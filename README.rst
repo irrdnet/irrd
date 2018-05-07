@@ -2,7 +2,7 @@
 Internet Routing Registry Daemon (IRRd) Version 4
 =================================================
 
-.. image:: https://pyup.io/repos/github/audreyr/python_boilerplate/shield.svg
+.. image:: https://pyup.io/repos/github/irrdnet/irrd4/shield.svg
      :target: https://pyup.io/repos/github/irrdnet/irrd4/
      :alt: Updates
 
