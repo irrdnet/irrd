@@ -15,15 +15,15 @@ today.
 This project will address these issues by developing an entirely new version of
 IRRD, featuring:
 
-o A single architecture design that encompasses all current features and
+* A single architecture design that encompasses all current features and
   provides room for extensibility in the future, to support new standards or
   add other functionality at relatively low cost.
-o A single codebase that is well documented, maintainable and consistent in
+* A single codebase that is well documented, maintainable and consistent in
   style and approach.
-o A comprehensive suite of both unit and integration tests to ensure the
+* A comprehensive suite of both unit and integration tests to ensure the
   continued correctness of IRRD.
-o Extensive compatibility with existing data submission, RPSL queries and
+* Extensive compatibility with existing data submission, RPSL queries and
   mirroring sources, to ease upgrades to IRRDv4.
-o A proxy module which can be used to compare the results of an existing
+* A proxy module which can be used to compare the results of an existing
   IRRD deployment to a new IRRDv4 deployment to assure the correct and
   consistent functioning, making upgrades from previous versions very low risk.
