@@ -43,6 +43,12 @@ jobs:
             py.test --cov-report html:test-reports/coverage --cov=irrd irrd --junitxml=test-reports/junit.xml
 
       - run:
+          name: build docs
+          command: |
+            . venv/bin/activate
+            sphinx-build -nW -b html docs/ test-reports/docs-html
+
+      - run:
           name: run flake8
           command: |
             . venv/bin/activate
