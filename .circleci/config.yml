@@ -54,6 +54,13 @@ jobs:
             . venv/bin/activate
             mypy irrd --ignore-missing-imports
 
+      - run:
+          name: report coverage
+          # Coveralls token is set in CircleCI config.
+          command: |
+            . venv/bin/activate
+            coveralls
+
       - store_test_results:
           path: test-reports
 

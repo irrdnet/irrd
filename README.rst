@@ -3,15 +3,16 @@ Internet Routing Registry Daemon (IRRd) Version 4
 =================================================
 
 .. image:: https://circleci.com/gh/irrdnet/irrd4.svg?style=svg
-    :target: https://circleci.com/gh/irrdnet/irrd4
+     :target: https://circleci.com/gh/irrdnet/irrd4
+
+.. image:: https://coveralls.io/repos/github/irrdnet/irrd4/badge.svg?branch=master
+     :target: https://coveralls.io/github/irrdnet/irrd4?branch=master
 
 .. image:: https://readthedocs.org/projects/irrd4/badge/?version=latest
      :target: http://irrd4.readthedocs.io/en/latest/?badge=latest
-     :alt: Documentation Status
 
 .. image:: https://pyup.io/repos/github/irrdnet/irrd4/shield.svg
      :target: https://pyup.io/repos/github/irrdnet/irrd4/
-     :alt: Updates
 
 NTT_ has tasked DashCare_ to develop
 a new version of the Internet Routing Registry Daemon (IRRDv4). This is an IRR
