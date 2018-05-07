@@ -159,5 +159,10 @@ texinfo_documents = [
      'Miscellaneous'),
 ]
 
-
-
+html_context = {
+    "display_github": True,
+    "github_user": "irrdnet",
+    "github_repo": "irrd4",
+    "github_version": "master",
+    "conf_py_path": "/docs/",
+}
