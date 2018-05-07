@@ -1,0 +1,17 @@
+python-gnupg==0.4.2    # Integration with gpg for key-cert objects
+passlib==1.7.1         # Password hashing for CRYPT-PW and MD5-PW
+IPy==0.83              # IP address parsing
+
+# Testing and related packages
+pytest==3.4.2
+pytest-cov==2.5.1
+coverage==4.5.1
+
+# Documentation generation
+Sphinx==1.7.4
+twine==1.11.0
+
+# Code style and type checks
+mypy==0.570
+flake8==3.5.0
+pep8-naming==0.5.0

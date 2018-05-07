@@ -1,14 +1,20 @@
-# Internet Routing Registry Daemon (IRRd) Version 4
+=================================================
+Internet Routing Registry Daemon (IRRd) Version 4
+=================================================
 
-[NTT](https://us.ntt.net) has tasked [DashCare](https://dashcare.nl) to develop
+.. image:: https://pyup.io/repos/github/audreyr/python_boilerplate/shield.svg
+     :target: https://pyup.io/repos/github/irrdnet/irrd4/
+     :alt: Updates
+
+NTT_ has tasked DashCare_ to develop
 a new version of the Internet Routing Registry Daemon (IRRDv4). This is an IRR
 database server, its main features being storing IRR data in RPSL format,
 mirroring other IRR services and answering queries of varying complexity.
 
 The v2 and v3 versions of IRRd are currently in use at NTT and RADB, amongst
-other places. The development process of IRRD up to version 3 has led to a
-project using many different architectures, styles and languages. The [current
-v3 project](https://github.com/irrdnet/irrd) is near impossible to maintain,
+other places. The development process of IRRd up to version 3 has led to a
+project using many different architectures, styles and languages. The
+`current v3 project`_ is near impossible to maintain,
 test and extend. Many of its design choices have been made in a distant past,
 and are no longer the best choice for today.
 
@@ -27,3 +33,7 @@ IRRD, featuring:
 * A proxy module which can be used to compare the results of an existing
   IRRD deployment to a new IRRDv4 deployment to assure the correct and
   consistent functioning, making upgrades from previous versions very low risk.
+
+.. _NTT: https://us.ntt.net
+.. _DashCare: https://www.dashcare.nl
+.. _current v3 project: https://github.com/irrdnet/irrd
