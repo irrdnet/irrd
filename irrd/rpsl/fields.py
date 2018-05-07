@@ -167,7 +167,7 @@ class RPSLIPv4AddressRangeField(RPSLTextField):
 
 class RPSLASNumberField(RPSLTextField):
     """Field for a single AS number (in ASxxxx syntax)."""
-    def clean(self, value: str, messages: RPSLParserMessages) -> str:
+    def clean(self, value: str, messages: RPSLParserMessages) -> Optional[str]:
         cleaned_value = clean_as_number(value, messages)
         if cleaned_value and cleaned_value.upper() != value.upper():
             messages.info(f"AS number {value} was reformatted as {cleaned_value}")
@@ -177,20 +177,19 @@ class RPSLASNumberField(RPSLTextField):
 class RPSLASBlockField(RPSLTextField):
     """Field for a block of AS numbers, e.g. AS1 - AS5."""
     def clean(self, value: str, messages: RPSLParserMessages) -> Optional[str]:
-        # Replace with validate_as_number when we have a way to return cleaned values
         if "-" not in value:
             messages.error(f"Invalid AS range: {value}: does not contain a hyphen")
             return None
 
-        as1, as2 = map(str.strip, value.split("-", 1))
+        as1_raw, as2_raw = map(str.strip, value.split("-", 1))
 
-        as1 = clean_as_number(as1, messages)
-        as2 = clean_as_number(as2, messages)
+        as1 = clean_as_number(as1_raw, messages)
+        as2 = clean_as_number(as2_raw, messages)
 
         if not all([as1, as2]):
             return None  # Messages about the reason for validation failure were already added.
 
-        if int(as1[2:]) > int(as2[2:]):
+        if int(as1[2:]) > int(as2[2:]):  # type: ignore
             messages.error(f"Invalid AS range: {value}: first AS is higher then second AS")
             return None
 
@@ -356,7 +355,7 @@ class RPSLReferenceListField(RPSLFieldListMixin, RPSLReferenceField):
         self.allow_kw_any = allow_kw_any
         super().__init__(*args, **kwargs)
 
-    def clean(self, value: str, messages: RPSLParserMessages) -> str:
+    def clean(self, value: str, messages: RPSLParserMessages) -> Optional[str]:
         if self.allow_kw_any and value.upper() == "ANY":
             return "ANY"
         return super().clean(value, messages)

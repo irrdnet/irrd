@@ -76,10 +76,10 @@ class RPSLObject(metaclass=RPSLObjectMeta):
     def pk(self) -> str:
         """Get the primary key value of an RPSL object. The PK is always converted to uppercase."""
         if len(self.pk_fields) == 1:
-            return self.cleaned_data.get(self.pk_fields[0]).upper()
+            return self.cleaned_data.get(self.pk_fields[0], "").upper()
         composite_values = []
         for field in self.pk_fields:
-            composite_values.append(self.cleaned_data.get(field))
+            composite_values.append(self.cleaned_data.get(field, ""))
         return ",".join(composite_values).upper()
 
     def render_rpsl_text(self) -> str:
