@@ -2,6 +2,9 @@
 Internet Routing Registry Daemon (IRRd) Version 4
 =================================================
 
+.. image:: https://circleci.com/gh/irrdnet/irrd4.svg?style=svg
+    :target: https://circleci.com/gh/irrdnet/irrd4
+
 .. image:: https://readthedocs.org/projects/irrd4/badge/?version=latest
      :target: http://irrd4.readthedocs.io/en/latest/?badge=latest
      :alt: Documentation Status
