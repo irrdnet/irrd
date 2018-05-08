@@ -61,6 +61,12 @@ jobs:
             mypy irrd --ignore-missing-imports
 
       - run:
+          name: run yapf
+          command: |
+            . venv/bin/activate
+            yapf -dpr packet | (! grep '.')
+
+      - run:
           name: report coverage
           # Coveralls token is set in CircleCI config.
           command: |

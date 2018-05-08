@@ -1,16 +1,45 @@
 import pytest
 from pytest import raises
 
-from .rpsl_samples import (object_sample_mapping, SAMPLE_MALFORMED_EMPTY_LINE, SAMPLE_MALFORMED_ATTRIBUTE_NAME,
-                           SAMPLE_UNKNOWN_CLASS, SAMPLE_MISSING_MANDATORY_ATTRIBUTE, SAMPLE_MALFORMED_SOURCE,
-                           SAMPLE_MALFORMED_PK, SAMPLE_UNKNOWN_ATTRIBUTE, SAMPLE_INVALID_MULTIPLE_ATTRIBUTE,
-                           KEY_CERT_SIGNED_MESSAGE_VALID, KEY_CERT_SIGNED_MESSAGE_INVALID,
-                           KEY_CERT_SIGNED_MESSAGE_CORRUPT, KEY_CERT_SIGNED_MESSAGE_WRONG_KEY)
-from ..rpsl_objects import (RPSLAsBlock, RPSLAsSet, RPSLAutNum, RPSLDictionary, RPSLDomain, RPSLFilterSet, RPSLInetRtr,
-                            RPSLInet6Num, RPSLInetnum, RPSLKeyCert, RPSLLimerick, RPSLMntner, RPSLPeeringSet,
-                            RPSLPerson,
-                            RPSLRepository, RPSLRole, RPSLRoute, RPSLRouteSet, RPSLRoute6, RPSLRtrSet,
-                            OBJECT_CLASS_MAPPING, rpsl_object_from_text)
+from .rpsl_samples import (
+    KEY_CERT_SIGNED_MESSAGE_CORRUPT,
+    KEY_CERT_SIGNED_MESSAGE_INVALID,
+    KEY_CERT_SIGNED_MESSAGE_VALID,
+    KEY_CERT_SIGNED_MESSAGE_WRONG_KEY,
+    SAMPLE_INVALID_MULTIPLE_ATTRIBUTE,
+    SAMPLE_MALFORMED_ATTRIBUTE_NAME,
+    SAMPLE_MALFORMED_EMPTY_LINE,
+    SAMPLE_MALFORMED_PK,
+    SAMPLE_MALFORMED_SOURCE,
+    SAMPLE_MISSING_MANDATORY_ATTRIBUTE,
+    SAMPLE_UNKNOWN_ATTRIBUTE,
+    SAMPLE_UNKNOWN_CLASS,
+    object_sample_mapping,
+)
+from ..rpsl_objects import (
+    OBJECT_CLASS_MAPPING,
+    RPSLAsBlock,
+    RPSLAsSet,
+    RPSLAutNum,
+    RPSLDictionary,
+    RPSLDomain,
+    RPSLFilterSet,
+    RPSLInet6Num,
+    RPSLInetRtr,
+    RPSLInetnum,
+    RPSLKeyCert,
+    RPSLLimerick,
+    RPSLMntner,
+    RPSLPeeringSet,
+    RPSLPerson,
+    RPSLRepository,
+    RPSLRole,
+    RPSLRoute,
+    RPSLRoute6,
+    RPSLRouteSet,
+    RPSLRtrSet,
+    rpsl_object_from_text,
+)
 
 
 @pytest.fixture()
@@ -24,8 +53,10 @@ def tmp_gpg_dir(tmpdir, monkeypatch):
     Default tmpdirs on Mac OS X are affected, to prevent this run pytest with:
         --basetemp=.tmpdirs
     """
+
     def gpg_dir(self):
         return str(tmpdir) + "/gnupg"
+
     monkeypatch.setattr(RPSLKeyCert, "gpg_dir", gpg_dir)
 
 
@@ -117,7 +148,8 @@ class TestRPSLAsSet:
         assert not obj.messages.errors()
         assert obj.pk() == "AS-RESTENA"
         # Field cleaning will cause our object to look slightly different than the original, hence the replace()
-        assert obj.render_rpsl_text() == rpsl_text.replace("AS2602, AS42909, AS51966, AS49624", "AS2602,AS42909,AS51966,AS49624")
+        assert obj.render_rpsl_text() == rpsl_text.replace("AS2602, AS42909, AS51966, AS49624",
+                                                           "AS2602,AS42909,AS51966,AS49624")
 
 
 class TestRPSLAutNum:
@@ -218,6 +250,7 @@ class TestRPSLKeyCert:
     tests call the actual gpg binary, as the test has little value when gpg is
     mocked out.
     """
+
     def test_has_mapping(self):
         obj = RPSLKeyCert()
         assert OBJECT_CLASS_MAPPING[obj.rpsl_object_class] == obj.__class__

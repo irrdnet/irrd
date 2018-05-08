@@ -45,5 +45,4 @@ for line in f.readlines():
 
 parse(current_obj)
 
-
 print(f"Processed {obj_parsed} objects, {obj_errors} with errors")

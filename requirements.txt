@@ -16,3 +16,4 @@ twine==1.11.0
 mypy==0.600
 flake8==3.5.0
 pep8-naming==0.6.1
+yapf==0.21.0

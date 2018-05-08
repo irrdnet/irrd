@@ -1,7 +1,20 @@
-from ..fields import (RPSLIPv4PrefixField, RPSLIPv4PrefixesField, RPSLIPv6PrefixField,
-                      RPSLIPv6PrefixesField, RPSLIPv4AddressRangeField, RPSLASNumberField, RPSLASBlockField,
-                      RPSLSetNameField, RPSLEmailField, RPSLDNSNameField, RPSLGenericNameField, RPSLReferenceField,
-                      RPSLReferenceListField, RPSLTextField, RPSLAuthField)
+from ..fields import (
+    RPSLASBlockField,
+    RPSLASNumberField,
+    RPSLAuthField,
+    RPSLDNSNameField,
+    RPSLEmailField,
+    RPSLGenericNameField,
+    RPSLIPv4AddressRangeField,
+    RPSLIPv4PrefixField,
+    RPSLIPv4PrefixesField,
+    RPSLIPv6PrefixField,
+    RPSLIPv6PrefixesField,
+    RPSLReferenceField,
+    RPSLReferenceListField,
+    RPSLSetNameField,
+    RPSLTextField,
+)
 from ..validators import RPSLParserMessages
 
 
@@ -135,8 +148,7 @@ def test_validate_as_block_field():
     assert field.clean("AS200-AS0200", messages) == "AS200 - AS200"
     assert not messages.errors()
     assert messages.infos() == [
-        "AS range AS001- AS200 was reformatted as AS1 - AS200",
-        "AS range AS200-AS0200 was reformatted as AS200 - AS200"
+        "AS range AS001- AS200 was reformatted as AS1 - AS200", "AS range AS200-AS0200 was reformatted as AS200 - AS200"
     ]
 
     assert_validation_err("does not contain a hyphen", field.clean, "AS23456")
@@ -154,11 +166,14 @@ def test_validate_set_name_field():
     assert field.clean("AS01:AS-3", messages) == "AS1:AS-3"
     assert not messages.errors()
     assert messages.infos() == [
-        "Set name AS01:AS-FOO was reformatted as AS1:AS-FOO",
-        "Set name AS01:AS-3 was reformatted as AS1:AS-3"
+        "Set name AS01:AS-FOO was reformatted as AS1:AS-FOO", "Set name AS01:AS-3 was reformatted as AS1:AS-3"
     ]
 
-    assert_validation_err("at least one component must be an actual set name", field.clean, "AS1",)
+    assert_validation_err(
+        "at least one component must be an actual set name",
+        field.clean,
+        "AS1",
+    )
     assert_validation_err("at least one component must be an actual set name", field.clean, "AS1:AS3")
     assert_validation_err("not a valid AS number nor a valid set name", field.clean, ":AS-FOO")
     assert_validation_err("not a valid AS number nor a valid set name", field.clean, "AS-FOO:")
@@ -231,7 +246,9 @@ def test_rpsl_reference_field():
 
     assert_validation_err(["Invalid AS number", "start with AS-"], field.clean, "RS-1234")
     assert_validation_err(["Invalid AS number", "start with AS-"], field.clean, "RS-1234")
-    assert_validation_err(["Invalid AS number", "at least one component must be an actual set name (i.e. start with AS-"], field.clean, "FOOBAR")
+    assert_validation_err(
+        ["Invalid AS number", "at least one component must be an actual set name (i.e. start with AS-"], field.clean,
+        "FOOBAR")
 
 
 def test_rpsl_references_field():

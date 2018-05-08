@@ -1,6 +1,5 @@
 from typing import Optional, List, TypeVar
 
-
 RPSLParserMessagesType = TypeVar("RPSLParserMessagesType", bound="RPSLParserMessages")
 
 
