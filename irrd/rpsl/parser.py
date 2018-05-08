@@ -18,6 +18,7 @@ class RPSLObjectMeta(type):
     kept as small as possible. This metaclass pre-calculates some derived data
     from the fields defined by a subclass of RPSLObject, for optimised parsing speed.
     """
+
     def __init__(cls, name, bases, clsdict):  # noqa: N805
         super().__init__(name, bases, clsdict)
         fields = clsdict.get("fields")
@@ -51,7 +52,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
 
     _re_attr_name = re.compile(r"^[a-z0-9_-]+$")
 
-    def __init__(self, from_text: Optional[str]=None, strict_validation=True) -> None:
+    def __init__(self, from_text: Optional[str] = None, strict_validation=True) -> None:
         """
         Create a new RPSL object, optionally instantiated from a string.
 
@@ -94,7 +95,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                 if idx == 0:
                     output += attr_display + line
                 else:
-                    output += continuation_chars[idx-1] + (RPSL_ATTRIBUTE_TEXT_WIDTH-1) * " " + line
+                    output += continuation_chars[idx - 1] + (RPSL_ATTRIBUTE_TEXT_WIDTH - 1) * " " + line
                 output += "\n"
         return output
 
@@ -177,8 +178,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         for attr_required in self.attrs_required:
             if attr_required not in attrs_present:
                 self.messages.error(
-                    f"Mandatory attribute {attr_required} on object {self.rpsl_object_class} is missing"
-                )
+                    f"Mandatory attribute {attr_required} on object {self.rpsl_object_class} is missing")
 
     def _clean_attribute_data(self) -> None:
         """

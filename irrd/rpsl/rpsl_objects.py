@@ -9,8 +9,8 @@ from .fields import (RPSLTextField, RPSLIPv4PrefixField, RPSLIPv4PrefixesField, 
                      RPSLReferenceListField, RPSLAuthField)
 from .parser import RPSLObject
 
-
 # TODO: the field definitions here should be verified against current IRRd
+
 
 def rpsl_object_from_text(text, strict_validation=True):
     rpsl_object_class = text.split(":", maxsplit=1)[0].strip()
@@ -238,8 +238,7 @@ class RPSLKeyCert(RPSLObject):
         if expected_object_name != actual_object_name:
             self.messages.error(
                 f"Invalid object name {actual_object_name}: does not match key fingerprint {fingerprint_formatted},"
-                f"expected object name {expected_object_name}"
-            )
+                f"expected object name {expected_object_name}")
             return False
 
         self._update_attribute_value("fingerpr", fingerprint_formatted)
