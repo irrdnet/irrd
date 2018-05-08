@@ -1,15 +1,45 @@
 import pytest
 from pytest import raises
 
-from .rpsl_samples import (object_sample_mapping, SAMPLE_MALFORMED_EMPTY_LINE, SAMPLE_MALFORMED_ATTRIBUTE_NAME,
-                           SAMPLE_UNKNOWN_CLASS, SAMPLE_MISSING_MANDATORY_ATTRIBUTE, SAMPLE_MALFORMED_SOURCE,
-                           SAMPLE_MALFORMED_PK, SAMPLE_UNKNOWN_ATTRIBUTE, SAMPLE_INVALID_MULTIPLE_ATTRIBUTE,
-                           KEY_CERT_SIGNED_MESSAGE_VALID, KEY_CERT_SIGNED_MESSAGE_INVALID,
-                           KEY_CERT_SIGNED_MESSAGE_CORRUPT, KEY_CERT_SIGNED_MESSAGE_WRONG_KEY)
-from ..rpsl_objects import (RPSLAsBlock, RPSLAsSet, RPSLAutNum, RPSLDictionary, RPSLDomain, RPSLFilterSet, RPSLInetRtr,
-                            RPSLInet6Num, RPSLInetnum, RPSLKeyCert, RPSLLimerick, RPSLMntner, RPSLPeeringSet,
-                            RPSLPerson, RPSLRepository, RPSLRole, RPSLRoute, RPSLRouteSet, RPSLRoute6, RPSLRtrSet,
-                            OBJECT_CLASS_MAPPING, rpsl_object_from_text)
+from .rpsl_samples import (
+    KEY_CERT_SIGNED_MESSAGE_CORRUPT,
+    KEY_CERT_SIGNED_MESSAGE_INVALID,
+    KEY_CERT_SIGNED_MESSAGE_VALID,
+    KEY_CERT_SIGNED_MESSAGE_WRONG_KEY,
+    SAMPLE_INVALID_MULTIPLE_ATTRIBUTE,
+    SAMPLE_MALFORMED_ATTRIBUTE_NAME,
+    SAMPLE_MALFORMED_EMPTY_LINE,
+    SAMPLE_MALFORMED_PK,
+    SAMPLE_MALFORMED_SOURCE,
+    SAMPLE_MISSING_MANDATORY_ATTRIBUTE,
+    SAMPLE_UNKNOWN_ATTRIBUTE,
+    SAMPLE_UNKNOWN_CLASS,
+    object_sample_mapping,
+)
+from ..rpsl_objects import (
+    OBJECT_CLASS_MAPPING,
+    RPSLAsBlock,
+    RPSLAsSet,
+    RPSLAutNum,
+    RPSLDictionary,
+    RPSLDomain,
+    RPSLFilterSet,
+    RPSLInet6Num,
+    RPSLInetRtr,
+    RPSLInetnum,
+    RPSLKeyCert,
+    RPSLLimerick,
+    RPSLMntner,
+    RPSLPeeringSet,
+    RPSLPerson,
+    RPSLRepository,
+    RPSLRole,
+    RPSLRoute,
+    RPSLRoute6,
+    RPSLRouteSet,
+    RPSLRtrSet,
+    rpsl_object_from_text,
+)
 
 
 @pytest.fixture()

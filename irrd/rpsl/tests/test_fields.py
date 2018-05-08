@@ -1,7 +1,20 @@
-from ..fields import (RPSLIPv4PrefixField, RPSLIPv4PrefixesField, RPSLIPv6PrefixField, RPSLIPv6PrefixesField,
-                      RPSLIPv4AddressRangeField, RPSLASNumberField, RPSLASBlockField, RPSLSetNameField, RPSLEmailField,
-                      RPSLDNSNameField, RPSLGenericNameField, RPSLReferenceField, RPSLReferenceListField, RPSLTextField,
-                      RPSLAuthField)
+from ..fields import (
+    RPSLASBlockField,
+    RPSLASNumberField,
+    RPSLAuthField,
+    RPSLDNSNameField,
+    RPSLEmailField,
+    RPSLGenericNameField,
+    RPSLIPv4AddressRangeField,
+    RPSLIPv4PrefixField,
+    RPSLIPv4PrefixesField,
+    RPSLIPv6PrefixField,
+    RPSLIPv6PrefixesField,
+    RPSLReferenceField,
+    RPSLReferenceListField,
+    RPSLSetNameField,
+    RPSLTextField,
+)
 from ..validators import RPSLParserMessages
 
 

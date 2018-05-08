@@ -17,10 +17,34 @@ re_pgpkey = re.compile(r"^PGPKEY-[A-F0-9]{8}$")
 re_dnsname = re.compile(r"^(([A-z0-9]|[A-z0-9][A-z0-9\-]*[A-z0-9])\.)*([A-z0-9]|[A-z0-9][A-z0-9\-]*[A-z0-9])$")
 re_generic_name = re.compile(r"^[A-z][A-z0-9_-]*[A-z0-9]$")
 reserved_words = [
-    "ANY", "AS-ANY", "RS_ANY", "PEERAS", "AND", "OR", "NOT", "ATOMIC", "FROM", "TO", "AT", "ACTION", "ACCEPT",
-    "ANNOUNCE", "EXCEPT", "REFINE", "NETWORKS", "INTO", "INBOUND", "OUTBOUND"
+    "ACCEPT",
+    "ACTION",
+    "AND",
+    "ANNOUNCE",
+    "ANY",
+    "AS-ANY",
+    "AT",
+    "ATOMIC",
+    "EXCEPT",
+    "FROM",
+    "INBOUND",
+    "INTO",
+    "NETWORKS",
+    "NOT",
+    "OR",
+    "OUTBOUND",
+    "PEERAS",
+    "REFINE",
+    "RS_ANY",
+    "TO",
 ]
-reserved_prefixes = ["AS-", "RS-", "RTRS-", "FLTR-", "PRNG-"]
+reserved_prefixes = [
+    "AS-",
+    "FLTR-",
+    "PRNG-",
+    "RS-",
+    "RTRS-",
+]
 """
 Fields for RPSL data.
 
