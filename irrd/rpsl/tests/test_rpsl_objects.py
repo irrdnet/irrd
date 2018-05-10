@@ -1,6 +1,7 @@
 import pytest
 from pytest import raises
 
+from irrd.rpsl.parser import UnknownRPSLObjectClassException
 from .rpsl_samples import (object_sample_mapping, SAMPLE_MALFORMED_EMPTY_LINE, SAMPLE_MALFORMED_ATTRIBUTE_NAME,
                            SAMPLE_UNKNOWN_CLASS, SAMPLE_MISSING_MANDATORY_ATTRIBUTE, SAMPLE_MALFORMED_SOURCE,
                            SAMPLE_MALFORMED_PK, SAMPLE_UNKNOWN_ATTRIBUTE, SAMPLE_INVALID_MULTIPLE_ATTRIBUTE,
@@ -31,9 +32,8 @@ def tmp_gpg_dir(tmpdir, monkeypatch):
 
 class TestRPSLParsingGeneric:
     # Most malformed objects are tested without strict validation, as they should always fail.
-    @pytest.mark.xfail
     def test_unknown_class(self):
-        with raises(ValueError) as ve:
+        with raises(UnknownRPSLObjectClassException) as ve:
             rpsl_object_from_text(SAMPLE_UNKNOWN_CLASS)
         assert "unknown object class" in str(ve)
 

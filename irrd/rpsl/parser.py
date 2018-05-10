@@ -254,3 +254,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         for new_value in new_values:
             self._object_data.insert(insert_idx, (attribute, new_value, []))
             insert_idx += 1
+
+
+class UnknownRPSLObjectClassException(Exception):
+    pass

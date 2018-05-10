@@ -7,7 +7,7 @@ from .fields import (RPSLTextField, RPSLIPv4PrefixField, RPSLIPv4PrefixesField, 
                      RPSLIPv6PrefixesField, RPSLIPv4AddressRangeField, RPSLASNumberField, RPSLASBlockField,
                      RPSLSetNameField, RPSLEmailField, RPSLDNSNameField, RPSLGenericNameField, RPSLReferenceField,
                      RPSLReferenceListField, RPSLAuthField)
-from .parser import RPSLObject
+from .parser import RPSLObject, UnknownRPSLObjectClassException
 
 
 # TODO: the field definitions here should be verified against current IRRd
@@ -17,9 +17,7 @@ def rpsl_object_from_text(text, strict_validation=True):
     try:
         klass = OBJECT_CLASS_MAPPING[rpsl_object_class]
     except KeyError:
-        # TODO: re-enable detection of unknown objects
-        # raise ValueError(f"Encountered unknown object class {rpsl_object_class}")
-        return RPSLAutNum()
+        raise UnknownRPSLObjectClassException(f"Encountered unknown object class {rpsl_object_class}")
     return klass(from_text=text, strict_validation=strict_validation)
 
 
