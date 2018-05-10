@@ -179,10 +179,13 @@ def test_validate_email_field():
     field = RPSLEmailField()
     messages = RPSLParserMessages()
     assert field.clean("foo.bar@example.asia", messages) == "foo.bar@example.asia"
+    assert field.clean("foo.bar@[192.0.2.1]", messages) == "foo.bar@[192.0.2.1]"
+    assert field.clean("foo.bar@[2001:db8::1]", messages) == "foo.bar@[2001:db8::1]"
     assert not messages.errors()
 
     assert_validation_err("Invalid e-mail", field.clean, "foo.bar+baz@")
     assert_validation_err("Invalid e-mail", field.clean, "a§§@example.com")
+    assert_validation_err("Invalid e-mail", field.clean, "a@[192.0.2.2.2]")
 
 
 def test_validate_dns_name_field():

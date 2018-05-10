@@ -8,14 +8,16 @@ from .validators import clean_as_number, RPSLParserMessages
 
 # The IPv4/IPv6 regexes are for initial screening - not full validators
 re_ipv4_prefix = re.compile(r"^\d+\.\d+\.\d+\.\d+/\d+$")
-re_ipv6_prefix = re.compile(r"^[A-f\d:]+/\d+$")
+re_ipv6_prefix = re.compile(r"^[A-F\d:]+/\d+$", re.IGNORECASE)
 
-# TODO: this email RE does not allow literal IP addresses
-re_email = re.compile(r"^[A-z0-9$!#%&\"*+/=?^_`{|}~\\.-]+@[A-z0-9\\.-]+$")
+# This regex is not designed to catch every possible invalid variation,
+# but rather meant to protect against unintentional mistakes.
+#                         # Validate local-part           @ domain         | or IPv4 address        | or IPv6
+re_email = re.compile(r"^[A-Z0-9$!#%&\"*+\/=?^_`{|}~\\.-]+@(([A-Z0-9\\.-]+)|(\[\d+\.\d+\.\d+\.\d+\])|(\[[A-f\d:]+\]))$", re.IGNORECASE)
 
 re_pgpkey = re.compile(r"^PGPKEY-[A-F0-9]{8}$")
-re_dnsname = re.compile(r"^(([A-z0-9]|[A-z0-9][A-z0-9\-]*[A-z0-9])\.)*([A-z0-9]|[A-z0-9][A-z0-9\-]*[A-z0-9])$")
-re_generic_name = re.compile(r"^[A-z][A-z0-9_-]*[A-z0-9]$")
+re_dnsname = re.compile(r"^(([A-Z0-9]|[A-Z0-9][A-Z0-9\-]*[A-Z0-9])\.)*([A-Z0-9]|[A-Z0-9][A-Z0-9\-]*[A-Z0-9])$", re.IGNORECASE)
+re_generic_name = re.compile(r"^[A-Z][A-Z0-9_-]*[A-Z0-9]$", re.IGNORECASE)
 reserved_words = ["ANY", "AS-ANY", "RS_ANY", "PEERAS", "AND", "OR", "NOT", "ATOMIC", "FROM", "TO", "AT", "ACTION",
                   "ACCEPT", "ANNOUNCE", "EXCEPT", "REFINE", "NETWORKS", "INTO", "INBOUND", "OUTBOUND"]
 reserved_prefixes = ["AS-", "RS-", "RTRS-", "FLTR-", "PRNG-"]
