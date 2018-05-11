@@ -23,25 +23,17 @@ class RPSLParserMessages:
     def errors(self):
         return [msg[1] for msg in self._messages if msg[0] == "ERROR"]
 
-    def message(self, level, message):
-        if level not in self.levels:
-            raise ValueError(f"Unknown level {level}")
-        self._messages.append((level, message))
-
     def info(self, msg):
-        self.message("INFO", msg)
-
-    def success(self, msg):
-        self.message("SUCCESS", msg)
-
-    def warning(self, msg):
-        self.message("WARNING", msg)
+        self._message("INFO", msg)
 
     def error(self, msg):
-        self.message("ERROR", msg)
+        self._message("ERROR", msg)
 
     def merge_messages(self, other_messages: RPSLParserMessagesType):
         self._messages += other_messages._messages
+
+    def _message(self, level, message):
+        self._messages.append((level, message))
 
 
 def clean_as_number(value: str, messages: RPSLParserMessages) -> Optional[str]:
