@@ -245,11 +245,12 @@ class TestRPSLKeyCert:
 
     def test_clean_missing_key(self, tmp_gpg_dir):
         rpsl_text = object_sample_mapping[RPSLKeyCert().rpsl_object_class]
-        obj = rpsl_object_from_text(rpsl_text.replace("certif:", "foo:"), strict_validation=False)
+        obj = rpsl_object_from_text(rpsl_text.replace("certif:", "remarks:"), strict_validation=True)
 
         errors = obj.messages.errors()
-        assert len(errors) == 1, f"Unexpected multiple errors: {errors}"
-        assert "No valid data found" in errors[0]
+        assert len(errors) == 2, f"Unexpected multiple errors: {errors}"
+        assert "Mandatory attribute certif on object key-cert is missing" in errors[0]
+        assert "No valid data found" in errors[1]
 
     def test_verify(self, tmp_gpg_dir):
         rpsl_text = object_sample_mapping[RPSLKeyCert().rpsl_object_class]

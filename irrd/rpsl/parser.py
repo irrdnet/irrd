@@ -174,7 +174,8 @@ class RPSLObject(metaclass=RPSLObjectMeta):
             self._validate_attribute_counts()
         self._clean_attribute_data()
 
-        self.clean()
+        if self.strict_validation:
+            self.clean()
 
     def _validate_attribute_counts(self) -> None:
         """
