@@ -233,7 +233,7 @@ class RPSLKeyCert(RPSLObject):
 
         if expected_object_name != actual_object_name:
             self.messages.error(
-                f"Invalid object name {actual_object_name}: does not match key fingerprint {fingerprint_formatted},"
+                f"Invalid object name {actual_object_name}: does not match key fingerprint {fingerprint_formatted}, "
                 f"expected object name {expected_object_name}"
             )
             return False
