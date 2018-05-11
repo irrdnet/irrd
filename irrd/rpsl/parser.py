@@ -210,7 +210,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
             field = self.fields.get(attr_name)
             if field and (self.strict_validation or field.primary_key or field.lookup_key):
                 normalised_value = self._normalise_rpsl_value(value)
-                cleaned_value = field.clean(normalised_value, self.messages)
+                cleaned_value = field.clean(normalised_value, self.messages, self.strict_validation)
                 if cleaned_value:
                     if cleaned_value != normalised_value:
                         # Note: this cleaning can be incomplete: if the normalised value is not contained in the

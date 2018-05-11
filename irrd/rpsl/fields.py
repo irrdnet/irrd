@@ -49,7 +49,7 @@ class RPSLTextField:
         self.primary_key = primary_key
         self.lookup_key = lookup_key
 
-    def clean(self, value: str, messages: RPSLParserMessages) -> Optional[str]:
+    def clean(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[str]:
         return value
 
 
@@ -64,10 +64,10 @@ class RPSLFieldListMixin:
         class RPSLASNumbersField(RPSLFieldListMixin, RPSLASNumberField):
             pass
     """
-    def clean(self, value: str, messages: RPSLParserMessages) -> Optional[str]:
+    def clean(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[str]:
         values = []
         for single_value in value.split(","):
-            value = super().clean(single_value.strip(), messages)  # type: ignore
+            value = super().clean(single_value.strip(), messages, strict_validation)  # type: ignore
             values.append(value)
         if not all(values):
             return None
@@ -76,7 +76,7 @@ class RPSLFieldListMixin:
 
 class RPSLIPv4PrefixField(RPSLTextField):
     """Field for a single IPv4 prefix."""
-    def clean(self, value: str, messages: RPSLParserMessages) -> Optional[str]:
+    def clean(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[str]:
         if not re_ipv4_prefix.match(value):
             messages.error(f"Invalid address prefix: {value}")
             return None
@@ -104,7 +104,7 @@ class RPSLIPv4PrefixesField(RPSLFieldListMixin, RPSLIPv4PrefixField):
 
 class RPSLIPv6PrefixField(RPSLTextField):
     """Field for a single IPv6 prefix."""
-    def clean(self, value: str, messages: RPSLParserMessages) -> Optional[str]:
+    def clean(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[str]:
         if not re_ipv6_prefix.match(value):
             messages.error(f"Invalid address prefix: {value}")
             return None
@@ -137,7 +137,7 @@ class RPSLIPv4AddressRangeField(RPSLTextField):
     Note that a single IP address is also valid, and that the range does
     not have to align to bitwise boundaries of prefixes.
     """
-    def clean(self, value: str, messages: RPSLParserMessages) -> Optional[str]:
+    def clean(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[str]:
         if "-" in value:
             ip1_input, ip2_input = value.split("-", 1)
         else:
@@ -168,7 +168,7 @@ class RPSLIPv4AddressRangeField(RPSLTextField):
 
 class RPSLASNumberField(RPSLTextField):
     """Field for a single AS number (in ASxxxx syntax)."""
-    def clean(self, value: str, messages: RPSLParserMessages) -> Optional[str]:
+    def clean(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[str]:
         cleaned_value = clean_as_number(value, messages)
         if cleaned_value and cleaned_value.upper() != value.upper():
             messages.info(f"AS number {value} was reformatted as {cleaned_value}")
@@ -177,7 +177,7 @@ class RPSLASNumberField(RPSLTextField):
 
 class RPSLASBlockField(RPSLTextField):
     """Field for a block of AS numbers, e.g. AS1 - AS5."""
-    def clean(self, value: str, messages: RPSLParserMessages) -> Optional[str]:
+    def clean(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[str]:
         if "-" not in value:
             messages.error(f"Invalid AS range: {value}: does not contain a hyphen")
             return None
@@ -217,7 +217,7 @@ class RPSLSetNameField(RPSLTextField):
         self.prefix = prefix + "-"
         super().__init__(*args, **kwargs)
 
-    def clean(self, value: str, messages: RPSLParserMessages) -> Optional[str]:
+    def clean(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[str]:
         assert self.prefix in reserved_prefixes
         input_components = value.split(":")
         output_components: List[str] = []
@@ -227,7 +227,7 @@ class RPSLSetNameField(RPSLTextField):
                            f"an actual set name (i.e. start with {self.prefix})")
             return None
         for component in input_components:
-            if component.upper() in reserved_words:
+            if strict_validation and component.upper() in reserved_words:
                 messages.error(f"Invalid set name {value}: component {component} is a reserved word")
                 return None
 
@@ -253,7 +253,7 @@ class RPSLSetNameField(RPSLTextField):
 
 class RPSLEmailField(RPSLTextField):
     """Field for an e-mail address. Only performs basic validation."""
-    def clean(self, value: str, messages: RPSLParserMessages) -> Optional[str]:
+    def clean(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[str]:
         if not re_email.match(value):
             messages.error(f"Invalid e-mail address: {value}")
             return None
@@ -262,7 +262,7 @@ class RPSLEmailField(RPSLTextField):
 
 class RPSLDNSNameField(RPSLTextField):
     """Field for a DNS name, as used in e.g. inet-rtr names."""
-    def clean(self, value: str, messages: RPSLParserMessages) -> Optional[str]:
+    def clean(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[str]:
         if not re_dnsname.match(value):
             messages.error(f"Invalid DNS name: {value}")
             return None
@@ -286,16 +286,17 @@ class RPSLGenericNameField(RPSLTextField):
             self.allowed_prefixes = []
         super().__init__(*args, **kwargs)
 
-    def clean(self, value: str, messages: RPSLParserMessages) -> Optional[str]:
+    def clean(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[str]:
         upper_value = value.upper()
-        if upper_value in reserved_words:
-            messages.error(f"Invalid name: {value}: this is a reserved word")
-            return None
-
-        for prefix in reserved_prefixes:
-            if upper_value.startswith(prefix) and prefix not in self.allowed_prefixes:
-                messages.error(f"Invalid name: {value}: {prefix} is a reserved prefix")
+        if strict_validation:
+            if upper_value in reserved_words:
+                messages.error(f"Invalid name: {value}: this is a reserved word")
                 return None
+
+            for prefix in reserved_prefixes:
+                if upper_value.startswith(prefix) and prefix not in self.allowed_prefixes:
+                    messages.error(f"Invalid name: {value}: {prefix} is a reserved prefix")
+                    return None
 
         if not re_generic_name.match(upper_value):
             messages.error(f"Invalid name: {value}: contains invalid characters, does not start with a letter, "
@@ -323,14 +324,14 @@ class RPSLReferenceField(RPSLTextField):
         self.referring_identifier_fields: List[RPSLTextField] = []
         super().__init__(*args, **kwargs)
 
-    def clean(self, value: str, messages: RPSLParserMessages) -> Optional[str]:
+    def clean(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[str]:
         if not self.referring_identifier_fields:
             self._build_cache()
 
         referring_field_messages = RPSLParserMessages()
         for identifier_field in self.referring_identifier_fields:
             if identifier_field:
-                cleaned_value = identifier_field.clean(value, referring_field_messages)
+                cleaned_value = identifier_field.clean(value, referring_field_messages, strict_validation)
                 if cleaned_value is not None:
                     return cleaned_value
 
@@ -356,15 +357,15 @@ class RPSLReferenceListField(RPSLFieldListMixin, RPSLReferenceField):
         self.allow_kw_any = allow_kw_any
         super().__init__(*args, **kwargs)
 
-    def clean(self, value: str, messages: RPSLParserMessages) -> Optional[str]:
+    def clean(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[str]:
         if self.allow_kw_any and value.upper() == "ANY":
             return "ANY"
-        return super().clean(value, messages)
+        return super().clean(value, messages, strict_validation)
 
 
 class RPSLAuthField(RPSLTextField):
     """Field for the auth attribute of a mntner."""
-    def clean(self, value: str, messages: RPSLParserMessages) -> Optional[str]:
+    def clean(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[str]:
         valid_beginnings = [hasher + " " for hasher in PASSWORD_HASHERS.keys()]
         if any(value.upper().startswith(b) for b in valid_beginnings) or re_pgpkey.match(value.upper()):
             return value

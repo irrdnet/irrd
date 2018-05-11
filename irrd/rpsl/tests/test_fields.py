@@ -164,6 +164,8 @@ def test_validate_set_name_field():
     assert_validation_err("not a valid AS number nor a valid set name", field.clean, "AS-FOO:")
     assert_validation_err("reserved word", field.clean, "AS1:AS-ANY")
 
+    assert field.clean("AS-ANY", messages, strict_validation=False) == "AS-ANY"
+
     field = RPSLSetNameField(prefix="RS")
     messages = RPSLParserMessages()
     assert field.clean("RS-FOO", messages) == "RS-FOO"
@@ -209,6 +211,8 @@ def test_validate_generic_name_field():
     assert_validation_err("reserved prefix", field.clean, "As-FOO")
     assert_validation_err("invalid character", field.clean, "FoO$BAR")
     assert_validation_err("invalid character", field.clean, "FOOBAR-")
+
+    assert field.clean("AS-FOO", messages, strict_validation=False) == "AS-FOO"
 
     field = RPSLGenericNameField(allowed_prefixes=["as"])
     assert field.clean("As-FOO", messages) == "As-FOO"
