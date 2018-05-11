@@ -2,9 +2,11 @@ Welcome to the IRRDv4 documentation
 ===================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents:
 
-   readme
+   architecture
    development
    license
+
+.. include:: ../README.rst

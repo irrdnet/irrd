@@ -14,6 +14,8 @@ Internet Routing Registry Daemon (IRRd) Version 4
 .. image:: https://pyup.io/repos/github/irrdnet/irrd4/shield.svg
      :target: https://pyup.io/repos/github/irrdnet/irrd4/
 
+------------
+
 NTT_ has tasked DashCare_ to develop
 a new version of the Internet Routing Registry Daemon (IRRDv4). This is an IRR
 database server, its main features being storing IRR data in RPSL format,
