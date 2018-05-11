@@ -54,7 +54,7 @@ class RPSLTextField:
 
 
 class RPSLFieldListMixin:
-    """fl
+    """
     Mixin to allow fields to support list values, like "AS1, AS2, AS3".
 
     For example, if you have an RPSLASNumberField that validates a single
