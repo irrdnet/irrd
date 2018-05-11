@@ -6,11 +6,11 @@ from .rpsl_samples import (object_sample_mapping, SAMPLE_MALFORMED_EMPTY_LINE, S
                            SAMPLE_UNKNOWN_CLASS, SAMPLE_MISSING_MANDATORY_ATTRIBUTE, SAMPLE_MALFORMED_SOURCE,
                            SAMPLE_MALFORMED_PK, SAMPLE_UNKNOWN_ATTRIBUTE, SAMPLE_INVALID_MULTIPLE_ATTRIBUTE,
                            KEY_CERT_SIGNED_MESSAGE_VALID, KEY_CERT_SIGNED_MESSAGE_INVALID,
-                           KEY_CERT_SIGNED_MESSAGE_CORRUPT, KEY_CERT_SIGNED_MESSAGE_WRONG_KEY)
+                           KEY_CERT_SIGNED_MESSAGE_CORRUPT, KEY_CERT_SIGNED_MESSAGE_WRONG_KEY, TEMPLATE_ROUTE_OBJECT,
+                           TEMPLATE_PERSON_OBJECT)
 from ..rpsl_objects import (RPSLAsBlock, RPSLAsSet, RPSLAutNum, RPSLDictionary, RPSLDomain, RPSLFilterSet, RPSLInetRtr,
                             RPSLInet6Num, RPSLInetnum, RPSLKeyCert, RPSLLimerick, RPSLMntner, RPSLPeeringSet,
-                            RPSLPerson,
-                            RPSLRepository, RPSLRole, RPSLRoute, RPSLRouteSet, RPSLRoute6, RPSLRtrSet,
+                            RPSLPerson, RPSLRepository, RPSLRole, RPSLRoute, RPSLRouteSet, RPSLRoute6, RPSLRtrSet,
                             OBJECT_CLASS_MAPPING, rpsl_object_from_text)
 
 
@@ -319,6 +319,10 @@ class TestRPSLPerson:
         assert obj.pk() == "DUMY-RIPE"
         assert obj.render_rpsl_text() == rpsl_text
 
+    def test_generate_template(self):
+        template = RPSLPerson().generate_template()
+        assert template == TEMPLATE_PERSON_OBJECT
+
 
 class TestRPSLRepository:
     def test_has_mapping(self):
@@ -353,6 +357,10 @@ class TestRPSLRoute:
         assert obj.pk() == "193.254.30.0/24,AS12726"
         # Field cleaning will cause our object to look slightly different than the original, hence the replace()
         assert obj.render_rpsl_text() == rpsl_text.replace("193.254.030.00/24", "193.254.30.0/24")
+
+    def test_generate_template(self):
+        template = RPSLRoute().generate_template()
+        assert template == TEMPLATE_ROUTE_OBJECT
 
 
 class TestRPSLRouteSet:

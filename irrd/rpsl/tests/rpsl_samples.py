@@ -1622,7 +1622,41 @@ object_sample_mapping = {
     "rtr-set": SAMPLE_RTR_SET,
 }
 
-# The samples above were originally generated from a 2018 RIPE split db dump, with the shell one-liner:
+TEMPLATE_ROUTE_OBJECT = """route:          [mandatory]  [single]    [primary/look-up key]
+descr:          [optional]   [multiple]  []
+origin:         [mandatory]  [single]    [primary key]
+holes:          [optional]   [multiple]  []
+member-of:      [optional]   [multiple]  []
+inject:         [optional]   [multiple]  []
+aggr-bndry:     [optional]   [single]    []
+aggr-mtd:       [optional]   [single]    []
+export-comps:   [optional]   [single]    []
+components:     [optional]   [single]    []
+admin-c:        [optional]   [multiple]  []
+tech-c:         [optional]   [multiple]  []
+geoidx:         [optional]   [multiple]  []
+roa-uri:        [optional]   [single]    []
+remarks:        [optional]   [multiple]  []
+notify:         [optional]   [multiple]  []
+mnt-by:         [mandatory]  [multiple]  []
+changed:        [mandatory]  [multiple]  []
+source:         [mandatory]  [single]    []
+"""
+
+TEMPLATE_PERSON_OBJECT = """person:    [mandatory]  [single]    [look-up key]
+address:   [mandatory]  [multiple]  []
+phone:     [mandatory]  [multiple]  []
+fax-no:    [optional]   [multiple]  []
+e-mail:    [mandatory]  [multiple]  []
+nic-hdl:   [mandatory]  [single]    [primary/look-up key]
+remarks:   [optional]   [multiple]  []
+notify:    [optional]   [multiple]  []
+mnt-by:    [mandatory]  [multiple]  []
+changed:   [mandatory]  [multiple]  []
+source:    [mandatory]  [single]    []
+"""
+
+# The object samples above were originally generated from a 2018 RIPE split db dump, with the shell one-liner:
 # for i in as-block as-set aut-num domain filter-set inet-rtr inet6num inetnum key-cert mntner peering-set person role route route-set route6 rtr-set; do label="SAMPLE_"`echo $i|sed -e "s/-/_/"|tr "[:lower:]" "[:upper:]"`; echo -n "$label = \"\"\""; head -n 10000 ripe.db.$i|egrep -v "^#"|tail -n +2|sed -e "/^$/,$d; "; echo -e """""\n"; done | tr -cd "\11\12\15\40-\176"
 # Subsequently, they were modified to match IRRDs expected format in attribute names,
 # and some variation was introduced to test obscure parts of the syntax.

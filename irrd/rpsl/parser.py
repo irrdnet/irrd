@@ -98,8 +98,25 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                 output += "\n"
         return output
 
-    def clean(self) -> bool:
+    def generate_template(self):
+        """Generate a template in text form of the main attributes of all fields."""
+        template = ""
+        max_name_width = max(len(k) for k in self.fields.keys())
+        for name, field in self.fields.items():
+            mandatory = "[optional] " if field.optional else "[mandatory]"
+            single = "[multiple]" if field.multiple else "[single]  "
+            key = "[]"
+            if field.primary_key and field.lookup_key:
+                key = "[primary/look-up key]"
+            elif field.primary_key:
+                key = "[primary key]"
+            elif field.lookup_key:
+                key = "[look-up key]"
+            name_padding = (max_name_width - len(name)) * " "
+            template += f"{name}: {name_padding}  {mandatory}  {single}  {key}\n"
+        return template
 
+    def clean(self) -> bool:
         return True
 
     def _extract_attributes_values(self, text: str) -> None:
