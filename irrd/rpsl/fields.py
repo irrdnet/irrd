@@ -67,8 +67,10 @@ class RPSLFieldListMixin:
     def clean(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[str]:
         values = []
         for single_value in value.split(","):
-            value = super().clean(single_value.strip(), messages, strict_validation)  # type: ignore
-            values.append(value)
+            single_value = single_value.strip()
+            if single_value:
+                value = super().clean(single_value, messages, strict_validation)  # type: ignore
+                values.append(value)
         if not all(values):
             return None
         return ",".join(values)

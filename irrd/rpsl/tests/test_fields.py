@@ -56,7 +56,10 @@ def test_ipv4_prefixes_field():
     field = RPSLIPv4PrefixesField()
     messages = RPSLParserMessages()
     assert field.clean("192.0.2.0/24", messages) == "192.0.2.0/24"
-    assert field.clean("192.0.2.0/24, 192.00.02.0/25", messages) == "192.0.2.0/24,192.0.2.0/25"
+    # Technically, the trailing comma is not RFC-compliant.
+    # However, it's used in some cases when the list is broken over
+    # multiple lines, and accepting it is harmless.
+    assert field.clean("192.0.2.0/24, 192.00.02.0/25, ", messages) == "192.0.2.0/24,192.0.2.0/25"
     assert not messages.errors()
     assert messages.infos() == ["Address prefix 192.00.02.0/25 was reformatted as 192.0.2.0/25"]
 
