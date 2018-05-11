@@ -10,8 +10,6 @@ from .fields import (RPSLTextField, RPSLIPv4PrefixField, RPSLIPv4PrefixesField, 
 from .parser import RPSLObject, UnknownRPSLObjectClassException
 
 
-# TODO: the field definitions here should be verified against current IRRd
-
 def rpsl_object_from_text(text, strict_validation=True):
     rpsl_object_class = text.split(":", maxsplit=1)[0].strip()
     try:
@@ -246,10 +244,11 @@ class RPSLKeyCert(RPSLObject):
 
         return True
 
-    # TODO: this API is correct, but not very practical.
+    # This API is correct, but not very practical.
     # In typical cases, the PGP key used to sign a message is not known until
     # the PGP signature is actually parsed. More useful is a generic method to find
     # which key signed a message, which can then be stored and compared to key-cert's later.
+    # This method will probably be extracted to the update handler.
     def verify(self, message: str) -> bool:
         gpg = gnupg.GPG(gnupghome=self.gpg_dir())
         result = gpg.verify(message)

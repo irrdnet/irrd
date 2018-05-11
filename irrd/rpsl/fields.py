@@ -50,7 +50,6 @@ class RPSLTextField:
         self.lookup_key = lookup_key
 
     def clean(self, value: str, messages: RPSLParserMessages) -> Optional[str]:
-        # TODO: check for allowed characters? Original RFC requires ascii.
         return value
 
 
