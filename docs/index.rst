@@ -6,6 +6,7 @@ Welcome to the IRRDv4 documentation
    :caption: Contents:
 
    architecture
+   object-validation
    development
    license
 

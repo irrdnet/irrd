@@ -53,7 +53,6 @@ def test_rpsl_parse(capsys, tmpdir):
 
     main(filename=tmp_file, strict_validation=False)
     captured = capsys.readouterr().out
-    print(captured)
     assert "ERROR: Unrecognised attribute unknown-obj on object as-block" not in captured
     assert "INFO: AS range AS2043 - as02043 was reformatted as AS2043 - AS2043" in captured
     assert "Processed 3 objects, 0 with errors" in captured

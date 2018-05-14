@@ -213,7 +213,7 @@ class RPSLSetNameField(RPSLTextField):
     must be a valid set name, i.e. start with the given prefix.
 
     The prefix provided is the expected prefix of the set name, e.g. "RS" for
-    a route-set, or "AS" for an as-set.
+    a route-set, or "AS" for an as-set.R
     """
     def __init__(self, prefix: str, *args, **kwargs) -> None:
         self.prefix = prefix + "-"
@@ -224,7 +224,7 @@ class RPSLSetNameField(RPSLTextField):
         input_components = value.split(":")
         output_components: List[str] = []
 
-        if not any([c.upper().startswith(self.prefix) for c in input_components]):
+        if strict_validation and not any([c.upper().startswith(self.prefix) for c in input_components]):
             messages.error(f"Invalid set name {value}: at least one component must be "
                            f"an actual set name (i.e. start with {self.prefix})")
             return None
@@ -236,7 +236,7 @@ class RPSLSetNameField(RPSLTextField):
             # clean_as_number receives a new message object instance, as we want to ignore the message
             # it produces - we want to create our own message later if validation fails.
             cleaned_as_number = clean_as_number(component, RPSLParserMessages())
-            if not component.upper().startswith(self.prefix) and not cleaned_as_number:
+            if not re_generic_name.match(component.upper()) and not cleaned_as_number:
                 messages.error(
                     f"Invalid set {value}: component {component} is not a valid AS number nor a valid set name"
                 )
