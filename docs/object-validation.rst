@@ -10,7 +10,8 @@ It has two modes:
 
 * Non-strict: includes validation of the presence of all primary key
   fields, and the correct syntax of all primary key and look-up fields.
-  Object classes that are unknown are ignored.
+  Object classes that are unknown are ignored. The syntax of an attribute
+  name is validated, i.e. whether it contains valid characters only.
 * Strict: validates presence, count, and correct syntax of all fields.
   Validation fails on attributes that are not known, or object classes
   that are not known.
