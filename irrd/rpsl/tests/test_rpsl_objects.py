@@ -50,7 +50,7 @@ class TestRPSLParsingGeneric:
     def test_missing_mandatory_attribute(self):
         obj = rpsl_object_from_text(SAMPLE_MISSING_MANDATORY_ATTRIBUTE, strict_validation=True)
         assert len(obj.messages.errors()) == 1, f"Unexpected extra errors: {obj.messages.errors()}"
-        assert "Mandatory attribute tech-c on object as-block is missing" in obj.messages.errors()[0]
+        assert "Mandatory attribute 'tech-c' on object as-block is missing" in obj.messages.errors()[0]
 
         obj = rpsl_object_from_text(SAMPLE_MISSING_MANDATORY_ATTRIBUTE, strict_validation=False)
         assert len(obj.messages.errors()) == 0, f"Unexpected extra errors: {obj.messages.errors()}"
@@ -249,7 +249,7 @@ class TestRPSLKeyCert:
 
         errors = obj.messages.errors()
         assert len(errors) == 2, f"Unexpected multiple errors: {errors}"
-        assert "Mandatory attribute certif on object key-cert is missing" in errors[0]
+        assert "Mandatory attribute 'certif' on object key-cert is missing" in errors[0]
         assert "No valid data found" in errors[1]
 
     def test_verify(self, tmp_gpg_dir):
@@ -358,6 +358,16 @@ class TestRPSLRoute:
         assert obj.pk() == "193.254.30.0/24,AS12726"
         # Field cleaning will cause our object to look slightly different than the original, hence the replace()
         assert obj.render_rpsl_text() == rpsl_text.replace("193.254.030.00/24", "193.254.30.0/24")
+
+    def test_missing_pk_nonstrict(self):
+        # In non-strict mode, the parser should not fail validation for missing
+        # attributes, except for those part of the PK. Route is one of the few
+        # objects that has two PK attributes.
+        missing_pk_route = "route: 192.0.2.0/24"
+        obj = rpsl_object_from_text(missing_pk_route, strict_validation=False)
+        assert obj.__class__ == RPSLRoute
+        assert len(obj.messages.errors()) == 1, f"Unexpected extra errors: {obj.messages.errors()}"
+        assert "Primary key attribute 'origin' on object route is missing" in obj.messages.errors()[0]
 
     def test_generate_template(self):
         template = RPSLRoute().generate_template()

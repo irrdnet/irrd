@@ -170,8 +170,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         (see the docstring for __init__).
         """
         self.cleaned_data: Dict[str, str] = {}
-        if self.strict_validation:
-            self._validate_attribute_counts()
+        self._validate_attribute_counts()
         self._clean_attribute_data()
 
         if self.strict_validation:
@@ -182,21 +181,30 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         Validate the number of times each attribute occurs.
 
         The expected counts (0, 1, or >=1) are derived indirectly
-        from the field data.
+        from the field data. In non-strict mode, only validate
+        presence of all PK attributes.
         """
         attrs_present = Counter([attr[0] for attr in self._object_data])
-        for attr_name, count in attrs_present.items():
-            if attr_name not in self.attrs_allowed:
-                self.messages.error(f"Unrecognised attribute {attr_name} on object {self.rpsl_object_class}")
-            if count > 1 and attr_name not in self.attrs_multiple:
-                self.messages.error(
-                    f"Attribute {attr_name} on object {self.rpsl_object_class} occurs multiple times, but is "
-                    f"only allowed once")
-        for attr_required in self.attrs_required:
-            if attr_required not in attrs_present:
-                self.messages.error(
-                    f"Mandatory attribute {attr_required} on object {self.rpsl_object_class} is missing"
-                )
+
+        if self.strict_validation:
+            for attr_name, count in attrs_present.items():
+                if attr_name not in self.attrs_allowed:
+                    self.messages.error(f"Unrecognised attribute {attr_name} on object {self.rpsl_object_class}")
+                if count > 1 and attr_name not in self.attrs_multiple:
+                    self.messages.error(
+                        f"Attribute '{attr_name}' on object {self.rpsl_object_class} occurs multiple times, but is "
+                        f"only allowed once")
+            for attr_required in self.attrs_required:
+                if attr_required not in attrs_present:
+                    self.messages.error(
+                        f"Mandatory attribute '{attr_required}' on object {self.rpsl_object_class} is missing"
+                    )
+        else:
+            for attr_pk in self.pk_fields:
+                if attr_pk not in attrs_present:
+                    self.messages.error(
+                        f"Primary key attribute '{attr_pk}' on object {self.rpsl_object_class} is missing"
+                    )
 
     def _clean_attribute_data(self) -> None:
         """
