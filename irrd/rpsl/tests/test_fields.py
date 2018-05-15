@@ -163,6 +163,7 @@ def test_validate_set_name_field():
 
     assert_validation_err("at least one component must be an actual set name", field.clean, "AS1",)
     assert_validation_err("at least one component must be an actual set name", field.clean, "AS1:AS3")
+    assert_validation_err("not a valid AS number, nor does it start with AS-", field.clean, "AS1:AS-FOO:RS-FORBIDDEN")
     assert_validation_err("not a valid AS number nor a valid set name", field.clean, ":AS-FOO")
     assert_validation_err("not a valid AS number nor a valid set name", field.clean, "AS-FOO:")
     assert_validation_err("reserved word", field.clean, "AS1:AS-ANY")

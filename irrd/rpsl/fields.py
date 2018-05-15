@@ -241,6 +241,10 @@ class RPSLSetNameField(RPSLTextField):
                     f"Invalid set {value}: component {component} is not a valid AS number nor a valid set name"
                 )
                 return None
+            if strict_validation and not cleaned_as_number and not component.upper().startswith(self.prefix):
+                messages.error(f"Invalid set {value}: component {component} is not a valid AS number, "
+                               f"nor does it start with {self.prefix}")
+                return None
 
             if cleaned_as_number:
                 output_components.append(cleaned_as_number)
