@@ -217,7 +217,8 @@ class RPSLKeyCert(RPSLObject):
             return False  # pragma: no cover
 
         gpg = gnupg.GPG(gnupghome=self.gpg_dir())
-        result = gpg.import_keys(self.cleaned_data.get("certif", ""))
+        certif_data = self.cleaned_data.get("certif", "").replace(",", "\n")
+        result = gpg.import_keys(certif_data)
 
         if len(result.fingerprints) != 1:
             msg = f"Unable to read public PGP key: key corrupt or multiple keys provided"
