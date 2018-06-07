@@ -2,6 +2,11 @@ python-gnupg==0.4.2    # Integration with gpg for key-cert objects
 passlib==1.7.1         # Password hashing for CRYPT-PW and MD5-PW
 IPy==0.83              # IP address parsing
 
+# Database connections and management
+psycopg2==2.7.4  # or psycopg2-binary
+SQLAlchemy==1.2.7
+alembic==0.9.9
+
 # Testing and related packages
 pytest==3.5.1
 pytest-cov==2.5.1

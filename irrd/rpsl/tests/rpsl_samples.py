@@ -20,7 +20,8 @@ remarks:        ****************************
 SAMPLE_AS_SET = """as-set:         AS-RESTENA
 descr:          Reseau Teleinformatique de l"Education Nationale
 descr:          Educational and research network for Luxembourg
-members:        AS2602, AS42909, AS51966, AS49624
+members:        AS2602, AS42909, AS51966
+members:        AS49624
 tech-c:         DUMY-RIPE
 admin-c:        DUMY-RIPE
 notify:         noc@restena.lu
@@ -1626,7 +1627,7 @@ TEMPLATE_ROUTE_OBJECT = """route:          [mandatory]  [single]    [primary/loo
 descr:          [optional]   [multiple]  []
 origin:         [mandatory]  [single]    [primary key]
 holes:          [optional]   [multiple]  []
-member-of:      [optional]   [multiple]  []
+member-of:      [optional]   [multiple]  [look-up key]
 inject:         [optional]   [multiple]  []
 aggr-bndry:     [optional]   [single]    []
 aggr-mtd:       [optional]   [single]    []
@@ -1638,7 +1639,7 @@ geoidx:         [optional]   [multiple]  []
 roa-uri:        [optional]   [single]    []
 remarks:        [optional]   [multiple]  []
 notify:         [optional]   [multiple]  []
-mnt-by:         [mandatory]  [multiple]  []
+mnt-by:         [mandatory]  [multiple]  [look-up key]
 changed:        [mandatory]  [multiple]  []
 source:         [mandatory]  [single]    []
 """
@@ -1651,7 +1652,7 @@ e-mail:    [mandatory]  [multiple]  []
 nic-hdl:   [mandatory]  [single]    [primary/look-up key]
 remarks:   [optional]   [multiple]  []
 notify:    [optional]   [multiple]  []
-mnt-by:    [mandatory]  [multiple]  []
+mnt-by:    [mandatory]  [multiple]  [look-up key]
 changed:   [mandatory]  [multiple]  []
 source:    [mandatory]  [single]    []
 """

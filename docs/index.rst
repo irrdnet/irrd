@@ -7,6 +7,7 @@ Welcome to the IRRDv4 documentation
 
    architecture
    object-validation
+   database
    development
    license
 
