@@ -13,6 +13,6 @@ Sphinx==1.7.5
 twine==1.11.0
 
 # Code style and type checks
-mypy==0.600
+mypy==0.610
 flake8==3.5.0
 pep8-naming==0.7.0
