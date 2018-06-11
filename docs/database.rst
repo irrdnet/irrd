@@ -3,8 +3,8 @@ Database
 ========
 
 .. caution::
-   At this time, this is a rough plan for the database, and this
-   will evolve as the project progresses and new insights are gained.
+   At this time, this is a plan for the database, and this
+   may evolve as the project progresses and new insights are gained.
 
 Requirements
 ------------
@@ -32,36 +32,41 @@ Database structure
 ------------------
 The RPSL objects are stored in a single table, which records:
 
-* ``rpsl_pk``: the primary key for the object, e.g. ``AS1 - AS200``
+* `pk`: a random UUID, primary key of the table
+* `rpsl_pk`: the primary key for the object, e.g. ``AS1 - AS200``
   for an as-block, or ``192.0.2.0/24,AS23456`` for a route object.
-* ``source``: the object's source attribute, e.g. ``NTTCOM``
-* ``object_class``: the RPSL object class, e.g. ``route6``
-* ``parsed_data``: a dict stored in JSONB, with all parsed attribute
+* `source`: the object's source attribute, e.g. ``NTTCOM``
+* `object_class`: the RPSL object class, e.g. ``route6``
+* `parsed_data`: a dict stored in JSONB, with all parsed attribute
   values. Comments are stripped, multiple lines and line continuation
   flattened to a single multi-line string.
-  For fields like ``members``, the value is recorded as a list,
+  For fields like `members`, the value is recorded as a list,
   in most cases the value is a string.
   In non-strict mode (i.e. for mirrored databases) this only
   contains values for primary and lookup keys, as other attributes
   are not parsed.
-* ``internal_object_data``: a representation of the internal state of
-  an object, as used in the RPSL parsing and generating process.
-  Contains metadata like the individual line continuation characters.
-* ``object_txt``: the full text of the object as a single text.
-* ``ip_version``, ``ip_first``, ``ip_last``, ``asn_first``, ``asn_last``:
+* `object_txt`: the full text of the object as a single text.
+* `ip_version`, `ip_first`, `ip_last`, `asn_first`, `asn_last`:
   a int / INET / int value describing which resources the objects refers
   to. For example, in a route with primary key ``192.0.2.0/24,AS23456``
   these columns would record: ``4``, ``192.0.2.0``, ``192.0.2.255``,
   ``23456``, ``23456``.
 
-The primary key of the table is ``rpsl_pk`` combined with ``source``.
-The columns ``rpsl_pk``, ``source``, ``ip_version``, ``ip_first``,
-``ip_last``, ``asn_first``, and ``asn_last`` are indexed. In addition,
-all lookup keys in ``parsed_data`` are indexed, so the following query
+The columns `rpsl_pk` and `source` must be unique together.
+The columns `pk`, `rpsl_pk`, `source`, `ip_version`, `ip_first`,
+`ip_last`, `asn_first`, and `asn_last` are indexed. In addition,
+all lookup keys in `parsed_data` are indexed, so the following query
 uses an efficient index too::
 
     SELECT * FROM rpsl_objects where parsed_data->'mnt-by' ? 'MY-MNTNER';
 
+When building queries using `ip_first` and `ip_last`, note that only
+certain operations are `supported by the inet_ops index class`_
+used for these columns - notably ``<`` and ``>`` can not use the index
+on these columns and will result in a sequential scan.
+
+.. _supported by the inet_ops index class:
+   https://www.postgresql.org/docs/10/static/gist-builtin-opclasses.html
 
 Updating the database
 ---------------------
@@ -71,7 +76,8 @@ the database, run alembic to generate a migration::
     alembic revision --autogenerate -m "Short message"
 
 The migrations are Python code, and should be reviewed after
-generation. They also need to be in source control.
+generation - alembic is helpful but far from perfect.
+The migration files also need to be in source control.
 
 To upgrade or initialise a database to the latest version, run::
 
@@ -91,8 +97,11 @@ And this to ``downgrade()``::
 
 Note that the indexes are not differentiated by RPSL object class.
 
-To remind you to do this, ``irrd.db`` asks ``irrd.rpsl`` for the current
-set of lookup fields upon initialisation, and compares it to a hardcoded
-list of expected fields. IRRD will fail to start if this list is inconsistent,
-as this means indexes may be missing. So after creating your index, also
-add your field to ``expected_lookup_field_names``.
+To remind you to do this, ``irrd.db.models`` asks ``irrd.rpsl.rpsl_objects``
+for the current set of lookup fields upon initialisation, and compares it to
+a hardcoded list of expected fields. If these are inconsistent, indexes may
+be missing, and so IRRD will fail to start with the error:
+`Field names of lookup fields do not match expected set. Indexes may be missing.`
+Therefore, after creating your index, also add your field to
+``expected_lookup_field_names``.
+

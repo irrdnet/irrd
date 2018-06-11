@@ -2,7 +2,7 @@ from __future__ import with_statement
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 from logging.config import fileConfig
-from irrd.db.tables import Base
+from irrd.db.models import Base
 
 # Load alembic config file
 config = context.config

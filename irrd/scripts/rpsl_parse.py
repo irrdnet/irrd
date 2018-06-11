@@ -10,7 +10,7 @@ import sys
 
 from irrd.rpsl.parser import UnknownRPSLObjectClassException
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
-from irrd.db.tables import RPSLDatabaseObjectWriter
+from irrd.db.api import DatabaseHandler
 
 obj_parsed = 0
 obj_errors = 0
@@ -34,22 +34,18 @@ def parse(rpsl_text, strict_validation):
         if obj.messages.messages():
             if obj.messages.errors():
                 obj_errors += 1
-        if obj and not obj.messages.errors():
-            database_writer.add_object(obj)
 
-            # print(rpsl_text.strip())
-            # print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-            # print(obj.messages)
-            # print("\n=======================================\n")
+            print(rpsl_text.strip())
+            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+            print(obj.messages)
+            print("\n=======================================\n")
+
+        if obj and not obj.messages.errors():
+            database_writer.upsert_object(obj)
+
     except UnknownRPSLObjectClassException as e:
         obj_unknown += 1
         unknown_object_classes.add(str(e).split(":")[1].strip())
-    # except IntegrityError as e:
-    #     print("=======================================")
-    #     print(rpsl_text)
-    #     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-    #     print(e)
-    #     session.rollback()
     except Exception as e:  # pragma: no cover
         print("=======================================")
         print(rpsl_text)
@@ -74,7 +70,7 @@ def main(filename, strict_validation):
     else:
         f = open(filename, encoding="iso-8859-1")
 
-    database_writer = RPSLDatabaseObjectWriter()
+    database_writer = DatabaseHandler()
     current_obj = ""
     for line in f.readlines():
         if line.startswith("%") or line.startswith("#"):

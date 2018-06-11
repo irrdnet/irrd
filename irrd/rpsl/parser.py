@@ -257,9 +257,9 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                             attr_value = getattr(parsed_value, attr, None)
                             if attr_value:
                                 existing_attr_value = getattr(self, attr, None)
-                                if existing_attr_value:
-                                    raise ValueError(f"Parsing of {parsed_value.value} reads {attr_value} for {attr},"
-                                                     f"but value {existing_attr_value} is already set.")
+                                if existing_attr_value:  # pragma: no cover
+                                    raise RuntimeError(f"Parsing of {parsed_value.value} reads {attr_value} for {attr},"
+                                                       f"but value {existing_attr_value} is already set.")
                                 setattr(self, attr, attr_value)
 
     def _normalise_rpsl_value(self, value: str) -> str:
