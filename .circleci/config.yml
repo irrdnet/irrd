@@ -53,7 +53,7 @@ jobs:
           name: run migrations
           command: |
             . venv/bin/activate
-            export PYTHONPATH=$CIRCLE_WORKING_DIRECTORY
+            export PYTHONPATH=.
             alembic upgrade head
 
       - run:
