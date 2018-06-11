@@ -79,6 +79,9 @@ class DatabaseHandler:
             self.transaction.rollback()
             raise
 
+    def rollback(self):
+        self.transaction.rollback()
+
     def _start_transaction(self):
         self.connection = engine.connect()
         self.transaction = self.connection.begin()
