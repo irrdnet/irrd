@@ -26,6 +26,10 @@ To avoid this, use ``--basetemp`` to set an alternate temporary directory, e.g.:
 
 You may also want to add ``-v`` for more verbose output.
 
+The tests use a live PostgreSQL instance, so you need to have one running.
+You can set a PostgreSQL URL in the environment variable ``IRRD_DATABASE_URL``.
+This must be an empty database - the test refuses to overwrite existing entries.
+
 Docs
 ----
 

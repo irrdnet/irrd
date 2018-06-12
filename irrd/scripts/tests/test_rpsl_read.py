@@ -1,4 +1,5 @@
-from ..rpsl_parse import main
+from ..rpsl_read import RPSLParse
+from unittest.mock import Mock
 
 # First an entirely valid object with an as-block that should be reformatted,
 # then an object with an extra unkown attributes,
@@ -38,22 +39,40 @@ source:         RIPE
 """
 
 
-def test_rpsl_parse(capsys, tmpdir):
+def test_rpsl_read(capsys, tmpdir, monkeypatch):
+    mock_database_handler = Mock()
+    monkeypatch.setattr("irrd.scripts.rpsl_read.DatabaseHandler", lambda: mock_database_handler)
+
     tmp_file = tmpdir + "/rpsl_parse_test.rpsl"
     fh = open(tmp_file, "w")
     fh.write(TEST_DATA)
     fh.close()
 
-    main(filename=tmp_file, strict_validation=True)
+    RPSLParse().main(filename=tmp_file, strict_validation=True, database=True)
     captured = capsys.readouterr().out
     assert "ERROR: Unrecognised attribute unknown-obj on object as-block" in captured
     assert "INFO: AS range AS2043 - as02043 was reformatted as AS2043 - AS2043" in captured
     assert "Processed 3 objects, 1 with errors" in captured
     assert "Ignored 1 objects due to unknown object classes: foo-block" in captured
 
-    main(filename=tmp_file, strict_validation=False)
+    assert mock_database_handler.mock_calls[0][0] == 'upsert_object'
+    assert mock_database_handler.mock_calls[0][1][0].pk() == 'AS2043 - AS2043'
+    assert mock_database_handler.mock_calls[1][0] == 'commit'
+    mock_database_handler.reset_mock()
+
+    RPSLParse().main(filename=tmp_file, strict_validation=False, database=True)
     captured = capsys.readouterr().out
     assert "ERROR: Unrecognised attribute unknown-obj on object as-block" not in captured
     assert "INFO: AS range AS2043 - as02043 was reformatted as AS2043 - AS2043" in captured
     assert "Processed 3 objects, 0 with errors" in captured
     assert "Ignored 1 objects due to unknown object classes: foo-block" in captured
+
+    assert mock_database_handler.mock_calls[0][0] == 'upsert_object'
+    assert mock_database_handler.mock_calls[0][1][0].pk() == 'AS2043 - AS2043'
+    assert mock_database_handler.mock_calls[1][0] == 'upsert_object'
+    assert mock_database_handler.mock_calls[1][1][0].pk() == 'AS2043 - AS2043'
+    assert mock_database_handler.mock_calls[2][0] == 'commit'
+    mock_database_handler.reset_mock()
+
+    RPSLParse().main(filename=tmp_file, strict_validation=False, database=False)
+    assert not mock_database_handler.mock_calls

@@ -1,10 +1,11 @@
 import re
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 
+from IPy import IP
 from collections.__init__ import OrderedDict, Counter
 
 from .fields import RPSLTextField
-from .validators import RPSLParserMessages
+from irrd.rpsl.parser_state import RPSLParserMessages
 
 RPSL_ATTRIBUTE_TEXT_WIDTH = 16
 TypeRPSLObjectData = List[Tuple[str, str, List[str]]]
@@ -34,7 +35,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
     """
     Base class for RPSL objects.
 
-    To parse an RPSL object in string form, the best option is not to instance
+    To clean an RPSL object in string form, the best option is not to instance
     this or a subclass, but instead call rpsl_object_from_text() which
     automatically derives the correct class.
 
@@ -61,26 +62,33 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         keys.
         """
         self.strict_validation = strict_validation
-        self.messages = RPSLParserMessages()
-        self._object_data: TypeRPSLObjectData = []
-
+        self._reset_internal_state()
         if from_text:
             self.read_rpsl_text(from_text)
 
     def read_rpsl_text(self, text: str) -> None:
         """Parse and validate RPSL object from string form."""
-        self.messages = RPSLParserMessages()
+        self._reset_internal_state()
         self._extract_attributes_values(text)
         self._validate_object()
 
     def pk(self) -> str:
         """Get the primary key value of an RPSL object. The PK is always converted to uppercase."""
         if len(self.pk_fields) == 1:
-            return self.cleaned_data.get(self.pk_fields[0], "").upper()
+            return self.parsed_data.get(self.pk_fields[0], "").upper()
         composite_values = []
         for field in self.pk_fields:
-            composite_values.append(self.cleaned_data.get(field, ""))
+            composite_values.append(self.parsed_data.get(field, ""))
         return ",".join(composite_values).upper()
+
+    def ip_version(self):
+        """
+        Get the IP version to which this object relates, or None for
+        e.g. person or as-block objects.
+        """
+        if self.ip_first:
+            return self.ip_first.version()
+        return None
 
     def render_rpsl_text(self) -> str:
         """Render the RPSL object as an RPSL string."""
@@ -169,9 +177,9 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         Validate an object. The strictness depends on self.strict_validation
         (see the docstring for __init__).
         """
-        self.cleaned_data: Dict[str, str] = {}
+        self.parsed_data: Dict[str, Any[str, List]] = {}
         self._validate_attribute_counts()
-        self._clean_attribute_data()
+        self._parse_attribute_data()
 
         if self.strict_validation:
             self.clean()
@@ -206,30 +214,48 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                         f"Primary key attribute '{attr_pk}' on object {self.rpsl_object_class} is missing"
                     )
 
-    def _clean_attribute_data(self) -> None:
+    def _parse_attribute_data(self) -> None:
         """
         Clean the data stored in attributes.
 
         If self.strict_validation is not set, only checks primary and lookup keys,
-        as they need to be indexed. All cleaned values (e.g. without comments) are
-        stored in self.cleaned_data.
+        as they need to be indexed. All parsed values (e.g. without comments) are
+        stored in self.parsed_data.
         """
         for idx, (attr_name, value, continuation_chars) in enumerate(self._object_data):
             field = self.fields.get(attr_name)
-            if field and (self.strict_validation or field.primary_key or field.lookup_key):
+            if field and (self.strict_validation or field.primary_key or field.lookup_key or attr_name == 'source'):
                 normalised_value = self._normalise_rpsl_value(value)
-                cleaned_value = field.clean(normalised_value, self.messages, self.strict_validation)
-                if cleaned_value:
-                    if cleaned_value != normalised_value:
-                        # Note: this cleaning can be incomplete: if the normalised value is not contained in the
-                        # cleaned value as single string, the replacement will not occur. This is not a great concern,
-                        # as this is purely cosmetic, and self.cleaned_data will have the correct normalised value.
-                        new_value = value.replace(normalised_value, cleaned_value)
+                parsed_value = field.parse(normalised_value, self.messages, self.strict_validation)
+                if parsed_value:
+                    if parsed_value != normalised_value:
+                        # Note: this replacement can be incomplete: if the normalised value is not contained in the
+                        # parsed value as single string, the replacement will not occur. This is not a great concern,
+                        # as this is purely cosmetic, and self.parsed_data will have the correct normalised value.
+                        new_value = value.replace(normalised_value, parsed_value.value)
                         self._object_data[idx] = attr_name, new_value, continuation_chars
-                    if attr_name in self.cleaned_data:
-                        self.cleaned_data[attr_name] += "\n" + cleaned_value
+                    if parsed_value.values_list:
+                        if attr_name in self.parsed_data:
+                            self.parsed_data[attr_name] += parsed_value.values_list
+                        else:
+                            self.parsed_data[attr_name] = parsed_value.values_list
                     else:
-                        self.cleaned_data[attr_name] = cleaned_value
+                        if attr_name in self.parsed_data:
+                            self.parsed_data[attr_name] += "\n" + parsed_value.value
+                        else:
+                            self.parsed_data[attr_name] = parsed_value.value
+
+                    # Some fields provide additional metadata about the resources to
+                    # which this object pertains.
+                    if field.primary_key or field.lookup_key:
+                        for attr in 'ip_first', 'ip_last', 'asn_first', 'asn_last':
+                            attr_value = getattr(parsed_value, attr, None)
+                            if attr_value:
+                                existing_attr_value = getattr(self, attr, None)
+                                if existing_attr_value:  # pragma: no cover
+                                    raise RuntimeError(f"Parsing of {parsed_value.value} reads {attr_value} for {attr},"
+                                                       f"but value {existing_attr_value} is already set.")
+                                setattr(self, attr, attr_value)
 
     def _normalise_rpsl_value(self, value: str) -> str:
         """
@@ -255,14 +281,14 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                 return value.split("#")[0].strip()
             return value.strip()
         for line in value.splitlines():
-            cleaned_line = line.split("#")[0].strip("\n, ")
-            normalized_lines.append(cleaned_line)
+            parsed_line = line.split("#")[0].strip("\n, ")
+            normalized_lines.append(parsed_line)
         return ",".join(normalized_lines)
 
     def _update_attribute_value(self, attribute, new_values):
         """
         Update the value of an attribute in the internal state and in
-        cleaned_data.
+        parsed_data.
 
         This is used for key-cert objects, where e.g. owner lines are
         derived from other data in the object.
@@ -272,13 +298,22 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         """
         if isinstance(new_values, str):
             new_values = [new_values]
-        self.cleaned_data["attribute"] = "\n".join(new_values)
+        self.parsed_data["attribute"] = "\n".join(new_values)
 
         self._object_data = list(filter(lambda a: a[0] != attribute, self._object_data))
         insert_idx = 1
         for new_value in new_values:
             self._object_data.insert(insert_idx, (attribute, new_value, []))
             insert_idx += 1
+
+    def _reset_internal_state(self) -> None:
+        """Reset the internal state of this object to prepare for parsing a new text."""
+        self.messages = RPSLParserMessages()
+        self._object_data: TypeRPSLObjectData = []
+        self.ip_first: IP = None
+        self.ip_last: IP = None
+        self.asn_first: IP = None
+        self.asn_last: IP = None
 
 
 class UnknownRPSLObjectClassException(Exception):
