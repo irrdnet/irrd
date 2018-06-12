@@ -77,7 +77,6 @@ class RPSLParse:
             print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
             raise e
 
-# TODO: confirmation on destructive operation
 if __name__ == "__main__":
     description = """Run RPSL data through the IRRD processor. For each object that resulted in messages emitted by
                      the parser, the object is printed followed by the messages. Optionally, insert objects into
@@ -87,8 +86,9 @@ if __name__ == "__main__":
                         help="the name of a file to read, or - for stdin")
     parser.add_argument("--strict", dest="strict_validation", action="store_true",
                         help="use strict validation (errors on e.g. unknown or missing attributes)")
-    parser.add_argument("--database", dest="database", action="store_true",
-                        help="insert all valid objects into the IRRD database")
+    parser.add_argument("--database-destructive-overwrite", dest="database", action="store_true",
+                        help="insert all valid objects into the IRRD database - OVERWRITING ANY EXISTING ENTRIES, if"
+                             "they have the same RPSL primary key and source")
     args = parser.parse_args()
 
     RPSLParse().main(args.input_file, args.strict_validation, args.database)

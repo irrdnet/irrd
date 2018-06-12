@@ -1,4 +1,4 @@
-from ..rpsl_parse import RPSLParse
+from ..rpsl_read import RPSLParse
 from unittest.mock import Mock
 
 # First an entirely valid object with an as-block that should be reformatted,
