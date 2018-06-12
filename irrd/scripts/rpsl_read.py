@@ -77,6 +77,7 @@ class RPSLParse:
             print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
             raise e
 
+
 if __name__ == "__main__":
     description = """Run RPSL data through the IRRD processor. For each object that resulted in messages emitted by
                      the parser, the object is printed followed by the messages. Optionally, insert objects into
