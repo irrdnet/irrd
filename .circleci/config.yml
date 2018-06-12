@@ -50,13 +50,6 @@ jobs:
             echo Failed waiting for PostgreSQL && exit 1
 
       - run:
-          name: run migrations
-          command: |
-            . venv/bin/activate
-            export PYTHONPATH=.
-            alembic upgrade head
-
-      - run:
           name: run tests
           command: |
             . venv/bin/activate
