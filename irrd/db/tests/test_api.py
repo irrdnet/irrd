@@ -1,5 +1,7 @@
 from IPy import IP
 
+from .. import engine
+from ..models import RPSLDatabaseObject
 from ..api import DatabaseHandler
 from unittest.mock import Mock
 
@@ -10,10 +12,20 @@ class TestDatabaseHandlerLive:
     as it's rather complicated to mock, and mocking would not make it
     a very useful test. Using in-memory SQLite is not an option due to
     using specific PostgreSQL features.
+
+    To improve performance, these tests do not run full migrations.
     """
 
     def test_object_writing(self, monkeypatch):
         monkeypatch.setattr('irrd.db.api.MAX_RECORDS_CACHE_BEFORE_INSERT', 1)
+
+        engine.execute('CREATE EXTENSION IF NOT EXISTS pgcrypto')
+
+        table_name = RPSLDatabaseObject.__tablename__
+        if engine.dialect.has_table(engine, table_name):
+            raise Exception(f"The database on URL {engine.url} already has a table named {table_name} - refusing "
+                            f"to overwrite existing database.")
+        RPSLDatabaseObject.metadata.create_all(engine)
 
         rpsl_object_route_v4 = Mock(
             pk=lambda: '192.0.2.0/24,AS23456',
@@ -72,3 +84,5 @@ class TestDatabaseHandlerLive:
         dh.rollback()
 
         # TODO: validate no new entries in the DB
+
+        RPSLDatabaseObject.metadata.drop_all(engine)

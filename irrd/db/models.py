@@ -40,7 +40,7 @@ class RPSLDatabaseObject(Base):  # type: ignore
         ]
         for name in lookup_field_names():
             index_name = 'ix_rpsl_objects_parsed_data_' + name.replace('-', '_')
-            index_on = sa.text(f"({cls.__tablename__}->'{name}')")
+            index_on = sa.text(f"(parsed_data->'{name}')")
             args.append(sa.Index(index_name, index_on, postgresql_using="gin"))
         return tuple(args)
 
