@@ -1,9 +1,9 @@
-# First an entirely valid object with an as-block that should be reformatted,
-# then an object with an extra unkown attributes,
-# then an entirely unknown object.
 from ..rpsl_parse import RPSLParse
 from unittest.mock import Mock
 
+# First an entirely valid object with an as-block that should be reformatted,
+# then an object with an extra unkown attributes,
+# then an entirely unknown object.
 TEST_DATA = """# TEST
 % TEST
 

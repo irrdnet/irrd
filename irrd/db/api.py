@@ -12,8 +12,8 @@ MAX_RECORDS_CACHE_BEFORE_INSERT = 5000
 class DatabaseHandler:
     def __init__(self):
         self._start_transaction()
-        self.records = []
-        self.rpsl_pk_source_seen = set()
+        self._records = []
+        self._rpsl_pk_source_seen = set()
 
     def upsert_object(self, rpsl_object: RPSLObject):
         ip_first = str(rpsl_object.ip_first) if rpsl_object.ip_first else None
@@ -25,10 +25,10 @@ class DatabaseHandler:
         # seen before, the cache must be flushed right away, or the two updates
         # will conflict.
         rpsl_pk_source = rpsl_object.pk() + "-" + rpsl_object.parsed_data['source']
-        if rpsl_pk_source in self.rpsl_pk_source_seen:
+        if rpsl_pk_source in self._rpsl_pk_source_seen:
             self.flush_upsert_cache()
 
-        self.records.append({
+        self._records.append({
             'rpsl_pk': rpsl_object.pk(),
             'source': rpsl_object.parsed_data['source'],
             'object_class': rpsl_object.rpsl_object_class,
@@ -41,14 +41,14 @@ class DatabaseHandler:
             'asn_last': rpsl_object.asn_last,
             'updated': datetime.utcnow(),
         })
-        self.rpsl_pk_source_seen.add(rpsl_pk_source)
+        self._rpsl_pk_source_seen.add(rpsl_pk_source)
 
-        if len(self.records) > MAX_RECORDS_CACHE_BEFORE_INSERT:
+        if len(self._records) > MAX_RECORDS_CACHE_BEFORE_INSERT:
             self.flush_upsert_cache()
 
     def flush_upsert_cache(self):
         rpsl_composite_key = ['rpsl_pk', 'source']
-        stmt = pg.insert(RPSLDatabaseObject).values(self.records)
+        stmt = pg.insert(RPSLDatabaseObject).values(self._records)
         columns_to_update = {
             c.name: c
             for c in stmt.excluded
@@ -62,20 +62,20 @@ class DatabaseHandler:
 
         try:
             self.connection.execute(update_stmt)
-        except Exception:
+        except Exception:  # pragma: no cover - TODO: log the exception and details and report back an error state
             self.transaction.rollback()
             raise
 
-        self.records = []
-        self.rpsl_pk_source_seen = set()
+        self._records = []
+        self._rpsl_pk_source_seen = set()
 
     def commit(self):
-        if self.records:
+        if self._records:
             self.flush_upsert_cache()
         try:
             self.transaction.commit()
             self._start_transaction()
-        except Exception:
+        except Exception:  # pragma: no cover - TODO: log the exception and details and report back an error state
             self.transaction.rollback()
             raise
 

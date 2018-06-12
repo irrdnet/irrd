@@ -1,3 +1,4 @@
+# Sample objects used in various tests.
 # flake8: noqa: W291,W293
 
 SAMPLE_AS_BLOCK = """as-block:       AS2043 - as02043
