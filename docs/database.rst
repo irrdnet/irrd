@@ -2,10 +2,6 @@
 Database
 ========
 
-.. caution::
-   At this time, this is a plan for the database, and this
-   may evolve as the project progresses and new insights are gained.
-
 Requirements
 ------------
 
@@ -30,7 +26,7 @@ theoretically always be added on an existing database.
 
 Database structure
 ------------------
-The RPSL objects are stored in a single table, which records:
+The RPSL objects are stored in a single table, `rpsl_objects`, which records:
 
 * `pk`: a random UUID, primary key of the table
 * `rpsl_pk`: the primary key for the object, e.g. ``AS1 - AS200``
@@ -41,7 +37,7 @@ The RPSL objects are stored in a single table, which records:
   values. Comments are stripped, multiple lines and line continuation
   flattened to a single multi-line string.
   For fields like `members`, the value is recorded as a list,
-  in most cases the value is a string.
+  in other cases the value is a string.
   In non-strict mode (i.e. for mirrored databases) this only
   contains values for primary and lookup keys, as other attributes
   are not parsed.
@@ -78,6 +74,8 @@ the database, run alembic to generate a migration::
 The migrations are Python code, and should be reviewed after
 generation - alembic is helpful but far from perfect.
 The migration files also need to be in source control.
+Alembic keeps state of which migrations have been run on a particular
+database in the `alembic_version` table.
 
 To upgrade or initialise a database to the latest version, run::
 
@@ -102,6 +100,9 @@ for the current set of lookup fields upon initialisation, and compares it to
 a hardcoded list of expected fields. If these are inconsistent, indexes may
 be missing, and so IRRD will fail to start with the error:
 `Field names of lookup fields do not match expected set. Indexes may be missing.`
-Therefore, after creating your index, also add your field to
-``expected_lookup_field_names``.
+
+Therefore, after creating your index, you need to **both**:
+
+    * add an alembic migration that adds/removes your index
+    * add your field to ``expected_lookup_field_names`` in ``irrd.db.models``
 

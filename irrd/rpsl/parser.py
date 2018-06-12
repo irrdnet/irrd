@@ -81,16 +81,11 @@ class RPSLObject(metaclass=RPSLObjectMeta):
             composite_values.append(self.parsed_data.get(field, ""))
         return ",".join(composite_values).upper()
 
-    def lookup_data(self):
-        """Get the lookup field values of an RPSL object."""
-        data = {}
-        for field in self.lookup_fields:
-            field_data = self.parsed_data.get(field, None)
-            if field_data:
-                data[field] = field_data
-        return data
-
     def ip_version(self):
+        """
+        Get the IP version to which this object relates, or None for
+        e.g. person or as-block objects.
+        """
         if self.ip_first:
             return self.ip_first.version()
         return None
@@ -312,7 +307,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
             insert_idx += 1
 
     def _reset_internal_state(self) -> None:
-        """Reset the internal state of this object to prepare parsing a new text."""
+        """Reset the internal state of this object to prepare for parsing a new text."""
         self.messages = RPSLParserMessages()
         self._object_data: TypeRPSLObjectData = []
         self.ip_first: IP = None

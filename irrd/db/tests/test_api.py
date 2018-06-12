@@ -13,7 +13,7 @@ def irrd_database():
     engine.execute('CREATE EXTENSION IF NOT EXISTS pgcrypto')
 
     table_name = RPSLDatabaseObject.__tablename__
-    if engine.dialect.has_table(engine, table_name):
+    if engine.dialect.has_table(engine, table_name):  # pragma: no cover
         raise Exception(f"The database on URL {engine.url} already has a table named {table_name} - refusing "
                         f"to overwrite existing database.")
     RPSLDatabaseObject.metadata.create_all(engine)

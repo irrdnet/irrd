@@ -10,6 +10,12 @@ Base = declarative_base()
 
 
 class RPSLDatabaseObject(Base):  # type: ignore
+    """
+    SQLAlchemy ORM object for RPSL database objects.
+
+    Note that SQLAlchemy does not require you to use the ORM for ORM
+    objects - as that can be slower with large queries.
+    """
     __tablename__ = 'rpsl_objects'
 
     # Requires extension pgcrypto
