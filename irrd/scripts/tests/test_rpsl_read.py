@@ -39,7 +39,7 @@ source:         RIPE
 """
 
 
-def test_rpsl_parse(capsys, tmpdir, monkeypatch):
+def test_rpsl_read(capsys, tmpdir, monkeypatch):
     mock_database_handler = Mock()
     monkeypatch.setattr("irrd.scripts.rpsl_read.DatabaseHandler", lambda: mock_database_handler)
 
