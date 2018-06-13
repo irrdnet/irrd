@@ -1,11 +1,11 @@
 import re
+from collections import OrderedDict, Counter
 from typing import Dict, List, Optional, Tuple, Any
 
 from IPy import IP
-from collections.__init__ import OrderedDict, Counter
 
-from .fields import RPSLTextField
 from irrd.rpsl.parser_state import RPSLParserMessages
+from .fields import RPSLTextField
 
 RPSL_ATTRIBUTE_TEXT_WIDTH = 16
 TypeRPSLObjectData = List[Tuple[str, str, List[str]]]

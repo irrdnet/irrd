@@ -1,5 +1,6 @@
-from ..rpsl_read import RPSLParse
 from unittest.mock import Mock
+
+from ..rpsl_read import RPSLParse
 
 # First an entirely valid object with an as-block that should be reformatted,
 # then an object with an extra unkown attributes,

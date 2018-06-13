@@ -4,8 +4,8 @@ from typing import List, Type, Optional
 from IPy import IP
 
 from .config import PASSWORD_HASHERS
+from .parser_state import RPSLParserMessages, RPSLFieldParseResult
 from .validators import parse_as_number
-from irrd.rpsl.parser_state import RPSLParserMessages, RPSLFieldParseResult
 
 # The IPv4/IPv6 regexes are for initial screening - not full validators
 re_ipv4_prefix = re.compile(r"^\d+\.\d+\.\d+\.\d+/\d+$")

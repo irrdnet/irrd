@@ -2,7 +2,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql as pg
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 
-from ..rpsl.rpsl_objects import lookup_field_names
+from irrd.rpsl.rpsl_objects import lookup_field_names
 
 Base = declarative_base()
 

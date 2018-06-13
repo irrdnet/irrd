@@ -1,6 +1,6 @@
 from typing import Optional, Tuple
 
-from irrd.rpsl.parser_state import RPSLParserMessages
+from .parser_state import RPSLParserMessages
 
 
 def parse_as_number(value: str, messages: RPSLParserMessages) -> Tuple[Optional[str], Optional[int]]:

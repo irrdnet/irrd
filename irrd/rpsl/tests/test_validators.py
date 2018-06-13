@@ -1,5 +1,5 @@
+from ..parser_state import RPSLParserMessages
 from ..validators import parse_as_number
-from irrd.rpsl.parser_state import RPSLParserMessages
 
 
 def test_validate_as_number():

@@ -4,7 +4,7 @@ from ..fields import (RPSLIPv4PrefixField, RPSLIPv4PrefixesField, RPSLIPv6Prefix
                       RPSLIPv6PrefixesField, RPSLIPv4AddressRangeField, RPSLASNumberField, RPSLASBlockField,
                       RPSLSetNameField, RPSLEmailField, RPSLDNSNameField, RPSLGenericNameField, RPSLReferenceField,
                       RPSLReferenceListField, RPSLTextField, RPSLAuthField)
-from irrd.rpsl.parser_state import RPSLParserMessages
+from ..parser_state import RPSLParserMessages
 
 
 def assert_validation_err(expected_errors, callable, *args, **kwargs):

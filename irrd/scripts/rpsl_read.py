@@ -9,9 +9,9 @@ import argparse
 import sys
 from typing import Set
 
+from irrd.db.api import DatabaseHandler
 from irrd.rpsl.parser import UnknownRPSLObjectClassException
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
-from irrd.db.api import DatabaseHandler
 
 
 class RPSLParse:
