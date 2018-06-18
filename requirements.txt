@@ -1,4 +1,4 @@
-python-gnupg==0.4.2    # Integration with gpg for key-cert objects
+python-gnupg==0.4.3    # Integration with gpg for key-cert objects
 passlib==1.7.1         # Password hashing for CRYPT-PW and MD5-PW
 IPy==0.83              # IP address parsing
 
