@@ -25,7 +25,7 @@ def upgrade():
                     sa.Column('source', sa.String(), nullable=False),
                     sa.Column('object_class', sa.String(), nullable=False),
                     sa.Column('parsed_data', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-                    sa.Column('object_txt', sa.Text(), nullable=False),
+                    sa.Column('object_text', sa.Text(), nullable=False),
                     sa.Column('ip_version', sa.Integer(), nullable=True),
                     sa.Column('ip_first', postgresql.INET(), nullable=True),
                     sa.Column('ip_last', postgresql.INET(), nullable=True),

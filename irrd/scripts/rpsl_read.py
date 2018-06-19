@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 """
+# TODO: expand pythonpath and update this description
+
 This is a small helper script to run RPSL data through the parser.
 
 This may be useful to validate the strictness of the parser against
@@ -66,7 +68,7 @@ class RPSLParse:
                 print("\n=======================================\n")
 
             if self.database_handler and obj and not obj.messages.errors():
-                self.database_handler.upsert_object(obj)
+                self.database_handler.upsert_rpsl_object(obj)
 
         except UnknownRPSLObjectClassException as e:
             self.obj_unknown += 1

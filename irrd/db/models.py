@@ -26,11 +26,12 @@ class RPSLDatabaseObject(Base):  # type: ignore
 
     object_class = sa.Column(sa.String, nullable=False, index=True)
     parsed_data = sa.Column(pg.JSONB, nullable=False)
-    object_txt = sa.Column(sa.Text, nullable=False)
+    object_text = sa.Column(sa.Text, nullable=False)
 
     ip_version = sa.Column(sa.Integer, index=True)
     ip_first = sa.Column(pg.INET)
     ip_last = sa.Column(pg.INET)
+    ip_size = sa.Column(sa.DECIMAL(scale=0))
     asn_first = sa.Column(sa.Integer, index=True)
     asn_last = sa.Column(sa.Integer, index=True)
 

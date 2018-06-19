@@ -46,7 +46,7 @@ def test_ipv4_prefix_field():
     assert parse_result.value == "192.0.2.0/24"
     assert parse_result.ip_first == IP('192.0.2.0')
     assert parse_result.ip_last == IP('192.0.2.255')
-
+    # TODO: this fails for /32's - which should include the /32 netmask
     assert field.parse("192.00.02.0/25", messages).value == "192.0.2.0/25"
     assert not messages.errors()
     assert messages.infos() == ["Address prefix 192.00.02.0/25 was reformatted as 192.0.2.0/25"]

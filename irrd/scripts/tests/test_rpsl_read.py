@@ -56,7 +56,7 @@ def test_rpsl_read(capsys, tmpdir, monkeypatch):
     assert "Processed 3 objects, 1 with errors" in captured
     assert "Ignored 1 objects due to unknown object classes: foo-block" in captured
 
-    assert mock_database_handler.mock_calls[0][0] == 'upsert_object'
+    assert mock_database_handler.mock_calls[0][0] == 'upsert_rpsl_object'
     assert mock_database_handler.mock_calls[0][1][0].pk() == 'AS2043 - AS2043'
     assert mock_database_handler.mock_calls[1][0] == 'commit'
     mock_database_handler.reset_mock()
@@ -68,9 +68,9 @@ def test_rpsl_read(capsys, tmpdir, monkeypatch):
     assert "Processed 3 objects, 0 with errors" in captured
     assert "Ignored 1 objects due to unknown object classes: foo-block" in captured
 
-    assert mock_database_handler.mock_calls[0][0] == 'upsert_object'
+    assert mock_database_handler.mock_calls[0][0] == 'upsert_rpsl_object'
     assert mock_database_handler.mock_calls[0][1][0].pk() == 'AS2043 - AS2043'
-    assert mock_database_handler.mock_calls[1][0] == 'upsert_object'
+    assert mock_database_handler.mock_calls[1][0] == 'upsert_rpsl_object'
     assert mock_database_handler.mock_calls[1][1][0].pk() == 'AS2043 - AS2043'
     assert mock_database_handler.mock_calls[2][0] == 'commit'
     mock_database_handler.reset_mock()
