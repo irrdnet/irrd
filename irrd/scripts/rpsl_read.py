@@ -1,11 +1,7 @@
 #!/usr/bin/env python
 """
-# TODO: expand pythonpath and update this description
-
-This is a small helper script to run RPSL data through the parser.
-
-This may be useful to validate the strictness of the parser against
-live RPSL data.
+This is a helper script to run RPSL data through the parser and, optionally,
+insert it into the database.
 """
 import argparse
 import sys
