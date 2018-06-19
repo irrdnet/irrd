@@ -162,6 +162,70 @@ class TestRPSLDatabaseQueryLive:
             RPSLDatabaseQuery().lookup_attr('not-a-lookup-attr', 'value')
         assert 'Invalid lookup attribute' in str(ve)
 
+        rpsl_route_more_specific_25_1 = Mock(
+            pk=lambda: '192.0.2.0/25,AS23456',
+            rpsl_object_class='route',
+            parsed_data={'mnt-by': ['MNT-TEST', 'MNT-TEST2'], 'source': 'TEST'},
+            render_rpsl_text=lambda: 'object-text',
+            ip_version=lambda: 4,
+            ip_first=IP('192.0.2.0'),
+            ip_last=IP('192.0.2.127'),
+            asn_first=23456,
+            asn_last=23456,
+        )
+        rpsl_route_more_specific_25_2 = Mock(
+            pk=lambda: '192.0.2.128/25,AS23456',
+            rpsl_object_class='route',
+            parsed_data={'mnt-by': ['MNT-TEST', 'MNT-TEST2'], 'source': 'TEST'},
+            render_rpsl_text=lambda: 'object-text',
+            ip_version=lambda: 4,
+            ip_first=IP('192.0.2.128'),
+            ip_last=IP('192.0.2.255'),
+            asn_first=23456,
+            asn_last=23456,
+        )
+        rpsl_route_more_specific_26 = Mock(
+            pk=lambda: '192.0.2.0/26,AS23456',
+            rpsl_object_class='route',
+            parsed_data={'mnt-by': ['MNT-TEST', 'MNT-TEST2'], 'source': 'TEST2'},
+            render_rpsl_text=lambda: 'object-text',
+            ip_version=lambda: 4,
+            ip_first=IP('192.0.2.0'),
+            ip_last=IP('192.0.2.63'),
+            asn_first=23456,
+            asn_last=23456,
+        )
+        self.dh.upsert_rpsl_object(rpsl_route_more_specific_25_1)
+        self.dh.upsert_rpsl_object(rpsl_route_more_specific_25_2)
+        self.dh.upsert_rpsl_object(rpsl_route_more_specific_26)
+        self.dh.commit()
+
+        q = RPSLDatabaseQuery().ip_more_specific(IP('192.0.2.0/24'))
+        rpsl_pks = [r['rpsl_pk'] for r in self.dh.execute_query(q)]
+        assert len(rpsl_pks) == 3, f"Failed query: {q}"
+        assert '192.0.2.0/25,AS23456' in rpsl_pks
+        assert '192.0.2.128/25,AS23456' in rpsl_pks
+        assert '192.0.2.0/26,AS23456' in rpsl_pks
+
+        q = RPSLDatabaseQuery().ip_less_specific(IP('192.0.2.0/25'))
+        result = [i for i in self.dh.execute_query(q)]
+        rpsl_pks = [r['rpsl_pk'] for r in self.dh.execute_query(q)]
+        assert len(rpsl_pks) == 2, f"Failed query: {q}"
+        assert '192.0.2.0/25,AS23456' in rpsl_pks
+        assert '192.0.2.0/24,AS23456' in rpsl_pks
+
+        q = RPSLDatabaseQuery().ip_less_specific_one_level(IP('192.0.2.0/26'))
+        rpsl_pks = [r['rpsl_pk'] for r in self.dh.execute_query(q)]
+        assert len(rpsl_pks) == 1, f"Failed query: {q}"
+        assert '192.0.2.0/25,AS23456' in rpsl_pks
+
+        q = RPSLDatabaseQuery().sources(['TEST']).ip_less_specific_one_level(IP('192.0.2.0/27'))
+        self._assert_match(q)
+
+        with raises(ValueError) as ve:
+            RPSLDatabaseQuery().ip_less_specific_one_level(IP('192.0.2.0/27')).sources(['TEST'])
+        assert 'frozen' in str(ve)
+
         self.dh._connection.close()
 
     def _assert_match(self, query):

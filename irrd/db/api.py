@@ -22,11 +22,12 @@ class RPSLDatabaseQuery:
         q = RPSLDatabaseQuery().sources(['NTTCOM']).asn(23456)
     would match all objects that refer or include AS23456 (i.e. aut-num, route,
     as-block, route6) from the NTTCOM source.
+
+    For methods taking a prefix or IP address, this should be an IPy.IP object.
     """
     table = RPSLDatabaseObject.__table__
     columns = RPSLDatabaseObject.__table__.c
     lookup_field_names = lookup_field_names()
-    # TODO: first level less/more specific
 
     def __init__(self):
         self.statement = sa.select([
@@ -35,6 +36,7 @@ class RPSLDatabaseQuery:
             self.columns.object_text
         ])
         self._lookup_attr_counter = 0
+        self._query_frozen = False
 
     def pk(self, pk: str):
         """Filter on an exact object PK (UUID)."""
@@ -68,6 +70,7 @@ class RPSLDatabaseQuery:
         """Filter on a lookup attribute, e.g. mnt-by."""
         if attr_name not in self.lookup_field_names:
             raise ValueError(f"Invalid lookup attribute: {attr_name}")
+        self._check_query_frozen()
 
         counter = ++self._lookup_attr_counter
         fltr = sa.text(f"parsed_data->:lookup_attr_name{counter} ? :lookup_attr_value{counter}")
@@ -93,12 +96,7 @@ class RPSLDatabaseQuery:
         return self._filter(fltr)
 
     def ip_less_specific(self, ip: IP):
-        """
-        Filter less specifics or exact matches of a prefix.
-
-        The provided ip should be an IPy.IP class, and can be a prefix or
-        an address.
-        """
+        """Filter any less specifics or exact matches of a prefix."""
         fltr = sa.and_(
             self.columns.ip_first <= str(ip.net()),
             self.columns.ip_last >= str(ip.broadcast()),
@@ -106,19 +104,45 @@ class RPSLDatabaseQuery:
         )
         return self._filter(fltr)
 
-    def ip_more_specific(self, ip: IP):
+    def ip_less_specific_one_level(self, ip: IP):
         """
-        Filter more specifics of a prefix.
+        Filter any less specifics or exact matches of a prefix.
 
-        The provided ip should be an IPy.IP class.
+        Due to implementation details around filtering, this must
+        always be the last call on a query object, or unpredictable
+        results may occur.
+        """
+        self._check_query_frozen()
+        # One level less specific could still have multiple objects.
+        # A subquery determines the smallest possible size less specific object,
+        # and this is then used to filter for any objects with that size.
+        fltr = sa.and_(
+            self.columns.ip_first <= str(ip.net()),
+            self.columns.ip_last >= str(ip.broadcast()),
+            self.columns.ip_version == ip.version(),
+            sa.not_(sa.and_(self.columns.ip_first == str(ip.net()), self.columns.ip_last == str(ip.broadcast()))),
+        )
+        self.statement = self.statement.where(fltr)
+
+        size_subquery = self.statement.with_only_columns([self.columns.ip_size])
+        size_subquery = size_subquery.order_by(self.columns.ip_size.asc())
+        size_subquery = size_subquery.limit(1)
+
+        self.statement = self.statement.where(self.columns.ip_size.in_(size_subquery))
+        self._query_frozen = True
+        return self
+
+    def ip_more_specific(self, ip: IP):
+        """Filter any more specifics of a prefix.
 
         Note that this only finds full more specifics: objects for which their
         IP range is fully encompassed by the ip parameter.
         """
         fltr = sa.and_(
-            self.columns.ip_first > str(ip.net()),
-            self.columns.ip_last < str(ip.broadcast()),
-            self.columns.ip_version == ip.version()
+            self.columns.ip_first >= str(ip.net()),
+            self.columns.ip_last <= str(ip.broadcast()),
+            self.columns.ip_version == ip.version(),
+            sa.not_(sa.and_(self.columns.ip_first == str(ip.net()), self.columns.ip_last == str(ip.broadcast()))),
         )
         return self._filter(fltr)
 
@@ -134,8 +158,13 @@ class RPSLDatabaseQuery:
         return self._filter(fltr)
 
     def _filter(self, fltr):
+        self._check_query_frozen()
         self.statement = self.statement.where(fltr)
         return self
+
+    def _check_query_frozen(self):
+        if self._query_frozen:
+            raise ValueError("This query was frozen - no more filters can be applied.")
 
     def __repr__(self):
         return f"RPSLDatabaseQuery: {self.statement}\nPARAMS: {self.statement.compile().params}"
@@ -160,9 +189,9 @@ class DatabaseHandler:
         # To be able to query objects that were just created, flush the cache.
         self._flush_rpsl_object_upsert_cache()
         result = self._connection.execute(query.statement)
-        return [dict(i) for i in result]
-        # for row in result:
-        #     yield dict(row)
+        for row in result:
+            yield dict(row)
+        result.close()
 
     def upsert_rpsl_object(self, rpsl_object: RPSLObject):
         """
@@ -177,6 +206,10 @@ class DatabaseHandler:
         """
         ip_first = str(rpsl_object.ip_first) if rpsl_object.ip_first else None
         ip_last = str(rpsl_object.ip_last) if rpsl_object.ip_last else None
+
+        ip_size = None
+        if rpsl_object.ip_first and rpsl_object.ip_last:
+            ip_size = rpsl_object.ip_last.int() - rpsl_object.ip_first.int() + 1
 
         # In some cases, multiple updates may be submitted for the same object.
         # PostgreSQL will not allow rows proposed for insertion to have duplicate
@@ -196,9 +229,10 @@ class DatabaseHandler:
             'ip_version': rpsl_object.ip_version(),
             'ip_first': ip_first,
             'ip_last': ip_last,
+            'ip_size': ip_size,
             'asn_first': rpsl_object.asn_first,
             'asn_last': rpsl_object.asn_last,
-            'updated': datetime.utcnow(),
+            'updated': datetime.utcnow(),  # TODO: timezones between created/updates are now inconsistent
         })
         self._rpsl_pk_source_seen.add(rpsl_pk_source)
 

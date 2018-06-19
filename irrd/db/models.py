@@ -31,6 +31,7 @@ class RPSLDatabaseObject(Base):  # type: ignore
     ip_version = sa.Column(sa.Integer, index=True)
     ip_first = sa.Column(pg.INET)
     ip_last = sa.Column(pg.INET)
+    ip_size = sa.Column(sa.DECIMAL(scale=0))
     asn_first = sa.Column(sa.Integer, index=True)
     asn_last = sa.Column(sa.Integer, index=True)
 
