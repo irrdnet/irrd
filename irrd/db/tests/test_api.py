@@ -35,6 +35,25 @@ def irrd_database():
     RPSLDatabaseObject.metadata.drop_all(engine)
 
 
+@pytest.fixture()
+def database_handler_with_route():
+    rpsl_object_route_v4 = Mock(
+        pk=lambda: '192.0.2.0/24,AS23456',
+        rpsl_object_class='route',
+        parsed_data={'mnt-by': ['MNT-TEST', 'MNT-TEST2'], 'source': 'TEST'},
+        render_rpsl_text=lambda: 'object-text',
+        ip_version=lambda: 4,
+        ip_first=IP('192.0.2.0'),
+        ip_last=IP('192.0.2.255'),
+        asn_first=23456,
+        asn_last=23456,
+    )
+    dh = DatabaseHandler()
+    dh.upsert_rpsl_object(rpsl_object_route_v4)
+    yield dh
+    dh._connection.close()
+
+
 class TestDatabaseHandlerLive:
     def test_object_writing(self, monkeypatch, irrd_database):
         monkeypatch.setattr('irrd.db.api.MAX_RECORDS_CACHE_BEFORE_INSERT', 1)
@@ -50,13 +69,13 @@ class TestDatabaseHandlerLive:
             asn_last=23456,
         )
 
-        dh = DatabaseHandler()
-        dh.upsert_rpsl_object(rpsl_object_route_v4)
-        assert len(dh._rpsl_upsert_cache) == 1
+        self.dh = DatabaseHandler()
+        self.dh.upsert_rpsl_object(rpsl_object_route_v4)
+        assert len(self.dh._rpsl_upsert_cache) == 1
 
         rpsl_object_route_v4.parsed_data = {'mnt-by': 'MNT-CORRECT', 'source': 'TEST'}
-        dh.upsert_rpsl_object(rpsl_object_route_v4)  # should trigger an immediate flush due to duplicate RPSL pk
-        assert len(dh._rpsl_upsert_cache) == 1
+        self.dh.upsert_rpsl_object(rpsl_object_route_v4)  # should trigger an immediate flush due to duplicate RPSL pk
+        assert len(self.dh._rpsl_upsert_cache) == 1
 
         rpsl_obj_route_v6 = Mock(
             pk=lambda: '2001:db8::/64,AS23456',
@@ -69,19 +88,19 @@ class TestDatabaseHandlerLive:
             asn_first=23456,
             asn_last=23456,
         )
-        dh.upsert_rpsl_object(rpsl_obj_route_v6)
-        assert len(dh._rpsl_upsert_cache) == 0  # should have been flushed to the DB
-        dh.upsert_rpsl_object(rpsl_obj_route_v6)
+        self.dh.upsert_rpsl_object(rpsl_obj_route_v6)
+        assert len(self.dh._rpsl_upsert_cache) == 0  # should have been flushed to the DB
+        self.dh.upsert_rpsl_object(rpsl_obj_route_v6)
 
-        dh.commit()
+        self.dh.commit()
 
         # There should be two entries with MNT-CORRECT in the db now.
         query = RPSLDatabaseQuery()
-        result = [i for i in dh.execute_query(query)]  # Loop to exhaust the generator
+        result = [i for i in self.dh.execute_query(query)]  # Loop to exhaust the generator
         assert len(result) == 2
 
         query.lookup_attr('mnt-by', 'MNT-CORRECT')
-        result = [i for i in dh.execute_query(query)]
+        result = [i for i in self.dh.execute_query(query)]
         assert len(result) == 2
 
         rpsl_obj_ignored = Mock(
@@ -95,35 +114,23 @@ class TestDatabaseHandlerLive:
             asn_first=23456,
             asn_last=23456,
         )
-        dh.upsert_rpsl_object(rpsl_obj_ignored)
-        assert len(dh._rpsl_upsert_cache) == 1
-        dh.upsert_rpsl_object(rpsl_obj_ignored)
-        assert len(dh._rpsl_upsert_cache) == 1
-        dh.rollback()
+        self.dh.upsert_rpsl_object(rpsl_obj_ignored)
+        assert len(self.dh._rpsl_upsert_cache) == 1
+        self.dh.upsert_rpsl_object(rpsl_obj_ignored)
+        assert len(self.dh._rpsl_upsert_cache) == 1
+        self.dh.rollback()
 
         query = RPSLDatabaseQuery()
-        result = [i for i in dh.execute_query(query)]  # Loop to exhaust the generator
+        result = [i for i in self.dh.execute_query(query)]  # Loop to exhaust the generator
         assert len(result) == 2
 
-        dh._connection.close()
+        self.dh._connection.close()
 
 
 class TestRPSLDatabaseQueryLive:
 
-    def test_queries(self, irrd_database):
-        rpsl_object_route_v4 = Mock(
-            pk=lambda: '192.0.2.0/24,AS23456',
-            rpsl_object_class='route',
-            parsed_data={'mnt-by': ['MNT-TEST', 'MNT-TEST2'], 'source': 'TEST'},
-            render_rpsl_text=lambda: 'object-text',
-            ip_version=lambda: 4,
-            ip_first=IP('192.0.2.0'),
-            ip_last=IP('192.0.2.255'),
-            asn_first=23456,
-            asn_last=23456,
-        )
-        self.dh = DatabaseHandler()
-        self.dh.upsert_rpsl_object(rpsl_object_route_v4)
+    def test_matching_filters(self, irrd_database, database_handler_with_route):
+        self.dh = database_handler_with_route
 
         # Each of these filters should match
         self._assert_match(RPSLDatabaseQuery().rpsl_pk('192.0.2.0/24,AS23456'))
@@ -136,6 +143,9 @@ class TestRPSLDatabaseQueryLive:
         self._assert_match(RPSLDatabaseQuery().ip_less_specific(IP('192.0.2.0/24')))
         self._assert_match(RPSLDatabaseQuery().ip_less_specific(IP('192.0.2.0/25')))
 
+    def test_chained_filters(self, irrd_database, database_handler_with_route):
+        self.dh = database_handler_with_route
+
         q = RPSLDatabaseQuery().rpsl_pk('192.0.2.0/24,AS23456').sources(['TEST', 'X']).object_classes(['route'])
         q = q.lookup_attr('mnt-by', 'MNT-TEST').ip_exact(IP('192.0.2.0/24')).asn(23456)
         q = q.ip_less_specific(IP('192.0.2.0/25')).ip_less_specific(IP('192.0.2.0/24'))
@@ -145,8 +155,10 @@ class TestRPSLDatabaseQueryLive:
         assert len(result) == 1, f"Failed query: {q}"
         pk = result[0]['pk']
 
-        assert generator_len(self.dh.execute_query(RPSLDatabaseQuery().pk(pk))) == 1
+        self._assert_match(RPSLDatabaseQuery().pk(pk))
 
+    def test_non_matching_filters(self, irrd_database, database_handler_with_route):
+        self.dh = database_handler_with_route
         # None of these should match
         self._assert_no_match(RPSLDatabaseQuery().pk(str(uuid.uuid4())))
         self._assert_no_match(RPSLDatabaseQuery().rpsl_pk('foo'))
@@ -158,10 +170,8 @@ class TestRPSLDatabaseQueryLive:
         self._assert_no_match(RPSLDatabaseQuery().ip_more_specific(IP('192.0.2.0/24')))
         self._assert_no_match(RPSLDatabaseQuery().ip_less_specific(IP('192.0.2.0/23')))
 
-        with raises(ValueError) as ve:
-            RPSLDatabaseQuery().lookup_attr('not-a-lookup-attr', 'value')
-        assert 'Invalid lookup attribute' in str(ve)
-
+    def test_more_less_specific_filters(self, irrd_database, database_handler_with_route):
+        self.dh = database_handler_with_route
         rpsl_route_more_specific_25_1 = Mock(
             pk=lambda: '192.0.2.0/25,AS23456',
             rpsl_object_class='route',
@@ -208,7 +218,6 @@ class TestRPSLDatabaseQueryLive:
         assert '192.0.2.0/26,AS23456' in rpsl_pks
 
         q = RPSLDatabaseQuery().ip_less_specific(IP('192.0.2.0/25'))
-        result = [i for i in self.dh.execute_query(q)]
         rpsl_pks = [r['rpsl_pk'] for r in self.dh.execute_query(q)]
         assert len(rpsl_pks) == 2, f"Failed query: {q}"
         assert '192.0.2.0/25,AS23456' in rpsl_pks
@@ -222,11 +231,15 @@ class TestRPSLDatabaseQueryLive:
         q = RPSLDatabaseQuery().sources(['TEST']).ip_less_specific_one_level(IP('192.0.2.0/27'))
         self._assert_match(q)
 
+    def test_modify_frozen_filter(self):
         with raises(ValueError) as ve:
             RPSLDatabaseQuery().ip_less_specific_one_level(IP('192.0.2.0/27')).sources(['TEST'])
         assert 'frozen' in str(ve)
 
-        self.dh._connection.close()
+    def test_invalid_lookup_attribute(self):
+        with raises(ValueError) as ve:
+            RPSLDatabaseQuery().lookup_attr('not-a-lookup-attr', 'value')
+        assert 'Invalid lookup attribute' in str(ve)
 
     def _assert_match(self, query):
         __tracebackhide__ = True
