@@ -8,7 +8,7 @@ SQLAlchemy==1.2.8
 alembic==0.9.9
 
 # Testing and related packages
-pytest==3.6.1
+pytest==3.6.2
 pytest-cov==2.5.1
 coverage==4.5.1
 coveralls==1.3.0
@@ -22,6 +22,6 @@ flake8==3.5.0
 pep8-naming==0.7.0
 
 # Creating python packages
-setuptools==39.1.0
-wheel==0.31.0
+setuptools==39.2.0
+wheel==0.31.1
 twine==1.11.0
