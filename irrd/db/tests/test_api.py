@@ -108,7 +108,7 @@ class TestDatabaseHandlerLive:
             rpsl_object_class='aut-num',
             parsed_data={'mnt-by': 'MNT-CORRECT', 'source': 'TEST'},
             render_rpsl_text=lambda: 'object-text',
-            ip_version=None,
+            ip_version=lambda: None,
             ip_first=None,
             ip_last=None,
             asn_first=23456,
