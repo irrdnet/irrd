@@ -104,13 +104,13 @@ class TestDatabaseHandlerLive:
         assert len(result) == 2
 
         rpsl_obj_ignored = Mock(
-            pk=lambda: '2001:db8::/64,AS2914',
-            rpsl_object_class='route',
+            pk=lambda: 'AS2914',
+            rpsl_object_class='aut-num',
             parsed_data={'mnt-by': 'MNT-CORRECT', 'source': 'TEST'},
             render_rpsl_text=lambda: 'object-text',
-            ip_version=lambda: 6,
-            ip_first=IP('2001:db8::'),
-            ip_last=IP('2001:db8::ffff:ffff:ffff:ffff'),
+            ip_version=lambda: None,
+            ip_first=None,
+            ip_last=None,
             asn_first=23456,
             asn_last=23456,
         )

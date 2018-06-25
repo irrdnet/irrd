@@ -128,6 +128,9 @@ def test_ipv4_address_range_field():
     assert parse_result.ip_first == IP('192.0.2.0')
     assert parse_result.ip_last == IP('192.0.2.0')
 
+    parse_result = field.parse("192.0.2.0 - 192.0.2.126", messages)
+    assert parse_result.value == "192.0.2.0 - 192.0.2.126"
+
     parse_result = field.parse("192.0.2.0 -192.0.02.126", messages)
     assert parse_result.value == "192.0.2.0 - 192.0.2.126"
     assert parse_result.ip_first == IP('192.0.2.0')
