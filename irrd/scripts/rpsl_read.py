@@ -76,7 +76,7 @@ class RPSLParse:
             raise e
 
 
-if __name__ == "__main__":
+def main():  # pragma: no cover
     description = """Run RPSL data through the IRRD processor. For each object that resulted in messages emitted by
                      the parser, the object is printed followed by the messages. Optionally, insert objects into
                      the database."""
@@ -91,3 +91,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     RPSLParse().main(args.input_file, args.strict_validation, args.database)
+
+
+if __name__ == "__main__":
+    main()
