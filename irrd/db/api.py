@@ -53,7 +53,7 @@ class RPSLDatabaseQuery:
         Sources list must be an iterable. Will match objects from any
         of the mentioned sources.
         """
-        fltr = sa.or_(*[self.columns.source == source for source in sources])
+        fltr = self.columns.source.in_(sources)
         return self._filter(fltr)
 
     def object_classes(self, object_classes: List[str]):
@@ -63,7 +63,7 @@ class RPSLDatabaseQuery:
         Classes list must be an iterable. Will match objects from any
         of the mentioned classes.
         """
-        fltr = sa.or_(*[self.columns.object_class == object_class for object_class in object_classes])
+        fltr = self.columns.object_class.in_(object_classes)
         return self._filter(fltr)
 
     def lookup_attr(self, attr_name: str, attr_value: str):
