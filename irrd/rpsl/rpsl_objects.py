@@ -494,8 +494,8 @@ OBJECT_CLASS_MAPPING = {
 
 
 def lookup_field_names() -> Set[str]:
-    """Return all unique names of all lookup keys in all objects."""
-    names = set()
+    """Return all unique names of all lookup keys in all objects, plus 'origin'."""
+    names = {'origin'}
     for object_class in OBJECT_CLASS_MAPPING.values():
         names.update([f for f in object_class.lookup_fields if f not in object_class.pk_fields])
     return names

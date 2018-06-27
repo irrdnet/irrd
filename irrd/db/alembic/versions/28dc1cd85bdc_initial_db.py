@@ -29,13 +29,16 @@ def upgrade():
                     sa.Column('ip_version', sa.Integer(), nullable=True),
                     sa.Column('ip_first', postgresql.INET(), nullable=True),
                     sa.Column('ip_last', postgresql.INET(), nullable=True),
-                    sa.Column('asn_first', sa.Integer(), nullable=True),
-                    sa.Column('asn_last', sa.Integer(), nullable=True),
+                    sa.Column('ip_size', sa.DECIMAL(scale=0), nullable=True),
+                    sa.Column('asn_first', sa.BigInteger(), nullable=True),
+                    sa.Column('asn_last', sa.BigInteger(), nullable=True),
                     sa.Column('created', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
                     sa.Column('updated', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
                     sa.PrimaryKeyConstraint('pk'),
                     sa.UniqueConstraint('rpsl_pk', 'source', name='rpsl_pk_source_unique')
                     )
+    op.create_index(op.f('ix_rpsl_objects_ip_first'), 'rpsl_objects', ['ip_first'], unique=False)
+    op.create_index(op.f('ix_rpsl_objects_ip_last'), 'rpsl_objects', ['ip_last'], unique=False)
     op.create_index(op.f('ix_rpsl_objects_asn_first'), 'rpsl_objects', ['asn_first'], unique=False)
     op.create_index(op.f('ix_rpsl_objects_asn_last'), 'rpsl_objects', ['asn_last'], unique=False)
     op.create_index(op.f('ix_rpsl_objects_ip_version'), 'rpsl_objects', ['ip_version'], unique=False)
@@ -58,18 +61,15 @@ def upgrade():
                     [sa.text("((parsed_data->'member-of'))")], unique=False, postgresql_using='gin')
     op.create_index(op.f('ix_rpsl_objects_parsed_data_mp_members'), 'rpsl_objects',
                     [sa.text("((parsed_data->'mp-members'))")], unique=False,
-                    postgresql_using='gin')  # ### end Alembic commands ###
-
-    op.create_index('ix_rpsl_objects_ip_first', 'rpsl_objects', [sa.text('ip_first inet_ops')], unique=False,
-                    postgresql_using='gist')
-    op.create_index('ix_rpsl_objects_ip_last', 'rpsl_objects', [sa.text('ip_last inet_ops')], unique=False,
-                    postgresql_using='gist')
+                    postgresql_using='gin')
+    op.create_index(op.f('ix_rpsl_objects_parsed_data_origin'), 'rpsl_objects', [sa.text("((parsed_data->'origin'))")],
+                    unique=False, postgresql_using='gin')
 
 
 def downgrade():
     # Manually added
-    op.drop_index(op.f('ix_rpsl_objects_ip_last'), table_name='rpsl_objects')
     op.drop_index(op.f('ix_rpsl_objects_ip_first'), table_name='rpsl_objects')
+    op.drop_index(op.f('ix_rpsl_objects_ip_last'), table_name='rpsl_objects')
     op.drop_index(op.f('ix_rpsl_objects_parsed_data_zone_c'), table_name='rpsl_objects')
     op.drop_index(op.f('ix_rpsl_objects_parsed_data_role'), table_name='rpsl_objects')
     op.drop_index(op.f('ix_rpsl_objects_parsed_data_members'), table_name='rpsl_objects')
