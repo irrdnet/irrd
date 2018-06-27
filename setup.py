@@ -9,7 +9,7 @@ with open('requirements.txt') as f:
 
 setuptools.setup(
     name='irrd4',
-    version='master',
+    version='master',  # TODO: read this from irrd/__init__
     author='DashCare for NTT Communications',
     author_email='irrd@dashcare.nl',
     description='Internet Routing Registry Daemon (IRRd) Version 4',

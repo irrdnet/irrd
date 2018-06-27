@@ -35,6 +35,7 @@ def irrd_database():
     RPSLDatabaseObject.metadata.drop_all(engine)
 
 
+# noinspection PyTypeChecker
 @pytest.fixture()
 def database_handler_with_route():
     rpsl_object_route_v4 = Mock(
@@ -96,11 +97,11 @@ class TestDatabaseHandlerLive:
 
         # There should be two entries with MNT-CORRECT in the db now.
         query = RPSLDatabaseQuery()
-        result = [i for i in self.dh.execute_query(query)]  # Loop to exhaust the generator
+        result = list(self.dh.execute_query(query))
         assert len(result) == 2
 
         query.lookup_attr('mnt-by', 'MNT-CORRECT')
-        result = [i for i in self.dh.execute_query(query)]
+        result = list(self.dh.execute_query(query))
         assert len(result) == 2
 
         rpsl_obj_ignored = Mock(
@@ -121,12 +122,13 @@ class TestDatabaseHandlerLive:
         self.dh.rollback()
 
         query = RPSLDatabaseQuery()
-        result = [i for i in self.dh.execute_query(query)]  # Loop to exhaust the generator
+        result = list(self.dh.execute_query(query))
         assert len(result) == 2
 
         self.dh._connection.close()
 
 
+# noinspection PyTypeChecker
 class TestRPSLDatabaseQueryLive:
 
     def test_matching_filters(self, irrd_database, database_handler_with_route):
@@ -142,6 +144,10 @@ class TestRPSLDatabaseQueryLive:
         self._assert_match(RPSLDatabaseQuery().ip_more_specific(IP('192.0.0.0/21')))
         self._assert_match(RPSLDatabaseQuery().ip_less_specific(IP('192.0.2.0/24')))
         self._assert_match(RPSLDatabaseQuery().ip_less_specific(IP('192.0.2.0/25')))
+        self._assert_match(RPSLDatabaseQuery().text_search('192.0.2.0/24'))
+        self._assert_match(RPSLDatabaseQuery().text_search('192.0.2.0/25'))
+        self._assert_match(RPSLDatabaseQuery().text_search('192.0.2.1'))
+        self._assert_match(RPSLDatabaseQuery().text_search('192.0.2.0/24,AS23456'))
 
     def test_chained_filters(self, irrd_database, database_handler_with_route):
         self.dh = database_handler_with_route
@@ -169,6 +175,43 @@ class TestRPSLDatabaseQueryLive:
         self._assert_no_match(RPSLDatabaseQuery().asn(23455))
         self._assert_no_match(RPSLDatabaseQuery().ip_more_specific(IP('192.0.2.0/24')))
         self._assert_no_match(RPSLDatabaseQuery().ip_less_specific(IP('192.0.2.0/23')))
+        self._assert_no_match(RPSLDatabaseQuery().text_search('192.0.2.0/23'))
+        self._assert_no_match(RPSLDatabaseQuery().text_search('AS2914'))
+        self._assert_no_match(RPSLDatabaseQuery().text_search('23456'))
+        # RPSL pk searches are case sensitive
+        self._assert_no_match(RPSLDatabaseQuery().text_search('192.0.2.0/24,as23456'))
+
+    def test_text_search_person_role(self, irrd_database):
+        rpsl_object_person = Mock(
+            pk=lambda: 'PERSON',
+            rpsl_object_class='person',
+            parsed_data={'person': 'my person-name', 'source': 'TEST'},
+            render_rpsl_text=lambda: 'object-text',
+            ip_version=lambda: None,
+            ip_first=None,
+            ip_last=None,
+            asn_first=None,
+            asn_last=None,
+        )
+        rpsl_object_role = Mock(
+            pk=lambda: 'ROLE',
+            rpsl_object_class='person',
+            parsed_data={'person': 'my role-name', 'source': 'TEST'},
+            render_rpsl_text=lambda: 'object-text',
+            ip_version=lambda: None,
+            ip_first=None,
+            ip_last=None,
+            asn_first=None,
+            asn_last=None,
+        )
+        self.dh = DatabaseHandler()
+        self.dh.upsert_rpsl_object(rpsl_object_person)
+        self.dh.upsert_rpsl_object(rpsl_object_role)
+
+        self._assert_match(RPSLDatabaseQuery().text_search('person-name'))
+        self._assert_match(RPSLDatabaseQuery().text_search('role-name'))
+
+        self.dh._connection.close()
 
     def test_more_less_specific_filters(self, irrd_database, database_handler_with_route):
         self.dh = database_handler_with_route
@@ -228,6 +271,11 @@ class TestRPSLDatabaseQueryLive:
         assert len(rpsl_pks) == 1, f"Failed query: {q}"
         assert '192.0.2.0/25,AS23456' in rpsl_pks
 
+        q = RPSLDatabaseQuery().ip_less_specific(IP('192.0.2.0/25')).first_only()
+        rpsl_pks = [r['rpsl_pk'] for r in self.dh.execute_query(q)]
+        assert len(rpsl_pks) == 1, f"Failed query: {q}"
+        assert '192.0.2.0/25,AS23456' in rpsl_pks
+
         q = RPSLDatabaseQuery().sources(['TEST']).ip_less_specific_one_level(IP('192.0.2.0/27'))
         self._assert_match(q)
 
@@ -243,12 +291,9 @@ class TestRPSLDatabaseQueryLive:
 
     def _assert_match(self, query):
         __tracebackhide__ = True
-        assert generator_len(self.dh.execute_query(query)) == 1, f"Failed query: {query}"
+        assert len(list(self.dh.execute_query(query))) == 1, f"Failed query: {query}"
 
     def _assert_no_match(self, query):
         __tracebackhide__ = True
-        assert not generator_len(self.dh.execute_query(query)), f"Failed query: {query}"
-
-
-def generator_len(generator):
-    return len([i for i in generator])
+        result = list(self.dh.execute_query(query))
+        assert not len(result), f"Failed query: {query}: unexpected output: {result}"

@@ -236,10 +236,11 @@ class RPSLSetNameField(RPSLTextField):
                 messages.error(f"Invalid set name {value}: component {component} is a reserved word")
                 return None
 
+            parsed_as_number = None
             try:
                 parsed_as_number, _ = parse_as_number(component)
             except ValidationError as ve:
-                parsed_as_number = None
+                pass
             if not re_generic_name.match(component.upper()) and not parsed_as_number:
                 messages.error(
                     f"Invalid set {value}: component {component} is not a valid AS number nor a valid set name"

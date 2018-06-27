@@ -7,6 +7,9 @@ psycopg2==2.7.5  # or psycopg2-binary
 SQLAlchemy==1.2.9
 alembic==0.9.10
 
+# Network handling
+twisted==18.4.0
+
 # Testing and related packages
 pytest==3.6.2
 pytest-cov==2.5.1
