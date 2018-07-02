@@ -5,7 +5,7 @@ IPy==0.83              # IP address parsing
 # Database connections and management
 psycopg2==2.7.5  # or psycopg2-binary
 SQLAlchemy==1.2.9
-alembic==0.9.9
+alembic==0.9.10
 
 # Testing and related packages
 pytest==3.6.2
