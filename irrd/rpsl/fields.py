@@ -5,7 +5,7 @@ from IPy import IP
 
 from .config import PASSWORD_HASHERS
 from .parser_state import RPSLParserMessages, RPSLFieldParseResult
-from .validators import parse_as_number
+from irrd.utils.validators import parse_as_number, ValidationError
 
 # The IPv4/IPv6 regexes are for initial screening - not full validators
 re_ipv4_prefix = re.compile(r"^\d+\.\d+\.\d+\.\d+/\d+$")
@@ -169,11 +169,13 @@ class RPSLIPv4AddressRangeField(RPSLTextField):
 class RPSLASNumberField(RPSLTextField):
     """Field for a single AS number (in ASxxxx syntax)."""
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
-        parsed_str, parsed_int = parse_as_number(value, messages)
+        try:
+            parsed_str, parsed_int = parse_as_number(value)
+        except ValidationError as ve:
+            messages.error(str(ve))
+            return None
         if parsed_str and parsed_str.upper() != value.upper():
             messages.info(f"AS number {value} was reformatted as {parsed_str}")
-        if not parsed_str:
-            return None
         return RPSLFieldParseResult(parsed_str, asn_first=parsed_int, asn_last=parsed_int)
 
 
@@ -186,11 +188,12 @@ class RPSLASBlockField(RPSLTextField):
 
         as1_raw, as2_raw = map(str.strip, value.split("-", 1))
 
-        as1_str, as1_int = parse_as_number(as1_raw, messages)
-        as2_str, as2_int = parse_as_number(as2_raw, messages)
-
-        if not all([as1_str, as2_str, as1_int, as2_int]):
-            return None  # Messages about the reason for validation failure were already added.
+        try:
+            as1_str, as1_int = parse_as_number(as1_raw)
+            as2_str, as2_int = parse_as_number(as2_raw)
+        except ValidationError as ve:
+            messages.error(str(ve))
+            return None
 
         if as1_int > as2_int:  # type: ignore
             messages.error(f"Invalid AS range: {value}: first AS is higher then second AS")
@@ -233,9 +236,10 @@ class RPSLSetNameField(RPSLTextField):
                 messages.error(f"Invalid set name {value}: component {component} is a reserved word")
                 return None
 
-            # parse_as_number receives a new message object instance, as we want to ignore the message
-            # it produces - we want to create our own message later if validation fails.
-            parsed_as_number, _ = parse_as_number(component, RPSLParserMessages())
+            try:
+                parsed_as_number, _ = parse_as_number(component)
+            except ValidationError as ve:
+                parsed_as_number = None
             if not re_generic_name.match(component.upper()) and not parsed_as_number:
                 messages.error(
                     f"Invalid set {value}: component {component} is not a valid AS number nor a valid set name"
