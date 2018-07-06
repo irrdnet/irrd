@@ -1289,7 +1289,7 @@ auth:           PGPKey-80F238C6
 auth:           CRYPT-PW LEuuhsBJNFV0Q  # crypt-password
 auth:           MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.  # md5-password
 mnt-by:         AS760-MNT
-mnt-by:         ACONET-LIR-MNT
+mnt-by:         ACONET-LIR-MNT,ACONET2-LIR-MNT
 changed:        2016-10-05T10:41:15Z
 source:         RIPE
 remarks:        ****************************

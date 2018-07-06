@@ -290,6 +290,7 @@ class TestRPSLMntner:
         assert obj.__class__ == RPSLMntner
         assert not obj.messages.errors()
         assert obj.pk() == "AS760-MNT"
+        assert obj.parsed_data["mnt-by"] == ['AS760-MNT', 'ACONET-LIR-MNT', 'ACONET2-LIR-MNT']
         assert obj.render_rpsl_text() == rpsl_text
 
     def test_verify(self, tmp_gpg_dir):

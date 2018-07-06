@@ -28,7 +28,7 @@ class RPSLAsBlock(RPSLObject):
         ("tech-c", RPSLReferenceField(multiple=True, referring=["role", "person"])),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
-        ("mnt-by", RPSLReferenceField(lookup_key=True, multiple=True, referring=["mntner"])),
+        ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
         ("changed", RPSLTextField(multiple=True)),
         ("source", RPSLGenericNameField()),
     ])
@@ -44,7 +44,7 @@ class RPSLAsSet(RPSLObject):
         ("tech-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
-        ("mnt-by", RPSLReferenceField(lookup_key=True, multiple=True, referring=["mntner"])),
+        ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
         ("changed", RPSLTextField(multiple=True)),
         ("source", RPSLGenericNameField()),
     ])
@@ -68,7 +68,7 @@ class RPSLAutNum(RPSLObject):
         ("tech-c", RPSLReferenceField(multiple=True, referring=["role", "person"])),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
-        ("mnt-by", RPSLReferenceField(lookup_key=True, optional=True, multiple=True, referring=["mntner"])),
+        ("mnt-by", RPSLReferenceListField(lookup_key=True, optional=True, multiple=True, referring=["mntner"])),
         ("changed", RPSLTextField(multiple=True)),
         ("source", RPSLGenericNameField()),
     ])
@@ -86,7 +86,7 @@ class RPSLDictionary(RPSLObject):
         ("afi", RPSLTextField(optional=True, multiple=True)),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
-        ("mnt-by", RPSLReferenceField(lookup_key=True, multiple=True, referring=["mntner"])),
+        ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
         ("changed", RPSLTextField(multiple=True)),
         ("source", RPSLGenericNameField(lookup_key=True)),
     ])
@@ -105,7 +105,7 @@ class RPSLDomain(RPSLObject):
         ("refer", RPSLTextField(optional=True)),  # ???
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
-        ("mnt-by", RPSLReferenceField(lookup_key=True, optional=True, multiple=True, referring=["mntner"])),
+        ("mnt-by", RPSLReferenceListField(lookup_key=True, optional=True, multiple=True, referring=["mntner"])),
         ("changed", RPSLTextField(multiple=True)),
         ("source", RPSLGenericNameField()),
     ])
@@ -121,7 +121,7 @@ class RPSLFilterSet(RPSLObject):
         ("tech-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
-        ("mnt-by", RPSLReferenceField(lookup_key=True, multiple=True, referring=["mntner"])),
+        ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
         ("changed", RPSLTextField(multiple=True)),
         ("source", RPSLGenericNameField()),
     ])
@@ -144,7 +144,7 @@ class RPSLInetRtr(RPSLObject):
         ("tech-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
-        ("mnt-by", RPSLReferenceField(lookup_key=True, multiple=True, referring=["mntner"])),
+        ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
         ("changed", RPSLTextField(multiple=True)),
         ("source", RPSLGenericNameField()),
     ])
@@ -162,7 +162,7 @@ class RPSLInet6Num(RPSLObject):
         ("status", RPSLTextField()),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
-        ("mnt-by", RPSLReferenceField(lookup_key=True, multiple=True, referring=["mntner"])),
+        ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
         ("changed", RPSLTextField(multiple=True)),
         ("source", RPSLGenericNameField()),
     ])
@@ -180,7 +180,7 @@ class RPSLInetnum(RPSLObject):
         ("status", RPSLTextField()),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
-        ("mnt-by", RPSLReferenceField(lookup_key=True, multiple=True, referring=["mntner"])),
+        ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
         ("changed", RPSLTextField(multiple=True)),
         ("source", RPSLGenericNameField()),
     ])
@@ -197,7 +197,7 @@ class RPSLKeyCert(RPSLObject):
         ("admin-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
         ("tech-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
-        ("mnt-by", RPSLReferenceField(lookup_key=True, multiple=True, referring=["mntner"])),
+        ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
         ("changed", RPSLTextField(multiple=True)),
         ("source", RPSLGenericNameField()),
     ])
@@ -278,7 +278,7 @@ class RPSLLimerick(RPSLObject):
         ("author", RPSLTextField(multiple=True)),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
-        ("mnt-by", RPSLReferenceField(lookup_key=True, multiple=True, referring=["mntner"])),
+        ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
         ("changed", RPSLTextField(multiple=True)),
         ("source", RPSLGenericNameField()),
     ])
@@ -295,7 +295,7 @@ class RPSLMntner(RPSLObject):
         ("auth", RPSLAuthField(multiple=True)),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
-        ("mnt-by", RPSLReferenceField(lookup_key=True, multiple=True, referring=["mntner"])),
+        ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
         ("changed", RPSLTextField(multiple=True)),
         ("source", RPSLGenericNameField()),
     ])
@@ -325,7 +325,7 @@ class RPSLPeeringSet(RPSLObject):
         ("tech-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
-        ("mnt-by", RPSLReferenceField(lookup_key=True, multiple=True, referring=["mntner"])),
+        ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
         ("changed", RPSLTextField(multiple=True)),
         ("source", RPSLGenericNameField()),
     ])
@@ -341,7 +341,7 @@ class RPSLPerson(RPSLObject):
         ("nic-hdl", RPSLGenericNameField(primary_key=True, lookup_key=True)),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
-        ("mnt-by", RPSLReferenceField(lookup_key=True, multiple=True, referring=["mntner"])),
+        ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
         ("changed", RPSLTextField(multiple=True)),
         ("source", RPSLGenericNameField()),
     ])
@@ -362,7 +362,7 @@ class RPSLRepository(RPSLObject):
         ("tech-c", RPSLReferenceField(multiple=True, referring=["role", "person"])),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
-        ("mnt-by", RPSLReferenceField(lookup_key=True, multiple=True, referring=["mntner"])),
+        ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
         ("changed", RPSLTextField(multiple=True)),
         ("source", RPSLGenericNameField()),
     ])
@@ -381,7 +381,7 @@ class RPSLRole(RPSLObject):
         ("nic-hdl", RPSLGenericNameField(primary_key=True, lookup_key=True)),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
-        ("mnt-by", RPSLReferenceField(lookup_key=True, multiple=True, referring=["mntner"])),
+        ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
         ("changed", RPSLTextField(multiple=True)),
         ("source", RPSLGenericNameField()),
     ])
@@ -405,7 +405,7 @@ class RPSLRoute(RPSLObject):
         ("roa-uri", RPSLTextField(optional=True)),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
-        ("mnt-by", RPSLReferenceField(lookup_key=True, multiple=True, referring=["mntner"])),
+        ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
         ("changed", RPSLTextField(multiple=True)),
         ("source", RPSLGenericNameField()),
     ])
@@ -422,7 +422,7 @@ class RPSLRouteSet(RPSLObject):
         ("tech-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
-        ("mnt-by", RPSLReferenceField(lookup_key=True, multiple=True, referring=["mntner"])),
+        ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
         ("changed", RPSLTextField(multiple=True)),
         ("source", RPSLGenericNameField()),
     ])
@@ -446,7 +446,7 @@ class RPSLRoute6(RPSLObject):
         ("roa-uri", RPSLTextField(optional=True)),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
-        ("mnt-by", RPSLReferenceField(lookup_key=True, multiple=True, referring=["mntner"])),
+        ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
         ("changed", RPSLTextField(multiple=True)),
         ("source", RPSLGenericNameField()),
     ])
@@ -463,7 +463,7 @@ class RPSLRtrSet(RPSLObject):
         ("tech-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
-        ("mnt-by", RPSLReferenceField(lookup_key=True, multiple=True, referring=["mntner"])),
+        ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
         ("changed", RPSLTextField(multiple=True)),
         ("source", RPSLGenericNameField()),
     ])
