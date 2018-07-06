@@ -7,7 +7,7 @@ from .config import PASSWORD_HASHERS
 from .fields import (RPSLTextField, RPSLIPv4PrefixField, RPSLIPv4PrefixesField, RPSLIPv6PrefixField,
                      RPSLIPv6PrefixesField, RPSLIPv4AddressRangeField, RPSLASNumberField, RPSLASBlockField,
                      RPSLSetNameField, RPSLEmailField, RPSLDNSNameField, RPSLGenericNameField, RPSLReferenceField,
-                     RPSLReferenceListField, RPSLAuthField)
+                     RPSLReferenceListField, RPSLAuthField, RPSLRouteSetMembersField)
 from .parser import RPSLObject, UnknownRPSLObjectClassException
 
 
@@ -414,8 +414,8 @@ class RPSLRoute(RPSLObject):
 class RPSLRouteSet(RPSLObject):
     fields = OrderedDict([
         ("route-set", RPSLSetNameField(primary_key=True, lookup_key=True, prefix="RS")),
-        ("members", RPSLTextField(lookup_key=True, optional=True, multiple=True)),  # ipv4 prefix list, route set name, range operator
-        ("mp-members", RPSLTextField(lookup_key=True, optional=True, multiple=True)),  # ipv6 prefix list, route set name, range operator
+        ("members", RPSLRouteSetMembersField(ip_version=4, lookup_key=True, optional=True, multiple=True)),
+        ("mp-members", RPSLRouteSetMembersField(ip_version=None, lookup_key=True, optional=True, multiple=True)),
         ("mbrs-by-ref", RPSLReferenceListField(optional=True, multiple=True, referring=["mntner"], allow_kw_any=True)),
         ("descr", RPSLTextField(multiple=True, optional=True)),
         ("admin-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),

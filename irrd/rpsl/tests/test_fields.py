@@ -3,7 +3,7 @@ from IPy import IP
 from ..fields import (RPSLIPv4PrefixField, RPSLIPv4PrefixesField, RPSLIPv6PrefixField,
                       RPSLIPv6PrefixesField, RPSLIPv4AddressRangeField, RPSLASNumberField, RPSLASBlockField,
                       RPSLSetNameField, RPSLEmailField, RPSLDNSNameField, RPSLGenericNameField, RPSLReferenceField,
-                      RPSLReferenceListField, RPSLTextField, RPSLAuthField)
+                      RPSLReferenceListField, RPSLTextField, RPSLAuthField, RPSLRouteSetMemberField)
 from ..parser_state import RPSLParserMessages
 
 
@@ -146,6 +146,55 @@ def test_ipv4_address_range_field():
     assert_validation_err("IP version mismatch", field.parse, "192.0.2.0 - 2001:db8::")
     assert_validation_err("first IP is higher", field.parse, "192.0.2.1 - 192.0.2.0")
     assert_validation_err("IP version mismatch", field.parse, "2001:db8::0 - 2001:db8::1")
+
+
+def test_route_set_members_field():
+    field = RPSLRouteSetMemberField(ip_version=4)
+    messages = RPSLParserMessages()
+
+    parse_result = field.parse("192.0.2.0/24^12-23", messages)
+    assert parse_result.value == "192.0.2.0/24^12-23"
+    parse_result = field.parse("AS23456:RS-TEST^32", messages)
+    assert parse_result.value == "AS23456:RS-TEST^32"
+
+    assert field.parse("192.0.2.0/25^+", messages).value == "192.0.2.0/25^+"
+    assert field.parse("192.0.2.0/25^32", messages).value == "192.0.2.0/25^32"
+    assert field.parse("192.00.02.0/25^-", messages).value == "192.0.2.0/25^-"
+    assert field.parse("192.0.02.0/32", messages).value == "192.0.2.0/32"
+    assert not messages.errors()
+    assert messages.infos() == [
+        "Route set member 192.00.02.0/25^- was reformatted as 192.0.2.0/25^-",
+        "Route set member 192.0.02.0/32 was reformatted as 192.0.2.0/32",
+    ]
+
+    assert_validation_err("Value is neither a valid set name nor a valid prefix", field.parse, "AS23456:TEST")
+    assert_validation_err("Missing range operator", field.parse, "192.0.2.0/32^")
+    assert_validation_err("Invalid range operator", field.parse, "192.0.2.0/32^x")
+    assert_validation_err("Invalid range operator", field.parse, "192.0.2.0/32^-32")
+    assert_validation_err("Invalid range operator", field.parse, "192.0.2.0/32^32-")
+    assert_validation_err("Invalid range operator", field.parse, "192.0.2.0/32^24+32")
+
+    field = RPSLRouteSetMemberField(ip_version=None)
+    messages = RPSLParserMessages()
+
+    parse_result = field.parse("192.0.2.0/24^12-23", messages)
+    assert parse_result.value == "192.0.2.0/24^12-23"
+    parse_result = field.parse("12ab:0:0:cd30::/60^12-23", messages)
+    assert parse_result.value == "12ab:0:0:cd30::/60^12-23"
+    parse_result = field.parse("AS23456:RS-TEST", messages)
+    assert parse_result.value == "AS23456:RS-TEST"
+
+    assert field.parse("192.0.2.0/25^+", messages).value == "192.0.2.0/25^+"
+    assert field.parse("192.0.2.0/25^32", messages).value == "192.0.2.0/25^32"
+    assert field.parse("12ab:00:0:cd30::/60^-", messages).value == "12ab:0:0:cd30::/60^-"
+    assert field.parse("12ab:0:0:cd30::/60", messages).value == "12ab:0:0:cd30::/60"
+    assert not messages.errors()
+    assert messages.infos() == [
+        "Route set member 12ab:00:0:cd30::/60^- was reformatted as 12ab:0:0:cd30::/60^-",
+    ]
+
+    assert_validation_err("Invalid range operator", field.parse, "192.0.2.0/32^24+32")
+    assert_validation_err("Invalid range operator", field.parse, "12ab:0:0:cd30::/60^24+32")
 
 
 def test_validate_as_number_field():

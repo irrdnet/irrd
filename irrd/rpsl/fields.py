@@ -16,6 +16,7 @@ re_ipv6_prefix = re.compile(r"^[A-F\d:]+/\d+$", re.IGNORECASE)
 #                         # Validate local-part           @ domain         | or IPv4 address        | or IPv6
 re_email = re.compile(r"^[A-Z0-9$!#%&\"*+\/=?^_`{|}~\\.-]+@(([A-Z0-9\\.-]+)|(\[\d+\.\d+\.\d+\.\d+\])|(\[[A-f\d:]+\]))$", re.IGNORECASE)
 
+re_range_operator = re.compile(r"^((\d{1,3}-\d{1,3})|(-)|(\+)|(\d{1,3}))$")
 re_pgpkey = re.compile(r"^PGPKEY-[A-F0-9]{8}$")
 re_dnsname = re.compile(r"^(([A-Z0-9]|[A-Z0-9][A-Z0-9\-]*[A-Z0-9])\.)*([A-Z0-9]|[A-Z0-9][A-Z0-9\-]*[A-Z0-9])$", re.IGNORECASE)
 re_generic_name = re.compile(r"^[A-Z][A-Z0-9_-]*[A-Z0-9]$", re.IGNORECASE)
@@ -166,6 +167,71 @@ class RPSLIPv4AddressRangeField(RPSLTextField):
         return RPSLFieldParseResult(parsed_value, ip_first=ip1, ip_last=ip2)
 
 
+class RPSLRouteSetMemberField(RPSLTextField):
+    """
+    Field for the members of a route-set. These can be:
+        - A valid name for another route set.
+        - A valid IPv4 or IPv6 (depending on ip_version) prefix
+        - A valid prefix followed by:
+          - ^-
+          - ^+
+          - ^[integer]
+          - ^[integer]-[integer]
+    """
+    def __init__(self, ip_version: Optional[int], *args, **kwargs) -> None:
+        if ip_version and ip_version not in [4, 6]:
+            raise ValueError(f'Invalid IP version: {ip_version}')
+        self.ip_version = ip_version
+        super().__init__(*args, **kwargs)
+
+    def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
+        if '^' in value:
+            address, range_operator = value.split('^', maxsplit=1)
+            if not range_operator:
+                messages.error(f'Missing range operator in value: {value}')
+                return None
+        else:
+            address = value
+            range_operator = ''
+
+        parse_set_result_messages = RPSLParserMessages()
+        parse_set_result = parse_set_name('RS-', address, parse_set_result_messages, strict_validation)
+        if parse_set_result and not parse_set_result_messages.errors():
+            result_value = parse_set_result.value
+            if range_operator:
+                result_value += '^' + range_operator
+            if result_value != value:
+                messages.info(f'Route set member {value} was reformatted as {result_value}')
+            return RPSLFieldParseResult(value=result_value)
+
+        try:
+            ip_version = self.ip_version if self.ip_version else 0
+            ip = IP(address, ipversion=ip_version)
+        except ValueError as ve:
+            messages.error(f'Value is neither a valid set name nor a valid prefix: {address}: {ve}')
+            return None
+
+        if range_operator and not re_range_operator.match(range_operator):
+            messages.error(f'Invalid range operator {range_operator} in value: {value}')
+            return None
+
+        parsed_ip_str = str(ip)
+        if ip.version() == 4 and ip.prefixlen() == 32:
+            parsed_ip_str += '/32'
+        if ip.version() == 6 and ip.prefixlen() == 128:
+            parsed_ip_str += '/128'
+        if range_operator:
+            parsed_ip_str += '^' + range_operator
+
+        if parsed_ip_str != value:
+            messages.info(f'Route set member {value} was reformatted as {parsed_ip_str}')
+        return RPSLFieldParseResult(parsed_ip_str)
+
+
+class RPSLRouteSetMembersField(RPSLFieldListMixin, RPSLRouteSetMemberField):
+    pass
+
+
 class RPSLASNumberField(RPSLTextField):
     """Field for a single AS number (in ASxxxx syntax)."""
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
@@ -213,7 +279,7 @@ class RPSLSetNameField(RPSLTextField):
     permitted for RPSL names).
     Set names can consist of multiple components, e.g. AS23456:RS-FOO. Each
     component must be a valid set name or valid AS number, and one component
-    must be a valid set name, i.e. start with the given prefix.
+    must be a valid set name for this specific set, i.e. start with the given prefix.
 
     The prefix provided is the expected prefix of the set name, e.g. "RS" for
     a route-set, or "AS" for an as-set.R
@@ -223,43 +289,7 @@ class RPSLSetNameField(RPSLTextField):
         super().__init__(*args, **kwargs)
 
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
-        assert self.prefix in reserved_prefixes
-        input_components = value.split(":")
-        output_components: List[str] = []
-
-        if strict_validation and not any([c.upper().startswith(self.prefix) for c in input_components]):
-            messages.error(f"Invalid set name {value}: at least one component must be "
-                           f"an actual set name (i.e. start with {self.prefix})")
-            return None
-        for component in input_components:
-            if strict_validation and component.upper() in reserved_words:
-                messages.error(f"Invalid set name {value}: component {component} is a reserved word")
-                return None
-
-            parsed_as_number = None
-            try:
-                parsed_as_number, _ = parse_as_number(component)
-            except ValidationError as ve:
-                pass
-            if not re_generic_name.match(component.upper()) and not parsed_as_number:
-                messages.error(
-                    f"Invalid set {value}: component {component} is not a valid AS number nor a valid set name"
-                )
-                return None
-            if strict_validation and not parsed_as_number and not component.upper().startswith(self.prefix):
-                messages.error(f"Invalid set {value}: component {component} is not a valid AS number, "
-                               f"nor does it start with {self.prefix}")
-                return None
-
-            if parsed_as_number:
-                output_components.append(parsed_as_number)
-            else:
-                output_components.append(component)
-
-        parsed_value = ":".join(output_components)
-        if parsed_value != value:
-            messages.info(f"Set name {value} was reformatted as {parsed_value}")
-        return RPSLFieldParseResult(parsed_value)
+        return parse_set_name(self.prefix, value, messages, strict_validation)
 
 
 class RPSLEmailField(RPSLTextField):
@@ -384,3 +414,43 @@ class RPSLAuthField(RPSLTextField):
         hashers = ", ".join(PASSWORD_HASHERS.keys())
         messages.error(f"Invalid auth attribute: {value}: supported options are {hashers} and PGPKEY-xxxxxxxx")
         return None
+
+
+def parse_set_name(prefix: str, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
+    assert prefix in reserved_prefixes
+    input_components = value.split(":")
+    output_components: List[str] = []
+
+    if strict_validation and not any([c.upper().startswith(prefix) for c in input_components]):
+        messages.error(f"Invalid set name {value}: at least one component must be "
+                       f"an actual set name (i.e. start with {prefix})")
+        return None
+    for component in input_components:
+        if strict_validation and component.upper() in reserved_words:
+            messages.error(f"Invalid set name {value}: component {component} is a reserved word")
+            return None
+
+        parsed_as_number = None
+        try:
+            parsed_as_number, _ = parse_as_number(component)
+        except ValidationError as ve:
+            pass
+        if not re_generic_name.match(component.upper()) and not parsed_as_number:
+            messages.error(
+                f"Invalid set {value}: component {component} is not a valid AS number nor a valid set name"
+            )
+            return None
+        if strict_validation and not parsed_as_number and not component.upper().startswith(prefix):
+            messages.error(f"Invalid set {value}: component {component} is not a valid AS number, "
+                           f"nor does it start with {prefix}")
+            return None
+
+        if parsed_as_number:
+            output_components.append(parsed_as_number)
+        else:
+            output_components.append(component)
+
+    parsed_value = ":".join(output_components)
+    if parsed_value != value:
+        messages.info(f"Set name {value} was reformatted as {parsed_value}")
+    return RPSLFieldParseResult(parsed_value)

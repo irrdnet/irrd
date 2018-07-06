@@ -13,7 +13,7 @@ from irrd.rpsl.parser import RPSLObject
 from irrd.rpsl.rpsl_objects import lookup_field_names
 
 logger = logging.getLogger(__name__)
-MAX_RECORDS_CACHE_BEFORE_INSERT = 500
+MAX_RECORDS_CACHE_BEFORE_INSERT = 5000
 
 
 class RPSLDatabaseQuery:
