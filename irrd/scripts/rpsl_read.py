@@ -19,7 +19,8 @@ class RPSLParse:
     unknown_object_classes: Set[str] = set()
     database_handler = None
 
-    def main(self, filename, strict_validation, database):
+    def main(self, filename, strict_validation, database, show_info=True):
+        self.show_info = show_info
         if database:
             self.database_handler = DatabaseHandler()
 
@@ -54,7 +55,7 @@ class RPSLParse:
         try:
             self.obj_parsed += 1
             obj = rpsl_object_from_text(rpsl_text.strip(), strict_validation=strict_validation)
-            if obj.messages.messages():
+            if (obj.messages.messages() and self.show_info) or obj.messages.errors():
                 if obj.messages.errors():
                     self.obj_errors += 1
 
@@ -81,6 +82,8 @@ def main():  # pragma: no cover
                      the parser, the object is printed followed by the messages. Optionally, insert objects into
                      the database."""
     parser = argparse.ArgumentParser(description=description)
+    parser.add_argument("--hide-info", dest="hide_info", action="store_true",
+                        help="hide INFO messages")
     parser.add_argument("input_file", type=str,
                         help="the name of a file to read, or - for stdin")
     parser.add_argument("--strict", dest="strict_validation", action="store_true",
@@ -90,7 +93,7 @@ def main():  # pragma: no cover
                              "they have the same RPSL primary key and source")
     args = parser.parse_args()
 
-    RPSLParse().main(args.input_file, args.strict_validation, args.database)
+    RPSLParse().main(args.input_file, args.strict_validation, args.database, not args.hide_info)
 
 
 if __name__ == "__main__":
