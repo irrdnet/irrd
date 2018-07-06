@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import setuptools
+from irrd import __version__
 
 with open('README.rst', 'r') as fh:
     long_description = fh.read()
@@ -9,7 +10,7 @@ with open('requirements.txt') as f:
 
 setuptools.setup(
     name='irrd4',
-    version='master',  # TODO: read this from irrd/__init__
+    version=__version__,
     author='DashCare for NTT Communications',
     author_email='irrd@dashcare.nl',
     description='Internet Routing Registry Daemon (IRRd) Version 4',
