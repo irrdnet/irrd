@@ -281,8 +281,9 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                 return value.split("#")[0].strip()
             return value.strip()
         for line in value.splitlines():
-            parsed_line = line.split("#")[0].strip("\n, ")
-            normalized_lines.append(parsed_line)
+            parsed_line = line.split("#")[0].strip("\n\t, ")
+            if parsed_line:
+                normalized_lines.append(parsed_line)
         return ",".join(normalized_lines)
 
     def _update_attribute_value(self, attribute, new_values):

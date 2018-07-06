@@ -824,6 +824,7 @@ nserver:        ns.gu.kiev.ua
 mnt-by:         AS3254-MNT
 changed:        2011-02-04T10:33:38Z
 source:         RIPE
+                # foo
 remarks:        ****************************
 remarks:        * THIS OBJECT IS MODIFIED
 remarks:        * Please note that all data that is generally regarded as personal

@@ -156,6 +156,7 @@ class TestRPSLDomain:
         assert obj.__class__ == RPSLDomain
         assert not obj.messages.errors()
         assert obj.pk() == "200.193.193.IN-ADDR.ARPA"
+        assert obj.parsed_data["source"] == 'RIPE'
         assert obj.render_rpsl_text() == rpsl_text
 
 
