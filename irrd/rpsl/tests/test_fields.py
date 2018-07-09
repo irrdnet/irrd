@@ -209,6 +209,8 @@ def test_validate_as_number_field():
     assert messages.infos() == ["AS number AS023456 was reformatted as AS23456"]
 
     assert_validation_err("not numeric", field.parse, "ASxxxx")
+    assert_validation_err("not numeric", field.parse, "AS2345💩")
+    assert_validation_err("must start with", field.parse, "💩AS2345")
 
 
 def test_validate_as_block_field():
@@ -300,6 +302,7 @@ def test_validate_generic_name_field():
     assert_validation_err("reserved prefix", field.parse, "As-FOO")
     assert_validation_err("invalid character", field.parse, "FoO$BAR")
     assert_validation_err("invalid character", field.parse, "FOOBAR-")
+    assert_validation_err("invalid character", field.parse, "FOO💩BAR")
 
     assert field.parse("AS-FOO", messages, strict_validation=False).value == "AS-FOO"
 
