@@ -319,8 +319,13 @@ class RPSLGenericNameField(RPSLTextField):
     Optionally, a list of allowed reserved prefixes can be provided.
     For example, this is used for the as-name attribute of an aut-num, as they
     are allowed to start with "AS".
+
+    If non_strict_allow_any is set, the parser will allow any value if strict_validation
+    is disabled. This is needed on nic-hdl for legacy reasons -
+    see https://github.com/irrdnet/irrd4/issues/60
     """
-    def __init__(self, allowed_prefixes: List[str]=None, *args, **kwargs) -> None:
+    def __init__(self, allowed_prefixes: List[str]=None, non_strict_allow_any=False, *args, **kwargs) -> None:
+        self.non_strict_allow_any = non_strict_allow_any
         if allowed_prefixes:
             self.allowed_prefixes = [prefix.upper() + "-" for prefix in allowed_prefixes]
         else:
@@ -328,6 +333,9 @@ class RPSLGenericNameField(RPSLTextField):
         super().__init__(*args, **kwargs)
 
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
+        if not strict_validation and self.non_strict_allow_any:
+            return RPSLFieldParseResult(value)
+
         upper_value = value.upper()
         if strict_validation:
             if upper_value in reserved_words:

@@ -304,12 +304,18 @@ def test_validate_generic_name_field():
     assert_validation_err("invalid character", field.parse, "FOO💩BAR")
 
     assert field.parse("AS-FOO", messages, strict_validation=False).value == "AS-FOO"
+    assert field.parse("FOO BAR", messages, strict_validation=False) is None
 
     field = RPSLGenericNameField(allowed_prefixes=["as"])
+    messages = RPSLParserMessages()
     assert field.parse("As-FOO", messages).value == "As-FOO"
     assert not messages.errors()
 
     assert_validation_err("reserved prefix", field.parse, "FLTr-FOO")
+
+    field = RPSLGenericNameField(non_strict_allow_any=True)
+    assert field.parse("FOO BAR", messages, strict_validation=False).value == "FOO BAR"
+    assert_validation_err("invalid character", field.parse, "FOO BAR")
 
 
 def test_rpsl_reference_field():
