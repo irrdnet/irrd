@@ -222,6 +222,8 @@ class WhoisQueryParser:
             members = self._find_set_members(parameter)
         else:
             members = self._recursive_set_resolve(parameter)
+            if parameter in members:
+                members.remove(parameter)
         return ' '.join(sorted(members))
 
     def _recursive_set_resolve(self, member: str, sets_seen=None) -> Set[str]:
@@ -247,6 +249,8 @@ class WhoisQueryParser:
             else:
                 new_members = self._recursive_set_resolve(sub_member, sets_seen)
                 asn_members.update(new_members)
+        if not sub_members:  # leaf member, always add directly
+            asn_members.add(member)
 
         return asn_members
 

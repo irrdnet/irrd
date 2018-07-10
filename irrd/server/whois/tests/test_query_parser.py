@@ -456,7 +456,7 @@ class TestWhoisQueryParserIRRD:
                 'pk': uuid.uuid4(),
                 'rpsl_pk': 'AS-THIRDLEVEL',
                 # Refers back to the first as-set to test infinite recursion issues
-                'parsed_data': {'as-set': 'AS-THIRDLEVEL', 'members': ['AS65535', 'AS-FIRSTLEVEL']},
+                'parsed_data': {'as-set': 'AS-THIRDLEVEL', 'members': ['AS65535', 'AS-FIRSTLEVEL', 'AS-UNKNOWN']},
                 'object_text': 'text',
                 'source': 'TEST1',
             },
@@ -474,13 +474,13 @@ class TestWhoisQueryParserIRRD:
         ]
         mock_dq.reset_mock()
 
-        mock_query_iterator = iter([mock_query_result1, mock_query_result2, mock_query_result3, mock_query_result1, []])
+        mock_query_iterator = iter([mock_query_result1, mock_query_result2, mock_query_result3, [], mock_query_result1, []])
         mock_dh.execute_query = lambda query: iter(next(mock_query_iterator))
 
         response = parser.handle_query('!iAS-FIRSTLEVEL,1')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
-        assert response.result == 'AS23456 AS65534 AS65535'
+        assert response.result == 'AS-UNKNOWN AS23456 AS65534 AS65535'
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['as-set', 'route-set'],), {}],
             ['rpsl_pk', ('AS-FIRSTLEVEL',), {}],
@@ -490,6 +490,9 @@ class TestWhoisQueryParserIRRD:
             ['first_only', (), {}],
             ['object_classes', (['as-set', 'route-set'],), {}],
             ['rpsl_pk', ('AS-THIRDLEVEL',), {}],
+            ['first_only', (), {}],
+            ['object_classes', (['as-set', 'route-set'],), {}],
+            ['rpsl_pk', ('AS-UNKNOWN',), {}],
             ['first_only', (), {}],
         ]
         mock_dq.reset_mock()
