@@ -24,6 +24,8 @@ reserved_words = ["ANY", "AS-ANY", "RS_ANY", "PEERAS", "AND", "OR", "NOT", "ATOM
                   "ACCEPT", "ANNOUNCE", "EXCEPT", "REFINE", "NETWORKS", "INTO", "INBOUND", "OUTBOUND"]
 reserved_prefixes = ["AS-", "RS-", "RTRS-", "FLTR-", "PRNG-"]
 
+# Turn "IP('193.0.1.1/21') has invalid prefix length (21)" into "invalid prefix length (21)"
+re_clean_ip_error = re.compile(r"IP\('[A-Z0-9:./]+'\) has ")
 
 """
 Fields for RPSL data.
@@ -89,7 +91,8 @@ class RPSLIPv4PrefixField(RPSLTextField):
         try:
             ip = IP(value, ipversion=4)
         except ValueError as ve:
-            messages.error(f"Invalid address prefix: {value}: {ve}")
+            clean_error = clean_ip_value_error(ve)
+            messages.error(f"Invalid address prefix: {value}: {clean_error}")
             return None
 
         parsed_ip_str = str(ip)
@@ -115,7 +118,8 @@ class RPSLIPv6PrefixField(RPSLTextField):
         try:
             ip = IP(value, ipversion=6)
         except ValueError as ve:
-            messages.error(f"Invalid address prefix: {value}: {ve}")
+            clean_error = clean_ip_value_error(ve)
+            messages.error(f"Invalid address prefix: {value}: {clean_error}")
             return None
 
         parsed_ip_str = str(ip)
@@ -148,7 +152,8 @@ class RPSLIPv4AddressRangeField(RPSLTextField):
             ip1 = IP(ip1_input)
             ip2 = IP(ip2_input)
         except ValueError as ve:
-            messages.error(f"Invalid address range: {value}: {ve}")
+            clean_error = clean_ip_value_error(ve)
+            messages.error(f"Invalid address range: {value}: {clean_error}")
             return None
 
         if not ip1.version() == ip2.version() == 4:
@@ -208,7 +213,8 @@ class RPSLRouteSetMemberField(RPSLTextField):
             ip_version = self.ip_version if self.ip_version else 0
             ip = IP(address, ipversion=ip_version)
         except ValueError as ve:
-            messages.error(f'Value is neither a valid set name nor a valid prefix: {address}: {ve}')
+            clean_error = clean_ip_value_error(ve)
+            messages.error(f'Value is neither a valid set name nor a valid prefix: {address}: {clean_error}')
             return None
 
         if range_operator and not re_range_operator.match(range_operator):
@@ -441,7 +447,7 @@ def parse_set_name(prefix: str, value: str, messages: RPSLParserMessages, strict
         parsed_as_number = None
         try:
             parsed_as_number, _ = parse_as_number(component)
-        except ValidationError as ve:
+        except ValidationError:
             pass
         if not re_generic_name.match(component.upper()) and not parsed_as_number:
             messages.error(
@@ -462,3 +468,7 @@ def parse_set_name(prefix: str, value: str, messages: RPSLParserMessages, strict
     if parsed_value != value:
         messages.info(f"Set name {value} was reformatted as {parsed_value}")
     return RPSLFieldParseResult(parsed_value)
+
+
+def clean_ip_value_error(value_error):
+    return re.sub(re_clean_ip_error, '', str(value_error))
