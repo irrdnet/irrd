@@ -456,8 +456,8 @@ class RPSLRtrSet(RPSLObject):
     fields = OrderedDict([
         ("rtr-set", RPSLSetNameField(primary_key=True, lookup_key=True, prefix="RTRS")),
         ("descr", RPSLTextField(multiple=True, optional=True)),
-        ("members", RPSLReferenceListField(lookup_key=True, optional=True, multiple=True, referring=["inet-rtr"])),
-        ("mp-members", RPSLReferenceListField(lookup_key=True, optional=True, multiple=True, referring=["inet-rtr"])),
+        ("members", RPSLReferenceListField(lookup_key=True, optional=True, multiple=True, referring=["inet-rtr", "rtr-set"])),
+        ("mp-members", RPSLReferenceListField(lookup_key=True, optional=True, multiple=True, referring=["inet-rtr", "rtr-set"])),
         ("mbrs-by-ref", RPSLReferenceListField(optional=True, multiple=True, referring=["mntner"], allow_kw_any=True)),
         ("admin-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
         ("tech-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
