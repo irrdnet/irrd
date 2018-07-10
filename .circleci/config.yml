@@ -53,7 +53,7 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            py.test --cov=irrd irrd --junitxml=test-reports/junit.xml
+            py.test --cov=irrd irrd --junitxml=test-reports/junit.xml --cov-fail-under=100
 
       - run:
           name: build docs
