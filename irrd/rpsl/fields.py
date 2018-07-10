@@ -25,7 +25,7 @@ reserved_words = ["ANY", "AS-ANY", "RS_ANY", "PEERAS", "AND", "OR", "NOT", "ATOM
 reserved_prefixes = ["AS-", "RS-", "RTRS-", "FLTR-", "PRNG-"]
 
 # Turn "IP('193.0.1.1/21') has invalid prefix length (21)" into "invalid prefix length (21)"
-re_clean_ip_error = re.compile(r"IP\('[A-Z0-9:./]+'\) has ")
+re_clean_ip_error = re.compile(r"IP\('[A-F0-9:./]+'\) has ", re.IGNORECASE)
 
 """
 Fields for RPSL data.
