@@ -1,4 +1,5 @@
 from IPy import IP
+from pytest import raises
 
 from ..fields import (RPSLIPv4PrefixField, RPSLIPv4PrefixesField, RPSLIPv6PrefixField,
                       RPSLIPv6PrefixesField, RPSLIPv4AddressRangeField, RPSLASNumberField, RPSLASBlockField,
@@ -149,20 +150,21 @@ def test_ipv4_address_range_field():
 
 
 def test_route_set_members_field():
+    with raises(ValueError):
+        RPSLRouteSetMemberField(ip_version=2)
+
     field = RPSLRouteSetMemberField(ip_version=4)
     messages = RPSLParserMessages()
 
-    parse_result = field.parse("192.0.2.0/24^12-23", messages)
-    assert parse_result.value == "192.0.2.0/24^12-23"
-    parse_result = field.parse("AS23456:RS-TEST^32", messages)
-    assert parse_result.value == "AS23456:RS-TEST^32"
-
+    assert field.parse("192.0.2.0/24^12-23", messages).value == "192.0.2.0/24^12-23"
+    assert field.parse("AS023456:RS-TEST^32", messages).value == "AS23456:RS-TEST^32"
     assert field.parse("192.0.2.0/25^+", messages).value == "192.0.2.0/25^+"
     assert field.parse("192.0.2.0/25^32", messages).value == "192.0.2.0/25^32"
     assert field.parse("192.00.02.0/25^-", messages).value == "192.0.2.0/25^-"
     assert field.parse("192.0.02.0/32", messages).value == "192.0.2.0/32"
     assert not messages.errors()
     assert messages.infos() == [
+        "Route set member AS023456:RS-TEST^32 was reformatted as AS23456:RS-TEST^32",
         "Route set member 192.00.02.0/25^- was reformatted as 192.0.2.0/25^-",
         "Route set member 192.0.02.0/32 was reformatted as 192.0.2.0/32",
     ]
@@ -177,12 +179,9 @@ def test_route_set_members_field():
     field = RPSLRouteSetMemberField(ip_version=None)
     messages = RPSLParserMessages()
 
-    parse_result = field.parse("192.0.2.0/24^12-23", messages)
-    assert parse_result.value == "192.0.2.0/24^12-23"
-    parse_result = field.parse("12ab:0:0:cd30::/60^12-23", messages)
-    assert parse_result.value == "12ab:0:0:cd30::/60^12-23"
-    parse_result = field.parse("AS23456:RS-TEST", messages)
-    assert parse_result.value == "AS23456:RS-TEST"
+    assert field.parse("192.0.2.0/24^12-23", messages).value == "192.0.2.0/24^12-23"
+    assert field.parse("12ab:0:0:cd30::/128^12-23", messages).value == "12ab:0:0:cd30::/128^12-23"
+    assert field.parse("AS23456:RS-TEST", messages).value == "AS23456:RS-TEST"
 
     assert field.parse("192.0.2.0/25^+", messages).value == "192.0.2.0/25^+"
     assert field.parse("192.0.2.0/25^32", messages).value == "192.0.2.0/25^32"
