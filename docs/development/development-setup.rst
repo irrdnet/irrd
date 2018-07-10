@@ -1,6 +1,6 @@
-===========
-Development
-===========
+=================
+Development setup
+=================
 
 Development environment & tests
 -------------------------------

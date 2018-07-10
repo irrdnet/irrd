@@ -1,14 +1,37 @@
-Welcome to the IRRDv4 documentation
-===================================
+IRRDv4 documentation
+====================
+
+General
+-------
+.. toctree::
+   :maxdepth: 2
+
+   object-validation
+   license
+
+For end users
+-------------
+
+This documentation is for end users, who are performing queries on IRRd
+instances, or trying to add objects to an instance, regardless of whether
+they are running that instance.
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Contents:
+   :maxdepth: 2
+   :glob:
 
-   architecture
-   object-validation
-   database
-   development
-   license
+   usage/*
+
+For developers
+--------------
+
+This documentation is for people who want to develop on the IRRd codebase
+itself, or are curious how it works.
+
+.. toctree::
+   :maxdepth: 2
+   :glob:
+
+   development/*
 
 .. include:: ../README.rst

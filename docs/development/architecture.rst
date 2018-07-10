@@ -32,8 +32,8 @@ Current architecture
 
 The basic architecture is this: [#]_
 
-.. image:: _static/architecture.svg
-   :target: _static/architecture.svg
+.. image:: ../_static/architecture.svg
+   :target: ../_static/architecture.svg
 
 This is intended as an overview, and not every class is included in this
 diagram for readability. Significant but out of scope of the diagram are
