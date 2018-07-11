@@ -40,12 +40,12 @@ class TestRPSLParsingGeneric:
 
     def test_malformed_empty_line(self):
         obj = rpsl_object_from_text(SAMPLE_MALFORMED_EMPTY_LINE, strict_validation=False)
-        assert len(obj.messages.errors()) == 1, f"Unexpected extra errors: {obj.messages.errors()}"
+        assert len(obj.messages.errors()) == 2, f"Unexpected extra errors: {obj.messages.errors()}"
         assert "encountered empty line" in obj.messages.errors()[0]
 
     def test_malformed_attribute_name(self):
         obj = rpsl_object_from_text(SAMPLE_MALFORMED_ATTRIBUTE_NAME, strict_validation=False)
-        assert len(obj.messages.errors()) == 1, f"Unexpected extra errors: {obj.messages.errors()}"
+        assert len(obj.messages.errors()) == 2, f"Unexpected extra errors: {obj.messages.errors()}"
         assert "malformed attribute name" in obj.messages.errors()[0]
 
     def test_missing_mandatory_attribute(self):
@@ -383,8 +383,10 @@ class TestRPSLRoute:
         missing_pk_route = "route: 192.0.2.0/24"
         obj = rpsl_object_from_text(missing_pk_route, strict_validation=False)
         assert obj.__class__ == RPSLRoute
-        assert len(obj.messages.errors()) == 1, f"Unexpected extra errors: {obj.messages.errors()}"
-        assert "Primary key attribute 'origin' on object route is missing" in obj.messages.errors()[0]
+        errors = obj.messages.errors()
+        assert len(errors) == 2, f"Unexpected extra errors: {errors}"
+        assert "Primary key attribute 'origin' on object route is missing" in errors[0]
+        assert "Primary key attribute 'source' on object route is missing" in errors[1]
 
     def test_generate_template(self):
         template = RPSLRoute().generate_template()

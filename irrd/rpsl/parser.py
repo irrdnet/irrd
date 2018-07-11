@@ -208,7 +208,8 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                         f"Mandatory attribute '{attr_required}' on object {self.rpsl_object_class} is missing"
                     )
         else:
-            for attr_pk in self.pk_fields:
+            required_fields = self.pk_fields + ['source']
+            for attr_pk in required_fields:
                 if attr_pk not in attrs_present:
                     self.messages.error(
                         f"Primary key attribute '{attr_pk}' on object {self.rpsl_object_class} is missing"
