@@ -229,22 +229,28 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                 normalised_value = self._normalise_rpsl_value(value)
                 parsed_value = field.parse(normalised_value, self.messages, self.strict_validation)
                 if parsed_value:
-                    if parsed_value != normalised_value:
+                    parsed_value_str = parsed_value.value
+                    if parsed_value_str != normalised_value:
                         # Note: this replacement can be incomplete: if the normalised value is not contained in the
                         # parsed value as single string, the replacement will not occur. This is not a great concern,
                         # as this is purely cosmetic, and self.parsed_data will have the correct normalised value.
-                        new_value = value.replace(normalised_value, parsed_value.value)
+                        new_value = value.replace(normalised_value, parsed_value_str)
                         self._object_data[idx] = attr_name, new_value, continuation_chars
-                    if parsed_value.values_list:
+                    values_list = parsed_value.values_list
+                    if values_list:
+                        if not field.case_sensitive:
+                            values_list = list(map(str.upper, values_list))
                         if attr_name in self.parsed_data:
-                            self.parsed_data[attr_name] += parsed_value.values_list
+                            self.parsed_data[attr_name] += values_list
                         else:
-                            self.parsed_data[attr_name] = parsed_value.values_list
+                            self.parsed_data[attr_name] = values_list
                     else:
+                        if not field.case_sensitive:
+                            parsed_value_str = parsed_value_str.upper()
                         if attr_name in self.parsed_data:
-                            self.parsed_data[attr_name] += "\n" + parsed_value.value
+                            self.parsed_data[attr_name] += "\n" + parsed_value_str
                         else:
-                            self.parsed_data[attr_name] = parsed_value.value
+                            self.parsed_data[attr_name] = parsed_value_str
 
                     # Some fields provide additional metadata about the resources to
                     # which this object pertains.

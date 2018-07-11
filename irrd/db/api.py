@@ -189,7 +189,7 @@ class RPSLDatabaseQuery:
         - If the value is a valid IP address or network, return all objects that relate to
           that resource and any less specifics.
         - Otherwise, return all objects where the RPSL primary key is exactly this value,
-          or (case insensitive) it matches part of a person/role name (not nic-hdl, their
+          or it matches part of a person/role name (not nic-hdl, their
           actual person/role attribute value).
         """
         self._check_query_frozen()
@@ -208,7 +208,7 @@ class RPSLDatabaseQuery:
         counter = self._lookup_attr_counter
         self._lookup_attr_counter += 1
         fltr = sa.or_(
-            self.columns.rpsl_pk == value,
+            self.columns.rpsl_pk == value.upper(),
             sa.and_(
                 self.columns.object_class == 'person',
                 sa.text(f"parsed_data->>'person' ILIKE :lookup_attr_text_search{counter}")

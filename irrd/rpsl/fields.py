@@ -46,12 +46,20 @@ class RPSLTextField:
     lines be joined by commas. It should add any info, error or warning messages to the passed
     messages object, and return a parsed version of the value. If it is not possible to extract
     a value, e.g. due to a validation error, it should return None.
+
+    Setting case_sensitive=True means that when parsing this field, the data's case should never
+    be changed, not even in the searchable indexed data. Key-cert's certif lines need this, because
+    the key is extracted from the case-sensitive base64 data. The same goes for mntner`s auth lines.
+    If a field is not a lookup/primary key, and it's data is not used by other validation parts,
+    the case_sensitive value is not significant.
     """
-    def __init__(self, optional: bool=False, multiple: bool=False, primary_key: bool=False, lookup_key: bool=False) -> None:
+    def __init__(self, optional: bool=False, multiple: bool=False, primary_key: bool=False,
+                 lookup_key: bool=False, case_sensitive=False) -> None:
         self.optional = optional
         self.multiple = multiple
         self.primary_key = primary_key
         self.lookup_key = lookup_key
+        self.case_sensitive = case_sensitive
 
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
         return RPSLFieldParseResult(value)

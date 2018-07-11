@@ -178,8 +178,6 @@ class TestRPSLDatabaseQueryLive:
         self._assert_no_match(RPSLDatabaseQuery().text_search('192.0.2.0/23'))
         self._assert_no_match(RPSLDatabaseQuery().text_search('AS2914'))
         self._assert_no_match(RPSLDatabaseQuery().text_search('23456'))
-        # RPSL pk searches are case sensitive
-        self._assert_no_match(RPSLDatabaseQuery().text_search('192.0.2.0/24,as23456'))
 
     def test_text_search_person_role(self, irrd_database):
         rpsl_object_person = Mock(

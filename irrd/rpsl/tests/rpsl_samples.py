@@ -1305,7 +1305,8 @@ SAMPLE_PEERING_SET = """peering-set:    prng-MEDIAFAX
 descr:          DNT peering with MEDIAFAX
 peering:        AS8930 at 194.102.255.254
 remarks:        MEDIAFAX
-tech-c:         DUMY-RIPE
+tech-c:         DUMY-RIPe
+tech-c:         DUMY2-RIPe
 admin-c:        DUMY-RIPE
 notify:         hostmaster@dnt.ro
 mnt-by:         AS6746-MNT
@@ -1395,7 +1396,7 @@ remarks:        ****************************
 SAMPLE_ROUTE6 = """route6:         2001:1578:200::/40
 descr:          GEFOEKOM-DE-ALLOC
 origin:         AS12817
-mnt-by:         GEFOEKOM-MNT
+mnt-by:         EXAmple-MNT
 changed:        2004-12-29T21:30:40Z
 source:         RIPE
 remarks:        ****************************
