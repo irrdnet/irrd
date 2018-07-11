@@ -101,9 +101,9 @@ class WhoisQueryParser:
 
     def handle_query(self, query: str) -> WhoisQueryResponse:
         """Process a single query. Always returns a WhoisQueryResponse object."""
-        # This flag is reset with every query, set by encountering -K somewhere,
-        # handled by the response rendering.
+        # These flags are reset with every query.
         self.key_fields_only = False
+        self.object_classes = []
 
         if query.startswith('!'):
             try:

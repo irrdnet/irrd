@@ -277,6 +277,16 @@ class TestWhoisQueryParserRIPE:
             ['object_classes', (['route'],), {}],
             ['lookup_attr', ('mnt-by', 'MNT-TEST'), {}],
         ]
+        mock_dq.reset_mock()
+
+        # -T should not persist
+        response = parser.handle_query('-i mnt-by MNT-TEST')
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.RIPE
+        assert response.result == MOCK_ROUTE_COMBINED
+        assert flatten_mock_calls(mock_dq) == [
+            ['lookup_attr', ('mnt-by', 'MNT-TEST'), {}],
+        ]
 
     def test_object_template(self, prepare_parser):
         mock_dq, mock_dh, parser = prepare_parser
