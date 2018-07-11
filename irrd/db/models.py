@@ -54,7 +54,7 @@ class RPSLDatabaseObject(Base):  # type: ignore
 
 
 expected_lookup_field_names = {
-    'zone-c', 'member-of', 'mnt-by', 'role', 'members', 'person', 'source', 'mp-members', 'origin'}
+    'zone-c', 'member-of', 'mnt-by', 'role', 'members', 'person', 'source', 'mp-members', 'origin', 'mbrs-by-ref'}
 if sorted(lookup_field_names()) != sorted(expected_lookup_field_names):  # pragma: no cover
     raise RuntimeError(f"Field names of lookup fields do not match expected set. Indexes may be missing. "
                        f"Expected: {expected_lookup_field_names}, actual: {lookup_field_names()}")

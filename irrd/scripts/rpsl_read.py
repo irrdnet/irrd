@@ -27,7 +27,7 @@ class RPSLParse:
         if filename == '-':  # pragma: no cover
             f = sys.stdin
         else:
-            f = open(filename, encoding="iso-8859-1", errors='backslashreplace')
+            f = open(filename, encoding="utf-8", errors='backslashreplace')
 
         current_obj = ""
         for line in f.readlines():

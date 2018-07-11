@@ -430,7 +430,7 @@ class TestWhoisQueryParserIRRD:
 
         assert not mock_dq.mock_calls
 
-    def test_as_set_members(self, prepare_parser):
+    def test_as_route_set_members(self, prepare_parser):
         mock_dq, mock_dh, parser = prepare_parser
 
         mock_query_result1 = [
@@ -439,6 +439,7 @@ class TestWhoisQueryParserIRRD:
                 'rpsl_pk': 'AS-FIRSTLEVEL',
                 'parsed_data': {'as-set': 'AS-FIRSTLEVEL', 'members': ['AS23456', 'AS-SECONDLEVEL']},
                 'object_text': 'text',
+                'object_class': 'as-set',
                 'source': 'TEST1',
             },
         ]
@@ -448,6 +449,7 @@ class TestWhoisQueryParserIRRD:
                 'rpsl_pk': 'AS-SECONDLEVEL',
                 'parsed_data': {'as-set': 'AS-SECONDLEVEL', 'members': ['AS-THIRDLEVEL', 'AS65534']},
                 'object_text': 'text',
+                'object_class': 'as-set',
                 'source': 'TEST1',
             },
         ]
@@ -458,6 +460,7 @@ class TestWhoisQueryParserIRRD:
                 # Refers back to the first as-set to test infinite recursion issues
                 'parsed_data': {'as-set': 'AS-THIRDLEVEL', 'members': ['AS65535', 'AS-FIRSTLEVEL', 'AS-UNKNOWN']},
                 'object_text': 'text',
+                'object_class': 'as-set',
                 'source': 'TEST1',
             },
         ]
@@ -506,6 +509,63 @@ class TestWhoisQueryParserIRRD:
             ['object_classes', (['as-set', 'route-set'],), {}],
             ['rpsl_pk', ('AS-FIRSTLEVEL',), {}],
             ['first_only', (), {}],
+        ]
+
+    def test_as_route_set_mbrs_by_ref(self, prepare_parser):
+        mock_dq, mock_dh, parser = prepare_parser
+
+        mock_query_result1 = [
+            {
+                # This route-set is intentionally misnamed RRS, as invalid names occur in real life.
+                'pk': uuid.uuid4(),
+                'rpsl_pk': 'RRS-TEST',
+                'parsed_data': {'route-set': 'RRS-TEST', 'members': ['192.0.2.0/32'],
+                                'mp-members': ['2001:db8::/32'], 'mbrs-by-ref': ['MNT-TEST']},
+                'object_text': 'text',
+                'object_class': 'route-set',
+                'source': 'TEST1',
+            },
+        ]
+        mock_query_result2 = [
+            {
+                'pk': uuid.uuid4(),
+                'rpsl_pk': '192.0.2.0/24,AS65534',
+                'parsed_data': {'route': '192.0.2.0/24', 'member-of': 'rrs-test', 'mnt-by': ['FOO', 'MNT-TEST']},
+                'object_text': 'text',
+                'object_class': 'route',
+                'source': 'TEST1',
+            },
+        ]
+        mock_query_iterator = iter([mock_query_result1, mock_query_result2, [], [], []])
+        mock_dh.execute_query = lambda query: iter(next(mock_query_iterator))
+
+        response = parser.handle_query('!iRRS-TEST,1')
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert response.result == '192.0.2.0/24 192.0.2.0/32 2001:db8::/32'
+        assert flatten_mock_calls(mock_dq) == [
+            ['object_classes', (['as-set', 'route-set'],), {}],
+            ['rpsl_pk', ('RRS-TEST',), {}],
+            ['first_only', (), {}],
+            ['object_classes', (['route', 'route6'],), {}],
+            ['lookup_attr', ('member-of', 'RRS-TEST'), {}],
+            ['lookup_attr_in', ('mnt-by', ['MNT-TEST']), {}]
+        ]
+        mock_dq.reset_mock()
+
+        # Disable maintainer check
+        mock_query_result1[0]['parsed_data']['mbrs-by-ref'] = ['ANY']
+        mock_query_iterator = iter([mock_query_result1, mock_query_result2, [], [], []])
+        response = parser.handle_query('!iRRS-TEST,1')
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert response.result == '192.0.2.0/24 192.0.2.0/32 2001:db8::/32'
+        assert flatten_mock_calls(mock_dq) == [
+            ['object_classes', (['as-set', 'route-set'],), {}],
+            ['rpsl_pk', ('RRS-TEST',), {}],
+            ['first_only', (), {}],
+            ['object_classes', (['route', 'route6'],), {}],
+            ['lookup_attr', ('member-of', 'RRS-TEST'), {}],
         ]
 
     def test_database_serial_range(self, prepare_parser):

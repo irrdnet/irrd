@@ -73,19 +73,34 @@ class RPSLDatabaseQuery:
         return self._filter(fltr)
 
     def lookup_attr(self, attr_name: str, attr_value: str):
-        """Filter on a lookup attribute, e.g. mnt-by."""
+        """
+        Filter on a lookup attribute, e.g. mnt-by.
+        At least one of the values for the lookup attribute must match attr_value.
+        """
+        return self.lookup_attr_in(attr_name, [attr_value])
+
+    def lookup_attr_in(self, attr_name: str, attr_values: List[str]):
+        """
+        Filter on a lookup attribute, e.g. mnt-by.
+        At least one of the values for the lookup attribute must match one
+        of the items in attr_values.
+        """
         attr_name = attr_name.lower()
         if attr_name not in self.lookup_field_names:
             raise ValueError(f"Invalid lookup attribute: {attr_name}")
         self._check_query_frozen()
 
-        counter = ++self._lookup_attr_counter
-        fltr = sa.text(f"parsed_data->:lookup_attr_name{counter} ? :lookup_attr_value{counter}")
-        self.statement = self.statement.where(fltr).params(
-            **{f"lookup_attr_name{counter}": attr_name,
-               f"lookup_attr_value{counter}": attr_value
-               }
-        )
+        value_filters = []
+        statement_params = {}
+        for attr_value in attr_values:
+            counter = self._lookup_attr_counter
+            self._lookup_attr_counter += 1
+            value_filters.append(sa.text(f"parsed_data->:lookup_attr_name{counter} ? :lookup_attr_value{counter}"))
+            statement_params[f"lookup_attr_name{counter}"] = attr_name
+            statement_params[f"lookup_attr_value{counter}"] = attr_value
+        fltr = sa.or_(*value_filters)
+        self.statement = self.statement.where(fltr).params(**statement_params)
+
         return self
 
     def ip_exact(self, ip: IP):
@@ -190,7 +205,8 @@ class RPSLDatabaseQuery:
         except ValueError:
             pass
 
-        counter = ++self._lookup_attr_counter
+        counter = self._lookup_attr_counter
+        self._lookup_attr_counter += 1
         fltr = sa.or_(
             self.columns.rpsl_pk == value,
             sa.and_(

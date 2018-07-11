@@ -241,31 +241,66 @@ class WhoisQueryParser:
             return set()
         sets_seen.add(member)
 
-        asn_members = set()
+        set_members = set()
         sub_members = self._find_set_members(member)
         for sub_member in sub_members:
-            if sub_member.startswith('AS') and sub_member[2:].isnumeric():
-                asn_members.add(sub_member)
-            else:
-                new_members = self._recursive_set_resolve(sub_member, sets_seen)
-                asn_members.update(new_members)
+            try:
+                IP(sub_member)
+                set_members.add(sub_member)
+                continue
+            except ValueError:
+                pass
+            try:
+                parse_as_number(sub_member)
+                set_members.add(sub_member)
+                continue
+            except ValueError:
+                pass
+            new_members = self._recursive_set_resolve(sub_member, sets_seen)
+            set_members.update(new_members)
         if not sub_members:  # leaf member, always add directly
-            asn_members.add(member)
+            set_members.add(member)
 
-        return asn_members
+        return set_members
 
     def _find_set_members(self, set_name: str) -> Set[str]:
         """
-        Find all members, of any kind, of a route-set or query-set.
+        Find all members of a route-set or as-set. Includes both
+        direct members listed in members attribute, but also
+        members includes by mbrs-by-ref/member-of.
         """
+        members = set()
+        object_class = None
+        mbrs_by_ref = None
+
         query = self._prepare_query().object_classes(['as-set', 'route-set']).rpsl_pk(set_name)
         query_result = self.database_handler.execute_query(query.first_only())
-        try:
-            result = next(query_result)
-            members = set(result['parsed_data']['members'])
+        for result in query_result:
+            object_class = result['object_class']
+            object_data = result['parsed_data']
+            mbrs_by_ref = object_data.get('mbrs-by-ref', None)
+            for members_attr in ['members', 'mp-members']:
+                if members_attr in object_data:
+                    members.update(set(object_data[members_attr]))
+
+        if not object_class or not mbrs_by_ref:
             return members
-        except (StopIteration, KeyError):
-            return set()
+
+        # If mbrs-by-ref is set, find any objects with member-of pointing to the route/as-set
+        # under query, and include a maintainer listed in mbrs-by-ref, unless mbrs-by-ref
+        # is set to ANY.
+        query_object_class = ['route', 'route6'] if object_class == 'route-set' else ['aut-num']
+        query = self._prepare_query().object_classes(query_object_class)
+        query = query.lookup_attr('member-of', set_name)
+        if 'ANY' not in [m.strip().upper() for m in mbrs_by_ref]:
+            query = query.lookup_attr_in('mnt-by', mbrs_by_ref)
+        query_result = self.database_handler.execute_query(query)
+
+        for result in query_result:
+            member_object_class = result['object_class']
+            members.add(result['parsed_data'][member_object_class])
+
+        return members
 
     def handle_irrd_database_serial_range(self, parameter: str) -> str:
         """!j query - mirror database serial range"""

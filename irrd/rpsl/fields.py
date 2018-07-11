@@ -414,7 +414,7 @@ class RPSLReferenceListField(RPSLFieldListMixin, RPSLReferenceField):
 
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
         if self.allow_kw_any and value.upper() == "ANY":
-            return RPSLFieldParseResult("ANY")
+            return RPSLFieldParseResult("ANY", values_list=["ANY"])
         return super().parse(value, messages, strict_validation)
 
 
