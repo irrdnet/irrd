@@ -138,7 +138,7 @@ class TestRPSLDatabaseQueryLive:
         self._assert_match(RPSLDatabaseQuery().rpsl_pk('192.0.2.0/24,AS23456'))
         self._assert_match(RPSLDatabaseQuery().sources(['TEST', 'X']))
         self._assert_match(RPSLDatabaseQuery().object_classes(['route']))
-        self._assert_match(RPSLDatabaseQuery().lookup_attr('mnt-by', 'MNT-TEST'))
+        self._assert_match(RPSLDatabaseQuery().lookup_attr('mnt-by', 'MNT-test'))  # intentional case mismatch
         self._assert_match(RPSLDatabaseQuery().ip_exact(IP('192.0.2.0/24')))
         self._assert_match(RPSLDatabaseQuery().asn(23456))
         self._assert_match(RPSLDatabaseQuery().ip_more_specific(IP('192.0.0.0/21')))
@@ -147,7 +147,7 @@ class TestRPSLDatabaseQueryLive:
         self._assert_match(RPSLDatabaseQuery().text_search('192.0.2.0/24'))
         self._assert_match(RPSLDatabaseQuery().text_search('192.0.2.0/25'))
         self._assert_match(RPSLDatabaseQuery().text_search('192.0.2.1'))
-        self._assert_match(RPSLDatabaseQuery().text_search('192.0.2.0/24,AS23456'))
+        self._assert_match(RPSLDatabaseQuery().text_search('192.0.2.0/24,As23456'))
 
     def test_chained_filters(self, irrd_database, database_handler_with_route):
         self.dh = database_handler_with_route
@@ -178,8 +178,6 @@ class TestRPSLDatabaseQueryLive:
         self._assert_no_match(RPSLDatabaseQuery().text_search('192.0.2.0/23'))
         self._assert_no_match(RPSLDatabaseQuery().text_search('AS2914'))
         self._assert_no_match(RPSLDatabaseQuery().text_search('23456'))
-        # RPSL pk searches are case sensitive
-        self._assert_no_match(RPSLDatabaseQuery().text_search('192.0.2.0/24,as23456'))
 
     def test_text_search_person_role(self, irrd_database):
         rpsl_object_person = Mock(

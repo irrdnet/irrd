@@ -46,7 +46,14 @@ class RPSLTextField:
     lines be joined by commas. It should add any info, error or warning messages to the passed
     messages object, and return a parsed version of the value. If it is not possible to extract
     a value, e.g. due to a validation error, it should return None.
+
+    The keep_case property affects the generation of RPSLObject.parsed_data during parsing.
+    If keep_case is False, all data is converted to upper case. The original object text is not
+    modified for this. As parsed_data is indexed in the databases, this is important for searches,
+    to match e.g. "mntner: FOO" to "mnt-by: foo" - as these values are equivalent.
     """
+    keep_case = True
+
     def __init__(self, optional: bool=False, multiple: bool=False, primary_key: bool=False, lookup_key: bool=False) -> None:
         self.optional = optional
         self.multiple = multiple
@@ -183,6 +190,8 @@ class RPSLRouteSetMemberField(RPSLTextField):
           - ^[integer]
           - ^[integer]-[integer]
     """
+    keep_case = False
+
     def __init__(self, ip_version: Optional[int], *args, **kwargs) -> None:
         if ip_version and ip_version not in [4, 6]:
             raise ValueError(f'Invalid IP version: {ip_version}')
@@ -290,6 +299,8 @@ class RPSLSetNameField(RPSLTextField):
     The prefix provided is the expected prefix of the set name, e.g. "RS" for
     a route-set, or "AS" for an as-set.R
     """
+    keep_case = False
+
     def __init__(self, prefix: str, *args, **kwargs) -> None:
         self.prefix = prefix + "-"
         super().__init__(*args, **kwargs)
@@ -309,6 +320,8 @@ class RPSLEmailField(RPSLTextField):
 
 class RPSLDNSNameField(RPSLTextField):
     """Field for a DNS name, as used in e.g. inet-rtr names."""
+    keep_case = False
+
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
         if not re_dnsname.match(value):
             messages.error(f"Invalid DNS name: {value}")
@@ -330,6 +343,8 @@ class RPSLGenericNameField(RPSLTextField):
     is disabled. This is needed on nic-hdl for legacy reasons -
     see https://github.com/irrdnet/irrd4/issues/60
     """
+    keep_case = False
+
     def __init__(self, allowed_prefixes: List[str]=None, non_strict_allow_any=False, *args, **kwargs) -> None:
         self.non_strict_allow_any = non_strict_allow_any
         if allowed_prefixes:
@@ -372,6 +387,8 @@ class RPSLReferenceField(RPSLTextField):
     the value must refer to one of these objects (e.g. tech-c can refer to
     role or person).
     """
+    keep_case = False
+
     def __init__(self, referring: List[str], *args, **kwargs) -> None:
         from .parser import RPSLObject
         self.referring = referring

@@ -185,6 +185,7 @@ class TestRPSLInetRtr:
         assert obj.__class__ == RPSLInetRtr
         assert not obj.messages.errors()
         assert obj.pk() == "KST1-CORE.SWIP.NET"
+        assert obj.parsed_data['inet-rtr'] == "KST1-CORE.SWIP.NET"
         assert obj.render_rpsl_text() == rpsl_text
 
 
@@ -316,6 +317,7 @@ class TestRPSLPeeringSet:
         assert obj.__class__ == RPSLPeeringSet
         assert not obj.messages.errors()
         assert obj.pk() == "PRNG-MEDIAFAX"
+        assert obj.parsed_data['tech-c'] == "DUMY-RIPE\nDUMY2-RIPE"
         assert obj.render_rpsl_text() == rpsl_text
 
 
@@ -330,6 +332,7 @@ class TestRPSLPerson:
         assert obj.__class__ == RPSLPerson
         assert not obj.messages.errors()
         assert obj.pk() == "DUMY-RIPE"
+        assert obj.parsed_data['nic-hdl'] == "DUMY-RIPE"
         assert obj.render_rpsl_text() == rpsl_text
 
     def test_generate_template(self):
@@ -423,6 +426,7 @@ class TestRPSLRoute6:
         assert obj.asn_first == 12817
         assert obj.asn_last == 12817
         assert obj.ip_version() == 6
+        assert obj.parsed_data['mnt-by'] == ['EXAMPLE-MNT']
         assert obj.render_rpsl_text() == rpsl_text
 
 
@@ -437,4 +441,5 @@ class TestRPSLRtrSet:
         assert obj.__class__ == RPSLRtrSet
         assert not obj.messages.errors()
         assert obj.pk() == "RTRS-MWAYS-CALLBACK"
+        assert obj.parsed_data['rtr-set'] == "RTRS-MWAYS-CALLBACK"
         assert obj.render_rpsl_text() == rpsl_text

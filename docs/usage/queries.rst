@@ -141,7 +141,7 @@ Supported flags
     `as-block`, `as-set` or `aut-num` objects.
   * If the input is a valid IP address or prefix, the query will look for
     any less specific matches of any object class.
-  * Otherwise, the query will look for any exact case sensitive matches
+  * Otherwise, the query will look for any exact case insensitive matches
     on the primary key of an object, or a `person` or `role` where their
     name includes the search string, case insensitive.
 
