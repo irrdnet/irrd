@@ -64,10 +64,13 @@ def upgrade():
                     postgresql_using='gin')
     op.create_index(op.f('ix_rpsl_objects_parsed_data_origin'), 'rpsl_objects', [sa.text("((parsed_data->'origin'))")],
                     unique=False, postgresql_using='gin')
+    op.create_index(op.f('ix_rpsl_objects_parsed_data_mbrs_by_ref'), 'rpsl_objects', [sa.text("((parsed_data->'mbrs-by-ref'))")],
+                    unique=False, postgresql_using='gin')
 
 
 def downgrade():
     # Manually added
+    op.drop_index(op.f('ix_rpsl_objects_parsed_data_mbrs_by_ref'), table_name='rpsl_objects')
     op.drop_index(op.f('ix_rpsl_objects_ip_first'), table_name='rpsl_objects')
     op.drop_index(op.f('ix_rpsl_objects_ip_last'), table_name='rpsl_objects')
     op.drop_index(op.f('ix_rpsl_objects_parsed_data_zone_c'), table_name='rpsl_objects')
