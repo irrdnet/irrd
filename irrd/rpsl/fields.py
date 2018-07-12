@@ -47,19 +47,18 @@ class RPSLTextField:
     messages object, and return a parsed version of the value. If it is not possible to extract
     a value, e.g. due to a validation error, it should return None.
 
-    Setting case_sensitive=True means that when parsing this field, the data's case should never
-    be changed, not even in the searchable indexed data. Key-cert's certif lines need this, because
-    the key is extracted from the case-sensitive base64 data. The same goes for mntner`s auth lines.
-    If a field is not a lookup/primary key, and it's data is not used by other validation parts,
-    the case_sensitive value is not significant.
+    The keep_case property affects the generation of RPSLObject.parsed_data during parsing.
+    If keep_case is False, all data is converted to upper case. The original object text is not
+    modified for this. As parsed_data is indexed in the databases, this is important for searches,
+    to match e.g. "mntner: FOO" to "mnt-by: foo" - as these values are equivalent.
     """
-    def __init__(self, optional: bool=False, multiple: bool=False, primary_key: bool=False,
-                 lookup_key: bool=False, case_sensitive=False) -> None:
+    keep_case = True
+
+    def __init__(self, optional: bool=False, multiple: bool=False, primary_key: bool=False, lookup_key: bool=False) -> None:
         self.optional = optional
         self.multiple = multiple
         self.primary_key = primary_key
         self.lookup_key = lookup_key
-        self.case_sensitive = case_sensitive
 
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
         return RPSLFieldParseResult(value)
@@ -191,6 +190,8 @@ class RPSLRouteSetMemberField(RPSLTextField):
           - ^[integer]
           - ^[integer]-[integer]
     """
+    keep_case = False
+
     def __init__(self, ip_version: Optional[int], *args, **kwargs) -> None:
         if ip_version and ip_version not in [4, 6]:
             raise ValueError(f'Invalid IP version: {ip_version}')
@@ -298,6 +299,8 @@ class RPSLSetNameField(RPSLTextField):
     The prefix provided is the expected prefix of the set name, e.g. "RS" for
     a route-set, or "AS" for an as-set.R
     """
+    keep_case = False
+
     def __init__(self, prefix: str, *args, **kwargs) -> None:
         self.prefix = prefix + "-"
         super().__init__(*args, **kwargs)
@@ -317,6 +320,8 @@ class RPSLEmailField(RPSLTextField):
 
 class RPSLDNSNameField(RPSLTextField):
     """Field for a DNS name, as used in e.g. inet-rtr names."""
+    keep_case = False
+
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
         if not re_dnsname.match(value):
             messages.error(f"Invalid DNS name: {value}")
@@ -338,6 +343,8 @@ class RPSLGenericNameField(RPSLTextField):
     is disabled. This is needed on nic-hdl for legacy reasons -
     see https://github.com/irrdnet/irrd4/issues/60
     """
+    keep_case = False
+
     def __init__(self, allowed_prefixes: List[str]=None, non_strict_allow_any=False, *args, **kwargs) -> None:
         self.non_strict_allow_any = non_strict_allow_any
         if allowed_prefixes:
@@ -380,6 +387,8 @@ class RPSLReferenceField(RPSLTextField):
     the value must refer to one of these objects (e.g. tech-c can refer to
     role or person).
     """
+    keep_case = False
+
     def __init__(self, referring: List[str], *args, **kwargs) -> None:
         from .parser import RPSLObject
         self.referring = referring

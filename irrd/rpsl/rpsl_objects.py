@@ -192,7 +192,7 @@ class RPSLKeyCert(RPSLObject):
         ("method", RPSLTextField(optional=True)),  # Fixed to PGP
         ("owner", RPSLTextField(optional=True, multiple=True)),  # key owner, autogenerate
         ("fingerpr", RPSLTextField(optional=True)),  # fingerprint, autogenerate
-        ("certif", RPSLTextField(multiple=True, case_sensitive=True)),  # Actual key
+        ("certif", RPSLTextField(multiple=True)),  # Actual key
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("admin-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
         ("tech-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
@@ -292,7 +292,7 @@ class RPSLMntner(RPSLObject):
         ("tech-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
         ("upd-to", RPSLEmailField(multiple=True)),
         ("mnt-nfy", RPSLEmailField(optional=True, multiple=True)),
-        ("auth", RPSLAuthField(multiple=True, case_sensitive=True)),
+        ("auth", RPSLAuthField(multiple=True)),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
         ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),

@@ -221,7 +221,8 @@ class RPSLObject(metaclass=RPSLObjectMeta):
 
         If self.strict_validation is not set, only checks primary and lookup keys,
         as they need to be indexed. All parsed values (e.g. without comments) are
-        stored in self.parsed_data.
+        stored in self.parsed_data - stored in upper case unless a field is marked
+        case sensitive.
         """
         for idx, (attr_name, value, continuation_chars) in enumerate(self._object_data):
             field = self.fields.get(attr_name)
@@ -238,14 +239,14 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                         self._object_data[idx] = attr_name, new_value, continuation_chars
                     values_list = parsed_value.values_list
                     if values_list:
-                        if not field.case_sensitive:
+                        if not field.keep_case:
                             values_list = list(map(str.upper, values_list))
                         if attr_name in self.parsed_data:
                             self.parsed_data[attr_name] += values_list
                         else:
                             self.parsed_data[attr_name] = values_list
                     else:
-                        if not field.case_sensitive:
+                        if not field.keep_case:
                             parsed_value_str = parsed_value_str.upper()
                         if attr_name in self.parsed_data:
                             self.parsed_data[attr_name] += "\n" + parsed_value_str
