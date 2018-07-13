@@ -100,7 +100,7 @@ class TestDatabaseHandlerLive:
         result = list(self.dh.execute_query(query))
         assert len(result) == 2
 
-        query.lookup_attr('mnt-by', 'MNT-CORRECT')
+        query = RPSLDatabaseQuery().lookup_attr('mnt-by', 'MNT-CORRECT')
         result = list(self.dh.execute_query(query))
         assert len(result) == 2
 
@@ -178,6 +178,65 @@ class TestRPSLDatabaseQueryLive:
         self._assert_no_match(RPSLDatabaseQuery().text_search('192.0.2.0/23'))
         self._assert_no_match(RPSLDatabaseQuery().text_search('AS2914'))
         self._assert_no_match(RPSLDatabaseQuery().text_search('23456'))
+
+    def test_ordering_sources(self, irrd_database, database_handler_with_route):
+        self.dh = database_handler_with_route
+        rpsl_object_2 = Mock(
+            pk=lambda: '192.0.2.1/32,AS23456',
+            rpsl_object_class='route',
+            parsed_data={'mnt-by': ['MNT-TEST', 'MNT-TEST2'], 'source': 'AAA-TST'},
+            render_rpsl_text=lambda: 'object-text',
+            ip_version=lambda: 4,
+            ip_first=IP('192.0.2.1'),
+            ip_last=IP('192.0.2.1'),
+            asn_first=23456,
+            asn_last=23456,
+        )
+        rpsl_object_3 = Mock(
+            pk=lambda: '192.0.2.2/32,AS23456',
+            rpsl_object_class='route',
+            parsed_data={'mnt-by': ['MNT-TEST', 'MNT-TEST2'], 'source': 'OTHER-SOURCE'},
+            render_rpsl_text=lambda: 'object-text',
+            ip_version=lambda: 4,
+            ip_first=IP('192.0.2.2'),
+            ip_last=IP('192.0.2.2'),
+            asn_first=23456,
+            asn_last=23456,
+        )
+        self.dh.upsert_rpsl_object(rpsl_object_2)
+        self.dh.upsert_rpsl_object(rpsl_object_3)
+
+        query = RPSLDatabaseQuery()
+        response_sources = [r['source'] for r in self.dh.execute_query(query)]
+        assert response_sources == ['TEST', 'AAA-TST', 'OTHER-SOURCE']  # ordered by IP
+
+        query = RPSLDatabaseQuery().sources(['OTHER-SOURCE', 'AAA-TST', 'TEST'])
+        response_sources = [r['source'] for r in self.dh.execute_query(query)]
+        assert response_sources == ['OTHER-SOURCE', 'AAA-TST', 'TEST']
+
+        query = RPSLDatabaseQuery().sources(['TEST', 'AAA-TST', 'TEST'])
+        response_sources = [r['source'] for r in self.dh.execute_query(query)]
+        assert response_sources == ['TEST', 'AAA-TST']
+
+        query = RPSLDatabaseQuery().sources(['AAA-TST', 'TEST']).first_only()
+        response_sources = [r['source'] for r in self.dh.execute_query(query)]
+        assert response_sources == ['AAA-TST']
+
+        query = RPSLDatabaseQuery().sources(['OTHER-SOURCE', 'TEST']).first_only()
+        response_sources = [r['source'] for r in self.dh.execute_query(query)]
+        assert response_sources == ['OTHER-SOURCE']
+
+        query = RPSLDatabaseQuery().prioritise_source('OTHER-SOURCE')
+        response_sources = [r['source'] for r in self.dh.execute_query(query)]
+        assert response_sources == ['OTHER-SOURCE', 'TEST', 'AAA-TST']
+
+        query = RPSLDatabaseQuery().prioritise_source('OTHER-SOURCE').sources(['AAA-TST', 'OTHER-SOURCE', 'TEST'])
+        response_sources = [r['source'] for r in self.dh.execute_query(query)]
+        assert response_sources == ['OTHER-SOURCE', 'AAA-TST', 'TEST']
+
+        query = RPSLDatabaseQuery().prioritise_source('OTHER-SOURCE').sources(['AAA-TST', 'TEST'])
+        response_sources = [r['source'] for r in self.dh.execute_query(query)]
+        assert response_sources == ['AAA-TST', 'TEST']
 
     def test_text_search_person_role(self, irrd_database):
         rpsl_object_person = Mock(

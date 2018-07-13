@@ -40,9 +40,11 @@ class RPSLDatabaseQuery:
             self.columns.parsed_data,
             self.columns.object_text,
             self.columns.source,
-        ]).order_by(self.columns.ip_first.asc(), self.columns.asn_first.asc())
+        ])
         self._lookup_attr_counter = 0
         self._query_frozen = False
+        self._sources_list = []
+        self._prioritised_source = None
 
     def pk(self, pk: str):
         """Filter on an exact object PK (UUID)."""
@@ -57,10 +59,23 @@ class RPSLDatabaseQuery:
         Filter on one or more sources.
 
         Sources list must be an iterable. Will match objects from any
-        of the mentioned sources.
+        of the mentioned sources. Order is used for sorting of results.
         """
-        fltr = self.columns.source.in_([s.upper() for s in sources])
+        sources = [s.upper().strip() for s in sources]
+        self._sources_list = sources
+        fltr = self.columns.source.in_(self._sources_list)
         return self._filter(fltr)
+
+    def prioritise_source(self, source: str):
+        """
+        Prioritise one particular source in sort order.
+
+        Results from this source will be sorted before all others.
+        When combined with first_only(), this allows a query for
+        "prefer a result from this source, otherwise look for others".
+        """
+        self._prioritised_source = source.strip().upper()
+        return self
 
     def object_classes(self, object_classes: List[str]):
         """
@@ -229,6 +244,36 @@ class RPSLDatabaseQuery:
         self.statement = self.statement.limit(1)
         return self
 
+    def finalise_statement(self):
+        """
+        Finalise the statement and return it.
+
+        This method does some final work on statements that may be dependent on
+        each other - particularly statements that determine the sort order of
+        the query, which depends on sources_list() and prioritise_source().
+        """
+        self._query_frozen = True
+
+        order_by = [
+            self.columns.ip_first.asc(),
+            self.columns.asn_first.asc(),
+        ]
+
+        if self._sources_list or self._prioritised_source:
+            case_elements = []
+            if self._prioritised_source:
+                element = (self.columns.source == self._prioritised_source, -1)
+                case_elements.append(element)
+
+            for idx, source in enumerate(self._sources_list):
+                case_elements.append((self.columns.source == source, idx + 1))
+
+            criterion = sa.case(case_elements, else_=100000)
+            order_by.insert(0, criterion)
+
+        self.statement = self.statement.order_by(*order_by)
+        return self.statement
+
     def _filter(self, fltr):
         self._check_query_frozen()
         self.statement = self.statement.where(fltr)
@@ -260,8 +305,9 @@ class DatabaseHandler:
         """Execute an RPSLDatabaseQuery within the current transaction."""
         # To be able to query objects that were just created, flush the cache.
         self._flush_rpsl_object_upsert_cache()
-        logger.debug(f'Executing: {query}')
-        result = self._connection.execute(query.statement)
+        statement = query.finalise_statement()
+        logger.debug(f'Executing query: {query}')
+        result = self._connection.execute(statement)
         for row in result:
             yield dict(row)
         result.close()
