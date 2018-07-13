@@ -218,6 +218,7 @@ class WhoisQueryParser:
             recursive = True
             parameter = parameter[:-2]
 
+        self._current_set_priority_source = None
         if not recursive:
             members = self._find_set_members(parameter)
         else:
@@ -269,19 +270,27 @@ class WhoisQueryParser:
         direct members listed in members attribute, but also
         members includes by mbrs-by-ref/member-of.
         """
-        members = set()
-        object_class = None
-        mbrs_by_ref = None
+        members: Set[str] = set()
 
         query = self._prepare_query().object_classes(['as-set', 'route-set']).rpsl_pk(set_name)
-        query_result = self.database_handler.execute_query(query.first_only())
-        for result in query_result:
-            object_class = result['object_class']
-            object_data = result['parsed_data']
-            mbrs_by_ref = object_data.get('mbrs-by-ref', None)
-            for members_attr in ['members', 'mp-members']:
-                if members_attr in object_data:
-                    members.update(set(object_data[members_attr]))
+        if self._current_set_priority_source:
+            query.prioritise_source(self._current_set_priority_source)
+        query_result = list(self.database_handler.execute_query(query.first_only()))
+
+        if not query_result:
+            return members
+        result = query_result[0]
+
+        # Track the source of the root object set
+        if not self._current_set_priority_source:
+            self._current_set_priority_source = result['source']
+
+        object_class = result['object_class']
+        object_data = result['parsed_data']
+        mbrs_by_ref = object_data.get('mbrs-by-ref', None)
+        for members_attr in ['members', 'mp-members']:
+            if members_attr in object_data:
+                members.update(set(object_data[members_attr]))
 
         if not object_class or not mbrs_by_ref:
             return members

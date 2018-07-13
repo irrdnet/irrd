@@ -460,7 +460,7 @@ class TestWhoisQueryParserIRRD:
                 'parsed_data': {'as-set': 'AS-SECONDLEVEL', 'members': ['AS-THIRDLEVEL', 'AS65534']},
                 'object_text': 'text',
                 'object_class': 'as-set',
-                'source': 'TEST1',
+                'source': 'TEST2',
             },
         ]
         mock_query_result3 = [
@@ -471,7 +471,7 @@ class TestWhoisQueryParserIRRD:
                 'parsed_data': {'as-set': 'AS-THIRDLEVEL', 'members': ['AS65535', 'AS-FIRSTLEVEL', 'AS-UNKNOWN']},
                 'object_text': 'text',
                 'object_class': 'as-set',
-                'source': 'TEST1',
+                'source': 'TEST2',
             },
         ]
         mock_dh.execute_query = lambda query: iter(mock_query_result1)
@@ -500,12 +500,15 @@ class TestWhoisQueryParserIRRD:
             ['first_only', (), {}],
             ['object_classes', (['as-set', 'route-set'],), {}],
             ['rpsl_pk', ('AS-SECONDLEVEL',), {}],
+            ['prioritise_source', ('TEST1',), {}],
             ['first_only', (), {}],
             ['object_classes', (['as-set', 'route-set'],), {}],
             ['rpsl_pk', ('AS-THIRDLEVEL',), {}],
+            ['prioritise_source', ('TEST1',), {}],
             ['first_only', (), {}],
             ['object_classes', (['as-set', 'route-set'],), {}],
             ['rpsl_pk', ('AS-UNKNOWN',), {}],
+            ['prioritise_source', ('TEST1',), {}],
             ['first_only', (), {}],
         ]
         mock_dq.reset_mock()
