@@ -4,7 +4,7 @@ IPy==0.83              # IP address parsing
 
 # Database connections and management
 psycopg2-binary==2.7.5
-SQLAlchemy==1.2.9
+SQLAlchemy==1.2.10
 alembic==0.9.10
 
 # Network handling
