@@ -303,9 +303,9 @@ class WhoisQueryParser:
         query = query.lookup_attr('member-of', set_name)
         if 'ANY' not in [m.strip().upper() for m in mbrs_by_ref]:
             query = query.lookup_attr_in('mnt-by', mbrs_by_ref)
-        query_result = self.database_handler.execute_query(query)
+        referring_objects = self.database_handler.execute_query(query)
 
-        for result in query_result:
+        for result in referring_objects:
             member_object_class = result['object_class']
             members.add(result['parsed_data'][member_object_class])
 

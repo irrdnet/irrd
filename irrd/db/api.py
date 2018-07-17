@@ -1,16 +1,17 @@
 import logging
 from datetime import datetime, timezone
-from typing import List, Set
+from typing import List, Set, Iterable, Dict, Any
 
 import sqlalchemy as sa
 from IPy import IP
 from sqlalchemy.dialects import postgresql as pg
+from sqlalchemy.sql import Select
 
+from irrd.rpsl.parser import RPSLObject
+from irrd.rpsl.rpsl_objects import lookup_field_names
 from irrd.utils.validators import parse_as_number, ValidationError
 from . import engine
 from .models import RPSLDatabaseObject
-from irrd.rpsl.parser import RPSLObject
-from irrd.rpsl.rpsl_objects import lookup_field_names
 
 logger = logging.getLogger(__name__)
 MAX_RECORDS_CACHE_BEFORE_INSERT = 5000
@@ -244,7 +245,7 @@ class RPSLDatabaseQuery:
         self.statement = self.statement.limit(1)
         return self
 
-    def finalise_statement(self):
+    def finalise_statement(self) -> Select:
         """
         Finalise the statement and return it.
 
@@ -279,7 +280,7 @@ class RPSLDatabaseQuery:
         self.statement = self.statement.where(fltr)
         return self
 
-    def _check_query_frozen(self):
+    def _check_query_frozen(self) -> None:
         if self._query_frozen:
             raise ValueError("This query was frozen - no more filters can be applied.")
 
@@ -301,7 +302,7 @@ class DatabaseHandler:
         self._connection = engine.connect()
         self._start_transaction()
 
-    def execute_query(self, query: RPSLDatabaseQuery):
+    def execute_query(self, query: RPSLDatabaseQuery) -> Iterable[Dict[str, Any]]:
         """Execute an RPSLDatabaseQuery within the current transaction."""
         # To be able to query objects that were just created, flush the cache.
         self._flush_rpsl_object_upsert_cache()
@@ -312,7 +313,7 @@ class DatabaseHandler:
             yield dict(row)
         result.close()
 
-    def upsert_rpsl_object(self, rpsl_object: RPSLObject):
+    def upsert_rpsl_object(self, rpsl_object: RPSLObject) -> None:
         """
         Schedule an RPSLObject for insertion/updating.
 
@@ -358,7 +359,7 @@ class DatabaseHandler:
         if len(self._rpsl_upsert_cache) > MAX_RECORDS_CACHE_BEFORE_INSERT:
             self._flush_rpsl_object_upsert_cache()
 
-    def commit(self):
+    def commit(self) -> None:
         """
         Commit any pending changes to the database and start a fresh transaction.
         """
@@ -370,13 +371,13 @@ class DatabaseHandler:
             self.transaction.rollback()
             raise
 
-    def rollback(self):
+    def rollback(self) -> None:
         """Roll back the current transaction, discarding all submitted changes."""
         self._rpsl_upsert_cache = []
         self._rpsl_pk_source_seen = set()
         self.transaction.rollback()
 
-    def _flush_rpsl_object_upsert_cache(self):
+    def _flush_rpsl_object_upsert_cache(self) -> None:
         """
         Flush the current upsert cache to the database.
 
@@ -409,6 +410,6 @@ class DatabaseHandler:
         self._rpsl_upsert_cache = []
         self._rpsl_pk_source_seen = set()
 
-    def _start_transaction(self):
+    def _start_transaction(self) -> None:
         """Start a fresh transaction."""
         self.transaction = self._connection.begin()
