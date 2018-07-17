@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Set
 
 import sqlalchemy as sa
@@ -351,7 +351,7 @@ class DatabaseHandler:
             'ip_size': ip_size,
             'asn_first': rpsl_object.asn_first,
             'asn_last': rpsl_object.asn_last,
-            'updated': datetime.utcnow(),
+            'updated': datetime.now(timezone.utc),
         })
         self._rpsl_pk_source_seen.add(rpsl_pk_source)
 
