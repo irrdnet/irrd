@@ -359,6 +359,26 @@ class DatabaseHandler:
         if len(self._rpsl_upsert_cache) > MAX_RECORDS_CACHE_BEFORE_INSERT:
             self._flush_rpsl_object_upsert_cache()
 
+    def delete_rpsl_object(self, rpsl_object: RPSLObject) -> None:
+        self._flush_rpsl_object_upsert_cache()
+        table = RPSLDatabaseObject.__table__
+        source = rpsl_object.parsed_data['source']
+        stmt = table.delete(
+            sa.and_(table.c.rpsl_pk == rpsl_object.pk(), table.c.source == source),
+        )
+        result = self._connection.execute(stmt)
+        if result.rowcount == 0:
+            logger.warning(f'attempted to remove object {rpsl_object.pk()}/{source}, but no database row matched')
+        if result.rowcount > 1:  # pragma: no cover
+            # This should not be possible, as rpsl_pk/source are a composite unique value in the database scheme.
+            # Therefore, a query should not be able to affect more than one row - and we also can not test this
+            # scenario. Due to the possible harm of a bug in this area, we still check for it anyways.
+            affected_pks = ','.join([r[0] for r in result.fetchall()])
+            msg = f'attempted to remove object {rpsl_object.pk()}/{source}, but multiple objects were affected, '
+            msg += f'internal pks affected: {affected_pks}'
+            logger.error(msg)
+            raise ValueError(msg)
+
     def commit(self) -> None:
         """
         Commit any pending changes to the database and start a fresh transaction.

@@ -5,6 +5,7 @@ import pytest
 from IPy import IP
 from pytest import raises
 
+from irrd.utils.test_utils import flatten_mock_calls
 from ..query_parser import WhoisQueryParser, WhoisQueryResponseMode, WhoisQueryResponseType, WhoisQueryResponse
 
 # Note that these mock objects are not entirely valid RPSL objects,
@@ -780,14 +781,3 @@ class TestWhoisQueryParserIRRD:
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result.startswith('IRRD4')
         assert not mock_dq.mock_calls
-
-
-def flatten_mock_calls(mock):
-    result = []
-    for call in mock.mock_calls:
-        call = list(call)
-        call_name = call[0]
-        if '.' in str(call_name):
-            call_name = str(call_name).split('.')[-1]
-        result.append([call_name] + call[1:])
-    return result

@@ -1,13 +1,14 @@
 from enum import Enum, unique
 from typing import List, Optional
 
+from irrd.db.api import DatabaseHandler
 from irrd.rpsl.parser import UnknownRPSLObjectClassException, RPSLObject
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 
 
 @unique
 class UpdateRequestStatus(Enum):
-    PROCESSED = 'processed'
+    SAVED = 'saved'
     PROCESSING = 'processing'
     ERROR_UNKNOWN_CLASS = 'error: unknown RPSL class'
     ERROR_PARSING = 'errors encountered during object parsing'
@@ -18,7 +19,7 @@ class UpdateRequestStatus(Enum):
 
 class UpdateRequest:
     rpsl_text: str
-    rpsl_obj: Optional[RPSLObject] = None
+    rpsl_obj: RPSLObject
     status = UpdateRequestStatus.PROCESSING
 
     error_messages: List[str]
@@ -42,9 +43,19 @@ class UpdateRequest:
             self.info_messages = self.rpsl_obj.messages.infos()
 
         except UnknownRPSLObjectClassException as exc:
+            self.rpsl_obj = None
             self.status = UpdateRequestStatus.ERROR_UNKNOWN_CLASS
             self.info_messages = []
             self.error_messages = [str(exc)]
+
+    def save(self, database_handler: DatabaseHandler) -> None:
+        if self.status != UpdateRequestStatus.PROCESSING:
+            raise ValueError("UpdateRequest can only be saved in status PROCESSING")
+        if self.delete_request:
+            database_handler.delete_rpsl_object(self.rpsl_obj)
+        else:
+            database_handler.upsert_rpsl_object(self.rpsl_obj)
+        self.status = UpdateRequestStatus.SAVED
 
 
 class UpdateRequestParser:

@@ -1,8 +1,13 @@
+from unittest.mock import Mock
+
+from pytest import raises
+
 from irrd.utils.rpsl_samples import SAMPLE_INETNUM, SAMPLE_AS_SET
-from irrd.updates.parser import UpdateRequestParser, UpdateRequestStatus
+from irrd.utils.test_utils import flatten_mock_calls
+from ..parser import UpdateRequestParser, UpdateRequestStatus
 
 
-class TestUpdateRequestParser:
+class TestUpdateRequest:
     def test_parse_valid(self):
         parser = UpdateRequestParser()
         unknown_class = 'unknown-object: foo\n'
@@ -53,3 +58,17 @@ class TestUpdateRequestParser:
         assert not result_invalid.info_messages
         assert len(result_invalid.error_messages) == 6
         assert 'Mandatory attribute' in result_invalid.error_messages[0]
+
+        dh_mock = Mock()
+        result_inetnum.save(dh_mock)
+        result_as_set.save(dh_mock)
+
+        with raises(ValueError):
+            result_unknown.save(dh_mock)
+        with raises(ValueError):
+            result_invalid.save(dh_mock)
+
+        assert flatten_mock_calls(dh_mock) == [
+            ['delete_rpsl_object', (result_inetnum.rpsl_obj,), {}],
+            ['upsert_rpsl_object', (result_as_set.rpsl_obj,), {}],
+        ]
