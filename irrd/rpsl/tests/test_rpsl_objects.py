@@ -116,6 +116,14 @@ class TestRPSLAsSet:
         assert obj.__class__ == RPSLAsSet
         assert not obj.messages.errors()
         assert obj.pk() == "AS-RESTENA"
+        assert obj.referred_objects() == [
+            ('members', ['aut-num', 'as-set'], ['AS2602', 'AS42909', 'AS51966', 'AS49624']),
+            ('admin-c', ['role', 'person'], ['DUMY-RIPE']),
+            ('tech-c', ['role', 'person'], ['DUMY-RIPE']),
+            ('mnt-by', ['mntner'], ['AS2602-MNT'])
+        ]
+        assert obj.source() == 'RIPE'
+
         assert obj.parsed_data['members'] == ['AS2602', 'AS42909', 'AS51966', 'AS49624']
         # Field parsing will cause our object to look slightly different than the original, hence the replace()
         assert obj.render_rpsl_text() == rpsl_text.replace("AS2602, AS42909, AS51966", "AS2602,AS42909,AS51966")

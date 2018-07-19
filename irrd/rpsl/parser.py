@@ -29,6 +29,7 @@ class RPSLObjectMeta(type):
             cls.attrs_allowed = [field[0] for field in fields.items()]
             cls.attrs_required = [field[0] for field in fields.items() if not field[1].optional]
             cls.attrs_multiple = [field[0] for field in fields.items() if field[1].multiple]
+            cls.referring_fields = [(field[0], field[1].referring) for field in fields.items() if hasattr(field[1], 'referring')]
 
 
 class RPSLObject(metaclass=RPSLObjectMeta):
@@ -81,7 +82,11 @@ class RPSLObject(metaclass=RPSLObjectMeta):
             composite_values.append(self.parsed_data.get(field, ""))
         return ",".join(composite_values).upper()
 
-    def ip_version(self):
+    def source(self) -> str:
+        """Shortcut to retrieve object source"""
+        return self.parsed_data.get('source')
+
+    def ip_version(self) -> Optional[int]:
         """
         Get the IP version to which this object relates, or None for
         e.g. person or as-block objects.
@@ -89,6 +94,17 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         if self.ip_first:
             return self.ip_first.version()
         return None
+
+    def referred_objects(self) -> List[Tuple[str, List, List]]:
+        result = []
+        for field_name, referred_objects in self.referring_fields:
+            data = self.parsed_data.get(field_name)
+            if not data:
+                continue
+            if isinstance(data, str):
+                data = [data]
+            result.append((field_name, referred_objects, data))
+        return result
 
     def render_rpsl_text(self) -> str:
         """Render the RPSL object as an RPSL string."""
