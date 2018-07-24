@@ -9,13 +9,23 @@ from ..parser import parse_update_request, UpdateRequestStatus, UpdateRequestTyp
 
 class TestUpdateRequest:
 
-    def test_parse_valid(self):
-        result_inetnum, result_as_set, result_unknown, result_invalid = parse_update_request(self._request_text())
+    def test_parse_valid(self, monkeypatch):
+        mock_dh = Mock()
+        mock_dq = Mock()
+        monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
 
-        assert result_inetnum.status == UpdateRequestStatus.PROCESSING
+        query_results = iter([
+            [{'object_text': SAMPLE_INETNUM}],
+            [{'object_text': SAMPLE_AS_SET}],
+        ])
+        mock_dh.execute_query = lambda query: next(query_results)
+
+        result_inetnum, result_as_set, result_unknown, result_invalid = parse_update_request(set(), None, mock_dh, self._request_text())
+
+        assert result_inetnum.status == UpdateRequestStatus.PROCESSING, result_inetnum.error_messages
         assert result_inetnum.is_valid()
         assert result_inetnum.rpsl_text.startswith('inetnum:')
-        assert result_inetnum.rpsl_obj.rpsl_object_class == 'inetnum'
+        assert result_inetnum.rpsl_obj_new.rpsl_object_class == 'inetnum'
         assert result_inetnum.passwords == ['pw1', 'pw2', 'pw3']
         assert result_inetnum.overrides == ['override-pw']
         assert result_inetnum.request_type == UpdateRequestType.DELETE
@@ -23,20 +33,20 @@ class TestUpdateRequest:
         assert 'reformatted as' in result_inetnum.info_messages[0]
         assert not result_inetnum.error_messages
 
-        assert result_as_set.status == UpdateRequestStatus.PROCESSING
+        assert result_as_set.status == UpdateRequestStatus.PROCESSING, result_inetnum.error_messages
         assert result_as_set.is_valid()
         assert result_as_set.rpsl_text.startswith('as-set:')
-        assert result_as_set.rpsl_obj.rpsl_object_class == 'as-set'
+        assert result_as_set.rpsl_obj_new.rpsl_object_class == 'as-set'
         assert result_as_set.passwords == ['pw1', 'pw2', 'pw3']
         assert result_inetnum.overrides == ['override-pw']
-        assert result_as_set.request_type == UpdateRequestType.NO_OP
+        assert result_as_set.request_type == UpdateRequestType.MODIFY
         assert not result_as_set.info_messages
         assert not result_as_set.error_messages
 
         assert result_unknown.status == UpdateRequestStatus.ERROR_UNKNOWN_CLASS
         assert not result_unknown.is_valid()
         assert result_unknown.rpsl_text.startswith('unknown-object:')
-        assert not result_unknown.rpsl_obj
+        assert not result_unknown.rpsl_obj_new
         assert result_unknown.passwords == ['pw1', 'pw2', 'pw3']
         assert result_unknown.overrides == ['override-pw']
         assert result_unknown.request_type == UpdateRequestType.NO_OP
@@ -47,7 +57,7 @@ class TestUpdateRequest:
         assert result_invalid.status == UpdateRequestStatus.ERROR_PARSING
         assert not result_invalid.is_valid()
         assert result_invalid.rpsl_text.startswith('aut-num:')
-        assert result_invalid.rpsl_obj.rpsl_object_class == 'aut-num'
+        assert result_invalid.rpsl_obj_new.rpsl_object_class == 'aut-num'
         assert result_invalid.passwords == ['pw1', 'pw2', 'pw3']
         assert result_invalid.overrides == ['override-pw']
         assert result_invalid.request_type == UpdateRequestType.NO_OP
@@ -55,7 +65,7 @@ class TestUpdateRequest:
         assert len(result_invalid.error_messages) == 6
         assert 'Mandatory attribute' in result_invalid.error_messages[0]
 
-        mock_dh = Mock()
+        mock_dh.reset_mock()
         result_inetnum.save(mock_dh)
         result_as_set.save(mock_dh)
 
@@ -63,19 +73,34 @@ class TestUpdateRequest:
             result_unknown.save(mock_dh)
         with raises(ValueError):
             result_invalid.save(mock_dh)
-
         assert flatten_mock_calls(mock_dh) == [
-            ['delete_rpsl_object', (result_inetnum.rpsl_obj,), {}],
-            ['upsert_rpsl_object', (result_as_set.rpsl_obj,), {}],
+            ['delete_rpsl_object', (result_inetnum.rpsl_obj_current,), {}],
+            ['upsert_rpsl_object', (result_as_set.rpsl_obj_new,), {}],
         ]
 
-    def test_check_references_valid(self, monkeypatch):
-        result_inetnum = parse_update_request(SAMPLE_INETNUM)[0]
+    def test_delete_nonexistent_object(self, monkeypatch):
+        mock_dh = Mock()
+        mock_dq = Mock()
+        monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
+        mock_dh.execute_query = lambda query: []
 
+        result_inetnum = parse_update_request(set(), None, mock_dh, self._request_text())[0]
+
+        assert result_inetnum.status == UpdateRequestStatus.ERROR_PARSING
+        assert not result_inetnum.is_valid()
+        assert result_inetnum.rpsl_text.startswith('inetnum:')
+        assert result_inetnum.request_type == UpdateRequestType.DELETE
+        assert len(result_inetnum.error_messages) == 1
+        assert 'Can not delete object: no object found for this key in this database' in result_inetnum.error_messages[0]
+
+    def test_check_references_valid(self, monkeypatch):
         mock_dh = Mock()
         mock_dq = Mock()
         monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
 
+        query_result_existing_obj = {
+            'object_text': SAMPLE_INETNUM,
+        }
         query_result_dumy_person = {
             'rpsl_pk': 'DUMY-RIPE',
             'object_class': 'person',
@@ -85,12 +110,17 @@ class TestUpdateRequest:
             'object_class': 'mntner',
             'parsed_data': {'mntner': 'INTERDB-MNT'},
         }
-        mock_dh.execute_query = lambda query: [next(iter([query_result_dumy_person, query_result_interdb_mntner]))]
-
+        query_results = iter([query_result_existing_obj, query_result_dumy_person, query_result_interdb_mntner])
+        mock_dh.execute_query = lambda query: [next(query_results)]
         checker = ReferenceChecker(mock_dh)
-        assert result_inetnum.check_references(checker)
+
+        result_inetnum = parse_update_request(set(), checker, mock_dh, SAMPLE_INETNUM)[0]
+        assert result_inetnum.check_references()
         assert result_inetnum.is_valid()
         assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['RIPE'],), {}],
+            ['object_classes', (['inetnum'],), {}],
+            ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}],
             ['sources', (['RIPE'],), {}],
             ['object_classes', (['role', 'person'],), {}],
             ['rpsl_pk', ('DUMY-RIPE',), {}],
@@ -100,28 +130,31 @@ class TestUpdateRequest:
         ]
 
     def test_check_references_invalid(self, monkeypatch):
-        result_inetnum = parse_update_request(SAMPLE_INETNUM)[0]
-
         mock_dh = Mock()
         mock_dq = Mock()
         monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
 
-        query_result_interdb_mntner = {
-            'rpsl_pk': 'INTERDB-MNT',
-            'object_class': 'mntner',
-            'parsed_data': {'mntner': 'INTERDB-MNT'},
+        query_result_existing_obj = {
+            'object_text': SAMPLE_INETNUM,
         }
-        mock_dh.execute_query = lambda query: next(iter([[], [], [query_result_interdb_mntner]]))
-
+        query_results = iter([[query_result_existing_obj], [], [], []])
+        mock_dh.execute_query = lambda query: next(query_results)
         checker = ReferenceChecker(mock_dh)
-        assert not result_inetnum.check_references(checker)
+
+        result_inetnum = parse_update_request(set(), checker, mock_dh, SAMPLE_INETNUM)[0]
+        assert not result_inetnum.check_references()
+        print(result_inetnum.user_report())
         assert not result_inetnum.is_valid()
         assert result_inetnum.error_messages == [
             'Object DUMY-RIPE referenced in field admin-c not found in database RIPE - must reference one of role, person object',
             'Object DUMY-RIPE referenced in field tech-c not found in database RIPE - must reference one of role, person object',
             'Object INTERB-MNT referenced in field mnt-by not found in database RIPE - must reference mntner object'
         ]
+        print(flatten_mock_calls(mock_dq))
         assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['RIPE'],), {}],
+            ['object_classes', (['inetnum'],), {}],
+            ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}],
             ['sources', (['RIPE'],), {}],
             ['object_classes', (['role', 'person'],), {}],
             ['rpsl_pk', ('DUMY-RIPE',), {}],
@@ -134,37 +167,54 @@ class TestUpdateRequest:
         ]
 
     def test_check_references_preload(self, monkeypatch):
-        result_inetnum = parse_update_request(SAMPLE_INETNUM)[0]
-
         mock_dh = Mock()
         mock_dq = Mock()
         monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
-        mock_dh.execute_query = lambda query: []
-
-        preload = parse_update_request(SAMPLE_PERSON + '\n' + SAMPLE_MNTNER.replace('AS760-MNt', 'INTERB-mnt'))
-
+        mock_dh.execute_query = lambda query: next(iter([[{'object_text': SAMPLE_PERSON}], [{'object_text': SAMPLE_MNTNER}]]))
         checker = ReferenceChecker(mock_dh)
+
+        preload = parse_update_request(set(), checker, mock_dh, SAMPLE_PERSON + '\n' + SAMPLE_MNTNER.replace('AS760-MNt', 'INTERB-mnt'))
+        mock_dq.reset_mock()
         checker.preload(preload)
 
-        assert result_inetnum.check_references(checker)
+        result_inetnum = parse_update_request(set(), checker, mock_dh, SAMPLE_INETNUM)[0]
+        assert result_inetnum.check_references()
         assert result_inetnum.is_valid()
-        assert flatten_mock_calls(mock_dq) == []
+        assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['RIPE'],), {}],
+            ['object_classes', (['inetnum'],), {}],
+            ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}]
+        ]
 
     def test_check_references_deletion(self, monkeypatch):
-        result_inetnum = parse_update_request(SAMPLE_INETNUM + "delete: delete")[0]
-
         mock_dh = Mock()
         mock_dq = Mock()
         monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
 
         checker = ReferenceChecker(mock_dh)
-        assert result_inetnum.check_references(checker)
+        mock_dh.execute_query = lambda query: [{'object_text': SAMPLE_INETNUM}]
+
+        result_inetnum = parse_update_request(set(), checker, mock_dh, SAMPLE_INETNUM + "delete: delete")[0]
+        assert result_inetnum.check_references()
         assert result_inetnum.is_valid()
-        assert flatten_mock_calls(mock_dq) == []
+        assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['RIPE'],), {}],
+            ['object_classes', (['inetnum'],), {}],
+            ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}]
+        ]
 
-    def test_user_report(self):
-        result_inetnum, result_as_set, result_unknown, result_invalid = parse_update_request(self._request_text())
+    def test_user_report(self, monkeypatch):
+        mock_dh = Mock()
+        mock_dq = Mock()
+        monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
 
+        query_results = iter([
+            [{'object_text': SAMPLE_INETNUM}],
+            [],
+        ])
+        mock_dh.execute_query = lambda query: next(query_results)
+
+        result_inetnum, result_as_set, result_unknown, result_invalid = parse_update_request(set(), None, mock_dh, self._request_text())
         report_inetnum = result_inetnum.user_report()
         report_as_set = result_as_set.user_report()
         report_unknown = result_unknown.user_report()
@@ -174,7 +224,7 @@ class TestUpdateRequest:
         assert 'remarks: ' in report_inetnum  # full RPSL object should be included
         assert 'INFO: Address range 80' in report_inetnum
 
-        assert report_as_set == 'No Operation succeeded: [as-set] AS-RESTENA\n'
+        assert report_as_set == 'Create succeeded: [as-set] AS-RESTENA\n'
 
         assert 'FAILED' in report_unknown
         assert 'ERROR: unknown object class' in report_unknown
