@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from typing import Set
+from typing import Set, List, Optional
 
 import gnupg
 
@@ -300,18 +300,24 @@ class RPSLMntner(RPSLObject):
         ("source", RPSLGenericNameField()),
     ])
 
-    def verify(self, password: str) -> bool:
+    def verify_auth(self, passwords: List[str], keycert_obj_pk: Optional[str]=None) -> bool:
         """
-        Verify whether a given password meets any of the auth hashes in this object.
+        Verify whether one of a given list of passwords matches
+        any of the auth hashes in this object.
         Currently ignores PGP keys.
         """
         for auth in self.parsed_data.get("auth", "").splitlines():
+            if keycert_obj_pk and auth.upper() == keycert_obj_pk:
+                return True
             if " " not in auth:
                 continue
             scheme, hash = auth.split(" ", 1)
             hasher = PASSWORD_HASHERS.get(scheme.upper())
-            if hasher and hasher.verify(password, hash):
-                return True
+            if not hasher:
+                continue
+            for password in passwords:
+                if hasher.verify(password, hash):
+                    return True
         return False
 
 

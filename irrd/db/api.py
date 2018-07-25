@@ -53,7 +53,12 @@ class RPSLDatabaseQuery:
 
     def rpsl_pk(self, rpsl_pk: str):
         """Filter on an exact RPSL PK (e.g. 192.0.2.0/24,AS23456)."""
-        return self._filter(self.columns.rpsl_pk == rpsl_pk.upper())
+        return self.rpsl_pks([rpsl_pk])
+
+    def rpsl_pks(self, rpsl_pks: List[str]):
+        """Filter on an exact RPSL PK (e.g. 192.0.2.0/24,AS23456) - will match any PK in the list."""
+        rpsl_pks = [p.upper().strip() for p in rpsl_pks]
+        return self._filter(self.columns.rpsl_pk.in_(rpsl_pks))
 
     def sources(self, sources: List[str]):
         """

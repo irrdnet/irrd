@@ -1,10 +1,11 @@
+import itertools
 from unittest.mock import Mock
 
 from pytest import raises
 
 from irrd.utils.rpsl_samples import SAMPLE_INETNUM, SAMPLE_AS_SET, SAMPLE_PERSON, SAMPLE_MNTNER
 from irrd.utils.test_utils import flatten_mock_calls
-from ..parser import parse_update_request, UpdateRequestStatus, UpdateRequestType, ReferenceChecker
+from ..parser import parse_update_requests, UpdateRequestStatus, UpdateRequestType, ReferenceChecker, AuthChecker
 
 
 class TestUpdateRequest:
@@ -20,7 +21,8 @@ class TestUpdateRequest:
         ])
         mock_dh.execute_query = lambda query: next(query_results)
 
-        result_inetnum, result_as_set, result_unknown, result_invalid = parse_update_request(set(), None, mock_dh, self._request_text())
+        result_inetnum, result_as_set, result_unknown, result_invalid = parse_update_requests(
+            self._request_text(), mock_dh, AuthChecker(mock_dh), None)
 
         assert result_inetnum.status == UpdateRequestStatus.PROCESSING, result_inetnum.error_messages
         assert result_inetnum.is_valid()
@@ -84,7 +86,7 @@ class TestUpdateRequest:
         monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
         mock_dh.execute_query = lambda query: []
 
-        result_inetnum = parse_update_request(set(), None, mock_dh, self._request_text())[0]
+        result_inetnum = parse_update_requests(self._request_text(), mock_dh, AuthChecker(mock_dh), None)[0]
 
         assert result_inetnum.status == UpdateRequestStatus.ERROR_PARSING
         assert not result_inetnum.is_valid()
@@ -112,10 +114,11 @@ class TestUpdateRequest:
         }
         query_results = iter([query_result_existing_obj, query_result_dumy_person, query_result_interdb_mntner])
         mock_dh.execute_query = lambda query: [next(query_results)]
+
         checker = ReferenceChecker(mock_dh)
 
-        result_inetnum = parse_update_request(set(), checker, mock_dh, SAMPLE_INETNUM)[0]
-        assert result_inetnum.check_references()
+        result_inetnum = parse_update_requests(SAMPLE_INETNUM, mock_dh, AuthChecker(mock_dh), checker)[0]
+        assert result_inetnum._check_references()
         assert result_inetnum.is_valid()
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['RIPE'],), {}],
@@ -141,16 +144,14 @@ class TestUpdateRequest:
         mock_dh.execute_query = lambda query: next(query_results)
         checker = ReferenceChecker(mock_dh)
 
-        result_inetnum = parse_update_request(set(), checker, mock_dh, SAMPLE_INETNUM)[0]
-        assert not result_inetnum.check_references()
-        print(result_inetnum.user_report())
+        result_inetnum = parse_update_requests(SAMPLE_INETNUM, mock_dh, AuthChecker(mock_dh), checker)[0]
+        assert not result_inetnum._check_references()
         assert not result_inetnum.is_valid()
         assert result_inetnum.error_messages == [
             'Object DUMY-RIPE referenced in field admin-c not found in database RIPE - must reference one of role, person object',
             'Object DUMY-RIPE referenced in field tech-c not found in database RIPE - must reference one of role, person object',
             'Object INTERB-MNT referenced in field mnt-by not found in database RIPE - must reference mntner object'
         ]
-        print(flatten_mock_calls(mock_dq))
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['RIPE'],), {}],
             ['object_classes', (['inetnum'],), {}],
@@ -173,12 +174,13 @@ class TestUpdateRequest:
         mock_dh.execute_query = lambda query: next(iter([[{'object_text': SAMPLE_PERSON}], [{'object_text': SAMPLE_MNTNER}]]))
         checker = ReferenceChecker(mock_dh)
 
-        preload = parse_update_request(set(), checker, mock_dh, SAMPLE_PERSON + '\n' + SAMPLE_MNTNER.replace('AS760-MNt', 'INTERB-mnt'))
+        preload = parse_update_requests(SAMPLE_PERSON + '\n' + SAMPLE_MNTNER.replace('AS760-MNt', 'INTERB-mnt'),
+                                        mock_dh, AuthChecker(mock_dh), checker)
         mock_dq.reset_mock()
         checker.preload(preload)
 
-        result_inetnum = parse_update_request(set(), checker, mock_dh, SAMPLE_INETNUM)[0]
-        assert result_inetnum.check_references()
+        result_inetnum = parse_update_requests(SAMPLE_INETNUM, mock_dh, AuthChecker(mock_dh), checker)[0]
+        assert result_inetnum._check_references()
         assert result_inetnum.is_valid()
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['RIPE'],), {}],
@@ -194,8 +196,9 @@ class TestUpdateRequest:
         checker = ReferenceChecker(mock_dh)
         mock_dh.execute_query = lambda query: [{'object_text': SAMPLE_INETNUM}]
 
-        result_inetnum = parse_update_request(set(), checker, mock_dh, SAMPLE_INETNUM + "delete: delete")[0]
-        assert result_inetnum.check_references()
+        result_inetnum = parse_update_requests(SAMPLE_INETNUM + "delete: delete",
+                                               mock_dh, AuthChecker(mock_dh), checker)[0]
+        assert result_inetnum._check_references()
         assert result_inetnum.is_valid()
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['RIPE'],), {}],
@@ -214,7 +217,8 @@ class TestUpdateRequest:
         ])
         mock_dh.execute_query = lambda query: next(query_results)
 
-        result_inetnum, result_as_set, result_unknown, result_invalid = parse_update_request(set(), None, mock_dh, self._request_text())
+        result_inetnum, result_as_set, result_unknown, result_invalid = parse_update_requests(
+            self._request_text(), mock_dh, AuthChecker(mock_dh), None)
         report_inetnum = result_inetnum.user_report()
         report_as_set = result_as_set.user_report()
         report_unknown = result_unknown.user_report()
@@ -233,6 +237,95 @@ class TestUpdateRequest:
         assert 'aut-num: pw1'  # full RPSL object should be included
         assert 'ERROR: Mandatory attribute' in report_invalid
         assert 'ERROR: Invalid AS number PW1' in report_invalid
+
+    def test_check_auth_success(self, monkeypatch):
+        mock_dh = Mock()
+        mock_dq = Mock()
+        monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
+
+        query_result1 = {'object_text': SAMPLE_INETNUM}
+        query_result2 = {'object_text': SAMPLE_MNTNER.replace('AS760-MNt', 'INTERB-mnt')}
+        query_results = itertools.cycle([[query_result1], [query_result2]])
+        mock_dh.execute_query = lambda query: next(query_results)
+
+        reference_checker = ReferenceChecker(mock_dh)
+        auth_checker = AuthChecker(mock_dh)
+
+        result_inetnum = parse_update_requests(SAMPLE_INETNUM + 'password: crypt-password',
+                                               mock_dh, auth_checker, reference_checker)[0]
+        assert result_inetnum._check_auth()
+        assert not result_inetnum.error_messages
+        assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['RIPE'],), {}],
+            ['object_classes', (['inetnum'],), {}],
+            ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}],
+            ['sources', (['RIPE'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', (['INTERB-MNT'],), {}]
+        ]
+
+        auth_checker = AuthChecker(mock_dh)
+        result_inetnum = parse_update_requests(SAMPLE_INETNUM + 'password: md5-password',
+                                               mock_dh, auth_checker, reference_checker)[0]
+        assert result_inetnum._check_auth()
+        assert not result_inetnum.error_messages
+
+        auth_checker = AuthChecker(mock_dh)
+        result_inetnum = parse_update_requests(SAMPLE_INETNUM, mock_dh,
+                                               auth_checker, reference_checker, 'PGPKEY-80F238C6')[0]
+        assert result_inetnum._check_auth()
+        assert not result_inetnum.error_messages
+
+    def test_check_auth_self_reference(self, monkeypatch):
+        mock_dh = Mock()
+        mock_dq = Mock()
+        monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
+        mock_dh.execute_query = lambda query: [{'object_text': SAMPLE_MNTNER}]
+
+        reference_checker = ReferenceChecker(mock_dh)
+        auth_checker = AuthChecker(mock_dh)
+
+        result_mntner = parse_update_requests(SAMPLE_MNTNER + 'password: crypt-password',
+                                               mock_dh, auth_checker, reference_checker)[0]
+        auth_checker.preapprove([result_mntner])
+
+        assert result_mntner._check_auth()
+        assert not result_mntner.error_messages
+        assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['RIPE'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pk', ('AS760-MNT',), {}]
+        ]
+
+        auth_checker = AuthChecker(mock_dh)
+        result_mntner = parse_update_requests(SAMPLE_MNTNER + 'password: wrong-pw',
+                                               mock_dh, auth_checker, reference_checker)[0]
+        auth_checker.preapprove([result_mntner])
+        assert not result_mntner._check_auth()
+
+    def test_check_auth_fail(self, monkeypatch):
+        mock_dh = Mock()
+        mock_dq = Mock()
+        monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
+        query_results = iter([[{'object_text': SAMPLE_INETNUM}], [{'object_text': SAMPLE_MNTNER}]])
+        mock_dh.execute_query = lambda query: next(query_results)
+
+        reference_checker = ReferenceChecker(mock_dh)
+        auth_checker = AuthChecker(mock_dh)
+
+        result_inetnum = parse_update_requests(SAMPLE_INETNUM + 'password: wrong-pw',
+                                               mock_dh, auth_checker, reference_checker)[0]
+        assert not result_inetnum._check_auth()
+        assert 'Authorisation for inetnum 80.16.151.184 - 80.16.151.191 failed' in result_inetnum.error_messages[0]
+        assert 'one of: INTERB-MNT' in result_inetnum.error_messages[0]
+        assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['RIPE'],), {}],
+            ['object_classes', (['inetnum'],), {}],
+            ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}],
+            ['sources', (['RIPE'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', (['INTERB-MNT'],), {}]
+        ]
 
     def _request_text(self):
         unknown_class = 'unknown-object: foo\n'

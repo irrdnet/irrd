@@ -307,11 +307,12 @@ class TestRPSLMntner:
         # Unknown hashes should simply be ignored.
         obj = rpsl_object_from_text(rpsl_text + "auth: UNKNOWN_HASH foo")
 
-        assert obj.verify("crypt-password")
-        assert obj.verify("md5-password")
-        assert not obj.verify("other-password")
-        assert not obj.verify(KEY_CERT_SIGNED_MESSAGE_CORRUPT)
-        assert not obj.verify(KEY_CERT_SIGNED_MESSAGE_WRONG_KEY)
+        assert obj.verify_auth(["crypt-password"])
+        assert obj.verify_auth(["md5-password"])
+        assert obj.verify_auth(["md5-password"], 'PGPKey-80F238C6')
+        assert not obj.verify_auth(["other-password"])
+        assert not obj.verify_auth([KEY_CERT_SIGNED_MESSAGE_CORRUPT])
+        assert not obj.verify_auth([KEY_CERT_SIGNED_MESSAGE_WRONG_KEY])
 
 
 class TestRPSLPeeringSet:

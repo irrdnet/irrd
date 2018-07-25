@@ -1,5 +1,5 @@
 from irrd.db.api import DatabaseHandler
-from irrd.updates.parser import parse_update_request, UpdateRequestStatus, ReferenceChecker, UpdateRequestType
+from irrd.updates.parser import parse_update_requests, UpdateRequestStatus, ReferenceChecker, UpdateRequestType
 
 
 class UpdateRequestHandler:
@@ -8,10 +8,11 @@ class UpdateRequestHandler:
         self.database_handler = DatabaseHandler()
 
     def handle_object_texts(self, object_texts: str):
-        results = parse_update_request(object_texts)
-        # TODO: pks should be immutable
-
         reference_checker = ReferenceChecker(self.database_handler)
+        results = parse_update_requests(object_texts, self.database_handler, None, reference_checker)
+
+        # TODO: deleted objects from this update must not have references
+        # both in this update, but also not in the DB
 
         # When an object references another object, e.g. tech-c referring a person or mntner,
         # an add/update is only valid if those referred objects exist. To complicate matters,
@@ -30,8 +31,8 @@ class UpdateRequestHandler:
             reference_checker.preload(valid_updates)
 
             for result in valid_updates:
-                result.check_references(reference_checker)
-                valid_updates = [r for r in results if r.is_valid()]
+                result.validate()
+            valid_updates = [r for r in results if r.is_valid()]
 
         # auth checks
 
