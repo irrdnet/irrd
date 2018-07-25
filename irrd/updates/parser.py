@@ -1,10 +1,11 @@
 import logging
-from enum import Enum, unique
-from typing import List, Optional, Tuple, Set
+from enum import unique, Enum
+from typing import List, Optional
 
 from irrd.db.api import DatabaseHandler, RPSLDatabaseQuery
 from irrd.rpsl.parser import UnknownRPSLObjectClassException, RPSLObject
-from irrd.rpsl.rpsl_objects import rpsl_object_from_text, RPSLMntner
+from irrd.rpsl.rpsl_objects import rpsl_object_from_text
+from .validators import ReferenceValidator, AuthValidator
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +17,7 @@ class UpdateRequestType(Enum):
     DELETE = 'delete'
     NO_OP = 'no operation'
 
+
 @unique
 class UpdateRequestStatus(Enum):
     SAVED = 'saved'
@@ -25,97 +27,6 @@ class UpdateRequestStatus(Enum):
     ERROR_AUTH = 'error: update not authorised'
     ERROR_REFERENCE = 'error: reference to object that does not exist'
     ERROR_NON_AUTHORITIVE = 'error: attempt to update object in non-authoritive database'
-
-
-class ReferenceChecker:
-    """
-    The ReferenceChecker validates references to other objects, given
-    their expected object_class, source and PK.
-
-    Sometimes updates are made to objects, referencing objects newly created
-    in the same update message. To handle this, the checker can be preloaded
-    with objects that should be considered valid.
-    """
-    def __init__(self, database_handler: DatabaseHandler):
-        self.database_handler = database_handler
-        self._cache: Set[Tuple[str, str, str]] = set()
-        self._preloaded: Set[Tuple[str, str, str]] = set()
-
-    def check_reference(self, object_classes: List[str], object_pk: str, source: str):
-        """
-        Check whether a reference to a particular object class/source/PK is valid,
-        i.e. such an object exists in the database.
-        """
-        if self._check_cache(object_classes, object_pk, source):
-            return True
-
-        # TODO: this still fails for route objects, where the PK includes the AS, but the reference does not
-        query = RPSLDatabaseQuery().sources([source]).object_classes(object_classes).rpsl_pk(object_pk)
-        results = list(self.database_handler.execute_query(query))
-        for result in results:
-            self._cache.add((result['object_class'], object_pk, source))
-        if results:
-            return True
-
-        return False
-
-    def _check_cache(self, object_classes: List[str], object_pk: str, source: str):
-        for object_class in object_classes:
-            if (object_class, object_pk, source) in self._cache:
-                return True
-            if (object_class, object_pk, source) in self._preloaded:
-                return True
-        return False
-
-    def preload(self, results):
-        """Preload an iterable of UpdateRequest objects to be considered valid."""
-        self._preloaded = set()
-        for request in results:
-            self._preloaded.add((request.rpsl_obj_new.rpsl_object_class, request.rpsl_obj_new.pk(),
-                                 request.rpsl_obj_new.source()))
-
-
-class AuthChecker:
-    passwords: List[str]
-    overrides: List[str]
-    keycert_obj_pk: Optional[str] = None
-
-    def __init__(self, database_handler: DatabaseHandler):
-        self.database_handler = database_handler
-        self._passed_cache: Set[str] = set()
-        self._preapproved: Set[str] = set()
-
-    def check_auth(self, rpsl_obj, mntner_list: List[str]):
-        """
-        Check whether authentication passes for a list of maintainers.
-
-        Returns True if at least one of the mntners in mntner_list
-        passes authentication, given self.passwords and
-        self.keycert_obj_pk. Updates and checks self.passed_mntner_cache
-        to prevent double checking of maintainers.
-        """
-        for mntner_name in mntner_list:
-            if mntner_name in self._passed_cache or mntner_name in self._preapproved:
-                return True
-
-        query = RPSLDatabaseQuery().sources([rpsl_obj.source()])
-        query = query.object_classes(['mntner']).rpsl_pks(mntner_list)
-        results = list(self.database_handler.execute_query(query))
-        mntner_objs: List[RPSLMntner] = [rpsl_object_from_text(r['object_text']) for r in results]
-
-        for mntner_obj in mntner_objs:
-            if mntner_obj.verify_auth(self.passwords, self.keycert_obj_pk):
-                self._passed_cache.add(mntner_obj.pk())
-
-                return True
-
-        return False
-
-    def preapprove(self, results):
-        self._preapproved = set()
-        for request in results:
-            if request.is_valid() and request.rpsl_obj_new.rpsl_object_class == 'mntner':
-                self._preapproved.add(request.rpsl_obj_new.pk())
 
 
 class UpdateRequest:
@@ -137,15 +48,15 @@ class UpdateRequest:
     overrides: List[str]
     keycert_obj_pk: Optional[str] = None
 
-    def __init__(self, rpsl_text: str, database_handler: DatabaseHandler, auth_checker: AuthChecker,
-                 reference_checker: ReferenceChecker, delete_reason=Optional[str], keycert_obj_pk=Optional[str]):
+    def __init__(self, rpsl_text: str, database_handler: DatabaseHandler, auth_validator: AuthValidator,
+                 reference_validator: ReferenceValidator, delete_reason=Optional[str], keycert_obj_pk=Optional[str]):
         """
         Initialise a new update request for a single RPSL object.
 
         :param rpsl_text: the object text
         :param database_handler: a DatabaseHandler instance
-        :param auth_checker: a AuthChecker instance, to resolve authentication requirements
-        :param reference_checker: a ReferenceChecker instance, to resolve references to other object
+        :param auth_validator: a AuthValidator instance, to resolve authentication requirements
+        :param reference_validator: a ReferenceValidator instance, to resolve references to other object
         :param delete_reason: a string with the deletion reason, if this was a deletion
         :param keycert_obj_pk: the RPSL PK of a PGPKEY key-cert object, if the message was signed with this
 
@@ -154,7 +65,7 @@ class UpdateRequest:
         into this method as delete_reason, or set in the passwords/overrides
         attributes after creating this instance.
 
-        The passed_mntner_cache and reference_checker must be shared between
+        The passed_mntner_cache and reference_validator must be shared between
         different instances, to benefit from caching, and to resolve references
         between different objects that are part of the same update.
 
@@ -163,8 +74,8 @@ class UpdateRequest:
         into them without prior validation.
         """
         self.database_handler = database_handler
-        self.auth_checker = auth_checker
-        self.reference_checker = reference_checker
+        self.auth_validator = auth_validator
+        self.reference_validator = reference_validator
         self.rpsl_text = rpsl_text
         self.keycert_obj_pk = keycert_obj_pk
 
@@ -238,8 +149,18 @@ class UpdateRequest:
         return self.status in [UpdateRequestStatus.SAVED, UpdateRequestStatus.PROCESSING]
 
     def validate(self) -> bool:
-        valid = all([self._check_auth(), self._check_references()])
-        return valid
+        auth_valid = self._check_auth()
+
+        references_valid = self._check_references()
+        return auth_valid and references_valid
+
+    def _check_auth(self):
+        auth_result = self.auth_validator.check_auth(self.rpsl_obj_new, self.rpsl_obj_current)
+        if auth_result:
+            self.status = UpdateRequestStatus.ERROR_AUTH
+            self.error_messages.append(auth_result)
+            return False
+        return True
 
     def _check_references(self) -> bool:
         """Check all references from this object to other objects."""
@@ -251,7 +172,7 @@ class UpdateRequest:
 
         for field_name, objects_referred, object_pks in references:
             for object_pk in object_pks:
-                if not self.reference_checker.check_reference(objects_referred, object_pk, source):
+                if not self.reference_validator.check_reference(objects_referred, object_pk, source):
                     if len(objects_referred) > 1:
                         objects_referred_str = 'one of ' + ', '.join(objects_referred)
                     else:
@@ -264,40 +185,11 @@ class UpdateRequest:
             return False
         return True
 
-    def _check_auth(self) -> bool:
-        """Check whether authentication passes for all required objects."""
-        mntners_new = self.rpsl_obj_new.parsed_data['mnt-by']
-        if not self.auth_checker.check_auth(self.rpsl_obj_new, mntners_new):
-            self._process_auth_failure(mntners_new)
-            return False
-
-        if self.rpsl_obj_current:
-            mntners_current = self.rpsl_obj_current.parsed_data['mnt-by']
-            if not self.auth_checker.check_auth(self.rpsl_obj_new, mntners_current):
-                self._process_auth_failure(mntners_current)
-                return False
-
-        if self.rpsl_obj_new.rpsl_object_class == 'mntner':
-            if not self.rpsl_obj_new.verify_auth(self.passwords, self.keycert_obj_pk):
-                self.status = UpdateRequestStatus.ERROR_AUTH
-                self.error_messages.append(f'Authorisation failed for the auth methods on this mntner object.')
-                return False
-
-        # TODO: further sets pending https://github.com/irrdnet/irrd4/issues/21#issuecomment-407105924
-        return True
-
-    def _process_auth_failure(self, expected_mntner_list: List[str]):
-        """Handle a failure to authenticate for a given list of maintainers. """
-        self.status = UpdateRequestStatus.ERROR_AUTH
-        mntner_str = ', '.join(expected_mntner_list)
-        self.error_messages.append(f'Authorisation for {self.rpsl_obj_new.rpsl_object_class} {self.rpsl_obj_new.pk()} '
-                                   f'failed: must by authenticated by one of: {mntner_str}')
-
 
 def parse_update_requests(requests_text: str,
                           database_handler: DatabaseHandler,
-                          auth_checker: AuthChecker,
-                          reference_checker: ReferenceChecker,
+                          auth_validator: AuthValidator,
+                          reference_validator: ReferenceValidator,
                           keycert_obj_pk: Optional[str] = None
                           ) -> List[UpdateRequest]:
     """
@@ -306,8 +198,8 @@ def parse_update_requests(requests_text: str,
 
     :param requests_text: a string containing all update requests
     :param database_handler: a DatabaseHandler instance
-        :param auth_checker: a AuthChecker instance, to resolve authentication requirements
-    :param reference_checker: a ReferenceChecker instance
+        :param auth_validator: a AuthValidator instance, to resolve authentication requirements
+    :param reference_validator: a ReferenceValidator instance
     :param keycert_obj_pk: the RPSL PK of a PGPKEY key-cert object, if the message was signed with this
     :return: a list of UpdateRequest instances
 
@@ -343,15 +235,15 @@ def parse_update_requests(requests_text: str,
         if not rpsl_text:
             continue
 
-        results.append(UpdateRequest(rpsl_text, database_handler, auth_checker, reference_checker,
+        results.append(UpdateRequest(rpsl_text, database_handler, auth_validator, reference_validator,
                                      delete_reason=delete_reason, keycert_obj_pk=keycert_obj_pk))
 
     for result in results:
         result.passwords = passwords
         result.overrides = overrides
 
-    if auth_checker:
-        auth_checker.passwords = passwords
-        auth_checker.overrides = overrides
-        auth_checker.keycert_obj_pk = keycert_obj_pk
+    if auth_validator:
+        auth_validator.passwords = passwords
+        auth_validator.overrides = overrides
+        auth_validator.keycert_obj_pk = keycert_obj_pk
     return results
