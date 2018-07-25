@@ -10,7 +10,7 @@ from ..validators import ReferenceValidator, AuthValidator
 
 
 class TestSingleUpdateRequestHandling:
-    # NOTE: the scope of this test includes UpdateRequest, ReferenceValidator and Authvalidator
+    # NOTE: the scope of this test includes UpdateRequest, ReferenceValidator and AuthValidator
 
     def test_parse_valid(self, monkeypatch):
         mock_dh = Mock()
@@ -54,7 +54,7 @@ class TestSingleUpdateRequestHandling:
         assert not result_unknown.rpsl_obj_new
         assert result_unknown.passwords == ['pw1', 'pw2', 'pw3']
         assert result_unknown.overrides == ['override-pw']
-        assert result_unknown.request_type == UpdateRequestType.NO_OP
+        assert not result_unknown.request_type
         assert not result_unknown.info_messages
         assert len(result_unknown.error_messages) == 1
         assert 'unknown object class' in result_unknown.error_messages[0]
@@ -65,7 +65,6 @@ class TestSingleUpdateRequestHandling:
         assert result_invalid.rpsl_obj_new.rpsl_object_class == 'aut-num'
         assert result_invalid.passwords == ['pw1', 'pw2', 'pw3']
         assert result_invalid.overrides == ['override-pw']
-        assert result_invalid.request_type == UpdateRequestType.NO_OP
         assert not result_invalid.info_messages
         assert len(result_invalid.error_messages) == 6
         assert 'Mandatory attribute' in result_invalid.error_messages[0]
@@ -299,7 +298,7 @@ class TestSingleUpdateRequestHandling:
         auth_validator = AuthValidator(mock_dh)
 
         result_mntner = parse_update_requests(SAMPLE_MNTNER + 'password: crypt-password',
-                                               mock_dh, auth_validator, reference_validator)[0]
+                                              mock_dh, auth_validator, reference_validator)[0]
         auth_validator.pre_approve([result_mntner])
 
         assert result_mntner._check_auth()
@@ -312,7 +311,7 @@ class TestSingleUpdateRequestHandling:
 
         auth_validator = AuthValidator(mock_dh)
         result_mntner = parse_update_requests(SAMPLE_MNTNER + 'password: wrong-pw',
-                                               mock_dh, auth_validator, reference_validator)[0]
+                                              mock_dh, auth_validator, reference_validator)[0]
         auth_validator.pre_approve([result_mntner])
         assert not result_mntner._check_auth()
 

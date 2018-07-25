@@ -36,10 +36,10 @@ class UpdateRequest:
     RPSL object.
     """
     rpsl_text: str
-    rpsl_obj_new: RPSLObject
+    rpsl_obj_new: Optional[RPSLObject]
     rpsl_obj_current: Optional[RPSLObject] = None
     status = UpdateRequestStatus.PROCESSING
-    request_type: Optional[UpdateRequestType] = UpdateRequestType.NO_OP
+    request_type: Optional[UpdateRequestType] = None
 
     error_messages: List[str]
     info_messages: List[str]
@@ -49,7 +49,8 @@ class UpdateRequest:
     keycert_obj_pk: Optional[str] = None
 
     def __init__(self, rpsl_text: str, database_handler: DatabaseHandler, auth_validator: AuthValidator,
-                 reference_validator: ReferenceValidator, delete_reason=Optional[str], keycert_obj_pk=Optional[str]):
+                 reference_validator: ReferenceValidator, delete_reason=Optional[str],
+                 keycert_obj_pk=Optional[str]) -> None:
         """
         Initialise a new update request for a single RPSL object.
 
@@ -88,6 +89,7 @@ class UpdateRequest:
 
         except UnknownRPSLObjectClassException as exc:
             self.rpsl_obj_new = None
+            self.request_type = None
             self.status = UpdateRequestStatus.ERROR_UNKNOWN_CLASS
             self.info_messages = []
             self.error_messages = [str(exc)]
@@ -116,16 +118,17 @@ class UpdateRequest:
             # This should not be possible, as rpsl_pk/source are a composite unique value in the database scheme.
             # Therefore, a query should not be able to affect more than one row.
             affected_pks = ', '.join([r['pk'] for r in results])
-            msg = f'attempted to retrieve current version of  object {rpsl_object.pk()}/{source}, but multiple '
+            msg = f'attempted to retrieve current version of  object {self.rpsl_obj_new.pk()}/'
+            msg += f'{self.rpsl_obj_new.source()}, but multiple '
             msg += f'objects were affected, internal pks affected: {affected_pks}'
             logger.error(msg)
             raise ValueError(msg)
 
     def save(self, database_handler: DatabaseHandler) -> None:
         """Save the update to the database."""
-        if self.status != UpdateRequestStatus.PROCESSING:
+        if self.status != UpdateRequestStatus.PROCESSING or not self.rpsl_obj_new:
             raise ValueError("UpdateRequest can only be saved in status PROCESSING")
-        if self.request_type == UpdateRequestType.DELETE:
+        if self.request_type == UpdateRequestType.DELETE and self.rpsl_obj_current is not None:
             database_handler.delete_rpsl_object(self.rpsl_obj_current)
         else:
             database_handler.upsert_rpsl_object(self.rpsl_obj_new)
@@ -136,7 +139,7 @@ class UpdateRequest:
         object_class = self.rpsl_obj_new.rpsl_object_class if self.rpsl_obj_new else '(unreadable object class)'
         pk = self.rpsl_obj_new.pk() if self.rpsl_obj_new else '(unreadable object key)'
         status = 'succeeded' if self.is_valid() else 'FAILED'
-        request_type = self.request_type.value.title()
+        request_type = self.request_type.value.title() if self.request_type else "Request"
 
         report = f'{request_type} {status}: [{object_class}] {pk}\n'
         if self.info_messages or self.error_messages:
@@ -150,7 +153,6 @@ class UpdateRequest:
 
     def validate(self) -> bool:
         auth_valid = self._check_auth()
-
         references_valid = self._check_references()
         return auth_valid and references_valid
 
@@ -164,7 +166,7 @@ class UpdateRequest:
 
     def _check_references(self) -> bool:
         """Check all references from this object to other objects."""
-        if self.request_type == UpdateRequestType.DELETE:
+        if self.request_type == UpdateRequestType.DELETE or not self.rpsl_obj_new:
             return True
 
         references = self.rpsl_obj_new.referred_objects()

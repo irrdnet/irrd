@@ -84,7 +84,10 @@ class RPSLObject(metaclass=RPSLObjectMeta):
 
     def source(self) -> str:
         """Shortcut to retrieve object source"""
-        return self.parsed_data.get('source')
+        try:
+            return self.parsed_data['source']
+        except KeyError:
+            raise ValueError("RPSL object has no known source")
 
     def ip_version(self) -> Optional[int]:
         """
@@ -97,7 +100,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
 
     def referred_objects(self) -> List[Tuple[str, List, List]]:
         result = []
-        for field_name, referred_objects in self.referring_fields:
+        for field_name, referred_objects in self.referring_fields:  # type: ignore
             data = self.parsed_data.get(field_name)
             if not data:
                 continue
