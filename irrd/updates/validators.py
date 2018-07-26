@@ -31,6 +31,7 @@ class ReferenceValidator:
     def preload(self, results: List['parser.UpdateRequest']) -> None:
         """Preload an iterable of UpdateRequest objects to be considered valid, or to be considered deleted."""
         self._preloaded_new = set()
+        self._preloaded_deleted = set()
         for request in results:
             if request.request_type == UpdateRequestType.DELETE:
                 self._preloaded_deleted.add((request.rpsl_obj_new.rpsl_object_class, request.rpsl_obj_new.pk(),
@@ -106,7 +107,7 @@ class AuthValidator:
 
         self._pre_approved = set()
         for request in results:
-            if request.is_valid() and isinstance(request.rpsl_obj_new, RPSLMntner):
+            if request.is_valid() and request.request_type != UpdateRequestType.DELETE and isinstance(request.rpsl_obj_new, RPSLMntner):
                 self._pre_approved.add(request.rpsl_obj_new.pk())
 
     def check_auth(self, rpsl_obj_new: RPSLObject, rpsl_obj_current: Optional[RPSLObject]) -> Optional[str]:

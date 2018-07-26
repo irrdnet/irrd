@@ -28,16 +28,16 @@ class UpdateRequestHandler:
         # becomes invalid on the first scan, which is why another scan is performed, which
         # will mark B invalid due to the reference to an invalid C, etc. This continues until
         # all references are resolved and repeated scans lead to the same conclusions.
-        valid_updates = [r for r in results if r.is_valid() and r.request_type != UpdateRequestType.DELETE]
+        valid_updates = [r for r in results if r.is_valid()]
         previous_valid_updates: List[UpdateRequest] = []
-        while valid_updates != previous_valid_updates:
+        while valid_updates != previous_valid_updates:  # TODO: protect against infinite loops
             previous_valid_updates = valid_updates
             reference_validator.preload(valid_updates)
             auth_validator.pre_approve(valid_updates)
 
             for result in valid_updates:
                 result.validate()
-            valid_updates = [r for r in results if r.is_valid() and r.request_type != UpdateRequestType.DELETE]
+            valid_updates = [r for r in results if r.is_valid()]
 
         for result in results:
             if result.is_valid():
