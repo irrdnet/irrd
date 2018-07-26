@@ -1,7 +1,8 @@
 from typing import List
 
 from irrd.db.api import DatabaseHandler
-from .parser import parse_update_requests, UpdateRequestType, UpdateRequest
+from .parser import parse_update_requests, UpdateRequest
+from .parser_state import UpdateRequestType
 from .validators import ReferenceValidator, AuthValidator
 
 

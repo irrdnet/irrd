@@ -1,6 +1,6 @@
 import re
 from collections import OrderedDict, Counter
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, List, Optional, Tuple, Any, Set
 
 from IPy import IP
 
@@ -99,6 +99,17 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         return None
 
     def referred_objects(self) -> List[Tuple[str, List, List]]:
+        """
+        Get all objects that this object refers to, e.g. an admin-c that refers
+        to person/role, along with the data this object has for that reference.
+        This information can be used to check whether all references from an
+        object are valid.
+
+        Returns a list of tuples, which each tuple having:
+        - field name on this object (e.g. 'admin-c')
+        - RPSL object class names of objects referred (e.g. ['role', 'person']
+        - Values this object has for that field (e.g. ['A-RIPE', 'B-RIPE']
+        """
         result = []
         for field_name, referred_objects in self.referring_fields:  # type: ignore
             data = self.parsed_data.get(field_name)
@@ -107,6 +118,20 @@ class RPSLObject(metaclass=RPSLObjectMeta):
             if isinstance(data, str):
                 data = [data]
             result.append((field_name, referred_objects, data))
+        return result
+
+    def referenced_as(self) -> Set[str]:
+        """
+        Get a set of field names under which other objects refer to
+        this object. E.g. for a person object, this would typically
+        return {'zone-c', 'admin-c', 'tech-c'}.
+        """
+        result = set()
+        from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING
+        for rpsl_object in OBJECT_CLASS_MAPPING.values():
+            for field_name, field in rpsl_object.fields.items():
+                if self.rpsl_object_class in getattr(field, 'referring', []):
+                    result.add(field_name)
         return result
 
     def render_rpsl_text(self) -> str:

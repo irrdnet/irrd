@@ -1,32 +1,13 @@
 import logging
-from enum import unique, Enum
 from typing import List, Optional
 
 from irrd.db.api import DatabaseHandler, RPSLDatabaseQuery
 from irrd.rpsl.parser import UnknownRPSLObjectClassException, RPSLObject
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
+from .parser_state import UpdateRequestType, UpdateRequestStatus
 from .validators import ReferenceValidator, AuthValidator
 
 logger = logging.getLogger(__name__)
-
-
-@unique
-class UpdateRequestType(Enum):
-    CREATE = 'create'
-    MODIFY = 'modify'
-    DELETE = 'delete'
-    NO_OP = 'no operation'
-
-
-@unique
-class UpdateRequestStatus(Enum):
-    SAVED = 'saved'
-    PROCESSING = 'processing'
-    ERROR_UNKNOWN_CLASS = 'error: unknown RPSL class'
-    ERROR_PARSING = 'errors encountered during object parsing'
-    ERROR_AUTH = 'error: update not authorised'
-    ERROR_REFERENCE = 'error: reference to object that does not exist'
-    ERROR_NON_AUTHORITIVE = 'error: attempt to update object in non-authoritive database'
 
 
 class UpdateRequest:
@@ -152,11 +133,20 @@ class UpdateRequest:
         return self.status in [UpdateRequestStatus.SAVED, UpdateRequestStatus.PROCESSING]
 
     def validate(self) -> bool:
+        if not self.is_valid() or not self.rpsl_obj_new:
+            return False
         auth_valid = self._check_auth()
-        references_valid = self._check_references()
+        # For deletions, only references to the deleted object matter, as
+        # they now become invalid. For other operations, only the validity
+        # of references from this object to others matter.
+        if self.request_type == UpdateRequestType.DELETE:
+            references_valid = self._check_references_to_object()
+        else:
+            references_valid = self._check_references_from_object()
         return auth_valid and references_valid
 
-    def _check_auth(self):
+    def _check_auth(self) -> bool:
+        assert self.rpsl_obj_new
         auth_result = self.auth_validator.check_auth(self.rpsl_obj_new, self.rpsl_obj_current)
         if auth_result:
             self.status = UpdateRequestStatus.ERROR_AUTH
@@ -164,23 +154,33 @@ class UpdateRequest:
             return False
         return True
 
-    def _check_references(self) -> bool:
+    def _check_references_from_object(self) -> bool:
         """Check all references from this object to other objects."""
-        if self.request_type == UpdateRequestType.DELETE or not self.rpsl_obj_new:
-            return True
-
+        assert self.rpsl_obj_new
         references = self.rpsl_obj_new.referred_objects()
         source = self.rpsl_obj_new.source()
 
         for field_name, objects_referred, object_pks in references:
             for object_pk in object_pks:
-                if not self.reference_validator.check_reference(objects_referred, object_pk, source):
+                if not self.reference_validator.check_reference_from_object(objects_referred, object_pk, source):
                     if len(objects_referred) > 1:
                         objects_referred_str = 'one of ' + ', '.join(objects_referred)
                     else:
                         objects_referred_str = objects_referred[0]
                     self.error_messages.append(f'Object {object_pk} referenced in field {field_name} not found in '
                                                f'database {source} - must reference {objects_referred_str} object')
+
+        if self.error_messages:
+            self.status = UpdateRequestStatus.ERROR_REFERENCE
+            return False
+        return True
+
+    def _check_references_to_object(self) -> bool:
+        assert self.rpsl_obj_current
+        references = self.reference_validator.check_reference_to_object(self.rpsl_obj_current)
+        for ref_object_class, ref_pk, ref_source in references:
+            self.error_messages.append(f'Object {self.rpsl_obj_current.pk()} to be deleted, but still referenced '
+                                       f'by {ref_object_class} {ref_pk}')
 
         if self.error_messages:
             self.status = UpdateRequestStatus.ERROR_REFERENCE

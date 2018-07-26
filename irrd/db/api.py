@@ -99,27 +99,29 @@ class RPSLDatabaseQuery:
         At least one of the values for the lookup attribute must match attr_value.
         Matching is case-insensitive.
         """
-        return self.lookup_attr_in(attr_name, [attr_value])
+        return self.lookup_attrs_in([attr_name], [attr_value])
 
-    def lookup_attr_in(self, attr_name: str, attr_values: List[str]):
+    def lookup_attrs_in(self, attr_names: List[str], attr_values: List[str]):
         """
-        Filter on a lookup attribute, e.g. mnt-by.
-        At least one of the values for the lookup attribute must match one
-        of the items in attr_values. Matching is case-insensitive.
+        Filter on one or more lookup attributes, e.g. mnt-by, or ['admin-c', 'tech-c']
+        At least one of the values for at least one of the lookup attribute must
+        match one of the items in attr_values. Matching is case-insensitive.
         """
-        attr_name = attr_name.lower()
-        if attr_name not in self.lookup_field_names:
-            raise ValueError(f"Invalid lookup attribute: {attr_name}")
+        attr_names = [attr_name.lower() for attr_name in attr_names]
+        for attr_name in attr_names:
+            if attr_name not in self.lookup_field_names:
+                raise ValueError(f"Invalid lookup attribute: {attr_name}")
         self._check_query_frozen()
 
         value_filters = []
         statement_params = {}
-        for attr_value in attr_values:
-            counter = self._lookup_attr_counter
-            self._lookup_attr_counter += 1
-            value_filters.append(sa.text(f"parsed_data->:lookup_attr_name{counter} ? :lookup_attr_value{counter}"))
-            statement_params[f"lookup_attr_name{counter}"] = attr_name
-            statement_params[f"lookup_attr_value{counter}"] = attr_value.upper()
+        for attr_name in attr_names:
+            for attr_value in attr_values:
+                counter = self._lookup_attr_counter
+                self._lookup_attr_counter += 1
+                value_filters.append(sa.text(f"parsed_data->:lookup_attr_name{counter} ? :lookup_attr_value{counter}"))
+                statement_params[f"lookup_attr_name{counter}"] = attr_name
+                statement_params[f"lookup_attr_value{counter}"] = attr_value.upper()
         fltr = sa.or_(*value_filters)
         self.statement = self.statement.where(fltr).params(**statement_params)
 

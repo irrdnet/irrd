@@ -348,6 +348,10 @@ class TestRPSLPerson:
         template = RPSLPerson().generate_template()
         assert template == TEMPLATE_PERSON_OBJECT
 
+    def test_referenced_as(self):
+        obj = RPSLPerson()
+        assert obj.referenced_as() == {'admin-c', 'tech-c', 'zone-c'}
+
 
 class TestRPSLRepository:
     def test_has_mapping(self):

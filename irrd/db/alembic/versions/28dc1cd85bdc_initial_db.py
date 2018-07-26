@@ -47,6 +47,10 @@ def upgrade():
     op.create_index(op.f('ix_rpsl_objects_source'), 'rpsl_objects', ['source'], unique=False)
 
     # Manually added
+    op.create_index(op.f('ix_rpsl_objects_parsed_data_admin_c'), 'rpsl_objects', [sa.text("((parsed_data->'admin-c'))")],
+                    unique=False, postgresql_using='gin')
+    op.create_index(op.f('ix_rpsl_objects_parsed_data_tech_c'), 'rpsl_objects', [sa.text("((parsed_data->'tech-c'))")],
+                    unique=False, postgresql_using='gin')
     op.create_index(op.f('ix_rpsl_objects_parsed_data_zone_c'), 'rpsl_objects', [sa.text("((parsed_data->'zone-c'))")],
                     unique=False, postgresql_using='gin')
     op.create_index(op.f('ix_rpsl_objects_parsed_data_role'), 'rpsl_objects', [sa.text("((parsed_data->'role'))")],

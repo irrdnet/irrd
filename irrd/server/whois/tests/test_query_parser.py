@@ -563,7 +563,7 @@ class TestWhoisQueryParserIRRD:
             ['first_only', (), {}],
             ['object_classes', (['route', 'route6'],), {}],
             ['lookup_attr', ('member-of', 'RRS-TEST'), {}],
-            ['lookup_attr_in', ('mnt-by', ['MNT-TEST']), {}]
+            ['lookup_attrs_in', (['mnt-by'], ['MNT-TEST']), {}]
         ]
         mock_dq.reset_mock()
 

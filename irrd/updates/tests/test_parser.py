@@ -5,7 +5,8 @@ from pytest import raises
 
 from irrd.utils.rpsl_samples import SAMPLE_INETNUM, SAMPLE_AS_SET, SAMPLE_PERSON, SAMPLE_MNTNER
 from irrd.utils.test_utils import flatten_mock_calls
-from ..parser import parse_update_requests, UpdateRequestType, UpdateRequestStatus
+from ..parser import parse_update_requests
+from ..parser_state import UpdateRequestType, UpdateRequestStatus
 from ..validators import ReferenceValidator, AuthValidator
 
 
@@ -122,7 +123,7 @@ class TestSingleUpdateRequestHandling:
         validator = ReferenceValidator(mock_dh)
 
         result_inetnum = parse_update_requests(SAMPLE_INETNUM, mock_dh, AuthValidator(mock_dh), validator)[0]
-        assert result_inetnum._check_references()
+        assert result_inetnum._check_references_from_object()
         assert result_inetnum.is_valid()
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['RIPE'],), {}],
@@ -150,7 +151,7 @@ class TestSingleUpdateRequestHandling:
         validator = ReferenceValidator(mock_dh)
 
         result_inetnum = parse_update_requests(SAMPLE_INETNUM, mock_dh, AuthValidator(mock_dh), validator)[0]
-        assert not result_inetnum._check_references()
+        assert not result_inetnum._check_references_from_object()
         assert not result_inetnum.is_valid()
         assert result_inetnum.error_messages == [
             'Object DUMY-RIPE referenced in field admin-c not found in database RIPE - must reference one of role, person object',
@@ -187,7 +188,7 @@ class TestSingleUpdateRequestHandling:
         validator.preload(preload)
 
         result_inetnum = parse_update_requests(SAMPLE_INETNUM, mock_dh, AuthValidator(mock_dh), validator)[0]
-        assert result_inetnum._check_references()
+        assert result_inetnum._check_references_from_object()
         assert result_inetnum.is_valid()
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['RIPE'],), {}],
@@ -195,23 +196,67 @@ class TestSingleUpdateRequestHandling:
             ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}]
         ]
 
-    def test_check_references_deletion(self, monkeypatch):
+    def test_check_references_delete_object_with_refs(self, monkeypatch):
         mock_dh = Mock()
         mock_dq = Mock()
         monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
         monkeypatch.setattr('irrd.updates.validators.RPSLDatabaseQuery', lambda: mock_dq)
 
         validator = ReferenceValidator(mock_dh)
-        mock_dh.execute_query = lambda query: [{'object_text': SAMPLE_INETNUM}]
+        query_results = iter([
+            [{'object_text': SAMPLE_PERSON}],
+            [{'object_text': SAMPLE_INETNUM, 'object_class': 'inetnum',
+              'rpsl_pk': '80.16.151.184 - 80.16.151.191', 'source': 'RIPE'}],
+        ])
+        mock_dh.execute_query = lambda query: next(query_results)
 
-        result_inetnum = parse_update_requests(SAMPLE_INETNUM + "delete: delete",
-                                               mock_dh, AuthValidator(mock_dh), validator)[0]
-        assert result_inetnum._check_references()
-        assert result_inetnum.is_valid()
+        result = parse_update_requests(SAMPLE_PERSON + "delete: delete",
+                                       mock_dh, AuthValidator(mock_dh), validator)[0]
+        result._check_references_to_object()
+        assert not result.is_valid()
+        assert result.error_messages == [
+            'Object DUMY-RIPE to be deleted, but still referenced by inetnum 80.16.151.184 - 80.16.151.191',
+        ]
+
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['RIPE'],), {}],
-            ['object_classes', (['inetnum'],), {}],
-            ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}]
+            ['object_classes', (['person'],), {}],
+            ['rpsl_pk', ('DUMY-RIPE',), {}],
+            ['sources', (['RIPE'],), {}],
+            ['lookup_attrs_in', ({'tech-c', 'zone-c', 'admin-c'}, ['DUMY-RIPE']), {}],
+        ]
+
+    def test_check_references_deleted_referencing_deleted_object(self, monkeypatch):
+        mock_dh = Mock()
+        mock_dq = Mock()
+        monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
+        monkeypatch.setattr('irrd.updates.validators.RPSLDatabaseQuery', lambda: mock_dq)
+
+        validator = ReferenceValidator(mock_dh)
+        mock_dh.execute_query = lambda query: []
+        result_inetnum = parse_update_requests(SAMPLE_INETNUM + "delete: delete",
+                                               mock_dh, AuthValidator(mock_dh), validator)
+        validator.preload(result_inetnum)
+        mock_dq.reset_mock()
+
+        query_results = iter([
+            [{'object_text': SAMPLE_PERSON}],
+            [{'object_text': SAMPLE_INETNUM, 'object_class': 'inetnum',
+              'rpsl_pk': '80.16.151.184 - 80.16.151.191', 'source': 'RIPE'}],
+        ])
+        mock_dh.execute_query = lambda query: next(query_results)
+
+        result = parse_update_requests(SAMPLE_PERSON + "delete: delete",
+                                       mock_dh, AuthValidator(mock_dh), validator)[0]
+        result._check_references_to_object()
+        assert result.is_valid()
+        assert not result.error_messages
+        assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['RIPE'],), {}],
+            ['object_classes', (['person'],), {}],
+            ['rpsl_pk', ('DUMY-RIPE',), {}],
+            ['sources', (['RIPE'],), {}],
+            ['lookup_attrs_in', ({'tech-c', 'zone-c', 'admin-c'}, ['DUMY-RIPE']), {}],
         ]
 
     def test_user_report(self, monkeypatch):
@@ -315,7 +360,7 @@ class TestSingleUpdateRequestHandling:
         auth_validator.pre_approve([result_mntner])
         assert not result_mntner._check_auth()
 
-    def test_check_auth_fail(self, monkeypatch):
+    def test_check_auth_fail_new_object(self, monkeypatch):
         mock_dh = Mock()
         mock_dq = Mock()
         monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
@@ -339,6 +384,39 @@ class TestSingleUpdateRequestHandling:
             ['sources', (['RIPE'],), {}],
             ['object_classes', (['mntner'],), {}],
             ['rpsl_pks', (['INTERB-MNT'],), {}]
+        ]
+
+    def test_check_auth_fail_current_object(self, monkeypatch):
+        mock_dh = Mock()
+        mock_dq = Mock()
+        monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
+        monkeypatch.setattr('irrd.updates.validators.RPSLDatabaseQuery', lambda: mock_dq)
+
+        query_results = iter([
+            [{'object_text': SAMPLE_INETNUM.replace('INTERB-MNT', 'FAIL-MNT')}],
+            [{'object_text': SAMPLE_MNTNER}],
+            []
+        ])
+        mock_dh.execute_query = lambda query: next(query_results)
+
+        reference_validator = ReferenceValidator(mock_dh)
+        auth_validator = AuthValidator(mock_dh)
+
+        result_inetnum = parse_update_requests(SAMPLE_INETNUM + 'password: md5-password',
+                                               mock_dh, auth_validator, reference_validator)[0]
+        assert not result_inetnum._check_auth()
+        assert 'Authorisation for inetnum 80.16.151.184 - 80.16.151.191 failed' in result_inetnum.error_messages[0]
+        assert 'one of: FAIL-MNT' in result_inetnum.error_messages[0]
+        assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['RIPE'],), {}],
+            ['object_classes', (['inetnum'],), {}],
+            ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}],
+            ['sources', (['RIPE'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', (['INTERB-MNT'],), {}],
+            ['sources', (['RIPE'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', (['FAIL-MNT'],), {}],
         ]
 
     def _request_text(self):
