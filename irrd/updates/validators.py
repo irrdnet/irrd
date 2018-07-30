@@ -44,9 +44,17 @@ class ReferenceValidator:
         """
         Check whether a reference to a particular object class/source/PK is valid,
         i.e. such an object exists in the database.
+
+        Object classes is a list of classes to which the reference may point, e.g.
+        person/role for admin-c, route for route-set members, or route/route6 for mp-members.
         """
-        if self._check_cache(object_classes, object_pk, source):
-            return True
+        for object_class in object_classes:
+            if (object_class, object_pk, source) in self._cache:
+                return True
+            if (object_class, object_pk, source) in self._preloaded_new:
+                return True
+            if (object_class, object_pk, source) in self._preloaded_deleted:
+                return False
 
         # TODO: this still fails for route objects, where the PK includes the AS, but the reference does not
         query = RPSLDatabaseQuery().sources([source]).object_classes(object_classes).rpsl_pk(object_pk)
@@ -59,20 +67,16 @@ class ReferenceValidator:
         return False
 
     def check_reference_to_object(self, rpsl_obj: RPSLObject) -> List[Tuple[str, str, str]]:
+        """
+        Check for any references to this object in the DB.
+        Used for validation deletions.
+        """
         query = RPSLDatabaseQuery().sources([rpsl_obj.source()])
         # TODO: fails to detect route objects
         query = query.lookup_attrs_in(rpsl_obj.referenced_as(), [rpsl_obj.pk()])
         query_results = self.database_handler.execute_query(query)
         results = [(r['object_class'], r['rpsl_pk'], r['source']) for r in query_results]
         return [r for r in results if r not in self._preloaded_deleted]
-
-    def _check_cache(self, object_classes: List[str], object_pk: str, source: str) -> bool:
-        for object_class in object_classes:
-            if (object_class, object_pk, source) in self._cache:
-                return True
-            if (object_class, object_pk, source) in self._preloaded_new:
-                return True
-        return False
 
 
 class AuthValidator:

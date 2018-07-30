@@ -196,7 +196,8 @@ class TestSingleUpdateRequestHandling:
             ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}]
         ]
 
-    def test_check_references_delete_object_with_refs(self, monkeypatch):
+    def test_check_references_delete_object_with_refs_in_db(self, monkeypatch):
+        # Delete an object which is still referred by other objects in the DB.
         mock_dh = Mock()
         mock_dq = Mock()
         monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
@@ -226,7 +227,53 @@ class TestSingleUpdateRequestHandling:
             ['lookup_attrs_in', ({'tech-c', 'zone-c', 'admin-c'}, ['DUMY-RIPE']), {}],
         ]
 
+    def test_check_references_delete_object_with_refs_in_update(self, monkeypatch):
+        # Delete an object that is referred by a new object in the same update.
+        mock_dh = Mock()
+        mock_dq = Mock()
+        monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
+        monkeypatch.setattr('irrd.updates.validators.RPSLDatabaseQuery', lambda: mock_dq)
+
+        validator = ReferenceValidator(mock_dh)
+        query_results = iter([
+            [{'object_text': SAMPLE_PERSON}],
+            [{'object_text': SAMPLE_INETNUM}],
+            [],
+            [{'object_text': SAMPLE_PERSON, 'object_class': 'person',
+              'rpsl_pk': 'DUMY-RIPE', 'source': 'RIPE'}],
+        ])
+        mock_dh.execute_query = lambda query: next(query_results)
+
+        results = parse_update_requests(SAMPLE_PERSON + "delete: delete" + "\n\n" + SAMPLE_INETNUM,
+                                        mock_dh, AuthValidator(mock_dh), validator)
+        validator.preload(results)
+        result_inetnum = results[1]
+        result_inetnum._check_references_from_object()
+        assert not result_inetnum.is_valid()
+        print(result_inetnum.error_messages)
+        print(flatten_mock_calls(mock_dq))
+        assert result_inetnum.error_messages == [
+            'Object DUMY-RIPE referenced in field admin-c not found in database RIPE - must reference one of role, person object',
+            'Object DUMY-RIPE referenced in field tech-c not found in database RIPE - must reference one of role, person object',
+            'Object INTERB-MNT referenced in field mnt-by not found in database RIPE - must reference mntner object',
+        ]
+
+        assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['RIPE'],), {}],
+            ['object_classes', (['person'],), {}],
+            ['rpsl_pk', ('DUMY-RIPE',), {}],
+            ['sources', (['RIPE'],), {}],
+            ['object_classes', (['inetnum'],), {}],
+            ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}],
+            ['sources', (['RIPE'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pk', ('INTERB-MNT',), {}],
+        ]
+
     def test_check_references_deleted_referencing_deleted_object(self, monkeypatch):
+        # Delete an object that refers another object in the DB,
+        # but the object referred to is also being deleted,
+        # therefore the deletion is valid.
         mock_dh = Mock()
         mock_dq = Mock()
         monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
