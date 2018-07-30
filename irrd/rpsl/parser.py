@@ -120,7 +120,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
             result.append((field_name, referred_objects, data))
         return result
 
-    def referenced_as(self) -> Set[str]:
+    def references_inbound(self) -> Set[str]:
         """
         Get a set of field names under which other objects refer to
         this object. E.g. for a person object, this would typically

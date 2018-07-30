@@ -313,11 +313,10 @@ class RPSLMntner(RPSLObject):
                 continue
             scheme, hash = auth.split(" ", 1)
             hasher = PASSWORD_HASHERS.get(scheme.upper())
-            if not hasher:
-                continue
-            for password in passwords:
-                if hasher.verify(password, hash):
-                    return True
+            if hasher:
+                for password in passwords:
+                    if hasher.verify(password, hash):
+                        return True
         return False
 
 

@@ -43,6 +43,9 @@ class TestRPSLParsingGeneric:
         assert len(obj.messages.errors()) == 2, f"Unexpected extra errors: {obj.messages.errors()}"
         assert "encountered empty line" in obj.messages.errors()[0]
 
+        with raises(ValueError):
+            obj.source()
+
     def test_malformed_attribute_name(self):
         obj = rpsl_object_from_text(SAMPLE_MALFORMED_ATTRIBUTE_NAME, strict_validation=False)
         assert len(obj.messages.errors()) == 2, f"Unexpected extra errors: {obj.messages.errors()}"
@@ -348,10 +351,6 @@ class TestRPSLPerson:
         template = RPSLPerson().generate_template()
         assert template == TEMPLATE_PERSON_OBJECT
 
-    def test_referenced_as(self):
-        obj = RPSLPerson()
-        assert obj.referenced_as() == {'admin-c', 'tech-c', 'zone-c'}
-
 
 class TestRPSLRepository:
     def test_has_mapping(self):
@@ -420,7 +419,8 @@ class TestRPSLRouteSet:
         assert obj.__class__ == RPSLRouteSet
         assert not obj.messages.errors()
         assert obj.pk() == "RS-TEST"
-        assert obj.render_rpsl_text() == rpsl_text
+        assert obj.render_rpsl_text() == rpsl_text.replace('2001:1578:0200:0::/040', '2001:1578:200::/40')
+        assert obj.parsed_data['mp-members'] == ['2001:1578:200::/40']
 
 
 class TestRPSLRoute6:

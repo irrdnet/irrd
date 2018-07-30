@@ -73,7 +73,7 @@ class ReferenceValidator:
         """
         query = RPSLDatabaseQuery().sources([rpsl_obj.source()])
         # TODO: fails to detect route objects
-        query = query.lookup_attrs_in(rpsl_obj.referenced_as(), [rpsl_obj.pk()])
+        query = query.lookup_attrs_in(rpsl_obj.references_inbound(), [rpsl_obj.pk()])
         query_results = self.database_handler.execute_query(query)
         results = [(r['object_class'], r['rpsl_pk'], r['source']) for r in query_results]
         return [r for r in results if r not in self._preloaded_deleted]
