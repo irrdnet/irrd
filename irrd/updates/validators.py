@@ -40,7 +40,7 @@ class ReferenceValidator:
                 self._preloaded_new.add((request.rpsl_obj_new.rpsl_object_class, request.rpsl_obj_new.pk(),
                                          request.rpsl_obj_new.source()))
 
-    def check_reference_from_object(self, object_classes: List[str], object_pk: str, source: str) -> bool:
+    def check_reference_to_others(self, object_classes: List[str], object_pk: str, source: str) -> bool:
         """
         Check whether a reference to a particular object class/source/PK is valid,
         i.e. such an object exists in the database.
@@ -66,7 +66,7 @@ class ReferenceValidator:
 
         return False
 
-    def check_reference_to_object(self, rpsl_obj: RPSLObject) -> List[Tuple[str, str, str]]:
+    def check_references_from_others(self, rpsl_obj: RPSLObject) -> List[Tuple[str, str, str]]:
         """
         Check for any references to this object in the DB.
         Used for validation deletions.

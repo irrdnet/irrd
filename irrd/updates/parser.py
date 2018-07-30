@@ -162,7 +162,7 @@ class UpdateRequest:
 
         for field_name, objects_referred, object_pks in references:
             for object_pk in object_pks:
-                if not self.reference_validator.check_reference_from_object(objects_referred, object_pk, source):
+                if not self.reference_validator.check_reference_to_others(objects_referred, object_pk, source):
                     if len(objects_referred) > 1:
                         objects_referred_str = 'one of ' + ', '.join(objects_referred)
                     else:
@@ -177,7 +177,7 @@ class UpdateRequest:
 
     def _check_references_to_object(self) -> bool:
         assert self.rpsl_obj_current
-        references = self.reference_validator.check_reference_to_object(self.rpsl_obj_current)
+        references = self.reference_validator.check_references_from_others(self.rpsl_obj_current)
         for ref_object_class, ref_pk, ref_source in references:
             self.error_messages.append(f'Object {self.rpsl_obj_current.pk()} to be deleted, but still referenced '
                                        f'by {ref_object_class} {ref_pk}')
