@@ -56,7 +56,6 @@ class ReferenceValidator:
             if (object_class, object_pk, source) in self._preloaded_deleted:
                 return False
 
-        # TODO: this still fails for route objects, where the PK includes the AS, but the reference does not
         query = RPSLDatabaseQuery().sources([source]).object_classes(object_classes).rpsl_pk(object_pk)
         results = list(self.database_handler.execute_query(query))
         for result in results:
@@ -72,7 +71,6 @@ class ReferenceValidator:
         Used for validation deletions.
         """
         query = RPSLDatabaseQuery().sources([rpsl_obj.source()])
-        # TODO: fails to detect route objects
         query = query.lookup_attrs_in(rpsl_obj.references_inbound(), [rpsl_obj.pk()])
         query_results = self.database_handler.execute_query(query)
         results = [(r['object_class'], r['rpsl_pk'], r['source']) for r in query_results]
