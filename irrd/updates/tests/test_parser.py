@@ -384,12 +384,13 @@ class TestSingleUpdateRequestHandling:
         monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
         monkeypatch.setattr('irrd.updates.validators.RPSLDatabaseQuery', lambda: mock_dq)
 
-        mock_dh.execute_query = lambda query: [{'object_text': SAMPLE_MNTNER}]
+        # Make the crypt password invalid in the version from the mock database
+        mock_dh.execute_query = lambda query: [{'object_text': SAMPLE_MNTNER.replace('CRYPT-PW', 'FAILED')}]
 
         reference_validator = ReferenceValidator(mock_dh)
         auth_validator = AuthValidator(mock_dh)
 
-        result_mntner = parse_update_requests(SAMPLE_MNTNER + 'password: crypt-password',
+        result_mntner = parse_update_requests(SAMPLE_MNTNER + 'password: md5-password',
                                               mock_dh, auth_validator, reference_validator)[0]
         auth_validator.pre_approve([result_mntner])
 
@@ -398,11 +399,15 @@ class TestSingleUpdateRequestHandling:
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['RIPE'],), {}],
             ['object_classes', (['mntner'],), {}],
-            ['rpsl_pk', ('AS760-MNT',), {}]
+            ['rpsl_pk', ('AS760-MNT',), {}],
+            ['sources', (['RIPE'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', (['AS760-MNT', 'ACONET-LIR-MNT', 'ACONET2-LIR-MNT'],), {}],
         ]
 
         auth_validator = AuthValidator(mock_dh)
-        result_mntner = parse_update_requests(SAMPLE_MNTNER + 'password: wrong-pw',
+        # This password is valid for the new object, but invalid for the current version in the DB
+        result_mntner = parse_update_requests(SAMPLE_MNTNER + 'password: crypt-password',
                                               mock_dh, auth_validator, reference_validator)[0]
         auth_validator.pre_approve([result_mntner])
         assert not result_mntner._check_auth()

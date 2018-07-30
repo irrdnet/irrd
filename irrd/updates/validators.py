@@ -106,12 +106,9 @@ class AuthValidator:
         When the mntner object itself is encountered, it's auth attributes are
         always validated against available authentication metadata.
         """
-        # TODO: only allow pre-approving newly created maintainers - otherwise
-        # follow the regular process to ensure the old mntner is validates
-
         self._pre_approved = set()
         for request in results:
-            if request.is_valid() and request.request_type != UpdateRequestType.DELETE and isinstance(request.rpsl_obj_new, RPSLMntner):
+            if request.is_valid() and request.request_type == UpdateRequestType.CREATE and isinstance(request.rpsl_obj_new, RPSLMntner):
                 self._pre_approved.add(request.rpsl_obj_new.pk())
 
     def check_auth(self, rpsl_obj_new: RPSLObject, rpsl_obj_current: Optional[RPSLObject]) -> Optional[str]:
