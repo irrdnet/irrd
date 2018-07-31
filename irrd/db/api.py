@@ -53,7 +53,12 @@ class RPSLDatabaseQuery:
 
     def rpsl_pk(self, rpsl_pk: str):
         """Filter on an exact RPSL PK (e.g. 192.0.2.0/24,AS23456)."""
-        return self._filter(self.columns.rpsl_pk == rpsl_pk.upper())
+        return self.rpsl_pks([rpsl_pk])
+
+    def rpsl_pks(self, rpsl_pks: List[str]):
+        """Filter on an exact RPSL PK (e.g. 192.0.2.0/24,AS23456) - will match any PK in the list."""
+        rpsl_pks = [p.upper().strip() for p in rpsl_pks]
+        return self._filter(self.columns.rpsl_pk.in_(rpsl_pks))
 
     def sources(self, sources: List[str]):
         """
@@ -94,27 +99,29 @@ class RPSLDatabaseQuery:
         At least one of the values for the lookup attribute must match attr_value.
         Matching is case-insensitive.
         """
-        return self.lookup_attr_in(attr_name, [attr_value])
+        return self.lookup_attrs_in([attr_name], [attr_value])
 
-    def lookup_attr_in(self, attr_name: str, attr_values: List[str]):
+    def lookup_attrs_in(self, attr_names: List[str], attr_values: List[str]):
         """
-        Filter on a lookup attribute, e.g. mnt-by.
-        At least one of the values for the lookup attribute must match one
-        of the items in attr_values. Matching is case-insensitive.
+        Filter on one or more lookup attributes, e.g. mnt-by, or ['admin-c', 'tech-c']
+        At least one of the values for at least one of the lookup attributes must
+        match one of the items in attr_values. Matching is case-insensitive.
         """
-        attr_name = attr_name.lower()
-        if attr_name not in self.lookup_field_names:
-            raise ValueError(f"Invalid lookup attribute: {attr_name}")
+        attr_names = [attr_name.lower() for attr_name in attr_names]
+        for attr_name in attr_names:
+            if attr_name not in self.lookup_field_names:
+                raise ValueError(f"Invalid lookup attribute: {attr_name}")
         self._check_query_frozen()
 
         value_filters = []
         statement_params = {}
-        for attr_value in attr_values:
-            counter = self._lookup_attr_counter
-            self._lookup_attr_counter += 1
-            value_filters.append(sa.text(f"parsed_data->:lookup_attr_name{counter} ? :lookup_attr_value{counter}"))
-            statement_params[f"lookup_attr_name{counter}"] = attr_name
-            statement_params[f"lookup_attr_value{counter}"] = attr_value.upper()
+        for attr_name in attr_names:
+            for attr_value in attr_values:
+                counter = self._lookup_attr_counter
+                self._lookup_attr_counter += 1
+                value_filters.append(sa.text(f"parsed_data->:lookup_attr_name{counter} ? :lookup_attr_value{counter}"))
+                statement_params[f"lookup_attr_name{counter}"] = attr_name
+                statement_params[f"lookup_attr_value{counter}"] = attr_value.upper()
         fltr = sa.or_(*value_filters)
         self.statement = self.statement.where(fltr).params(**statement_params)
 
@@ -358,6 +365,26 @@ class DatabaseHandler:
 
         if len(self._rpsl_upsert_cache) > MAX_RECORDS_CACHE_BEFORE_INSERT:
             self._flush_rpsl_object_upsert_cache()
+
+    def delete_rpsl_object(self, rpsl_object: RPSLObject) -> None:
+        self._flush_rpsl_object_upsert_cache()
+        table = RPSLDatabaseObject.__table__
+        source = rpsl_object.parsed_data['source']
+        stmt = table.delete(
+            sa.and_(table.c.rpsl_pk == rpsl_object.pk(), table.c.source == source),
+        ).returning(table.c.pk)
+        result = self._connection.execute(stmt)
+        if result.rowcount == 0:
+            logger.warning(f'attempted to remove object {rpsl_object.pk()}/{source}, but no database row matched')
+        if result.rowcount > 1:  # pragma: no cover
+            # This should not be possible, as rpsl_pk/source are a composite unique value in the database scheme.
+            # Therefore, a query should not be able to affect more than one row - and we also can not test this
+            # scenario. Due to the possible harm of a bug in this area, we still check for it anyways.
+            affected_pks = ','.join([r[0] for r in result.fetchall()])
+            msg = f'attempted to remove object {rpsl_object.pk()}/{source}, but multiple objects were affected, '
+            msg += f'internal pks affected: {affected_pks}'
+            logger.error(msg)
+            raise ValueError(msg)
 
     def commit(self) -> None:
         """

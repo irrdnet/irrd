@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from typing import Set
+from typing import Set, List, Optional
 
 import gnupg
 
@@ -11,12 +11,12 @@ from .fields import (RPSLTextField, RPSLIPv4PrefixField, RPSLIPv4PrefixesField, 
 from .parser import RPSLObject, UnknownRPSLObjectClassException
 
 
-def rpsl_object_from_text(text, strict_validation=True):
+def rpsl_object_from_text(text, strict_validation=True) -> RPSLObject:
     rpsl_object_class = text.split(":", maxsplit=1)[0].strip()
     try:
         klass = OBJECT_CLASS_MAPPING[rpsl_object_class]
     except KeyError:
-        raise UnknownRPSLObjectClassException(f"Encountered unknown object class: {rpsl_object_class}")
+        raise UnknownRPSLObjectClassException(f"unknown object class: {rpsl_object_class}")
     return klass(from_text=text, strict_validation=strict_validation)
 
 
@@ -24,8 +24,8 @@ class RPSLAsBlock(RPSLObject):
     fields = OrderedDict([
         ("as-block", RPSLASBlockField(primary_key=True, lookup_key=True)),
         ("descr", RPSLTextField(multiple=True, optional=True)),
-        ("admin-c", RPSLReferenceField(multiple=True, referring=["role", "person"])),
-        ("tech-c", RPSLReferenceField(multiple=True, referring=["role", "person"])),
+        ("admin-c", RPSLReferenceField(lookup_key=True, multiple=True, referring=["role", "person"])),
+        ("tech-c", RPSLReferenceField(lookup_key=True, multiple=True, referring=["role", "person"])),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
         ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
@@ -40,8 +40,8 @@ class RPSLAsSet(RPSLObject):
         ("descr", RPSLTextField(multiple=True, optional=True)),
         ("members", RPSLReferenceListField(lookup_key=True, optional=True, multiple=True, referring=["aut-num", "as-set"])),
         ("mbrs-by-ref", RPSLReferenceListField(lookup_key=True, optional=True, multiple=True, referring=["mntner"], allow_kw_any=True)),
-        ("admin-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
-        ("tech-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
+        ("admin-c", RPSLReferenceField(lookup_key=True, optional=True, multiple=True, referring=["role", "person"])),
+        ("tech-c", RPSLReferenceField(lookup_key=True, optional=True, multiple=True, referring=["role", "person"])),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
         ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
@@ -64,8 +64,8 @@ class RPSLAutNum(RPSLObject):
         ("export-via", RPSLTextField(optional=True, multiple=True)),
         ("default", RPSLTextField(optional=True, multiple=True)),
         ("mp-default", RPSLTextField(optional=True, multiple=True)),
-        ("admin-c", RPSLReferenceField(multiple=True, referring=["role", "person"])),
-        ("tech-c", RPSLReferenceField(multiple=True, referring=["role", "person"])),
+        ("admin-c", RPSLReferenceField(lookup_key=True, multiple=True, referring=["role", "person"])),
+        ("tech-c", RPSLReferenceField(lookup_key=True, multiple=True, referring=["role", "person"])),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
         ("mnt-by", RPSLReferenceListField(lookup_key=True, optional=True, multiple=True, referring=["mntner"])),
@@ -78,8 +78,8 @@ class RPSLDictionary(RPSLObject):
     fields = OrderedDict([
         ("dictionary", RPSLGenericNameField(primary_key=True, lookup_key=True)),
         ("descr", RPSLTextField(multiple=True, optional=True)),
-        ("admin-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
-        ("tech-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
+        ("admin-c", RPSLReferenceField(lookup_key=True, optional=True, multiple=True, referring=["role", "person"])),
+        ("tech-c", RPSLReferenceField(lookup_key=True, optional=True, multiple=True, referring=["role", "person"])),
         ("typedef", RPSLTextField(optional=True, multiple=True)),
         ("rp-attribute", RPSLTextField(optional=True, multiple=True)),
         ("protocol", RPSLTextField(optional=True, multiple=True)),
@@ -96,8 +96,8 @@ class RPSLDomain(RPSLObject):
     fields = OrderedDict([
         ("domain", RPSLTextField(primary_key=True, lookup_key=True)),  # reverse delegation address (range), v4/v6/enum
         ("descr", RPSLTextField(multiple=True, optional=True)),
-        ("admin-c", RPSLReferenceField(multiple=True, referring=["role", "person"])),
-        ("tech-c", RPSLReferenceField(multiple=True, referring=["role", "person"])),
+        ("admin-c", RPSLReferenceField(lookup_key=True, multiple=True, referring=["role", "person"])),
+        ("tech-c", RPSLReferenceField(lookup_key=True, multiple=True, referring=["role", "person"])),
         ("zone-c", RPSLReferenceField(lookup_key=True, multiple=True, referring=["role", "person"])),
         ("nserver", RPSLTextField(optional=True, multiple=True)),  # DNS name, possibly followed v4/v6
         ("sub-dom", RPSLTextField(optional=True, multiple=True)),
@@ -117,8 +117,8 @@ class RPSLFilterSet(RPSLObject):
         ("descr", RPSLTextField(multiple=True, optional=True)),
         ("filter", RPSLTextField()),
         ("mp-filter", RPSLTextField(optional=True)),
-        ("admin-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
-        ("tech-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
+        ("admin-c", RPSLReferenceField(lookup_key=True, optional=True, multiple=True, referring=["role", "person"])),
+        ("tech-c", RPSLReferenceField(lookup_key=True, optional=True, multiple=True, referring=["role", "person"])),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
         ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
@@ -140,8 +140,8 @@ class RPSLInetRtr(RPSLObject):
         ("member-of", RPSLReferenceListField(lookup_key=True, optional=True, multiple=True, referring=["rtr-set"])),
         ("rs-in", RPSLTextField(optional=True)),
         ("rs-out", RPSLTextField(optional=True)),
-        ("admin-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
-        ("tech-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
+        ("admin-c", RPSLReferenceField(lookup_key=True, optional=True, multiple=True, referring=["role", "person"])),
+        ("tech-c", RPSLReferenceField(lookup_key=True, optional=True, multiple=True, referring=["role", "person"])),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
         ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
@@ -156,8 +156,8 @@ class RPSLInet6Num(RPSLObject):
         ("netname", RPSLTextField()),
         ("descr", RPSLTextField(multiple=True, optional=True)),
         ("country", RPSLTextField(multiple=True)),
-        ("admin-c", RPSLReferenceField(multiple=True, referring=["role", "person"])),
-        ("tech-c", RPSLReferenceField(multiple=True, referring=["role", "person"])),
+        ("admin-c", RPSLReferenceField(lookup_key=True, multiple=True, referring=["role", "person"])),
+        ("tech-c", RPSLReferenceField(lookup_key=True, multiple=True, referring=["role", "person"])),
         ("rev-srv", RPSLTextField(optional=True, multiple=True)),
         ("status", RPSLTextField()),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
@@ -174,8 +174,8 @@ class RPSLInetnum(RPSLObject):
         ("netname", RPSLTextField()),
         ("descr", RPSLTextField(multiple=True, optional=True)),
         ("country", RPSLTextField(multiple=True)),
-        ("admin-c", RPSLReferenceField(multiple=True, referring=["role", "person"])),
-        ("tech-c", RPSLReferenceField(multiple=True, referring=["role", "person"])),
+        ("admin-c", RPSLReferenceField(lookup_key=True, multiple=True, referring=["role", "person"])),
+        ("tech-c", RPSLReferenceField(lookup_key=True, multiple=True, referring=["role", "person"])),
         ("rev-srv", RPSLTextField(optional=True, multiple=True)),
         ("status", RPSLTextField()),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
@@ -194,8 +194,8 @@ class RPSLKeyCert(RPSLObject):
         ("fingerpr", RPSLTextField(optional=True)),  # fingerprint, autogenerate
         ("certif", RPSLTextField(multiple=True)),  # Actual key
         ("remarks", RPSLTextField(optional=True, multiple=True)),
-        ("admin-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
-        ("tech-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
+        ("admin-c", RPSLReferenceField(lookup_key=True, optional=True, multiple=True, referring=["role", "person"])),
+        ("tech-c", RPSLReferenceField(lookup_key=True, optional=True, multiple=True, referring=["role", "person"])),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
         ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
         ("changed", RPSLTextField(multiple=True)),
@@ -274,7 +274,7 @@ class RPSLLimerick(RPSLObject):
         ("limerick", RPSLTextField(primary_key=True, lookup_key=True)),  # ????
         ("descr", RPSLTextField(multiple=True, optional=True)),
         ("text", RPSLTextField(multiple=True)),
-        ("admin-c", RPSLReferenceField(multiple=True, referring=["role", "person"])),
+        ("admin-c", RPSLReferenceField(lookup_key=True, multiple=True, referring=["role", "person"])),
         ("author", RPSLTextField(multiple=True)),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
@@ -288,8 +288,8 @@ class RPSLMntner(RPSLObject):
     fields = OrderedDict([
         ("mntner", RPSLGenericNameField(primary_key=True, lookup_key=True)),
         ("descr", RPSLTextField(multiple=True, optional=True)),
-        ("admin-c", RPSLReferenceField(multiple=True, referring=["role", "person"])),
-        ("tech-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
+        ("admin-c", RPSLReferenceField(lookup_key=True, multiple=True, referring=["role", "person"])),
+        ("tech-c", RPSLReferenceField(lookup_key=True, optional=True, multiple=True, referring=["role", "person"])),
         ("upd-to", RPSLEmailField(multiple=True)),
         ("mnt-nfy", RPSLEmailField(optional=True, multiple=True)),
         ("auth", RPSLAuthField(multiple=True)),
@@ -300,18 +300,23 @@ class RPSLMntner(RPSLObject):
         ("source", RPSLGenericNameField()),
     ])
 
-    def verify(self, password: str) -> bool:
+    def verify_auth(self, passwords: List[str], keycert_obj_pk: Optional[str]=None) -> bool:
         """
-        Verify whether a given password meets any of the auth hashes in this object.
-        Currently ignores PGP keys.
+        Verify whether one of a given list of passwords matches
+        any of the auth hashes in this object, or match the
+        keycert object PK.
         """
         for auth in self.parsed_data.get("auth", "").splitlines():
+            if keycert_obj_pk and auth.upper() == keycert_obj_pk:
+                return True
             if " " not in auth:
                 continue
             scheme, hash = auth.split(" ", 1)
             hasher = PASSWORD_HASHERS.get(scheme.upper())
-            if hasher and hasher.verify(password, hash):
-                return True
+            if hasher:
+                for password in passwords:
+                    if hasher.verify(password, hash):
+                        return True
         return False
 
 
@@ -321,8 +326,8 @@ class RPSLPeeringSet(RPSLObject):
         ("descr", RPSLTextField(multiple=True, optional=True)),
         ("peering", RPSLTextField(optional=True, multiple=True)),
         ("mp-peering", RPSLTextField(optional=True, multiple=True)),
-        ("admin-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
-        ("tech-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
+        ("admin-c", RPSLReferenceField(lookup_key=True, optional=True, multiple=True, referring=["role", "person"])),
+        ("tech-c", RPSLReferenceField(lookup_key=True, optional=True, multiple=True, referring=["role", "person"])),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
         ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
@@ -358,8 +363,8 @@ class RPSLRepository(RPSLObject):
         ("expire", RPSLTextField()),
         ("heartbeat-interval", RPSLTextField()),
         ("descr", RPSLTextField(multiple=True, optional=True)),
-        ("admin-c", RPSLReferenceField(multiple=True, referring=["role", "person"])),
-        ("tech-c", RPSLReferenceField(multiple=True, referring=["role", "person"])),
+        ("admin-c", RPSLReferenceField(lookup_key=True, multiple=True, referring=["role", "person"])),
+        ("tech-c", RPSLReferenceField(lookup_key=True, multiple=True, referring=["role", "person"])),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
         ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
@@ -376,8 +381,8 @@ class RPSLRole(RPSLObject):
         ("phone", RPSLTextField(multiple=True)),
         ("fax-no", RPSLTextField(optional=True, multiple=True)),
         ("e-mail", RPSLEmailField(multiple=True)),
-        ("admin-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
-        ("tech-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
+        ("admin-c", RPSLReferenceField(lookup_key=True, optional=True, multiple=True, referring=["role", "person"])),
+        ("tech-c", RPSLReferenceField(lookup_key=True, optional=True, multiple=True, referring=["role", "person"])),
         ("nic-hdl", RPSLGenericNameField(primary_key=True, lookup_key=True, non_strict_allow_any=True)),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
@@ -399,8 +404,8 @@ class RPSLRoute(RPSLObject):
         ("aggr-mtd", RPSLTextField(optional=True)),
         ("export-comps", RPSLTextField(optional=True)),
         ("components", RPSLTextField(optional=True)),
-        ("admin-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
-        ("tech-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
+        ("admin-c", RPSLReferenceField(lookup_key=True, optional=True, multiple=True, referring=["role", "person"])),
+        ("tech-c", RPSLReferenceField(lookup_key=True, optional=True, multiple=True, referring=["role", "person"])),
         ("geoidx", RPSLTextField(optional=True, multiple=True)),
         ("roa-uri", RPSLTextField(optional=True)),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
@@ -418,8 +423,8 @@ class RPSLRouteSet(RPSLObject):
         ("mp-members", RPSLRouteSetMembersField(ip_version=None, lookup_key=True, optional=True, multiple=True)),
         ("mbrs-by-ref", RPSLReferenceListField(lookup_key=True, optional=True, multiple=True, referring=["mntner"], allow_kw_any=True)),
         ("descr", RPSLTextField(multiple=True, optional=True)),
-        ("admin-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
-        ("tech-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
+        ("admin-c", RPSLReferenceField(lookup_key=True, optional=True, multiple=True, referring=["role", "person"])),
+        ("tech-c", RPSLReferenceField(lookup_key=True, optional=True, multiple=True, referring=["role", "person"])),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
         ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
@@ -440,8 +445,8 @@ class RPSLRoute6(RPSLObject):
         ("aggr-mtd", RPSLTextField(optional=True)),
         ("export-comps", RPSLTextField(optional=True)),
         ("components", RPSLTextField(optional=True)),
-        ("admin-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
-        ("tech-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
+        ("admin-c", RPSLReferenceField(lookup_key=True, optional=True, multiple=True, referring=["role", "person"])),
+        ("tech-c", RPSLReferenceField(lookup_key=True, optional=True, multiple=True, referring=["role", "person"])),
         ("geoidx", RPSLTextField(optional=True, multiple=True)),
         ("roa-uri", RPSLTextField(optional=True)),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
@@ -459,8 +464,8 @@ class RPSLRtrSet(RPSLObject):
         ("members", RPSLReferenceListField(lookup_key=True, optional=True, multiple=True, referring=["inet-rtr", "rtr-set"])),
         ("mp-members", RPSLReferenceListField(lookup_key=True, optional=True, multiple=True, referring=["inet-rtr", "rtr-set"])),
         ("mbrs-by-ref", RPSLReferenceListField(lookup_key=True, optional=True, multiple=True, referring=["mntner"], allow_kw_any=True)),
-        ("admin-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
-        ("tech-c", RPSLReferenceField(optional=True, multiple=True, referring=["role", "person"])),
+        ("admin-c", RPSLReferenceField(lookup_key=True, optional=True, multiple=True, referring=["role", "person"])),
+        ("tech-c", RPSLReferenceField(lookup_key=True, optional=True, multiple=True, referring=["role", "person"])),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
         ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),

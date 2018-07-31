@@ -55,6 +55,7 @@ def database_handler_with_route():
     dh._connection.close()
 
 
+# noinspection PyTypeChecker
 class TestDatabaseHandlerLive:
     def test_object_writing(self, monkeypatch, irrd_database):
         monkeypatch.setattr('irrd.db.api.MAX_RECORDS_CACHE_BEFORE_INSERT', 1)
@@ -124,6 +125,12 @@ class TestDatabaseHandlerLive:
         query = RPSLDatabaseQuery()
         result = list(self.dh.execute_query(query))
         assert len(result) == 2
+
+        self.dh.delete_rpsl_object(rpsl_obj_route_v6)
+        self.dh.delete_rpsl_object(rpsl_obj_route_v6)
+        query = RPSLDatabaseQuery()
+        result = list(self.dh.execute_query(query))
+        assert len(result) == 1
 
         self.dh._connection.close()
 

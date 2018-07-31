@@ -2,12 +2,12 @@ import pytest
 from IPy import IP
 from pytest import raises
 
-from .rpsl_samples import (object_sample_mapping, SAMPLE_MALFORMED_EMPTY_LINE, SAMPLE_MALFORMED_ATTRIBUTE_NAME,
-                           SAMPLE_UNKNOWN_CLASS, SAMPLE_MISSING_MANDATORY_ATTRIBUTE, SAMPLE_MALFORMED_SOURCE,
-                           SAMPLE_MALFORMED_PK, SAMPLE_UNKNOWN_ATTRIBUTE, SAMPLE_INVALID_MULTIPLE_ATTRIBUTE,
-                           KEY_CERT_SIGNED_MESSAGE_VALID, KEY_CERT_SIGNED_MESSAGE_INVALID,
-                           KEY_CERT_SIGNED_MESSAGE_CORRUPT, KEY_CERT_SIGNED_MESSAGE_WRONG_KEY, TEMPLATE_ROUTE_OBJECT,
-                           TEMPLATE_PERSON_OBJECT)
+from irrd.utils.rpsl_samples import (object_sample_mapping, SAMPLE_MALFORMED_EMPTY_LINE, SAMPLE_MALFORMED_ATTRIBUTE_NAME,
+                                     SAMPLE_UNKNOWN_CLASS, SAMPLE_MISSING_MANDATORY_ATTRIBUTE, SAMPLE_MALFORMED_SOURCE,
+                                     SAMPLE_MALFORMED_PK, SAMPLE_UNKNOWN_ATTRIBUTE, SAMPLE_INVALID_MULTIPLE_ATTRIBUTE,
+                                     KEY_CERT_SIGNED_MESSAGE_VALID, KEY_CERT_SIGNED_MESSAGE_INVALID,
+                                     KEY_CERT_SIGNED_MESSAGE_CORRUPT, KEY_CERT_SIGNED_MESSAGE_WRONG_KEY, TEMPLATE_ROUTE_OBJECT,
+                                     TEMPLATE_PERSON_OBJECT)
 from ..parser import UnknownRPSLObjectClassException
 from ..rpsl_objects import (RPSLAsBlock, RPSLAsSet, RPSLAutNum, RPSLDictionary, RPSLDomain, RPSLFilterSet, RPSLInetRtr,
                             RPSLInet6Num, RPSLInetnum, RPSLKeyCert, RPSLLimerick, RPSLMntner, RPSLPeeringSet,
@@ -42,6 +42,9 @@ class TestRPSLParsingGeneric:
         obj = rpsl_object_from_text(SAMPLE_MALFORMED_EMPTY_LINE, strict_validation=False)
         assert len(obj.messages.errors()) == 2, f"Unexpected extra errors: {obj.messages.errors()}"
         assert "encountered empty line" in obj.messages.errors()[0]
+
+        with raises(ValueError):
+            obj.source()
 
     def test_malformed_attribute_name(self):
         obj = rpsl_object_from_text(SAMPLE_MALFORMED_ATTRIBUTE_NAME, strict_validation=False)
@@ -116,6 +119,14 @@ class TestRPSLAsSet:
         assert obj.__class__ == RPSLAsSet
         assert not obj.messages.errors()
         assert obj.pk() == "AS-RESTENA"
+        assert obj.referred_objects() == [
+            ('members', ['aut-num', 'as-set'], ['AS2602', 'AS42909', 'AS51966', 'AS49624']),
+            ('admin-c', ['role', 'person'], ['DUMY-RIPE']),
+            ('tech-c', ['role', 'person'], ['DUMY-RIPE']),
+            ('mnt-by', ['mntner'], ['AS2602-MNT'])
+        ]
+        assert obj.source() == 'RIPE'
+
         assert obj.parsed_data['members'] == ['AS2602', 'AS42909', 'AS51966', 'AS49624']
         # Field parsing will cause our object to look slightly different than the original, hence the replace()
         assert obj.render_rpsl_text() == rpsl_text.replace("AS2602, AS42909, AS51966", "AS2602,AS42909,AS51966")
@@ -299,11 +310,12 @@ class TestRPSLMntner:
         # Unknown hashes should simply be ignored.
         obj = rpsl_object_from_text(rpsl_text + "auth: UNKNOWN_HASH foo")
 
-        assert obj.verify("crypt-password")
-        assert obj.verify("md5-password")
-        assert not obj.verify("other-password")
-        assert not obj.verify(KEY_CERT_SIGNED_MESSAGE_CORRUPT)
-        assert not obj.verify(KEY_CERT_SIGNED_MESSAGE_WRONG_KEY)
+        assert obj.verify_auth(["crypt-password"])
+        assert obj.verify_auth(["md5-password"])
+        assert obj.verify_auth(["md5-password"], 'PGPKey-80F238C6')
+        assert not obj.verify_auth(["other-password"])
+        assert not obj.verify_auth([KEY_CERT_SIGNED_MESSAGE_CORRUPT])
+        assert not obj.verify_auth([KEY_CERT_SIGNED_MESSAGE_WRONG_KEY])
 
 
 class TestRPSLPeeringSet:
@@ -407,7 +419,8 @@ class TestRPSLRouteSet:
         assert obj.__class__ == RPSLRouteSet
         assert not obj.messages.errors()
         assert obj.pk() == "RS-TEST"
-        assert obj.render_rpsl_text() == rpsl_text
+        assert obj.render_rpsl_text() == rpsl_text.replace('2001:1578:0200:0::/040', '2001:1578:200::/40')
+        assert obj.parsed_data['mp-members'] == ['2001:1578:200::/40']
 
 
 class TestRPSLRoute6:

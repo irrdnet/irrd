@@ -302,7 +302,7 @@ class WhoisQueryParser:
         query = self._prepare_query().object_classes(query_object_class)
         query = query.lookup_attr('member-of', set_name)
         if 'ANY' not in [m.strip().upper() for m in mbrs_by_ref]:
-            query = query.lookup_attr_in('mnt-by', mbrs_by_ref)
+            query = query.lookup_attrs_in(['mnt-by'], mbrs_by_ref)
         referring_objects = self.database_handler.execute_query(query)
 
         for result in referring_objects:

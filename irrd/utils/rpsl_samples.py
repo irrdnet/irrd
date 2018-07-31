@@ -9,13 +9,7 @@ changed:        2014-02-24T13:15:13Z
 tech-c:         DUMY-RIPE
 admin-c:        DUMY-RIPE
 source:         RIPE
-remarks:        ****************************
-remarks:        * THIS OBJECT IS MODIFIED
-remarks:        * Please note that all data that is generally regarded as personal
-remarks:        * data has been removed from this object.
-remarks:        * To view the original object, please query the RIPE Database at:
-remarks:        * http://www.ripe.net/whois
-remarks:        ****************************
+remarks:        remark
 """
 
 SAMPLE_AS_SET = """as-set:         AS-RESTENA
@@ -29,13 +23,7 @@ notify:         noc@restena.lu
 mnt-by:         AS2602-MNT
 changed:        2017-05-19T12:22:08Z
 source:         RIPE
-remarks:        ****************************
-remarks:        * THIS OBJECT IS MODIFIED
-remarks:        * Please note that all data that is generally regarded as personal
-remarks:        * data has been removed from this object.
-remarks:        * To view the original object, please query the RIPE Database at:
-remarks:        * http://www.ripe.net/whois
-remarks:        ****************************
+remarks:        remark
 """
 
 SAMPLE_AUT_NUM = """aut-num:        as03255
@@ -804,13 +792,7 @@ notify:         lir@uar.net
 mnt-by:         AS3255-MNT
 changed:        2018-03-13T19:16:16Z
 source:         RIPE
-remarks:        ****************************
-remarks:        * THIS OBJECT IS MODIFIED
-remarks:        * Please note that all data that is generally regarded as personal
-remarks:        * data has been removed from this object.
-remarks:        * To view the original object, please query the RIPE Database at:
-remarks:        * http://www.ripe.net/whois
-remarks:        ****************************
+remarks:        remark
 """
 
 SAMPLE_DOMAIN = """domain:         200.193.193.in-addr.arpa
@@ -825,13 +807,7 @@ mnt-by:         AS3254-MNT
 changed:        2011-02-04T10:33:38Z
 source:         RIPE
                 # foo
-remarks:        ****************************
-remarks:        * THIS OBJECT IS MODIFIED
-remarks:        * Please note that all data that is generally regarded as personal
-remarks:        * data has been removed from this object.
-remarks:        * To view the original object, please query the RIPE Database at:
-remarks:        * http://www.ripe.net/whois
-remarks:        ****************************
+remarks:        remark
 """
 
 SAMPLE_FILTER_SET = """filter-set:     fltr-bogons-integra-it
@@ -932,13 +908,7 @@ tech-c:         DUMY-RIPE
 mnt-by:         AS12784-MNT
 changed:        2002-12-04T11:34:27Z
 source:         RIPE
-remarks:        ****************************
-remarks:        * THIS OBJECT IS MODIFIED
-remarks:        * Please note that all data that is generally regarded as personal
-remarks:        * data has been removed from this object.
-remarks:        * To view the original object, please query the RIPE Database at:
-remarks:        * http://www.ripe.net/whois
-remarks:        ****************************
+remarks:        remark
 """
 
 SAMPLE_INET_RTR = """inet-rtr:       kst1-core.swip.net
@@ -952,13 +922,7 @@ tech-c:         DUMY-RIPE
 mnt-by:         AS1257-MNT
 changed:        2001-09-21T22:07:57Z
 source:         RIPE
-remarks:        ****************************
-remarks:        * THIS OBJECT IS MODIFIED
-remarks:        * Please note that all data that is generally regarded as personal
-remarks:        * data has been removed from this object.
-remarks:        * To view the original object, please query the RIPE Database at:
-remarks:        * http://www.ripe.net/whois
-remarks:        ****************************
+remarks:        remark
 """
 
 SAMPLE_INET6NUM = """inet6num:       2001:638:501::/48
@@ -976,13 +940,7 @@ mnt-by:         DFN-HM-MNT
 status:         ASSIGNED
 changed:        2011-10-14T15:05:09Z
 source:         RIPE
-remarks:        ****************************
-remarks:        * THIS OBJECT IS MODIFIED
-remarks:        * Please note that all data that is generally regarded as personal
-remarks:        * data has been removed from this object.
-remarks:        * To view the original object, please query the RIPE Database at:
-remarks:        * http://www.ripe.net/whois
-remarks:        ****************************
+remarks:        remark
 """
 
 SAMPLE_INETNUM = """inetnum:        80.16.151.184 - 80.016.151.191
@@ -996,13 +954,7 @@ notify:         neteconomy.rete@telecomitalia.it
 mnt-by:         INTERB-MNT
 changed:        2001-09-21T22:08:01Z
 source:         RIPE
-remarks:        ****************************
-remarks:        * THIS OBJECT IS MODIFIED
-remarks:        * Please note that all data that is generally regarded as personal
-remarks:        * data has been removed from this object.
-remarks:        * To view the original object, please query the RIPE Database at:
-remarks:        * http://www.ripe.net/whois
-remarks:        ****************************
+remarks:        remark
 """
 
 SAMPLE_KEY_CERT = """key-cert:       PGPKEY-80F238C6
@@ -1292,13 +1244,7 @@ mnt-by:         AS760-MNT
 mnt-by:         ACONET-LIR-MNT,ACONET2-LIR-MNT
 changed:        2016-10-05T10:41:15Z
 source:         RIPE
-remarks:        ****************************
-remarks:        * THIS OBJECT IS MODIFIED
-remarks:        * Please note that all data that is generally regarded as personal
-remarks:        * data has been removed from this object.
-remarks:        * To view the original object, please query the RIPE Database at:
-remarks:        * http://www.ripe.net/whois
-remarks:        ****************************
+remarks:        remark
 """
 
 SAMPLE_PEERING_SET = """peering-set:    prng-MEDIAFAX
@@ -1312,13 +1258,7 @@ notify:         hostmaster@dnt.ro
 mnt-by:         AS6746-MNT
 changed:        2001-09-21T23:07:39Z
 source:         RIPE
-remarks:        ****************************
-remarks:        * THIS OBJECT IS MODIFIED
-remarks:        * Please note that all data that is generally regarded as personal
-remarks:        * data has been removed from this object.
-remarks:        * To view the original object, please query the RIPE Database at:
-remarks:        * http://www.ripe.net/whois
-remarks:        ****************************
+remarks:        remark
 """
 
 SAMPLE_PERSON = """person:         Placeholder Person Object
@@ -1352,13 +1292,7 @@ notify:         netmaster@bisping.de
 mnt-by:         BISPING-MNT
 changed:        2017-11-21T15:56:58Z
 source:         RIPE
-remarks:        ****************************
-remarks:        * THIS OBJECT IS MODIFIED
-remarks:        * Please note that all data that is generally regarded as personal
-remarks:        * data has been removed from this object.
-remarks:        * To view the original object, please query the RIPE Database at:
-remarks:        * http://www.ripe.net/whois
-remarks:        ****************************
+remarks:        remark
 """
 
 SAMPLE_ROUTE = """route:          193.254.030.00/24
@@ -1367,13 +1301,7 @@ origin:         AS12726
 mnt-by:         AS12312-MNT
 changed:        2009-10-15T09:32:17Z
 source:         RIPE
-remarks:        ****************************
-remarks:        * THIS OBJECT IS MODIFIED
-remarks:        * Please note that all data that is generally regarded as personal
-remarks:        * data has been removed from this object.
-remarks:        * To view the original object, please query the RIPE Database at:
-remarks:        * http://www.ripe.net/whois
-remarks:        ****************************
+remarks:        remark
 """
 
 SAMPLE_ROUTE_SET = """route-set:      RS-TEST
@@ -1382,15 +1310,10 @@ mbrs-by-ref:    UUNET-MNT
 tech-c:         DUMY-RIPE
 admin-c:        DUMY-RIPE
 mnt-by:         UUNET-MNT
+mp-members:     2001:1578:0200:0::/040
 changed:        2001-09-22T09:34:03Z
 source:         RIPE
-remarks:        ****************************
-remarks:        * THIS OBJECT IS MODIFIED
-remarks:        * Please note that all data that is generally regarded as personal
-remarks:        * data has been removed from this object.
-remarks:        * To view the original object, please query the RIPE Database at:
-remarks:        * http://www.ripe.net/whois
-remarks:        ****************************
+remarks:        remark
 """
 
 SAMPLE_ROUTE6 = """route6:         2001:1578:200::/40
@@ -1399,13 +1322,7 @@ origin:         AS12817
 mnt-by:         EXAmple-MNT
 changed:        2004-12-29T21:30:40Z
 source:         RIPE
-remarks:        ****************************
-remarks:        * THIS OBJECT IS MODIFIED
-remarks:        * Please note that all data that is generally regarded as personal
-remarks:        * data has been removed from this object.
-remarks:        * To view the original object, please query the RIPE Database at:
-remarks:        * http://www.ripe.net/whois
-remarks:        ****************************
+remarks:        remark
 """
 
 SAMPLE_RTR_SET = """rtr-set:        rtrs-mways-callback
@@ -1437,13 +1354,7 @@ admin-c:        DUMY-RIPE
 mnt-by:         MDA-Z
 changed:        2001-09-22T09:34:04Z
 source:         RIPE
-remarks:        ****************************
-remarks:        * THIS OBJECT IS MODIFIED
-remarks:        * Please note that all data that is generally regarded as personal
-remarks:        * data has been removed from this object.
-remarks:        * To view the original object, please query the RIPE Database at:
-remarks:        * http://www.ripe.net/whois
-remarks:        ****************************
+remarks:        remark
 """
 
 SAMPLE_UNKNOWN_CLASS = """foo-block:       AS2043 - AS2043
@@ -1636,8 +1547,8 @@ aggr-bndry:     [optional]   [single]    []
 aggr-mtd:       [optional]   [single]    []
 export-comps:   [optional]   [single]    []
 components:     [optional]   [single]    []
-admin-c:        [optional]   [multiple]  []
-tech-c:         [optional]   [multiple]  []
+admin-c:        [optional]   [multiple]  [look-up key]
+tech-c:         [optional]   [multiple]  [look-up key]
 geoidx:         [optional]   [multiple]  []
 roa-uri:        [optional]   [single]    []
 remarks:        [optional]   [multiple]  []
