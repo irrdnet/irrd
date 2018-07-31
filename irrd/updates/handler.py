@@ -16,8 +16,6 @@ class UpdateRequestHandler:
         auth_validator = AuthValidator(self.database_handler)
         results = parse_update_requests(object_texts, self.database_handler, auth_validator, reference_validator)
 
-        # TODO: deleted objects from this update must not have references in the DB
-
         # When an object references another object, e.g. tech-c referring a person or mntner,
         # an add/update is only valid if those referred objects exist. To complicate matters,
         # the object referred to may be part of this very same update. For this reason, the
