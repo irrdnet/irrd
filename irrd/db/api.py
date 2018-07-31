@@ -372,8 +372,7 @@ class DatabaseHandler:
         source = rpsl_object.parsed_data['source']
         stmt = table.delete(
             sa.and_(table.c.rpsl_pk == rpsl_object.pk(), table.c.source == source),
-            returning=table.c.pk,
-        )
+        ).returning(table.c.pk)
         result = self._connection.execute(stmt)
         if result.rowcount == 0:
             logger.warning(f'attempted to remove object {rpsl_object.pk()}/{source}, but no database row matched')

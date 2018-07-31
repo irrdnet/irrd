@@ -40,7 +40,30 @@ class ReferenceValidator:
                 self._preloaded_new.add((request.rpsl_obj_new.rpsl_object_class, request.rpsl_obj_new.pk(),
                                          request.rpsl_obj_new.source()))
 
-    def check_reference_to_others(self, object_classes: List[str], object_pk: str, source: str) -> bool:
+    def check_references_to_others(self, rpsl_obj: RPSLObject) -> List[str]:
+        """
+        Check the validity of references of a particular object, i.e. whether
+        all references to other objects actually exist in the database.
+
+
+        Returns a list of error messages, or an empty list if there were no errors.
+        """
+        error_messages = []
+        references = rpsl_obj.referred_objects()
+        source = rpsl_obj.source()
+
+        for field_name, objects_referred, object_pks in references:
+            for object_pk in object_pks:
+                if not self._check_reference_to_others(objects_referred, object_pk, source):
+                    if len(objects_referred) > 1:
+                        objects_referred_str = 'one of ' + ', '.join(objects_referred)
+                    else:
+                        objects_referred_str = objects_referred[0]
+                    error_messages.append(f'Object {object_pk} referenced in field {field_name} not found in '
+                                          f'database {source} - must reference {objects_referred_str}.')
+        return error_messages
+
+    def _check_reference_to_others(self, object_classes: List[str], object_pk: str, source: str) -> bool:
         """
         Check whether a reference to a particular object class/source/PK is valid,
         i.e. such an object exists in the database.
@@ -69,6 +92,12 @@ class ReferenceValidator:
         """
         Check for any references to this object in the DB.
         Used for validation deletions.
+
+        Returns a list with a tuple for each reference found, with each tuple:
+        - the RPSL object class
+        - the RPSL PK of the object referring to rpsl_obj
+        - the RPSL source of the object referring to rpsl_obj
+
         """
         query = RPSLDatabaseQuery().sources([rpsl_obj.source()])
         query = query.lookup_attrs_in(rpsl_obj.references_inbound(), [rpsl_obj.pk()])

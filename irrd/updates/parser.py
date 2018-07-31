@@ -16,7 +16,7 @@ class UpdateRequest:
     In this context, an update can be creating, modifying or deleting an
     RPSL object.
     """
-    rpsl_text: str
+    rpsl_text_submitted: str
     rpsl_obj_new: Optional[RPSLObject]
     rpsl_obj_current: Optional[RPSLObject] = None
     status = UpdateRequestStatus.PROCESSING
@@ -25,27 +25,20 @@ class UpdateRequest:
     error_messages: List[str]
     info_messages: List[str]
 
-    passwords: List[str]
-    overrides: List[str]
-    keycert_obj_pk: Optional[str] = None
-
-    def __init__(self, rpsl_text: str, database_handler: DatabaseHandler, auth_validator: AuthValidator,
-                 reference_validator: ReferenceValidator, delete_reason=Optional[str],
-                 keycert_obj_pk=Optional[str]) -> None:
+    def __init__(self, rpsl_text_submitted: str, database_handler: DatabaseHandler, auth_validator: AuthValidator,
+                 reference_validator: ReferenceValidator, delete_reason=Optional[str]) -> None:
         """
         Initialise a new update request for a single RPSL object.
 
-        :param rpsl_text: the object text
+        :param rpsl_text_submitted: the object text
         :param database_handler: a DatabaseHandler instance
         :param auth_validator: a AuthValidator instance, to resolve authentication requirements
-        :param reference_validator: a ReferenceValidator instance, to resolve references to other object
-        :param delete_reason: a string with the deletion reason, if this was a deletion
-        :param keycert_obj_pk: the RPSL PK of a PGPKEY key-cert object, if the message was signed with this
+        :param reference_validator: a ReferenceValidator instance, to resolve references between objects
+        :param delete_reason: a string with the deletion reason, if this was a deletion request
 
         The rpsl_text passed into this function should be cleaned from any
         meta attributes like delete/override/password. Those should be passed
-        into this method as delete_reason, or set in the passwords/overrides
-        attributes after creating this instance.
+        into this method as delete_reason, or provided to the AuthValidator.
 
         The passed_mntner_cache and reference_validator must be shared between
         different instances, to benefit from caching, and to resolve references
@@ -58,11 +51,10 @@ class UpdateRequest:
         self.database_handler = database_handler
         self.auth_validator = auth_validator
         self.reference_validator = reference_validator
-        self.rpsl_text = rpsl_text
-        self.keycert_obj_pk = keycert_obj_pk
+        self.rpsl_text_submitted = rpsl_text_submitted
 
         try:
-            self.rpsl_obj_new = rpsl_object_from_text(rpsl_text, strict_validation=True)
+            self.rpsl_obj_new = rpsl_object_from_text(rpsl_text_submitted, strict_validation=True)
             if self.rpsl_obj_new.messages.errors():
                 self.status = UpdateRequestStatus.ERROR_PARSING
             self.error_messages = self.rpsl_obj_new.messages.errors()
@@ -85,7 +77,10 @@ class UpdateRequest:
                 self.error_messages.append(f"Can not delete object: no object found for this key in this database.")
 
     def _retrieve_existing_version(self):
-        """Retrieve the current version of this object, if any, and store it in rpsl_obj_current."""
+        """
+        Retrieve the current version of this object, if any, and store it in rpsl_obj_current.
+        Update self.status appropriately.
+        """
         query = RPSLDatabaseQuery().sources([self.rpsl_obj_new.source()])
         query = query.object_classes([self.rpsl_obj_new.rpsl_object_class]).rpsl_pk(self.rpsl_obj_new.pk())
         results = list(self.database_handler.execute_query(query))
@@ -94,14 +89,14 @@ class UpdateRequest:
             self.request_type = UpdateRequestType.CREATE
         elif len(results) == 1:
             self.request_type = UpdateRequestType.MODIFY
-            self.rpsl_obj_current = rpsl_object_from_text(results[0]['object_text'])
+            self.rpsl_obj_current = rpsl_object_from_text(results[0]['object_text'], strict_validation=False)
         else:  # pragma: no cover
             # This should not be possible, as rpsl_pk/source are a composite unique value in the database scheme.
             # Therefore, a query should not be able to affect more than one row.
             affected_pks = ', '.join([r['pk'] for r in results])
-            msg = f'attempted to retrieve current version of  object {self.rpsl_obj_new.pk()}/'
+            msg = f'attempted to retrieve current version of object {self.rpsl_obj_new.pk()}/'
             msg += f'{self.rpsl_obj_new.source()}, but multiple '
-            msg += f'objects were affected, internal pks affected: {affected_pks}'
+            msg += f'objects were found, internal pks found: {affected_pks}'
             logger.error(msg)
             raise ValueError(msg)
 
@@ -124,9 +119,9 @@ class UpdateRequest:
 
         report = f'{request_type} {status}: [{object_class}] {pk}\n'
         if self.info_messages or self.error_messages:
-            report += '\n' + self.rpsl_text + '\n'
-        report += ''.join([f'ERROR: {e}\n' for e in self.error_messages])
-        report += ''.join([f'INFO: {e}\n' for e in self.info_messages])
+            report += '\n' + self.rpsl_text_submitted + '\n'
+            report += ''.join([f'ERROR: {e}\n' for e in self.error_messages])
+            report += ''.join([f'INFO: {e}\n' for e in self.info_messages])
         return report
 
     def is_valid(self):
@@ -140,49 +135,38 @@ class UpdateRequest:
         # they now become invalid. For other operations, only the validity
         # of references from this object to others matter.
         if self.request_type == UpdateRequestType.DELETE:
-            references_valid = self._check_references_to_object()
+            references_valid = self._check_references_from_others()
         else:
-            references_valid = self._check_references_from_object()
+            references_valid = self._check_references_to_others()
         return auth_valid and references_valid
 
     def _check_auth(self) -> bool:
         assert self.rpsl_obj_new
-        auth_result = self.auth_validator.check_auth(self.rpsl_obj_new, self.rpsl_obj_current)
-        if auth_result:
+        auth_error_message = self.auth_validator.check_auth(self.rpsl_obj_new, self.rpsl_obj_current)
+        if auth_error_message:
             self.status = UpdateRequestStatus.ERROR_AUTH
-            self.error_messages.append(auth_result)
+            self.error_messages.append(auth_error_message)
             return False
         return True
 
-    def _check_references_from_object(self) -> bool:
+    def _check_references_to_others(self) -> bool:
         """Check all references from this object to other objects."""
         assert self.rpsl_obj_new
-        references = self.rpsl_obj_new.referred_objects()
-        source = self.rpsl_obj_new.source()
-
-        for field_name, objects_referred, object_pks in references:
-            for object_pk in object_pks:
-                if not self.reference_validator.check_reference_to_others(objects_referred, object_pk, source):
-                    if len(objects_referred) > 1:
-                        objects_referred_str = 'one of ' + ', '.join(objects_referred)
-                    else:
-                        objects_referred_str = objects_referred[0]
-                    self.error_messages.append(f'Object {object_pk} referenced in field {field_name} not found in '
-                                               f'database {source} - must reference {objects_referred_str} object')
-
-        if self.error_messages:
+        references_error_messages = self.reference_validator.check_references_to_others(self.rpsl_obj_new)
+        self.error_messages += references_error_messages
+        if references_error_messages and self.is_valid():
             self.status = UpdateRequestStatus.ERROR_REFERENCE
             return False
         return True
 
-    def _check_references_to_object(self) -> bool:
+    def _check_references_from_others(self) -> bool:
         assert self.rpsl_obj_current
         references = self.reference_validator.check_references_from_others(self.rpsl_obj_current)
         for ref_object_class, ref_pk, ref_source in references:
             self.error_messages.append(f'Object {self.rpsl_obj_current.pk()} to be deleted, but still referenced '
                                        f'by {ref_object_class} {ref_pk}')
 
-        if self.error_messages:
+        if self.error_messages and self.is_valid():
             self.status = UpdateRequestStatus.ERROR_REFERENCE
             return False
         return True
@@ -238,7 +222,7 @@ def parse_update_requests(requests_text: str,
             continue
 
         results.append(UpdateRequest(rpsl_text, database_handler, auth_validator, reference_validator,
-                                     delete_reason=delete_reason, keycert_obj_pk=keycert_obj_pk))
+                                     delete_reason=delete_reason))
 
     for result in results:
         result.passwords = passwords

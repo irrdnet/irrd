@@ -1,6 +1,7 @@
 import itertools
 from unittest.mock import Mock
 
+import pytest
 from pytest import raises
 
 from irrd.utils.rpsl_samples import SAMPLE_INETNUM, SAMPLE_AS_SET, SAMPLE_PERSON, SAMPLE_MNTNER
@@ -10,14 +11,20 @@ from ..parser_state import UpdateRequestType, UpdateRequestStatus
 from ..validators import ReferenceValidator, AuthValidator
 
 
+@pytest.fixture()
+def prepare_mocks(monkeypatch):
+    mock_dh = Mock()
+    mock_dq = Mock()
+    monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
+    monkeypatch.setattr('irrd.updates.validators.RPSLDatabaseQuery', lambda: mock_dq)
+    yield mock_dq, mock_dh
+
+
 class TestSingleUpdateRequestHandling:
     # NOTE: the scope of this test includes UpdateRequest, ReferenceValidator and AuthValidator
 
-    def test_parse_valid(self, monkeypatch):
-        mock_dh = Mock()
-        mock_dq = Mock()
-        monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
-        monkeypatch.setattr('irrd.updates.validators.RPSLDatabaseQuery', lambda: mock_dq)
+    def test_parse_valid(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
 
         query_results = iter([
             [{'object_text': SAMPLE_INETNUM}],
@@ -30,7 +37,7 @@ class TestSingleUpdateRequestHandling:
 
         assert result_inetnum.status == UpdateRequestStatus.PROCESSING, result_inetnum.error_messages
         assert result_inetnum.is_valid()
-        assert result_inetnum.rpsl_text.startswith('inetnum:')
+        assert result_inetnum.rpsl_text_submitted.startswith('inetnum:')
         assert result_inetnum.rpsl_obj_new.rpsl_object_class == 'inetnum'
         assert result_inetnum.passwords == ['pw1', 'pw2', 'pw3']
         assert result_inetnum.overrides == ['override-pw']
@@ -41,7 +48,7 @@ class TestSingleUpdateRequestHandling:
 
         assert result_as_set.status == UpdateRequestStatus.PROCESSING, result_inetnum.error_messages
         assert result_as_set.is_valid()
-        assert result_as_set.rpsl_text.startswith('as-set:')
+        assert result_as_set.rpsl_text_submitted.startswith('as-set:')
         assert result_as_set.rpsl_obj_new.rpsl_object_class == 'as-set'
         assert result_as_set.passwords == ['pw1', 'pw2', 'pw3']
         assert result_inetnum.overrides == ['override-pw']
@@ -51,7 +58,7 @@ class TestSingleUpdateRequestHandling:
 
         assert result_unknown.status == UpdateRequestStatus.ERROR_UNKNOWN_CLASS
         assert not result_unknown.is_valid()
-        assert result_unknown.rpsl_text.startswith('unknown-object:')
+        assert result_unknown.rpsl_text_submitted.startswith('unknown-object:')
         assert not result_unknown.rpsl_obj_new
         assert result_unknown.passwords == ['pw1', 'pw2', 'pw3']
         assert result_unknown.overrides == ['override-pw']
@@ -62,7 +69,7 @@ class TestSingleUpdateRequestHandling:
 
         assert result_invalid.status == UpdateRequestStatus.ERROR_PARSING
         assert not result_invalid.is_valid()
-        assert result_invalid.rpsl_text.startswith('aut-num:')
+        assert result_invalid.rpsl_text_submitted.startswith('aut-num:')
         assert result_invalid.rpsl_obj_new.rpsl_object_class == 'aut-num'
         assert result_invalid.passwords == ['pw1', 'pw2', 'pw3']
         assert result_invalid.overrides == ['override-pw']
@@ -83,27 +90,21 @@ class TestSingleUpdateRequestHandling:
             ['upsert_rpsl_object', (result_as_set.rpsl_obj_new,), {}],
         ]
 
-    def test_delete_nonexistent_object(self, monkeypatch):
-        mock_dh = Mock()
-        mock_dq = Mock()
-        monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
-        monkeypatch.setattr('irrd.updates.validators.RPSLDatabaseQuery', lambda: mock_dq)
+    def test_save_nonexistent_object(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
         mock_dh.execute_query = lambda query: []
 
         result_inetnum = parse_update_requests(self._request_text(), mock_dh, AuthValidator(mock_dh), None)[0]
 
         assert result_inetnum.status == UpdateRequestStatus.ERROR_PARSING
         assert not result_inetnum.is_valid()
-        assert result_inetnum.rpsl_text.startswith('inetnum:')
+        assert result_inetnum.rpsl_text_submitted.startswith('inetnum:')
         assert result_inetnum.request_type == UpdateRequestType.DELETE
         assert len(result_inetnum.error_messages) == 1
         assert 'Can not delete object: no object found for this key in this database' in result_inetnum.error_messages[0]
 
-    def test_check_references_valid(self, monkeypatch):
-        mock_dh = Mock()
-        mock_dq = Mock()
-        monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
-        monkeypatch.setattr('irrd.updates.validators.RPSLDatabaseQuery', lambda: mock_dq)
+    def test_check_references_valid(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
 
         query_result_existing_obj = {
             'object_text': SAMPLE_INETNUM,
@@ -123,7 +124,7 @@ class TestSingleUpdateRequestHandling:
         validator = ReferenceValidator(mock_dh)
 
         result_inetnum = parse_update_requests(SAMPLE_INETNUM, mock_dh, AuthValidator(mock_dh), validator)[0]
-        assert result_inetnum._check_references_from_object()
+        assert result_inetnum._check_references_to_others()
         assert result_inetnum.is_valid()
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['RIPE'],), {}],
@@ -137,11 +138,8 @@ class TestSingleUpdateRequestHandling:
             ['rpsl_pk', ('INTERB-MNT',), {}],
         ]
 
-    def test_check_references_invalid(self, monkeypatch):
-        mock_dh = Mock()
-        mock_dq = Mock()
-        monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
-        monkeypatch.setattr('irrd.updates.validators.RPSLDatabaseQuery', lambda: mock_dq)
+    def test_check_references_not_existing(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
 
         query_result_existing_obj = {
             'object_text': SAMPLE_INETNUM,
@@ -151,12 +149,12 @@ class TestSingleUpdateRequestHandling:
         validator = ReferenceValidator(mock_dh)
 
         result_inetnum = parse_update_requests(SAMPLE_INETNUM, mock_dh, AuthValidator(mock_dh), validator)[0]
-        assert not result_inetnum._check_references_from_object()
+        assert not result_inetnum._check_references_to_others()
         assert not result_inetnum.is_valid()
         assert result_inetnum.error_messages == [
-            'Object DUMY-RIPE referenced in field admin-c not found in database RIPE - must reference one of role, person object',
-            'Object DUMY-RIPE referenced in field tech-c not found in database RIPE - must reference one of role, person object',
-            'Object INTERB-MNT referenced in field mnt-by not found in database RIPE - must reference mntner object'
+            'Object DUMY-RIPE referenced in field admin-c not found in database RIPE - must reference one of role, person.',
+            'Object DUMY-RIPE referenced in field tech-c not found in database RIPE - must reference one of role, person.',
+            'Object INTERB-MNT referenced in field mnt-by not found in database RIPE - must reference mntner.'
         ]
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['RIPE'],), {}],
@@ -173,11 +171,8 @@ class TestSingleUpdateRequestHandling:
             ['rpsl_pk', ('INTERB-MNT',), {}],
         ]
 
-    def test_check_references_preload(self, monkeypatch):
-        mock_dh = Mock()
-        mock_dq = Mock()
-        monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
-        monkeypatch.setattr('irrd.updates.validators.RPSLDatabaseQuery', lambda: mock_dq)
+    def test_check_references_preload_valid_references(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
 
         mock_dh.execute_query = lambda query: next(iter([[{'object_text': SAMPLE_PERSON}], [{'object_text': SAMPLE_MNTNER}]]))
         validator = ReferenceValidator(mock_dh)
@@ -188,7 +183,7 @@ class TestSingleUpdateRequestHandling:
         validator.preload(preload)
 
         result_inetnum = parse_update_requests(SAMPLE_INETNUM, mock_dh, AuthValidator(mock_dh), validator)[0]
-        assert result_inetnum._check_references_from_object()
+        assert result_inetnum._check_references_to_others()
         assert result_inetnum.is_valid()
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['RIPE'],), {}],
@@ -196,12 +191,9 @@ class TestSingleUpdateRequestHandling:
             ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}]
         ]
 
-    def test_check_references_delete_object_with_refs_in_db(self, monkeypatch):
+    def test_check_references_invalid_deleted_object_with_refs_in_db(self, prepare_mocks):
         # Delete an object which is still referred by other objects in the DB.
-        mock_dh = Mock()
-        mock_dq = Mock()
-        monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
-        monkeypatch.setattr('irrd.updates.validators.RPSLDatabaseQuery', lambda: mock_dq)
+        mock_dq, mock_dh = prepare_mocks
 
         validator = ReferenceValidator(mock_dh)
         query_results = iter([
@@ -213,7 +205,7 @@ class TestSingleUpdateRequestHandling:
 
         result = parse_update_requests(SAMPLE_PERSON + "delete: delete",
                                        mock_dh, AuthValidator(mock_dh), validator)[0]
-        result._check_references_to_object()
+        result._check_references_from_others()
         assert not result.is_valid()
         assert result.error_messages == [
             'Object DUMY-RIPE to be deleted, but still referenced by inetnum 80.16.151.184 - 80.16.151.191',
@@ -227,12 +219,9 @@ class TestSingleUpdateRequestHandling:
             ['lookup_attrs_in', ({'tech-c', 'zone-c', 'admin-c'}, ['DUMY-RIPE']), {}],
         ]
 
-    def test_check_references_delete_object_with_refs_in_update(self, monkeypatch):
+    def test_check_references_invalid_deleted_object_with_refs_in_update_message(self, prepare_mocks):
         # Delete an object that is referred by a new object in the same update.
-        mock_dh = Mock()
-        mock_dq = Mock()
-        monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
-        monkeypatch.setattr('irrd.updates.validators.RPSLDatabaseQuery', lambda: mock_dq)
+        mock_dq, mock_dh = prepare_mocks
 
         validator = ReferenceValidator(mock_dh)
         query_results = iter([
@@ -248,14 +237,14 @@ class TestSingleUpdateRequestHandling:
                                         mock_dh, AuthValidator(mock_dh), validator)
         validator.preload(results)
         result_inetnum = results[1]
-        result_inetnum._check_references_from_object()
+        result_inetnum._check_references_to_others()
         assert not result_inetnum.is_valid()
         print(result_inetnum.error_messages)
         print(flatten_mock_calls(mock_dq))
         assert result_inetnum.error_messages == [
-            'Object DUMY-RIPE referenced in field admin-c not found in database RIPE - must reference one of role, person object',
-            'Object DUMY-RIPE referenced in field tech-c not found in database RIPE - must reference one of role, person object',
-            'Object INTERB-MNT referenced in field mnt-by not found in database RIPE - must reference mntner object',
+            'Object DUMY-RIPE referenced in field admin-c not found in database RIPE - must reference one of role, person.',
+            'Object DUMY-RIPE referenced in field tech-c not found in database RIPE - must reference one of role, person.',
+            'Object INTERB-MNT referenced in field mnt-by not found in database RIPE - must reference mntner.',
         ]
 
         assert flatten_mock_calls(mock_dq) == [
@@ -270,14 +259,11 @@ class TestSingleUpdateRequestHandling:
             ['rpsl_pk', ('INTERB-MNT',), {}],
         ]
 
-    def test_check_references_deleted_referencing_deleted_object(self, monkeypatch):
+    def test_check_references_valid_deleted_object_referencing_deleted_object(self, prepare_mocks):
         # Delete an object that refers another object in the DB,
         # but the object referred to is also being deleted,
         # therefore the deletion is valid.
-        mock_dh = Mock()
-        mock_dq = Mock()
-        monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
-        monkeypatch.setattr('irrd.updates.validators.RPSLDatabaseQuery', lambda: mock_dq)
+        mock_dq, mock_dh = prepare_mocks
 
         validator = ReferenceValidator(mock_dh)
         mock_dh.execute_query = lambda query: []
@@ -295,7 +281,7 @@ class TestSingleUpdateRequestHandling:
 
         result = parse_update_requests(SAMPLE_PERSON + "delete: delete",
                                        mock_dh, AuthValidator(mock_dh), validator)[0]
-        result._check_references_to_object()
+        result._check_references_from_others()
         assert result.is_valid()
         assert not result.error_messages
         assert flatten_mock_calls(mock_dq) == [
@@ -306,44 +292,8 @@ class TestSingleUpdateRequestHandling:
             ['lookup_attrs_in', ({'tech-c', 'zone-c', 'admin-c'}, ['DUMY-RIPE']), {}],
         ]
 
-    def test_user_report(self, monkeypatch):
-        mock_dh = Mock()
-        mock_dq = Mock()
-        monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
-        monkeypatch.setattr('irrd.updates.validators.RPSLDatabaseQuery', lambda: mock_dq)
-
-        query_results = iter([
-            [{'object_text': SAMPLE_INETNUM}],
-            [],
-        ])
-        mock_dh.execute_query = lambda query: next(query_results)
-
-        result_inetnum, result_as_set, result_unknown, result_invalid = parse_update_requests(
-            self._request_text(), mock_dh, AuthValidator(mock_dh), None)
-        report_inetnum = result_inetnum.user_report()
-        report_as_set = result_as_set.user_report()
-        report_unknown = result_unknown.user_report()
-        report_invalid = result_invalid.user_report()
-
-        assert 'Delete succeeded' in report_inetnum
-        assert 'remarks: ' in report_inetnum  # full RPSL object should be included
-        assert 'INFO: Address range 80' in report_inetnum
-
-        assert report_as_set == 'Create succeeded: [as-set] AS-RESTENA\n'
-
-        assert 'FAILED' in report_unknown
-        assert 'ERROR: unknown object class' in report_unknown
-
-        assert 'FAILED' in report_invalid
-        assert 'aut-num: pw1'  # full RPSL object should be included
-        assert 'ERROR: Mandatory attribute' in report_invalid
-        assert 'ERROR: Invalid AS number PW1' in report_invalid
-
-    def test_check_auth_success(self, monkeypatch):
-        mock_dh = Mock()
-        mock_dq = Mock()
-        monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
-        monkeypatch.setattr('irrd.updates.validators.RPSLDatabaseQuery', lambda: mock_dq)
+    def test_check_auth_valid_update_mntner(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
 
         query_result1 = {'object_text': SAMPLE_INETNUM}
         query_result2 = {'object_text': SAMPLE_MNTNER.replace('AS760-MNt', 'INTERB-mnt')}
@@ -378,14 +328,10 @@ class TestSingleUpdateRequestHandling:
         assert result_inetnum._check_auth()
         assert not result_inetnum.error_messages
 
-    def test_check_auth_self_reference(self, monkeypatch):
-        mock_dh = Mock()
-        mock_dq = Mock()
-        monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
-        monkeypatch.setattr('irrd.updates.validators.RPSLDatabaseQuery', lambda: mock_dq)
+    def test_check_auth_valid_create_mntner_referencing_self(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
 
-        # Make the crypt password invalid in the version from the mock database
-        mock_dh.execute_query = lambda query: [{'object_text': SAMPLE_MNTNER.replace('CRYPT-PW', 'FAILED')}]
+        mock_dh.execute_query = lambda query: []
 
         reference_validator = ReferenceValidator(mock_dh)
         auth_validator = AuthValidator(mock_dh)
@@ -400,23 +346,57 @@ class TestSingleUpdateRequestHandling:
             ['sources', (['RIPE'],), {}],
             ['object_classes', (['mntner'],), {}],
             ['rpsl_pk', ('AS760-MNT',), {}],
-            ['sources', (['RIPE'],), {}],
-            ['object_classes', (['mntner'],), {}],
-            ['rpsl_pks', (['AS760-MNT', 'ACONET-LIR-MNT', 'ACONET2-LIR-MNT'],), {}],
         ]
 
+    def test_check_auth_invalid_create_mntner_referencing_self_wrong_password(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
+
+        mock_dh.execute_query = lambda query: []
+
+        reference_validator = ReferenceValidator(mock_dh)
         auth_validator = AuthValidator(mock_dh)
+
+        result_mntner = parse_update_requests(SAMPLE_MNTNER + 'password: invalid-password',
+                                              mock_dh, auth_validator, reference_validator)[0]
+        auth_validator.pre_approve([result_mntner])
+
+        assert not result_mntner._check_auth()
+        assert result_mntner.error_messages == ['Authorisation failed for the auth methods on this mntner object.']
+        assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['RIPE'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pk', ('AS760-MNT',), {}],
+        ]
+
+    def test_check_auth_invalid_update_mntner_wrong_password_current_db_object(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
+
+        # Make the crypt password invalid in the version from the mock database
+        mock_dh.execute_query = lambda query: [{'object_text': SAMPLE_MNTNER.replace('CRYPT-PW', 'FAILED')}]
+
+        reference_validator = ReferenceValidator(mock_dh)
+        auth_validator = AuthValidator(mock_dh)
+
         # This password is valid for the new object, but invalid for the current version in the DB
         result_mntner = parse_update_requests(SAMPLE_MNTNER + 'password: crypt-password',
                                               mock_dh, auth_validator, reference_validator)[0]
         auth_validator.pre_approve([result_mntner])
         assert not result_mntner._check_auth()
+        assert result_mntner.error_messages == [
+            'Authorisation for mntner AS760-MNT failed: must by authenticated by one of: AS760-MNT, '
+            'ACONET-LIR-MNT, ACONET2-LIR-MNT'
+        ]
+        assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['RIPE'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pk', ('AS760-MNT',), {}],
+            ['sources', (['RIPE'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', (['AS760-MNT', 'ACONET-LIR-MNT', 'ACONET2-LIR-MNT'],), {}],
+        ]
 
-    def test_check_auth_fail_new_object(self, monkeypatch):
-        mock_dh = Mock()
-        mock_dq = Mock()
-        monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
-        monkeypatch.setattr('irrd.updates.validators.RPSLDatabaseQuery', lambda: mock_dq)
+    def test_check_auth_invalid_create_with_incorrect_password_referenced_mntner(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
 
         query_results = iter([[{'object_text': SAMPLE_INETNUM}], [{'object_text': SAMPLE_MNTNER}]])
         mock_dh.execute_query = lambda query: next(query_results)
@@ -438,11 +418,8 @@ class TestSingleUpdateRequestHandling:
             ['rpsl_pks', (['INTERB-MNT'],), {}]
         ]
 
-    def test_check_auth_fail_current_object(self, monkeypatch):
-        mock_dh = Mock()
-        mock_dq = Mock()
-        monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
-        monkeypatch.setattr('irrd.updates.validators.RPSLDatabaseQuery', lambda: mock_dq)
+    def test_check_auth_invalid_update_with_incorrect_password_referenced_mntner(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
 
         query_results = iter([
             [{'object_text': SAMPLE_INETNUM.replace('INTERB-MNT', 'FAIL-MNT')}],
@@ -470,6 +447,36 @@ class TestSingleUpdateRequestHandling:
             ['object_classes', (['mntner'],), {}],
             ['rpsl_pks', (['FAIL-MNT'],), {}],
         ]
+
+    def test_user_report(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
+
+        query_results = iter([
+            [{'object_text': SAMPLE_INETNUM}],
+            [],
+        ])
+        mock_dh.execute_query = lambda query: next(query_results)
+
+        result_inetnum, result_as_set, result_unknown, result_invalid = parse_update_requests(
+            self._request_text(), mock_dh, AuthValidator(mock_dh), None)
+        report_inetnum = result_inetnum.user_report()
+        report_as_set = result_as_set.user_report()
+        report_unknown = result_unknown.user_report()
+        report_invalid = result_invalid.user_report()
+
+        assert 'Delete succeeded' in report_inetnum
+        assert 'remarks: ' in report_inetnum  # full RPSL object should be included
+        assert 'INFO: Address range 80' in report_inetnum
+
+        assert report_as_set == 'Create succeeded: [as-set] AS-RESTENA\n'
+
+        assert 'FAILED' in report_unknown
+        assert 'ERROR: unknown object class' in report_unknown
+
+        assert 'FAILED' in report_invalid
+        assert 'aut-num: pw1'  # full RPSL object should be included
+        assert 'ERROR: Mandatory attribute' in report_invalid
+        assert 'ERROR: Invalid AS number PW1' in report_invalid
 
     def _request_text(self):
         unknown_class = 'unknown-object: foo\n'
