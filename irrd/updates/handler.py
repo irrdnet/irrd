@@ -8,12 +8,18 @@ from .validators import ReferenceValidator, AuthValidator
 
 
 class UpdateRequestHandler:
+    """
+    The UpdateRequestHandler handles the text of one or more RPSL updates
+    (create, modify or delete), parses, validates and eventually saves
+    them. This includes validating references between objects, including
+    those part of the same update message, and checking authentication.
+    """
 
-    def __init__(self, object_texts: str):
+    def __init__(self, object_texts: str) -> None:
         self.database_handler = DatabaseHandler()
         self._handle_object_texts(object_texts)
 
-    def _handle_object_texts(self, object_texts: str):
+    def _handle_object_texts(self, object_texts: str) -> None:
         reference_validator = ReferenceValidator(self.database_handler)
         auth_validator = AuthValidator(self.database_handler)
         results = parse_update_requests(object_texts, self.database_handler, auth_validator, reference_validator)
@@ -46,12 +52,14 @@ class UpdateRequestHandler:
         self.database_handler.commit()
         self.results = results
 
-    def status(self):
+    def status(self) -> str:
+        """Provide a simple SUCCESS/FAILED string based - former used if all objects were saved."""
         if all([result.status == UpdateRequestStatus.SAVED for result in self.results]):
             return "SUCCESS"
         return "FAILED"
 
-    def user_report(self):
+    def user_report(self) -> str:
+        """Produce a human-readable report for the user."""
         # flake8: noqa: W293
         successful = [r for r in self.results if r.status == UpdateRequestStatus.SAVED]
         failed = [r for r in self.results if r.status != UpdateRequestStatus.SAVED]
