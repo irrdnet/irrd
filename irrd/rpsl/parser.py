@@ -100,10 +100,10 @@ class RPSLObject(metaclass=RPSLObjectMeta):
 
     def referred_objects(self) -> List[Tuple[str, List, List]]:
         """
-        Get all objects that this object refers to, e.g. an admin-c that refers
-        to person/role, along with the data this object has for that reference.
-        This information can be used to check whether all references from an
-        object are valid.
+        Get all objects that this object refers to (e.g. an admin-c attribute
+        on this object, that refers to person/role) along with the data this
+        object has for that reference. This information can be used to check
+        whether all references from an object are valid.
 
         Returns a list of tuples, which each tuple having:
         - field name on this object (e.g. 'admin-c')

@@ -104,7 +104,7 @@ class RPSLDatabaseQuery:
     def lookup_attrs_in(self, attr_names: List[str], attr_values: List[str]):
         """
         Filter on one or more lookup attributes, e.g. mnt-by, or ['admin-c', 'tech-c']
-        At least one of the values for at least one of the lookup attribute must
+        At least one of the values for at least one of the lookup attributes must
         match one of the items in attr_values. Matching is case-insensitive.
         """
         attr_names = [attr_name.lower() for attr_name in attr_names]
@@ -372,6 +372,7 @@ class DatabaseHandler:
         source = rpsl_object.parsed_data['source']
         stmt = table.delete(
             sa.and_(table.c.rpsl_pk == rpsl_object.pk(), table.c.source == source),
+            returning=table.c.pk,
         )
         result = self._connection.execute(stmt)
         if result.rowcount == 0:

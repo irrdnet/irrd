@@ -303,8 +303,8 @@ class RPSLMntner(RPSLObject):
     def verify_auth(self, passwords: List[str], keycert_obj_pk: Optional[str]=None) -> bool:
         """
         Verify whether one of a given list of passwords matches
-        any of the auth hashes in this object.
-        Currently ignores PGP keys.
+        any of the auth hashes in this object, or match the
+        keycert object PK.
         """
         for auth in self.parsed_data.get("auth", "").splitlines():
             if keycert_obj_pk and auth.upper() == keycert_obj_pk:
