@@ -36,7 +36,10 @@ class UpdateRequestHandler:
         # all references are resolved and repeated scans lead to the same conclusions.
         valid_updates = [r for r in results if r.is_valid()]
         previous_valid_updates: List[UpdateRequest] = []
-        while valid_updates != previous_valid_updates:  # TODO: protect against infinite loops
+        loop_count = 0
+        loop_max = len(results) + 10
+
+        while valid_updates != previous_valid_updates:
             previous_valid_updates = valid_updates
             reference_validator.preload(valid_updates)
             auth_validator.pre_approve(valid_updates)
@@ -44,6 +47,11 @@ class UpdateRequestHandler:
             for result in valid_updates:
                 result.validate()
             valid_updates = [r for r in results if r.is_valid()]
+
+            loop_count += 1
+            if loop_count > loop_max:  # pragma: no cover
+                msg = 'Update validity resolver ran an excessive amount of loops, may be stuck, aborting processing'
+                raise ValueError(msg)
 
         for result in results:
             if result.is_valid():
