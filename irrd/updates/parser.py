@@ -224,10 +224,6 @@ def parse_update_requests(requests_text: str,
         results.append(UpdateRequest(rpsl_text, database_handler, auth_validator, reference_validator,
                                      delete_reason=delete_reason))
 
-    for result in results:
-        result.passwords = passwords
-        result.overrides = overrides
-
     if auth_validator:
         auth_validator.passwords = passwords
         auth_validator.overrides = overrides
