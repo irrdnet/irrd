@@ -134,7 +134,7 @@ class TestSingleUpdateRequestHandling:
             ['rpsl_pk', ('INTERB-MNT',), {}],
         ]
 
-    def test_check_references_not_existing(self, prepare_mocks):
+    def test_check_references_invalid_referred_objects_dont_exist(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
 
         query_result_existing_obj = {
@@ -167,7 +167,7 @@ class TestSingleUpdateRequestHandling:
             ['rpsl_pk', ('INTERB-MNT',), {}],
         ]
 
-    def test_check_references_preload_valid_references(self, prepare_mocks):
+    def test_check_references_valid_preload_references(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
 
         mock_dh.execute_query = lambda query: next(iter([[{'object_text': SAMPLE_PERSON}], [{'object_text': SAMPLE_MNTNER}]]))
@@ -187,7 +187,7 @@ class TestSingleUpdateRequestHandling:
             ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}]
         ]
 
-    def test_check_references_invalid_deleted_object_with_refs_in_db(self, prepare_mocks):
+    def test_check_references_invalid_deleting_object_with_refs_in_db(self, prepare_mocks):
         # Delete an object which is still referred by other objects in the DB.
         mock_dq, mock_dh = prepare_mocks
 
@@ -215,7 +215,7 @@ class TestSingleUpdateRequestHandling:
             ['lookup_attrs_in', ({'tech-c', 'zone-c', 'admin-c'}, ['DUMY-RIPE']), {}],
         ]
 
-    def test_check_references_invalid_deleted_object_with_refs_in_update_message(self, prepare_mocks):
+    def test_check_references_invalid_deleting_object_with_refs_in_update_message(self, prepare_mocks):
         # Delete an object that is referred by a new object in the same update.
         mock_dq, mock_dh = prepare_mocks
 
@@ -255,7 +255,7 @@ class TestSingleUpdateRequestHandling:
             ['rpsl_pk', ('INTERB-MNT',), {}],
         ]
 
-    def test_check_references_valid_deleted_object_referencing_deleted_object(self, prepare_mocks):
+    def test_check_references_valid_deleting_object_referencing_to_be_deleted_object(self, prepare_mocks):
         # Delete an object that refers another object in the DB,
         # but the object referred to is also being deleted,
         # therefore the deletion is valid.
