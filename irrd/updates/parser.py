@@ -128,9 +128,9 @@ class UpdateRequest:
         return self.status in [UpdateRequestStatus.SAVED, UpdateRequestStatus.PROCESSING]
 
     def validate(self) -> bool:
-        if not self.is_valid() or not self.rpsl_obj_new:
-            return False
         auth_valid = self._check_auth()
+        if not auth_valid:
+            return False
         # For deletions, only references to the deleted object matter, as
         # they now become invalid. For other operations, only the validity
         # of references from this object to others matter.
@@ -138,7 +138,7 @@ class UpdateRequest:
             references_valid = self._check_references_from_others()
         else:
             references_valid = self._check_references_to_others()
-        return auth_valid and references_valid
+        return references_valid
 
     def _check_auth(self) -> bool:
         assert self.rpsl_obj_new

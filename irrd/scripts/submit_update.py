@@ -4,12 +4,10 @@ import sys
 from irrd.updates.handler import UpdateRequestHandler
 
 
-def main():
-    handler = UpdateRequestHandler()
-    data = sys.stdin.read()
-    report = handler.handle_object_texts(data)
-    print(report)
+def main(data):
+    handler = UpdateRequestHandler(data)
+    print(handler.user_report())
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.stdin.read())

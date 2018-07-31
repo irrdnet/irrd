@@ -32,15 +32,14 @@ class TestSingleUpdateRequestHandling:
         ])
         mock_dh.execute_query = lambda query: next(query_results)
 
+        auth_validator = AuthValidator(mock_dh)
         result_inetnum, result_as_set, result_unknown, result_invalid = parse_update_requests(
-            self._request_text(), mock_dh, AuthValidator(mock_dh), None)
+            self._request_text(), mock_dh, auth_validator, None)
 
         assert result_inetnum.status == UpdateRequestStatus.PROCESSING, result_inetnum.error_messages
         assert result_inetnum.is_valid()
         assert result_inetnum.rpsl_text_submitted.startswith('inetnum:')
         assert result_inetnum.rpsl_obj_new.rpsl_object_class == 'inetnum'
-        assert result_inetnum.passwords == ['pw1', 'pw2', 'pw3']
-        assert result_inetnum.overrides == ['override-pw']
         assert result_inetnum.request_type == UpdateRequestType.DELETE
         assert len(result_inetnum.info_messages) == 1
         assert 'reformatted as' in result_inetnum.info_messages[0]
@@ -50,8 +49,6 @@ class TestSingleUpdateRequestHandling:
         assert result_as_set.is_valid()
         assert result_as_set.rpsl_text_submitted.startswith('as-set:')
         assert result_as_set.rpsl_obj_new.rpsl_object_class == 'as-set'
-        assert result_as_set.passwords == ['pw1', 'pw2', 'pw3']
-        assert result_inetnum.overrides == ['override-pw']
         assert result_as_set.request_type == UpdateRequestType.MODIFY
         assert not result_as_set.info_messages
         assert not result_as_set.error_messages
@@ -60,8 +57,6 @@ class TestSingleUpdateRequestHandling:
         assert not result_unknown.is_valid()
         assert result_unknown.rpsl_text_submitted.startswith('unknown-object:')
         assert not result_unknown.rpsl_obj_new
-        assert result_unknown.passwords == ['pw1', 'pw2', 'pw3']
-        assert result_unknown.overrides == ['override-pw']
         assert not result_unknown.request_type
         assert not result_unknown.info_messages
         assert len(result_unknown.error_messages) == 1
@@ -71,11 +66,12 @@ class TestSingleUpdateRequestHandling:
         assert not result_invalid.is_valid()
         assert result_invalid.rpsl_text_submitted.startswith('aut-num:')
         assert result_invalid.rpsl_obj_new.rpsl_object_class == 'aut-num'
-        assert result_invalid.passwords == ['pw1', 'pw2', 'pw3']
-        assert result_invalid.overrides == ['override-pw']
         assert not result_invalid.info_messages
         assert len(result_invalid.error_messages) == 6
         assert 'Mandatory attribute' in result_invalid.error_messages[0]
+
+        assert auth_validator.passwords == ['pw1', 'pw2', 'pw3']
+        assert auth_validator.overrides == ['override-pw']
 
         mock_dh.reset_mock()
         result_inetnum.save(mock_dh)

@@ -368,6 +368,10 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         self.asn_first: IP = None
         self.asn_last: IP = None
 
+    def __repr__(self):
+        source = self.parsed_data.get('source', '')
+        return f'{self.rpsl_object_class}/{self.pk()}/{source}'
+
 
 class UnknownRPSLObjectClassException(Exception):
     pass

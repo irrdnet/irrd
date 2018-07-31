@@ -6,7 +6,6 @@ class UpdateRequestType(Enum):
     CREATE = 'create'
     MODIFY = 'modify'
     DELETE = 'delete'
-    NO_OP = 'no operation'
 
 
 @unique
