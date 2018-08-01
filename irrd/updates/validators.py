@@ -1,5 +1,5 @@
 import logging
-from typing import Set, Tuple, List, Optional, TYPE_CHECKING
+from typing import Set, Tuple, List, Optional, TYPE_CHECKING, Dict
 
 from irrd.db.api import DatabaseHandler, RPSLDatabaseQuery
 from irrd.rpsl.parser import RPSLObject
@@ -121,8 +121,8 @@ class AuthValidator:
 
     def __init__(self, database_handler: DatabaseHandler) -> None:
         self.database_handler = database_handler
-        self._passed_cache: Set[str] = set()
-        self._pre_approved: Set[str] = set()
+        self._passed_cache: Dict[str, RPSLMntner] = dict()
+        self._pre_approved: Dict[str, RPSLMntner] = dict()
 
     def pre_approve(self, results: List['parser.UpdateRequest']) -> None:
         """
@@ -133,60 +133,82 @@ class AuthValidator:
         When the mntner object itself is encountered, it's auth attributes are
         always validated against available authentication metadata.
         """
-        self._pre_approved = set()
+        self._pre_approved = dict()
         for request in results:
             if request.is_valid() and request.request_type == UpdateRequestType.CREATE and isinstance(request.rpsl_obj_new, RPSLMntner):
-                self._pre_approved.add(request.rpsl_obj_new.pk())
+                self._pre_approved[request.rpsl_obj_new.pk()] = request.rpsl_obj_new
 
     def check_auth(self, rpsl_obj_new: RPSLObject, rpsl_obj_current: Optional[RPSLObject]) -> Optional[str]:
         """
         Check whether authentication passes for all required objects.
 
-        Returns a string with an error message for failures, None when successful
+        Returns a string with an error message for failures, None when successful.
         """
         source = rpsl_obj_new.source()
 
+        mntners_needed_lists: List[List[str]] = []
+
         mntners_new = rpsl_obj_new.parsed_data['mnt-by']
-        if not self._check_mntners(mntners_new, source):
-            return self._generate_failure_message(mntners_new, rpsl_obj_new)
+        mntners_needed_lists.append(mntners_new)
 
         if rpsl_obj_current:
             mntners_current = rpsl_obj_current.parsed_data['mnt-by']
-            if not self._check_mntners(mntners_current, source):
-                return self._generate_failure_message(mntners_current, rpsl_obj_new)
+            mntners_needed_lists.append(mntners_current)
+        # TODO: further sets pending https://github.com/irrdnet/irrd4/issues/21#issuecomment-407105924
+
+        for mntner_needed_list in mntners_needed_lists:
+            mntner_objs = self._check_mntners(mntner_needed_list, source)
+            if mntner_objs is None:
+                return self._generate_failure_message(mntner_needed_list, rpsl_obj_new)
 
         if isinstance(rpsl_obj_new, RPSLMntner):
             if not rpsl_obj_new.verify_auth(self.passwords, self.keycert_obj_pk):
                 return f'Authorisation failed for the auth methods on this mntner object.'
 
         return None
-        # TODO: further sets pending https://github.com/irrdnet/irrd4/issues/21#issuecomment-407105924
 
-    def _check_mntners(self, mntner_list: List[str], source: str) -> bool:
+    def _check_mntners(self, mntner_list: List[str], source: str) -> Optional[List[RPSLMntner]]:
         """
         Check whether authentication passes for a list of maintainers.
 
-        Returns True if at least one of the mntners in mntner_list
+        Returns a list if at least one of the mntners in mntner_list
         passes authentication, given self.passwords and
-        self.keycert_obj_pk. Updates and checks self.passed_mntner_cache
+        self.keycert_obj_pk. Updates and checks self._passed_mntner_cache
         to prevent double checking of maintainers.
+        The list contains all RPSLMntner objects that were evaluated.
+
+        If no mntner passed authentication, returns None.
         """
+        approved = False
+        mntners_already_approved = {**self._passed_cache, **self._pre_approved}
         for mntner_name in mntner_list:
-            if mntner_name in self._passed_cache or mntner_name in self._pre_approved:
-                return True
+            if mntner_name in mntners_already_approved.keys():
+                approved = True
+
+        # This shortcut prevents additional database queries, but only if all
+        # mntners have already been seen before. Otherwise, we need to do the
+        # query even for already approved changes, to retrieve their
+        # mnt-nfy/upd-nfy.
+        if approved:
+            try:
+                return [mntners_already_approved[name] for name in mntner_list]
+            except KeyError:
+                pass
 
         query = RPSLDatabaseQuery().sources([source])
         query = query.object_classes(['mntner']).rpsl_pks(mntner_list)
         results = list(self.database_handler.execute_query(query))
         mntner_objs: List[RPSLMntner] = [rpsl_object_from_text(r['object_text']) for r in results]  # type: ignore
 
+        if approved:
+            return mntner_objs
+
         for mntner_obj in mntner_objs:
             if mntner_obj.verify_auth(self.passwords, self.keycert_obj_pk):
-                self._passed_cache.add(mntner_obj.pk())
+                self._passed_cache[mntner_obj.pk()] = mntner_obj
+                return mntner_objs
 
-                return True
-
-        return False
+        return None
 
     def _generate_failure_message(self, failed_mntner_list: List[str], rpsl_obj) -> str:
         mntner_str = ', '.join(failed_mntner_list)

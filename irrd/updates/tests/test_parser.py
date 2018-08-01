@@ -358,6 +358,7 @@ class TestSingleUpdateRequestHandling:
 
         assert not result_mntner._check_auth()
         assert result_mntner.error_messages == ['Authorisation failed for the auth methods on this mntner object.']
+        print(flatten_mock_calls(mock_dq))
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['RIPE'],), {}],
             ['object_classes', (['mntner'],), {}],
