@@ -351,7 +351,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         """
         if isinstance(new_values, str):
             new_values = [new_values]
-        self.parsed_data["attribute"] = "\n".join(new_values)
+        self.parsed_data[attribute] = "\n".join(new_values)
 
         self._object_data = list(filter(lambda a: a[0] != attribute, self._object_data))
         insert_idx = 1

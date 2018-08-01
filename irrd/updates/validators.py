@@ -80,7 +80,7 @@ class ReferenceValidator:
                 return False
 
         query = RPSLDatabaseQuery().sources([source]).object_classes(object_classes).rpsl_pk(object_pk)
-        results = list(self.database_handler.execute_query(query))
+        results = self.database_handler.execute_query(query)
         for result in results:
             self._cache.add((result['object_class'], object_pk, source))
         if results:
@@ -119,10 +119,11 @@ class AuthValidator:
     overrides: List[str]
     keycert_obj_pk: Optional[str] = None
 
-    def __init__(self, database_handler: DatabaseHandler) -> None:
+    def __init__(self, database_handler: DatabaseHandler, keycert_obj_pk=None) -> None:
         self.database_handler = database_handler
         self._passed_cache: Set[str] = set()
         self._pre_approved: Set[str] = set()
+        self.keycert_obj_pk = keycert_obj_pk
 
     def pre_approve(self, results: List['parser.UpdateRequest']) -> None:
         """

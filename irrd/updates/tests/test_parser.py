@@ -235,8 +235,6 @@ class TestSingleUpdateRequestHandling:
         result_inetnum = results[1]
         result_inetnum._check_references_to_others()
         assert not result_inetnum.is_valid()
-        print(result_inetnum.error_messages)
-        print(flatten_mock_calls(mock_dq))
         assert result_inetnum.error_messages == [
             'Object DUMY-RIPE referenced in field admin-c not found in database RIPE - must reference one of role, person.',
             'Object DUMY-RIPE referenced in field tech-c not found in database RIPE - must reference one of role, person.',
@@ -318,9 +316,8 @@ class TestSingleUpdateRequestHandling:
         assert result_inetnum._check_auth()
         assert not result_inetnum.error_messages
 
-        auth_validator = AuthValidator(mock_dh)
-        result_inetnum = parse_update_requests(SAMPLE_INETNUM, mock_dh,
-                                               auth_validator, reference_validator, 'PGPKEY-80F238C6')[0]
+        auth_validator = AuthValidator(mock_dh, 'PGPKEY-80F238C6')
+        result_inetnum = parse_update_requests(SAMPLE_INETNUM, mock_dh, auth_validator, reference_validator)[0]
         assert result_inetnum._check_auth()
         assert not result_inetnum.error_messages
 

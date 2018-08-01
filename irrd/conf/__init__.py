@@ -8,12 +8,16 @@ DEFAULT_SETTINGS = {
     'server.whois.interface': '::0',
     'server.whois.port': 8043,
     'server.whois.max_connections': 50,
+    'gnupg.homedir': os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), '../gnupg/'),
+    'email.from': 'example@example.com',
+    'email.footer': '',
+    'email.smtp': 'localhost',
 }
 
 
 def get_setting(setting_name: str) -> Any:
     default = DEFAULT_SETTINGS.get(setting_name)
-    env_key = 'IRRD_' + setting_name.upper()
+    env_key = 'IRRD_' + setting_name.upper().replace('.', '_')
     if env_key in os.environ:
         return os.environ[env_key]
     return default

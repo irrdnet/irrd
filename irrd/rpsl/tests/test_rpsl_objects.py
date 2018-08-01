@@ -8,27 +8,15 @@ from irrd.utils.rpsl_samples import (object_sample_mapping, SAMPLE_MALFORMED_EMP
                                      KEY_CERT_SIGNED_MESSAGE_VALID, KEY_CERT_SIGNED_MESSAGE_INVALID,
                                      KEY_CERT_SIGNED_MESSAGE_CORRUPT, KEY_CERT_SIGNED_MESSAGE_WRONG_KEY, TEMPLATE_ROUTE_OBJECT,
                                      TEMPLATE_PERSON_OBJECT)
+
+# noinspection PyUnresolvedReferences
+from irrd.utils.test_utils import tmp_gpg_dir   # noqa: F401
+
 from ..parser import UnknownRPSLObjectClassException
 from ..rpsl_objects import (RPSLAsBlock, RPSLAsSet, RPSLAutNum, RPSLDictionary, RPSLDomain, RPSLFilterSet, RPSLInetRtr,
                             RPSLInet6Num, RPSLInetnum, RPSLKeyCert, RPSLLimerick, RPSLMntner, RPSLPeeringSet,
                             RPSLPerson, RPSLRepository, RPSLRole, RPSLRoute, RPSLRouteSet, RPSLRoute6, RPSLRtrSet,
                             OBJECT_CLASS_MAPPING, rpsl_object_from_text)
-
-
-@pytest.fixture()
-def tmp_gpg_dir(tmpdir, monkeypatch):
-    """
-    Fixture to use a temporary separate gpg dir, to prevent it using your
-    user's keyring.
-
-    NOTE: if the gpg homedir name is very long, this introduces a 5 second
-    delay in all gpg tests due to gpg incorrectly waiting to find a gpg-agent.
-    Default tmpdirs on Mac OS X are affected, to prevent this run pytest with:
-        --basetemp=.tmpdirs
-    """
-    def gpg_dir(self):
-        return str(tmpdir) + "/gnupg"
-    monkeypatch.setattr(RPSLKeyCert, "gpg_dir", gpg_dir)
 
 
 class TestRPSLParsingGeneric:
@@ -245,7 +233,7 @@ class TestRPSLKeyCert:
         obj = RPSLKeyCert()
         assert OBJECT_CLASS_MAPPING[obj.rpsl_object_class] == obj.__class__
 
-    def test_parse_parse(self, tmp_gpg_dir):
+    def test_parse_parse(self):
         rpsl_text = object_sample_mapping[RPSLKeyCert().rpsl_object_class]
 
         # Mangle the fingerprint/owner/method lines to ensure the parser correctly re-generates them
@@ -257,7 +245,9 @@ class TestRPSLKeyCert:
         assert not obj.messages.errors()
         assert obj.pk() == "PGPKEY-80F238C6"
         assert obj.render_rpsl_text() == rpsl_text
+        assert obj.parsed_data['fingerpr'] == "8626 1D8D BEBD A4F5 4692  D64D A838 3BA7 80F2 38C6"
 
+    @pytest.mark.usefixtures("tmp_gpg_dir")  # noqa: F811
     def test_parse_incorrect_object_name(self, tmp_gpg_dir):
         rpsl_text = object_sample_mapping[RPSLKeyCert().rpsl_object_class]
         obj = rpsl_object_from_text(rpsl_text.replace("PGPKEY-80F238C6", "PGPKEY-80F23816"))
@@ -266,6 +256,7 @@ class TestRPSLKeyCert:
         assert len(errors) == 1, f"Unexpected multiple errors: {errors}"
         assert "does not match key fingerprint" in errors[0]
 
+    @pytest.mark.usefixtures("tmp_gpg_dir")  # noqa: F811
     def test_parse_missing_key(self, tmp_gpg_dir):
         rpsl_text = object_sample_mapping[RPSLKeyCert().rpsl_object_class]
         obj = rpsl_object_from_text(rpsl_text.replace("certif:", "remarks:"), strict_validation=True)
@@ -275,6 +266,7 @@ class TestRPSLKeyCert:
         assert "Mandatory attribute 'certif' on object key-cert is missing" in errors[0]
         assert "No valid data found" in errors[1]
 
+    @pytest.mark.usefixtures("tmp_gpg_dir")  # noqa: F811
     def test_verify(self, tmp_gpg_dir):
         rpsl_text = object_sample_mapping[RPSLKeyCert().rpsl_object_class]
         obj = rpsl_object_from_text(rpsl_text)
@@ -305,6 +297,7 @@ class TestRPSLMntner:
         assert obj.parsed_data["mnt-by"] == ['AS760-MNT', 'ACONET-LIR-MNT', 'ACONET2-LIR-MNT']
         assert obj.render_rpsl_text() == rpsl_text
 
+    @pytest.mark.usefixtures("tmp_gpg_dir")  # noqa: F811
     def test_verify(self, tmp_gpg_dir):
         rpsl_text = object_sample_mapping[RPSLMntner().rpsl_object_class]
         # Unknown hashes should simply be ignored.

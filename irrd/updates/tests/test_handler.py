@@ -15,6 +15,7 @@ def prepare_mocks(monkeypatch):
     mock_dh = Mock()
     monkeypatch.setattr('irrd.updates.handler.DatabaseHandler', lambda: mock_dh)
     mock_dq = Mock()
+    monkeypatch.setattr('irrd.updates.handler.RPSLDatabaseQuery', lambda: mock_dq)
     monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
     monkeypatch.setattr('irrd.updates.validators.RPSLDatabaseQuery', lambda: mock_dq)
     yield mock_dq, mock_dh
@@ -123,6 +124,133 @@ class TestUpdateRequestHandler:
         
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """)
+
+    def test_parse_valid_new_objects_pgp_key(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
+
+        person_text = textwrap.dedent("""
+        person:         Placeholder Person Object
+        address:        The Netherlands
+        phone:          +31 20 535 4444
+        nic-hdl:        DUMy-RIPE
+        mnt-by:         as760-mnt
+        e-mail:         bitbucket@ripe.net
+        changed:        2009-07-24T17:00:00Z
+        source:         RIPE
+        """)
+
+        mntner_text = textwrap.dedent("""
+        mntner:         AS760-MNT
+        admin-c:        DUMY-RIPE
+        upd-to:         unread@ripe.net
+        auth:           PGPKey-80F238C6
+        mnt-by:         AS760-MNT
+        changed:        2016-10-05T10:41:15Z
+        source:         RIPE
+        """)
+        rpsl_text = person_text + "\n\n" + mntner_text
+
+        query_responses = iter([
+            [{'parsed_data': {'fingerpr': '8626 1D8D BEBD A4F5 4692  D64D A838 3BA7 80F2 38C6'}}],
+            [],
+            [{'object_text': mntner_text}],
+            [{'object_text': mntner_text}],
+            [],
+        ])
+        mock_dh.execute_query = lambda query: next(query_responses)
+
+        handler = UpdateRequestHandler(rpsl_text, pgp_fingerprint='8626 1D8DBEBD A4F5 4692  D64D A838 3BA7 80F2 38C6',
+                                       request_meta={'Message-ID': 'test', 'From': 'example@example.com'})
+        assert handler.status() == 'SUCCESS', handler.user_report()
+
+        assert flatten_mock_calls(mock_dq) == [
+            ['object_classes', (['key-cert'],), {}], ['rpsl_pk', ('PGPKEY-80F238C6',), {}],
+            ['sources', (['RIPE'],), {}], ['object_classes', (['person'],), {}], ['rpsl_pk', ('DUMY-RIPE',), {}],
+            ['sources', (['RIPE'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pk', ('AS760-MNT',), {}],
+            ['sources', (['RIPE'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['AS760-MNT'],), {}]
+        ]
+
+        assert mock_dh.mock_calls[0][0] == 'upsert_rpsl_object'
+        assert mock_dh.mock_calls[0][1][0].pk() == 'DUMY-RIPE'
+        assert mock_dh.mock_calls[1][0] == 'upsert_rpsl_object'
+        assert mock_dh.mock_calls[1][1][0].pk() == 'AS760-MNT'
+        assert mock_dh.mock_calls[2][0] == 'commit'
+
+        assert handler.user_report() == textwrap.dedent("""
+        > Message-ID: test
+        > From: example@example.com
+        
+        
+        SUMMARY OF UPDATE:
+
+        Number of objects found:                    2
+        Number of objects processed successfully:   2
+            Create:        1
+            Modify:        1
+            Delete:        0
+        Number of objects processed with errors:    0
+            Create:        0
+            Modify:        0
+            Delete:        0
+
+        DETAILED EXPLANATION:
+
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        ---
+        Create succeeded: [person] DUMY-RIPE
+
+        ---
+        Modify succeeded: [mntner] AS760-MNT
+
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """)
+
+    def test_parse_invalid_new_objects_pgp_key_does_not_exist(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
+
+        person_text = textwrap.dedent("""
+        person:         Placeholder Person Object
+        address:        The Netherlands
+        phone:          +31 20 535 4444
+        nic-hdl:        DUMy-RIPE
+        mnt-by:         as760-mnt
+        e-mail:         bitbucket@ripe.net
+        changed:        2009-07-24T17:00:00Z
+        source:         RIPE
+        """)
+
+        mntner_text = textwrap.dedent("""
+        mntner:         AS760-MNT
+        admin-c:        DUMY-RIPE
+        upd-to:         unread@ripe.net
+        auth:           PGPKey-80F238C6
+        mnt-by:         AS760-MNT
+        changed:        2016-10-05T10:41:15Z
+        source:         RIPE
+        """)
+        rpsl_text = person_text + "\n\n" + mntner_text
+
+        query_responses = iter([
+            [{'parsed_data': {'fingerpr': '8626 1D8D BEBD A4F5 XXXX  D64D A838 3BA7 80F2 38C6'}}],
+            [],
+            [{'object_text': mntner_text}],
+            [{'object_text': mntner_text}],
+            [],
+        ])
+        mock_dh.execute_query = lambda query: next(query_responses)
+
+        handler = UpdateRequestHandler(rpsl_text, pgp_fingerprint='8626 1D8DBEBD A4F5 4692  D64D A838 3BA7 80F2 38C6')
+        assert handler.status() == 'FAILED', handler.user_report()
+
+        assert flatten_mock_calls(mock_dq) == [
+            ['object_classes', (['key-cert'],), {}], ['rpsl_pk', ('PGPKEY-80F238C6',), {}],
+            ['sources', (['RIPE'],), {}], ['object_classes', (['person'],), {}], ['rpsl_pk', ('DUMY-RIPE',), {}],
+            ['sources', (['RIPE'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pk', ('AS760-MNT',), {}],
+            ['sources', (['RIPE'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['AS760-MNT'],), {}],
+            ['sources', (['RIPE'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['AS760-MNT'],), {}],
+        ]
+
+        assert mock_dh.mock_calls[0][0] == 'commit'
 
     def test_parse_valid_delete(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
@@ -438,7 +566,6 @@ class TestUpdateRequestHandler:
         assert flatten_mock_calls(mock_dq) == []
         assert mock_dh.mock_calls[0][0] == 'commit'
 
-        print(handler.user_report())
         assert handler.user_report() == textwrap.dedent("""
         SUMMARY OF UPDATE:
         
