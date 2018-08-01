@@ -3,6 +3,7 @@ from typing import Set, List, Optional
 
 import gnupg
 
+from irrd.conf import get_setting
 from .config import PASSWORD_HASHERS
 from .fields import (RPSLTextField, RPSLIPv4PrefixField, RPSLIPv4PrefixesField, RPSLIPv6PrefixField,
                      RPSLIPv6PrefixesField, RPSLIPv4AddressRangeField, RPSLASNumberField, RPSLASBlockField,
@@ -217,7 +218,7 @@ class RPSLKeyCert(RPSLObject):
         if not super().clean():
             return False  # pragma: no cover
 
-        gpg = gnupg.GPG(gnupghome=self.gpg_dir())
+        gpg = gnupg.GPG(gnupghome=get_setting('gnupg.homedir'))
         certif_data = self.parsed_data.get("certif", "").replace(",", "\n")
         result = gpg.import_keys(certif_data)
 
@@ -252,12 +253,9 @@ class RPSLKeyCert(RPSLObject):
     # which key signed a message, which can then be stored and compared to key-cert's later.
     # This method will probably be extracted to the update handler.
     def verify(self, message: str) -> bool:
-        gpg = gnupg.GPG(gnupghome=self.gpg_dir())
+        gpg = gnupg.GPG(gnupghome=get_setting('gnupg.homedir'))
         result = gpg.verify(message)
         return result.valid and result.key_status is None and result.fingerprint == self.fingerprint
-
-    def gpg_dir(self) -> str:  # pragma: no cover
-        return "gnupg"
 
     @staticmethod
     def format_fingerprint(fingerprint: str) -> str:

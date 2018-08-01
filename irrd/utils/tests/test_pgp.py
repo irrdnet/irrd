@@ -1,0 +1,163 @@
+# flake8: noqa: W293
+
+import textwrap
+
+import pytest
+
+from irrd.rpsl.rpsl_objects import rpsl_object_from_text
+from irrd.utils.rpsl_samples import SAMPLE_KEY_CERT
+# noinspection PyUnresolvedReferences
+from irrd.utils.test_utils import tmp_gpg_dir  # noqa: F401
+from ..pgp import validate_pgp_signature
+
+
+@pytest.fixture()
+def preload_gpg_key():
+    # Simply parsing the key-cert will load it into the GPG keychain
+    rpsl_text = SAMPLE_KEY_CERT
+    rpsl_object_from_text(rpsl_text)
+
+
+class TestValidatePGPSignature:
+
+    @pytest.mark.usefixtures("tmp_gpg_dir")
+    def test_valid_detached_signed_ascii(self, tmp_gpg_dir, preload_gpg_key):
+        message = textwrap.dedent("""
+        Content-Transfer-Encoding: 7bit
+        Content-Type: text/plain;
+        \tcharset=us-ascii
+
+        test 1 2 3
+        """).strip() + "\n"
+
+        signature = textwrap.dedent("""
+        -----BEGIN PGP SIGNATURE-----
+
+        iQIzBAEBCAAdFiEEhiYdjb69pPVGktZNqDg7p4DyOMYFAlthsw0ACgkQqDg7p4Dy
+        OMbLdBAAnJ93CZYz6VNhHiSFhj2EtU6yG70chyAiCfrZXsXGWQXNBbkQBCpk3Cy0
+        HD2cIBxh1612bDkct8ezWaS4uOEvp5gyEJg0/VrAMCvWIEXEFizE75kOgj3ay+hs
+        Dj4C7TRlRvQdRbaNdCb3R27WMK9GPwDJgqjifZQu13pWkkAxQLpZBs+wbnWvh01X
+        QWQdf7xr3PQUkm+uVE2fU7j+c1vQs5oJLMdvSuzSN59IvLiEmRFrkQF7yj3WCesh
+        dTxAYl5TA8IhldXsc2/MYL24fNKk2L9Ns3Cr0x9XHYBk+w/iGQuCvTkTiOzeoxab
+        puk83Xr+WDgVo6w6KT7n5ZFg7XRH/WV0hhdy6i+wuyXnwdTP5JQbJn66xZV4iYZh
+        QAHrNeb/kRMcw7l6I3eL94W7ndfCZK7/XhHqYB4m88Jnbaklxih2gjJGWu50eQc7
+        EXt0dl6BQeKlMtLWfgtBY4RzEglr1u99DSEqotJTlpSqUQ79rYwzKNvjI1Xc7yJc
+        lLNwRJTtoWd8sUc0njlemxtVELNHUj0ahpQgMTqw1WbJu+FJxaTcRdbu6fYwl7hc
+        k1Bt6Qyyn4qWD19aV6yClqyhJwZB2uoSKHvBmPIu31nHRYNr9SWD75dht8YODsmF
+        QxtFWD7kfutDc40U0GjukbcPsfni1BH9AZZbUsm6YS7JMxoh1Rk=
+        =92HM
+        -----END PGP SIGNATURE-----
+        """).strip()
+        new_message, fingerprint = validate_pgp_signature(message, signature)
+        assert new_message is None
+        assert fingerprint == '86261D8DBEBDA4F54692D64DA8383BA780F238C6'
+
+    @pytest.mark.usefixtures("tmp_gpg_dir")
+    def test_valid_inline_signed_ascii(self, tmp_gpg_dir, preload_gpg_key):
+        message = textwrap.dedent("""
+        UNSIGNED TEXT TO BE IGNORED
+
+        -----BEGIN PGP SIGNED MESSAGE-----
+        Hash: SHA256
+
+        test 1 2 3
+        -----BEGIN PGP SIGNATURE-----
+
+        iQIzBAEBCAAdFiEEhiYdjb69pPVGktZNqDg7p4DyOMYFAltix/QACgkQqDg7p4Dy
+        OMYTzA//buAOavyy5mShsCu8jlAyA9Y9PZWp4fc9I2Gnef/ESwmagr10KIBJpz3M
+        qO85Oxml3kJDKXUUS5NLxUiVQnznErETbPYx04S3NLP8yRvFUV31x5D7WPwy7g0V
+        1WDr4eDBB+Nk9ib7fBGhKosjODzPt/58xTCgcD25rPYF8ie3VzIv0KzgSQNC3jqE
+        e4+eCS/IpPxoVEqfR7Dxt9j6Z7+ERcNkNYexX14IdOL+eldXlOgZgAjhDyY1FGoX
+        yZUBK1ZBXfyNY33dSMsM/LRN3TnnLeqQu4VlsgaE3syqgiHw3fLjnldAVFRaDV9g
+        BTFg/3LQ+QwjzKcKi+f2pjr/FbsqnSBZZH31M6Pmdwvz9roZJB59Hhjgr+kxpfop
+        bgZ95P4z2i7XuCOJmI5LNOaqlZmt3RebLd2QIAfKONi2GfwLl4ibk6VlCdMIQoJS
+        paQ7V2Dq9r6Pure2wn+xIPOuySQ+zVf7emY9GFxFim87Eu2aaV4E/S52EpOFqWCU
+        TgTCi98X5RJyBdvii7XBl+VcM041hww221nw2WvRECaImgwx1eNx2UjXpsLN5VrT
+        oxZBbe2zPrzKJSG3WmBRi8bekarDrCPSd1uWXRoCqUmIPLTTID52ikkPKEBTeNyv
+        4Ni0aIkkZY3cM0QR9EEHSCJgS2RVQujw/KZTeTQTLAJLtGtLbq8=
+        =Zn24
+        -----END PGP SIGNATURE-----
+        """).strip()
+        new_message, fingerprint = validate_pgp_signature(message)
+        assert new_message.strip() == 'test 1 2 3'
+        assert fingerprint == '86261D8DBEBDA4F54692D64DA8383BA780F238C6'
+
+    @pytest.mark.usefixtures("tmp_gpg_dir")
+    def test_invalid_inline_signed_ascii_multiple_messages(self, tmp_gpg_dir, preload_gpg_key):
+        message = textwrap.dedent("""
+        -----BEGIN PGP SIGNED MESSAGE-----
+        Hash: SHA256
+
+        test 1 2 3
+        -----BEGIN PGP SIGNATURE-----
+
+        iQIzBAEBCAAdFiEEhiYdjb69pPVGktZNqDg7p4DyOMYFAltix/QACgkQqDg7p4Dy
+        OMYTzA//buAOavyy5mShsCu8jlAyA9Y9PZWp4fc9I2Gnef/ESwmagr10KIBJpz3M
+        qO85Oxml3kJDKXUUS5NLxUiVQnznErETbPYx04S3NLP8yRvFUV31x5D7WPwy7g0V
+        1WDr4eDBB+Nk9ib7fBGhKosjODzPt/58xTCgcD25rPYF8ie3VzIv0KzgSQNC3jqE
+        e4+eCS/IpPxoVEqfR7Dxt9j6Z7+ERcNkNYexX14IdOL+eldXlOgZgAjhDyY1FGoX
+        yZUBK1ZBXfyNY33dSMsM/LRN3TnnLeqQu4VlsgaE3syqgiHw3fLjnldAVFRaDV9g
+        BTFg/3LQ+QwjzKcKi+f2pjr/FbsqnSBZZH31M6Pmdwvz9roZJB59Hhjgr+kxpfop
+        bgZ95P4z2i7XuCOJmI5LNOaqlZmt3RebLd2QIAfKONi2GfwLl4ibk6VlCdMIQoJS
+        paQ7V2Dq9r6Pure2wn+xIPOuySQ+zVf7emY9GFxFim87Eu2aaV4E/S52EpOFqWCU
+        TgTCi98X5RJyBdvii7XBl+VcM041hww221nw2WvRECaImgwx1eNx2UjXpsLN5VrT
+        oxZBbe2zPrzKJSG3WmBRi8bekarDrCPSd1uWXRoCqUmIPLTTID52ikkPKEBTeNyv
+        4Ni0aIkkZY3cM0QR9EEHSCJgS2RVQujw/KZTeTQTLAJLtGtLbq8=
+        =Zn24
+        -----END PGP SIGNATURE-----
+
+        -----BEGIN PGP SIGNED MESSAGE-----
+        Hash: SHA256
+
+        INVALID
+        -----BEGIN PGP SIGNATURE-----
+
+        iQIzBAEBCAAdFiEEhiYdjb69pPVGktZNqDg7p4DyOMYFAltix/QACgkQqDg7p4Dy
+        OMYTzA//buAOavyy5mShsCu8jlAyA9Y9PZWp4fc9I2Gnef/ESwmagr10KIBJpz3M
+        qO85Oxml3kJDKXUUS5NLxUiVQnznErETbPYx04S3NLP8yRvFUV31x5D7WPwy7g0V
+        1WDr4eDBB+Nk9ib7fBGhKosjODzPt/58xTCgcD25rPYF8ie3VzIv0KzgSQNC3jqE
+        e4+eCS/IpPxoVEqfR7Dxt9j6Z7+ERcNkNYexX14IdOL+eldXlOgZgAjhDyY1FGoX
+        yZUBK1ZBXfyNY33dSMsM/LRN3TnnLeqQu4VlsgaE3syqgiHw3fLjnldAVFRaDV9g
+        BTFg/3LQ+QwjzKcKi+f2pjr/FbsqnSBZZH31M6Pmdwvz9roZJB59Hhjgr+kxpfop
+        bgZ95P4z2i7XuCOJmI5LNOaqlZmt3RebLd2QIAfKONi2GfwLl4ibk6VlCdMIQoJS
+        paQ7V2Dq9r6Pure2wn+xIPOuySQ+zVf7emY9GFxFim87Eu2aaV4E/S52EpOFqWCU
+        TgTCi98X5RJyBdvii7XBl+VcM041hww221nw2WvRECaImgwx1eNx2UjXpsLN5VrT
+        oxZBbe2zPrzKJSG3WmBRi8bekarDrCPSd1uWXRoCqUmIPLTTID52ikkPKEBTeNyv
+        4Ni0aIkkZY3cM0QR9EEHSCJgS2RVQujw/KZTeTQTLAJLtGtLbq8=
+        =Zn24
+        -----END PGP SIGNATURE-----
+        """).strip()
+        new_message, fingerprint = validate_pgp_signature(message)
+        assert new_message is None
+        assert fingerprint is None
+
+    @pytest.mark.usefixtures("tmp_gpg_dir")
+    def test_invalid_signature_detached_signed_ascii(self, tmp_gpg_dir, preload_gpg_key):
+        message = textwrap.dedent("""
+        Content-Transfer-Encoding: 7bit
+        Content-Type: text/plain;
+        \tcharset=us-ascii
+
+        test 1 2 INVALID
+        """).strip() + "\n"
+        signature = textwrap.dedent("""
+        -----BEGIN PGP SIGNATURE-----
+
+        iQIzBAEBCAAdFiEEhiYdjb69pPVGktZNqDg7p4DyOMYFAlthsw0ACgkQqDg7p4Dy
+        OMbLdBAAnJ93CZYz6VNhHiSFhj2EtU6yG70chyAiCfrZXsXGWQXNBbkQBCpk3Cy0
+        HD2cIBxh1612bDkct8ezWaS4uOEvp5gyEJg0/VrAMCvWIEXEFizE75kOgj3ay+hs
+        Dj4C7TRlRvQdRbaNdCb3R27WMK9GPwDJgqjifZQu13pWkkAxQLpZBs+wbnWvh01X
+        QWQdf7xr3PQUkm+uVE2fU7j+c1vQs5oJLMdvSuzSN59IvLiEmRFrkQF7yj3WCesh
+        dTxAYl5TA8IhldXsc2/MYL24fNKk2L9Ns3Cr0x9XHYBk+w/iGQuCvTkTiOzeoxab
+        puk83Xr+WDgVo6w6KT7n5ZFg7XRH/WV0hhdy6i+wuyXnwdTP5JQbJn66xZV4iYZh
+        QAHrNeb/kRMcw7l6I3eL94W7ndfCZK7/XhHqYB4m88Jnbaklxih2gjJGWu50eQc7
+        EXt0dl6BQeKlMtLWfgtBY4RzEglr1u99DSEqotJTlpSqUQ79rYwzKNvjI1Xc7yJc
+        lLNwRJTtoWd8sUc0njlemxtVELNHUj0ahpQgMTqw1WbJu+FJxaTcRdbu6fYwl7hc
+        k1Bt6Qyyn4qWD19aV6yClqyhJwZB2uoSKHvBmPIu31nHRYNr9SWD75dht8YODsmF
+        QxtFWD7kfutDc40U0GjukbcPsfni1BH9AZZbUsm6YS7JMxoh1Rk=
+        =92HM
+        -----END PGP SIGNATURE-----
+        """).strip()
+        new_message, fingerprint = validate_pgp_signature(message, signature)
+        assert new_message is None
+        assert fingerprint is None

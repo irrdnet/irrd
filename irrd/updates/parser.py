@@ -176,7 +176,6 @@ def parse_update_requests(requests_text: str,
                           database_handler: DatabaseHandler,
                           auth_validator: AuthValidator,
                           reference_validator: ReferenceValidator,
-                          keycert_obj_pk: Optional[str] = None
                           ) -> List[UpdateRequest]:
     """
     Parse update requests, a text of RPSL objects along with metadata like
@@ -186,11 +185,7 @@ def parse_update_requests(requests_text: str,
     :param database_handler: a DatabaseHandler instance
         :param auth_validator: a AuthValidator instance, to resolve authentication requirements
     :param reference_validator: a ReferenceValidator instance
-    :param keycert_obj_pk: the RPSL PK of a PGPKEY key-cert object, if the message was signed with this
     :return: a list of UpdateRequest instances
-
-    NOTE: keycert_obj_pk is trusted without further verification.
-    User provided values must never be passed in without prior validation.
     """
     results = []
     passwords = []
@@ -227,5 +222,4 @@ def parse_update_requests(requests_text: str,
     if auth_validator:
         auth_validator.passwords = passwords
         auth_validator.overrides = overrides
-        auth_validator.keycert_obj_pk = keycert_obj_pk
     return results

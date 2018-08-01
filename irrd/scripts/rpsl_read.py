@@ -1,11 +1,15 @@
 #!/usr/bin/env python
+# flake8: noqa: E402
 """
 This is a helper script to run RPSL data through the parser and, optionally,
 insert it into the database.
 """
 import argparse
+import os
 import sys
 from typing import Set
+
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), '../'))
 
 from irrd.db.api import DatabaseHandler
 from irrd.rpsl.parser import UnknownRPSLObjectClassException
