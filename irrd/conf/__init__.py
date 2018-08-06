@@ -3,6 +3,8 @@ import time
 from typing import Any
 import os
 
+PASSWORD_HASH_DUMMY_VALUE = 'DummyValue'
+
 DEFAULT_SETTINGS = {
     'database_url': 'postgresql:///irrd',
     'server.whois.interface': '::0',
