@@ -439,7 +439,9 @@ class RPSLAuthField(RPSLTextField):
     """Field for the auth attribute of a mntner."""
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
         valid_beginnings = [hasher + " " for hasher in PASSWORD_HASHERS.keys()]
-        if any(value.upper().startswith(b) for b in valid_beginnings) or re_pgpkey.match(value.upper()):
+        has_valid_beginning = any(value.upper().startswith(b) for b in valid_beginnings)
+        is_valid_hash = has_valid_beginning and value.count(' ') == 1 and not value.count(',')
+        if is_valid_hash or re_pgpkey.match(value.upper()):
             return RPSLFieldParseResult(value)
 
         hashers = ", ".join(PASSWORD_HASHERS.keys())

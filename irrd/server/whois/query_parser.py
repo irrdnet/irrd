@@ -6,11 +6,14 @@ from typing import Optional, List, Set
 from IPy import IP
 
 from irrd import __version__
+from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
 from irrd.db.api import DatabaseHandler, RPSLDatabaseQuery
+from irrd.rpsl.config import PASSWORD_HASHERS
 from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING, lookup_field_names
 from irrd.utils.validators import parse_as_number, ValidationError
 
 logger = logging.getLogger(__name__)
+re_remove_passwords = re.compile(r'(%s)[\W\w]+' % '|'.join(PASSWORD_HASHERS.keys()))
 
 
 class WhoisQueryParserException(ValueError):
@@ -52,29 +55,33 @@ class WhoisQueryResponse:
         self.result = result
 
     def generate_response(self) -> str:
+        result = self.result
+        if result:
+            result = re_remove_passwords.sub(r'\1 %s  # Filtered for security' % PASSWORD_HASH_DUMMY_VALUE, result)
+
         if self.mode == WhoisQueryResponseMode.IRRD:
             if self.response_type == WhoisQueryResponseType.SUCCESS:
-                if self.result:
-                    result_len = len(self.result) + 1
-                    return f'A{result_len}\n{self.result}\nC\n'
+                if result:
+                    result_len = len(result) + 1
+                    return f'A{result_len}\n{result}\nC\n'
                 else:
                     return 'C\n'
             elif self.response_type == WhoisQueryResponseType.KEY_NOT_FOUND:
                 return f'D\n'
             elif self.response_type == WhoisQueryResponseType.ERROR:
-                return f'F {self.result}\n'
+                return f'F {result}\n'
 
         elif self.mode == WhoisQueryResponseMode.RIPE:
             if self.response_type == WhoisQueryResponseType.SUCCESS:
-                if self.result:
-                    return self.result + '\n\n'
+                if result:
+                    return result + '\n\n'
                 return '%  No entries found for the selected source(s).\n'
             elif self.response_type == WhoisQueryResponseType.KEY_NOT_FOUND:
                 return '%  No entries found for the selected source(s).\n'
             elif self.response_type == WhoisQueryResponseType.ERROR:
-                return f'%% {self.result}\n'
+                return f'%% {result}\n'
 
-        raise RuntimeError(f'Unable to formulate response for {self.response_type} / {self.mode}: {self.result}')
+        raise RuntimeError(f'Unable to formulate response for {self.response_type} / {self.mode}: {result}')
 
 
 class WhoisQueryParser:

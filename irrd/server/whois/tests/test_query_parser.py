@@ -5,6 +5,8 @@ import pytest
 from IPy import IP
 from pytest import raises
 
+from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
+from irrd.utils.rpsl_samples import SAMPLE_MNTNER
 from irrd.utils.test_utils import flatten_mock_calls
 from ..query_parser import WhoisQueryParser, WhoisQueryResponseMode, WhoisQueryResponseType, WhoisQueryResponse
 
@@ -127,6 +129,14 @@ class TestWhoisQueryResponse:
             # noinspection PyTypeChecker
             WhoisQueryResponse(response_type='bar', mode='foo', result='foo').generate_response()  # type:ignore
         assert 'foo' in str(ve)
+
+    def test_auth_hash_removal(self):
+        response = WhoisQueryResponse(mode=WhoisQueryResponseMode.RIPE,
+                                      response_type=WhoisQueryResponseType.ERROR,
+                                      result=SAMPLE_MNTNER).generate_response()
+        assert 'CRYPT-PW ' + PASSWORD_HASH_DUMMY_VALUE in response
+        assert 'CRYPT-PW LEuuhsBJNFV0Q' not in response
+        assert 'MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.' not in response
 
 
 class TestWhoisQueryParserRIPE:
