@@ -46,6 +46,14 @@ LOGGING = {
         },
     },
     'loggers': {
+        'passlib.registry': {
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'gnupg': {
+            'level': 'INFO',
+            'propagate': True,
+        },
         '': {
             'handlers': ['console'],
             'level': 'DEBUG',
