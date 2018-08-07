@@ -1,9 +1,9 @@
 from collections import OrderedDict
-from typing import Set, List, Optional
+from typing import Set, List, Optional, Union
 
 import gnupg
 
-from irrd.conf import get_setting
+from irrd.conf import get_setting, PASSWORD_HASH_DUMMY_VALUE
 from .config import PASSWORD_HASHERS
 from .fields import (RPSLTextField, RPSLIPv4PrefixField, RPSLIPv4PrefixesField, RPSLIPv6PrefixField,
                      RPSLIPv6PrefixesField, RPSLIPv4AddressRangeField, RPSLASNumberField, RPSLASBlockField,
@@ -298,24 +298,67 @@ class RPSLMntner(RPSLObject):
         ("source", RPSLGenericNameField()),
     ])
 
+    def clean(self):
+        """Check whether either all hash values are dummy hashes, or none."""
+        if not super().clean():
+            return False  # pragma: no cover
+
+        dummy_matches = [auth[1] == PASSWORD_HASH_DUMMY_VALUE for auth in self._auth_lines(True)]
+        if any(dummy_matches) and not all(dummy_matches):
+            self.messages.error('Either all password auth hashes in a submitted mntner must be dummy objects, or none.')
+
     def verify_auth(self, passwords: List[str], keycert_obj_pk: Optional[str]=None) -> bool:
         """
         Verify whether one of a given list of passwords matches
         any of the auth hashes in this object, or match the
         keycert object PK.
         """
-        for auth in self.parsed_data.get("auth", "").splitlines():
+        for auth in self.parsed_data.get('auth', '').splitlines():
             if keycert_obj_pk and auth.upper() == keycert_obj_pk:
                 return True
             if " " not in auth:
                 continue
-            scheme, hash = auth.split(" ", 1)
+            scheme, hash = auth.split(' ', 1)
             hasher = PASSWORD_HASHERS.get(scheme.upper())
             if hasher:
                 for password in passwords:
-                    if hasher.verify(password, hash):
-                        return True
+                    try:
+                        if hasher.verify(password, hash):
+                            return True
+                    except ValueError:
+                        pass
         return False
+
+    def has_dummy_auth_value(self) -> bool:
+        """
+        Check whether this object has dummy auth hashes.
+        If clean() has returned successfully before, the answer from this method
+        means that either all or no hashes have dummy values.
+        """
+        auth_values = [auth[1] for auth in self._auth_lines(password_hashes=True)]
+        return bool(auth_values) and all([value == PASSWORD_HASH_DUMMY_VALUE for value in auth_values])
+
+    def force_single_new_password(self, password) -> None:
+        """
+        Overwrite all auth hashes with a single new hash for the provided password.
+        Retains other methods, i.e. PGPKEY.
+        """
+        hash = 'MD5-PW ' + PASSWORD_HASHERS['MD5-PW'].hash(password)
+        auths = self._auth_lines(password_hashes=False)
+        auths.append(hash)
+        self._update_attribute_value("auth", auths)
+
+    def _auth_lines(self, password_hashes=True) -> List[Union[str, List[str]]]:
+        """
+        Return a list of auth values in this object.
+        If password_hashes=False, returns only non-hash (i.e. PGPKEY) lines.
+        If password_hashes=True, returns a list of lists, each inner list containing
+        the hash method and the hash.
+        """
+        lines = self.parsed_data.get("auth", "").splitlines()
+        if password_hashes is True:
+            return [auth.split(' ', 1) for auth in lines if ' ' in auth]
+        return [auth for auth in lines if ' ' not in auth]
 
 
 class RPSLPeeringSet(RPSLObject):

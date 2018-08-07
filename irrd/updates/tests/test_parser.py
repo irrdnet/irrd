@@ -2,8 +2,10 @@ import itertools
 from unittest.mock import Mock
 
 import pytest
+from passlib.handlers.md5_crypt import md5_crypt
 from pytest import raises
 
+from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
 from irrd.utils.rpsl_samples import SAMPLE_INETNUM, SAMPLE_AS_SET, SAMPLE_PERSON, SAMPLE_MNTNER
 from irrd.utils.test_utils import flatten_mock_calls
 from ..parser import parse_update_requests
@@ -120,7 +122,7 @@ class TestSingleUpdateRequestHandling:
         validator = ReferenceValidator(mock_dh)
 
         result_inetnum = parse_update_requests(SAMPLE_INETNUM, mock_dh, AuthValidator(mock_dh), validator)[0]
-        assert result_inetnum._check_references_to_others()
+        assert result_inetnum._check_references()
         assert result_inetnum.is_valid()
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['RIPE'],), {}],
@@ -145,7 +147,7 @@ class TestSingleUpdateRequestHandling:
         validator = ReferenceValidator(mock_dh)
 
         result_inetnum = parse_update_requests(SAMPLE_INETNUM, mock_dh, AuthValidator(mock_dh), validator)[0]
-        assert not result_inetnum._check_references_to_others()
+        assert not result_inetnum._check_references()
         assert not result_inetnum.is_valid()
         assert result_inetnum.error_messages == [
             'Object DUMY-RIPE referenced in field admin-c not found in database RIPE - must reference one of role, person.',
@@ -179,7 +181,7 @@ class TestSingleUpdateRequestHandling:
         validator.preload(preload)
 
         result_inetnum = parse_update_requests(SAMPLE_INETNUM, mock_dh, AuthValidator(mock_dh), validator)[0]
-        assert result_inetnum._check_references_to_others()
+        assert result_inetnum._check_references()
         assert result_inetnum.is_valid()
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['RIPE'],), {}],
@@ -201,7 +203,7 @@ class TestSingleUpdateRequestHandling:
 
         result = parse_update_requests(SAMPLE_PERSON + "delete: delete",
                                        mock_dh, AuthValidator(mock_dh), validator)[0]
-        result._check_references_from_others()
+        result._check_references()
         assert not result.is_valid()
         assert result.error_messages == [
             'Object DUMY-RIPE to be deleted, but still referenced by inetnum 80.16.151.184 - 80.16.151.191',
@@ -233,7 +235,7 @@ class TestSingleUpdateRequestHandling:
                                         mock_dh, AuthValidator(mock_dh), validator)
         validator.preload(results)
         result_inetnum = results[1]
-        result_inetnum._check_references_to_others()
+        result_inetnum._check_references()
         assert not result_inetnum.is_valid()
         assert result_inetnum.error_messages == [
             'Object DUMY-RIPE referenced in field admin-c not found in database RIPE - must reference one of role, person.',
@@ -273,10 +275,10 @@ class TestSingleUpdateRequestHandling:
         ])
         mock_dh.execute_query = lambda query: next(query_results)
 
-        result = parse_update_requests(SAMPLE_PERSON + "delete: delete",
+        result = parse_update_requests(SAMPLE_PERSON + "delete: delete" + "\n",
                                        mock_dh, AuthValidator(mock_dh), validator)[0]
-        result._check_references_from_others()
-        assert result.is_valid()
+        result._check_references()
+        assert result.is_valid(), result.error_messages
         assert not result.error_messages
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['RIPE'],), {}],
@@ -361,6 +363,104 @@ class TestSingleUpdateRequestHandling:
             ['rpsl_pk', ('AS760-MNT',), {}],
         ]
 
+    def test_check_auth_invalid_create_mntner_referencing_self_with_dummy_passwords(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
+
+        mock_dh.execute_query = lambda query: []
+
+        reference_validator = ReferenceValidator(mock_dh)
+        auth_validator = AuthValidator(mock_dh)
+
+        # Submit the mntner with dummy password values as would be returned by queries.
+        # This should not be allowed in new objects.
+        data = SAMPLE_MNTNER.replace('LEuuhsBJNFV0Q', PASSWORD_HASH_DUMMY_VALUE)
+        data = data.replace('$1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.', PASSWORD_HASH_DUMMY_VALUE)
+        result_mntner = parse_update_requests(data + 'password: crypt-password',
+                                              mock_dh, auth_validator, reference_validator)[0]
+        auth_validator.pre_approve([result_mntner])
+
+        assert not result_mntner._check_auth()
+        assert result_mntner.error_messages == ['Authorisation failed for the auth methods on this mntner object.']
+        assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['RIPE'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pk', ('AS760-MNT',), {}],
+        ]
+
+    def test_check_auth_valid_update_mntner_submits_new_object_with_all_dummy_hash_values(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
+
+        mock_dh.execute_query = lambda query: [{'object_text': SAMPLE_MNTNER}]
+
+        reference_validator = ReferenceValidator(mock_dh)
+        auth_validator = AuthValidator(mock_dh)
+
+        # Submit the mntner with dummy password values as would be returned by queries,
+        # but a password attribute that is valid for the current DB object.
+        data = SAMPLE_MNTNER.replace('LEuuhsBJNFV0Q', PASSWORD_HASH_DUMMY_VALUE)
+        data = data.replace('$1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.', PASSWORD_HASH_DUMMY_VALUE)
+        result_mntner = parse_update_requests(data + 'password: crypt-password',
+                                              mock_dh, auth_validator, reference_validator)[0]
+        auth_validator.pre_approve([result_mntner])
+        assert result_mntner._check_auth()
+        assert not result_mntner.error_messages
+        auth_pgp, auth_hash = result_mntner.rpsl_obj_new.parsed_data['auth'].splitlines()
+        assert auth_pgp == 'PGPKey-80F238C6'
+        assert auth_hash.startswith('MD5-PW ')
+        assert md5_crypt.verify('crypt-password', auth_hash[7:])
+        assert auth_hash in result_mntner.rpsl_obj_new.render_rpsl_text()
+
+        assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['RIPE'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pk', ('AS760-MNT',), {}],
+            ['sources', (['RIPE'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', (['AS760-MNT', 'ACONET-LIR-MNT', 'ACONET2-LIR-MNT'],), {}],
+        ]
+
+    def test_check_auth_invalid_update_mntner_submits_new_object_with_mixed_dummy_hash_real_hash(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
+
+        mock_dh.execute_query = lambda query: [{'object_text': SAMPLE_MNTNER}]
+
+        reference_validator = ReferenceValidator(mock_dh)
+        auth_validator = AuthValidator(mock_dh)
+
+        # Submit the mntner with dummy password values as would be returned by queries,
+        # but a password attribute that is valid for the current DB object.
+        data = SAMPLE_MNTNER.replace('LEuuhsBJNFV0Q', PASSWORD_HASH_DUMMY_VALUE)
+        result_mntner = parse_update_requests(data + 'password: md5-password',
+                                              mock_dh, auth_validator, reference_validator)[0]
+        auth_validator.pre_approve([result_mntner])
+        result_mntner._check_auth()
+        assert not result_mntner.is_valid()
+        assert result_mntner.error_messages == [
+            'Either all password auth hashes in a submitted mntner must be dummy objects, or none.',
+        ]
+
+    def test_check_auth_invalid_update_mntner_submits_new_object_with_dummy_hash_multiple_passwords(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
+
+        mock_dh.execute_query = lambda query: [{'object_text': SAMPLE_MNTNER}]
+
+        reference_validator = ReferenceValidator(mock_dh)
+        auth_validator = AuthValidator(mock_dh)
+
+        # Submit the mntner with dummy password values as would be returned by queries,
+        # but multiple password attributes, which means we wouldn't know which password to set.
+        data = SAMPLE_MNTNER.replace('LEuuhsBJNFV0Q', PASSWORD_HASH_DUMMY_VALUE)
+        data = data.replace('$1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.', PASSWORD_HASH_DUMMY_VALUE)
+        result_mntner = parse_update_requests(data + 'password: md5-password\npassword: other-password',
+                                              mock_dh, auth_validator, reference_validator)[0]
+        auth_validator.pre_approve([result_mntner])
+        result_mntner._check_auth()
+        assert not result_mntner.is_valid()
+        assert result_mntner.error_messages == [
+            'Object submitted with dummy hash values, but multiple passwords submitted. '
+            'Either submit all full hashes, or a single password.'
+        ]
+
     def test_check_auth_invalid_update_mntner_wrong_password_current_db_object(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
 
@@ -380,18 +480,17 @@ class TestSingleUpdateRequestHandling:
             'ACONET-LIR-MNT, ACONET2-LIR-MNT'
         ]
         assert flatten_mock_calls(mock_dq) == [
-            ['sources', (['RIPE'],), {}],
-            ['object_classes', (['mntner'],), {}],
-            ['rpsl_pk', ('AS760-MNT',), {}],
-            ['sources', (['RIPE'],), {}],
-            ['object_classes', (['mntner'],), {}],
+            ['sources', (['RIPE'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pk', ('AS760-MNT',), {}],
+            ['sources', (['RIPE'],), {}], ['object_classes', (['mntner'],), {}],
             ['rpsl_pks', (['AS760-MNT', 'ACONET-LIR-MNT', 'ACONET2-LIR-MNT'],), {}],
+            ['sources', (['RIPE'],), {}], ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', (['AS760-MNT', 'ACONET-LIR-MNT', 'ACONET2-LIR-MNT'],), {}]
         ]
 
     def test_check_auth_invalid_create_with_incorrect_password_referenced_mntner(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
 
-        query_results = iter([[{'object_text': SAMPLE_INETNUM}], [{'object_text': SAMPLE_MNTNER}]])
+        query_results = iter([[{'object_text': SAMPLE_INETNUM}], [{'object_text': SAMPLE_MNTNER}], []])
         mock_dh.execute_query = lambda query: next(query_results)
 
         reference_validator = ReferenceValidator(mock_dh)
@@ -403,12 +502,12 @@ class TestSingleUpdateRequestHandling:
         assert 'Authorisation for inetnum 80.16.151.184 - 80.16.151.191 failed' in result_inetnum.error_messages[0]
         assert 'one of: INTERB-MNT' in result_inetnum.error_messages[0]
         assert flatten_mock_calls(mock_dq) == [
-            ['sources', (['RIPE'],), {}],
-            ['object_classes', (['inetnum'],), {}],
+            ['sources', (['RIPE'],), {}], ['object_classes', (['inetnum'],), {}],
             ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}],
             ['sources', (['RIPE'],), {}],
-            ['object_classes', (['mntner'],), {}],
-            ['rpsl_pks', (['INTERB-MNT'],), {}]
+            ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['INTERB-MNT'],), {}],
+            ['sources', (['RIPE'],), {}],
+            ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['INTERB-MNT'],), {}]
         ]
 
     def test_check_auth_invalid_update_with_incorrect_password_referenced_mntner(self, prepare_mocks):

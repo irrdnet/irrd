@@ -2,6 +2,7 @@ import pytest
 from IPy import IP
 from pytest import raises
 
+from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
 from irrd.utils.rpsl_samples import (object_sample_mapping, SAMPLE_MALFORMED_EMPTY_LINE, SAMPLE_MALFORMED_ATTRIBUTE_NAME,
                                      SAMPLE_UNKNOWN_CLASS, SAMPLE_MISSING_MANDATORY_ATTRIBUTE, SAMPLE_MALFORMED_SOURCE,
                                      SAMPLE_MALFORMED_PK, SAMPLE_UNKNOWN_ATTRIBUTE, SAMPLE_INVALID_MULTIPLE_ATTRIBUTE,
@@ -292,10 +293,20 @@ class TestRPSLMntner:
         rpsl_text = object_sample_mapping[RPSLMntner().rpsl_object_class]
         obj = rpsl_object_from_text(rpsl_text)
         assert obj.__class__ == RPSLMntner
+
         assert not obj.messages.errors()
         assert obj.pk() == "AS760-MNT"
         assert obj.parsed_data["mnt-by"] == ['AS760-MNT', 'ACONET-LIR-MNT', 'ACONET2-LIR-MNT']
         assert obj.render_rpsl_text() == rpsl_text
+
+    def test_parse_invalid_partial_dummy_hash(self):
+        rpsl_text = object_sample_mapping[RPSLMntner().rpsl_object_class]
+        rpsl_text = rpsl_text.replace('LEuuhsBJNFV0Q', PASSWORD_HASH_DUMMY_VALUE)
+        obj = rpsl_object_from_text(rpsl_text)
+        assert obj.__class__ == RPSLMntner
+        assert obj.messages.errors() == [
+            'Either all password auth hashes in a submitted mntner must be dummy objects, or none.'
+        ]
 
     @pytest.mark.usefixtures("tmp_gpg_dir")  # noqa: F811
     def test_verify(self, tmp_gpg_dir):

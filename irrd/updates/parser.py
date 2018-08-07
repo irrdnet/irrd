@@ -131,44 +131,41 @@ class UpdateRequest:
         auth_valid = self._check_auth()
         if not auth_valid:
             return False
-        # For deletions, only references to the deleted object matter, as
-        # they now become invalid. For other operations, only the validity
-        # of references from this object to others matter.
-        if self.request_type == UpdateRequestType.DELETE:
-            references_valid = self._check_references_from_others()
-        else:
-            references_valid = self._check_references_to_others()
+        references_valid = self._check_references()
         return references_valid
 
     def _check_auth(self) -> bool:
         assert self.rpsl_obj_new
-        auth_error_message = self.auth_validator.check_auth(self.rpsl_obj_new, self.rpsl_obj_current)
-        if auth_error_message:
+        auth_result = self.auth_validator.check_auth(self.rpsl_obj_new, self.rpsl_obj_current)
+        self.info_messages += auth_result.info_messages
+
+        if not auth_result.is_valid():
             self.status = UpdateRequestStatus.ERROR_AUTH
-            self.error_messages.append(auth_error_message)
+            self.error_messages += auth_result.error_messages
             return False
         return True
 
-    def _check_references_to_others(self) -> bool:
-        """Check all references from this object to other objects."""
-        assert self.rpsl_obj_new
-        references_error_messages = self.reference_validator.check_references_to_others(self.rpsl_obj_new)
-        self.error_messages += references_error_messages
-        if references_error_messages and self.is_valid():
-            self.status = UpdateRequestStatus.ERROR_REFERENCE
-            return False
-        return True
+    def _check_references(self) -> bool:
+        """
+        Check all references from this object to or from other objects.
 
-    def _check_references_from_others(self) -> bool:
-        assert self.rpsl_obj_current
-        references = self.reference_validator.check_references_from_others(self.rpsl_obj_current)
-        for ref_object_class, ref_pk, ref_source in references:
-            self.error_messages.append(f'Object {self.rpsl_obj_current.pk()} to be deleted, but still referenced '
-                                       f'by {ref_object_class} {ref_pk}')
+        For deletions, only references to the deleted object matter, as
+        they now become invalid. For other operations, only the validity
+        of references from the new object to others matter.
+        """
+        if self.request_type == UpdateRequestType.DELETE and self.rpsl_obj_current is not None:
+            assert self.rpsl_obj_new
+            references_result = self.reference_validator.check_references_from_others(self.rpsl_obj_new)
+        else:
+            assert self.rpsl_obj_new
+            references_result = self.reference_validator.check_references_to_others(self.rpsl_obj_new)
+        self.info_messages += references_result.info_messages
 
-        if self.error_messages and self.is_valid():
-            self.status = UpdateRequestStatus.ERROR_REFERENCE
-            return False
+        if not references_result.is_valid():
+            self.error_messages += references_result.error_messages
+            if self.is_valid():  # Only update the status if this object was valid prior, so this is the first failure
+                self.status = UpdateRequestStatus.ERROR_REFERENCE
+                return False
         return True
 
 
