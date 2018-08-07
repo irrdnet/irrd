@@ -236,6 +236,7 @@ class TestUpdateRequestHandler:
             [{'object_text': mntner_text}],
             [{'object_text': mntner_text}],
             [],
+            [],
         ])
         mock_dh.execute_query = lambda query: next(query_responses)
 
@@ -248,6 +249,7 @@ class TestUpdateRequestHandler:
             ['sources', (['RIPE'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pk', ('AS760-MNT',), {}],
             ['sources', (['RIPE'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['AS760-MNT'],), {}],
             ['sources', (['RIPE'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['AS760-MNT'],), {}],
+            ['sources', (['RIPE'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['AS760-MNT'],), {}]
         ]
 
         assert mock_dh.mock_calls[0][0] == 'commit'

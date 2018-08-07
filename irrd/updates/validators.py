@@ -1,6 +1,9 @@
 import logging
 from typing import Set, Tuple, List, Optional, TYPE_CHECKING
 
+from dataclasses import dataclass, field
+from orderedset import OrderedSet
+
 from irrd.db.api import DatabaseHandler, RPSLDatabaseQuery
 from irrd.rpsl.parser import RPSLObject
 from irrd.rpsl.rpsl_objects import RPSLMntner, rpsl_object_from_text
@@ -11,6 +14,15 @@ if TYPE_CHECKING:  # pragma: no cover
     import parser  # noqa: F401
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class ValidatorResult:
+    error_messages: Set[str] = field(default_factory=OrderedSet)
+    info_messages: Set[str] = field(default_factory=OrderedSet)
+
+    def is_valid(self):
+        return len(self.error_messages) == 0
 
 
 class ReferenceValidator:
@@ -40,15 +52,12 @@ class ReferenceValidator:
                 self._preloaded_new.add((request.rpsl_obj_new.rpsl_object_class, request.rpsl_obj_new.pk(),
                                          request.rpsl_obj_new.source()))
 
-    def check_references_to_others(self, rpsl_obj: RPSLObject) -> List[str]:
+    def check_references_to_others(self, rpsl_obj: RPSLObject) -> ValidatorResult:
         """
         Check the validity of references of a particular object, i.e. whether
         all references to other objects actually exist in the database.
-
-
-        Returns a list of error messages, or an empty list if there were no errors.
         """
-        error_messages = []
+        result = ValidatorResult()
         references = rpsl_obj.referred_objects()
         source = rpsl_obj.source()
 
@@ -59,13 +68,13 @@ class ReferenceValidator:
                         objects_referred_str = 'one of ' + ', '.join(objects_referred)
                     else:
                         objects_referred_str = objects_referred[0]
-                    error_messages.append(f'Object {object_pk} referenced in field {field_name} not found in '
-                                          f'database {source} - must reference {objects_referred_str}.')
-        return error_messages
+                    result.error_messages.add(f'Object {object_pk} referenced in field {field_name} not found in '
+                                              f'database {source} - must reference {objects_referred_str}.')
+        return result
 
     def _check_reference_to_others(self, object_classes: List[str], object_pk: str, source: str) -> bool:
         """
-        Check whether a reference to a particular object class/source/PK is valid,
+        Check whether one reference to a particular object class/source/PK is valid,
         i.e. such an object exists in the database.
 
         Object classes is a list of classes to which the reference may point, e.g.
@@ -88,22 +97,26 @@ class ReferenceValidator:
 
         return False
 
-    def check_references_from_others(self, rpsl_obj: RPSLObject) -> List[Tuple[str, str, str]]:
+    def check_references_from_others(self, rpsl_obj: RPSLObject) -> ValidatorResult:
         """
         Check for any references to this object in the DB.
-        Used for validation deletions.
+        Used for validating deletions.
 
-        Returns a list with a tuple for each reference found, with each tuple:
-        - the RPSL object class
-        - the RPSL PK of the object referring to rpsl_obj
-        - the RPSL source of the object referring to rpsl_obj
-
+        Checks self._preload_deleted, because a reference from an object
+        that is also about to be deleted, is acceptable.
         """
+        result = ValidatorResult()
+
         query = RPSLDatabaseQuery().sources([rpsl_obj.source()])
         query = query.lookup_attrs_in(rpsl_obj.references_inbound(), [rpsl_obj.pk()])
         query_results = self.database_handler.execute_query(query)
-        results = [(r['object_class'], r['rpsl_pk'], r['source']) for r in query_results]
-        return [r for r in results if r not in self._preloaded_deleted]
+        for query_result in query_results:
+            reference_to_be_deleted = (query_result["object_class"], query_result["rpsl_pk"],
+                                       query_result["source"]) in self._preloaded_deleted
+            if not reference_to_be_deleted:
+                result.error_messages.add(f'Object {rpsl_obj.pk()} to be deleted, but still referenced '
+                                          f'by {query_result["object_class"]} {query_result["rpsl_pk"]}')
+        return result
 
 
 class AuthValidator:
@@ -128,39 +141,47 @@ class AuthValidator:
     def pre_approve(self, results: List['parser.UpdateRequest']) -> None:
         """
         Pre-approve certain maintainers that are part of this batch of updates.
+        This is required for creating new maintainers along with other objects.
 
-        When these maintainers are encountered in another object, e.g. the mnt-by
-        of a person, their authentication is considered passed.
-        When the mntner object itself is encountered, it's auth attributes are
-        always validated against available authentication metadata.
+        All new maintainer PKs are added to self._pre_approved. When they are
+        encountered as mnt-by, the authentication is immediately approved,
+        as a check in the database would fail.
+        When the new mntner object's mnt-by is checked, there is an additional
+        check to verify that it passes the newly submitted authentication.
         """
         self._pre_approved = set()
         for request in results:
             if request.is_valid() and request.request_type == UpdateRequestType.CREATE and isinstance(request.rpsl_obj_new, RPSLMntner):
                 self._pre_approved.add(request.rpsl_obj_new.pk())
 
-    def check_auth(self, rpsl_obj_new: RPSLObject, rpsl_obj_current: Optional[RPSLObject]) -> Optional[str]:
+    def check_auth(self, rpsl_obj_new: RPSLObject, rpsl_obj_current: Optional[RPSLObject]) -> ValidatorResult:
         """
         Check whether authentication passes for all required objects.
-
-        Returns a string with an error message for failures, None when successful
         """
         source = rpsl_obj_new.source()
+        result = ValidatorResult()
 
         mntners_new = rpsl_obj_new.parsed_data['mnt-by']
         if not self._check_mntners(mntners_new, source):
-            return self._generate_failure_message(mntners_new, rpsl_obj_new)
+            self._generate_failure_message(result, mntners_new, rpsl_obj_new)
 
         if rpsl_obj_current:
             mntners_current = rpsl_obj_current.parsed_data['mnt-by']
             if not self._check_mntners(mntners_current, source):
-                return self._generate_failure_message(mntners_current, rpsl_obj_new)
+                self._generate_failure_message(result, mntners_current, rpsl_obj_new)
 
         if isinstance(rpsl_obj_new, RPSLMntner):
-            if not rpsl_obj_new.verify_auth(self.passwords, self.keycert_obj_pk):
-                return f'Authorisation failed for the auth methods on this mntner object.'
+            # Dummy auth values are only permitted in existing objects, which are never pre-approved.
+            if rpsl_obj_new.has_dummy_auth_value() and rpsl_obj_new.pk() not in self._pre_approved:
+                if len(self.passwords) == 1:
+                    rpsl_obj_new.force_single_new_password(self.passwords[0])
+                else:
+                    result.error_messages.add(f'Object submitted with dummy hash values, but multiple passwords '
+                                              f'submitted. Either submit all full hashes, or a single password.')
+            elif not rpsl_obj_new.verify_auth(self.passwords, self.keycert_obj_pk):
+                result.error_messages.add(f'Authorisation failed for the auth methods on this mntner object.')
 
-        return None
+        return result
         # TODO: further sets pending https://github.com/irrdnet/irrd4/issues/21#issuecomment-407105924
 
     def _check_mntners(self, mntner_list: List[str], source: str) -> bool:
@@ -189,8 +210,8 @@ class AuthValidator:
 
         return False
 
-    def _generate_failure_message(self, failed_mntner_list: List[str], rpsl_obj) -> str:
+    def _generate_failure_message(self, result: ValidatorResult, failed_mntner_list: List[str], rpsl_obj) -> None:
         mntner_str = ', '.join(failed_mntner_list)
         msg = f'Authorisation for {rpsl_obj.rpsl_object_class} {rpsl_obj.pk()} failed: '
         msg += f'must by authenticated by one of: {mntner_str}'
-        return msg
+        result.error_messages.add(msg)

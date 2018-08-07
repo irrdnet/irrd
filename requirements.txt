@@ -1,6 +1,8 @@
 python-gnupg==0.4.3    # Integration with gpg for key-cert objects
 passlib==1.7.1         # Password hashing for CRYPT-PW and MD5-PW
 IPy==0.83              # IP address parsing
+dataclasses==0.6       # PEP 557 dataclasses for python<3.7
+orderedset==2.0.1      # Ordered sets for simple unique ordered storage
 
 # Database connections and management
 psycopg2-binary==2.7.5
