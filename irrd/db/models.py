@@ -1,8 +1,16 @@
+import enum
+
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql as pg
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 
 from irrd.rpsl.rpsl_objects import lookup_field_names
+
+
+class DatabaseOperations(enum.Enum):
+    add_or_update = 'ADD'
+    delete = 'DEL'
+
 
 Base = declarative_base()
 
@@ -51,6 +59,37 @@ class RPSLDatabaseObject(Base):  # type: ignore
 
     def __repr__(self):
         return f"<{self.rpsl_pk}/{self.source}/{self.pk}>"
+
+
+class RPSLDatabaseObjectHistory(Base):  # type: ignore
+    """
+    SQLAlchemy ORM object for history of RPSL database objects.
+    """
+    __tablename__ = 'rpsl_objects_history'
+
+    # Requires extension pgcrypto
+    # in alembic: op.execute('create EXTENSION if not EXISTS "pgcrypto";')
+    pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)
+    rpsl_pk = sa.Column(sa.String, index=True, nullable=False)
+    source = sa.Column(sa.String, index=True, nullable=False)
+
+    serial = sa.Column(sa.Enum(DatabaseOperations))
+    operation = sa.Column(sa.Enum(DatabaseOperations))
+
+    object_class = sa.Column(sa.String, nullable=False, index=True)
+    object_text = sa.Column(sa.Text, nullable=False)
+
+    # These objects are not mutable, so creation time is sufficient.
+    timestamp = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
+
+    @declared_attr
+    def __table_args__(cls):  # noqa
+        return (
+            sa.UniqueConstraint('serial', 'source', name='rpsl_pk_source_unique'),
+        )
+
+    def __repr__(self):
+        return f"<{self.serial}/{self.operation}/{self.source}/{self.pk}>"
 
 
 # Before you update this, please check the documentation for changing lookup fields.
