@@ -35,7 +35,7 @@ def upgrade():
                     sa.Column('created', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
                     sa.Column('updated', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
                     sa.PrimaryKeyConstraint('pk'),
-                    sa.UniqueConstraint('rpsl_pk', 'source', name='rpsl_pk_source_unique')
+                    sa.UniqueConstraint('rpsl_pk', 'source', name='rpsl_objects_rpsl_pk_source_unique')
                     )
     op.create_index(op.f('ix_rpsl_objects_ip_first'), 'rpsl_objects', ['ip_first'], unique=False)
     op.create_index(op.f('ix_rpsl_objects_ip_last'), 'rpsl_objects', ['ip_last'], unique=False)

@@ -6,8 +6,8 @@ from IPy import IP
 from pytest import raises
 
 from .. import engine
-from ..api import DatabaseHandler, RPSLDatabaseQuery
-from ..models import RPSLDatabaseObject
+from ..api import DatabaseHandler, RPSLDatabaseQuery, RPSLDatabaseJournalQuery
+from ..models import RPSLDatabaseObject, DatabaseOperations
 
 """
 These tests for the database use a live PostgreSQL database,
@@ -20,7 +20,9 @@ To improve performance, these tests do not run full migrations.
 
 
 @pytest.fixture()
-def irrd_database():
+def irrd_database(monkeypatch):
+    monkeypatch.setenv('IRRD_DATABASES_TEST_AUTHORITATIVE', '1')
+
     engine.execute('CREATE EXTENSION IF NOT EXISTS pgcrypto')
 
     table_name = RPSLDatabaseObject.__tablename__
@@ -132,6 +134,18 @@ class TestDatabaseHandlerLive:
         result = list(self.dh.execute_query(query))
         assert len(result) == 1
 
+        history_query = RPSLDatabaseJournalQuery()
+        results = list(self.dh.execute_query(history_query))
+        result_clean = [[v for k, v in result.items() if k not in ['pk', 'timestamp']] for result in results]
+        assert result_clean == [
+            ['192.0.2.0/24,AS23456', 'TEST', 1, DatabaseOperations.add_or_update, 'route', 'object-text'],
+            ['192.0.2.0/24,AS23456', 'TEST', 2, DatabaseOperations.add_or_update, 'route', 'object-text'],
+            ['2001:db8::/64,AS23456', 'TEST', 3, DatabaseOperations.add_or_update, 'route', 'object-text'],
+            ['2001:db8::/64,AS23456', 'TEST', 4, DatabaseOperations.add_or_update, 'route', 'object-text'],
+            ['2001:db8::/64,AS23456', 'TEST', 5, DatabaseOperations.delete, 'route', 'object-text'],
+        ]
+
+        self.dh.rollback()
         self.dh._connection.close()
 
 

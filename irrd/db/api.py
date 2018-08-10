@@ -5,44 +5,25 @@ from typing import List, Set, Iterable, Dict, Any
 import sqlalchemy as sa
 from IPy import IP
 from sqlalchemy.dialects import postgresql as pg
-from sqlalchemy.sql import Select
+from sqlalchemy.sql import Select, ColumnCollection
 
+from irrd.conf import get_setting
 from irrd.rpsl.parser import RPSLObject
 from irrd.rpsl.rpsl_objects import lookup_field_names
 from irrd.utils.validators import parse_as_number, ValidationError
 from . import engine
-from .models import RPSLDatabaseObject
+from .models import RPSLDatabaseObject, RPSLDatabaseJournal, DatabaseOperations
 
 logger = logging.getLogger(__name__)
 MAX_RECORDS_CACHE_BEFORE_INSERT = 5000
 
 
-class RPSLDatabaseQuery:
-    """
-    RPSL data query builder for retrieving RPSL objects.
-
-    Offers various ways to filter, which are always constructed in an AND query.
-    For example:
-        q = RPSLDatabaseQuery().sources(['NTTCOM']).asn(23456)
-    would match all objects that refer or include AS23456 (i.e. aut-num, route,
-    as-block, route6) from the NTTCOM source.
-
-    For methods taking a prefix or IP address, this should be an IPy.IP object.
-    """
-    table = RPSLDatabaseObject.__table__
-    columns = RPSLDatabaseObject.__table__.c
-    lookup_field_names = lookup_field_names()
+class BaseRPSLDatabaseQuery:
+    statement: Select
+    table: sa.Table
+    columns: ColumnCollection
 
     def __init__(self):
-        self.statement = sa.select([
-            self.columns.pk,
-            self.columns.object_class,
-            self.columns.rpsl_pk,
-            self.columns.parsed_data,
-            self.columns.object_text,
-            self.columns.source,
-        ])
-        self._lookup_attr_counter = 0
         self._query_frozen = False
         self._sources_list = []
         self._prioritised_source = None
@@ -92,6 +73,80 @@ class RPSLDatabaseQuery:
         """
         fltr = self.columns.object_class.in_(object_classes)
         return self._filter(fltr)
+
+    def first_only(self):
+        """Only return the first match."""
+        self.statement = self.statement.limit(1)
+        return self
+
+    def finalise_statement(self) -> Select:
+        """
+        Finalise the statement and return it.
+
+        This method does some final work on statements that may be dependent on
+        each other - particularly statements that determine the sort order of
+        the query, which depends on sources_list() and prioritise_source().
+        """
+        self._query_frozen = True
+
+        order_by = []
+        if 'ip_first' in self.columns:
+            order_by.append(self.columns.ip_first.asc())
+        if 'asn_first' in self.columns:
+            order_by.append(self.columns.asn_first.asc())
+
+        if self._sources_list or self._prioritised_source:
+            case_elements = []
+            if self._prioritised_source:
+                element = (self.columns.source == self._prioritised_source, -1)
+                case_elements.append(element)
+
+            for idx, source in enumerate(self._sources_list):
+                case_elements.append((self.columns.source == source, idx + 1))
+
+            criterion = sa.case(case_elements, else_=100000)
+            order_by.insert(0, criterion)
+
+        self.statement = self.statement.order_by(*order_by)
+        return self.statement
+
+    def _filter(self, fltr):
+        self._check_query_frozen()
+        self.statement = self.statement.where(fltr)
+        return self
+
+    def _check_query_frozen(self) -> None:
+        if self._query_frozen:
+            raise ValueError("This query was frozen - no more filters can be applied.")
+
+
+class RPSLDatabaseQuery(BaseRPSLDatabaseQuery):
+    """
+    RPSL data query builder for retrieving RPSL objects.
+
+    Offers various ways to filter, which are always constructed in an AND query.
+    For example:
+        q = RPSLDatabaseQuery().sources(['NTTCOM']).asn(23456)
+    would match all objects that refer or include AS23456 (i.e. aut-num, route,
+    as-block, route6) from the NTTCOM source.
+
+    For methods taking a prefix or IP address, this should be an IPy.IP object.
+    """
+    table = RPSLDatabaseObject.__table__
+    columns = RPSLDatabaseObject.__table__.c
+    lookup_field_names = lookup_field_names()
+
+    def __init__(self):
+        super().__init__()
+        self.statement = sa.select([
+            self.columns.pk,
+            self.columns.object_class,
+            self.columns.rpsl_pk,
+            self.columns.parsed_data,
+            self.columns.object_text,
+            self.columns.source,
+        ])
+        self._lookup_attr_counter = 0
 
     def lookup_attr(self, attr_name: str, attr_value: str):
         """
@@ -247,52 +302,33 @@ class RPSLDatabaseQuery:
         )
         return self
 
-    def first_only(self):
-        """Only return the first match."""
-        self.statement = self.statement.limit(1)
-        return self
-
-    def finalise_statement(self) -> Select:
-        """
-        Finalise the statement and return it.
-
-        This method does some final work on statements that may be dependent on
-        each other - particularly statements that determine the sort order of
-        the query, which depends on sources_list() and prioritise_source().
-        """
-        self._query_frozen = True
-
-        order_by = [
-            self.columns.ip_first.asc(),
-            self.columns.asn_first.asc(),
-        ]
-
-        if self._sources_list or self._prioritised_source:
-            case_elements = []
-            if self._prioritised_source:
-                element = (self.columns.source == self._prioritised_source, -1)
-                case_elements.append(element)
-
-            for idx, source in enumerate(self._sources_list):
-                case_elements.append((self.columns.source == source, idx + 1))
-
-            criterion = sa.case(case_elements, else_=100000)
-            order_by.insert(0, criterion)
-
-        self.statement = self.statement.order_by(*order_by)
-        return self.statement
-
-    def _filter(self, fltr):
-        self._check_query_frozen()
-        self.statement = self.statement.where(fltr)
-        return self
-
-    def _check_query_frozen(self) -> None:
-        if self._query_frozen:
-            raise ValueError("This query was frozen - no more filters can be applied.")
-
     def __repr__(self):
         return f"RPSLDatabaseQuery: {self.statement}\nPARAMS: {self.statement.compile().params}"
+
+
+class RPSLDatabaseJournalQuery(BaseRPSLDatabaseQuery):
+    """
+    RPSL data query builder for retrieving the journal,
+    analogous to RPSLDatabaseQuery.
+    """
+    table = RPSLDatabaseJournal.__table__
+    columns = RPSLDatabaseJournal.__table__.c
+
+    def __init__(self):
+        super().__init__()
+        self.statement = sa.select([
+            self.columns.pk,
+            self.columns.rpsl_pk,
+            self.columns.source,
+            self.columns.serial_nrtm,
+            self.columns.operation,
+            self.columns.object_class,
+            self.columns.object_text,
+            self.columns.timestamp,
+        ])
+
+    def __repr__(self):
+        return f"RPSLDatabaseJournalQuery: {self.statement}\nPARAMS: {self.statement.compile().params}"
 
 
 class DatabaseHandler:
@@ -372,19 +408,30 @@ class DatabaseHandler:
         source = rpsl_object.parsed_data['source']
         stmt = table.delete(
             sa.and_(table.c.rpsl_pk == rpsl_object.pk(), table.c.source == source),
-        ).returning(table.c.pk)
-        result = self._connection.execute(stmt)
-        if result.rowcount == 0:
+        ).returning(table.c.pk, table.c.rpsl_pk, table.c.source, table.c.object_class, table.c.object_text)
+        results = self._connection.execute(stmt)
+
+        if results.rowcount == 0:
             logger.warning(f'attempted to remove object {rpsl_object.pk()}/{source}, but no database row matched')
-        if result.rowcount > 1:  # pragma: no cover
+            return None
+        if results.rowcount > 1:  # pragma: no cover
             # This should not be possible, as rpsl_pk/source are a composite unique value in the database scheme.
             # Therefore, a query should not be able to affect more than one row - and we also can not test this
             # scenario. Due to the possible harm of a bug in this area, we still check for it anyways.
-            affected_pks = ','.join([r[0] for r in result.fetchall()])
+            affected_pks = ','.join([r[0] for r in results.fetchall()])
             msg = f'attempted to remove object {rpsl_object.pk()}/{source}, but multiple objects were affected, '
             msg += f'internal pks affected: {affected_pks}'
             logger.error(msg)
             raise ValueError(msg)
+
+        result = results.fetchone()
+        self._record_history(
+            operation=DatabaseOperations.delete,
+            rpsl_pk=result['rpsl_pk'],
+            source=result['source'],
+            object_class=result['object_class'],
+            object_text=result['object_text'],
+        )
 
     def commit(self) -> None:
         """
@@ -433,9 +480,33 @@ class DatabaseHandler:
         except Exception:  # pragma: no cover - TODO: log the exception and details and report back an error state
             self.transaction.rollback()
             raise
+        for obj in self._rpsl_upsert_cache:
+            self._record_history(
+                operation=DatabaseOperations.add_or_update,
+                rpsl_pk=obj['rpsl_pk'],
+                source=obj['source'],
+                object_class=obj['object_class'],
+                object_text=obj['object_text'],
+            )
 
         self._rpsl_upsert_cache = []
         self._rpsl_pk_source_seen = set()
+
+    def _record_history(self, operation: DatabaseOperations, rpsl_pk: str, source: str, object_class: str,
+                        object_text: str) -> None:
+        if get_setting(f'databases.{source}.authoritative'):
+            tablename = RPSLDatabaseJournal.__tablename__
+            self._connection.execute(f'LOCK TABLE {tablename} IN EXCLUSIVE MODE')
+            stmt = RPSLDatabaseJournal.__table__.insert().values(
+                rpsl_pk=rpsl_pk,
+                source=source,
+                operation=operation,
+                object_class=object_class,
+                object_text=object_text,
+                serial_nrtm=sa.select(
+                    [sa.text(f'COALESCE(MAX(serial_nrtm), 0) + 1 FROM {tablename}')]).as_scalar(),
+            )
+            self._connection.execute(stmt)
 
     def _start_transaction(self) -> None:
         """Start a fresh transaction."""

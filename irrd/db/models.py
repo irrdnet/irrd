@@ -49,7 +49,7 @@ class RPSLDatabaseObject(Base):  # type: ignore
     @declared_attr
     def __table_args__(cls):  # noqa
         args = [
-            sa.UniqueConstraint('rpsl_pk', 'source', name='rpsl_pk_source_unique'),
+            sa.UniqueConstraint('rpsl_pk', 'source', name='rpsl_objects_rpsl_pk_source_unique'),
         ]
         for name in lookup_field_names():
             index_name = 'ix_rpsl_objects_parsed_data_' + name.replace('-', '_')
@@ -61,11 +61,11 @@ class RPSLDatabaseObject(Base):  # type: ignore
         return f"<{self.rpsl_pk}/{self.source}/{self.pk}>"
 
 
-class RPSLDatabaseObjectHistory(Base):  # type: ignore
+class RPSLDatabaseJournal(Base):  # type: ignore
     """
     SQLAlchemy ORM object for history of RPSL database objects.
     """
-    __tablename__ = 'rpsl_objects_history'
+    __tablename__ = 'rpsl_database_journal'
 
     # Requires extension pgcrypto
     # in alembic: op.execute('create EXTENSION if not EXISTS "pgcrypto";')
@@ -73,8 +73,8 @@ class RPSLDatabaseObjectHistory(Base):  # type: ignore
     rpsl_pk = sa.Column(sa.String, index=True, nullable=False)
     source = sa.Column(sa.String, index=True, nullable=False)
 
-    serial = sa.Column(sa.Enum(DatabaseOperations))
-    operation = sa.Column(sa.Enum(DatabaseOperations))
+    serial_nrtm = sa.Column(sa.Integer, index=True, nullable=False)
+    operation = sa.Column(sa.Enum(DatabaseOperations), nullable=False)
 
     object_class = sa.Column(sa.String, nullable=False, index=True)
     object_text = sa.Column(sa.Text, nullable=False)
@@ -85,11 +85,35 @@ class RPSLDatabaseObjectHistory(Base):  # type: ignore
     @declared_attr
     def __table_args__(cls):  # noqa
         return (
-            sa.UniqueConstraint('serial', 'source', name='rpsl_pk_source_unique'),
+            sa.UniqueConstraint('serial_nrtm', 'source', name='rpsl_objects_history_serial_nrtm_source_unique'),
         )
 
     def __repr__(self):
-        return f"<{self.serial}/{self.operation}/{self.source}/{self.pk}>"
+        return f"<{self.source}/{self.serial}/{self.operation}/{self.rpsl_pk}>"
+
+
+# class DatabaseStatus(Base):  # type: ignore
+#     """
+#     SQLAlchemy ORM object for the status of authoritative and mirrored DBs.
+#
+#     Note that this database is for keeping status, and is not the source
+#     of configuration parameters.
+#     """
+#     __tablename__ = 'database_status'
+#
+#     pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)
+#     database_name = sa.Column(sa.String, index=True, nullable=False, unique=True)
+#
+#     serial_oldest = sa.Column(sa.Integer, nullable=False)
+#     serial_newest = sa.Column(sa.Integer, nullable=False)
+#     serial_last_dump = sa.Column(sa.Integer)
+#     last_error = sa.Column(sa.Text)
+#
+#     created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
+#     updated = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now(), nullable=False)
+#
+#     def __repr__(self):
+#         return self.database_name
 
 
 # Before you update this, please check the documentation for changing lookup fields.
