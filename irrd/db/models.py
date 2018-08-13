@@ -92,28 +92,28 @@ class RPSLDatabaseJournal(Base):  # type: ignore
         return f"<{self.source}/{self.serial}/{self.operation}/{self.rpsl_pk}>"
 
 
-# class DatabaseStatus(Base):  # type: ignore
-#     """
-#     SQLAlchemy ORM object for the status of authoritative and mirrored DBs.
-#
-#     Note that this database is for keeping status, and is not the source
-#     of configuration parameters.
-#     """
-#     __tablename__ = 'database_status'
-#
-#     pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)
-#     database_name = sa.Column(sa.String, index=True, nullable=False, unique=True)
-#
-#     serial_oldest = sa.Column(sa.Integer, nullable=False)
-#     serial_newest = sa.Column(sa.Integer, nullable=False)
-#     serial_last_dump = sa.Column(sa.Integer)
-#     last_error = sa.Column(sa.Text)
-#
-#     created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
-#     updated = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now(), nullable=False)
-#
-#     def __repr__(self):
-#         return self.database_name
+class RPSLDatabaseStatus(Base):  # type: ignore
+    """
+    SQLAlchemy ORM object for the status of authoritative and mirrored DBs.
+
+    Note that this database is for keeping status, and is not the source
+    of configuration parameters.
+    """
+    __tablename__ = 'database_status'
+
+    pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)
+    source = sa.Column(sa.String, index=True, nullable=False, unique=True)
+
+    serial_oldest = sa.Column(sa.Integer)
+    serial_newest = sa.Column(sa.Integer)
+    serial_last_dump = sa.Column(sa.Integer)
+    last_error = sa.Column(sa.Text)
+
+    created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
+    updated = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now(), nullable=False)
+
+    def __repr__(self):
+        return self.source
 
 
 # Before you update this, please check the documentation for changing lookup fields.

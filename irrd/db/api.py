@@ -12,13 +12,13 @@ from irrd.rpsl.parser import RPSLObject
 from irrd.rpsl.rpsl_objects import lookup_field_names
 from irrd.utils.validators import parse_as_number, ValidationError
 from . import engine
-from .models import RPSLDatabaseObject, RPSLDatabaseJournal, DatabaseOperations
+from .models import RPSLDatabaseObject, RPSLDatabaseJournal, DatabaseOperations, RPSLDatabaseStatus
 
 logger = logging.getLogger(__name__)
 MAX_RECORDS_CACHE_BEFORE_INSERT = 5
 
 
-class BaseRPSLDatabaseQuery:
+class BaseRPSLObjectDatabaseQuery:
     statement: Select
     table: sa.Table
     columns: ColumnCollection
@@ -120,7 +120,7 @@ class BaseRPSLDatabaseQuery:
             raise ValueError("This query was frozen - no more filters can be applied.")
 
 
-class RPSLDatabaseQuery(BaseRPSLDatabaseQuery):
+class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
     """
     RPSL data query builder for retrieving RPSL objects.
 
@@ -306,7 +306,7 @@ class RPSLDatabaseQuery(BaseRPSLDatabaseQuery):
         return f"RPSLDatabaseQuery: {self.statement}\nPARAMS: {self.statement.compile().params}"
 
 
-class RPSLDatabaseJournalQuery(BaseRPSLDatabaseQuery):
+class RPSLDatabaseJournalQuery(BaseRPSLObjectDatabaseQuery):
     """
     RPSL data query builder for retrieving the journal,
     analogous to RPSLDatabaseQuery.
@@ -329,6 +329,42 @@ class RPSLDatabaseJournalQuery(BaseRPSLDatabaseQuery):
 
     def __repr__(self):
         return f"RPSLDatabaseJournalQuery: {self.statement}\nPARAMS: {self.statement.compile().params}"
+
+
+class RPSLDatabaseStatusQuery:
+    table = RPSLDatabaseStatus.__table__
+    columns = RPSLDatabaseStatus.__table__.c
+
+    def __init__(self):
+        self.statement = sa.select([
+            self.columns.pk,
+            self.columns.source,
+            self.columns.serial_oldest,
+            self.columns.serial_newest,
+            self.columns.serial_last_dump,
+            self.columns.last_error,
+            self.columns.created,
+            self.columns.updated,
+        ])
+
+    def sources(self, sources: List[str]):
+        """
+        Filter on one or more sources.
+
+        Sources list must be an iterable. Will match objects from any
+        of the mentioned sources.
+        """
+        sources = [s.upper().strip() for s in sources]
+        self._sources_list = sources
+        fltr = self.columns.source.in_(self._sources_list)
+        return self._filter(fltr)
+
+    def finalise_statement(self):
+        return self.statement
+
+    def _filter(self, fltr):
+        self.statement = self.statement.where(fltr)
+        return self
 
 
 class DatabaseHandler:
@@ -440,6 +476,7 @@ class DatabaseHandler:
         Commit any pending changes to the database and start a fresh transaction.
         """
         self._flush_rpsl_object_upsert_cache()
+        self._update_database_status_serials()
         try:
             self.transaction.commit()
             self._start_transaction()
@@ -526,7 +563,41 @@ class DatabaseHandler:
                 serial_nrtm=serial_subquery,
             )
             self._connection.execute(stmt)
+            self.sources_journal_updated.add(source)
+
+    def _update_database_status_serials(self):
+        """
+        Update the status of all database serials, based on the current
+        journal. Note that this only correctly updates databases for
+        which we have a journal.
+        If there is no status object for this database, it is created.
+        """
+        c_journal = RPSLDatabaseJournal.__table__.c
+
+        for source in self.sources_journal_updated:
+            subquery_min = sa.select([sa.func.min(c_journal.serial_nrtm)]).where(c_journal.source == source)
+            subquery_max = sa.select([sa.func.max(c_journal.serial_nrtm)]).where(c_journal.source == source)
+
+            stmt = pg.insert(RPSLDatabaseStatus).values(
+                serial_oldest=subquery_min,
+                serial_newest=subquery_max,
+                source=source,
+                updated=datetime.now(timezone.utc),
+            )
+            columns_to_update = {
+                c.name: c
+                for c in stmt.excluded
+                if c.name != 'source'
+            }
+
+            stmt = stmt.on_conflict_do_update(
+                index_elements=['source'],
+                set_=columns_to_update,
+            )
+
+            self._connection.execute(stmt)
 
     def _start_transaction(self) -> None:
         """Start a fresh transaction."""
         self.transaction = self._connection.begin()
+        self.sources_journal_updated: Set[str] = set()

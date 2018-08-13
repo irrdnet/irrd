@@ -29,6 +29,10 @@ DEFAULT_SETTINGS = DottedDict({
             'authoritative': True,
             # export schedule
         },
+        'ARIN-WHOIS': {
+            'authoritative': True,
+            # export schedule
+        },
         'RADB': {
             'authoritative': False,
             'nrtm_host': 'whois.radb.net:43',

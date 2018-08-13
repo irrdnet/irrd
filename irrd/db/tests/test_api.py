@@ -6,7 +6,7 @@ from IPy import IP
 from pytest import raises
 
 from .. import engine
-from ..api import DatabaseHandler, RPSLDatabaseQuery, RPSLDatabaseJournalQuery
+from ..api import DatabaseHandler, RPSLDatabaseQuery, RPSLDatabaseJournalQuery, RPSLDatabaseStatusQuery
 from ..models import RPSLDatabaseObject, DatabaseOperations
 
 """
@@ -23,6 +23,7 @@ To improve performance, these tests do not run full migrations.
 def irrd_database(monkeypatch):
     monkeypatch.setenv('IRRD_DATABASES_TEST_AUTHORITATIVE', '1')
     monkeypatch.setenv('IRRD_DATABASES_TEST2_KEEP_JOURNAL', '1')
+    # RPSLDatabaseObject.metadata.drop_all(engine)
 
     engine.execute('CREATE EXTENSION IF NOT EXISTS pgcrypto')
 
@@ -135,23 +136,40 @@ class TestDatabaseHandlerLive:
         query = RPSLDatabaseQuery()
         result = list(self.dh.execute_query(query))
         assert len(result) == 1
+        self.dh.commit()
 
-        history_query = RPSLDatabaseJournalQuery()
-        results = list(self.dh.execute_query(history_query))
-        result_clean = [[v for k, v in result.items() if k not in ['pk', 'timestamp']] for result in results]
+        journal = self._clean_result(self.dh.execute_query(RPSLDatabaseJournalQuery()))
 
         # The IPv6 object was created in a different source, so it should
         # have a separate sequence of NRTM serials.
-        assert result_clean == [
-            ['192.0.2.0/24,AS23456', 'TEST', 1, DatabaseOperations.add_or_update, 'route', 'object-text'],
-            ['192.0.2.0/24,AS23456', 'TEST', 2, DatabaseOperations.add_or_update, 'route', 'object-text'],
-            ['2001:db8::/64,AS23456', 'TEST2', 1, DatabaseOperations.add_or_update, 'route', 'object-text'],
-            ['2001:db8::/64,AS23456', 'TEST2', 2, DatabaseOperations.add_or_update, 'route', 'object-text'],
-            ['2001:db8::/64,AS23456', 'TEST2', 3, DatabaseOperations.delete, 'route', 'object-text'],
+        assert journal == [
+            {'rpsl_pk': '192.0.2.0/24,AS23456', 'source': 'TEST', 'serial_nrtm': 1,
+             'operation': DatabaseOperations.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
+            {'rpsl_pk': '192.0.2.0/24,AS23456', 'source': 'TEST', 'serial_nrtm': 2,
+             'operation': DatabaseOperations.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
+            {'rpsl_pk': '2001:db8::/64,AS23456', 'source': 'TEST2', 'serial_nrtm': 1,
+             'operation': DatabaseOperations.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
+            {'rpsl_pk': '2001:db8::/64,AS23456', 'source': 'TEST2', 'serial_nrtm': 2,
+             'operation': DatabaseOperations.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
+            {'rpsl_pk': '2001:db8::/64,AS23456', 'source': 'TEST2', 'serial_nrtm': 3,
+             'operation': DatabaseOperations.delete, 'object_class': 'route', 'object_text': 'object-text'},
+        ]
+
+        status_test = self._clean_result(self.dh.execute_query(RPSLDatabaseStatusQuery().sources(['TEST'])))
+        assert status_test == [
+            {'source': 'TEST', 'serial_oldest': 1, 'serial_newest': 2, 'serial_last_dump': None, 'last_error': None},
+        ]
+        status_test2 = self._clean_result(self.dh.execute_query(RPSLDatabaseStatusQuery().sources(['TEST2'])))
+        assert status_test2 == [
+            {'source': 'TEST2', 'serial_oldest': 1, 'serial_newest': 3, 'serial_last_dump': None, 'last_error': None},
         ]
 
         self.dh.rollback()
         self.dh._connection.close()
+
+    def _clean_result(self, results):
+        variable_fields = ['pk', 'timestamp', 'created', 'updated']
+        return [{k: v for k, v in result.items() if k not in variable_fields} for result in list(results)]
 
 
 # noinspection PyTypeChecker
