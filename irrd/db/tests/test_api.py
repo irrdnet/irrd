@@ -22,6 +22,7 @@ To improve performance, these tests do not run full migrations.
 @pytest.fixture()
 def irrd_database(monkeypatch):
     monkeypatch.setenv('IRRD_DATABASES_TEST_AUTHORITATIVE', '1')
+    monkeypatch.setenv('IRRD_DATABASES_TEST2_KEEP_JOURNAL', '1')
 
     engine.execute('CREATE EXTENSION IF NOT EXISTS pgcrypto')
 
@@ -81,10 +82,10 @@ class TestDatabaseHandlerLive:
         self.dh.upsert_rpsl_object(rpsl_object_route_v4)  # should trigger an immediate flush due to duplicate RPSL pk
         assert len(self.dh._rpsl_upsert_cache) == 1
 
-        rpsl_obj_route_v6 = Mock(
+        rpsl_object_route_v6 = Mock(
             pk=lambda: '2001:db8::/64,AS23456',
             rpsl_object_class='route',
-            parsed_data={'mnt-by': 'MNT-CORRECT', 'source': 'TEST'},
+            parsed_data={'mnt-by': 'MNT-CORRECT', 'source': 'TEST2'},
             render_rpsl_text=lambda: 'object-text',
             ip_version=lambda: 6,
             ip_first=IP('2001:db8::'),
@@ -92,9 +93,9 @@ class TestDatabaseHandlerLive:
             asn_first=23456,
             asn_last=23456,
         )
-        self.dh.upsert_rpsl_object(rpsl_obj_route_v6)
+        self.dh.upsert_rpsl_object(rpsl_object_route_v6)
         assert len(self.dh._rpsl_upsert_cache) == 0  # should have been flushed to the DB
-        self.dh.upsert_rpsl_object(rpsl_obj_route_v6)
+        self.dh.upsert_rpsl_object(rpsl_object_route_v6)
 
         self.dh.commit()
 
@@ -107,6 +108,7 @@ class TestDatabaseHandlerLive:
         result = list(self.dh.execute_query(query))
         assert len(result) == 2
 
+        # This object should be ignored due to a rollback.
         rpsl_obj_ignored = Mock(
             pk=lambda: 'AS2914',
             rpsl_object_class='aut-num',
@@ -128,8 +130,8 @@ class TestDatabaseHandlerLive:
         result = list(self.dh.execute_query(query))
         assert len(result) == 2
 
-        self.dh.delete_rpsl_object(rpsl_obj_route_v6)
-        self.dh.delete_rpsl_object(rpsl_obj_route_v6)
+        self.dh.delete_rpsl_object(rpsl_object_route_v6)
+        self.dh.delete_rpsl_object(rpsl_object_route_v6)
         query = RPSLDatabaseQuery()
         result = list(self.dh.execute_query(query))
         assert len(result) == 1
@@ -137,12 +139,15 @@ class TestDatabaseHandlerLive:
         history_query = RPSLDatabaseJournalQuery()
         results = list(self.dh.execute_query(history_query))
         result_clean = [[v for k, v in result.items() if k not in ['pk', 'timestamp']] for result in results]
+
+        # The IPv6 object was created in a different source, so it should
+        # have a separate sequence of NRTM serials.
         assert result_clean == [
             ['192.0.2.0/24,AS23456', 'TEST', 1, DatabaseOperations.add_or_update, 'route', 'object-text'],
             ['192.0.2.0/24,AS23456', 'TEST', 2, DatabaseOperations.add_or_update, 'route', 'object-text'],
-            ['2001:db8::/64,AS23456', 'TEST', 3, DatabaseOperations.add_or_update, 'route', 'object-text'],
-            ['2001:db8::/64,AS23456', 'TEST', 4, DatabaseOperations.add_or_update, 'route', 'object-text'],
-            ['2001:db8::/64,AS23456', 'TEST', 5, DatabaseOperations.delete, 'route', 'object-text'],
+            ['2001:db8::/64,AS23456', 'TEST2', 1, DatabaseOperations.add_or_update, 'route', 'object-text'],
+            ['2001:db8::/64,AS23456', 'TEST2', 2, DatabaseOperations.add_or_update, 'route', 'object-text'],
+            ['2001:db8::/64,AS23456', 'TEST2', 3, DatabaseOperations.delete, 'route', 'object-text'],
         ]
 
         self.dh.rollback()

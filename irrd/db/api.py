@@ -15,7 +15,7 @@ from . import engine
 from .models import RPSLDatabaseObject, RPSLDatabaseJournal, DatabaseOperations
 
 logger = logging.getLogger(__name__)
-MAX_RECORDS_CACHE_BEFORE_INSERT = 5000
+MAX_RECORDS_CACHE_BEFORE_INSERT = 5
 
 
 class BaseRPSLDatabaseQuery:
@@ -339,7 +339,9 @@ class DatabaseHandler:
     has been called - and rollback() can be called at any time
     to all submitted changes.
     """
-    def __init__(self):
+
+    def __init__(self, journalling_enabled=True):
+        self.journalling_enabled = journalling_enabled
         self._rpsl_upsert_cache: List[dict] = []
         self._rpsl_pk_source_seen: Set[str] = set()
         self._connection = engine.connect()
@@ -450,6 +452,7 @@ class DatabaseHandler:
         self._rpsl_upsert_cache = []
         self._rpsl_pk_source_seen = set()
         self.transaction.rollback()
+        self._start_transaction()
 
     def _flush_rpsl_object_upsert_cache(self) -> None:
         """
@@ -494,17 +497,33 @@ class DatabaseHandler:
 
     def _record_history(self, operation: DatabaseOperations, rpsl_pk: str, source: str, object_class: str,
                         object_text: str) -> None:
-        if get_setting(f'databases.{source}.authoritative'):
-            tablename = RPSLDatabaseJournal.__tablename__
-            self._connection.execute(f'LOCK TABLE {tablename} IN EXCLUSIVE MODE')
+        """
+        Make a record in the journal of a change to an object.
+
+        Will only record changes when self.journalling_enabled is set,
+        and the database.SOURCE.authoritative or database.SOURCE.keep_journal
+        settings are set.
+
+        Note that this method locks the journal table for writing to ensure a
+        gapless set of NRTM serials.
+        """
+        if self.journalling_enabled and (
+                get_setting(f'databases.{source}.authoritative') or get_setting(f'databases.{source}.keep_journal')
+        ):
+            journal_tablename = RPSLDatabaseJournal.__tablename__
+            self._connection.execute(f'LOCK TABLE {journal_tablename} IN EXCLUSIVE MODE')
+
+            serial_subquery = sa.select([sa.text(f'COALESCE(MAX(serial_nrtm), 0) + 1')])
+            serial_subquery = serial_subquery.where(RPSLDatabaseJournal.__table__.c.source == source)
+            serial_subquery = serial_subquery.as_scalar()
+
             stmt = RPSLDatabaseJournal.__table__.insert().values(
                 rpsl_pk=rpsl_pk,
                 source=source,
                 operation=operation,
                 object_class=object_class,
                 object_text=object_text,
-                serial_nrtm=sa.select(
-                    [sa.text(f'COALESCE(MAX(serial_nrtm), 0) + 1 FROM {tablename}')]).as_scalar(),
+                serial_nrtm=serial_subquery,
             )
             self._connection.execute(stmt)
 
