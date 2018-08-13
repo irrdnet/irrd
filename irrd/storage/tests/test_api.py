@@ -23,7 +23,7 @@ To improve performance, these tests do not run full migrations.
 def irrd_database(monkeypatch):
     monkeypatch.setenv('IRRD_DATABASES_TEST_AUTHORITATIVE', '1')
     monkeypatch.setenv('IRRD_DATABASES_TEST2_KEEP_JOURNAL', '1')
-    # RPSLDatabaseObject.metadata.drop_all(engine)
+    RPSLDatabaseObject.metadata.drop_all(engine)
 
     engine.execute('CREATE EXTENSION IF NOT EXISTS pgcrypto')
 
@@ -36,7 +36,7 @@ def irrd_database(monkeypatch):
     yield None
 
     engine.dispose()
-    RPSLDatabaseObject.metadata.drop_all(engine)
+    # RPSLDatabaseObject.metadata.drop_all(engine)
 
 
 # noinspection PyTypeChecker
@@ -62,7 +62,7 @@ def database_handler_with_route():
 # noinspection PyTypeChecker
 class TestDatabaseHandlerLive:
     def test_object_writing(self, monkeypatch, irrd_database):
-        monkeypatch.setattr('irrd.db.api.MAX_RECORDS_CACHE_BEFORE_INSERT', 1)
+        monkeypatch.setattr('irrd.storage.api.MAX_RECORDS_CACHE_BEFORE_INSERT', 1)
         rpsl_object_route_v4 = Mock(
             pk=lambda: '192.0.2.0/24,AS23456',
             rpsl_object_class='route',

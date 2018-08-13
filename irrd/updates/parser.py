@@ -1,7 +1,7 @@
 import logging
 from typing import List, Optional
 
-from irrd.db.api import DatabaseHandler, RPSLDatabaseQuery
+from irrd.storage.api import DatabaseHandler, RPSLDatabaseQuery
 from irrd.rpsl.parser import UnknownRPSLObjectClassException, RPSLObject
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from .parser_state import UpdateRequestType, UpdateRequestStatus
