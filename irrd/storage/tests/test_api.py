@@ -7,7 +7,7 @@ from pytest import raises
 
 from .. import engine
 from ..api import DatabaseHandler, RPSLDatabaseQuery, RPSLDatabaseJournalQuery, RPSLDatabaseStatusQuery
-from ..models import RPSLDatabaseObject, DatabaseOperations
+from ..models import RPSLDatabaseObject, DatabaseOperation
 
 """
 These tests for the database use a live PostgreSQL database,
@@ -144,15 +144,15 @@ class TestDatabaseHandlerLive:
         # have a separate sequence of NRTM serials.
         assert journal == [
             {'rpsl_pk': '192.0.2.0/24,AS23456', 'source': 'TEST', 'serial_nrtm': 1,
-             'operation': DatabaseOperations.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
+             'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
             {'rpsl_pk': '192.0.2.0/24,AS23456', 'source': 'TEST', 'serial_nrtm': 2,
-             'operation': DatabaseOperations.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
+             'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
             {'rpsl_pk': '2001:db8::/64,AS23456', 'source': 'TEST2', 'serial_nrtm': 1,
-             'operation': DatabaseOperations.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
+             'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
             {'rpsl_pk': '2001:db8::/64,AS23456', 'source': 'TEST2', 'serial_nrtm': 2,
-             'operation': DatabaseOperations.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
+             'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
             {'rpsl_pk': '2001:db8::/64,AS23456', 'source': 'TEST2', 'serial_nrtm': 3,
-             'operation': DatabaseOperations.delete, 'object_class': 'route', 'object_text': 'object-text'},
+             'operation': DatabaseOperation.delete, 'object_class': 'route', 'object_text': 'object-text'},
         ]
 
         status_test = self._clean_result(self.dh.execute_query(RPSLDatabaseStatusQuery().sources(['TEST'])))

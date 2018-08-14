@@ -7,7 +7,7 @@ from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from irrd.rpsl.rpsl_objects import lookup_field_names
 
 
-class DatabaseOperations(enum.Enum):
+class DatabaseOperation(enum.Enum):
     add_or_update = 'ADD'
     delete = 'DEL'
 
@@ -74,7 +74,7 @@ class RPSLDatabaseJournal(Base):  # type: ignore
     source = sa.Column(sa.String, index=True, nullable=False)
 
     serial_nrtm = sa.Column(sa.Integer, index=True, nullable=False)
-    operation = sa.Column(sa.Enum(DatabaseOperations), nullable=False)
+    operation = sa.Column(sa.Enum(DatabaseOperation), nullable=False)
 
     object_class = sa.Column(sa.String, nullable=False, index=True)
     object_text = sa.Column(sa.Text, nullable=False)

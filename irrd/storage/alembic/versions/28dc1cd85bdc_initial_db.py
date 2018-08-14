@@ -24,7 +24,7 @@ def upgrade():
                     sa.Column('rpsl_pk', sa.String(), nullable=False),
                     sa.Column('source', sa.String(), nullable=False),
                     sa.Column('serial_nrtm', sa.Integer(), nullable=False),
-                    sa.Column('operation', sa.Enum('add_or_update', 'delete', name='databaseoperations'),
+                    sa.Column('operation', sa.Enum('add_or_update', 'delete', name='databaseoperation'),
                               nullable=False),
                     sa.Column('object_class', sa.String(), nullable=False),
                     sa.Column('object_text', sa.Text(), nullable=False),

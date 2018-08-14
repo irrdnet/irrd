@@ -12,7 +12,7 @@ from irrd.rpsl.parser import RPSLObject
 from irrd.rpsl.rpsl_objects import lookup_field_names
 from irrd.utils.validators import parse_as_number, ValidationError
 from . import engine
-from .models import RPSLDatabaseObject, RPSLDatabaseJournal, DatabaseOperations, RPSLDatabaseStatus
+from .models import RPSLDatabaseObject, RPSLDatabaseJournal, DatabaseOperation, RPSLDatabaseStatus
 
 logger = logging.getLogger(__name__)
 MAX_RECORDS_CACHE_BEFORE_INSERT = 5
@@ -464,7 +464,7 @@ class DatabaseHandler:
 
         result = results.fetchone()
         self._record_history(
-            operation=DatabaseOperations.delete,
+            operation=DatabaseOperation.delete,
             rpsl_pk=result['rpsl_pk'],
             source=result['source'],
             object_class=result['object_class'],
@@ -522,7 +522,7 @@ class DatabaseHandler:
             raise
         for obj in self._rpsl_upsert_cache:
             self._record_history(
-                operation=DatabaseOperations.add_or_update,
+                operation=DatabaseOperation.add_or_update,
                 rpsl_pk=obj['rpsl_pk'],
                 source=obj['source'],
                 object_class=obj['object_class'],
@@ -532,7 +532,7 @@ class DatabaseHandler:
         self._rpsl_upsert_cache = []
         self._rpsl_pk_source_seen = set()
 
-    def _record_history(self, operation: DatabaseOperations, rpsl_pk: str, source: str, object_class: str,
+    def _record_history(self, operation: DatabaseOperation, rpsl_pk: str, source: str, object_class: str,
                         object_text: str) -> None:
         """
         Make a record in the journal of a change to an object.
