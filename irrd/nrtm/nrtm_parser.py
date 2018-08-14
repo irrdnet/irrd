@@ -76,6 +76,11 @@ class NRTMParser:
 
     def _handle_operation(self, current_line: str, lines) -> None:
         """Handle a single ADD/DEL operation."""
+        if not self.source:
+            msg = f'Encountered operation before NRTM START line, line encountered: {current_line}'
+            logger.error(msg)
+            raise ValueError(msg)
+
         if self._current_op_serial == -1:
             self._current_op_serial = self.first_serial
         else:
@@ -104,5 +109,5 @@ class NRTMParser:
                 break
             current_obj += object_line + "\n"
 
-        nrtm_operation = NRTMOperation(operation, self._current_op_serial, current_obj)
+        nrtm_operation = NRTMOperation(self.source, operation, self._current_op_serial, current_obj)
         self.operations.append(nrtm_operation)

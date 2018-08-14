@@ -32,6 +32,7 @@ DEL
 inetnum: 192.0.2.0 - 192.0.2.255
 source: RIPE
 """
+
 SAMPLE_NRTM_V1_TOO_MANY_ITEMS = """
 % The serial range is one item, but there are two items in here.
 
@@ -49,6 +50,7 @@ inetnum: 192.0.2.0 - 192.0.2.255
 source: RIPE
 """
 SAMPLE_NRTM_INVALID_VERSION = """%START Version: 99 RIPE 11012700-11012700"""
+
 SAMPLE_NRTM_V3_SERIAL_MISMATCH = """
 # NRTM v3 serials should align to the start header
 
@@ -67,7 +69,23 @@ source: RIPE
 
 %END RIPE
 """
+
 SAMPLE_NRTM_V3_INVALID_MULTIPLE_START_LINES = """
 %START Version: 3 RIPE 11012700-11012700
 %START Version: 3 RIPE 11012700-11012700
+"""
+
+SAMPLE_NRTM_INVALID_NO_START_LINE = """
+ADD 11012701
+
+person: NRTM test
+address: NowhereLand
+source: RIPE
+
+DEL 11012700
+
+inetnum: 192.0.2.0 - 192.0.2.255
+source: RIPE
+
+%END RIPE
 """

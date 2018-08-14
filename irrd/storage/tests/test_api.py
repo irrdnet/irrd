@@ -21,8 +21,6 @@ To improve performance, these tests do not run full migrations.
 
 @pytest.fixture()
 def irrd_database(monkeypatch):
-    monkeypatch.setenv('IRRD_DATABASES_TEST_AUTHORITATIVE', '1')
-    monkeypatch.setenv('IRRD_DATABASES_TEST2_KEEP_JOURNAL', '1')
     RPSLDatabaseObject.metadata.drop_all(engine)
 
     engine.execute('CREATE EXTENSION IF NOT EXISTS pgcrypto')
@@ -62,7 +60,10 @@ def database_handler_with_route():
 # noinspection PyTypeChecker
 class TestDatabaseHandlerLive:
     def test_object_writing(self, monkeypatch, irrd_database):
+        monkeypatch.setenv('IRRD_DATABASES_TEST_AUTHORITATIVE', '1')
+        monkeypatch.setenv('IRRD_DATABASES_TEST2_KEEP_JOURNAL', '1')
         monkeypatch.setattr('irrd.storage.api.MAX_RECORDS_CACHE_BEFORE_INSERT', 1)
+
         rpsl_object_route_v4 = Mock(
             pk=lambda: '192.0.2.0/24,AS23456',
             rpsl_object_class='route',
@@ -76,7 +77,7 @@ class TestDatabaseHandlerLive:
         )
 
         self.dh = DatabaseHandler()
-        self.dh.upsert_rpsl_object(rpsl_object_route_v4)
+        self.dh.upsert_rpsl_object(rpsl_object_route_v4, 42)
         assert len(self.dh._rpsl_upsert_cache) == 1
 
         rpsl_object_route_v4.parsed_data = {'mnt-by': 'MNT-CORRECT', 'source': 'TEST'}
@@ -141,11 +142,12 @@ class TestDatabaseHandlerLive:
         journal = self._clean_result(self.dh.execute_query(RPSLDatabaseJournalQuery()))
 
         # The IPv6 object was created in a different source, so it should
-        # have a separate sequence of NRTM serials.
+        # have a separate sequence of NRTM serials. Serial for TEST was forced
+        # to 42 at the first upsert query.
         assert journal == [
-            {'rpsl_pk': '192.0.2.0/24,AS23456', 'source': 'TEST', 'serial_nrtm': 1,
+            {'rpsl_pk': '192.0.2.0/24,AS23456', 'source': 'TEST', 'serial_nrtm': 42,
              'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
-            {'rpsl_pk': '192.0.2.0/24,AS23456', 'source': 'TEST', 'serial_nrtm': 2,
+            {'rpsl_pk': '192.0.2.0/24,AS23456', 'source': 'TEST', 'serial_nrtm': 43,
              'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
             {'rpsl_pk': '2001:db8::/64,AS23456', 'source': 'TEST2', 'serial_nrtm': 1,
              'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
@@ -157,11 +159,55 @@ class TestDatabaseHandlerLive:
 
         status_test = self._clean_result(self.dh.execute_query(RPSLDatabaseStatusQuery().sources(['TEST'])))
         assert status_test == [
-            {'source': 'TEST', 'serial_oldest': 1, 'serial_newest': 2, 'serial_last_dump': None, 'last_error': None},
+            {'source': 'TEST', 'serial_oldest': 42, 'serial_newest': 43, 'serial_last_dump': None, 'last_error': None},
         ]
         status_test2 = self._clean_result(self.dh.execute_query(RPSLDatabaseStatusQuery().sources(['TEST2'])))
         assert status_test2 == [
             {'source': 'TEST2', 'serial_oldest': 1, 'serial_newest': 3, 'serial_last_dump': None, 'last_error': None},
+        ]
+
+        self.dh.rollback()
+        self.dh._connection.close()
+
+    def test_updates_database_status_forced_serials(self, monkeypatch, irrd_database):
+        # As settings are default, journal keeping is disabled for this DB
+        rpsl_object_route_v4 = Mock(
+            pk=lambda: '192.0.2.0/24,AS23456',
+            rpsl_object_class='route',
+            parsed_data={'mnt-by': 'MNT-WRONG', 'source': 'TEST'},
+            render_rpsl_text=lambda: 'object-text',
+            ip_version=lambda: 4,
+            ip_first=IP('192.0.2.0'),
+            ip_last=IP('192.0.2.255'),
+            asn_first=23456,
+            asn_last=23456,
+        )
+
+        self.dh = DatabaseHandler()
+        # This upsert has a forced serial, so it should be recorded in the DB status.
+        self.dh.upsert_rpsl_object(rpsl_object_route_v4, 42)
+        self.dh.upsert_rpsl_object(rpsl_object_route_v4, 4242)
+
+        rpsl_object_route_v6 = Mock(
+            pk=lambda: '2001:db8::/64,AS23456',
+            rpsl_object_class='route',
+            parsed_data={'mnt-by': 'MNT-CORRECT', 'source': 'TEST2'},
+            render_rpsl_text=lambda: 'object-text',
+            ip_version=lambda: 6,
+            ip_first=IP('2001:db8::'),
+            ip_last=IP('2001:db8::ffff:ffff:ffff:ffff'),
+            asn_first=23456,
+            asn_last=23456,
+        )
+        # This upsert has no serial, and journal keeping is not enabled,
+        # so there should be no record of the DB status.
+        self.dh.upsert_rpsl_object(rpsl_object_route_v6)
+        self.dh.commit()
+
+        status = self._clean_result(self.dh.execute_query(RPSLDatabaseStatusQuery()))
+        print(status)
+        assert status == [
+            {'source': 'TEST', 'serial_oldest': 42, 'serial_newest': 4242, 'serial_last_dump': None, 'last_error': None},
         ]
 
         self.dh.rollback()

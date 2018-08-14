@@ -42,7 +42,7 @@ source:         RIPE
 
 def test_rpsl_read(capsys, tmpdir, monkeypatch):
     mock_database_handler = Mock()
-    monkeypatch.setattr("irrd.scripts.rpsl_read.DatabaseHandler", lambda journalling_enabled: mock_database_handler)
+    monkeypatch.setattr("irrd.scripts.rpsl_read.DatabaseHandler", lambda journaling_enabled: mock_database_handler)
 
     tmp_file = tmpdir + "/rpsl_parse_test.rpsl"
     fh = open(tmp_file, "w")

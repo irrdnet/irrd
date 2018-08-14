@@ -1,6 +1,7 @@
 import logging
+from collections import defaultdict
 from datetime import datetime, timezone
-from typing import List, Set, Iterable, Dict, Any
+from typing import List, Set, Iterable, Dict, Any, Tuple, Optional
 
 import sqlalchemy as sa
 from IPy import IP
@@ -376,9 +377,9 @@ class DatabaseHandler:
     to all submitted changes.
     """
 
-    def __init__(self, journalling_enabled=True):
-        self.journalling_enabled = journalling_enabled
-        self._rpsl_upsert_cache: List[dict] = []
+    def __init__(self, journaling_enabled=True):
+        self.journaling_enabled = journaling_enabled
+        self._rpsl_upsert_cache: List[Tuple[Optional[int], dict]] = []
         self._rpsl_pk_source_seen: Set[str] = set()
         self._connection = engine.connect()
         self._start_transaction()
@@ -394,7 +395,7 @@ class DatabaseHandler:
             yield dict(row)
         result.close()
 
-    def upsert_rpsl_object(self, rpsl_object: RPSLObject) -> None:
+    def upsert_rpsl_object(self, rpsl_object: RPSLObject, forced_serial: Optional[int]=None) -> None:
         """
         Schedule an RPSLObject for insertion/updating.
 
@@ -421,26 +422,29 @@ class DatabaseHandler:
         if rpsl_pk_source in self._rpsl_pk_source_seen:
             self._flush_rpsl_object_upsert_cache()
 
-        self._rpsl_upsert_cache.append({
-            'rpsl_pk': rpsl_object.pk(),
-            'source': rpsl_object.parsed_data['source'],
-            'object_class': rpsl_object.rpsl_object_class,
-            'parsed_data': rpsl_object.parsed_data,
-            'object_text': rpsl_object.render_rpsl_text(),
-            'ip_version': rpsl_object.ip_version(),
-            'ip_first': ip_first,
-            'ip_last': ip_last,
-            'ip_size': ip_size,
-            'asn_first': rpsl_object.asn_first,
-            'asn_last': rpsl_object.asn_last,
-            'updated': datetime.now(timezone.utc),
-        })
+        self._rpsl_upsert_cache.append((
+            forced_serial,
+            {
+                'rpsl_pk': rpsl_object.pk(),
+                'source': rpsl_object.parsed_data['source'],
+                'object_class': rpsl_object.rpsl_object_class,
+                'parsed_data': rpsl_object.parsed_data,
+                'object_text': rpsl_object.render_rpsl_text(),
+                'ip_version': rpsl_object.ip_version(),
+                'ip_first': ip_first,
+                'ip_last': ip_last,
+                'ip_size': ip_size,
+                'asn_first': rpsl_object.asn_first,
+                'asn_last': rpsl_object.asn_last,
+                'updated': datetime.now(timezone.utc),
+            },
+        ))
         self._rpsl_pk_source_seen.add(rpsl_pk_source)
 
         if len(self._rpsl_upsert_cache) > MAX_RECORDS_CACHE_BEFORE_INSERT:
             self._flush_rpsl_object_upsert_cache()
 
-    def delete_rpsl_object(self, rpsl_object: RPSLObject) -> None:
+    def delete_rpsl_object(self, rpsl_object: RPSLObject, forced_serial: Optional[int]=None) -> None:
         self._flush_rpsl_object_upsert_cache()
         table = RPSLDatabaseObject.__table__
         source = rpsl_object.parsed_data['source']
@@ -469,6 +473,7 @@ class DatabaseHandler:
             source=result['source'],
             object_class=result['object_class'],
             object_text=result['object_text'],
+            forced_serial=forced_serial,
         )
 
     def commit(self) -> None:
@@ -503,7 +508,7 @@ class DatabaseHandler:
             return
 
         rpsl_composite_key = ['rpsl_pk', 'source']
-        stmt = pg.insert(RPSLDatabaseObject).values(self._rpsl_upsert_cache)
+        stmt = pg.insert(RPSLDatabaseObject).values([x[1] for x in self._rpsl_upsert_cache])
         columns_to_update = {
             c.name: c
             for c in stmt.excluded
@@ -520,31 +525,32 @@ class DatabaseHandler:
         except Exception:  # pragma: no cover - TODO: log the exception and details and report back an error state
             self.transaction.rollback()
             raise
-        for obj in self._rpsl_upsert_cache:
+        for forced_serial, obj in self._rpsl_upsert_cache:
             self._record_history(
                 operation=DatabaseOperation.add_or_update,
                 rpsl_pk=obj['rpsl_pk'],
                 source=obj['source'],
                 object_class=obj['object_class'],
                 object_text=obj['object_text'],
+                forced_serial=forced_serial,
             )
 
         self._rpsl_upsert_cache = []
         self._rpsl_pk_source_seen = set()
 
     def _record_history(self, operation: DatabaseOperation, rpsl_pk: str, source: str, object_class: str,
-                        object_text: str) -> None:
+                        object_text: str, forced_serial: Optional[int]) -> None:
         """
         Make a record in the journal of a change to an object.
 
-        Will only record changes when self.journalling_enabled is set,
+        Will only record changes when self.journaling_enabled is set,
         and the database.SOURCE.authoritative or database.SOURCE.keep_journal
         settings are set.
 
         Note that this method locks the journal table for writing to ensure a
         gapless set of NRTM serials.
         """
-        if self.journalling_enabled and (
+        if self.journaling_enabled and (
                 get_setting(f'databases.{source}.authoritative') or get_setting(f'databases.{source}.keep_journal')
         ):
             journal_tablename = RPSLDatabaseJournal.__tablename__
@@ -554,29 +560,42 @@ class DatabaseHandler:
             serial_subquery = serial_subquery.where(RPSLDatabaseJournal.__table__.c.source == source)
             serial_subquery = serial_subquery.as_scalar()
 
+            if forced_serial is None:
+                serial_nrtm = serial_subquery
+            else:
+                serial_nrtm = forced_serial
             stmt = RPSLDatabaseJournal.__table__.insert().values(
                 rpsl_pk=rpsl_pk,
                 source=source,
                 operation=operation,
                 object_class=object_class,
                 object_text=object_text,
-                serial_nrtm=serial_subquery,
+                serial_nrtm=serial_nrtm,
             )
             self._connection.execute(stmt)
             self.sources_journal_updated.add(source)
+        elif forced_serial:
+            self.sources_unjournalled_new_serials[source].add(forced_serial)
 
     def _update_database_status_serials(self):
         """
-        Update the status of all database serials, based on the current
-        journal. Note that this only correctly updates databases for
-        which we have a journal.
+        Update the status of all database serials, based on either the
+        updated journal, or a list of new serials for this database.
         If there is no status object for this database, it is created.
         """
         c_journal = RPSLDatabaseJournal.__table__.c
+        c_status = RPSLDatabaseStatus.__table__.c
 
-        for source in self.sources_journal_updated:
-            subquery_min = sa.select([sa.func.min(c_journal.serial_nrtm)]).where(c_journal.source == source)
-            subquery_max = sa.select([sa.func.max(c_journal.serial_nrtm)]).where(c_journal.source == source)
+        for source in list(self.sources_journal_updated) + list(self.sources_unjournalled_new_serials.keys()):
+            if source in self.sources_unjournalled_new_serials:
+                serials = self.sources_unjournalled_new_serials[source]
+                subquery_min = sa.select([sa.func.least(sa.func.min(c_status.serial_oldest), min(serials))]).where(
+                    c_status.source == source)
+                subquery_max = sa.select([sa.func.greatest(sa.func.max(c_status.serial_newest), max(serials))]).where(
+                    c_status.source == source)
+            else:
+                subquery_min = sa.select([sa.func.min(c_journal.serial_nrtm)]).where(c_journal.source == source)
+                subquery_max = sa.select([sa.func.max(c_journal.serial_nrtm)]).where(c_journal.source == source)
 
             stmt = pg.insert(RPSLDatabaseStatus).values(
                 serial_oldest=subquery_min,
@@ -601,3 +620,4 @@ class DatabaseHandler:
         """Start a fresh transaction."""
         self.transaction = self._connection.begin()
         self.sources_journal_updated: Set[str] = set()
+        self.sources_unjournalled_new_serials: Dict[str, Set[int]] = defaultdict(set)

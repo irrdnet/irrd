@@ -26,7 +26,7 @@ class RPSLParse:
     def main(self, filename, strict_validation, database, show_info=True):
         self.show_info = show_info
         if database:
-            self.database_handler = DatabaseHandler(journalling_enabled=False)
+            self.database_handler = DatabaseHandler(journaling_enabled=False)
 
         if filename == '-':  # pragma: no cover
             f = sys.stdin
