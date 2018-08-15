@@ -17,7 +17,24 @@ depends_on = None
 
 
 def upgrade():
-    op.execute('create EXTENSION if not EXISTS "pgcrypto";')
+    op.execute('CREATE EXTENSION IF NOT EXISTS "pgcrypto";')
+
+    op.create_table('database_status',
+                    sa.Column('pk', postgresql.UUID(as_uuid=True), server_default=sa.text('gen_random_uuid()'),
+                              nullable=False),
+                    sa.Column('source', sa.String(), nullable=False),
+                    sa.Column('serial_oldest_seen', sa.Integer(), nullable=True),
+                    sa.Column('serial_newest_seen', sa.Integer(), nullable=True),
+                    sa.Column('serial_oldest_journal', sa.Integer(), nullable=True),
+                    sa.Column('serial_newest_journal', sa.Integer(), nullable=True),
+                    sa.Column('serial_last_dump', sa.Integer(), nullable=True),
+                    sa.Column('last_error', sa.Text(), nullable=True),
+                    sa.Column('created', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+                    sa.Column('updated', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+                    sa.PrimaryKeyConstraint('pk')
+                    )
+    op.create_index(op.f('ix_database_status_source'), 'database_status', ['source'], unique=True)
+
     op.create_table('rpsl_database_journal',
                     sa.Column('pk', postgresql.UUID(as_uuid=True), server_default=sa.text('gen_random_uuid()'),
                               nullable=False),
@@ -122,3 +139,6 @@ def downgrade():
     op.drop_index(op.f('ix_rpsl_database_journal_rpsl_pk'), table_name='rpsl_database_journal')
     op.drop_index(op.f('ix_rpsl_database_journal_object_class'), table_name='rpsl_database_journal')
     op.drop_table('rpsl_database_journal')
+
+    op.drop_index(op.f('ix_database_status_source'), table_name='database_status')
+    op.drop_table('database_status')
