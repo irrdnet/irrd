@@ -104,8 +104,10 @@ class RPSLDatabaseStatus(Base):  # type: ignore
     pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)
     source = sa.Column(sa.String, index=True, nullable=False, unique=True)
 
-    serial_oldest = sa.Column(sa.Integer)
-    serial_newest = sa.Column(sa.Integer)
+    serial_oldest_seen = sa.Column(sa.Integer)
+    serial_newest_seen = sa.Column(sa.Integer)
+    serial_oldest_journal = sa.Column(sa.Integer)
+    serial_newest_journal = sa.Column(sa.Integer)
     serial_last_dump = sa.Column(sa.Integer)
     last_error = sa.Column(sa.Text)
 

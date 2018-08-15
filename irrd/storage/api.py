@@ -340,8 +340,10 @@ class RPSLDatabaseStatusQuery:
         self.statement = sa.select([
             self.columns.pk,
             self.columns.source,
-            self.columns.serial_oldest,
-            self.columns.serial_newest,
+            self.columns.serial_oldest_seen,
+            self.columns.serial_newest_seen,
+            self.columns.serial_oldest_journal,
+            self.columns.serial_newest_journal,
             self.columns.serial_last_dump,
             self.columns.last_error,
             self.columns.created,
@@ -570,16 +572,17 @@ class DatabaseStatusTracker:
     and finalise_transaction() before committing.
 
     If journalling is enabled, a new entry in the journal will be made.
-    If journalling is not enabled (due to journaling_enabled=False, or settings
-    for this specific source), and a forced_serial was provided, a record is
-    kept in memory of all forced serials encountered for this source.
+    If a journal entry was made, or forced_serial was set, a record is kept in
+    memory with all serials encountered/created for this source.
 
     When finalising, the RPSLDatabaseStatus table is updated to correctly
     reflect the range of serials known for a particular source.
     """
     journaling_enabled: bool
-    _sources_journal_updated: Set[str]
-    _sources_unjournalled_new_serials: Dict[str, Set[int]]
+    _new_serials_per_source: Dict[str, Set[int]]
+
+    c_journal = RPSLDatabaseJournal.__table__.c
+    c_status = RPSLDatabaseStatus.__table__.c
 
     def __init__(self, database_handler: DatabaseHandler, journalling_enabled=True) -> None:
         self.database_handler = database_handler
@@ -619,37 +622,41 @@ class DatabaseStatusTracker:
                 object_class=object_class,
                 object_text=object_text,
                 serial_nrtm=serial_nrtm,
-            )
-            self.database_handler.execute_statement(stmt)
-            self._sources_journal_updated.add(source)
+            ).returning(self.c_journal.serial_nrtm)
+
+            insert_result = self.database_handler.execute_statement(stmt)
+            inserted_serial = insert_result.fetchone()['serial_nrtm']
+            self._new_serials_per_source[source].add(inserted_serial)
         elif forced_serial:
-            self._sources_unjournalled_new_serials[source].add(forced_serial)
+            self._new_serials_per_source[source].add(forced_serial)
 
     def finalise_transaction(self):
         """
-        Update the status of all database serials, based on either the
-        updated journal, or a list of new serials for this database.
+        Update the status of all database serials, based on a list of
+        new serials for this database.
         If there is no status object for this database, it is created.
-
-        # TODO: this should probably separate "most recent serial seen" from "which serials are in the journal".
         """
-        c_journal = RPSLDatabaseJournal.__table__.c
-        c_status = RPSLDatabaseStatus.__table__.c
 
-        for source in list(self._sources_journal_updated) + list(self._sources_unjournalled_new_serials.keys()):
-            if source in self._sources_unjournalled_new_serials:
-                serials = self._sources_unjournalled_new_serials[source]
-                subquery_min = sa.select([sa.func.least(sa.func.min(c_status.serial_oldest), min(serials))]).where(
-                    c_status.source == source)
-                subquery_max = sa.select([sa.func.greatest(sa.func.max(c_status.serial_newest), max(serials))]).where(
-                    c_status.source == source)
-            else:
-                subquery_min = sa.select([sa.func.min(c_journal.serial_nrtm)]).where(c_journal.source == source)
-                subquery_max = sa.select([sa.func.max(c_journal.serial_nrtm)]).where(c_journal.source == source)
+        for source, serials in self._new_serials_per_source.items():
+            serial_oldest_seen = sa.select([
+                sa.func.least(sa.func.min(self.c_status.serial_oldest_seen), min(serials))
+            ]).where(self.c_status.source == source)
+            serial_newest_seen = sa.select([
+                sa.func.greatest(sa.func.max(self.c_status.serial_newest_seen), max(serials))
+            ]).where(self.c_status.source == source)
+
+            serial_oldest_journal = sa.select([
+                sa.func.min(self.c_journal.serial_nrtm)
+            ]).where(self.c_journal.source == source)
+            serial_newest_journal = sa.select([
+                sa.func.max(self.c_journal.serial_nrtm)
+            ]).where(self.c_journal.source == source)
 
             stmt = pg.insert(RPSLDatabaseStatus).values(
-                serial_oldest=subquery_min,
-                serial_newest=subquery_max,
+                serial_oldest_seen=serial_oldest_seen,
+                serial_newest_seen=serial_newest_seen,
+                serial_oldest_journal=serial_oldest_journal,
+                serial_newest_journal=serial_newest_journal,
                 source=source,
                 updated=datetime.now(timezone.utc),
             )
@@ -669,5 +676,4 @@ class DatabaseStatusTracker:
         self._reset()
 
     def _reset(self):
-        self._sources_journal_updated = set()
-        self._sources_unjournalled_new_serials = defaultdict(set)
+        self._new_serials_per_source = defaultdict(set)
