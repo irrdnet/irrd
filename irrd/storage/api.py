@@ -376,12 +376,46 @@ class DatabaseHandler:
     has been called - and rollback() can be called at any time
     to all submitted changes.
     """
+    journaling_enabled: bool
+    _transaction: sa.engine.base.Transaction
+    _rpsl_pk_source_seen: Set[str]
+    # The RPSL upsert cache is a list of tuples. Each tuple first has a dict
+    # with all database column names and their values, and then an optional int
+    # with a forced serial. The forced serial is used for mirrored databases,
+    # where this basically means: this call was triggered by an NRTM operation
+    # with this serial.
+    _rpsl_upsert_cache: List[Tuple[dict, Optional[int]]]
 
     def __init__(self, journaling_enabled=True):
         self.journaling_enabled = journaling_enabled
-        self._rpsl_upsert_cache: List[Tuple[Optional[int], dict]] = []
-        self._rpsl_pk_source_seen: Set[str] = set()
         self._connection = engine.connect()
+        self._start_transaction()
+
+    def _start_transaction(self) -> None:
+        """Start a fresh transaction."""
+        self._transaction = self._connection.begin()
+        self._rpsl_upsert_cache = []
+        self._rpsl_pk_source_seen = set()
+        self.status_tracker = DatabaseStatusTracker(self, journalling_enabled=self.journaling_enabled)
+
+    def commit(self) -> None:
+        """
+        Commit any pending changes to the database and start a fresh transaction.
+        """
+        self._flush_rpsl_object_upsert_cache()
+        self.status_tracker.finalise_transaction()
+        try:
+            self._transaction.commit()
+            self._start_transaction()
+        except Exception:  # pragma: no cover - TODO: log the exception and details and report back an error state
+            self._transaction.rollback()
+            raise
+
+    def rollback(self) -> None:
+        """Roll back the current transaction, discarding all submitted changes."""
+        self._rpsl_upsert_cache = []
+        self._rpsl_pk_source_seen = set()
+        self._transaction.rollback()
         self._start_transaction()
 
     def execute_query(self, query: RPSLDatabaseQuery) -> Iterable[Dict[str, Any]]:
@@ -395,6 +429,10 @@ class DatabaseHandler:
             yield dict(row)
         result.close()
 
+    def execute_statement(self, statement):
+        """Execute a raw SQLAlchemy statement, without flushing the upsert cache."""
+        return self._connection.execute(statement)
+
     def upsert_rpsl_object(self, rpsl_object: RPSLObject, forced_serial: Optional[int]=None) -> None:
         """
         Schedule an RPSLObject for insertion/updating.
@@ -405,6 +443,8 @@ class DatabaseHandler:
 
         Writes may not be issued to the database immediately for performance
         reasons, but commit() will ensure all writes are flushed to the DB first.
+
+        See the comment on the instance declaration for an explanation of forced_serial.
         """
         ip_first = str(rpsl_object.ip_first) if rpsl_object.ip_first else None
         ip_last = str(rpsl_object.ip_last) if rpsl_object.ip_last else None
@@ -423,7 +463,6 @@ class DatabaseHandler:
             self._flush_rpsl_object_upsert_cache()
 
         self._rpsl_upsert_cache.append((
-            forced_serial,
             {
                 'rpsl_pk': rpsl_object.pk(),
                 'source': rpsl_object.parsed_data['source'],
@@ -438,6 +477,7 @@ class DatabaseHandler:
                 'asn_last': rpsl_object.asn_last,
                 'updated': datetime.now(timezone.utc),
             },
+            forced_serial,
         ))
         self._rpsl_pk_source_seen.add(rpsl_pk_source)
 
@@ -445,6 +485,10 @@ class DatabaseHandler:
             self._flush_rpsl_object_upsert_cache()
 
     def delete_rpsl_object(self, rpsl_object: RPSLObject, forced_serial: Optional[int]=None) -> None:
+        """
+        Delete an RPSL object from the database.
+        See the comment on the instance declaration for an explanation of forced_serial.
+        """
         self._flush_rpsl_object_upsert_cache()
         table = RPSLDatabaseObject.__table__
         source = rpsl_object.parsed_data['source']
@@ -467,7 +511,7 @@ class DatabaseHandler:
             raise ValueError(msg)
 
         result = results.fetchone()
-        self._record_history(
+        self.status_tracker.record_operation(
             operation=DatabaseOperation.delete,
             rpsl_pk=result['rpsl_pk'],
             source=result['source'],
@@ -475,26 +519,6 @@ class DatabaseHandler:
             object_text=result['object_text'],
             forced_serial=forced_serial,
         )
-
-    def commit(self) -> None:
-        """
-        Commit any pending changes to the database and start a fresh transaction.
-        """
-        self._flush_rpsl_object_upsert_cache()
-        self._update_database_status_serials()
-        try:
-            self.transaction.commit()
-            self._start_transaction()
-        except Exception:  # pragma: no cover - TODO: log the exception and details and report back an error state
-            self.transaction.rollback()
-            raise
-
-    def rollback(self) -> None:
-        """Roll back the current transaction, discarding all submitted changes."""
-        self._rpsl_upsert_cache = []
-        self._rpsl_pk_source_seen = set()
-        self.transaction.rollback()
-        self._start_transaction()
 
     def _flush_rpsl_object_upsert_cache(self) -> None:
         """
@@ -508,7 +532,7 @@ class DatabaseHandler:
             return
 
         rpsl_composite_key = ['rpsl_pk', 'source']
-        stmt = pg.insert(RPSLDatabaseObject).values([x[1] for x in self._rpsl_upsert_cache])
+        stmt = pg.insert(RPSLDatabaseObject).values([x[0] for x in self._rpsl_upsert_cache])
         columns_to_update = {
             c.name: c
             for c in stmt.excluded
@@ -523,10 +547,10 @@ class DatabaseHandler:
         try:
             self._connection.execute(update_stmt)
         except Exception:  # pragma: no cover - TODO: log the exception and details and report back an error state
-            self.transaction.rollback()
+            self._transaction.rollback()
             raise
-        for forced_serial, obj in self._rpsl_upsert_cache:
-            self._record_history(
+        for obj, forced_serial in self._rpsl_upsert_cache:
+            self.status_tracker.record_operation(
                 operation=DatabaseOperation.add_or_update,
                 rpsl_pk=obj['rpsl_pk'],
                 source=obj['source'],
@@ -538,8 +562,32 @@ class DatabaseHandler:
         self._rpsl_upsert_cache = []
         self._rpsl_pk_source_seen = set()
 
-    def _record_history(self, operation: DatabaseOperation, rpsl_pk: str, source: str, object_class: str,
-                        object_text: str, forced_serial: Optional[int]) -> None:
+
+class DatabaseStatusTracker:
+    """
+    Keep track of the status of databases, and their journal, if enabled.
+    Changes to the database should always call record_operation() on this object,
+    and finalise_transaction() before committing.
+
+    If journalling is enabled, a new entry in the journal will be made.
+    If journalling is not enabled (due to journaling_enabled=False, or settings
+    for this specific source), and a forced_serial was provided, a record is
+    kept in memory of all forced serials encountered for this source.
+
+    When finalising, the RPSLDatabaseStatus table is updated to correctly
+    reflect the range of serials known for a particular source.
+    """
+    journaling_enabled: bool
+    _sources_journal_updated: Set[str]
+    _sources_unjournalled_new_serials: Dict[str, Set[int]]
+
+    def __init__(self, database_handler: DatabaseHandler, journalling_enabled=True) -> None:
+        self.database_handler = database_handler
+        self.journaling_enabled = journalling_enabled
+        self._reset()
+
+    def record_operation(self, operation: DatabaseOperation, rpsl_pk: str, source: str, object_class: str,
+                         object_text: str, forced_serial: Optional[int]) -> None:
         """
         Make a record in the journal of a change to an object.
 
@@ -554,7 +602,7 @@ class DatabaseHandler:
                 get_setting(f'databases.{source}.authoritative') or get_setting(f'databases.{source}.keep_journal')
         ):
             journal_tablename = RPSLDatabaseJournal.__tablename__
-            self._connection.execute(f'LOCK TABLE {journal_tablename} IN EXCLUSIVE MODE')
+            self.database_handler.execute_statement(f'LOCK TABLE {journal_tablename} IN EXCLUSIVE MODE')
 
             serial_subquery = sa.select([sa.text(f'COALESCE(MAX(serial_nrtm), 0) + 1')])
             serial_subquery = serial_subquery.where(RPSLDatabaseJournal.__table__.c.source == source)
@@ -572,23 +620,25 @@ class DatabaseHandler:
                 object_text=object_text,
                 serial_nrtm=serial_nrtm,
             )
-            self._connection.execute(stmt)
-            self.sources_journal_updated.add(source)
+            self.database_handler.execute_statement(stmt)
+            self._sources_journal_updated.add(source)
         elif forced_serial:
-            self.sources_unjournalled_new_serials[source].add(forced_serial)
+            self._sources_unjournalled_new_serials[source].add(forced_serial)
 
-    def _update_database_status_serials(self):
+    def finalise_transaction(self):
         """
         Update the status of all database serials, based on either the
         updated journal, or a list of new serials for this database.
         If there is no status object for this database, it is created.
+
+        # TODO: this should probably separate "most recent serial seen" from "which serials are in the journal".
         """
         c_journal = RPSLDatabaseJournal.__table__.c
         c_status = RPSLDatabaseStatus.__table__.c
 
-        for source in list(self.sources_journal_updated) + list(self.sources_unjournalled_new_serials.keys()):
-            if source in self.sources_unjournalled_new_serials:
-                serials = self.sources_unjournalled_new_serials[source]
+        for source in list(self._sources_journal_updated) + list(self._sources_unjournalled_new_serials.keys()):
+            if source in self._sources_unjournalled_new_serials:
+                serials = self._sources_unjournalled_new_serials[source]
                 subquery_min = sa.select([sa.func.least(sa.func.min(c_status.serial_oldest), min(serials))]).where(
                     c_status.source == source)
                 subquery_max = sa.select([sa.func.greatest(sa.func.max(c_status.serial_newest), max(serials))]).where(
@@ -614,10 +664,10 @@ class DatabaseHandler:
                 set_=columns_to_update,
             )
 
-            self._connection.execute(stmt)
+            self.database_handler.execute_statement(stmt)
 
-    def _start_transaction(self) -> None:
-        """Start a fresh transaction."""
-        self.transaction = self._connection.begin()
-        self.sources_journal_updated: Set[str] = set()
-        self.sources_unjournalled_new_serials: Dict[str, Set[int]] = defaultdict(set)
+        self._reset()
+
+    def _reset(self):
+        self._sources_journal_updated = set()
+        self._sources_unjournalled_new_serials = defaultdict(set)

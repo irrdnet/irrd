@@ -59,6 +59,9 @@ def database_handler_with_route():
 
 # noinspection PyTypeChecker
 class TestDatabaseHandlerLive:
+    """
+    This test covers mainly DatabaseHandler and DatabaseStatusTracker.
+    """
     def test_object_writing(self, monkeypatch, irrd_database):
         monkeypatch.setenv('IRRD_DATABASES_TEST_AUTHORITATIVE', '1')
         monkeypatch.setenv('IRRD_DATABASES_TEST2_KEEP_JOURNAL', '1')

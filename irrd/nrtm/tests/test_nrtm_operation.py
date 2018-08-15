@@ -48,6 +48,18 @@ class TestNRTMOperation:
         assert not operation.save(database_handler=mock_dh)
         assert mock_dh.upsert_rpsl_object.call_count == 0
 
+    def test_nrtm_add_invalid_inconsistent_source(self):
+        mock_dh = Mock()
+
+        operation = NRTMOperation(
+            source='NOT-RIPE',
+            operation=DatabaseOperation.add_or_update,
+            serial=42424242,
+            object_text=SAMPLE_MNTNER,
+        )
+        assert not operation.save(database_handler=mock_dh)
+        assert mock_dh.upsert_rpsl_object.call_count == 0
+
     def test_nrtm_add_invalid_rpsl_errors(self):
         mock_dh = Mock()
 
