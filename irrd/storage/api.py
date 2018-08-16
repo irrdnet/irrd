@@ -16,7 +16,7 @@ from . import engine
 from .models import RPSLDatabaseObject, RPSLDatabaseJournal, DatabaseOperation, RPSLDatabaseStatus
 
 logger = logging.getLogger(__name__)
-MAX_RECORDS_CACHE_BEFORE_INSERT = 5
+MAX_RECORDS_CACHE_BEFORE_INSERT = 5000
 
 
 class BaseRPSLObjectDatabaseQuery:
@@ -369,6 +369,9 @@ class RPSLDatabaseStatusQuery:
         self.statement = self.statement.where(fltr)
         return self
 
+    def __repr__(self):
+        return f"RPSLDatabaseStatusQuery: {self.statement}\nPARAMS: {self.statement.compile().params}"
+
 
 class DatabaseHandler:
     """
@@ -398,7 +401,11 @@ class DatabaseHandler:
         self._transaction = self._connection.begin()
         self._rpsl_upsert_cache = []
         self._rpsl_pk_source_seen = set()
-        self.status_tracker = DatabaseStatusTracker(self, journalling_enabled=self.journaling_enabled)
+        self.status_tracker = DatabaseStatusTracker(self, journaling_enabled=self.journaling_enabled)
+
+    def disable_journaling(self):
+        self.journaling_enabled = False
+        self.status_tracker.journaling_enabled = False
 
     def commit(self) -> None:
         """
@@ -564,6 +571,9 @@ class DatabaseHandler:
         self._rpsl_upsert_cache = []
         self._rpsl_pk_source_seen = set()
 
+    def close(self):
+        self._connection.close()
+
 
 class DatabaseStatusTracker:
     """
@@ -584,9 +594,9 @@ class DatabaseStatusTracker:
     c_journal = RPSLDatabaseJournal.__table__.c
     c_status = RPSLDatabaseStatus.__table__.c
 
-    def __init__(self, database_handler: DatabaseHandler, journalling_enabled=True) -> None:
+    def __init__(self, database_handler: DatabaseHandler, journaling_enabled=True) -> None:
         self.database_handler = database_handler
-        self.journaling_enabled = journalling_enabled
+        self.journaling_enabled = journaling_enabled
         self._reset()
 
     def record_operation(self, operation: DatabaseOperation, rpsl_pk: str, source: str, object_class: str,
@@ -605,14 +615,12 @@ class DatabaseStatusTracker:
                 get_setting(f'databases.{source}.authoritative') or get_setting(f'databases.{source}.keep_journal')
         ):
             journal_tablename = RPSLDatabaseJournal.__tablename__
-            self.database_handler.execute_statement(f'LOCK TABLE {journal_tablename} IN EXCLUSIVE MODE')
-
-            serial_subquery = sa.select([sa.text(f'COALESCE(MAX(serial_nrtm), 0) + 1')])
-            serial_subquery = serial_subquery.where(RPSLDatabaseJournal.__table__.c.source == source)
-            serial_subquery = serial_subquery.as_scalar()
 
             if forced_serial is None:
-                serial_nrtm = serial_subquery
+                self.database_handler.execute_statement(f'LOCK TABLE {journal_tablename} IN EXCLUSIVE MODE')
+                serial_nrtm = sa.select([sa.text(f'COALESCE(MAX(serial_nrtm), 0) + 1')])
+                serial_nrtm = serial_nrtm.where(RPSLDatabaseJournal.__table__.c.source == source)
+                serial_nrtm = serial_nrtm.as_scalar()
             else:
                 serial_nrtm = forced_serial
             stmt = RPSLDatabaseJournal.__table__.insert().values(

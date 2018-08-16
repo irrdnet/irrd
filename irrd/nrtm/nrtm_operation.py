@@ -1,5 +1,6 @@
 import logging
 
+from irrd.conf import get_setting
 from irrd.rpsl.parser import UnknownRPSLObjectClassException
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.storage.api import DatabaseHandler
@@ -18,12 +19,18 @@ class NRTMOperation:
         self.operation = operation
         self.serial = serial
         self.object_text = object_text
+        self.object_class_filter = get_setting(f'databases.{self.source}.object_class_filter')
+        if self.object_class_filter:
+            self.object_class_filter = [c.trim().lower() for c in self.object_class_filter.split(',')]
 
     def save(self, database_handler: DatabaseHandler) -> bool:
         try:
             obj = rpsl_object_from_text(self.object_text.strip(), strict_validation=False)
         except UnknownRPSLObjectClassException as exc:
             logger.warning(f'Ignoring NRTM from {self.source} operation {self.serial}/{self.operation.value}: {exc}')
+            return False
+
+        if self.object_class_filter and obj.rpsl_object_class.lower() not in self.object_class_filter:
             return False
 
         if obj.messages.errors():
@@ -35,7 +42,7 @@ class NRTMOperation:
                             f'Parser error messages: {errors}; original object text follows:\n{self.object_text}')
             return False
 
-        if obj.parsed_data.get('source') != self.source:
+        if obj.parsed_data.get('source').upper() != self.source:
             logger.critical(f'Incorrect source in NRTM object: stream has source {self.source}, found object with '
                             f'source {obj.source()} in operation {self.serial}/{self.operation.value}/{obj.pk()}. '
                             f'This operation is ignored, causing potential data inconsistencies.')
@@ -46,7 +53,8 @@ class NRTMOperation:
         elif self.operation == DatabaseOperation.delete:
             database_handler.delete_rpsl_object(obj, self.serial)
 
+        logger.info(f'Completed NRTM operation in {self.source}: {self.serial}/{self.operation.value}/{obj.pk()}')
         return True
 
     def __repr__(self):
-        return f"{self.operation}/{self.serial}"
+        return f"{self.source}/{self.serial}/{self.operation.value}"

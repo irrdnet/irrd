@@ -1,15 +1,88 @@
 import logging
 import re
-from typing import List
+from typing import List, Set
 
-from .nrtm_operation import NRTMOperation
+from irrd.conf import get_setting
+from irrd.rpsl.parser import UnknownRPSLObjectClassException
+from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.storage.models import DatabaseOperation
+from .nrtm_operation import NRTMOperation
 
 logger = logging.getLogger(__name__)
-start_line_re = re.compile(r'^% *START *Version: *(?P<version>\d+) +(?P<source>\w+) +(?P<first_serial>\d+)-(?P<last_serial>\d+)$')
+start_line_re = re.compile(r'^% *START *Version: *(?P<version>\d+) +(?P<source>\w+) +(?P<first_serial>\d+)-(?P<last_serial>\d+)')
 
 
-class NRTMParser:
+class NRTMBulkParser:
+    obj_parsed = 0
+    obj_errors = 0
+    obj_ignored_class = 0
+    obj_unknown = 0
+    unknown_object_classes: Set[str] = set()
+    database_handler = None
+
+    def __init__(self, source, filename, serial, strict_validation, database_handler):
+        logger.debug(f'Running bulk import of {source} from {filename}, setting serial {serial}')
+        self.serial = serial
+        self.source = source
+        self.database_handler = database_handler
+
+        self.object_class_filter = get_setting(f'databases.{self.source}.object_class_filter')
+        if self.object_class_filter:
+            self.object_class_filter = [c.trim().lower() for c in self.object_class_filter.split(',')]
+
+        f = open(filename, encoding="utf-8", errors='backslashreplace')
+
+        current_obj = ""
+        for line in f.readlines():
+            if line.startswith("%") or line.startswith("#"):
+                continue
+            current_obj += line
+
+            if not line.strip("\r\n"):
+                self.parse_object(current_obj, strict_validation)
+                current_obj = ""
+
+        self.parse_object(current_obj, strict_validation)
+
+        obj_successful = self.obj_parsed - self.obj_unknown - self.obj_errors - self.obj_ignored_class
+        logger.info(f"Bulk imported for {self.source}: {self.obj_parsed} objects read, "
+                    f"{obj_successful} objects inserted, "
+                    f"ignored {self.obj_errors} due to errors,"
+                    f"ignored {self.obj_ignored_class} objects due to the object class filter, "
+                    f"serial {self.serial}")
+        if self.obj_unknown:
+            unknown_formatted = ', '.join(self.unknown_object_classes)
+            logger.error(f"Ignored {self.obj_unknown} objects found in bulk import for {self.source} due to unknown "
+                         f"object classes: {unknown_formatted}")
+
+    def parse_object(self, rpsl_text, strict_validation):
+        if not rpsl_text.strip():
+            return
+        try:
+            self.obj_parsed += 1
+            obj = rpsl_object_from_text(rpsl_text.strip(), strict_validation=strict_validation)
+
+            if obj.messages.errors():
+                logger.critical(f'Parsing errors occurred while importing initial dump from {self.source}. '
+                                f'This object is ignored, causing potential data inconsistencies. A new operation for '
+                                f'this update, without errors, will still be processed and cause the inconsistency to '
+                                f'be resolved. Parser error messages: {obj.messages.errors()}; '
+                                f'original object text follows:\n{rpsl_text}')
+                self.obj_errors += 1
+                return
+
+            if self.object_class_filter and obj.rpsl_object_class.lower() not in self.object_class_filter:
+                self.obj_ignored_class += 1
+                return
+
+            self.database_handler.upsert_rpsl_object(obj, forced_serial=self.serial)
+
+        except UnknownRPSLObjectClassException as e:
+            self.obj_unknown += 1
+            self.unknown_object_classes.add(str(e).split(":")[1].strip())
+
+
+class NRTMStreamParser:
     """
     The NRTM parser takes the data of an NRTM string, and splits it
     into individual operations, matched with their serial and
@@ -19,7 +92,7 @@ class NRTMParser:
     - first_serial: the first serial found in the data
     - last_serial: the last serial found
     - source: the RPSL source recorded in the START header
-    - objects: a list of NRTMOperation objects
+    - operations: a list of NRTMOperation objects
 
     Raises a ValueError for invalid NRTM data.
     """
@@ -63,7 +136,7 @@ class NRTMParser:
             raise ValueError(msg)
 
         self.version = start_line_match.group('version')
-        self.source = start_line_match.group('source')
+        self.source = start_line_match.group('source').upper()
         self.first_serial = int(start_line_match.group('first_serial'))
         self.last_serial = int(start_line_match.group('last_serial'))
 
@@ -71,6 +144,8 @@ class NRTMParser:
             msg = f'Invalid NRTM version {self.version} in NRTM start line: {line}'
             logger.error(msg)
             raise ValueError(msg)
+
+        logger.debug(f'Found valid start line for {self.source}, range {self.first_serial}-{self.last_serial}')
 
         return True
 
@@ -89,11 +164,14 @@ class NRTMParser:
         if ' ' in current_line:
             operation_str, line_serial_str = current_line.split(' ')
             line_serial = int(line_serial_str)
-            if line_serial != self._current_op_serial:
-                msg = f'Invalid NRTM serial: ADD/DEL has serial {line_serial}, ' \
-                      f'expected {self._current_op_serial}'
+            # Gaps are allowed, but the line serial can never be lower, as that
+            # means operations are served in the wrong order.
+            if line_serial < self._current_op_serial:
+                msg = f'Invalid NRTM serial for {self.source}: ADD/DEL has serial {line_serial}, ' \
+                      f'expected at least {self._current_op_serial}'
                 logger.error(msg)
                 raise ValueError(msg)
+            self._current_op_serial = line_serial
         else:
             operation_str = current_line.strip()
         operation = DatabaseOperation(operation_str)
