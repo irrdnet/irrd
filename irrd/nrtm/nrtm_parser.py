@@ -6,6 +6,7 @@ from irrd.conf import get_setting
 from irrd.rpsl.parser import UnknownRPSLObjectClassException
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.storage.models import DatabaseOperation
+from irrd.utils import splitline_unicodesafe
 from .nrtm_operation import NRTMOperation
 
 logger = logging.getLogger(__name__)
@@ -21,14 +22,14 @@ class NRTMBulkParser:
     database_handler = None
 
     def __init__(self, source, filename, serial, strict_validation, database_handler):
-        logger.debug(f'Running bulk import of {source} from {filename}, setting serial {serial}')
+        logger.debug(f'Starting bulk import of {source} from {filename}, setting serial {serial}')
         self.serial = serial
         self.source = source
         self.database_handler = database_handler
 
         self.object_class_filter = get_setting(f'databases.{self.source}.object_class_filter')
         if self.object_class_filter:
-            self.object_class_filter = [c.trim().lower() for c in self.object_class_filter.split(',')]
+            self.object_class_filter = [c.strip().lower() for c in self.object_class_filter.split(',')]
 
         f = open(filename, encoding="utf-8", errors='backslashreplace')
 
@@ -47,9 +48,9 @@ class NRTMBulkParser:
         obj_successful = self.obj_parsed - self.obj_unknown - self.obj_errors - self.obj_ignored_class
         logger.info(f"Bulk imported for {self.source}: {self.obj_parsed} objects read, "
                     f"{obj_successful} objects inserted, "
-                    f"ignored {self.obj_errors} due to errors,"
-                    f"ignored {self.obj_ignored_class} objects due to the object class filter, "
-                    f"serial {self.serial}")
+                    f"ignored {self.obj_errors} due to errors, "
+                    f"ignored {self.obj_ignored_class} due to object_class_filter, "
+                    f"serial {self.serial}, source {filename}")
         if self.obj_unknown:
             unknown_formatted = ', '.join(self.unknown_object_classes)
             logger.error(f"Ignored {self.obj_unknown} objects found in bulk import for {self.source} due to unknown "
@@ -107,7 +108,7 @@ class NRTMStreamParser:
 
     def _split_stream(self, data: str) -> None:
         """Split a stream into individual operations."""
-        lines = iter(data.splitlines())
+        lines = splitline_unicodesafe(data)
 
         for line in lines:
             if self._handle_possible_start_line(line):

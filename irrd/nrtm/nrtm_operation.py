@@ -21,7 +21,7 @@ class NRTMOperation:
         self.object_text = object_text
         self.object_class_filter = get_setting(f'databases.{self.source}.object_class_filter')
         if self.object_class_filter:
-            self.object_class_filter = [c.trim().lower() for c in self.object_class_filter.split(',')]
+            self.object_class_filter = [c.strip().lower() for c in self.object_class_filter.split(',')]
 
     def save(self, database_handler: DatabaseHandler) -> bool:
         try:
