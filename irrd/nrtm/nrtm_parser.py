@@ -118,7 +118,7 @@ class NRTMStreamParser:
             elif line.startswith('ADD') or line.startswith('DEL'):
                 self._handle_operation(line, lines)
 
-        if self._current_op_serial != self.last_serial:
+        if self._current_op_serial != self.last_serial and self.version != '3':
             msg = f'NRTM stream error: expected operations up to and including serial {self.last_serial}, ' \
                   f'last operation was {self._current_op_serial}'
             logger.error(msg)

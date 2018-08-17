@@ -965,7 +965,7 @@ owner:          keybase.io/mxsasha <mxsasha@keybase.io>
 owner:          Sasha Romijn <gpg@mxsasha.eu>
 fingerpr:       8626 1D8D BEBD A4F5 4692  D64D A838 3BA7 80F2 38C6
 certif:         -----BEGIN PGP PUBLIC KEY BLOCK-----
-certif:
+certif:         
 certif:         mQINBFnY7YoBEADH5ooPsoR9G/dNxrdHRMJeDHXCSQbwgXWEez5/F8/BZKV9occ/
 certif:         jZ7w2wH+Ghj4vTQl1DhuNcxi60qDv9DAPxG73DkBrK0I3fDUJUPrdOKW9SXvZCAq
 certif:         LrVEdDVH+YEKhQLlGG7DTODGsfMglL98mn7GD/wD64LtRF3eBAucTIjaOl9hvoqX

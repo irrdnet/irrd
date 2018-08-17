@@ -6,6 +6,7 @@ from passlib.handlers.md5_crypt import md5_crypt
 from pytest import raises
 
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
+from irrd.utils import splitline_unicodesafe
 from irrd.utils.rpsl_samples import SAMPLE_INETNUM, SAMPLE_AS_SET, SAMPLE_PERSON, SAMPLE_MNTNER
 from irrd.utils.test_utils import flatten_mock_calls
 from ..parser import parse_update_requests
@@ -404,7 +405,7 @@ class TestSingleUpdateRequestHandling:
         auth_validator.pre_approve([result_mntner])
         assert result_mntner._check_auth()
         assert not result_mntner.error_messages
-        auth_pgp, auth_hash = result_mntner.rpsl_obj_new.parsed_data['auth'].splitlines()
+        auth_pgp, auth_hash = splitline_unicodesafe(result_mntner.rpsl_obj_new.parsed_data['auth'])
         assert auth_pgp == 'PGPKey-80F238C6'
         assert auth_hash.startswith('MD5-PW ')
         assert md5_crypt.verify('crypt-password', auth_hash[7:])

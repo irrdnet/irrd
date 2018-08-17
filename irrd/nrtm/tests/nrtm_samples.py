@@ -51,10 +51,29 @@ source: RIPE
 """
 SAMPLE_NRTM_INVALID_VERSION = """%START Version: 99 RIPE 11012700-11012700"""
 
-SAMPLE_NRTM_V3_SERIAL_MISMATCH = """
-# NRTM v3 serials should align to the start header
+SAMPLE_NRTM_V3_SERIAL_GAP = """
+# NRTM v3 serials are allowed to have gaps per https://github.com/irrdnet/irrd4/issues/85
 
-%START Version: 3 RIPE 11012700-11012701
+%START Version: 3 RIPE 11012699-11012703
+
+ADD 11012700
+
+person: NRTM test
+address: NowhereLand
+source: RIPE
+
+DEL 11012701
+
+inetnum: 192.0.2.0 - 192.0.2.255
+source: RIPE
+
+%END RIPE
+"""
+
+SAMPLE_NRTM_V3_SERIAL_OUT_OF_ORDER = """
+# NRTM v3 serials can have gaps, but must always increase.
+
+%START Version: 3 RIPE 11012699-11012703
 
 ADD 11012701
 
@@ -62,7 +81,7 @@ person: NRTM test
 address: NowhereLand
 source: RIPE
 
-DEL 11012700
+DEL 11012701
 
 inetnum: 192.0.2.0 - 192.0.2.255
 source: RIPE

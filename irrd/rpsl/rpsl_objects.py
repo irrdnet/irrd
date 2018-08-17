@@ -4,6 +4,7 @@ from typing import Set, List, Optional, Union
 import gnupg
 
 from irrd.conf import get_setting, PASSWORD_HASH_DUMMY_VALUE
+from irrd.utils import splitline_unicodesafe
 from .config import PASSWORD_HASHERS
 from .fields import (RPSLTextField, RPSLIPv4PrefixField, RPSLIPv4PrefixesField, RPSLIPv6PrefixField,
                      RPSLIPv6PrefixesField, RPSLIPv4AddressRangeField, RPSLASNumberField, RPSLASBlockField,
@@ -313,7 +314,7 @@ class RPSLMntner(RPSLObject):
         any of the auth hashes in this object, or match the
         keycert object PK.
         """
-        for auth in self.parsed_data.get('auth', '').splitlines():
+        for auth in splitline_unicodesafe(self.parsed_data.get('auth', '')):
             if keycert_obj_pk and auth.upper() == keycert_obj_pk:
                 return True
             if " " not in auth:
@@ -355,7 +356,7 @@ class RPSLMntner(RPSLObject):
         If password_hashes=True, returns a list of lists, each inner list containing
         the hash method and the hash.
         """
-        lines = self.parsed_data.get("auth", "").splitlines()
+        lines = splitline_unicodesafe(self.parsed_data.get("auth", ""))
         if password_hashes is True:
             return [auth.split(' ', 1) for auth in lines if ' ' in auth]
         return [auth for auth in lines if ' ' not in auth]
