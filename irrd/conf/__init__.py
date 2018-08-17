@@ -26,13 +26,27 @@ DEFAULT_SETTINGS = DottedDict({
     },
     # TODO: rename to sources
     'databases': {
-        # 'AFRINIC': {
-        #     'authoritative': False,
-        #     'dump_source': 'http://ftp.afrinic.net/pub/dbase/afrinic.db.gz',
-        #     'dump_serial_source': 'http://ftp.afrinic.net/pub/dbase/AFRINIC.CURRENTSERIAL',
-        # },
+        'AFRINIC': {
+            'authoritative': False,
+            'dump_source': 'ftp://ftp.afrinic.net/pub/dbase/afrinic.db.gz',
+            'dump_serial_source': 'ftp://ftp.afrinic.net/pub/dbase/AFRINIC.CURRENTSERIAL',
+            'object_class_filter': 'as-block,as-set,autnum,filter-set,inet-rtr,peering-set,role,route-set,route,route6,rtr-set',
+        },
         # ALTDB FTP is dead
-        # APNIC only has split files
+        'APNIC': {
+            'authoritative': False,
+            'dump_source': 'ftp://ftp.apnic.net/pub/apnic/whois/apnic.db.as-block.gz,'
+                           'ftp://ftp.apnic.net/pub/apnic/whois/apnic.db.as-set.gz,'
+                           'ftp://ftp.apnic.net/pub/apnic/whois/apnic.db.aut-num.gz,'
+                           'ftp://ftp.apnic.net/pub/apnic/whois/apnic.db.filter-set.gz,'
+                           'ftp://ftp.apnic.net/pub/apnic/whois/apnic.db.inet-rtr.gz,'
+                           'ftp://ftp.apnic.net/pub/apnic/whois/apnic.db.peering-set.gz,'
+                           'ftp://ftp.apnic.net/pub/apnic/whois/apnic.db.route-set.gz,'
+                           'ftp://ftp.apnic.net/pub/apnic/whois/apnic.db.route.gz,'
+                           'ftp://ftp.apnic.net/pub/apnic/whois/apnic.db.route6.gz,'
+                           'ftp://ftp.apnic.net/pub/apnic/whois/apnic.db.rtr-set.gz',
+            'dump_serial_source': 'ftp://ftp.arin.net/pub/rr/ARIN.CURRENTSERIAL',
+        },
         'ARIN': {
             'authoritative': False,
             'keep_journal': True,
@@ -73,7 +87,6 @@ DEFAULT_SETTINGS = DottedDict({
             'nrtm_port': 43,
             'dump_source': 'ftp://ftp.radb.net/radb/dbase/radb.db.gz',
             'dump_serial_source': 'ftp://ftp.radb.net/radb/dbase/RADB.CURRENTSERIAL',
-            # filter for object types
         },
         # REGISTROBR source unknown
         'RGNET': {
@@ -85,9 +98,19 @@ DEFAULT_SETTINGS = DottedDict({
         },
         'RIPE': {
             'authoritative': False,
-            'dump_source': 'ftp://ftp.ripe.net/ripe/dbase/ripe.db.gz',
+            'dump_source': 'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.as-block.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.as-set.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.aut-num.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.filter-set.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.inet-rtr.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.organisation.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.peering-set.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.role.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.route.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.route6.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.route-set.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.rtr-set.gz',
             'dump_serial_source': 'ftp://ftp.ripe.net/ripe/dbase/RIPE.CURRENTSERIAL',
-            'object_class_filter': 'aut-num,route,route6,as-set,filter-set,inet-rtr,peering-set,route-set,rtr-set',
         },
         # RPKI source unknown
         # TC FTP not reachable

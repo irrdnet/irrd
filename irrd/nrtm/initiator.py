@@ -41,20 +41,21 @@ class NRTMInitiatior:
             return None
 
     def _full_import(self):
-        dump_source = get_setting(f'databases.{self.source}.dump_source')
+        dump_sources = get_setting(f'databases.{self.source}.dump_source').split(',')
         dump_serial_source = get_setting(f'databases.{self.source}.dump_serial_source')
 
-        if not dump_source or not dump_serial_source:
+        if not dump_sources or not dump_serial_source:
             logger.debug(f'Skipping full import for {self.source}, dump_source or dump_serial_source not set.')
 
-        logger.info(f'Running full import of {self.source} from {dump_source}, serial from {dump_serial_source}')
+        logger.info(f'Running full import of {self.source} from {dump_sources}, serial from {dump_serial_source}')
 
-        dump_filename = self._retrieve_file(dump_source, use_tempfile=True)
         dump_serial = self._retrieve_file(dump_serial_source, use_tempfile=False)
+        dump_filenames = [self._retrieve_file(dump_source, use_tempfile=True) for dump_source in dump_sources]
 
         self.database_handler.disable_journaling()
-        NRTMBulkParser(source=self.source, filename=dump_filename, serial=dump_serial, strict_validation=False,
-                       database_handler=self.database_handler)
+        for dump_filename in dump_filenames:
+            NRTMBulkParser(source=self.source, filename=dump_filename, serial=dump_serial, strict_validation=False,
+                           database_handler=self.database_handler)
 
         os.unlink(dump_filename)
 
@@ -93,6 +94,7 @@ class NRTMInitiatior:
             return value
 
     def _retrieve_updates(self, serial_newest_seen: int):
+        return
         serial_start = serial_newest_seen + 1
         nrtm_host = get_setting(f'databases.{self.source}.nrtm_host')
         nrtm_port = get_setting(f'databases.{self.source}.nrtm_port')
