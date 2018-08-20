@@ -54,7 +54,7 @@ def database_handler_with_route():
     dh = DatabaseHandler()
     dh.upsert_rpsl_object(rpsl_object_route_v4)
     yield dh
-    dh._connection.close()
+    dh.close()
 
 
 # noinspection PyTypeChecker
@@ -174,7 +174,7 @@ class TestDatabaseHandlerLive:
         ]
 
         self.dh.rollback()
-        self.dh._connection.close()
+        self.dh.close()
 
     def test_updates_database_status_forced_serials(self, monkeypatch, irrd_database):
         # As settings are default, journal keeping is disabled for this DB
@@ -220,7 +220,40 @@ class TestDatabaseHandlerLive:
         ]
 
         self.dh.rollback()
-        self.dh._connection.close()
+        self.dh.close()
+
+    def test_disable_journaling(self, monkeypatch, irrd_database):
+        monkeypatch.setenv('IRRD_DATABASES_TEST_AUTHORITATIVE', '1')
+        monkeypatch.setenv('IRRD_DATABASES_TEST_KEEP_JOURNAL', '1')
+        monkeypatch.setattr('irrd.storage.api.MAX_RECORDS_CACHE_BEFORE_INSERT', 1)
+
+        rpsl_object_route_v4 = Mock(
+            pk=lambda: '192.0.2.0/24,AS23456',
+            rpsl_object_class='route',
+            parsed_data={'source': 'TEST'},
+            render_rpsl_text=lambda: 'object-text',
+            ip_version=lambda: 4,
+            ip_first=IP('192.0.2.0'),
+            ip_last=IP('192.0.2.255'),
+            asn_first=23456,
+            asn_last=23456,
+        )
+
+        self.dh = DatabaseHandler()
+        self.dh.disable_journaling()
+        self.dh.upsert_rpsl_object(rpsl_object_route_v4, 42)
+        self.dh.commit()
+
+        journal = self._clean_result(self.dh.execute_query(RPSLDatabaseJournalQuery()))
+        assert journal == []
+
+        status_test = self._clean_result(self.dh.execute_query(RPSLDatabaseStatusQuery()))
+        assert status_test == [
+            {'source': 'TEST', 'serial_oldest_journal': None, 'serial_newest_journal': None,
+             'serial_oldest_seen': 42, 'serial_newest_seen': 42,
+             'serial_last_dump': None, 'last_error': None},
+        ]
+        self.dh.close()
 
     def _clean_result(self, results):
         variable_fields = ['pk', 'timestamp', 'created', 'updated']
@@ -367,7 +400,7 @@ class TestRPSLDatabaseQueryLive:
         self._assert_match(RPSLDatabaseQuery().text_search('person-name'))
         self._assert_match(RPSLDatabaseQuery().text_search('role-name'))
 
-        self.dh._connection.close()
+        self.dh.close()
 
     def test_more_less_specific_filters(self, irrd_database, database_handler_with_route):
         self.dh = database_handler_with_route

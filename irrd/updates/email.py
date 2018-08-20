@@ -9,8 +9,8 @@ from typing import Optional
 
 from irrd import __version__
 from irrd.conf import get_setting
-from irrd.updates.handler import UpdateRequestHandler
 from irrd.utils.pgp import validate_pgp_signature
+from .handler import UpdateRequestHandler
 
 logger = logging.getLogger(__name__)
 

@@ -1,6 +1,8 @@
 SAMPLE_NRTM_V3 = """
 % NRTM v3 contains serials per object.
 
+% Another comment
+
 %START Version: 3 RIPE 11012700-11012701
 
 ADD 11012700
@@ -16,10 +18,8 @@ source: RIPE
 
 %END RIPE
 """
-SAMPLE_NRTM_V1 = """
-% NRTM v1 does not contain serials per object
-
-%START Version: 1 RIPE 11012700-11012701
+# NRTM v1 has no serials per object
+SAMPLE_NRTM_V1 = """%START Version: 1 RIPE 11012700-11012701
 
 ADD
 
@@ -36,7 +36,7 @@ source: RIPE
 SAMPLE_NRTM_V1_TOO_MANY_ITEMS = """
 % The serial range is one item, but there are two items in here.
 
-%START Version: 1 RIPE 11012700-11012700
+%START Version: 1 RIPE 11012700-11012700 FILTERED
 
 ADD
 
@@ -61,6 +61,7 @@ ADD 11012700
 person: NRTM test
 address: NowhereLand
 source: RIPE
+
 
 DEL 11012701
 
@@ -91,7 +92,14 @@ source: RIPE
 
 SAMPLE_NRTM_V3_INVALID_MULTIPLE_START_LINES = """
 %START Version: 3 RIPE 11012700-11012700
-%START Version: 3 RIPE 11012700-11012700
+
+%START Version: 3 ARIN 11012700-11012700
+
+ADD 11012701
+
+person: NRTM test
+address: NowhereLand
+source: RIPE
 """
 
 SAMPLE_NRTM_INVALID_NO_START_LINE = """

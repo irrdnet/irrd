@@ -1,7 +1,7 @@
 import logging
 from collections import defaultdict
 from datetime import datetime, timezone
-from typing import List, Set, Iterable, Dict, Any, Tuple, Optional
+from typing import List, Set, Dict, Any, Tuple, Optional, Iterator
 
 import sqlalchemy as sa
 from IPy import IP
@@ -351,6 +351,7 @@ class RPSLDatabaseStatusQuery:
         ])
 
     def sources(self, sources: List[str]):
+        # TODO: change to single source
         """
         Filter on one or more sources.
 
@@ -427,7 +428,7 @@ class DatabaseHandler:
         self._transaction.rollback()
         self._start_transaction()
 
-    def execute_query(self, query: RPSLDatabaseQuery) -> Iterable[Dict[str, Any]]:
+    def execute_query(self, query: RPSLDatabaseQuery) -> Iterator[Dict[str, Any]]:
         """Execute an RPSLDatabaseQuery within the current transaction."""
         # To be able to query objects that were just created, flush the cache.
         self._flush_rpsl_object_upsert_cache()

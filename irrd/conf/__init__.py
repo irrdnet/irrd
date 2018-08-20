@@ -28,6 +28,9 @@ DEFAULT_SETTINGS = DottedDict({
     'databases': {
         'AFRINIC': {
             'authoritative': False,
+            'keep_journal': True,
+            'nrtm_host': 'rr.ntt.net',
+            'nrtm_port': 43,
             'dump_source': 'ftp://ftp.afrinic.net/pub/dbase/afrinic.db.gz',
             'dump_serial_source': 'ftp://ftp.afrinic.net/pub/dbase/AFRINIC.CURRENTSERIAL',
             'object_class_filter': 'as-block,as-set,autnum,filter-set,inet-rtr,peering-set,role,route-set,route,route6,rtr-set',
@@ -35,6 +38,9 @@ DEFAULT_SETTINGS = DottedDict({
         # ALTDB FTP is dead
         'APNIC': {
             'authoritative': False,
+            'keep_journal': True,
+            'nrtm_host': 'rr.ntt.net',
+            'nrtm_port': 43,
             'dump_source': 'ftp://ftp.apnic.net/pub/apnic/whois/apnic.db.as-block.gz,'
                            'ftp://ftp.apnic.net/pub/apnic/whois/apnic.db.as-set.gz,'
                            'ftp://ftp.apnic.net/pub/apnic/whois/apnic.db.aut-num.gz,'
@@ -58,6 +64,7 @@ DEFAULT_SETTINGS = DottedDict({
         # ARIN-WHOIS source unknown
         'BBOI': {
             'authoritative': False,
+            'keep_journal': True,
             'nrtm_host': 'irr.bboi.net',
             'nrtm_port': 43,
             'dump_source': 'ftp://irr.bboi.net/bboi.db.gz',
@@ -76,6 +83,9 @@ DEFAULT_SETTINGS = DottedDict({
         },
         'NTTCOM': {
             'authoritative': True,
+            'keep_journal': True,
+            'nrtm_host': 'rr.ntt.net',
+            'nrtm_port': 43,
             'dump_source': 'ftp://rr1.ntt.net/nttcomRR/nttcom.db.gz',
             'dump_serial_source': 'ftp://rr1.ntt.net/nttcomRR/NTTCOM.CURRENTSERIAL',
             # export schedule
@@ -83,6 +93,7 @@ DEFAULT_SETTINGS = DottedDict({
         },
         'RADB': {
             'authoritative': False,
+            'keep_journal': True,
             'nrtm_host': 'whois.radb.net',
             'nrtm_port': 43,
             'dump_source': 'ftp://ftp.radb.net/radb/dbase/radb.db.gz',
@@ -91,6 +102,7 @@ DEFAULT_SETTINGS = DottedDict({
         # REGISTROBR source unknown
         'RGNET': {
             'authoritative': False,
+            'keep_journal': True,
             'nrtm_host': 'whois.rg.net',
             'nrtm_port': 43,
             'dump_source': 'ftp://rg.net/rgnet/RGNET.db.gz',
@@ -98,19 +110,41 @@ DEFAULT_SETTINGS = DottedDict({
         },
         'RIPE': {
             'authoritative': False,
-            'dump_source': 'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.as-block.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.as-set.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.aut-num.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.filter-set.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.inet-rtr.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.organisation.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.peering-set.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.role.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.route.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.route6.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.route-set.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.rtr-set.gz',
-            'dump_serial_source': 'ftp://ftp.ripe.net/ripe/dbase/RIPE.CURRENTSERIAL',
+            'keep_journal': True,
+            'nrtm_host': '193.0.6.145',
+            'nrtm_port': 4444,
+            'dump_source': 'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe.db.as-block.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe.db.as-set.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe.db.aut-num.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe.db.filter-set.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe.db.inet-rtr.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe.db.organisation.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe.db.peering-set.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe.db.role.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe.db.route.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe.db.route6.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe.db.route-set.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe.db.rtr-set.gz',
+            'dump_serial_source': 'ftp://ftp.ripe.net/ripe/dbase/rc/RIPE.CURRENTSERIAL',
+        },
+        'RIPE-NONAUTH': {
+            'authoritative': False,
+            'keep_journal': True,
+            'nrtm_host': '193.0.6.145',
+            'nrtm_port': 4444,
+            'dump_source': 'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe-nonauth.db.as-block.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe-nonauth.db.as-set.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe-nonauth.db.aut-num.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe-nonauth.db.filter-set.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe-nonauth.db.inet-rtr.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe-nonauth.db.organisation.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe-nonauth.db.peering-set.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe-nonauth.db.role.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe-nonauth.db.route.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe-nonauth.db.route6.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe-nonauth.db.route-set.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe-nonauth.db.rtr-set.gz',
+            'dump_serial_source': 'ftp://ftp.ripe.net/ripe/dbase/rc/RIPE-NONAUTH.CURRENTSERIAL',
         },
         # RPKI source unknown
         # TC FTP not reachable

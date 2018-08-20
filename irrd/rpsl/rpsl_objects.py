@@ -4,7 +4,7 @@ from typing import Set, List, Optional, Union
 import gnupg
 
 from irrd.conf import get_setting, PASSWORD_HASH_DUMMY_VALUE
-from irrd.utils import splitline_unicodesafe
+from irrd.utils.text import splitline_unicodesafe
 from .config import PASSWORD_HASHERS
 from .fields import (RPSLTextField, RPSLIPv4PrefixField, RPSLIPv4PrefixesField, RPSLIPv6PrefixField,
                      RPSLIPv6PrefixesField, RPSLIPv4AddressRangeField, RPSLASNumberField, RPSLASBlockField,

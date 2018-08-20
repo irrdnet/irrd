@@ -9,6 +9,8 @@ import os
 import sys
 from typing import Set
 
+from irrd.utils.text import split_paragraphs_rpsl
+
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), '../'))
 
 from irrd.storage.api import DatabaseHandler
@@ -33,17 +35,8 @@ class RPSLParse:
         else:
             f = open(filename, encoding="utf-8", errors='backslashreplace')
 
-        current_obj = ""
-        for line in f.readlines():
-            if line.startswith("%") or line.startswith("#"):
-                continue
-            current_obj += line
-
-            if not line.strip("\r\n"):
-                self.parse_object(current_obj, strict_validation)
-                current_obj = ""
-
-        self.parse_object(current_obj, strict_validation)
+        for paragraph in split_paragraphs_rpsl(f):
+            self.parse_object(paragraph, strict_validation)
 
         print(f"Processed {self.obj_parsed} objects, {self.obj_errors} with errors")
         if self.obj_unknown:

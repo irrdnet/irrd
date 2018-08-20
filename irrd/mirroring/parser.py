@@ -6,14 +6,23 @@ from irrd.conf import get_setting
 from irrd.rpsl.parser import UnknownRPSLObjectClassException
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.storage.models import DatabaseOperation
-from irrd.utils import splitline_unicodesafe
-from .nrtm_operation import NRTMOperation
+from irrd.utils.text import split_paragraphs_rpsl
+from .operation import NRTMOperation
 
 logger = logging.getLogger(__name__)
-start_line_re = re.compile(r'^% *START *Version: *(?P<version>\d+) +(?P<source>\w+) +(?P<first_serial>\d+)-(?P<last_serial>\d+)')
+start_line_re = re.compile(r'^% *START *Version: *(?P<version>\d+) +(?P<source>[\w-]+) +(?P<first_serial>\d+)-(?P<last_serial>\d+)( FILTERED)?\n$', flags=re.MULTILINE)
 
 
-class NRTMBulkParser:
+class MirrorParser:
+    def __init__(self):
+        object_class_filter = get_setting(f'databases.{self.source}.object_class_filter')
+        if object_class_filter:
+            self.object_class_filter = [c.strip().lower() for c in object_class_filter.split(',')]
+        else:
+            self.object_class_filter = None
+
+
+class MirrorFullImportParser(MirrorParser):
     obj_parsed = 0
     obj_errors = 0
     obj_ignored_class = 0
@@ -22,46 +31,27 @@ class NRTMBulkParser:
     database_handler = None
 
     def __init__(self, source, filename, serial, strict_validation, database_handler):
-        logger.debug(f'Starting bulk import of {source} from {filename}, setting serial {serial}')
-        self.serial = serial
+        logger.debug(f'Starting full import of {source} from {filename}, setting serial {serial}')
         self.source = source
+        self.filename = filename
+        self.serial = serial
+        self.strict_validation = strict_validation
         self.database_handler = database_handler
+        super().__init__()
 
-        self.object_class_filter = get_setting(f'databases.{self.source}.object_class_filter')
-        if self.object_class_filter:
-            self.object_class_filter = [c.strip().lower() for c in self.object_class_filter.split(',')]
+        self.run_import()
 
-        f = open(filename, encoding="utf-8", errors='backslashreplace')
+    def run_import(self):
+        f = open(self.filename, encoding="utf-8", errors='backslashreplace')
+        for paragraph in split_paragraphs_rpsl(f):
+            self.parse_object(paragraph)
 
-        current_obj = ""
-        for line in f.readlines():
-            if line.startswith("%") or line.startswith("#"):
-                continue
-            current_obj += line
+        self.generate_report()
 
-            if not line.strip("\r\n"):
-                self.parse_object(current_obj, strict_validation)
-                current_obj = ""
-
-        self.parse_object(current_obj, strict_validation)
-
-        obj_successful = self.obj_parsed - self.obj_unknown - self.obj_errors - self.obj_ignored_class
-        logger.info(f"Bulk imported for {self.source}: {self.obj_parsed} objects read, "
-                    f"{obj_successful} objects inserted, "
-                    f"ignored {self.obj_errors} due to errors, "
-                    f"ignored {self.obj_ignored_class} due to object_class_filter, "
-                    f"serial {self.serial}, source {filename}")
-        if self.obj_unknown:
-            unknown_formatted = ', '.join(self.unknown_object_classes)
-            logger.error(f"Ignored {self.obj_unknown} objects found in bulk import for {self.source} due to unknown "
-                         f"object classes: {unknown_formatted}")
-
-    def parse_object(self, rpsl_text, strict_validation):
-        if not rpsl_text.strip():
-            return
+    def parse_object(self, rpsl_text):
         try:
             self.obj_parsed += 1
-            obj = rpsl_object_from_text(rpsl_text.strip(), strict_validation=strict_validation)
+            obj = rpsl_object_from_text(rpsl_text.strip(), strict_validation=self.strict_validation)
 
             if obj.messages.errors():
                 logger.critical(f'Parsing errors occurred while importing initial dump from {self.source}. '
@@ -69,6 +59,11 @@ class NRTMBulkParser:
                                 f'this update, without errors, will still be processed and cause the inconsistency to '
                                 f'be resolved. Parser error messages: {obj.messages.errors()}; '
                                 f'original object text follows:\n{rpsl_text}')
+                self.obj_errors += 1
+                return
+
+            if obj.source() != self.source:
+                logger.critical(f'Invalid source {obj.source()} for object {obj.pk()}, expected {self.source}')
                 self.obj_errors += 1
                 return
 
@@ -82,8 +77,20 @@ class NRTMBulkParser:
             self.obj_unknown += 1
             self.unknown_object_classes.add(str(e).split(":")[1].strip())
 
+    def generate_report(self):
+        obj_successful = self.obj_parsed - self.obj_unknown - self.obj_errors - self.obj_ignored_class
+        logger.info(f"Full import for {self.source}: {self.obj_parsed} objects read, "
+                    f"{obj_successful} objects inserted, "
+                    f"ignored {self.obj_errors} due to errors, "
+                    f"ignored {self.obj_ignored_class} due to object_class_filter, "
+                    f"serial {self.serial}, source {self.filename}")
+        if self.obj_unknown:
+            unknown_formatted = ', '.join(self.unknown_object_classes)
+            logger.error(f"Ignored {self.obj_unknown} objects found in full import for {self.source} due to unknown "
+                         f"object classes: {unknown_formatted}")
 
-class NRTMStreamParser:
+
+class NRTMStreamParser(MirrorParser):
     """
     The NRTM parser takes the data of an NRTM string, and splits it
     into individual operations, matched with their serial and
@@ -92,31 +99,33 @@ class NRTMStreamParser:
     Creating an instance will fill the attributes:
     - first_serial: the first serial found in the data
     - last_serial: the last serial found
-    - source: the RPSL source recorded in the START header
+    - nrtm_source: the RPSL source recorded in the START header (must be equal to expected source)
     - operations: a list of NRTMOperation objects
 
     Raises a ValueError for invalid NRTM data.
     """
     first_serial = -1
     last_serial = -1
-    source = None
+    nrtm_source = None
     _current_op_serial = -1
 
-    def __init__(self, nrtm_data: str) -> None:
+    def __init__(self, source: str, nrtm_data: str) -> None:
+        self.source = source
+        super().__init__()
         self.operations: List[NRTMOperation] = []
         self._split_stream(nrtm_data)
 
     def _split_stream(self, data: str) -> None:
         """Split a stream into individual operations."""
-        lines = splitline_unicodesafe(data)
+        paragraphs = split_paragraphs_rpsl(data, strip_comments=False)
 
-        for line in lines:
-            if self._handle_possible_start_line(line):
+        for paragraph in paragraphs:
+            if self._handle_possible_start_line(paragraph):
                 continue
-            elif line.startswith("%") or line.startswith("#"):
-                continue
-            elif line.startswith('ADD') or line.startswith('DEL'):
-                self._handle_operation(line, lines)
+            elif paragraph.startswith("%") or paragraph.startswith("#"):
+                continue  # pragma: no cover -- falsely detected as not run by coverage library
+            elif paragraph.startswith('ADD') or paragraph.startswith('DEL'):
+                self._handle_operation(paragraph, paragraphs)
 
         if self._current_op_serial != self.last_serial and self.version != '3':
             msg = f'NRTM stream error: expected operations up to and including serial {self.last_serial}, ' \
@@ -130,19 +139,25 @@ class NRTMStreamParser:
         if not start_line_match:
             return False
 
-        if self.source:  # source can only be defined if this is a second START line
+        if self.nrtm_source:  # nrtm_source can only be defined if this is a second START line
             msg = f'Encountered second START line in NRTM stream, first was {self.source} ' \
                   f'{self.first_serial}-{self.last_serial}, new line is: {line}'
             logger.error(msg)
             raise ValueError(msg)
 
         self.version = start_line_match.group('version')
-        self.source = start_line_match.group('source').upper()
+        self.nrtm_source = start_line_match.group('source').upper()
         self.first_serial = int(start_line_match.group('first_serial'))
         self.last_serial = int(start_line_match.group('last_serial'))
 
+        if self.source != self.nrtm_source:
+            msg = f'Invalid NRTM source in START line: expected {self.source} but found ' \
+                  f'{self.nrtm_source} in line: {line}'
+            logger.error(msg)
+            raise ValueError(msg)
+
         if self.version not in ['1', '3']:
-            msg = f'Invalid NRTM version {self.version} in NRTM start line: {line}'
+            msg = f'Invalid NRTM version {self.version} in START line: {line}'
             logger.error(msg)
             raise ValueError(msg)
 
@@ -150,10 +165,10 @@ class NRTMStreamParser:
 
         return True
 
-    def _handle_operation(self, current_line: str, lines) -> None:
+    def _handle_operation(self, current_paragraph: str, paragraphs) -> None:
         """Handle a single ADD/DEL operation."""
-        if not self.source:
-            msg = f'Encountered operation before NRTM START line, line encountered: {current_line}'
+        if not self.nrtm_source:
+            msg = f'Encountered operation before valid NRTM START line, paragraph encountered: {current_paragraph}'
             logger.error(msg)
             raise ValueError(msg)
 
@@ -162,8 +177,8 @@ class NRTMStreamParser:
         else:
             self._current_op_serial += 1
 
-        if ' ' in current_line:
-            operation_str, line_serial_str = current_line.split(' ')
+        if ' ' in current_paragraph:
+            operation_str, line_serial_str = current_paragraph.split(' ')
             line_serial = int(line_serial_str)
             # Gaps are allowed, but the line serial can never be lower, as that
             # means operations are served in the wrong order.
@@ -174,19 +189,10 @@ class NRTMStreamParser:
                 raise ValueError(msg)
             self._current_op_serial = line_serial
         else:
-            operation_str = current_line.strip()
+            operation_str = current_paragraph.strip()
+
         operation = DatabaseOperation(operation_str)
-
-        next(lines)  # Discard empty line
-        current_obj = ""
-        while True:
-            try:
-                object_line = next(lines)
-            except StopIteration:
-                break
-            if not object_line.strip('\r\n'):
-                break
-            current_obj += object_line + "\n"
-
-        nrtm_operation = NRTMOperation(self.source, operation, self._current_op_serial, current_obj)
+        object_text = next(paragraphs)
+        nrtm_operation = NRTMOperation(self.source, operation, self._current_op_serial,
+                                       object_text, self.object_class_filter)
         self.operations.append(nrtm_operation)

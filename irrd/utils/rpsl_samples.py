@@ -965,7 +965,7 @@ owner:          keybase.io/mxsasha <mxsasha@keybase.io>
 owner:          Sasha Romijn <gpg@mxsasha.eu>
 fingerpr:       8626 1D8D BEBD A4F5 4692  D64D A838 3BA7 80F2 38C6
 certif:         -----BEGIN PGP PUBLIC KEY BLOCK-----
-certif:         
+certif:
 certif:         mQINBFnY7YoBEADH5ooPsoR9G/dNxrdHRMJeDHXCSQbwgXWEez5/F8/BZKV9occ/
 certif:         jZ7w2wH+Ghj4vTQl1DhuNcxi60qDv9DAPxG73DkBrK0I3fDUJUPrdOKW9SXvZCAq
 certif:         LrVEdDVH+YEKhQLlGG7DTODGsfMglL98mn7GD/wD64LtRF3eBAucTIjaOl9hvoqX
@@ -1327,9 +1327,8 @@ remarks:        remark
 
 SAMPLE_RTR_SET = """rtr-set:        rtrs-mways-callback
 descr:          mediaWays GmbH
-descr:          Huelshorstweg 30
-descr:          D-33415 Verl
-descr:          DE
+descr:
+descr:          description
 members:        rmws-brln-de07.nw.mediaWays.net
 members:        rmws-brmn-de02.nw.mediaWays.net
 members:        rmws-dsdn-de01.nw.mediaWays.net
@@ -1345,10 +1344,7 @@ members:        rmws-mnch-de03.nw.mediaWays.net
 members:        rmws-nrbg-de02.nw.mediaWays.net
 members:        rmws-srbk-de02.nw.mediaWays.net
 members:        rtrs-other-set
-remarks:        -------------------------------------------------------
-remarks:        The mediaWays NCC is reachable any time at ncc@mediaWays.net or
-remarks:        phone: +49 5241 80 1701
-remarks:        -------------------------------------------------------
+remarks:
 tech-c:         DUMY-RIPE
 admin-c:        DUMY-RIPE
 mnt-by:         MDA-Z

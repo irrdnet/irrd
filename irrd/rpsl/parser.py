@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Tuple, Any, Set
 from IPy import IP
 
 from irrd.rpsl.parser_state import RPSLParserMessages
-from irrd.utils import splitline_unicodesafe
+from irrd.utils.text import splitline_unicodesafe
 from .fields import RPSLTextField
 
 RPSL_ATTRIBUTE_TEXT_WIDTH = 16
@@ -46,7 +46,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
     subclasses should also be added to OBJECT_CLASS_MAPPING.
     """
     fields: Dict[str, RPSLTextField] = OrderedDict()
-    rpsl_object_class = None
+    rpsl_object_class: str
     pk_fields: List[str] = []
     attrs_allowed: List[str] = []
     attrs_required: List[str] = []
@@ -140,7 +140,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         output = ""
         for attr, value, continuation_chars in self._object_data:
             attr_display = f"{attr}:".ljust(RPSL_ATTRIBUTE_TEXT_WIDTH)
-            value_lines = splitline_unicodesafe(value)
+            value_lines = list(splitline_unicodesafe(value))
             if not value_lines:
                 output += f"{attr}:\n"
             for idx, line in enumerate(value_lines):

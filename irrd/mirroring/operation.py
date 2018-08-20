@@ -1,6 +1,6 @@
 import logging
+from typing import Optional, List
 
-from irrd.conf import get_setting
 from irrd.rpsl.parser import UnknownRPSLObjectClassException
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.storage.api import DatabaseHandler
@@ -14,14 +14,13 @@ class NRTMOperation:
     NRTMOperation represents a single NRTM operation, i.e. an ADD/DEL
     with a serial number and source, from an NRTM stream.
     """
-    def __init__(self, source: str, operation: DatabaseOperation, serial: int, object_text: str) -> None:
+    def __init__(self, source: str, operation: DatabaseOperation, serial: int, object_text: str,
+                 object_class_filter: Optional[List[str]] = None) -> None:
         self.source = source
         self.operation = operation
         self.serial = serial
         self.object_text = object_text
-        self.object_class_filter = get_setting(f'databases.{self.source}.object_class_filter')
-        if self.object_class_filter:
-            self.object_class_filter = [c.strip().lower() for c in self.object_class_filter.split(',')]
+        self.object_class_filter = object_class_filter
 
     def save(self, database_handler: DatabaseHandler) -> bool:
         try:
@@ -42,7 +41,7 @@ class NRTMOperation:
                             f'Parser error messages: {errors}; original object text follows:\n{self.object_text}')
             return False
 
-        if obj.parsed_data.get('source').upper() != self.source:
+        if 'source' in obj.parsed_data and obj.parsed_data['source'].upper() != self.source:
             logger.critical(f'Incorrect source in NRTM object: stream has source {self.source}, found object with '
                             f'source {obj.source()} in operation {self.serial}/{self.operation.value}/{obj.pk()}. '
                             f'This operation is ignored, causing potential data inconsistencies.')

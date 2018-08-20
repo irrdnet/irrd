@@ -6,7 +6,7 @@ from passlib.handlers.md5_crypt import md5_crypt
 from pytest import raises
 
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
-from irrd.utils import splitline_unicodesafe
+from irrd.utils.text import splitline_unicodesafe
 from irrd.utils.rpsl_samples import SAMPLE_INETNUM, SAMPLE_AS_SET, SAMPLE_PERSON, SAMPLE_MNTNER
 from irrd.utils.test_utils import flatten_mock_calls
 from ..parser import parse_update_requests

@@ -2,10 +2,11 @@ from unittest.mock import Mock
 
 from irrd.storage.models import DatabaseOperation
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER, SAMPLE_UNKNOWN_CLASS, SAMPLE_MALFORMED_EMPTY_LINE
-from ..nrtm_operation import NRTMOperation
+from ..operation import NRTMOperation
 
 
 class TestNRTMOperation:
+
     def test_nrtm_add_valid(self):
         mock_dh = Mock()
 
@@ -14,12 +15,26 @@ class TestNRTMOperation:
             operation=DatabaseOperation.add_or_update,
             serial=42424242,
             object_text=SAMPLE_MNTNER,
+            object_class_filter=['route', 'route6', 'mntner'],
         )
         assert operation.save(database_handler=mock_dh)
 
         assert mock_dh.upsert_rpsl_object.call_count == 1
         assert mock_dh.mock_calls[0][1][0].pk() == 'AS760-MNT'
         assert mock_dh.mock_calls[0][1][1] == 42424242
+
+    def test_nrtm_add_valid_ignored_object_class(self):
+        mock_dh = Mock()
+
+        operation = NRTMOperation(
+            source='RIPE',
+            operation=DatabaseOperation.add_or_update,
+            serial=42424242,
+            object_text=SAMPLE_MNTNER,
+            object_class_filter=['route', 'route6'],
+        )
+        assert not operation.save(database_handler=mock_dh)
+        assert mock_dh.upsert_rpsl_object.call_count == 0
 
     def test_nrtm_delete_valid(self):
         mock_dh = Mock()

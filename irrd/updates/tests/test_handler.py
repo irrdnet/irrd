@@ -5,9 +5,9 @@ from unittest.mock import Mock
 
 import pytest
 
-from irrd.updates.handler import UpdateRequestHandler
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
 from irrd.utils.test_utils import flatten_mock_calls
+from ..handler import UpdateRequestHandler
 
 
 @pytest.fixture()
