@@ -63,8 +63,8 @@ class TestDatabaseHandlerLive:
     This test covers mainly DatabaseHandler and DatabaseStatusTracker.
     """
     def test_object_writing(self, monkeypatch, irrd_database):
-        monkeypatch.setenv('IRRD_DATABASES_TEST_AUTHORITATIVE', '1')
-        monkeypatch.setenv('IRRD_DATABASES_TEST2_KEEP_JOURNAL', '1')
+        monkeypatch.setenv('IRRD_SOURCES_TEST_AUTHORITATIVE', '1')
+        monkeypatch.setenv('IRRD_SOURCES_TEST2_KEEP_JOURNAL', '1')
         monkeypatch.setattr('irrd.storage.api.MAX_RECORDS_CACHE_BEFORE_INSERT', 1)
 
         rpsl_object_route_v4 = Mock(
@@ -223,8 +223,8 @@ class TestDatabaseHandlerLive:
         self.dh.close()
 
     def test_disable_journaling(self, monkeypatch, irrd_database):
-        monkeypatch.setenv('IRRD_DATABASES_TEST_AUTHORITATIVE', '1')
-        monkeypatch.setenv('IRRD_DATABASES_TEST_KEEP_JOURNAL', '1')
+        monkeypatch.setenv('IRRD_SOURCES_TEST_AUTHORITATIVE', '1')
+        monkeypatch.setenv('IRRD_SOURCES_TEST_KEEP_JOURNAL', '1')
         monkeypatch.setattr('irrd.storage.api.MAX_RECORDS_CACHE_BEFORE_INSERT', 1)
 
         rpsl_object_route_v4 = Mock(

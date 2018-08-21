@@ -13,12 +13,12 @@ from ..parser import NRTMStreamParser, MirrorFullImportParser
 
 class TestMirrorFullImportParser:
     def test_parse(self, monkeypatch, caplog):
-        monkeypatch.setenv('IRRD_DATABASES_RIPE_OBJECT_CLASS_FILTER', 'as-block,as-set')
+        monkeypatch.setenv('IRRD_SOURCES_RIPE_OBJECT_CLASS_FILTER', 'as-block,as-set')
         mock_dh = Mock()
 
         test_data = [
             SAMPLE_UNKNOWN_ATTRIBUTE,  # valid, because mirror imports are non-strict
-            SAMPLE_ROUTE,
+            SAMPLE_ROUTE,  # Valid, excluded by object class filter
             SAMPLE_ROUTE.replace('RIPE', 'BADSOURCE'),
             SAMPLE_UNKNOWN_CLASS,
             SAMPLE_MALFORMED_PK,
