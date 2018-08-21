@@ -387,7 +387,7 @@ class DatabaseHandler:
     _rpsl_pk_source_seen: Set[str]
     # The RPSL upsert cache is a list of tuples. Each tuple first has a dict
     # with all database column names and their values, and then an optional int
-    # with a forced serial. The forced serial is used for mirrored databases,
+    # with a forced serial. The forced serial is used for mirrored sources,
     # where this basically means: this call was triggered by an NRTM operation
     # with this serial.
     _rpsl_upsert_cache: List[Tuple[dict, Optional[int]]]
@@ -578,7 +578,7 @@ class DatabaseHandler:
 
 class DatabaseStatusTracker:
     """
-    Keep track of the status of databases, and their journal, if enabled.
+    Keep track of the status of sources, and their journal, if enabled.
     Changes to the database should always call record_operation() on this object,
     and finalise_transaction() before committing.
 
@@ -613,7 +613,7 @@ class DatabaseStatusTracker:
         gapless set of NRTM serials.
         """
         if self.journaling_enabled and (
-                get_setting(f'databases.{source}.authoritative') or get_setting(f'databases.{source}.keep_journal')
+                get_setting(f'sources.{source}.authoritative') or get_setting(f'sources.{source}.keep_journal')
         ):
             journal_tablename = RPSLDatabaseJournal.__tablename__
 

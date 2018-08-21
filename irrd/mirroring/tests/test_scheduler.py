@@ -11,7 +11,7 @@ class TestMirrorScheduler:
         global thread_run_count
         thread_run_count = 0
 
-        DEFAULT_SETTINGS['databases'] = {'TEST': {'dump_source': 'url'}}
+        DEFAULT_SETTINGS['sources'] = {'TEST': {'dump_source': 'url'}}
         monkeypatch.setattr("irrd.mirroring.scheduler.MirrorUpdateRunner", MockUpdateRunner)
 
         scheduler = MirrorScheduler()

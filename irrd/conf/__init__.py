@@ -24,8 +24,7 @@ DEFAULT_SETTINGS = DottedDict({
     'gnupg': {
         'homedir': os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), '../gnupg/'),
     },
-    # TODO: rename to sources
-    'databases': {
+    'sources': {
         'AFRINIC': {
             'authoritative': False,
             'keep_journal': True,

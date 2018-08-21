@@ -52,7 +52,7 @@ class TestMirrorUpdateRunner:
 
 class TestMirrorFullImportRunner:
     def test_run_import(self, monkeypatch):
-        DEFAULT_SETTINGS['databases'] = {'TEST': {
+        DEFAULT_SETTINGS['sources'] = {'TEST': {
             'dump_source': 'ftp://host/source1.gz,ftp://host/source2',
             'dump_serial_source': 'ftp://host/serial',
         }}
@@ -75,7 +75,7 @@ class TestMirrorFullImportRunner:
         assert MockMirrorFullImportParser.rpsl_data_calls == ['source1', 'source2']
 
     def test_missing_source_settings(self):
-        DEFAULT_SETTINGS['databases'] = {'TEST': {
+        DEFAULT_SETTINGS['sources'] = {'TEST': {
             'dump_source': 'ftp://host/source1.gz,ftp://host/source2',
         }}
 
@@ -83,7 +83,7 @@ class TestMirrorFullImportRunner:
         MirrorFullImportRunner('TEST').run(mock_dh)
 
     def test_unsupported_protocol(self):
-        DEFAULT_SETTINGS['databases'] = {'TEST': {
+        DEFAULT_SETTINGS['sources'] = {'TEST': {
             'dump_source': 'ftp://host/source1.gz,ftp://host/source2',
             'dump_serial_source': 'gopher://host/serial',
         }}
@@ -107,7 +107,7 @@ class MockMirrorFullImportParser:
 
 class TestNRTMUpdateStreamRunner:
     def test_run_import(self, monkeypatch):
-        DEFAULT_SETTINGS['databases'] = {'TEST': {
+        DEFAULT_SETTINGS['sources'] = {'TEST': {
             'nrtm_host': '192.0.2.1',
             'nrtm_port': 43,
         }}
@@ -126,7 +126,7 @@ class TestNRTMUpdateStreamRunner:
         NRTMUpdateStreamRunner('TEST').run(424242, mock_dh)
 
     def test_missing_source_settings(self):
-        DEFAULT_SETTINGS['databases'] = {'TEST': {
+        DEFAULT_SETTINGS['sources'] = {'TEST': {
             'nrtm_host': '192.0.2.1',
         }}
 

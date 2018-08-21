@@ -20,8 +20,8 @@ class MirrorScheduler:
     running_deferreds = 0
 
     def run(self) -> None:
-        for source in get_setting('databases').keys():
-            is_mirror = get_setting(f'databases.{source}.dump_source') or get_setting(f'databases.{source}.nrtm_host')
+        for source in get_setting('sources').keys():
+            is_mirror = get_setting(f'sources.{source}.dump_source') or get_setting(f'sources.{source}.nrtm_host')
             if is_mirror and not self._is_thread_running(source):
                 logger.debug(f'Started new thread for NRTM initiator for {source}')
                 initiator = MirrorUpdateRunner(source=source)

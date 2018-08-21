@@ -66,8 +66,8 @@ class MirrorFullImportRunner:
 
     def run(self, database_handler: DatabaseHandler):
         # TODO: delete old RPSL objects from the DB
-        dump_sources = get_setting(f'databases.{self.source}.dump_source').split(',')
-        dump_serial_source = get_setting(f'databases.{self.source}.dump_serial_source')
+        dump_sources = get_setting(f'sources.{self.source}.dump_source').split(',')
+        dump_serial_source = get_setting(f'sources.{self.source}.dump_serial_source')
 
         if not dump_sources or not dump_serial_source:
             logger.debug(f'Skipping full import for {self.source}, dump_source or dump_serial_source not set.')
@@ -140,8 +140,8 @@ class NRTMUpdateStreamRunner:
 
     def run(self, serial_newest_seen: int, database_handler: DatabaseHandler):
         serial_start = serial_newest_seen + 1
-        nrtm_host = get_setting(f'databases.{self.source}.nrtm_host')
-        nrtm_port = get_setting(f'databases.{self.source}.nrtm_port')
+        nrtm_host = get_setting(f'sources.{self.source}.nrtm_host')
+        nrtm_port = get_setting(f'sources.{self.source}.nrtm_port')
         if not nrtm_host or not nrtm_port:
             logger.debug(f'Skipping NRTM updates for {self.source}, nrtm_host or nrtm_port not set.')
             return
