@@ -23,7 +23,7 @@ class TestMirrorUpdateRunner:
         runner = MirrorUpdateRunner(source='TEST')
         runner.run()
 
-        assert flatten_mock_calls(mock_dq) == [['sources', (['TEST'],), {}]]
+        assert flatten_mock_calls(mock_dq) == [['source', ('TEST',), {}]]
         assert flatten_mock_calls(mock_dh) == [['commit', (), {}], ['close', (), {}]]
 
         assert len(mock_full_import_runner.mock_calls) == 1
@@ -42,7 +42,7 @@ class TestMirrorUpdateRunner:
         runner = MirrorUpdateRunner(source='TEST')
         runner.run()
 
-        assert flatten_mock_calls(mock_dq) == [['sources', (['TEST'],), {}]]
+        assert flatten_mock_calls(mock_dq) == [['source', ('TEST',), {}]]
         assert flatten_mock_calls(mock_dh) == [['commit', (), {}], ['close', (), {}]]
 
         assert len(mock_stream_runner.mock_calls) == 1

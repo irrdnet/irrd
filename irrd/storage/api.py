@@ -350,17 +350,9 @@ class RPSLDatabaseStatusQuery:
             self.columns.updated,
         ])
 
-    def sources(self, sources: List[str]):
-        # TODO: change to single source
-        """
-        Filter on one or more sources.
-
-        Sources list must be an iterable. Will match objects from any
-        of the mentioned sources.
-        """
-        sources = [s.upper().strip() for s in sources]
-        self._sources_list = sources
-        fltr = self.columns.source.in_(self._sources_list)
+    def source(self, source: str):
+        """Filter on a source."""
+        fltr = self.columns.source == source.upper()
         return self._filter(fltr)
 
     def finalise_statement(self):

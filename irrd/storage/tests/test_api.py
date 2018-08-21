@@ -160,13 +160,13 @@ class TestDatabaseHandlerLive:
              'operation': DatabaseOperation.delete, 'object_class': 'route', 'object_text': 'object-text'},
         ]
 
-        status_test = self._clean_result(self.dh.execute_query(RPSLDatabaseStatusQuery().sources(['TEST'])))
+        status_test = self._clean_result(self.dh.execute_query(RPSLDatabaseStatusQuery().source('TEST')))
         assert status_test == [
             {'source': 'TEST', 'serial_oldest_journal': 42, 'serial_newest_journal': 43,
              'serial_oldest_seen': 42, 'serial_newest_seen': 43,
              'serial_last_dump': None, 'last_error': None},
         ]
-        status_test2 = self._clean_result(self.dh.execute_query(RPSLDatabaseStatusQuery().sources(['TEST2'])))
+        status_test2 = self._clean_result(self.dh.execute_query(RPSLDatabaseStatusQuery().source('TEST2')))
         assert status_test2 == [
             {'source': 'TEST2', 'serial_oldest_journal': 1, 'serial_newest_journal': 3,
              'serial_oldest_seen': 1, 'serial_newest_seen': 3,

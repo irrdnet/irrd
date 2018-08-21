@@ -44,7 +44,7 @@ class MirrorUpdateRunner:
         self.database_handler.close()
 
     def _serial_newest_seen(self) -> Optional[int]:
-        query = RPSLDatabaseStatusQuery().sources([self.source])
+        query = RPSLDatabaseStatusQuery().source(self.source)
         result = self.database_handler.execute_query(query)
         try:
             return next(result)['serial_newest_seen']
