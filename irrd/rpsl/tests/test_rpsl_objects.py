@@ -43,7 +43,7 @@ class TestRPSLParsingGeneric:
     def test_missing_mandatory_attribute(self):
         obj = rpsl_object_from_text(SAMPLE_MISSING_MANDATORY_ATTRIBUTE, strict_validation=True)
         assert len(obj.messages.errors()) == 1, f"Unexpected extra errors: {obj.messages.errors()}"
-        assert "Mandatory attribute 'tech-c' on object as-block is missing" in obj.messages.errors()[0]
+        assert "Mandatory attribute 'changed' on object route is missing" in obj.messages.errors()[0]
 
         obj = rpsl_object_from_text(SAMPLE_MISSING_MANDATORY_ATTRIBUTE, strict_validation=False)
         assert len(obj.messages.errors()) == 0, f"Unexpected extra errors: {obj.messages.errors()}"
@@ -67,12 +67,12 @@ class TestRPSLParsingGeneric:
     def test_malformed_pk(self):
         obj = rpsl_object_from_text(SAMPLE_MALFORMED_PK, strict_validation=True)
         assert len(obj.messages.errors()) == 1, f"Unexpected extra errors: {obj.messages.errors()}"
-        assert "Invalid AS number" in obj.messages.errors()[0]
+        assert "Invalid address prefix: not-a-prefix" in obj.messages.errors()[0]
 
         # A primary key field should also be tested in non-strict mode
         obj = rpsl_object_from_text(SAMPLE_MALFORMED_PK, strict_validation=False)
         assert len(obj.messages.errors()) == 1, f"Unexpected extra errors: {obj.messages.errors()}"
-        assert "Invalid AS number" in obj.messages.errors()[0]
+        assert "Invalid address prefix: not-a-prefix" in obj.messages.errors()[0]
 
     def test_malformed_source(self):
         obj = rpsl_object_from_text(SAMPLE_MALFORMED_SOURCE, strict_validation=False)
@@ -90,11 +90,11 @@ class TestRPSLAsBlock:
         obj = rpsl_object_from_text(rpsl_text)
         assert obj.__class__ == RPSLAsBlock
         assert not obj.messages.errors()
-        assert obj.pk() == "AS2043 - AS2043"
-        assert obj.asn_first == 2043
-        assert obj.asn_last == 2043
+        assert obj.pk() == "AS65536 - AS65538"
+        assert obj.asn_first == 65536
+        assert obj.asn_last == 65538
         # Field parsing will cause our object to look slightly different than the original, hence the replace()
-        assert obj.render_rpsl_text() == rpsl_text.replace("as02043", "AS2043")
+        assert obj.render_rpsl_text() == rpsl_text.replace("as065538", "AS65538")
 
 
 class TestRPSLAsSet:
@@ -107,14 +107,14 @@ class TestRPSLAsSet:
         obj = rpsl_object_from_text(rpsl_text)
         assert obj.__class__ == RPSLAsSet
         assert not obj.messages.errors()
-        assert obj.pk() == "AS-RESTENA"
+        assert obj.pk() == "AS-SETTEST"
         assert obj.referred_objects() == [
             ('members', ['aut-num', 'as-set'], ['AS2602', 'AS42909', 'AS51966', 'AS49624']),
-            ('admin-c', ['role', 'person'], ['DUMY-RIPE']),
-            ('tech-c', ['role', 'person'], ['DUMY-RIPE']),
-            ('mnt-by', ['mntner'], ['AS2602-MNT'])
+            ('admin-c', ['role', 'person'], ['PERSON-TEST']),
+            ('tech-c', ['role', 'person'], ['PERSON-TEST']),
+            ('mnt-by', ['mntner'], ['TEST-MNT'])
         ]
-        assert obj.source() == 'RIPE'
+        assert obj.source() == 'TEST'
 
         assert obj.parsed_data['members'] == ['AS2602', 'AS42909', 'AS51966', 'AS49624']
         # Field parsing will cause our object to look slightly different than the original, hence the replace()
@@ -131,12 +131,12 @@ class TestRPSLAutNum:
         obj = rpsl_object_from_text(rpsl_text)
         assert obj.__class__ == RPSLAutNum
         assert not obj.messages.errors()
-        assert obj.pk() == "AS3255"
-        assert obj.asn_first == 3255
-        assert obj.asn_last == 3255
+        assert obj.pk() == "AS65537"
+        assert obj.asn_first == 65537
+        assert obj.asn_last == 65537
         assert obj.ip_version() is None
         # Field parsing will cause our object to look slightly different than the original, hence the replace()
-        assert obj.render_rpsl_text() == rpsl_text.replace("as03255", "AS3255")
+        assert obj.render_rpsl_text() == rpsl_text.replace("as065537", "AS65537")
 
 
 class TestRPSLDictionary:
@@ -155,8 +155,8 @@ class TestRPSLDomain:
         obj = rpsl_object_from_text(rpsl_text)
         assert obj.__class__ == RPSLDomain
         assert not obj.messages.errors()
-        assert obj.pk() == "200.193.193.IN-ADDR.ARPA"
-        assert obj.parsed_data["source"] == 'RIPE'
+        assert obj.pk() == "2.0.192.IN-ADDR.ARPA"
+        assert obj.parsed_data["source"] == 'TEST'
         assert obj.render_rpsl_text() == rpsl_text
 
 
@@ -170,7 +170,7 @@ class TestRPSLFilterSet:
         obj = rpsl_object_from_text(rpsl_text)
         assert obj.__class__ == RPSLFilterSet
         assert not obj.messages.errors()
-        assert obj.pk() == "FLTR-BOGONS-INTEGRA-IT"
+        assert obj.pk() == "FLTR-SETTEST"
         assert obj.render_rpsl_text() == rpsl_text
 
 
@@ -184,8 +184,8 @@ class TestRPSLInetRtr:
         obj = rpsl_object_from_text(rpsl_text)
         assert obj.__class__ == RPSLInetRtr
         assert not obj.messages.errors()
-        assert obj.pk() == "KST1-CORE.SWIP.NET"
-        assert obj.parsed_data['inet-rtr'] == "KST1-CORE.SWIP.NET"
+        assert obj.pk() == "RTR.EXAMPLE.COM"
+        assert obj.parsed_data['inet-rtr'] == "RTR.EXAMPLE.COM"
         assert obj.render_rpsl_text() == rpsl_text
 
 
@@ -199,9 +199,9 @@ class TestRPSLInet6Num:
         obj = rpsl_object_from_text(rpsl_text)
         assert obj.__class__ == RPSLInet6Num
         assert not obj.messages.errors()
-        assert obj.pk() == "2001:638:501::/48"
-        assert obj.ip_first == IP("2001:638:501::")
-        assert obj.ip_last == IP("2001:638:501:ffff:ffff:ffff:ffff:ffff")
+        assert obj.pk() == "2001:DB8::/48"
+        assert obj.ip_first == IP("2001:db8::")
+        assert obj.ip_last == IP("2001:db8::ffff:ffff:ffff:ffff:ffff")
         assert obj.ip_version() == 6
         assert obj.render_rpsl_text() == rpsl_text
 
@@ -216,12 +216,12 @@ class TestRPSLInetnum:
         obj = rpsl_object_from_text(rpsl_text)
         assert obj.__class__ == RPSLInetnum
         assert not obj.messages.errors()
-        assert obj.pk() == "80.16.151.184 - 80.16.151.191"
-        assert obj.ip_first == IP("80.16.151.184")
-        assert obj.ip_last == IP("80.16.151.191")
+        assert obj.pk() == "192.0.2.0 - 192.0.2.255"
+        assert obj.ip_first == IP("192.0.2.0")
+        assert obj.ip_last == IP("192.0.2.255")
         assert obj.ip_version() == 4
         # Field parsing will cause our object to look slightly different than the original, hence the replace()
-        assert obj.render_rpsl_text() == rpsl_text.replace("80.016.151.191", "80.16.151.191")
+        assert obj.render_rpsl_text() == rpsl_text.replace("192.0.02.255", "192.0.2.255")
 
 
 class TestRPSLKeyCert:
@@ -295,8 +295,8 @@ class TestRPSLMntner:
         assert obj.__class__ == RPSLMntner
 
         assert not obj.messages.errors()
-        assert obj.pk() == "AS760-MNT"
-        assert obj.parsed_data["mnt-by"] == ['AS760-MNT', 'ACONET-LIR-MNT', 'ACONET2-LIR-MNT']
+        assert obj.pk() == "TEST-MNT"
+        assert obj.parsed_data["mnt-by"] == ['TEST-MNT', 'OTHER1-MNT', 'OTHER2-MNT']
         assert obj.render_rpsl_text() == rpsl_text
 
     def test_parse_invalid_partial_dummy_hash(self):
@@ -332,8 +332,8 @@ class TestRPSLPeeringSet:
         obj = rpsl_object_from_text(rpsl_text)
         assert obj.__class__ == RPSLPeeringSet
         assert not obj.messages.errors()
-        assert obj.pk() == "PRNG-MEDIAFAX"
-        assert obj.parsed_data['tech-c'] == "DUMY-RIPE\nDUMY2-RIPE"
+        assert obj.pk() == "PRNG-SETTEST"
+        assert obj.parsed_data['tech-c'] == "PERSON-TEST\nDUMY2-TEST"
         assert obj.render_rpsl_text() == rpsl_text
 
 
@@ -347,8 +347,8 @@ class TestRPSLPerson:
         obj = rpsl_object_from_text(rpsl_text)
         assert obj.__class__ == RPSLPerson
         assert not obj.messages.errors()
-        assert obj.pk() == "DUMY-RIPE"
-        assert obj.parsed_data['nic-hdl'] == "DUMY-RIPE"
+        assert obj.pk() == "PERSON-TEST"
+        assert obj.parsed_data['nic-hdl'] == "PERSON-TEST"
         assert obj.render_rpsl_text() == rpsl_text
 
     def test_generate_template(self):
@@ -372,7 +372,7 @@ class TestRPSLRole:
         obj = rpsl_object_from_text(rpsl_text)
         assert obj.__class__ == RPSLRole
         assert not obj.messages.errors()
-        assert obj.pk() == "BISP-RIPE"
+        assert obj.pk() == "ROLE-TEST"
         assert obj.render_rpsl_text() == rpsl_text
 
 
@@ -386,14 +386,14 @@ class TestRPSLRoute:
         obj = rpsl_object_from_text(rpsl_text)
         assert obj.__class__ == RPSLRoute
         assert not obj.messages.errors()
-        assert obj.pk() == "193.254.30.0/24,AS12726"
-        assert obj.ip_first == IP("193.254.30.0")
-        assert obj.ip_last == IP("193.254.30.255")
-        assert obj.asn_first == 12726
-        assert obj.asn_last == 12726
+        assert obj.pk() == "192.0.2.0/24,AS65537"
+        assert obj.ip_first == IP("192.0.2.0")
+        assert obj.ip_last == IP("192.0.2.255")
+        assert obj.asn_first == 65537
+        assert obj.asn_last == 65537
         assert obj.ip_version() == 4
         # Field parsing will cause our object to look slightly different than the original, hence the replace()
-        assert obj.render_rpsl_text() == rpsl_text.replace("193.254.030.00/24", "193.254.30.0/24")
+        assert obj.render_rpsl_text() == rpsl_text.replace("  192.0.02.0/24", "  192.0.2.0/24")
 
     def test_missing_pk_nonstrict(self):
         # In non-strict mode, the parser should not fail validation for missing
@@ -423,8 +423,8 @@ class TestRPSLRouteSet:
         assert obj.__class__ == RPSLRouteSet
         assert not obj.messages.errors()
         assert obj.pk() == "RS-TEST"
-        assert obj.render_rpsl_text() == rpsl_text.replace('2001:1578:0200:0::/040', '2001:1578:200::/40')
-        assert obj.parsed_data['mp-members'] == ['2001:1578:200::/40']
+        assert obj.parsed_data['mp-members'] == ['2001:DB8::/48']
+        assert obj.render_rpsl_text() == rpsl_text.replace('2001:0dB8::/48', '2001:db8::/48')
 
 
 class TestRPSLRoute6:
@@ -437,13 +437,13 @@ class TestRPSLRoute6:
         obj = rpsl_object_from_text(rpsl_text)
         assert obj.__class__ == RPSLRoute6
         assert not obj.messages.errors()
-        assert obj.pk() == "2001:1578:200::/40,AS12817"
-        assert obj.ip_first == IP("2001:1578:200::")
-        assert obj.ip_last == IP("2001:1578:2ff:ffff:ffff:ffff:ffff:ffff")
-        assert obj.asn_first == 12817
-        assert obj.asn_last == 12817
+        assert obj.pk() == "2001:DB8::/48,AS65537"
+        assert obj.ip_first == IP("2001:db8::")
+        assert obj.ip_last == IP("2001:db8::ffff:ffff:ffff:ffff:ffff")
+        assert obj.asn_first == 65537
+        assert obj.asn_last == 65537
         assert obj.ip_version() == 6
-        assert obj.parsed_data['mnt-by'] == ['EXAMPLE-MNT']
+        assert obj.parsed_data['mnt-by'] == ['TEST-MNT']
         assert obj.render_rpsl_text() == rpsl_text
 
 
@@ -457,6 +457,6 @@ class TestRPSLRtrSet:
         obj = rpsl_object_from_text(rpsl_text)
         assert obj.__class__ == RPSLRtrSet
         assert not obj.messages.errors()
-        assert obj.pk() == "RTRS-MWAYS-CALLBACK"
-        assert obj.parsed_data['rtr-set'] == "RTRS-MWAYS-CALLBACK"
+        assert obj.pk() == "RTRS-SETTEST"
+        assert obj.parsed_data['rtr-set'] == "RTRS-SETTEST"
         assert obj.render_rpsl_text() == rpsl_text

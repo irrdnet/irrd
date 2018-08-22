@@ -34,11 +34,11 @@ class BaseRPSLObjectDatabaseQuery:
         return self._filter(self.columns.pk == pk)
 
     def rpsl_pk(self, rpsl_pk: str):
-        """Filter on an exact RPSL PK (e.g. 192.0.2.0/24,AS23456)."""
+        """Filter on an exact RPSL PK (e.g. 192.0.2.0/24,AS65537)."""
         return self.rpsl_pks([rpsl_pk])
 
     def rpsl_pks(self, rpsl_pks: List[str]):
-        """Filter on an exact RPSL PK (e.g. 192.0.2.0/24,AS23456) - will match any PK in the list."""
+        """Filter on an exact RPSL PK (e.g. 192.0.2.0/24,AS65537) - will match any PK in the list."""
         rpsl_pks = [p.upper().strip() for p in rpsl_pks]
         return self._filter(self.columns.rpsl_pk.in_(rpsl_pks))
 
@@ -127,8 +127,8 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
 
     Offers various ways to filter, which are always constructed in an AND query.
     For example:
-        q = RPSLDatabaseQuery().sources(['NTTCOM']).asn(23456)
-    would match all objects that refer or include AS23456 (i.e. aut-num, route,
+        q = RPSLDatabaseQuery().sources(['NTTCOM']).asn(65537)
+    would match all objects that refer or include AS65537 (i.e. aut-num, route,
     as-block, route6) from the NTTCOM source.
 
     For methods taking a prefix or IP address, this should be an IPy.IP object.

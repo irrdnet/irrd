@@ -109,7 +109,7 @@ class TestSingleUpdateRequestHandling:
             'object_text': SAMPLE_INETNUM,
         }
         query_result_dumy_person = {
-            'rpsl_pk': 'DUMY-RIPE',
+            'rpsl_pk': 'PERSON-TEST',
             'object_class': 'person',
         }
         query_result_interdb_mntner = {
@@ -126,15 +126,15 @@ class TestSingleUpdateRequestHandling:
         assert result_inetnum._check_references()
         assert result_inetnum.is_valid()
         assert flatten_mock_calls(mock_dq) == [
-            ['sources', (['RIPE'],), {}],
+            ['sources', (['TEST'],), {}],
             ['object_classes', (['inetnum'],), {}],
-            ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}],
-            ['sources', (['RIPE'],), {}],
+            ['rpsl_pk', ('192.0.2.0 - 192.0.2.255',), {}],
+            ['sources', (['TEST'],), {}],
             ['object_classes', (['role', 'person'],), {}],
-            ['rpsl_pk', ('DUMY-RIPE',), {}],
-            ['sources', (['RIPE'],), {}],
+            ['rpsl_pk', ('PERSON-TEST',), {}],
+            ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
-            ['rpsl_pk', ('INTERB-MNT',), {}],
+            ['rpsl_pk', ('TEST-MNT',), {}],
         ]
 
     def test_check_references_invalid_referred_objects_dont_exist(self, prepare_mocks):
@@ -151,23 +151,23 @@ class TestSingleUpdateRequestHandling:
         assert not result_inetnum._check_references()
         assert not result_inetnum.is_valid()
         assert result_inetnum.error_messages == [
-            'Object DUMY-RIPE referenced in field admin-c not found in database RIPE - must reference one of role, person.',
-            'Object DUMY-RIPE referenced in field tech-c not found in database RIPE - must reference one of role, person.',
-            'Object INTERB-MNT referenced in field mnt-by not found in database RIPE - must reference mntner.'
+            'Object PERSON-TEST referenced in field admin-c not found in database TEST - must reference one of role, person.',
+            'Object PERSON-TEST referenced in field tech-c not found in database TEST - must reference one of role, person.',
+            'Object TEST-MNT referenced in field mnt-by not found in database TEST - must reference mntner.'
         ]
         assert flatten_mock_calls(mock_dq) == [
-            ['sources', (['RIPE'],), {}],
+            ['sources', (['TEST'],), {}],
             ['object_classes', (['inetnum'],), {}],
-            ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}],
-            ['sources', (['RIPE'],), {}],
+            ['rpsl_pk', ('192.0.2.0 - 192.0.2.255',), {}],
+            ['sources', (['TEST'],), {}],
             ['object_classes', (['role', 'person'],), {}],
-            ['rpsl_pk', ('DUMY-RIPE',), {}],
-            ['sources', (['RIPE'],), {}],
+            ['rpsl_pk', ('PERSON-TEST',), {}],
+            ['sources', (['TEST'],), {}],
             ['object_classes', (['role', 'person'],), {}],
-            ['rpsl_pk', ('DUMY-RIPE',), {}],
-            ['sources', (['RIPE'],), {}],
+            ['rpsl_pk', ('PERSON-TEST',), {}],
+            ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
-            ['rpsl_pk', ('INTERB-MNT',), {}],
+            ['rpsl_pk', ('TEST-MNT',), {}],
         ]
 
     def test_check_references_valid_preload_references(self, prepare_mocks):
@@ -176,7 +176,7 @@ class TestSingleUpdateRequestHandling:
         mock_dh.execute_query = lambda query: next(iter([[{'object_text': SAMPLE_PERSON}], [{'object_text': SAMPLE_MNTNER}]]))
         validator = ReferenceValidator(mock_dh)
 
-        preload = parse_update_requests(SAMPLE_PERSON + '\n' + SAMPLE_MNTNER.replace('AS760-MNt', 'INTERB-mnt'),
+        preload = parse_update_requests(SAMPLE_PERSON + '\n' + SAMPLE_MNTNER,
                                         mock_dh, AuthValidator(mock_dh), validator)
         mock_dq.reset_mock()
         validator.preload(preload)
@@ -185,9 +185,9 @@ class TestSingleUpdateRequestHandling:
         assert result_inetnum._check_references()
         assert result_inetnum.is_valid()
         assert flatten_mock_calls(mock_dq) == [
-            ['sources', (['RIPE'],), {}],
+            ['sources', (['TEST'],), {}],
             ['object_classes', (['inetnum'],), {}],
-            ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}]
+            ['rpsl_pk', ('192.0.2.0 - 192.0.2.255',), {}]
         ]
 
     def test_check_references_invalid_deleting_object_with_refs_in_db(self, prepare_mocks):
@@ -198,7 +198,7 @@ class TestSingleUpdateRequestHandling:
         query_results = iter([
             [{'object_text': SAMPLE_PERSON}],
             [{'object_text': SAMPLE_INETNUM, 'object_class': 'inetnum',
-              'rpsl_pk': '80.16.151.184 - 80.16.151.191', 'source': 'RIPE'}],
+              'rpsl_pk': '192.0.2.0 - 192.0.2.255', 'source': 'TEST'}],
         ])
         mock_dh.execute_query = lambda query: next(query_results)
 
@@ -207,15 +207,15 @@ class TestSingleUpdateRequestHandling:
         result._check_references()
         assert not result.is_valid()
         assert result.error_messages == [
-            'Object DUMY-RIPE to be deleted, but still referenced by inetnum 80.16.151.184 - 80.16.151.191',
+            'Object PERSON-TEST to be deleted, but still referenced by inetnum 192.0.2.0 - 192.0.2.255',
         ]
 
         assert flatten_mock_calls(mock_dq) == [
-            ['sources', (['RIPE'],), {}],
+            ['sources', (['TEST'],), {}],
             ['object_classes', (['person'],), {}],
-            ['rpsl_pk', ('DUMY-RIPE',), {}],
-            ['sources', (['RIPE'],), {}],
-            ['lookup_attrs_in', ({'tech-c', 'zone-c', 'admin-c'}, ['DUMY-RIPE']), {}],
+            ['rpsl_pk', ('PERSON-TEST',), {}],
+            ['sources', (['TEST'],), {}],
+            ['lookup_attrs_in', ({'tech-c', 'zone-c', 'admin-c'}, ['PERSON-TEST']), {}],
         ]
 
     def test_check_references_invalid_deleting_object_with_refs_in_update_message(self, prepare_mocks):
@@ -228,7 +228,7 @@ class TestSingleUpdateRequestHandling:
             [{'object_text': SAMPLE_INETNUM}],
             [],
             [{'object_text': SAMPLE_PERSON, 'object_class': 'person',
-              'rpsl_pk': 'DUMY-RIPE', 'source': 'RIPE'}],
+              'rpsl_pk': 'PERSON-TEST', 'source': 'TEST'}],
         ])
         mock_dh.execute_query = lambda query: next(query_results)
 
@@ -239,21 +239,21 @@ class TestSingleUpdateRequestHandling:
         result_inetnum._check_references()
         assert not result_inetnum.is_valid()
         assert result_inetnum.error_messages == [
-            'Object DUMY-RIPE referenced in field admin-c not found in database RIPE - must reference one of role, person.',
-            'Object DUMY-RIPE referenced in field tech-c not found in database RIPE - must reference one of role, person.',
-            'Object INTERB-MNT referenced in field mnt-by not found in database RIPE - must reference mntner.',
+            'Object PERSON-TEST referenced in field admin-c not found in database TEST - must reference one of role, person.',
+            'Object PERSON-TEST referenced in field tech-c not found in database TEST - must reference one of role, person.',
+            'Object TEST-MNT referenced in field mnt-by not found in database TEST - must reference mntner.',
         ]
 
         assert flatten_mock_calls(mock_dq) == [
-            ['sources', (['RIPE'],), {}],
+            ['sources', (['TEST'],), {}],
             ['object_classes', (['person'],), {}],
-            ['rpsl_pk', ('DUMY-RIPE',), {}],
-            ['sources', (['RIPE'],), {}],
+            ['rpsl_pk', ('PERSON-TEST',), {}],
+            ['sources', (['TEST'],), {}],
             ['object_classes', (['inetnum'],), {}],
-            ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}],
-            ['sources', (['RIPE'],), {}],
+            ['rpsl_pk', ('192.0.2.0 - 192.0.2.255',), {}],
+            ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
-            ['rpsl_pk', ('INTERB-MNT',), {}],
+            ['rpsl_pk', ('TEST-MNT',), {}],
         ]
 
     def test_check_references_valid_deleting_object_referencing_to_be_deleted_object(self, prepare_mocks):
@@ -272,7 +272,7 @@ class TestSingleUpdateRequestHandling:
         query_results = iter([
             [{'object_text': SAMPLE_PERSON}],
             [{'object_text': SAMPLE_INETNUM, 'object_class': 'inetnum',
-              'rpsl_pk': '80.16.151.184 - 80.16.151.191', 'source': 'RIPE'}],
+              'rpsl_pk': '192.0.2.0 - 192.0.2.255', 'source': 'TEST'}],
         ])
         mock_dh.execute_query = lambda query: next(query_results)
 
@@ -282,18 +282,18 @@ class TestSingleUpdateRequestHandling:
         assert result.is_valid(), result.error_messages
         assert not result.error_messages
         assert flatten_mock_calls(mock_dq) == [
-            ['sources', (['RIPE'],), {}],
+            ['sources', (['TEST'],), {}],
             ['object_classes', (['person'],), {}],
-            ['rpsl_pk', ('DUMY-RIPE',), {}],
-            ['sources', (['RIPE'],), {}],
-            ['lookup_attrs_in', ({'tech-c', 'zone-c', 'admin-c'}, ['DUMY-RIPE']), {}],
+            ['rpsl_pk', ('PERSON-TEST',), {}],
+            ['sources', (['TEST'],), {}],
+            ['lookup_attrs_in', ({'tech-c', 'zone-c', 'admin-c'}, ['PERSON-TEST']), {}],
         ]
 
     def test_check_auth_valid_update_mntner(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
 
         query_result1 = {'object_text': SAMPLE_INETNUM}
-        query_result2 = {'object_text': SAMPLE_MNTNER.replace('AS760-MNt', 'INTERB-mnt')}
+        query_result2 = {'object_text': SAMPLE_MNTNER}
         query_results = itertools.cycle([[query_result1], [query_result2]])
         mock_dh.execute_query = lambda query: next(query_results)
 
@@ -305,12 +305,12 @@ class TestSingleUpdateRequestHandling:
         assert result_inetnum._check_auth()
         assert not result_inetnum.error_messages
         assert flatten_mock_calls(mock_dq) == [
-            ['sources', (['RIPE'],), {}],
+            ['sources', (['TEST'],), {}],
             ['object_classes', (['inetnum'],), {}],
-            ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}],
-            ['sources', (['RIPE'],), {}],
+            ['rpsl_pk', ('192.0.2.0 - 192.0.2.255',), {}],
+            ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
-            ['rpsl_pks', (['INTERB-MNT'],), {}]
+            ['rpsl_pks', (['TEST-MNT'],), {}]
         ]
 
         auth_validator = AuthValidator(mock_dh)
@@ -339,9 +339,9 @@ class TestSingleUpdateRequestHandling:
         assert result_mntner._check_auth()
         assert not result_mntner.error_messages
         assert flatten_mock_calls(mock_dq) == [
-            ['sources', (['RIPE'],), {}],
+            ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
-            ['rpsl_pk', ('AS760-MNT',), {}],
+            ['rpsl_pk', ('TEST-MNT',), {}],
         ]
 
     def test_check_auth_invalid_create_mntner_referencing_self_wrong_password(self, prepare_mocks):
@@ -359,9 +359,9 @@ class TestSingleUpdateRequestHandling:
         assert not result_mntner._check_auth()
         assert result_mntner.error_messages == ['Authorisation failed for the auth methods on this mntner object.']
         assert flatten_mock_calls(mock_dq) == [
-            ['sources', (['RIPE'],), {}],
+            ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
-            ['rpsl_pk', ('AS760-MNT',), {}],
+            ['rpsl_pk', ('TEST-MNT',), {}],
         ]
 
     def test_check_auth_invalid_create_mntner_referencing_self_with_dummy_passwords(self, prepare_mocks):
@@ -383,9 +383,9 @@ class TestSingleUpdateRequestHandling:
         assert not result_mntner._check_auth()
         assert result_mntner.error_messages == ['Authorisation failed for the auth methods on this mntner object.']
         assert flatten_mock_calls(mock_dq) == [
-            ['sources', (['RIPE'],), {}],
+            ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
-            ['rpsl_pk', ('AS760-MNT',), {}],
+            ['rpsl_pk', ('TEST-MNT',), {}],
         ]
 
     def test_check_auth_valid_update_mntner_submits_new_object_with_all_dummy_hash_values(self, prepare_mocks):
@@ -416,12 +416,12 @@ class TestSingleUpdateRequestHandling:
         assert auth_hash in result_mntner.rpsl_obj_new.render_rpsl_text()
 
         assert flatten_mock_calls(mock_dq) == [
-            ['sources', (['RIPE'],), {}],
+            ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
-            ['rpsl_pk', ('AS760-MNT',), {}],
-            ['sources', (['RIPE'],), {}],
+            ['rpsl_pk', ('TEST-MNT',), {}],
+            ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
-            ['rpsl_pks', (['AS760-MNT', 'ACONET-LIR-MNT', 'ACONET2-LIR-MNT'],), {}],
+            ['rpsl_pks', (['TEST-MNT', 'OTHER1-MNT', 'OTHER2-MNT'],), {}],
         ]
 
     def test_check_auth_invalid_update_mntner_submits_new_object_with_mixed_dummy_hash_real_hash(self, prepare_mocks):
@@ -481,15 +481,15 @@ class TestSingleUpdateRequestHandling:
         auth_validator.pre_approve([result_mntner])
         assert not result_mntner._check_auth()
         assert result_mntner.error_messages == [
-            'Authorisation for mntner AS760-MNT failed: must by authenticated by one of: AS760-MNT, '
-            'ACONET-LIR-MNT, ACONET2-LIR-MNT'
+            'Authorisation for mntner TEST-MNT failed: must by authenticated by one of: TEST-MNT, '
+            'OTHER1-MNT, OTHER2-MNT'
         ]
         assert flatten_mock_calls(mock_dq) == [
-            ['sources', (['RIPE'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pk', ('AS760-MNT',), {}],
-            ['sources', (['RIPE'],), {}], ['object_classes', (['mntner'],), {}],
-            ['rpsl_pks', (['AS760-MNT', 'ACONET-LIR-MNT', 'ACONET2-LIR-MNT'],), {}],
-            ['sources', (['RIPE'],), {}], ['object_classes', (['mntner'],), {}],
-            ['rpsl_pks', (['AS760-MNT', 'ACONET-LIR-MNT', 'ACONET2-LIR-MNT'],), {}]
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pk', ('TEST-MNT',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', (['TEST-MNT', 'OTHER1-MNT', 'OTHER2-MNT'],), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', (['TEST-MNT', 'OTHER1-MNT', 'OTHER2-MNT'],), {}],
         ]
 
     def test_check_auth_invalid_create_with_incorrect_password_referenced_mntner(self, prepare_mocks):
@@ -504,22 +504,22 @@ class TestSingleUpdateRequestHandling:
         result_inetnum = parse_update_requests(SAMPLE_INETNUM + 'password: wrong-pw',
                                                mock_dh, auth_validator, reference_validator)[0]
         assert not result_inetnum._check_auth()
-        assert 'Authorisation for inetnum 80.16.151.184 - 80.16.151.191 failed' in result_inetnum.error_messages[0]
-        assert 'one of: INTERB-MNT' in result_inetnum.error_messages[0]
+        assert 'Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed' in result_inetnum.error_messages[0]
+        assert 'one of: TEST-MNT' in result_inetnum.error_messages[0]
         assert flatten_mock_calls(mock_dq) == [
-            ['sources', (['RIPE'],), {}], ['object_classes', (['inetnum'],), {}],
-            ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}],
-            ['sources', (['RIPE'],), {}],
-            ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['INTERB-MNT'],), {}],
-            ['sources', (['RIPE'],), {}],
-            ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['INTERB-MNT'],), {}]
+            ['sources', (['TEST'],), {}], ['object_classes', (['inetnum'],), {}],
+            ['rpsl_pk', ('192.0.2.0 - 192.0.2.255',), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['TEST-MNT'],), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['TEST-MNT'],), {}]
         ]
 
     def test_check_auth_invalid_update_with_incorrect_password_referenced_mntner(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
 
         query_results = iter([
-            [{'object_text': SAMPLE_INETNUM.replace('INTERB-MNT', 'FAIL-MNT')}],
+            [{'object_text': SAMPLE_INETNUM.replace('test-MNT', 'FAIL-MNT')}],
             [{'object_text': SAMPLE_MNTNER}],
             []
         ])
@@ -530,17 +530,17 @@ class TestSingleUpdateRequestHandling:
 
         result_inetnum = parse_update_requests(SAMPLE_INETNUM + 'password: md5-password',
                                                mock_dh, auth_validator, reference_validator)[0]
-        assert not result_inetnum._check_auth()
-        assert 'Authorisation for inetnum 80.16.151.184 - 80.16.151.191 failed' in result_inetnum.error_messages[0]
+        assert not result_inetnum._check_auth(), result_inetnum
+        assert 'Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed' in result_inetnum.error_messages[0]
         assert 'one of: FAIL-MNT' in result_inetnum.error_messages[0]
         assert flatten_mock_calls(mock_dq) == [
-            ['sources', (['RIPE'],), {}],
+            ['sources', (['TEST'],), {}],
             ['object_classes', (['inetnum'],), {}],
-            ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}],
-            ['sources', (['RIPE'],), {}],
+            ['rpsl_pk', ('192.0.2.0 - 192.0.2.255',), {}],
+            ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
-            ['rpsl_pks', (['INTERB-MNT'],), {}],
-            ['sources', (['RIPE'],), {}],
+            ['rpsl_pks', (['TEST-MNT'],), {}],
+            ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
             ['rpsl_pks', (['FAIL-MNT'],), {}],
         ]
@@ -563,9 +563,9 @@ class TestSingleUpdateRequestHandling:
 
         assert 'Delete succeeded' in report_inetnum
         assert 'remarks: ' in report_inetnum  # full RPSL object should be included
-        assert 'INFO: Address range 80' in report_inetnum
+        assert 'INFO: Address range 192' in report_inetnum
 
-        assert report_as_set == 'Create succeeded: [as-set] AS-RESTENA\n'
+        assert report_as_set == 'Create succeeded: [as-set] AS-SETTEST\n'
 
         assert 'FAILED' in report_unknown
         assert 'ERROR: unknown object class' in report_unknown

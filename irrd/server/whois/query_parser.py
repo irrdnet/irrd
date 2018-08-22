@@ -193,11 +193,11 @@ class WhoisQueryParser:
         )
 
     def handle_irrd_routes_for_origin_v4(self, origin: str) -> str:
-        """!g query - find all originating IPv4 prefixes from an origin, e.g. !gAS23456"""
+        """!g query - find all originating IPv4 prefixes from an origin, e.g. !gAS65537"""
         return self._routes_for_origin('route', origin)
 
     def handle_irrd_routes_for_origin_v6(self, origin: str) -> str:
-        """!6 query - find all originating IPv6 prefixes from an origin, e.g. !6as23456"""
+        """!6 query - find all originating IPv6 prefixes from an origin, e.g. !6as65537"""
         return self._routes_for_origin('route6', origin)
 
     def _routes_for_origin(self, object_class: str, origin: str) -> str:
@@ -329,7 +329,7 @@ class WhoisQueryParser:
         raise NotImplementedError()
 
     def handle_irrd_exact_key(self, parameter: str):
-        """!m query - exact object key lookup, e.g. !maut-num,AS23456"""
+        """!m query - exact object key lookup, e.g. !maut-num,AS65537"""
         try:
             object_class, rpsl_pk = parameter.split(',', maxsplit=1)
         except ValueError:

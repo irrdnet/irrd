@@ -157,19 +157,19 @@ def test_route_set_members_field():
     messages = RPSLParserMessages()
 
     assert field.parse("192.0.2.0/24^12-23", messages).value == "192.0.2.0/24^12-23"
-    assert field.parse("AS023456:RS-TEST^32", messages).value == "AS23456:RS-TEST^32"
+    assert field.parse("AS065537:RS-TEST^32", messages).value == "AS65537:RS-TEST^32"
     assert field.parse("192.0.2.0/25^+", messages).value == "192.0.2.0/25^+"
     assert field.parse("192.0.2.0/25^32", messages).value == "192.0.2.0/25^32"
     assert field.parse("192.00.02.0/25^-", messages).value == "192.0.2.0/25^-"
     assert field.parse("192.0.02.0/32", messages).value == "192.0.2.0/32"
     assert not messages.errors()
     assert messages.infos() == [
-        "Route set member AS023456:RS-TEST^32 was reformatted as AS23456:RS-TEST^32",
+        "Route set member AS065537:RS-TEST^32 was reformatted as AS65537:RS-TEST^32",
         "Route set member 192.00.02.0/25^- was reformatted as 192.0.2.0/25^-",
         "Route set member 192.0.02.0/32 was reformatted as 192.0.2.0/32",
     ]
 
-    assert_validation_err("Value is neither a valid set name nor a valid prefix", field.parse, "AS23456:TEST")
+    assert_validation_err("Value is neither a valid set name nor a valid prefix", field.parse, "AS65537:TEST")
     assert_validation_err("Missing range operator", field.parse, "192.0.2.0/32^")
     assert_validation_err("Invalid range operator", field.parse, "192.0.2.0/32^x")
     assert_validation_err("Invalid range operator", field.parse, "192.0.2.0/32^-32")
@@ -181,7 +181,7 @@ def test_route_set_members_field():
 
     assert field.parse("192.0.2.0/24^12-23", messages).value == "192.0.2.0/24^12-23"
     assert field.parse("12ab:0:0:cd30::/128^12-23", messages).value == "12ab:0:0:cd30::/128^12-23"
-    assert field.parse("AS23456:RS-TEST", messages).value == "AS23456:RS-TEST"
+    assert field.parse("AS65537:RS-TEST", messages).value == "AS65537:RS-TEST"
 
     assert field.parse("192.0.2.0/25^+", messages).value == "192.0.2.0/25^+"
     assert field.parse("192.0.2.0/25^32", messages).value == "192.0.2.0/25^32"
@@ -200,12 +200,12 @@ def test_validate_as_number_field():
     field = RPSLASNumberField()
     messages = RPSLParserMessages()
 
-    parse_result = field.parse("AS023456", messages)
-    assert parse_result.value == "AS23456"
-    assert parse_result.asn_first == 23456
-    assert parse_result.asn_last == 23456
+    parse_result = field.parse("AS065537", messages)
+    assert parse_result.value == "AS65537"
+    assert parse_result.asn_first == 65537
+    assert parse_result.asn_last == 65537
     assert not messages.errors()
-    assert messages.infos() == ["AS number AS023456 was reformatted as AS23456"]
+    assert messages.infos() == ["AS number AS065537 was reformatted as AS65537"]
 
     assert_validation_err("not numeric", field.parse, "ASxxxx")
     assert_validation_err("not numeric", field.parse, "AS2345💩")
@@ -228,7 +228,7 @@ def test_validate_as_block_field():
         "AS range AS200-AS0200 was reformatted as AS200 - AS200"
     ]
 
-    assert_validation_err("does not contain a hyphen", field.parse, "AS23456")
+    assert_validation_err("does not contain a hyphen", field.parse, "AS65537")
     assert_validation_err("number part is not numeric", field.parse, "ASxxxx - ASyyyy")
     assert_validation_err("Invalid AS number", field.parse, "AS-FOO - AS-BAR")
     assert_validation_err("Invalid AS range", field.parse, "AS300 - AS200")

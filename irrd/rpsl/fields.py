@@ -292,7 +292,7 @@ class RPSLSetNameField(RPSLTextField):
 
     The actual set name must start with a designated prefix (which is otherwise not
     permitted for RPSL names).
-    Set names can consist of multiple components, e.g. AS23456:RS-FOO. Each
+    Set names can consist of multiple components, e.g. AS65537:RS-FOO. Each
     component must be a valid set name or valid AS number, and one component
     must be a valid set name for this specific set, i.e. start with the given prefix.
 

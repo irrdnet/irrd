@@ -162,11 +162,13 @@ class AuthValidator:
         result = ValidatorResult()
 
         mntners_new = rpsl_obj_new.parsed_data['mnt-by']
+        logger.debug(f'Checking auth for {rpsl_obj_new}, mntners in new object: {mntners_new}')
         if not self._check_mntners(mntners_new, source):
             self._generate_failure_message(result, mntners_new, rpsl_obj_new)
 
         if rpsl_obj_current:
             mntners_current = rpsl_obj_current.parsed_data['mnt-by']
+            logger.debug(f'Checking auth for {rpsl_obj_current}, mntners in new object: {mntners_current}')
             if not self._check_mntners(mntners_current, source):
                 self._generate_failure_message(result, mntners_current, rpsl_obj_new)
 
@@ -174,6 +176,8 @@ class AuthValidator:
             # Dummy auth values are only permitted in existing objects, which are never pre-approved.
             if rpsl_obj_new.has_dummy_auth_value() and rpsl_obj_new.pk() not in self._pre_approved:
                 if len(self.passwords) == 1:
+                    logger.debug(f'Object {rpsl_obj_new} submitted with dummy hash values and single password, '
+                                 f'replacing all hashes with currently supplied password.')
                     rpsl_obj_new.force_single_new_password(self.passwords[0])
                     result.info_messages.add('As you submitted dummy hash values, all password hashes on this object '
                                              'were replaced with a new MD5-PW hash of the password you provided for '

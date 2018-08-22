@@ -33,20 +33,20 @@ class TestUpdateRequestHandler:
         person:         Placeholder Person Object
         address:        The Netherlands
         phone:          +31 20 535 4444
-        nic-hdl:        DUMy-RIPE
-        mnt-by:         as760-mnt
+        nic-hdl:        PERSON-TEST
+        mnt-by:         TEST-MNT
         e-mail:         bitbucket@ripe.net
         changed:        2009-07-24T17:00:00Z
-        source:         RIPE
+        source:         TEST
 
-        mntner:         AS760-MNT
-        admin-c:        DUMY-RIPE
+        mntner:         TEST-MNT
+        admin-c:        PERSON-TEST
         upd-to:         unread@ripe.net
         auth:           PGPKey-80F238C6
         auth:           MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.  # md5-password
-        mnt-by:         AS760-MNT
+        mnt-by:         TEST-MNT
         changed:        2016-10-05T10:41:15Z
-        source:         RIPE
+        source:         TEST
         
         password: md5-password
 
@@ -54,13 +54,13 @@ class TestUpdateRequestHandler:
         netname:        NETECONOMY-MG41731
         descr:          TELECOM ITALIA LAB SPA
         country:        IT
-        admin-c:        DUMY-RIPE
-        tech-c:         DUMY-RIPE
+        admin-c:        PERSON-TEST
+        tech-c:         PERSON-TEST
         status:         ASSIGNED PA
         notify:         neteconomy.rete@telecomitalia.it
-        mnt-by:         AS760-mnt
+        mnt-by:         TEST-MNT
         changed:        2001-09-21T22:08:01Z
-        source:         RIPE
+        source:         TEST
         remarks:        remark
         """)
 
@@ -68,16 +68,16 @@ class TestUpdateRequestHandler:
         assert handler.status() == 'SUCCESS'
 
         assert flatten_mock_calls(mock_dq) == [
-            ['sources', (['RIPE'],), {}], ['object_classes', (['person'],), {}], ['rpsl_pk', ('DUMY-RIPE',), {}],
-            ['sources', (['RIPE'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pk', ('AS760-MNT',), {}],
-            ['sources', (['RIPE'],), {}], ['object_classes', (['inetnum'],), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['person'],), {}], ['rpsl_pk', ('PERSON-TEST',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pk', ('TEST-MNT',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['inetnum'],), {}],
             ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}],
         ]
 
         assert mock_dh.mock_calls[0][0] == 'upsert_rpsl_object'
-        assert mock_dh.mock_calls[0][1][0].pk() == 'DUMY-RIPE'
+        assert mock_dh.mock_calls[0][1][0].pk() == 'PERSON-TEST'
         assert mock_dh.mock_calls[1][0] == 'upsert_rpsl_object'
-        assert mock_dh.mock_calls[1][1][0].pk() == 'AS760-MNT'
+        assert mock_dh.mock_calls[1][1][0].pk() == 'TEST-MNT'
         assert mock_dh.mock_calls[2][0] == 'upsert_rpsl_object'
         assert mock_dh.mock_calls[2][1][0].pk() == '80.16.151.184 - 80.16.151.191'
         assert mock_dh.mock_calls[3][0] == 'commit'
@@ -100,10 +100,10 @@ class TestUpdateRequestHandler:
         
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ---
-        Create succeeded: [person] DUMY-RIPE
+        Create succeeded: [person] PERSON-TEST
         
         ---
-        Create succeeded: [mntner] AS760-MNT
+        Create succeeded: [mntner] TEST-MNT
         
         ---
         Create succeeded: [inetnum] 80.16.151.184 - 80.16.151.191
@@ -112,13 +112,13 @@ class TestUpdateRequestHandler:
         netname:        NETECONOMY-MG41731
         descr:          TELECOM ITALIA LAB SPA
         country:        IT
-        admin-c:        DUMY-RIPE
-        tech-c:         DUMY-RIPE
+        admin-c:        PERSON-TEST
+        tech-c:         PERSON-TEST
         status:         ASSIGNED PA
         notify:         neteconomy.rete@telecomitalia.it
-        mnt-by:         AS760-mnt
+        mnt-by:         TEST-MNT
         changed:        2001-09-21T22:08:01Z
-        source:         RIPE
+        source:         TEST
         remarks:        remark
         
         INFO: Address range 80.16.151.184 - 80.016.151.191 was reformatted as 80.16.151.184 - 80.16.151.191
@@ -133,21 +133,21 @@ class TestUpdateRequestHandler:
         person:         Placeholder Person Object
         address:        The Netherlands
         phone:          +31 20 535 4444
-        nic-hdl:        DUMy-RIPE
-        mnt-by:         as760-mnt
+        nic-hdl:        PERSON-TEST
+        mnt-by:         TEST-MNT
         e-mail:         bitbucket@ripe.net
         changed:        2009-07-24T17:00:00Z
-        source:         RIPE
+        source:         TEST
         """)
 
         mntner_text = textwrap.dedent("""
-        mntner:         AS760-MNT
-        admin-c:        DUMY-RIPE
+        mntner:         TEST-MNT
+        admin-c:        PERSON-TEST
         upd-to:         unread@ripe.net
         auth:           PGPKey-80F238C6
-        mnt-by:         AS760-MNT
+        mnt-by:         TEST-MNT
         changed:        2016-10-05T10:41:15Z
-        source:         RIPE
+        source:         TEST
         """)
         rpsl_text = person_text + "\n\n" + mntner_text
 
@@ -166,15 +166,15 @@ class TestUpdateRequestHandler:
 
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['key-cert'],), {}], ['rpsl_pk', ('PGPKEY-80F238C6',), {}],
-            ['sources', (['RIPE'],), {}], ['object_classes', (['person'],), {}], ['rpsl_pk', ('DUMY-RIPE',), {}],
-            ['sources', (['RIPE'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pk', ('AS760-MNT',), {}],
-            ['sources', (['RIPE'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['AS760-MNT'],), {}]
+            ['sources', (['TEST'],), {}], ['object_classes', (['person'],), {}], ['rpsl_pk', ('PERSON-TEST',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pk', ('TEST-MNT',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['TEST-MNT'],), {}]
         ]
 
         assert mock_dh.mock_calls[0][0] == 'upsert_rpsl_object'
-        assert mock_dh.mock_calls[0][1][0].pk() == 'DUMY-RIPE'
+        assert mock_dh.mock_calls[0][1][0].pk() == 'PERSON-TEST'
         assert mock_dh.mock_calls[1][0] == 'upsert_rpsl_object'
-        assert mock_dh.mock_calls[1][1][0].pk() == 'AS760-MNT'
+        assert mock_dh.mock_calls[1][1][0].pk() == 'TEST-MNT'
         assert mock_dh.mock_calls[2][0] == 'commit'
         assert mock_dh.mock_calls[3][0] == 'close'
 
@@ -199,10 +199,10 @@ class TestUpdateRequestHandler:
 
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ---
-        Create succeeded: [person] DUMY-RIPE
+        Create succeeded: [person] PERSON-TEST
 
         ---
-        Modify succeeded: [mntner] AS760-MNT
+        Modify succeeded: [mntner] TEST-MNT
 
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """)
@@ -214,21 +214,21 @@ class TestUpdateRequestHandler:
         person:         Placeholder Person Object
         address:        The Netherlands
         phone:          +31 20 535 4444
-        nic-hdl:        DUMy-RIPE
-        mnt-by:         as760-mnt
+        nic-hdl:        PERSON-TEST
+        mnt-by:         TEST-MNT
         e-mail:         bitbucket@ripe.net
         changed:        2009-07-24T17:00:00Z
-        source:         RIPE
+        source:         TEST
         """)
 
         mntner_text = textwrap.dedent("""
-        mntner:         AS760-MNT
-        admin-c:        DUMY-RIPE
+        mntner:         TEST-MNT
+        admin-c:        PERSON-TEST
         upd-to:         unread@ripe.net
         auth:           PGPKey-80F238C6
-        mnt-by:         AS760-MNT
+        mnt-by:         TEST-MNT
         changed:        2016-10-05T10:41:15Z
-        source:         RIPE
+        source:         TEST
         """)
         rpsl_text = person_text + "\n\n" + mntner_text
 
@@ -247,11 +247,11 @@ class TestUpdateRequestHandler:
 
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['key-cert'],), {}], ['rpsl_pk', ('PGPKEY-80F238C6',), {}],
-            ['sources', (['RIPE'],), {}], ['object_classes', (['person'],), {}], ['rpsl_pk', ('DUMY-RIPE',), {}],
-            ['sources', (['RIPE'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pk', ('AS760-MNT',), {}],
-            ['sources', (['RIPE'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['AS760-MNT'],), {}],
-            ['sources', (['RIPE'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['AS760-MNT'],), {}],
-            ['sources', (['RIPE'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['AS760-MNT'],), {}]
+            ['sources', (['TEST'],), {}], ['object_classes', (['person'],), {}], ['rpsl_pk', ('PERSON-TEST',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pk', ('TEST-MNT',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['TEST-MNT'],), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['TEST-MNT'],), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['TEST-MNT'],), {}]
         ]
 
         assert mock_dh.mock_calls[0][0] == 'commit'
@@ -264,11 +264,11 @@ class TestUpdateRequestHandler:
         person:         Placeholder Person Object
         address:        The Netherlands
         phone:          +31 20 535 4444
-        nic-hdl:        DUMy-RIPE
-        mnt-by:         as760-mnt
+        nic-hdl:        PERSON-TEST
+        mnt-by:         TEST-MNT
         e-mail:         bitbucket@ripe.net
         changed:        2009-07-24T17:00:00Z
-        source:         RIPE
+        source:         TEST
         """)
 
         query_responses = iter([
@@ -282,14 +282,14 @@ class TestUpdateRequestHandler:
         assert handler.status() == 'SUCCESS'
 
         assert flatten_mock_calls(mock_dq) == [
-            ['sources', (['RIPE'],), {}], ['object_classes', (['person'],), {}],
-            ['rpsl_pk', ('DUMY-RIPE',), {}],
-            ['sources', (['RIPE'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['AS760-MNT'],), {}],
-            ['sources', (['RIPE'],), {}],
-            ['lookup_attrs_in', ({'tech-c', 'zone-c', 'admin-c'}, ['DUMY-RIPE']), {}]
+            ['sources', (['TEST'],), {}], ['object_classes', (['person'],), {}],
+            ['rpsl_pk', ('PERSON-TEST',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['TEST-MNT'],), {}],
+            ['sources', (['TEST'],), {}],
+            ['lookup_attrs_in', ({'tech-c', 'zone-c', 'admin-c'}, ['PERSON-TEST']), {}]
         ]
         assert mock_dh.mock_calls[0][0] == 'delete_rpsl_object'
-        assert mock_dh.mock_calls[0][1][0].pk() == 'DUMY-RIPE'
+        assert mock_dh.mock_calls[0][1][0].pk() == 'PERSON-TEST'
         assert mock_dh.mock_calls[1][0] == 'commit'
         assert mock_dh.mock_calls[2][0] == 'close'
 
@@ -310,7 +310,7 @@ class TestUpdateRequestHandler:
 
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             ---
-            Delete succeeded: [person] DUMY-RIPE
+            Delete succeeded: [person] PERSON-TEST
 
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """)
@@ -320,14 +320,14 @@ class TestUpdateRequestHandler:
         mock_dh.execute_query = lambda query: []
 
         rpsl_text = textwrap.dedent("""
-        mntner:         AS760-MNT
-        admin-c:        DUMY-RIPE
+        mntner:         TEST-MNT
+        admin-c:        PERSON-TEST
         upd-to:         unread@ripe.net
         auth:           PGPKey-80F238C6
         auth:           MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.  # md5-password
-        mnt-by:         AS760-MNT
+        mnt-by:         TEST-MNT
         changed:        2016-10-05T10:41:15Z
-        source:         RIPE
+        source:         TEST
 
         password: md5-password
 
@@ -335,38 +335,38 @@ class TestUpdateRequestHandler:
         netname:        NETECONOMY-MG41731
         descr:          TELECOM ITALIA LAB SPA
         country:        IT
-        admin-c:        DUMY-RIPE
-        tech-c:         DUMY-RIPE
+        admin-c:        PERSON-TEST
+        tech-c:         PERSON-TEST
         status:         ASSIGNED PA
         notify:         neteconomy.rete@telecomitalia.it
-        mnt-by:         AS760-mnt
+        mnt-by:         TEST-MNT
         changed:        2001-09-21T22:08:01Z
-        source:         RIPE
+        source:         TEST
         remarks:        remark
         
         person:         Placeholder Person Object
         address:        The Netherlands
         phone:          +31 20 535 4444
-        nic-hdl:        DUMy-RIPE
+        nic-hdl:        PERSON-TEST
         mnt-by:         OTHER-MNT
         e-mail:         bitbucket@ripe.net
         changed:        2009-07-24T17:00:00Z
-        source:         RIPE
+        source:         TEST
         """)
 
         handler = UpdateRequestHandler(rpsl_text)
         assert handler.status() == 'FAILED'
 
         assert flatten_mock_calls(mock_dq) == [
-            ['sources', (['RIPE'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pk', ('AS760-MNT',), {}],
-            ['sources', (['RIPE'],), {}], ['object_classes', (['inetnum'],), {}],
-            ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}], ['sources', (['RIPE'],), {}],
-            ['object_classes', (['person'],), {}], ['rpsl_pk', ('DUMY-RIPE',), {}], ['sources', (['RIPE'],), {}],
-            ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['OTHER-MNT'],), {}], ['sources', (['RIPE'],), {}],
-            ['object_classes', (['role', 'person'],), {}], ['rpsl_pk', ('DUMY-RIPE',), {}],
-            ['sources', (['RIPE'],), {}], ['object_classes', (['role', 'person'],), {}],
-            ['rpsl_pk', ('DUMY-RIPE',), {}], ['sources', (['RIPE'],), {}],
-            ['object_classes', (['role', 'person'],), {}], ['rpsl_pk', ('DUMY-RIPE',), {}]
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pk', ('TEST-MNT',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['inetnum'],), {}],
+            ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}], ['sources', (['TEST'],), {}],
+            ['object_classes', (['person'],), {}], ['rpsl_pk', ('PERSON-TEST',), {}], ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['OTHER-MNT'],), {}], ['sources', (['TEST'],), {}],
+            ['object_classes', (['role', 'person'],), {}], ['rpsl_pk', ('PERSON-TEST',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['role', 'person'],), {}],
+            ['rpsl_pk', ('PERSON-TEST',), {}], ['sources', (['TEST'],), {}],
+            ['object_classes', (['role', 'person'],), {}], ['rpsl_pk', ('PERSON-TEST',), {}]
         ]
         assert flatten_mock_calls(mock_dh) == [
             ['commit', (), {}],
@@ -390,18 +390,18 @@ class TestUpdateRequestHandler:
         
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ---
-        Create FAILED: [mntner] AS760-MNT
+        Create FAILED: [mntner] TEST-MNT
         
-        mntner:         AS760-MNT
-        admin-c:        DUMY-RIPE
+        mntner:         TEST-MNT
+        admin-c:        PERSON-TEST
         upd-to:         unread@ripe.net
         auth:           PGPKey-80F238C6
         auth:           MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.  # md5-password
-        mnt-by:         AS760-MNT
+        mnt-by:         TEST-MNT
         changed:        2016-10-05T10:41:15Z
-        source:         RIPE
+        source:         TEST
         
-        ERROR: Object DUMY-RIPE referenced in field admin-c not found in database RIPE - must reference one of role, person.
+        ERROR: Object PERSON-TEST referenced in field admin-c not found in database TEST - must reference one of role, person.
         
         ---
         Create FAILED: [inetnum] 80.16.151.184 - 80.16.151.191
@@ -410,32 +410,32 @@ class TestUpdateRequestHandler:
         netname:        NETECONOMY-MG41731
         descr:          TELECOM ITALIA LAB SPA
         country:        IT
-        admin-c:        DUMY-RIPE
-        tech-c:         DUMY-RIPE
+        admin-c:        PERSON-TEST
+        tech-c:         PERSON-TEST
         status:         ASSIGNED PA
         notify:         neteconomy.rete@telecomitalia.it
-        mnt-by:         AS760-mnt
+        mnt-by:         TEST-MNT
         changed:        2001-09-21T22:08:01Z
-        source:         RIPE
+        source:         TEST
         remarks:        remark
         
-        ERROR: Object DUMY-RIPE referenced in field admin-c not found in database RIPE - must reference one of role, person.
-        ERROR: Object DUMY-RIPE referenced in field tech-c not found in database RIPE - must reference one of role, person.
+        ERROR: Object PERSON-TEST referenced in field admin-c not found in database TEST - must reference one of role, person.
+        ERROR: Object PERSON-TEST referenced in field tech-c not found in database TEST - must reference one of role, person.
         INFO: Address range 80.16.151.184 - 80.016.151.191 was reformatted as 80.16.151.184 - 80.16.151.191
         
         ---
-        Create FAILED: [person] DUMY-RIPE
+        Create FAILED: [person] PERSON-TEST
         
         person:         Placeholder Person Object
         address:        The Netherlands
         phone:          +31 20 535 4444
-        nic-hdl:        DUMy-RIPE
+        nic-hdl:        PERSON-TEST
         mnt-by:         OTHER-MNT
         e-mail:         bitbucket@ripe.net
         changed:        2009-07-24T17:00:00Z
-        source:         RIPE
+        source:         TEST
         
-        ERROR: Authorisation for person DUMY-RIPE failed: must by authenticated by one of: OTHER-MNT
+        ERROR: Authorisation for person PERSON-TEST failed: must by authenticated by one of: OTHER-MNT
         
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """)
@@ -448,20 +448,20 @@ class TestUpdateRequestHandler:
         person:         Placeholder Person Object
         address:        The Netherlands
         phone:          +31 20 535 4444
-        nic-hdl:        DUMy-RIPE
-        mnt-by:         as760-mnt
+        nic-hdl:        PERSON-TEST
+        mnt-by:         TEST-MNT
         e-mail:         bitbucket@ripe.net
         changed:        2009-07-24T17:00:00Z
-        source:         RIPE
+        source:         TEST
 
-        mntner:         AS760-MNT
-        admin-c:        DUMY-RIPE
+        mntner:         TEST-MNT
+        admin-c:        PERSON-TEST
         upd-to:         unread@ripe.net
         auth:           PGPKey-80F238C6
         auth:           MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.  # md5-password
-        mnt-by:         AS760-MNT
+        mnt-by:         TEST-MNT
         changed:        2016-10-05T10:41:15Z
-        source:         RIPE
+        source:         TEST
 
         password: wrong-password
 
@@ -469,13 +469,13 @@ class TestUpdateRequestHandler:
         netname:        NETECONOMY-MG41731
         descr:          TELECOM ITALIA LAB SPA
         country:        IT
-        admin-c:        DUMY-RIPE
-        tech-c:         DUMY-RIPE
+        admin-c:        PERSON-TEST
+        tech-c:         PERSON-TEST
         status:         ASSIGNED PA
         notify:         neteconomy.rete@telecomitalia.it
-        mnt-by:         AS760-mnt
+        mnt-by:         TEST-MNT
         changed:        2001-09-21T22:08:01Z
-        source:         RIPE
+        source:         TEST
         remarks:        remark
         """)
 
@@ -483,12 +483,12 @@ class TestUpdateRequestHandler:
         assert handler.status() == 'FAILED'
 
         assert flatten_mock_calls(mock_dq) == [
-            ['sources', (['RIPE'],), {}], ['object_classes', (['person'],), {}], ['rpsl_pk', ('DUMY-RIPE',), {}],
-            ['sources', (['RIPE'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pk', ('AS760-MNT',), {}],
-            ['sources', (['RIPE'],), {}], ['object_classes', (['inetnum'],), {}],
-            ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}], ['sources', (['RIPE'],), {}],
-            ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['AS760-MNT'],), {}], ['sources', (['RIPE'],), {}],
-            ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['AS760-MNT'],), {}]
+            ['sources', (['TEST'],), {}], ['object_classes', (['person'],), {}], ['rpsl_pk', ('PERSON-TEST',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pk', ('TEST-MNT',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['inetnum'],), {}],
+            ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}], ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['TEST-MNT'],), {}], ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['TEST-MNT'],), {}]
         ]
         assert flatten_mock_calls(mock_dh) == [
             ['commit', (), {}],
@@ -512,30 +512,30 @@ class TestUpdateRequestHandler:
 
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ---
-        Create FAILED: [person] DUMY-RIPE
+        Create FAILED: [person] PERSON-TEST
         
         person:         Placeholder Person Object
         address:        The Netherlands
         phone:          +31 20 535 4444
-        nic-hdl:        DUMy-RIPE
-        mnt-by:         as760-mnt
+        nic-hdl:        PERSON-TEST
+        mnt-by:         TEST-MNT
         e-mail:         bitbucket@ripe.net
         changed:        2009-07-24T17:00:00Z
-        source:         RIPE
+        source:         TEST
         
-        ERROR: Authorisation for person DUMY-RIPE failed: must by authenticated by one of: AS760-MNT
+        ERROR: Authorisation for person PERSON-TEST failed: must by authenticated by one of: TEST-MNT
         
         ---
-        Create FAILED: [mntner] AS760-MNT
+        Create FAILED: [mntner] TEST-MNT
         
-        mntner:         AS760-MNT
-        admin-c:        DUMY-RIPE
+        mntner:         TEST-MNT
+        admin-c:        PERSON-TEST
         upd-to:         unread@ripe.net
         auth:           PGPKey-80F238C6
         auth:           MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.  # md5-password
-        mnt-by:         AS760-MNT
+        mnt-by:         TEST-MNT
         changed:        2016-10-05T10:41:15Z
-        source:         RIPE
+        source:         TEST
         
         ERROR: Authorisation failed for the auth methods on this mntner object.
         
@@ -546,16 +546,16 @@ class TestUpdateRequestHandler:
         netname:        NETECONOMY-MG41731
         descr:          TELECOM ITALIA LAB SPA
         country:        IT
-        admin-c:        DUMY-RIPE
-        tech-c:         DUMY-RIPE
+        admin-c:        PERSON-TEST
+        tech-c:         PERSON-TEST
         status:         ASSIGNED PA
         notify:         neteconomy.rete@telecomitalia.it
-        mnt-by:         AS760-mnt
+        mnt-by:         TEST-MNT
         changed:        2001-09-21T22:08:01Z
-        source:         RIPE
+        source:         TEST
         remarks:        remark
         
-        ERROR: Authorisation for inetnum 80.16.151.184 - 80.16.151.191 failed: must by authenticated by one of: AS760-MNT
+        ERROR: Authorisation for inetnum 80.16.151.184 - 80.16.151.191 failed: must by authenticated by one of: TEST-MNT
         INFO: Address range 80.16.151.184 - 80.016.151.191 was reformatted as 80.16.151.184 - 80.16.151.191
 
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -567,9 +567,9 @@ class TestUpdateRequestHandler:
 
         rpsl_text = textwrap.dedent("""
         person:         Placeholder Person Object
-        nic-hdl:        DUMy-RIPE
+        nic-hdl:        PERSON-TEST
         changed:        2009-07-24T17:00:00Z
-        source:         RIPE
+        source:         TEST
         """)
 
         handler = UpdateRequestHandler(rpsl_text)
@@ -596,12 +596,12 @@ class TestUpdateRequestHandler:
         
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ---
-        Request FAILED: [person] DUMY-RIPE
+        Request FAILED: [person] PERSON-TEST
         
         person:         Placeholder Person Object
-        nic-hdl:        DUMy-RIPE
+        nic-hdl:        PERSON-TEST
         changed:        2009-07-24T17:00:00Z
-        source:         RIPE
+        source:         TEST
         
         ERROR: Mandatory attribute 'address' on object person is missing
         ERROR: Mandatory attribute 'phone' on object person is missing

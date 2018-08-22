@@ -39,15 +39,15 @@ def irrd_database(monkeypatch):
 @pytest.fixture()
 def database_handler_with_route():
     rpsl_object_route_v4 = Mock(
-        pk=lambda: '192.0.2.0/24,AS23456',
+        pk=lambda: '192.0.2.0/24,AS65537',
         rpsl_object_class='route',
         parsed_data={'mnt-by': ['MNT-TEST', 'MNT-TEST2'], 'source': 'TEST'},
         render_rpsl_text=lambda: 'object-text',
         ip_version=lambda: 4,
         ip_first=IP('192.0.2.0'),
         ip_last=IP('192.0.2.255'),
-        asn_first=23456,
-        asn_last=23456,
+        asn_first=65537,
+        asn_last=65537,
     )
     dh = DatabaseHandler()
     dh.upsert_rpsl_object(rpsl_object_route_v4)
@@ -66,15 +66,15 @@ class TestDatabaseHandlerLive:
         monkeypatch.setattr('irrd.storage.api.MAX_RECORDS_CACHE_BEFORE_INSERT', 1)
 
         rpsl_object_route_v4 = Mock(
-            pk=lambda: '192.0.2.0/24,AS23456',
+            pk=lambda: '192.0.2.0/24,AS65537',
             rpsl_object_class='route',
             parsed_data={'mnt-by': 'MNT-WRONG', 'source': 'TEST'},
             render_rpsl_text=lambda: 'object-text',
             ip_version=lambda: 4,
             ip_first=IP('192.0.2.0'),
             ip_last=IP('192.0.2.255'),
-            asn_first=23456,
-            asn_last=23456,
+            asn_first=65537,
+            asn_last=65537,
         )
 
         self.dh = DatabaseHandler()
@@ -86,15 +86,15 @@ class TestDatabaseHandlerLive:
         assert len(self.dh._rpsl_upsert_cache) == 1
 
         rpsl_object_route_v6 = Mock(
-            pk=lambda: '2001:db8::/64,AS23456',
+            pk=lambda: '2001:db8::/64,AS65537',
             rpsl_object_class='route',
             parsed_data={'mnt-by': 'MNT-CORRECT', 'source': 'TEST2'},
             render_rpsl_text=lambda: 'object-text',
             ip_version=lambda: 6,
             ip_first=IP('2001:db8::'),
             ip_last=IP('2001:db8::ffff:ffff:ffff:ffff'),
-            asn_first=23456,
-            asn_last=23456,
+            asn_first=65537,
+            asn_last=65537,
         )
         self.dh.upsert_rpsl_object(rpsl_object_route_v6)
         assert len(self.dh._rpsl_upsert_cache) == 0  # should have been flushed to the DB
@@ -120,8 +120,8 @@ class TestDatabaseHandlerLive:
             ip_version=lambda: None,
             ip_first=None,
             ip_last=None,
-            asn_first=23456,
-            asn_last=23456,
+            asn_first=65537,
+            asn_last=65537,
         )
         self.dh.upsert_rpsl_object(rpsl_obj_ignored)
         assert len(self.dh._rpsl_upsert_cache) == 1
@@ -146,15 +146,15 @@ class TestDatabaseHandlerLive:
         # have a separate sequence of NRTM serials. Serial for TEST was forced
         # to 42 at the first upsert query.
         assert journal == [
-            {'rpsl_pk': '192.0.2.0/24,AS23456', 'source': 'TEST', 'serial_nrtm': 42,
+            {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 42,
              'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
-            {'rpsl_pk': '192.0.2.0/24,AS23456', 'source': 'TEST', 'serial_nrtm': 43,
+            {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 43,
              'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
-            {'rpsl_pk': '2001:db8::/64,AS23456', 'source': 'TEST2', 'serial_nrtm': 1,
+            {'rpsl_pk': '2001:db8::/64,AS65537', 'source': 'TEST2', 'serial_nrtm': 1,
              'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
-            {'rpsl_pk': '2001:db8::/64,AS23456', 'source': 'TEST2', 'serial_nrtm': 2,
+            {'rpsl_pk': '2001:db8::/64,AS65537', 'source': 'TEST2', 'serial_nrtm': 2,
              'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
-            {'rpsl_pk': '2001:db8::/64,AS23456', 'source': 'TEST2', 'serial_nrtm': 3,
+            {'rpsl_pk': '2001:db8::/64,AS65537', 'source': 'TEST2', 'serial_nrtm': 3,
              'operation': DatabaseOperation.delete, 'object_class': 'route', 'object_text': 'object-text'},
         ]
 
@@ -177,15 +177,15 @@ class TestDatabaseHandlerLive:
     def test_updates_database_status_forced_serials(self, monkeypatch, irrd_database):
         # As settings are default, journal keeping is disabled for this DB
         rpsl_object_route_v4 = Mock(
-            pk=lambda: '192.0.2.0/24,AS23456',
+            pk=lambda: '192.0.2.0/24,AS65537',
             rpsl_object_class='route',
             parsed_data={'mnt-by': 'MNT-WRONG', 'source': 'TEST'},
             render_rpsl_text=lambda: 'object-text',
             ip_version=lambda: 4,
             ip_first=IP('192.0.2.0'),
             ip_last=IP('192.0.2.255'),
-            asn_first=23456,
-            asn_last=23456,
+            asn_first=65537,
+            asn_last=65537,
         )
 
         self.dh = DatabaseHandler()
@@ -194,15 +194,15 @@ class TestDatabaseHandlerLive:
         self.dh.upsert_rpsl_object(rpsl_object_route_v4, 4242)
 
         rpsl_object_route_v6 = Mock(
-            pk=lambda: '2001:db8::/64,AS23456',
+            pk=lambda: '2001:db8::/64,AS65537',
             rpsl_object_class='route',
             parsed_data={'mnt-by': 'MNT-CORRECT', 'source': 'TEST2'},
             render_rpsl_text=lambda: 'object-text',
             ip_version=lambda: 6,
             ip_first=IP('2001:db8::'),
             ip_last=IP('2001:db8::ffff:ffff:ffff:ffff'),
-            asn_first=23456,
-            asn_last=23456,
+            asn_first=65537,
+            asn_last=65537,
         )
         # This upsert has no serial, and journal keeping is not enabled,
         # so there should be no record of the DB status.
@@ -233,15 +233,15 @@ class TestDatabaseHandlerLive:
         monkeypatch.setenv('IRRD_SOURCES_TEST_KEEP_JOURNAL', '1')
 
         rpsl_object_route_v4 = Mock(
-            pk=lambda: '192.0.2.0/24,AS23456',
+            pk=lambda: '192.0.2.0/24,AS65537',
             rpsl_object_class='route',
             parsed_data={'source': 'TEST'},
             render_rpsl_text=lambda: 'object-text',
             ip_version=lambda: 4,
             ip_first=IP('192.0.2.0'),
             ip_last=IP('192.0.2.255'),
-            asn_first=23456,
-            asn_last=23456,
+            asn_first=65537,
+            asn_last=65537,
         )
 
         self.dh = DatabaseHandler()
@@ -272,25 +272,25 @@ class TestRPSLDatabaseQueryLive:
         self.dh = database_handler_with_route
 
         # Each of these filters should match
-        self._assert_match(RPSLDatabaseQuery().rpsl_pk('192.0.2.0/24,AS23456'))
+        self._assert_match(RPSLDatabaseQuery().rpsl_pk('192.0.2.0/24,AS65537'))
         self._assert_match(RPSLDatabaseQuery().sources(['TEST', 'X']))
         self._assert_match(RPSLDatabaseQuery().object_classes(['route']))
         self._assert_match(RPSLDatabaseQuery().lookup_attr('mnt-by', 'MNT-test'))  # intentional case mismatch
         self._assert_match(RPSLDatabaseQuery().ip_exact(IP('192.0.2.0/24')))
-        self._assert_match(RPSLDatabaseQuery().asn(23456))
+        self._assert_match(RPSLDatabaseQuery().asn(65537))
         self._assert_match(RPSLDatabaseQuery().ip_more_specific(IP('192.0.0.0/21')))
         self._assert_match(RPSLDatabaseQuery().ip_less_specific(IP('192.0.2.0/24')))
         self._assert_match(RPSLDatabaseQuery().ip_less_specific(IP('192.0.2.0/25')))
         self._assert_match(RPSLDatabaseQuery().text_search('192.0.2.0/24'))
         self._assert_match(RPSLDatabaseQuery().text_search('192.0.2.0/25'))
         self._assert_match(RPSLDatabaseQuery().text_search('192.0.2.1'))
-        self._assert_match(RPSLDatabaseQuery().text_search('192.0.2.0/24,As23456'))
+        self._assert_match(RPSLDatabaseQuery().text_search('192.0.2.0/24,As65537'))
 
     def test_chained_filters(self, irrd_database, database_handler_with_route):
         self.dh = database_handler_with_route
 
-        q = RPSLDatabaseQuery().rpsl_pk('192.0.2.0/24,AS23456').sources(['TEST', 'X']).object_classes(['route'])
-        q = q.lookup_attr('mnt-by', 'MNT-TEST').ip_exact(IP('192.0.2.0/24')).asn(23456)
+        q = RPSLDatabaseQuery().rpsl_pk('192.0.2.0/24,AS65537').sources(['TEST', 'X']).object_classes(['route'])
+        q = q.lookup_attr('mnt-by', 'MNT-TEST').ip_exact(IP('192.0.2.0/24')).asn(65537)
         q = q.ip_less_specific(IP('192.0.2.0/25')).ip_less_specific(IP('192.0.2.0/24'))
         q = q.ip_more_specific(IP('192.0.0.0/21'))
 
@@ -314,31 +314,31 @@ class TestRPSLDatabaseQueryLive:
         self._assert_no_match(RPSLDatabaseQuery().ip_less_specific(IP('192.0.2.0/23')))
         self._assert_no_match(RPSLDatabaseQuery().text_search('192.0.2.0/23'))
         self._assert_no_match(RPSLDatabaseQuery().text_search('AS2914'))
-        self._assert_no_match(RPSLDatabaseQuery().text_search('23456'))
+        self._assert_no_match(RPSLDatabaseQuery().text_search('65537'))
 
     def test_ordering_sources(self, irrd_database, database_handler_with_route):
         self.dh = database_handler_with_route
         rpsl_object_2 = Mock(
-            pk=lambda: '192.0.2.1/32,AS23456',
+            pk=lambda: '192.0.2.1/32,AS65537',
             rpsl_object_class='route',
             parsed_data={'mnt-by': ['MNT-TEST', 'MNT-TEST2'], 'source': 'AAA-TST'},
             render_rpsl_text=lambda: 'object-text',
             ip_version=lambda: 4,
             ip_first=IP('192.0.2.1'),
             ip_last=IP('192.0.2.1'),
-            asn_first=23456,
-            asn_last=23456,
+            asn_first=65537,
+            asn_last=65537,
         )
         rpsl_object_3 = Mock(
-            pk=lambda: '192.0.2.2/32,AS23456',
+            pk=lambda: '192.0.2.2/32,AS65537',
             rpsl_object_class='route',
             parsed_data={'mnt-by': ['MNT-TEST', 'MNT-TEST2'], 'source': 'OTHER-SOURCE'},
             render_rpsl_text=lambda: 'object-text',
             ip_version=lambda: 4,
             ip_first=IP('192.0.2.2'),
             ip_last=IP('192.0.2.2'),
-            asn_first=23456,
-            asn_last=23456,
+            asn_first=65537,
+            asn_last=65537,
         )
         self.dh.upsert_rpsl_object(rpsl_object_2)
         self.dh.upsert_rpsl_object(rpsl_object_3)
@@ -410,37 +410,37 @@ class TestRPSLDatabaseQueryLive:
     def test_more_less_specific_filters(self, irrd_database, database_handler_with_route):
         self.dh = database_handler_with_route
         rpsl_route_more_specific_25_1 = Mock(
-            pk=lambda: '192.0.2.0/25,AS23456',
+            pk=lambda: '192.0.2.0/25,AS65537',
             rpsl_object_class='route',
             parsed_data={'mnt-by': ['MNT-TEST', 'MNT-TEST2'], 'source': 'TEST'},
             render_rpsl_text=lambda: 'object-text',
             ip_version=lambda: 4,
             ip_first=IP('192.0.2.0'),
             ip_last=IP('192.0.2.127'),
-            asn_first=23456,
-            asn_last=23456,
+            asn_first=65537,
+            asn_last=65537,
         )
         rpsl_route_more_specific_25_2 = Mock(
-            pk=lambda: '192.0.2.128/25,AS23456',
+            pk=lambda: '192.0.2.128/25,AS65537',
             rpsl_object_class='route',
             parsed_data={'mnt-by': ['MNT-TEST', 'MNT-TEST2'], 'source': 'TEST'},
             render_rpsl_text=lambda: 'object-text',
             ip_version=lambda: 4,
             ip_first=IP('192.0.2.128'),
             ip_last=IP('192.0.2.255'),
-            asn_first=23456,
-            asn_last=23456,
+            asn_first=65537,
+            asn_last=65537,
         )
         rpsl_route_more_specific_26 = Mock(
-            pk=lambda: '192.0.2.0/26,AS23456',
+            pk=lambda: '192.0.2.0/26,AS65537',
             rpsl_object_class='route',
             parsed_data={'mnt-by': ['MNT-TEST', 'MNT-TEST2'], 'source': 'TEST2'},
             render_rpsl_text=lambda: 'object-text',
             ip_version=lambda: 4,
             ip_first=IP('192.0.2.0'),
             ip_last=IP('192.0.2.63'),
-            asn_first=23456,
-            asn_last=23456,
+            asn_first=65537,
+            asn_last=65537,
         )
         self.dh.upsert_rpsl_object(rpsl_route_more_specific_25_1)
         self.dh.upsert_rpsl_object(rpsl_route_more_specific_25_2)
@@ -450,25 +450,25 @@ class TestRPSLDatabaseQueryLive:
         q = RPSLDatabaseQuery().ip_more_specific(IP('192.0.2.0/24'))
         rpsl_pks = [r['rpsl_pk'] for r in self.dh.execute_query(q)]
         assert len(rpsl_pks) == 3, f"Failed query: {q}"
-        assert '192.0.2.0/25,AS23456' in rpsl_pks
-        assert '192.0.2.128/25,AS23456' in rpsl_pks
-        assert '192.0.2.0/26,AS23456' in rpsl_pks
+        assert '192.0.2.0/25,AS65537' in rpsl_pks
+        assert '192.0.2.128/25,AS65537' in rpsl_pks
+        assert '192.0.2.0/26,AS65537' in rpsl_pks
 
         q = RPSLDatabaseQuery().ip_less_specific(IP('192.0.2.0/25'))
         rpsl_pks = [r['rpsl_pk'] for r in self.dh.execute_query(q)]
         assert len(rpsl_pks) == 2, f"Failed query: {q}"
-        assert '192.0.2.0/25,AS23456' in rpsl_pks
-        assert '192.0.2.0/24,AS23456' in rpsl_pks
+        assert '192.0.2.0/25,AS65537' in rpsl_pks
+        assert '192.0.2.0/24,AS65537' in rpsl_pks
 
         q = RPSLDatabaseQuery().ip_less_specific_one_level(IP('192.0.2.0/26'))
         rpsl_pks = [r['rpsl_pk'] for r in self.dh.execute_query(q)]
         assert len(rpsl_pks) == 1, f"Failed query: {q}"
-        assert '192.0.2.0/25,AS23456' in rpsl_pks
+        assert '192.0.2.0/25,AS65537' in rpsl_pks
 
         q = RPSLDatabaseQuery().ip_less_specific(IP('192.0.2.0/25')).first_only()
         rpsl_pks = [r['rpsl_pk'] for r in self.dh.execute_query(q)]
         assert len(rpsl_pks) == 1, f"Failed query: {q}"
-        assert '192.0.2.0/25,AS23456' in rpsl_pks
+        assert '192.0.2.0/25,AS65537' in rpsl_pks
 
         q = RPSLDatabaseQuery().sources(['TEST']).ip_less_specific_one_level(IP('192.0.2.0/27'))
         self._assert_match(q)

@@ -1,820 +1,87 @@
 # Sample objects used in various tests.
 # flake8: noqa: W291,W293
 
-SAMPLE_AS_BLOCK = """as-block:       AS2043 - as02043
-descr:          RIPE NCC ASN block
-remarks:        These AS Numbers are assigned to network operators in the RIPE NCC service region.
-mnt-by:         RIPE-NCC-HM-MNT
+SAMPLE_AS_BLOCK = """as-block:       AS65536 - as065538
+descr:          TEST ASN block
+remarks:        test remark
+mnt-by:         TEST-MNT
 changed:        2014-02-24T13:15:13Z
-tech-c:         DUMY-RIPE
-admin-c:        DUMY-RIPE
-source:         RIPE
+tech-c:         PERSON-TEST
+admin-c:        PERSON-TEST
+source:         TEST
 remarks:        remark
 """
 
-SAMPLE_AS_SET = """as-set:         AS-RESTENA
-descr:          Reseau Teleinformatique de l"Education Nationale
-descr:          Educational and research network for Luxembourg
+SAMPLE_AS_SET = """as-set:         AS-SETTEST
+descr:          description
 members:        AS2602, AS42909, AS51966
 members:        AS49624
-tech-c:         DUMY-RIPE
-admin-c:        DUMY-RIPE
-notify:         noc@restena.lu
-mnt-by:         AS2602-MNT
+tech-c:         PERSON-TEST
+admin-c:        PERSON-TEST
+notify:         notify@example.com
+mnt-by:         TEST-MNT
 changed:        2017-05-19T12:22:08Z
-source:         RIPE
+source:         TEST
 remarks:        remark
 """
 
-SAMPLE_AUT_NUM = """aut-num:        as03255
-as-name:        UARNET-AS
-descr:          UARNet
-descr:          EARN-Ukraine
+SAMPLE_AUT_NUM = """aut-num:        as065537
+as-name:        TEST-AS
+descr:          description
++               foo
 remarks:        ---> Uplinks
-export:         to AS3356 announce AS-UARNET
+export:         to AS3356 announce AS-SETTEST
 import:         from AS3356 accept ANY
-export:         to AS174 announce AS-UARNET
+export:         to AS174 announce AS-SETTEST
 import:         from AS174 accept ANY
-mp-export:      afi ipv6.unicast to AS174 announce AS-UARNET
+mp-export:      afi ipv6.unicast to AS174 announce AS-SETTEST
 mp-import:      afi ipv6.unicast from AS174 accept ANY
-export:         to AS8359 announce AS-UARNET
+export:         to AS8359 announce AS-SETTEST
 import:         from AS8359 accept ANY
-export:         to AS3257 announce AS-UARNET
+export:         to AS3257 announce AS-SETTEST
 import:         from AS3257 accept ANY
-export:         to AS3549 announce AS-UARNET
+export:         to AS3549 announce AS-SETTEST
 import:         from AS3549 accept ANY
-export:         to AS9002 announce AS-UARNET
+export:         to AS9002 announce AS-SETTEST
 import:         from AS9002 accept ANY
-mp-export:      afi ipv6.unicast to AS9002 announce AS-UARNET
+mp-export:      afi ipv6.unicast to AS9002 announce AS-SETTEST
 mp-import:      afi ipv6.unicast from AS9002 accept ANY
 remarks:        ---> Peers
-export:         to AS31117 announce AS-UARNET AS-UAIX
+export:         to AS31117 announce AS-SETTEST AS-UAIX
 import:         from AS31117 accept AS-ENERGOTEL
-export:         to AS8501 announce AS-UARNET AS-UAIX
+export:         to AS8501 announce AS-SETTEST AS-UAIX
 import:         from AS8501 accept AS-PLNET
-export:         to AS35297 announce AS-UARNET
+export:         to AS35297 announce AS-SETTEST
 import:         from AS35297 accept AS-DL-WORLD
-export:         to AS13188 announce AS-UARNET
+export:         to AS13188 announce AS-SETTEST
 import:         from AS13188 accept AS-BANKINFORM
-export:         to AS12389 announce AS-UARNET
+export:         to AS12389 announce AS-SETTEST
 import:         from AS12389 accept AS-ROSTELECOM
-export:         to AS35395 announce AS-UARNET
+export:         to AS35395 announce AS-SETTEST
 import:         from AS35395 accept AS-GECIXUAIX
-export:         to AS50952 announce AS-UARNET
+export:         to AS50952 announce AS-SETTEST
 import:         from AS50952 accept AS-DATAIX
-remarks:        ---> UA-IX
-export:         to AS15645 announce AS-UARNET AS-PLNET AS-ENERGOTEL
-import:         from AS15645 accept AS-UAIX
-mp-export:      afi ipv6.unicast to AS15645 announce AS-UARNET
-mp-import:      afi ipv6.unicast from AS15645 accept AS-UAIX-v6
-remarks:        ---> DE-CIX
-export:         to AS6695 announce AS-UARNET
-import:         from AS6695 accept AS-DECIX
-mp-export:      afi ipv6.unicast to AS6695 announce AS-UARNET
-mp-import:      afi ipv6.unicast from AS6695 accept AS-DECIX-V6
-export:         to AS6939 announce AS-UARNET
-import:         from AS6939 accept AS-HURRICANE
-export:         to AS20940 announce AS-UARNET
-import:         from AS20940 accept AS-AKAMAI
-export:         to AS13030 announce AS-UARNET
-import:         from AS13030 accept AS-INIT7
-export:         to AS5588 announce AS-UARNET
-import:         from AS5588 accept AS-GTS-CE
-export:         to AS6730 announce AS-UARNET
-import:         from AS6730 accept AS-GLOBAL
-export:         to AS29208 announce AS-UARNET
-import:         from AS29208 accept AS-DIALTELECOM
-export:         to AS42 announce AS-UARNET
-import:         from AS42 accept AS-PCH
-export:         to AS3856 announce AS-UARNET
-import:         from AS3856 accept AS-PCH
-export:         to AS19151 announce AS-UARNET
-import:         from AS19151 accept AS-WVFIBER
-export:         to AS5430 announce AS-UARNET
-import:         from AS5430 accept AS-FREENETDE
-export:         to AS6805 announce AS-UARNET
-import:         from AS6805 accept AS-TDDE
-export:         to AS8365 announce AS-UARNET
-import:         from AS8365 accept AS-MANDA
-export:         to AS13285 announce AS-UARNET
-import:         from AS13285 accept AS-OPAL
-export:         to AS22822 announce AS-UARNET
-import:         from AS22822 accept AS-LLNW
-export:         to AS4788 announce AS-UARNET
-import:         from AS4788 accept AS-TMNET-CUSTOMERS
-export:         to AS8966 announce AS-UARNET
-import:         from AS8966 accept AS-EMIX
-remarks:        ---> PL-IX
-export:         to AS8545 announce AS-UARNET
-import:         from AS8545 accept AS-PLIX
-remarks:        ---> Other Peers
-export:         to AS25229 announce AS-UARNET
-import:         from AS25229 accept AS25229:AS-CUST
-export:         to AS31210 announce AS-UARNET
-import:         from AS31210 accept AS-DTEL-IX
-remarks:        ---
-export:         to AS3319 announce ANY
-import:         from AS3319 accept AS-KSNET
-export:         to AS13249 announce AS-UARNET
-import:         from AS13249 accept ANY
-export:         to AS6849 announce AS-UARNET
-import:         from AS6849 accept ANY
-export:         to AS25462 announce AS-UARNET
-import:         from AS25462 accept ANY
-export:         to AS6807 announce ANY
-import:         from AS6807 accept AS6807
-export:         to AS6846 announce ANY
-import:         from AS6846 accept AS6846
-export:         to AS12700 announce ANY
-import:         from AS12700 accept AS12700
-export:         to AS15626 announce ANY
-import:         from AS15626 accept AS-ITL
-export:         to AS41166 announce ANY
-import:         from AS41166 accept AS41166
-export:         to AS15772 announce AS-UARNET
-import:         from AS15772 accept ANY
-export:         to AS13307 announce ANY
-import:         from AS13307 accept AS-SKIF
-mp-export:      afi ipv6.unicast to AS13307 announce ANY
-mp-import:      afi ipv6.unicast from AS13307 accept AS-SKIF-V6
-export:         to AS35004 announce ANY
-import:         from AS35004 accept AS-NETGRUP
-export:         to AS16324 announce ANY
-import:         from AS16324 accept AS16324
-export:         to AS20754 announce ANY
-import:         from AS20754 accept AS20754
-export:         to AS20873 announce ANY
-import:         from AS20873 accept AS-P5
-export:         to AS21131 announce ANY
-import:         from AS21131 accept AS21131
-mp-export:      afi ipv6.unicast to AS21131 announce ANY
-mp-import:      afi ipv6.unicast from AS21131 accept AS21131
-export:         to AS21256 announce ANY
-import:         from AS21256 accept AS21256
-export:         to AS21488 announce ANY
-import:         from AS21488 accept AS-EMPLOT
-export:         to AS24893 announce ANY
-import:         from AS24893 accept AS24893
-export:         to AS25119 announce ANY
-import:         from AS25119 accept AS25119
-export:         to AS25143 announce ANY
-import:         from AS25143 accept AS-IU
-export:         to AS28776 announce ANY
-import:         from AS28776 accept AS28776
-export:         to AS29044 announce ANY
-import:         from AS29044 accept AS-IF-INFOCOM
-export:         to AS29375 announce ANY
-import:         from AS29375 accept AS29375
-export:         to AS29442 announce ANY
-import:         from AS29442 accept AS-INETCOM
-export:         to AS31145 announce ANY
-import:         from AS31145 accept AS31145
-export:         to AS31556 announce ANY
-import:         from AS31556 accept AS-ARKADAX
-export:         to AS24962 announce ANY
-import:         from AS24962 accept AS24962
-export:         to AS25521 announce ANY
-import:         from AS25521 accept AS25521
-export:         to AS28858 announce ANY
-import:         from AS28858 accept AS-LECOS
-export:         to AS34046 announce ANY
-import:         from AS34046 accept AS-SHIELD
-export:         to AS35412 announce ANY
-import:         from AS35412 accept AS-SET-DCS
-export:         to AS35409 announce ANY
-import:         from AS35409 accept AS-UPLINK
-export:         to AS6884 announce ANY
-import:         from AS6884 accept AS-EURONET-UA
-export:         to AS31062 announce ANY
-import:         from AS31062 accept AS31062
-export:         to AS20950 announce ANY
-import:         from AS20950 accept AS20950
-export:         to AS21075 announce ANY
-import:         from AS21075 accept AS21075
-export:         to AS21151 announce ANY
-import:         from AS21151 accept AS21151:AS-CUSTOMERS
-export:         to AS24896 announce ANY
-import:         from AS24896 accept AS24896 AS35362
-export:         to AS34251 announce ANY
-import:         from AS34251 accept AS-IMC
-export:         to AS34399 announce ANY
-import:         from AS16223 accept AS-BITTERNET
-export:         to AS16223 announce ANY
-import:         from AS35345 accept AS35345
-export:         to AS25282 announce ANY
-import:         from AS25282 accept AS-KS
-export:         to AS30886 announce ANY
-import:         from AS30886 accept AS-KOMITEX
-mp-export:      afi ipv6.unicast to AS30886 announce ANY
-mp-import:      afi ipv6.unicast from AS30886 accept AS-KOMITEX
-export:         to AS39066 announce ANY
-import:         from AS39066 accept AS39066
-export:         to AS34323 announce ANY
-import:         from AS34323 accept AS-IPCOM
-export:         to AS39127 announce ANY
-import:         from AS39127 accept AS39127
-export:         to AS34118 announce ANY
-import:         from AS34118 accept AS34118
-export:         to AS39247 announce ANY
-import:         from AS39247 accept AS-LVIVNET
-export:         to AS24593 announce ANY
-import:         from AS24593 accept AS-MOBICOM
-export:         to AS39084 announce ANY
-import:         from AS39084 accept AS39084
-export:         to AS34672 announce ANY
-import:         from AS34672 accept AS-ELHIM
-export:         to AS35296 announce ANY
-import:         from AS35296 accept AS35296
-export:         to AS39399 announce ANY
-import:         from AS39399 accept AS-FENIXVT
-export:         to AS39431 announce ANY
-import:         from AS39431 accept AS-ARGOCOM
-export:         to AS41619 announce ANY
-import:         from AS41619 accept AS41619
-export:         to AS41649 announce ANY
-import:         from AS41649 accept AS-ROYAL
-export:         to AS42381 announce ANY
-import:         from AS42381 accept AS42381
-export:         to AS42501 announce ANY
-import:         from AS42501 accept AS42501
-export:         to AS43206 announce ANY
-import:         from AS43206 accept AS43206
-export:         to AS43880 announce ANY
-import:         from AS43880 accept AS-LITECH
-export:         to AS43864 announce ANY
-import:         from AS43864 accept AS-INTEGRA-MEDIA
-export:         to AS44318 announce ANY
-import:         from AS44318 accept AS44318
-export:         to AS44411 announce ANY
-import:         from AS44411 accept AS44411
-export:         to AS44629 announce ANY
-import:         from AS44616 accept AS44616
-export:         to AS44616 announce ANY
-import:         from AS44629 accept AS44629
-export:         to AS47266 announce ANY
-import:         from AS47266 accept AS47266
-export:         to AS31725 announce ANY
-import:         from AS31725 accept AS-SHTORM
-export:         to AS28996 announce ANY
-import:         from AS28996 accept AS-IMPULS_ZT
-export:         to AS47800 announce ANY
-import:         from AS47800 accept AS47800
-export:         to AS42112 announce ANY
-import:         from AS42112 accept AS42112
-export:         to AS41435 announce ANY
-import:         from AS41435 accept AS41435 AS-NETUNDER
-export:         to AS48082 announce ANY
-import:         from AS48082 accept AS48082
-export:         to AS39065 announce ANY
-import:         from AS39065 accept AS-SOHO-TO-ANY
-export:         to AS35067 announce ANY
-import:         from AS35067 accept AS-PROKK
-export:         to AS34187 announce ANY
-import:         from AS34187 accept AS-RENOME
-export:         to AS43613 announce ANY
-import:         from AS43613 accept AS-SOWA
-export:         to AS47985 announce ANY
-import:         from AS47985 accept AS47985
-export:         to AS35688 announce ANY
-import:         from AS35688 accept AS35688
-export:         to AS42802 announce ANY
-import:         from AS42802 accept AS42802
-export:         to AS48420 announce ANY
-import:         from AS48420 accept AS48420
-export:         to AS48006 announce ANY
-import:         from AS48006 accept AS-LANGATE-NET
-export:         to AS6876 announce ANY
-import:         from AS6876 accept AS-TENET-UA
-export:         to AS41867 announce ANY
-import:         from AS41867 accept AS-GEONIC
-export:         to AS24945 announce ANY
-import:         from AS24945 accept AS-VNTP
-export:         to AS48589 announce ANY
-import:         from AS48589 accept AS48589
-export:         to AS6789 announce ANY
-import:         from AS6789 accept AS-CRELCOM
-export:         to AS34661 announce ANY
-import:         from AS34661 accept AS-BRIZ-TO-ODIX
-export:         to AS8654 announce ANY
-import:         from AS8654 accept AS-CRIMEAINFOCOM
-export:         to AS43802 announce ANY
-import:         from AS43802 accept AS-MYST
-export:         to AS43258 announce ANY
-import:         from AS43258 accept AS43258
-export:         to AS48957 announce ANY
-import:         from AS48957 accept AS-LVIV
-export:         to AS43103 announce ANY
-import:         from AS43103 accept AS-ONETELECOM
-export:         to AS12545 announce ANY
-import:         from AS12545 accept AS-TCOM-UZH
-export:         to AS31234 announce ANY
-import:         from AS31234 accept AS-KRAM-UZH
-export:         to AS15461 announce ANY
-import:         from AS15461 accept AS-SOLVER
-export:         to AS21437 announce ANY
-import:         from AS21437 accept AS-AVITI
-export:         to AS25498 announce ANY
-import:         from AS25498 accept AS-MOBICOM-UA
-export:         to AS42239 announce ANY
-import:         from AS42239 accept AS-FARLINE
-export:         to AS25132 announce ANY
-import:         from AS25132 accept AS25132
-export:         to AS196740 announce ANY
-import:         from AS196740 accept AS196740
-export:         to AS31272 announce ANY
-import:         from AS31272 accept AS-WILDPARK
-mp-export:      afi ipv6.unicast to AS31272 announce ANY
-mp-import:      afi ipv6.unicast from AS31272 accept AS-WILDPARK-V6
-export:         to AS49183 announce ANY
-import:         from AS49183 accept AS49183:AS-CUSTOMERS
-export:         to AS48323 announce ANY
-import:         from AS48323 accept AS-NEIRON
-export:         to AS44533 announce ANY
-import:         from AS44533 accept AS44533
-export:         to AS49125 announce ANY
-import:         from AS49125 accept AS-UTEAM
-export:         to AS49356 announce ANY
-import:         from AS49356 accept AS49356
-export:         to AS48094 announce ANY
-import:         from AS48094 accept AS-ELECTRA
-export:         to AS34715 announce ANY
-import:         from AS34715 accept AS34715
-export:         to AS28761 announce ANY
-import:         from AS28761 accept AS28761:AS-CUSTOMERS
-export:         to AS49480 announce ANY
-import:         from AS49480 accept AS49480
-export:         to AS8788 announce ANY
-import:         from AS8788 accept AS-ADAM-UA
-import:         from AS8788 accept AS-ADAM
-export:         to AS41665 announce ANY
-import:         from AS41665 accept AS41665
-export:         to AS28907 announce ANY
-import:         from AS28907 accept AS-MIROHOST
-mp-export:      afi ipv6.unicast to AS28907 announce ANY
-mp-import:      afi ipv6.unicast from AS28907 accept AS-MIROHOST-v6
-export:         to AS43266 announce ANY
-import:         from AS43266 accept AS-ABSET
-export:         to AS21312 announce ANY
-import:         from AS21312 accept AS-CHEREDA-SM
-export:         to AS47743 announce ANY
-import:         from AS47743 accept AS-IRENASU
-export:         to AS42896 announce ANY
-import:         from AS42896 accept AS-ACSGROUP
-export:         to AS41972 announce ANY
-import:         from AS41972 accept AS-MAYCOM
-export:         to AS49827 announce ANY
-import:         from AS49827 accept AS49827
-export:         to AS40965 announce ANY
-import:         from AS40965 accept AS-RISE
-export:         to AS35680 announce ANY
-import:         from AS35680 accept AS35680
-export:         to AS15595 announce ANY
-import:         from AS15595 accept AS-SKYLINE-TO-UAIX
-export:         to AS44722 announce ANY
-import:         from AS44722 accept AS44722
-export:         to AS39728 announce ANY
-import:         from AS39728 accept AS-LUGANET
-export:         to AS35649 announce ANY
-import:         from AS35649 accept AS-DILINES
-export:         to AS39769 announce ANY
-import:         from AS39769 accept AS39769
-export:         to AS49984 announce ANY
-import:         from AS49984 accept AS49984
-export:         to AS41161 announce ANY
-import:         from AS41161 accept AS-REALWEB
-export:         to AS12986 announce ANY
-import:         from AS12986 accept AS-UKRSC AS12963:AS-CUST2UPD
-mp-export:      afi ipv6.unicast to AS12986 announce ANY
-mp-import:      afi ipv6.unicast from AS12986 accept AS12986
-export:         to AS49883 announce ANY
-import:         from AS49883 accept AS49883
-export:         to AS6886 announce ANY
-import:         from AS6886 accept AS-INTS
-export:         to AS43764 announce ANY
-import:         from AS43764 accept AS43764
-export:         to AS13103 announce ANY
-import:         from AS13103 accept AS-VALOR
-export:         to AS50392 announce ANY
-import:         from AS50392 accept AS-CAMPUS-RV
-mp-export:      afi ipv6.unicast to AS50392 announce ANY
-mp-import:      afi ipv6.unicast from AS50392 accept AS-CAMPUS-RV
-export:         to AS44894 announce ANY
-import:         from AS44894 accept AS-UCMA
-export:         to AS48533 announce ANY
-import:         from AS48533 accept AS-TANGRAM
-export:         to AS49491 announce ANY
-import:         from AS49491 accept AS49491
-export:         to AS196790 announce ANY
-import:         from AS196790 accept AS196790
-export:         to AS25403 announce ANY
-import:         from AS25403 accept AS25403
-remarks:        ---> Test
-export:         to AS43110 announce ANY
-import:         from AS43110 accept AS-ROSTNET
-export:         to AS8343 announce ANY
-import:         from AS8343 accept AS-DORIS
-export:         to AS50569 announce ANY
-import:         from AS50569 accept AS-ISOFTS2
-export:         to AS35362 announce ANY
-import:         from AS35362 accept AS-35362
-export:         to AS50211 announce ANY
-import:         from AS50211 accept AS50211
-export:         to AS15738 announce ANY
-import:         from AS15738 accept AS-EXPRESSUA
-export:         to AS50579 announce ANY
-import:         from AS50579 accept AS-SIM-LTD
-export:         to AS50662 announce ANY
-import:         from AS50662 accept AS50662
-export:         to AS50297 announce ANY
-import:         from AS50297 accept AS-CITONET
-export:         to AS30822 announce ANY
-import:         from AS30822 accept AS30822
-export:         to AS196975 announce ANY
-import:         from AS196975 accept AS196975
-export:         to AS49223 announce ANY
-import:         from AS49223 accept AS-EVEREST
-export:         to AS41709 announce ANY
-import:         from AS41709 accept AS-LDS-UA
-export:         to AS197073 announce ANY
-import:         from AS197073 accept AS197073
-export:         to AS47898 announce ANY
-import:         from AS47898 accept AS47898
-export:         to AS28804 announce ANY
-import:         from AS28804 accept AS28804
-export:         to AS50012 announce ANY
-import:         from AS50012 accept AS50012
-export:         to AS50325 announce ANY
-import:         from AS50325 accept AS-ASV-UARNET
-export:         to AS29576 announce ANY
-import:         from AS29576 accept AS-POISK-UA
-export:         to AS49706 announce ANY
-import:         from AS49706 accept AS49706
-export:         to AS6723 announce ANY
-import:         from AS6723 accept AS-6723
-mp-export:      afi ipv6.unicast to AS6723 announce ANY
-mp-import:      afi ipv6.unicast from AS6723 accept AS-6723-v6
-export:         to AS39512 announce ANY
-import:         from AS39512 accept AS39512
-export:         to AS44171 announce ANY
-import:         from AS44171 accept AS44171
-export:         to as47702 announce ANY
-import:         from as47702 accept AS-DISCOVERY
-export:         to AS51622 announce ANY
-import:         from AS51622 accept AS51622
-export:         to AS197348 announce ANY
-import:         from AS197348 accept AS197348
-export:         to AS6702 announce ANY
-import:         from AS6702 accept AS-APEX
-export:         to AS197327 announce ANY
-import:         from AS197327 accept AS197327
-export:         to AS48117 announce ANY
-import:         from AS48117 accept AS48117
-export:         to AS51858 announce ANY
-import:         from AS51858 accept AS51858
-export:         to AS49332 announce ANY
-import:         from AS49332 accept AS49332
-export:         to AS12687 announce ANY
-import:         from AS12687 accept AS-URAN-INET
-mp-export:      afi ipv6.unicast to AS12687 announce ANY
-mp-import:      afi ipv6.unicast from AS12687 accept AS-URAN-INET-v6
-export:         to AS48964 announce ANY
-import:         from AS48964 accept AS-ENTERRA
-export:         to AS52074 announce ANY
-import:         from AS52074 accept AS52074
-export:         to AS52071 announce ANY
-import:         from AS52071 accept AS-PIEOC
-export:         to AS43022 announce ANY
-import:         from AS43022 accept AS-UASEECH
-export:         to AS35816 announce ANY
-import:         from AS35816 accept AS-LANCOM
-export:         to AS44921 announce ANY
-import:         from AS44921 accept AS-STIKONET
-export:         to AS197131 announce ANY
-import:         from AS197131 accept AS197131
-export:         to AS56429 announce ANY
-import:         from AS56429 accept AS56429
-export:         to AS197610 announce ANY
-import:         from AS197610 accept AS197610
-export:         to AS51314 announce ANY
-import:         from AS51314 accept AS51314
-export:         to AS197158 announce ANY
-import:         from AS197158 accept AS197158
-export:         to AS56394 announce ANY
-import:         from AS56394 accept AS56394
-export:         to AS34814 announce ANY
-import:         from AS34814 accept AS-DYTYNETS
-export:         to AS31593 announce ANY
-import:         from AS31593 accept AS31593
-export:         to AS29685 announce ANY
-import:         from AS29685 accept AS-OKNET
-export:         to AS34448 announce ANY
-import:         from AS34448 accept AS-SNTUA
-export:         to AS50803 announce ANY
-import:         from AS50803 accept AS50803
-export:         to AS21310 announce ANY
-import:         from AS21310 accept AS-SATELLITE
-export:         to AS43781 announce ANY
-import:         from AS43781 accept AS43781
-export:         to AS49131 announce ANY
-import:         from AS49131 accept AS-INTELEKT
-export:         to AS41009 announce ANY
-import:         from AS41009 accept AS41009
-export:         to AS51930 announce ANY
-import:         from AS51930 accept AS51930
-export:         to AS16327 announce ANY
-import:         from AS16327 accept AS16327
-export:         to AS20539 announce ANY
-import:         from AS20539 accept AS-RS
-export:         to AS31305 announce ANY
-import:         from AS31305 accept AS-ALBA
-export:         to AS3254 announce ANY
-import:         from AS3254 accept AS-LUCKY
-export:         to AS50380 announce ANY
-import:         from AS50380 accept AS50380
-export:         to AS41631 announce ANY
-import:         from AS41631 accept AS-SOBORKA
-export:         to AS34355 announce ANY
-import:         from AS34355 accept AS-INFOSFERA
-export:         to as39422 announce ANY
-import:         from as39422 accept as39422
-export:         to AS47799 announce ANY
-import:         from AS47799 accept AS-ONU
-export:         to AS20934 announce ANY
-import:         from AS20934 accept AS-Maket
-export:         to AS39315 announce ANY
-import:         from AS39315 accept AS39315
-export:         to AS43320 announce ANY
-import:         from AS43320 accept AS-ASTRATELCOM
-export:         to AS50161 announce ANY
-import:         from AS50161 accept AS-VELES-EXT
-mp-export:      afi ipv6.unicast to AS50161 announce ANY
-mp-import:      afi ipv6.unicast from AS50161 accept AS50161
-export:         to AS50487 announce ANY
-import:         from AS50487 accept AS50487
-export:         to AS50479 announce ANY
-import:         from AS50479 accept AS50479
-export:         to AS29439 announce ANY
-import:         from AS29439 accept AS-RIFT
-export:         to AS56400 announce ANY
-import:         from AS56400 accept AS56400
-export:         to AS50027 announce ANY
-import:         from AS50027 accept AS-KREMEN-NET-CUSTOMERS
-export:         to AS198323 announce ANY
-import:         from AS198323 accept AS198323
-export:         to AS198251 announce ANY
-import:         from AS198251 accept AS-LEOTEL
-export:         to AS48229 announce ANY
-import:         from AS48229 accept AS-STARLIGHT
-export:         to AS42702 announce ANY
-import:         from AS42702 accept AS-DICS
-export:         to AS50861 announce ANY
-import:         from AS50861 accept AS50861
-export:         to AS50648 announce ANY
-import:         from AS50648 accept AS50648
-export:         to AS58021 announce ANY
-import:         from AS58021 accept AS58021
-export:         to AS58309 announce ANY
-import:         from AS58309 accept AS58309
-export:         to AS58332 announce ANY
-import:         from AS58332 accept AS58332
-export:         to AS39680 announce ANY
-import:         from AS39680 accept AS39680
-export:         to AS42458 announce ANY
-import:         from AS42458 accept AS42458
-export:         to AS59492 announce ANY
-import:         from AS59492 accept AS-TELEFAX
-export:         to AS57582 announce ANY
-import:         from AS57582 accept AS57582
-export:         to AS47361 announce ANY
-import:         from AS47361 accept AS47361
-export:         to AS51672 announce ANY
-import:         from AS51672 accept AS51672
-export:         to AS196953 announce ANY
-import:         from AS196953 accept AS-MALTAPLUS_IN
-export:         to AS41871 announce ANY
-import:         from AS41871 accept AS-ORG-TR2-RIPE
-export:         to AS39445 announce ANY
-import:         from AS39445 accept AS-LIS
-export:         to AS50115 announce ANY
-import:         from AS50115 accept AS50115
-export:         to AS49461 announce ANY
-import:         from AS49461 accept AS-KAMPOD
-export:         to AS199351 announce ANY
-import:         from AS199351 accept AS199351
-export:         to AS47245 announce ANY
-import:         from AS47245 accept AS-NTLINE
-export:         to AS56543 announce ANY
-import:         from AS56543 accept AS56543
-export:         to AS60386 announce ANY
-import:         from AS60386 accept AS60386
-export:         to AS41278 announce ANY
-import:         from AS41278 accept AS41278
-export:         to AS21131 announce ANY
-import:         from AS21131 accept AS-SACURA
-export:         to AS196808 announce ANY
-import:         from AS196808 accept AS196808
-export:         to AS41360 announce ANY
-import:         from AS41360 accept AS-NEOCOM
-export:         to AS15577 announce ANY
-import:         from AS15577 accept AS-RNS
-export:         to AS197035 announce ANY
-import:         from AS197035 accept AS197035
-mp-export:      afi ipv6.unicast to AS60334 announce ANY
-mp-import:      afi ipv6.unicast from AS60334 accept AS60334
-export:         to AS16038 announce ANY
-import:         from AS16038 accept AS16038
-export:         to AS34278 announce ANY
-import:         from AS34278 accept AS34278
-export:         to AS198720 announce ANY
-import:         from AS198720 accept AS-MOBIKOM
-export:         to AS44686 announce ANY
-import:         from AS44686 accept AS44686
-export:         to AS44800 announce ANY
-import:         from AS44800 accept AS44800
-import:         from AS44800 accept AS42905
-export:         to AS51784 announce ANY
-import:         from AS51784 accept AS-XCITY
-export:         to AS48589 announce ANY
-import:         from AS48589 accept AS-SOWA
-export:         to AS56823 announce ANY
-import:         from AS56823 accept AS56823
-export:         to AS50130 announce ANY
-import:         from AS50130 accept AS50130
-export:         to AS57944 announce ANY
-import:         from AS57944 accept AS-IPC
-export:         to AS58015 announce ANY
-import:         from AS58015 accept AS58015
-export:         to AS8461 announce ANY
-import:         from AS8461 accept AS8461
-export:         to AS31633 announce ANY
-import:         from AS31633 accept AS-LANTELECOM-ANY
-mp-export:      afi ipv6.unicast to AS57944 announce ANY
-mp-import:      afi ipv6.unicast from AS57944 accept AS-IPC6
-export:         to AS30891 announce ANY
-import:         from AS30891 accept AS30891
-export:         to AS20897 announce ANY
-import:         from AS20897 accept AS20897
-export:         to AS49204 announce ANY
-import:         from AS49204 accept AS-ITT
-export:         to AS39822 announce ANY
-import:         from AS39822 accept AS-FOBOS1
-export:         to AS39471 announce ANY
-import:         from AS39471 accept AS39471
-export:         to AS44209 announce ANY
-import:         from AS44209 accept AS-FINACTIVE
-export:         to AS59671 announce ANY
-import:         from AS59671 accept AS59671
-export:         to AS59564 announce ANY
-import:         from AS59564 accept AS-Unit-IS
-export:         to AS57060 announce ANY
-import:         from AS57060 accept AS57060
-export:         to AS29213 announce ANY
-import:         from AS29213 accept AS29213
-export:         to AS47673 announce ANY
-import:         from AS47673 accept AS47673
-export:         to AS41285 announce ANY
-import:         from AS41285 accept AS41285
-export:         to AS201094 announce ANY
-import:         from AS201094 accept AS201094
-export:         to AS59468 announce ANY
-import:         from AS59468 accept AS59468
-export:         to AS60134 announce ANY
-import:         from AS60134 accept AS60134
-export:         to AS200510 announce ANY
-import:         from AS200510 accept AS200510
-export:         to AS49620 announce ANY
-import:         from AS49620 accept AS49620
-export:         to AS21354 announce ANY
-import:         from AS21354 accept AS21354
-export:         to AS20536 announce ANY
-import:         from AS20536 accept AS20536
-export:         to AS61986 announce ANY
-import:         from AS61986 accept AS61986
-export:         to AS197522 announce ANY
-import:         from AS197522 accept AS-KIM
-export:         to AS24812 announce ANY
-import:         from AS24812 accept AS-HOME-NET
-export:         to AS2864 announce ANY
-import:         from AS2864 accept AS2864
-export:         to AS57519 announce ANY
-import:         from AS57519 accept AS57519
-export:         to AS59497 announce ANY
-import:         from AS59497 accept AS-BUKNET-EXT
-export:         to AS198820 announce ANY
-import:         from AS198820 accept AS198820
-export:         to AS43175 announce ANY
-import:         from AS43175 accept AS43175
-export:         to AS56522 announce ANY
-import:         from AS56522 accept AS56522
-export:         to AS43418 announce ANY
-import:         from AS43418 accept AS-ANTIDOT
-export:         to AS203830 announce ANY
-import:         from AS203830 accept AS203830
-export:         to AS34058 announce ANY
-import:         from AS34058 accept AS34058
-export:         to AS31388 announce ANY
-import:         from AS31388 accept AS-ICONNECT
-export:         to AS39762 announce ANY
-import:         from AS39762 accept AS-VAK
-export:         to AS50303 announce ANY
-import:         from AS50303 accept AS-TECC
-export:         to AS51500 announce ANY
-import:         from AS51500 accept AS51500
-export:         to AS13032 announce ANY
-import:         from AS13032 accept AS13032
-export:         to AS45043 announce ANY
-import:         from AS45043 accept AS45043
-export:         to AS42504 announce ANY
-import:         from AS42504 accept AS-UKRBIT
-export:         to AS49824 announce ANY
-import:         from AS49824 accept AS-ACTPA
-export:         to AS41018 announce ANY
-import:         from AS41018 accept AS-OMNILANCE
-mp-export:      afi ipv6.unicast to AS41018 announce ANY
-mp-import:      afi ipv6.unicast from AS41018 accept AS-OMNILANCE-V6
-export:         to AS47725 announce ANY
-import:         from AS47725 accept AS47725:AS-CUSTOMERS
-mp-export:      afi ipv6.unicast to AS47725 announce ANY
-mp-import:      afi ipv6.unicast from AS47725 accept AS47725:AS-CUSTOMERS
-export:         to AS43656 announce ANY
-import:         from AS43656 accept AS43656
-export:         to AS44340 announce ANY
-import:         from AS44340 accept AS44340
-export:         to AS64490 announce ANY
-import:         from AS64490 accept AS64490
-export:         to AS57479 announce ANY
-import:         from AS57479 accept AS-RIFT
-export:         to AS50594 announce ANY
-import:         from AS50594 accept AS-VINFAST
-export:         to AS42563 announce ANY
-import:         from AS42563 accept AS42563
-export:         to AS59577 announce ANY
-import:         from AS59577 accept AS59577
-export:         to AS9098 announce ANY
-import:         from AS9098 accept AS-SETFKTR
-export:         to AS41323 announce ANY
-import:         from AS41323 accept AS41323
-export:         to AS39027 announce ANY
-import:         from AS39027 accept AS-BATYEVKA
-export:         to AS205127 announce ANY
-import:         from AS205127 accept AS205127
-export:         to AS60777 announce ANY
-import:         from AS60777 accept AS60777
-export:         to AS39530 announce ANY
-import:         from AS39530 accept AS39530
-export-via:     AS6777 to AS-ANY announce AS-UARNET
-import-via:     AS6777 from AS-ANY accept ANY
-export:         to AS39443 announce ANY
-import:         from AS39443 accept AS39443
-mp-import:      afi ipv6.unicast from AS9098 accept AS-SETFKTRv6
-export:         to AS15169 announce ANY
-import:         from AS15169 accept AS15169
-export:         to AS16509 announce ANY
-import:         from AS16509 accept AS16509
-export:         to AS196844 announce ANY
-import:         from AS196844 accept AS196844
-export:         to AS32934 announce ANY
-import:         from AS32934 accept AS32934
-export:         to AS46489 announce ANY
-import:         from AS46489 accept AS46489
-export:         to AS48850 announce ANY
-import:         from AS48850 accept AS48850
-export:         to AS207085 announce ANY
-import:         from AS207085 accept AS207085
-export:         to AS205420 announce ANY
-import:         from AS205420 accept AS205420
-export:         to AS204584 announce ANY
-import:         from AS204584 accept AS204584
-admin-c:        DUMY-RIPE
-tech-c:         DUMY-RIPE
-mnt-by:         RIPE-NCC-END-MNT
-notify:         lir@uar.net
-mnt-by:         AS3255-MNT
+admin-c:        PERSON-TEST
+tech-c:         PERSON-TEST
+mnt-by:         TEST-MNT
 changed:        2018-03-13T19:16:16Z
-source:         RIPE
+source:         TEST
 remarks:        remark
 """
 
-SAMPLE_DOMAIN = """domain:         200.193.193.in-addr.arpa
-descr:          Splitblock-200
-descr:          Lucky Line, Ltd.
-admin-c:        DUMY-RIPE
-tech-c:         DUMY-RIPE
-zone-c:         DUMY-RIPE
-nserver:        ns.lucky.net
-nserver:        ns.gu.kiev.ua
-mnt-by:         AS3254-MNT
+SAMPLE_DOMAIN = """domain:         2.0.192.in-addr.arpa
+admin-c:        PERSON-TEST
+tech-c:         PERSON-TEST
+zone-c:         PERSON-TEST
+mnt-by:         TEST-MNT
 changed:        2011-02-04T10:33:38Z
-source:         RIPE
+source:         TEST
                 # foo
 remarks:        remark
 """
 
-SAMPLE_FILTER_SET = """filter-set:     fltr-bogons-integra-it
+SAMPLE_FILTER_SET = """filter-set:     fltr-settest
 descr:          Generic anti-bogons filter
-remarks:        adapted by Secure BGP Template Version 2.1 robt@cymru.com
-remarks:        http://www.enteract.com/~robt/Docs/Articles
-remarks:        see also:
 remarks:        http://www.iana.org/assignments/ipv4-address-space
 filter:         {
                 1.0.0.0/8^- ,
@@ -903,57 +170,48 @@ filter:         {
                 223.0.0.0/8^- ,
                 224.0.0.0/3^-
                 }
-admin-c:        DUMY-RIPE
-tech-c:         DUMY-RIPE
+admin-c:        PERSON-TEST
+tech-c:         PERSON-TEST
 mnt-by:         AS12784-MNT
 changed:        2002-12-04T11:34:27Z
-source:         RIPE
+source:         TEST
 remarks:        remark
 """
 
-SAMPLE_INET_RTR = """inet-rtr:       kst1-core.swip.net
-local-as:       AS1257
-ifaddr:         146.188.49.14 masklen 30
-ifaddr:         195.158.247.62 masklen 30
-peer:           BGP4 146.188.49.13 asno(AS702)
-peer:           BGP4 195.158.247.61 asno(AS1755)
-admin-c:        DUMY-RIPE
-tech-c:         DUMY-RIPE
-mnt-by:         AS1257-MNT
+SAMPLE_INET_RTR = """inet-rtr:       rtr.example.com
+local-as:       AS65537
+ifaddr:         192.0.2.1 masklen 30
+peer:           BGP4 192.0.2.2 asno(as65530)
+admin-c:        PERSON-TEST
+tech-c:         PERSON-TEST
+mnt-by:         TEST-MNT
 changed:        2001-09-21T22:07:57Z
-source:         RIPE
+source:         TEST
 remarks:        remark
 """
 
-SAMPLE_INET6NUM = """inet6num:       2001:638:501::/48
-netname:        UNI-ESSEN
-descr:          Universitaet Duisburg-Essen
-descr:          Zentrum fuer Informations- und Mediendienste
-descr:          Schuetzenbahn 70
-descr:          45127 Essen
-descr:          Germany
+SAMPLE_INET6NUM = """inet6num:       2001:db8::/48
+netname:        NET-TEST-V6
 country:        DE
-admin-c:        DUMY-RIPE
-tech-c:         DUMY-RIPE
-notify:         netadm@netz.uni-essen.de
-mnt-by:         DFN-HM-MNT
+admin-c:        PERSON-TEST
+tech-c:         PERSON-TEST
+mnt-by:         TEST-MNT
 status:         ASSIGNED
 changed:        2011-10-14T15:05:09Z
-source:         RIPE
+source:         TEST
 remarks:        remark
 """
 
-SAMPLE_INETNUM = """inetnum:        80.16.151.184 - 80.016.151.191
-netname:        NETECONOMY-MG41731
-descr:          TELECOM ITALIA LAB SPA
+SAMPLE_INETNUM = """inetnum:        192.0.2.0 - 192.0.02.255
+netname:        NET-TEST-V4
+descr:          description
 country:        IT
-admin-c:        DUMY-RIPE
-tech-c:         DUMY-RIPE
+admin-c:        PERSON-TEST
+tech-c:         PERSON-TEST
 status:         ASSIGNED PA
-notify:         neteconomy.rete@telecomitalia.it
-mnt-by:         INTERB-MNT
+mnt-by:         test-MNT
 changed:        2001-09-21T22:08:01Z
-source:         RIPE
+source:         TEST
 remarks:        remark
 """
 
@@ -1227,213 +485,170 @@ certif:         M6Ou3r6guvVecNLh42XlKCN2EMew6kKD7GV5MUsvk8w6dlBZAQ12uQadx/BtqhzD
 certif:         lxEK/ng5MnwCg1JvzWabWeMR2Q==
 certif:         =rpYI
 certif:         -----END PGP PUBLIC KEY BLOCK-----
-admin-c:        SR13427-RIPE
-tech-c:         SR13427-RIPE
-mnt-by:         SR42-MNT
+admin-c:        PERSON-TEST
+tech-c:         PERSON-TEST
+mnt-by:         TEST-MNT
 changed:        2018-04-10T13:39:39Z
-source:         RIPE
+source:         TEST
 """
 
-SAMPLE_MNTNER = """mntner:         AS760-MNt
-admin-c:        DUMY-RIPE
-upd-to:         unread@ripe.net
+SAMPLE_MNTNER = """mntner:         TEST-MNT
+admin-c:        PERSON-TEST
+upd-to:         unread@example.net
 auth:           PGPKey-80F238C6
 auth:           CRYPT-PW LEuuhsBJNFV0Q  # crypt-password
 auth:           MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.  # md5-password
-mnt-by:         AS760-MNT
-mnt-by:         ACONET-LIR-MNT,ACONET2-LIR-MNT
+mnt-by:         TEST-MNT
+mnt-by:         OTHER1-MNT,OTHER2-MNT
 changed:        2016-10-05T10:41:15Z
-source:         RIPE
+source:         TEST
 remarks:        remark
 """
 
-SAMPLE_PEERING_SET = """peering-set:    prng-MEDIAFAX
-descr:          DNT peering with MEDIAFAX
-peering:        AS8930 at 194.102.255.254
+SAMPLE_PEERING_SET = """peering-set:    prng-settest
+descr:          test data for peering-set
+peering:        AS65537 at 192.0.2.1
 remarks:        MEDIAFAX
-tech-c:         DUMY-RIPe
-tech-c:         DUMY2-RIPe
-admin-c:        DUMY-RIPE
+tech-c:         PERSON-TEST
+tech-c:         DUMY2-TEST
+admin-c:        PERSON-TEST
 notify:         hostmaster@dnt.ro
-mnt-by:         AS6746-MNT
+mnt-by:         TEST-MNT
 changed:        2001-09-21T23:07:39Z
-source:         RIPE
+source:         TEST
 remarks:        remark
 """
 
-SAMPLE_PERSON = """person:         Placeholder Person Object
-address:        RIPE Network Coordination Centre
-address:        P.O. Box 10096
-address:        1001 EB Amsterdam
+SAMPLE_PERSON = """person:         Test person
+address:        DashCare BV
+address:        Amsterdam
 address:        The Netherlands
-phone:          +31 20 535 4444
-nic-hdl:        DUMY-RIPe
-mnt-by:         RIPE-DBM-MNT
-e-mail:         bitbucket@ripe.net
-remarks:        **********************************************************
-remarks:        * This is a placeholder object to protect personal data.
-remarks:        * To view the original object, please query the RIPE
-remarks:        * Database at:
-remarks:        * http://www.ripe.net/whois
-remarks:        **********************************************************
+phone:          +31 20 000 0000
+nic-hdl:        PERSON-TEST
+mnt-by:         TEST-MNT
+e-mail:         email@example.com
 changed:        2009-07-24T17:00:00Z
-source:         RIPE
+source:         TEST
 """
 
-SAMPLE_ROLE = """role:           Bisping Und Bisping Contact
-address:        Dummy address for BISP-RIPE
-phone:          +31205354444
-fax-no:         +31205354444
-e-mail:         unread@ripe.net
-admin-c:        DUMY-RIPE
-tech-c:         DUMY-RIPE
-nic-hdl:        BISP-RIPE
-notify:         netmaster@bisping.de
-mnt-by:         BISPING-MNT
+SAMPLE_ROLE = """role:           DashCare BV
+address:        address
+phone:          +31200000000
+fax-no:         +31200000000
+e-mail:         unread@example.com
+admin-c:        PERSON-TEST
+tech-c:         PERSON-TEST
+nic-hdl:        ROLE-TEST
+notify:         notify@example.com
+mnt-by:         TEST-MNT
 changed:        2017-11-21T15:56:58Z
-source:         RIPE
+source:         TEST
 remarks:        remark
 """
 
-SAMPLE_ROUTE = """route:          193.254.030.00/24
-descr:          Lufthansa Airplus Servicekarten GmbH
-origin:         AS12726
-mnt-by:         AS12312-MNT
+SAMPLE_ROUTE = """route:          192.0.02.0/24
+descr:          example route
+descr:          the route attribute should have the extra zero removed,
++               but this value should not: 192.0.02.0/24
+origin:         AS65537
+mnt-by:         TEST-MNT
 changed:        2009-10-15T09:32:17Z
-source:         RIPE
+source:         TEST
 remarks:        remark
 """
 
 SAMPLE_ROUTE_SET = """route-set:      RS-TEST
-descr:          TEST Community for development
-mbrs-by-ref:    UUNET-MNT
-tech-c:         DUMY-RIPE
-admin-c:        DUMY-RIPE
-mnt-by:         UUNET-MNT
-mp-members:     2001:1578:0200:0::/040
+descr:          TEST route set
+mbrs-by-ref:    TEST-MNT
+tech-c:         PERSON-TEST
+admin-c:        PERSON-TEST
+mnt-by:         TEST-MNT
+mp-members:     2001:0dB8::/48
 changed:        2001-09-22T09:34:03Z
-source:         RIPE
+source:         TEST
 remarks:        remark
 """
 
-SAMPLE_ROUTE6 = """route6:         2001:1578:200::/40
-descr:          GEFOEKOM-DE-ALLOC
-origin:         AS12817
-mnt-by:         EXAmple-MNT
+SAMPLE_ROUTE6 = """route6:         2001:db8::/48
+descr:          test route6
+origin:         AS65537
+mnt-by:         test-MNT
 changed:        2004-12-29T21:30:40Z
-source:         RIPE
+source:         TEST
 remarks:        remark
 """
 
-SAMPLE_RTR_SET = """rtr-set:        rtrs-mways-callback
-descr:          mediaWays GmbH
-descr:
-descr:          description
-members:        rmws-brln-de07.nw.mediaWays.net
-members:        rmws-brmn-de02.nw.mediaWays.net
-members:        rmws-dsdn-de01.nw.mediaWays.net
-members:        rmws-dtmd-de02.nw.mediaWays.net
-members:        rmws-essn-de03.nw.mediaWays.net
-members:        rmws-frnk-de03.nw.mediaWays.net
-members:        rmws-gtso-de11.nw.mediaWays.net
-members:        rmws-gtso-de13.nw.mediaWays.net
-members:        rmws-hmbg-de07.nw.mediaWays.net
-members:        rmws-hnvr-de04.nw.mediaWays.net
-members:        rmws-koln-de02.nw.mediaWays.net
-members:        rmws-mnch-de03.nw.mediaWays.net
-members:        rmws-nrbg-de02.nw.mediaWays.net
-members:        rmws-srbk-de02.nw.mediaWays.net
+SAMPLE_RTR_SET = """rtr-set:        rtrs-settest
+descr:          rtr-set test
+members:        router1.example.com
+members:        router2.example.com
+members:        router3.example.com
 members:        rtrs-other-set
 remarks:
-tech-c:         DUMY-RIPE
-admin-c:        DUMY-RIPE
-mnt-by:         MDA-Z
+tech-c:         PERSON-TEST
+admin-c:        PERSON-TEST
+mnt-by:         TEST-MNT
 changed:        2001-09-22T09:34:04Z
-source:         RIPE
+source:         TEST
 remarks:        remark
 """
 
-SAMPLE_UNKNOWN_CLASS = """foo-block:       AS2043 - AS2043
-descr:          RIPE NCC ASN block
-remarks:        These AS Numbers are assigned to network operators in the RIPE NCC service region.
-mnt-by:         RIPE-NCC-HM-MNT
-changed:        2014-02-24T13:15:13Z
-tech-c:         DUMY-RIPE
-admin-c:        DUMY-RIPE
-source:         RIPE
-changed:        2001-09-22T09:34:04Z
+SAMPLE_UNKNOWN_CLASS = """foo-block:          192.0.2.0/24
+origin:         AS65537
+mnt-by:         TEST-MNT
+changed:        2009-10-15T09:32:17Z
+source:         TEST
 """
 
-SAMPLE_MALFORMED_EMPTY_LINE = """as-block:       AS2043 - AS2043
-descr:          RIPE NCC ASN block
-remarks:        These AS Numbers are assigned to network operators in the RIPE NCC service region.
-mnt-by:         RIPE-NCC-HM-MNT
+SAMPLE_MALFORMED_EMPTY_LINE = """route:          192.0.2.0/24
+origin:         AS65537
+mnt-by:         TEST-MNT
 
-tech-c:         DUMY-RIPE
-admin-c:        DUMY-RIPE
-source:         RIPE
-changed:        2001-09-22T09:34:04Z
+changed:        2009-10-15T09:32:17Z
+source:         TEST
 """
 
-SAMPLE_MALFORMED_ATTRIBUTE_NAME = """as-block:       AS2043 - AS2043
-descr:          RIPE NCC ASN block
-remarks:        These AS Numbers are assigned to network operators in the RIPE NCC service region.
-$t-by:         RIPE-NCC-HM-MNT
-tech-c:         DUMY-RIPE
-admin-c:        DUMY-RIPE
-source:         RIPE
-changed:        2001-09-22T09:34:04Z
+SAMPLE_MALFORMED_ATTRIBUTE_NAME = """route:          192.0.2.0/24
+origin:         AS65537
+$$$-by:         TEST-MNT
+changed:        2009-10-15T09:32:17Z
+source:         TEST
 """
 
-SAMPLE_MISSING_MANDATORY_ATTRIBUTE = """as-block:       AS2043 - AS2043
-descr:          RIPE NCC ASN block
-remarks:        These AS Numbers are assigned to network operators in the RIPE NCC service region.
-mnt-by:         RIPE-NCC-HM-MNT
-admin-c:        DUMY-RIPE
-source:         RIPE
-changed:        2001-09-22T09:34:04Z
+SAMPLE_MISSING_MANDATORY_ATTRIBUTE = """route:          192.0.2.0/24
+origin:         AS65537
+mnt-by:         TEST-MNT
+source:         TEST
 """
 
-SAMPLE_UNKNOWN_ATTRIBUTE = """as-block:       AS2043 - AS2043
-descr:          RIPE NCC ASN block
-remarks:        These AS Numbers are assigned to network operators in the RIPE NCC service region.
-tech-c:         DUMY-RIPE
+SAMPLE_UNKNOWN_ATTRIBUTE = """route:          192.0.2.0/24
+origin:         AS65537
+mnt-by:         TEST-MNT
 foo: bar
-mnt-by:         RIPE-NCC-HM-MNT
-admin-c:        DUMY-RIPE
-source:         RIPE
-changed:        2001-09-22T09:34:04Z
+changed:        2009-10-15T09:32:17Z
+source:         TEST
 """
 
-SAMPLE_INVALID_MULTIPLE_ATTRIBUTE = """as-block:       AS2043 - AS2043
-descr:          RIPE NCC ASN block
-remarks:        These AS Numbers are assigned to network operators in the RIPE NCC service region.
-tech-c:         DUMY-RIPE
-mnt-by:         RIPE-NCC-HM-MNT
-admin-c:        DUMY-RIPE
-source:         RIPE
-source:         NOT-RIPE
-changed:        2001-09-22T09:34:04Z
+SAMPLE_INVALID_MULTIPLE_ATTRIBUTE = """route:          192.0.2.0/24
+origin:         AS65537
+mnt-by:         TEST-MNT
+changed:        2009-10-15T09:32:17Z
+source:         TEST
+source:         NOT-TEST
 """
 
-SAMPLE_MALFORMED_PK = """as-block:       AS2043 - ASX
-descr:          RIPE NCC ASN block
-remarks:        These AS Numbers are assigned to network operators in the RIPE NCC service region.
-tech-c:         DUMY-RIPE
-admin-c:        DUMY-RIPE
-mnt-by:         RIPE-NCC-HM-MNT
-source:         RIPE
-changed:        2001-09-22T09:34:04Z
+SAMPLE_MALFORMED_PK = """route:          not-a-prefix
+origin:         AS65537
+mnt-by:         TEST-MNT
+changed:        2009-10-15T09:32:17Z
+source:         TEST
 """
 
-SAMPLE_MALFORMED_SOURCE = """as-block:       AS2043 - AS2043
-descr:          RIPE NCC ASN block
-remarks:        These AS Numbers are assigned to network operators in the RIPE NCC service region.
-tech-c:         DUMY-RIPE
-admin-c:        DUMY-RIPE
-mnt-by:         RIPE-NCC-HM-MNT
-source:         +FOO$$$
-changed:        2001-09-22T09:34:04Z
+SAMPLE_MALFORMED_SOURCE = """route:          192.0.2.0/24
+origin:         AS65537
+mnt-by:         TEST-MNT
+changed:        2009-10-15T09:32:17Z
+source:         +TEST$$$
 """
 
 KEY_CERT_SIGNED_MESSAGE_VALID = """-----BEGIN PGP SIGNED MESSAGE-----
@@ -1566,8 +781,3 @@ mnt-by:    [mandatory]  [multiple]  [look-up key]
 changed:   [mandatory]  [multiple]  []
 source:    [mandatory]  [single]    []
 """
-
-# The object samples above were originally generated from a 2018 RIPE split db dump, with the shell one-liner:
-# for i in as-block as-set aut-num domain filter-set inet-rtr inet6num inetnum key-cert mntner peering-set person role route route-set route6 rtr-set; do label="SAMPLE_"`echo $i|sed -e "s/-/_/"|tr "[:lower:]" "[:upper:]"`; echo -n "$label = \"\"\""; head -n 10000 ripe.db.$i|egrep -v "^#"|tail -n +2|sed -e "/^$/,$d; "; echo -e """""\n"; done | tr -cd "\11\12\15\40-\176"
-# Subsequently, they were modified to match IRRDs expected format in attribute names,
-# and some variation was introduced to test obscure parts of the syntax.

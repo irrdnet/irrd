@@ -14,7 +14,7 @@ from ..query_parser import WhoisQueryParser, WhoisQueryResponseMode, WhoisQueryR
 # as they are meant to test all the scenarios in the query parser.
 MOCK_ROUTE1 = """route:          192.0.2.0/25
 descr:          description
-origin:         AS23456
+origin:         AS65547
 mnt-by:         MNT-TEST
 source:         TEST1
 members:        AS1,AS2
@@ -22,14 +22,14 @@ members:        AS1,AS2
 
 MOCK_ROUTE2 = """route:          192.0.2.0/25
 descr:          description
-origin:         AS65534
+origin:         AS65544
 mnt-by:         MNT-TEST
 source:         TEST2
 """
 
 MOCK_ROUTE3 = """route:          192.0.2.128/25
 descr:          description
-origin:         AS65535
+origin:         AS65545
 mnt-by:         MNT-TEST
 source:         TEST2
 """
@@ -38,14 +38,14 @@ MOCK_ROUTE_COMBINED = MOCK_ROUTE1 + "\n" + MOCK_ROUTE2 + "\n" + MOCK_ROUTE3.stri
 
 
 MOCK_ROUTE_COMBINED_KEY_FIELDS = """route: 192.0.2.0/25
-origin: AS23456
+origin: AS65547
 members: AS1, AS2
 
 route: 192.0.2.0/25
-origin: AS65534
+origin: AS65544
 
 route: 192.0.2.128/25
-origin: AS65535"""
+origin: AS65545"""
 
 
 @pytest.fixture()
@@ -61,10 +61,10 @@ def prepare_parser(monkeypatch):
     mock_query_result = [
         {
             'pk': uuid.uuid4(),
-            'rpsl_pk': '192.0.2.0/25,AS23456',
+            'rpsl_pk': '192.0.2.0/25,AS65547',
             'object_class': 'route',
             'parsed_data': {
-                'route': '192.0.2.0/25', 'origin': 'AS23456', 'mnt-by': 'MNT-TEST', 'source': 'TEST1',
+                'route': '192.0.2.0/25', 'origin': 'AS65547', 'mnt-by': 'MNT-TEST', 'source': 'TEST1',
                 'members': ['AS1, AS2']
             },
             'object_text': MOCK_ROUTE1,
@@ -72,17 +72,17 @@ def prepare_parser(monkeypatch):
         },
         {
             'pk': uuid.uuid4(),
-            'rpsl_pk': '192.0.2.0/25,AS65534',
+            'rpsl_pk': '192.0.2.0/25,AS65544',
             'object_class': 'route',
-            'parsed_data': {'route': '192.0.2.0/25', 'origin': 'AS65534', 'mnt-by': 'MNT-TEST', 'source': 'TEST2'},
+            'parsed_data': {'route': '192.0.2.0/25', 'origin': 'AS65544', 'mnt-by': 'MNT-TEST', 'source': 'TEST2'},
             'object_text': MOCK_ROUTE2,
             'source': 'TEST2',
         },
         {
             'pk': uuid.uuid4(),
-            'rpsl_pk': '192.0.2.128/25,AS65535',
+            'rpsl_pk': '192.0.2.128/25,AS65545',
             'object_class': 'route',
-            'parsed_data': {'route': '192.0.2.128/25', 'origin': 'AS65535', 'mnt-by': 'MNT-TEST', 'source': 'TEST2'},
+            'parsed_data': {'route': '192.0.2.128/25', 'origin': 'AS65545', 'mnt-by': 'MNT-TEST', 'source': 'TEST2'},
             'object_text': MOCK_ROUTE3,
             'source': 'TEST2',
         },
@@ -415,17 +415,17 @@ class TestWhoisQueryParserIRRD:
     def test_routes_for_origin_v4(self, prepare_parser):
         mock_dq, mock_dh, parser = prepare_parser
 
-        response = parser.handle_query('!gAS23456')
+        response = parser.handle_query('!gAS65547')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == '192.0.2.0/25 192.0.2.128/25'
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['route'],), {}],
-            ['asn', (23456,), {}],
+            ['asn', (65547,), {}],
         ]
 
         mock_dh.execute_query = lambda query: []
-        response = parser.handle_query('!gAS23456')
+        response = parser.handle_query('!gAS65547')
         assert response.response_type == WhoisQueryResponseType.KEY_NOT_FOUND
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert not response.result
@@ -439,17 +439,17 @@ class TestWhoisQueryParserIRRD:
             mock_result_row['parsed_data']['route6'] = mock_result_row['parsed_data']['route']
         mock_dh.execute_query = lambda query: mock_query_result
 
-        response = parser.handle_query('!6AS23456')
+        response = parser.handle_query('!6AS65547')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == '192.0.2.0/25 192.0.2.128/25'
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['route6'],), {}],
-            ['asn', (23456,), {}],
+            ['asn', (65547,), {}],
         ]
 
         mock_dh.execute_query = lambda query: []
-        response = parser.handle_query('!6AS23456')
+        response = parser.handle_query('!6AS65547')
         assert response.response_type == WhoisQueryResponseType.KEY_NOT_FOUND
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert not response.result
@@ -471,7 +471,7 @@ class TestWhoisQueryParserIRRD:
             {
                 'pk': uuid.uuid4(),
                 'rpsl_pk': 'AS-FIRSTLEVEL',
-                'parsed_data': {'as-set': 'AS-FIRSTLEVEL', 'members': ['AS23456', 'AS-SECONDLEVEL']},
+                'parsed_data': {'as-set': 'AS-FIRSTLEVEL', 'members': ['AS65547', 'AS-SECONDLEVEL']},
                 'object_text': 'text',
                 'object_class': 'as-set',
                 'source': 'TEST1',
@@ -481,7 +481,7 @@ class TestWhoisQueryParserIRRD:
             {
                 'pk': uuid.uuid4(),
                 'rpsl_pk': 'AS-SECONDLEVEL',
-                'parsed_data': {'as-set': 'AS-SECONDLEVEL', 'members': ['AS-THIRDLEVEL', 'AS65534']},
+                'parsed_data': {'as-set': 'AS-SECONDLEVEL', 'members': ['AS-THIRDLEVEL', 'AS65544']},
                 'object_text': 'text',
                 'object_class': 'as-set',
                 'source': 'TEST2',
@@ -492,7 +492,7 @@ class TestWhoisQueryParserIRRD:
                 'pk': uuid.uuid4(),
                 'rpsl_pk': 'AS-THIRDLEVEL',
                 # Refers back to the first as-set to test infinite recursion issues
-                'parsed_data': {'as-set': 'AS-THIRDLEVEL', 'members': ['AS65535', 'AS-FIRSTLEVEL', 'AS-UNKNOWN']},
+                'parsed_data': {'as-set': 'AS-THIRDLEVEL', 'members': ['AS65545', 'AS-FIRSTLEVEL', 'AS-UNKNOWN']},
                 'object_text': 'text',
                 'object_class': 'as-set',
                 'source': 'TEST2',
@@ -503,7 +503,7 @@ class TestWhoisQueryParserIRRD:
         response = parser.handle_query('!iAS-FIRSTLEVEL')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
-        assert response.result == 'AS-SECONDLEVEL AS23456'
+        assert response.result == 'AS-SECONDLEVEL AS65547'
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['as-set', 'route-set'],), {}],
             ['rpsl_pk', ('AS-FIRSTLEVEL',), {}],
@@ -517,7 +517,7 @@ class TestWhoisQueryParserIRRD:
         response = parser.handle_query('!iAS-FIRSTLEVEL,1')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
-        assert response.result == 'AS-UNKNOWN AS23456 AS65534 AS65535'
+        assert response.result == 'AS-UNKNOWN AS65544 AS65545 AS65547'
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['as-set', 'route-set'],), {}],
             ['rpsl_pk', ('AS-FIRSTLEVEL',), {}],
@@ -566,7 +566,7 @@ class TestWhoisQueryParserIRRD:
         mock_query_result2 = [
             {
                 'pk': uuid.uuid4(),
-                'rpsl_pk': '192.0.2.0/24,AS65534',
+                'rpsl_pk': '192.0.2.0/24,AS65544',
                 'parsed_data': {'route': '192.0.2.0/24', 'member-of': 'rrs-test', 'mnt-by': ['FOO', 'MNT-TEST']},
                 'object_text': 'text',
                 'object_class': 'route',
@@ -704,7 +704,7 @@ class TestWhoisQueryParserIRRD:
         response = parser.handle_query('!r192.0.2.0/25,o')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
-        assert response.result == 'AS23456 AS65534 AS65535'
+        assert response.result == 'AS65547 AS65544 AS65545'
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['route', 'route6'],), {}],
             ['ip_exact', (IP('192.0.2.0/25'),), {}]
