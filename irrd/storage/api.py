@@ -637,7 +637,6 @@ class DatabaseStatusTracker:
         new serials for this database.
         If there is no status object for this database, it is created.
         """
-
         for source, serials in self._new_serials_per_source.items():
             serial_oldest_seen = sa.select([
                 sa.func.least(sa.func.min(self.c_status.serial_oldest_seen), min(serials))

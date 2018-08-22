@@ -21,10 +21,9 @@ class MirrorUpdateRunner:
     This MirrorUpdateRunner is the entry point for updating a single
     database mirror, depending on current state.
 
-    If there is no current mirror, will call MirrorFullImportRunner
-    to run a new import from full dump files.
-    Otherwise, will call NRTMUpdateStreamRunner to retrieve new updates
-    from NRTM.
+    If there is no current mirrored data, will call MirrorFullImportRunner
+    to run a new import from full dump files. Otherwise, will call
+    NRTMUpdateStreamRunner to retrieve new updates from NRTM.
     """
     def __init__(self, source: str) -> None:
         self.source = source
@@ -75,12 +74,12 @@ class MirrorFullImportRunner:
 
         logger.info(f'Running full import of {self.source} from {dump_sources}, serial from {dump_serial_source}')
 
-        dump_serial = self._retrieve_file(dump_serial_source, use_tempfile=False)
+        dump_serial = int(self._retrieve_file(dump_serial_source, use_tempfile=False))
         dump_filenames = [self._retrieve_file(dump_source, use_tempfile=True) for dump_source in dump_sources]
 
         database_handler.disable_journaling()
         for dump_filename in dump_filenames:
-            MirrorFullImportParser(source=self.source, filename=dump_filename, serial=dump_serial, strict_validation=False,
+            MirrorFullImportParser(source=self.source, filename=dump_filename, serial=dump_serial,
                                    database_handler=database_handler)
             os.unlink(dump_filename)
 
@@ -151,6 +150,8 @@ class NRTMUpdateStreamRunner:
             f'\n% END {self.source}\n',
             '\n%ERROR',
             '\n% ERROR',
+            '\n% Warning: there are no newer updates available',
+            '\n% Warning (1): there are no newer updates available',
         ]
 
         logger.info(f'Retrieving NRTM updates for {self.source} from serial {serial_start} on {nrtm_host}:{nrtm_port}')

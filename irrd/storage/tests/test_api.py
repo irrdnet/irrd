@@ -21,8 +21,6 @@ To improve performance, these tests do not run full migrations.
 
 @pytest.fixture()
 def irrd_database(monkeypatch):
-    RPSLDatabaseObject.metadata.drop_all(engine)
-
     engine.execute('CREATE EXTENSION IF NOT EXISTS pgcrypto')
 
     table_name = RPSLDatabaseObject.__tablename__
@@ -34,7 +32,7 @@ def irrd_database(monkeypatch):
     yield None
 
     engine.dispose()
-    # RPSLDatabaseObject.metadata.drop_all(engine)
+    RPSLDatabaseObject.metadata.drop_all(engine)
 
 
 # noinspection PyTypeChecker
@@ -225,7 +223,6 @@ class TestDatabaseHandlerLive:
     def test_disable_journaling(self, monkeypatch, irrd_database):
         monkeypatch.setenv('IRRD_SOURCES_TEST_AUTHORITATIVE', '1')
         monkeypatch.setenv('IRRD_SOURCES_TEST_KEEP_JOURNAL', '1')
-        monkeypatch.setattr('irrd.storage.api.MAX_RECORDS_CACHE_BEFORE_INSERT', 1)
 
         rpsl_object_route_v4 = Mock(
             pk=lambda: '192.0.2.0/24,AS23456',

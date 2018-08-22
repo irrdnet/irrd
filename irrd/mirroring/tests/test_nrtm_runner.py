@@ -97,12 +97,11 @@ class TestMirrorFullImportRunner:
 class MockMirrorFullImportParser:
     rpsl_data_calls: List[str] = []
 
-    def __init__(self, source, filename, serial, strict_validation, database_handler):
+    def __init__(self, source, filename, serial, database_handler):
         with open(filename, 'r') as f:
             self.rpsl_data_calls.append(f.read())
         assert source == 'TEST'
-        assert serial == '424242'
-        assert not strict_validation
+        assert serial == 424242
 
 
 class TestNRTMUpdateStreamRunner:

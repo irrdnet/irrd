@@ -5,6 +5,7 @@ from typing import List, Set
 from irrd.conf import get_setting
 from irrd.rpsl.parser import UnknownRPSLObjectClassException
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
+from irrd.storage.api import DatabaseHandler
 from irrd.storage.models import DatabaseOperation
 from irrd.utils.text import split_paragraphs_rpsl
 from .operation import NRTMOperation
@@ -23,19 +24,20 @@ class MirrorParser:
 
 
 class MirrorFullImportParser(MirrorParser):
-    obj_parsed = 0
-    obj_errors = 0
-    obj_ignored_class = 0
-    obj_unknown = 0
-    unknown_object_classes: Set[str] = set()
-    database_handler = None
+    """
+    This parser handles full imports of mirror databases.
+    """
+    obj_parsed = 0  # Total objects found
+    obj_errors = 0  # Objects with errors
+    obj_ignored_class = 0  # Objects ignored due to object_class_filter setting
+    obj_unknown = 0  # Objects with unknown classes
+    unknown_object_classes: Set[str] = set()  # Set of encountered unknown classes
 
-    def __init__(self, source, filename, serial, strict_validation, database_handler):
+    def __init__(self, source: str, filename: str, serial: int, database_handler: DatabaseHandler) -> None:
         logger.debug(f'Starting full import of {source} from {filename}, setting serial {serial}')
         self.source = source
         self.filename = filename
         self.serial = serial
-        self.strict_validation = strict_validation
         self.database_handler = database_handler
         super().__init__()
 
@@ -46,12 +48,12 @@ class MirrorFullImportParser(MirrorParser):
         for paragraph in split_paragraphs_rpsl(f):
             self.parse_object(paragraph)
 
-        self.generate_report()
+        self.log_report()
 
-    def parse_object(self, rpsl_text):
+    def parse_object(self, rpsl_text: str) -> None:
         try:
             self.obj_parsed += 1
-            obj = rpsl_object_from_text(rpsl_text.strip(), strict_validation=self.strict_validation)
+            obj = rpsl_object_from_text(rpsl_text.strip(), strict_validation=False)
 
             if obj.messages.errors():
                 logger.critical(f'Parsing errors occurred while importing initial dump from {self.source}. '
@@ -77,7 +79,7 @@ class MirrorFullImportParser(MirrorParser):
             self.obj_unknown += 1
             self.unknown_object_classes.add(str(e).split(":")[1].strip())
 
-    def generate_report(self):
+    def log_report(self) -> None:
         obj_successful = self.obj_parsed - self.obj_unknown - self.obj_errors - self.obj_ignored_class
         logger.info(f"Full import for {self.source}: {self.obj_parsed} objects read, "
                     f"{obj_successful} objects inserted, "

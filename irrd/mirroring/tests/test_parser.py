@@ -32,7 +32,6 @@ class TestMirrorFullImportParser:
                 source='RIPE',
                 filename=fp.name,
                 serial=424242,
-                strict_validation=False,
                 database_handler=mock_dh,
             )
         assert len(mock_dh.mock_calls) == 1
