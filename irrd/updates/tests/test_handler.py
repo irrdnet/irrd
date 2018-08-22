@@ -81,6 +81,7 @@ class TestUpdateRequestHandler:
         assert mock_dh.mock_calls[2][0] == 'upsert_rpsl_object'
         assert mock_dh.mock_calls[2][1][0].pk() == '80.16.151.184 - 80.16.151.191'
         assert mock_dh.mock_calls[3][0] == 'commit'
+        assert mock_dh.mock_calls[4][0] == 'close'
 
         assert handler.user_report() == textwrap.dedent("""
         SUMMARY OF UPDATE:
@@ -175,6 +176,7 @@ class TestUpdateRequestHandler:
         assert mock_dh.mock_calls[1][0] == 'upsert_rpsl_object'
         assert mock_dh.mock_calls[1][1][0].pk() == 'AS760-MNT'
         assert mock_dh.mock_calls[2][0] == 'commit'
+        assert mock_dh.mock_calls[3][0] == 'close'
 
         assert handler.user_report() == textwrap.dedent("""
         > Message-ID: test
@@ -253,6 +255,7 @@ class TestUpdateRequestHandler:
         ]
 
         assert mock_dh.mock_calls[0][0] == 'commit'
+        assert mock_dh.mock_calls[1][0] == 'close'
 
     def test_parse_valid_delete(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
@@ -288,6 +291,7 @@ class TestUpdateRequestHandler:
         assert mock_dh.mock_calls[0][0] == 'delete_rpsl_object'
         assert mock_dh.mock_calls[0][1][0].pk() == 'DUMY-RIPE'
         assert mock_dh.mock_calls[1][0] == 'commit'
+        assert mock_dh.mock_calls[2][0] == 'close'
 
         assert handler.user_report() == textwrap.dedent("""
             SUMMARY OF UPDATE:
@@ -364,7 +368,10 @@ class TestUpdateRequestHandler:
             ['rpsl_pk', ('DUMY-RIPE',), {}], ['sources', (['RIPE'],), {}],
             ['object_classes', (['role', 'person'],), {}], ['rpsl_pk', ('DUMY-RIPE',), {}]
         ]
-        assert flatten_mock_calls(mock_dh) == [['commit', (), {}]]
+        assert flatten_mock_calls(mock_dh) == [
+            ['commit', (), {}],
+            ['close', (), {}],
+        ]
 
         assert handler.user_report() == textwrap.dedent("""
         SUMMARY OF UPDATE:
@@ -483,7 +490,10 @@ class TestUpdateRequestHandler:
             ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['AS760-MNT'],), {}], ['sources', (['RIPE'],), {}],
             ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['AS760-MNT'],), {}]
         ]
-        assert flatten_mock_calls(mock_dh) == [['commit', (), {}]]
+        assert flatten_mock_calls(mock_dh) == [
+            ['commit', (), {}],
+            ['close', (), {}],
+        ]
 
         assert handler.user_report() == textwrap.dedent("""
         SUMMARY OF UPDATE:
@@ -567,6 +577,7 @@ class TestUpdateRequestHandler:
 
         assert flatten_mock_calls(mock_dq) == []
         assert mock_dh.mock_calls[0][0] == 'commit'
+        assert mock_dh.mock_calls[1][0] == 'close'
 
         assert handler.user_report() == textwrap.dedent("""
         SUMMARY OF UPDATE:

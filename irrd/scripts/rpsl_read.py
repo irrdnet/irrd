@@ -45,6 +45,7 @@ class RPSLParse:
 
         if self.database_handler:
             self.database_handler.commit()
+            self.database_handler.close()
 
     def parse_object(self, rpsl_text, strict_validation):
         if not rpsl_text.strip():

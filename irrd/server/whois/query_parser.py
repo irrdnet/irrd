@@ -96,12 +96,12 @@ class WhoisQueryParser:
     handle_query() being called for each individual query.
     """
     lookup_field_names = lookup_field_names()
+    database_handler: DatabaseHandler
 
     def __init__(self, peer: str) -> None:
         self.all_valid_sources = list(get_setting('sources').keys())
         self.sources: List[str] = []
         self.object_classes: List[str] = []
-        self.database_handler = DatabaseHandler()
         self.user_agent: Optional[str] = None
         self.multiple_command_mode = False
         self.key_fields_only = False
@@ -110,6 +110,7 @@ class WhoisQueryParser:
     def handle_query(self, query: str) -> WhoisQueryResponse:
         """Process a single query. Always returns a WhoisQueryResponse object."""
         # These flags are reset with every query.
+        self.database_handler = DatabaseHandler()
         self.key_fields_only = False
         self.object_classes = []
 
@@ -123,6 +124,8 @@ class WhoisQueryParser:
                     mode=WhoisQueryResponseMode.IRRD,
                     result=str(exc)
                 )
+            finally:
+                self.database_handler.close()
 
         try:
             return self.handle_ripe_command(query)
@@ -133,6 +136,8 @@ class WhoisQueryParser:
                 mode=WhoisQueryResponseMode.RIPE,
                 result=str(exc)
             )
+        finally:
+            self.database_handler.close()
 
     def handle_irrd_command(self, full_command: str) -> WhoisQueryResponse:
         """Handle an IRRD-style query. full_command should not include the first exclamation mark. """

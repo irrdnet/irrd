@@ -152,7 +152,7 @@ class TestWhoisQueryParserRIPE:
         assert response.response_type == WhoisQueryResponseType.ERROR
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert response.result == 'Unrecognised flag/search: e'
-        assert not mock_dh.mock_calls
+        assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
 
     def test_keepalive(self, prepare_parser):
         mock_dq, mock_dh, parser = prepare_parser
@@ -231,7 +231,7 @@ class TestWhoisQueryParserRIPE:
         assert response.response_type == WhoisQueryResponseType.ERROR
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert response.result == 'Invalid input for route search: not-a-prefix'
-        assert not mock_dh.mock_calls
+        assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
 
     def test_inverse_attribute_search(self, prepare_parser):
         mock_dq, mock_dh, parser = prepare_parser
@@ -264,7 +264,7 @@ class TestWhoisQueryParserRIPE:
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert not response.result
-        assert not mock_dh.mock_calls
+        assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
         assert parser.sources == ['TEST1']
 
     def test_sources_all(self, prepare_parser):
@@ -275,7 +275,7 @@ class TestWhoisQueryParserRIPE:
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert not response.result
-        assert not mock_dh.mock_calls
+        assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
         assert parser.sources == []
 
     def test_sources_invalid_unknown_source(self, prepare_parser):
@@ -318,13 +318,14 @@ class TestWhoisQueryParserRIPE:
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert 'aut-num:[mandatory][single][primary/look-upkey]' in response.result.replace(' ', '')
-        assert not mock_dh.mock_calls
+        assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
+        mock_dh.reset_mock()
 
         response = parser.handle_query('-t object-class-not-existing')
         assert response.response_type == WhoisQueryResponseType.ERROR
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert response.result == 'Unknown object class: object-class-not-existing'
-        assert not mock_dh.mock_calls
+        assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
 
     def test_key_fields_only(self, prepare_parser):
         mock_dq, mock_dh, parser = prepare_parser
@@ -355,7 +356,7 @@ class TestWhoisQueryParserRIPE:
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert not response.result
-        assert not mock_dh.mock_calls
+        assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
 
     def test_text_search(self, prepare_parser):
         mock_dq, mock_dh, parser = prepare_parser
@@ -379,7 +380,8 @@ class TestWhoisQueryParserRIPE:
             assert response.response_type == WhoisQueryResponseType.ERROR
             assert response.mode == WhoisQueryResponseMode.RIPE
             assert response.result == 'Missing argument for flag/search: ' + query[1]
-            assert not mock_dh.mock_calls
+            assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
+            mock_dh.reset_mock()
 
 
 class TestWhoisQueryParserIRRD:
@@ -667,7 +669,8 @@ class TestWhoisQueryParserIRRD:
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert not response.result
-        assert not mock_dh.mock_calls
+        print(flatten_mock_calls(mock_dh))
+        assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
 
     def test_objects_maintained_by(self, prepare_parser):
         mock_dq, mock_dh, parser = prepare_parser
@@ -757,18 +760,22 @@ class TestWhoisQueryParserIRRD:
         assert response.response_type == WhoisQueryResponseType.ERROR
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == "Invalid input for route search: z"
+        assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
+        mock_dh.reset_mock()
 
         response = parser.handle_query('!rz,o')
         assert response.response_type == WhoisQueryResponseType.ERROR
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == "Invalid input for route search: z,o"
+        assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
+        mock_dh.reset_mock()
 
         response = parser.handle_query('!r192.0.2.0/25,z')
         assert response.response_type == WhoisQueryResponseType.ERROR
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == "Invalid route search option: z"
-
-        assert not mock_dh.mock_calls
+        assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
+        mock_dh.reset_mock()
 
     def test_sources_list(self, prepare_parser):
         mock_dq, mock_dh, parser = prepare_parser
@@ -778,7 +785,7 @@ class TestWhoisQueryParserIRRD:
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert not response.result
-        assert not mock_dh.mock_calls
+        assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
         assert parser.sources == ['TEST1']
 
         response = parser.handle_query('!s-lc')

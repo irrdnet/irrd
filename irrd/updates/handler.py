@@ -20,6 +20,8 @@ class UpdateRequestHandler:
         self.request_meta = request_meta if request_meta else {}
         self._pgp_key_id = self._resolve_pgp_key_id(pgp_fingerprint) if pgp_fingerprint else None
         self._handle_object_texts(object_texts)
+        self.database_handler.commit()
+        self.database_handler.close()
 
     def _handle_object_texts(self, object_texts: str) -> None:
         reference_validator = ReferenceValidator(self.database_handler)
@@ -59,7 +61,6 @@ class UpdateRequestHandler:
             if result.is_valid():
                 result.save(self.database_handler)
 
-        self.database_handler.commit()
         self.results = results
 
     def _resolve_pgp_key_id(self, pgp_fingerprint: str) -> Optional[str]:
