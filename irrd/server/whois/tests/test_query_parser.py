@@ -5,7 +5,7 @@ import pytest
 from IPy import IP
 from pytest import raises
 
-from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
+from irrd.conf import PASSWORD_HASH_DUMMY_VALUE, DEFAULT_SETTINGS
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
 from irrd.utils.test_utils import flatten_mock_calls
 from ..query_parser import WhoisQueryParser, WhoisQueryResponseMode, WhoisQueryResponseType, WhoisQueryResponse
@@ -50,6 +50,8 @@ origin: AS65535"""
 
 @pytest.fixture()
 def prepare_parser(monkeypatch):
+    DEFAULT_SETTINGS['sources'] = {'TEST1': {}, 'TEST2': {}}
+
     mock_database_handler = Mock()
     monkeypatch.setattr("irrd.server.whois.query_parser.DatabaseHandler", lambda: mock_database_handler)
     mock_database_query = Mock()
@@ -258,12 +260,12 @@ class TestWhoisQueryParserRIPE:
         mock_dq, mock_dh, parser = prepare_parser
         mock_dh.reset_mock()
 
-        response = parser.handle_query('-s ripe,nttcom')
+        response = parser.handle_query('-s test1')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert not response.result
         assert not mock_dh.mock_calls
-        assert parser.sources == ['RIPE', 'NTTCOM']
+        assert parser.sources == ['TEST1']
 
     def test_sources_all(self, prepare_parser):
         mock_dq, mock_dh, parser = prepare_parser
@@ -275,6 +277,15 @@ class TestWhoisQueryParserRIPE:
         assert not response.result
         assert not mock_dh.mock_calls
         assert parser.sources == []
+
+    def test_sources_invalid_unknown_source(self, prepare_parser):
+        mock_dq, mock_dh, parser = prepare_parser
+        mock_dh.reset_mock()
+
+        response = parser.handle_query('-s UNKNOWN')
+        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.mode == WhoisQueryResponseMode.RIPE
+        assert response.result == 'One or more selected sources are unavailable.'
 
     def test_restrict_object_class(self, prepare_parser):
         mock_dq, mock_dh, parser = prepare_parser
@@ -625,13 +636,13 @@ class TestWhoisQueryParserIRRD:
     def test_exact_key_limit_sources(self, prepare_parser):
         mock_dq, mock_dh, parser = prepare_parser
 
-        parser.handle_query('!snttcom,ripe')
+        parser.handle_query('!stest1')
         response = parser.handle_query('!mroute,192.0.2.0/25')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == MOCK_ROUTE_COMBINED
         assert flatten_mock_calls(mock_dq) == [
-            ['sources', (['NTTCOM', 'RIPE'],), {}],
+            ['sources', (['TEST1'],), {}],
             ['object_classes', (['route'],), {}],
             ['rpsl_pk', ('192.0.2.0/25',), {}],
             ['first_only', (), {}],
@@ -763,24 +774,27 @@ class TestWhoisQueryParserIRRD:
         mock_dq, mock_dh, parser = prepare_parser
         mock_dh.reset_mock()
 
-        response = parser.handle_query('!sripe,nttcom')
+        response = parser.handle_query('!stest1')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert not response.result
         assert not mock_dh.mock_calls
-        assert parser.sources == ['RIPE', 'NTTCOM']
+        assert parser.sources == ['TEST1']
 
         response = parser.handle_query('!s-lc')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
-        assert response.result == 'RIPE,NTTCOM'
+        assert response.result == 'TEST1,TEST2'
 
         response = parser.handle_query('!s')
         assert response.response_type == WhoisQueryResponseType.ERROR
         assert response.mode == WhoisQueryResponseMode.IRRD
-        assert response.result == 'One or more listed sources are unavailable.'
+        assert response.result == 'One or more selected sources are unavailable.'
 
-        # TODO: add test with invalid sources
+        response = parser.handle_query('!sTEST3')
+        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert response.result == 'One or more selected sources are unavailable.'
 
     def test_irrd_version(self, prepare_parser):
         mock_dq, mock_dh, parser = prepare_parser

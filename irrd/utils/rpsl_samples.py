@@ -1327,9 +1327,8 @@ remarks:        remark
 
 SAMPLE_RTR_SET = """rtr-set:        rtrs-mways-callback
 descr:          mediaWays GmbH
-descr:          Huelshorstweg 30
-descr:          D-33415 Verl
-descr:          DE
+descr:
+descr:          description
 members:        rmws-brln-de07.nw.mediaWays.net
 members:        rmws-brmn-de02.nw.mediaWays.net
 members:        rmws-dsdn-de01.nw.mediaWays.net
@@ -1345,10 +1344,7 @@ members:        rmws-mnch-de03.nw.mediaWays.net
 members:        rmws-nrbg-de02.nw.mediaWays.net
 members:        rmws-srbk-de02.nw.mediaWays.net
 members:        rtrs-other-set
-remarks:        -------------------------------------------------------
-remarks:        The mediaWays NCC is reachable any time at ncc@mediaWays.net or
-remarks:        phone: +49 5241 80 1701
-remarks:        -------------------------------------------------------
+remarks:
 tech-c:         DUMY-RIPE
 admin-c:        DUMY-RIPE
 mnt-by:         MDA-Z

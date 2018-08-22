@@ -1,10 +1,15 @@
-from __future__ import with_statement
+# flake8: noqa: E402
+import os
+import sys
+
 from alembic import context
 from sqlalchemy import create_engine
 from logging.config import fileConfig
 
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), '../../'))
+
 from irrd.conf import get_setting
-from irrd.db.models import Base
+from irrd.storage.models import Base
 
 # Load alembic config file
 config = context.config

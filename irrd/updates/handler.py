@@ -1,7 +1,7 @@
 import textwrap
 from typing import List, Optional, Dict
 
-from irrd.db.api import DatabaseHandler, RPSLDatabaseQuery
+from irrd.storage.api import DatabaseHandler, RPSLDatabaseQuery
 from .parser import parse_update_requests, UpdateRequest
 from .parser_state import UpdateRequestStatus, UpdateRequestType
 from .validators import ReferenceValidator, AuthValidator

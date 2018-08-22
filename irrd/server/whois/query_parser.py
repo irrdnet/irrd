@@ -6,8 +6,8 @@ from typing import Optional, List, Set
 from IPy import IP
 
 from irrd import __version__
-from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
-from irrd.db.api import DatabaseHandler, RPSLDatabaseQuery
+from irrd.conf import PASSWORD_HASH_DUMMY_VALUE, get_setting
+from irrd.storage.api import DatabaseHandler, RPSLDatabaseQuery
 from irrd.rpsl.config import PASSWORD_HASHERS
 from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING, lookup_field_names
 from irrd.utils.validators import parse_as_number, ValidationError
@@ -98,7 +98,8 @@ class WhoisQueryParser:
     lookup_field_names = lookup_field_names()
 
     def __init__(self, peer: str) -> None:
-        self.sources: List[str] = []  # TODO: auto-fill with configured sources
+        self.all_valid_sources = list(get_setting('sources').keys())
+        self.sources: List[str] = []
         self.object_classes: List[str] = []
         self.database_handler = DatabaseHandler()
         self.user_agent: Optional[str] = None
@@ -375,11 +376,14 @@ class WhoisQueryParser:
            !sripe,nttcom limits sources to ripe and nttcom
         """
         if parameter == '-lc':
-            return ','.join(self.sources)
-        if parameter:  # TODO: validate sources
-            self.sources = parameter.upper().split(',')
+            return ','.join(self.all_valid_sources)
+        if parameter:
+            sources = parameter.upper().split(',')
+            if not all([source in self.all_valid_sources for source in sources]):
+                raise WhoisQueryParserException("One or more selected sources are unavailable.")
+            self.sources = sources
         else:
-            raise WhoisQueryParserException("One or more listed sources are unavailable.")
+            raise WhoisQueryParserException("One or more selected sources are unavailable.")
         return None
 
     def handle_irrd_version(self):
@@ -468,8 +472,11 @@ class WhoisQueryParser:
 
     def handle_ripe_sources_list(self, sources_list: Optional[str]) -> None:
         """-s/-a parameter - set sources list. Empty list enables all sources. """
-        if sources_list:  # TODO: validate sources
-            self.sources = sources_list.upper().split(',')
+        if sources_list:
+            sources = sources_list.upper().split(',')
+            if not all([source in self.all_valid_sources for source in sources]):
+                raise WhoisQueryParserException("One or more selected sources are unavailable.")
+            self.sources = sources
         else:
             self.sources = []
 

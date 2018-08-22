@@ -1,9 +1,10 @@
 import logging
 from typing import List, Optional
 
-from irrd.db.api import DatabaseHandler, RPSLDatabaseQuery
+from irrd.storage.api import DatabaseHandler, RPSLDatabaseQuery
 from irrd.rpsl.parser import UnknownRPSLObjectClassException, RPSLObject
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
+from irrd.utils.text import splitline_unicodesafe
 from .parser_state import UpdateRequestType, UpdateRequestStatus
 from .validators import ReferenceValidator, AuthValidator
 
@@ -191,6 +192,8 @@ def parse_update_requests(requests_text: str,
     requests_text = requests_text.replace('\r', '')
     for object_text in requests_text.split('\n\n'):
         object_text = object_text.strip()
+        if not object_text:
+            continue
 
         rpsl_text = ''
         delete_reason = None
@@ -198,7 +201,7 @@ def parse_update_requests(requests_text: str,
         # The attributes password/override/delete are meta attributes
         # and need to be extracted before parsing. Delete refers to a specific
         # object, password/override apply to all included objects.
-        for line in object_text.splitlines():
+        for line in splitline_unicodesafe(object_text):
             if line.startswith('password:'):
                 password = line.split(':', maxsplit=1)[1].strip()
                 passwords.append(password)
