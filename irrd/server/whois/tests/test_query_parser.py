@@ -669,7 +669,6 @@ class TestWhoisQueryParserIRRD:
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert not response.result
-        print(flatten_mock_calls(mock_dh))
         assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
 
     def test_objects_maintained_by(self, prepare_parser):

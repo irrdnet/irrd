@@ -592,8 +592,6 @@ class TestHandleEmailUpdate:
         assert len(handler.results) == 1
         assert len(handler.results[0].error_messages)
 
-        print(flatten_mock_calls(mock_smtp))
-
     def test_invalid_no_text_plain(self, monkeypatch):
         mock_smtp = Mock()
         monkeypatch.setattr('irrd.updates.email.SMTP', lambda server: mock_smtp)
