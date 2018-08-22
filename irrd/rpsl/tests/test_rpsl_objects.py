@@ -3,12 +3,14 @@ from IPy import IP
 from pytest import raises
 
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
-from irrd.utils.rpsl_samples import (object_sample_mapping, SAMPLE_MALFORMED_EMPTY_LINE, SAMPLE_MALFORMED_ATTRIBUTE_NAME,
+from irrd.utils.rpsl_samples import (object_sample_mapping, SAMPLE_MALFORMED_EMPTY_LINE,
+                                     SAMPLE_MALFORMED_ATTRIBUTE_NAME,
                                      SAMPLE_UNKNOWN_CLASS, SAMPLE_MISSING_MANDATORY_ATTRIBUTE, SAMPLE_MALFORMED_SOURCE,
                                      SAMPLE_MALFORMED_PK, SAMPLE_UNKNOWN_ATTRIBUTE, SAMPLE_INVALID_MULTIPLE_ATTRIBUTE,
                                      KEY_CERT_SIGNED_MESSAGE_VALID, KEY_CERT_SIGNED_MESSAGE_INVALID,
-                                     KEY_CERT_SIGNED_MESSAGE_CORRUPT, KEY_CERT_SIGNED_MESSAGE_WRONG_KEY, TEMPLATE_ROUTE_OBJECT,
-                                     TEMPLATE_PERSON_OBJECT)
+                                     KEY_CERT_SIGNED_MESSAGE_CORRUPT, KEY_CERT_SIGNED_MESSAGE_WRONG_KEY,
+                                     TEMPLATE_ROUTE_OBJECT,
+                                     TEMPLATE_PERSON_OBJECT, SAMPLE_LINE_NEITHER_CONTINUATION_NOR_ATTR)
 
 # noinspection PyUnresolvedReferences
 from irrd.utils.test_utils import tmp_gpg_dir   # noqa: F401
@@ -29,7 +31,7 @@ class TestRPSLParsingGeneric:
 
     def test_malformed_empty_line(self):
         obj = rpsl_object_from_text(SAMPLE_MALFORMED_EMPTY_LINE, strict_validation=False)
-        assert len(obj.messages.errors()) == 2, f"Unexpected extra errors: {obj.messages.errors()}"
+        assert len(obj.messages.errors()) == 1, f"Unexpected extra errors: {obj.messages.errors()}"
         assert "encountered empty line" in obj.messages.errors()[0]
 
         with raises(ValueError):
@@ -37,7 +39,7 @@ class TestRPSLParsingGeneric:
 
     def test_malformed_attribute_name(self):
         obj = rpsl_object_from_text(SAMPLE_MALFORMED_ATTRIBUTE_NAME, strict_validation=False)
-        assert len(obj.messages.errors()) == 2, f"Unexpected extra errors: {obj.messages.errors()}"
+        assert len(obj.messages.errors()) == 1, f"Unexpected extra errors: {obj.messages.errors()}"
         assert "malformed attribute name" in obj.messages.errors()[0]
 
     def test_missing_mandatory_attribute(self):
@@ -78,6 +80,11 @@ class TestRPSLParsingGeneric:
         obj = rpsl_object_from_text(SAMPLE_MALFORMED_SOURCE, strict_validation=False)
         assert len(obj.messages.errors()) == 1, f"Unexpected extra errors: {obj.messages.errors()}"
         assert "contains invalid characters" in obj.messages.errors()[0]
+
+    def test_line_neither_continuation_nor_attribute(self):
+        obj = rpsl_object_from_text(SAMPLE_LINE_NEITHER_CONTINUATION_NOR_ATTR, strict_validation=False)
+        assert len(obj.messages.errors()) == 1, f"Unexpected extra errors: {obj.messages.errors()}"
+        assert "line is neither continuation nor valid attribute" in obj.messages.errors()[0]
 
 
 class TestRPSLAsBlock:
@@ -263,9 +270,17 @@ class TestRPSLKeyCert:
         obj = rpsl_object_from_text(rpsl_text.replace("certif:", "remarks:"), strict_validation=True)
 
         errors = obj.messages.errors()
-        assert len(errors) == 2, f"Unexpected multiple errors: {errors}"
+        assert len(errors) == 1, f"Unexpected multiple errors: {errors}"
         assert "Mandatory attribute 'certif' on object key-cert is missing" in errors[0]
-        assert "No valid data found" in errors[1]
+
+    @pytest.mark.usefixtures("tmp_gpg_dir")  # noqa: F811
+    def test_parse_invalid_key(self, tmp_gpg_dir):
+        rpsl_text = object_sample_mapping[RPSLKeyCert().rpsl_object_class]
+        obj = rpsl_object_from_text(rpsl_text.replace("mQINBFnY7YoBEADH5ooPsoR9G", "foo"), strict_validation=True)
+
+        errors = obj.messages.errors()
+        assert len(errors) == 1, f"Unexpected multiple errors: {errors}"
+        assert "Unable to read public PGP key: key corrupt or multiple keys provided: No valid data found" in errors[0]
 
     @pytest.mark.usefixtures("tmp_gpg_dir")  # noqa: F811
     def test_verify(self, tmp_gpg_dir):

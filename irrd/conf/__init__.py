@@ -34,7 +34,12 @@ DEFAULT_SETTINGS = DottedDict({
             'dump_serial_source': 'ftp://ftp.afrinic.net/pub/dbase/AFRINIC.CURRENTSERIAL',
             'object_class_filter': 'as-block,as-set,autnum,filter-set,inet-rtr,peering-set,role,route-set,route,route6,rtr-set',
         },
-        # ALTDB FTP is dead
+        'ALTDB': {
+            'nrtm_host': 'rr.ntt.net',
+            'nrtm_port': 43,
+            'dump_source': 'ftp://ftp.radb.net/radb/dbase/altdb.db.gz',
+            'dump_serial_source': 'ftp://ftp.radb.net/radb/dbase/ALTDB.CURRENTSERIAL',
+        },
         'APNIC': {
             'authoritative': False,
             'keep_journal': True,
@@ -69,9 +74,19 @@ DEFAULT_SETTINGS = DottedDict({
             'dump_source': 'ftp://irr.bboi.net/bboi.db.gz',
             'dump_serial_source': 'ftp://irr.bboi.net/BBOI.CURRENTSERIAL',
         },
-        # BELL FTP is dead
+        'BELL': {
+            'nrtm_host': 'rr.ntt.net',
+            'nrtm_port': 43,
+            'dump_source': 'ftp://ftp.radb.net/radb/dbase/bell.db.gz',
+            'dump_serial_source': 'ftp://ftp.radb.net/radb/dbase/BELL.CURRENTSERIAL',
+        },
         # INTERNAL source unknown
-        # JPIRR FTP is dead
+        'JPIRR': {
+            'nrtm_host': 'rr.ntt.net',
+            'nrtm_port': 43,
+            'dump_source': 'ftp://ftp.radb.net/radb/dbase/jpirr.db.gz',
+            'dump_serial_source': 'ftp://ftp.radb.net/radb/dbase/JPIRR.CURRENTSERIAL',
+        },
         'LEVEL3': {
             'authoritative': False,
             'keep_journal': True,
@@ -146,7 +161,12 @@ DEFAULT_SETTINGS = DottedDict({
             'dump_serial_source': 'ftp://ftp.ripe.net/ripe/dbase/rc/RIPE-NONAUTH.CURRENTSERIAL',
         },
         # RPKI source unknown
-        # TC FTP not reachable
+        'TC': {
+            'nrtm_host': 'rr.ntt.net',
+            'nrtm_port': 43,
+            'dump_source': 'ftp://ftp.radb.net/radb/dbase/tc.db.gz',
+            'dump_serial_source': 'ftp://ftp.radb.net/radb/dbase/TC.CURRENTSERIAL',
+        },
     }
 })
 

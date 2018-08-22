@@ -202,6 +202,9 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                     # the attribute is finished.
                     self._object_data.append((current_attr, current_value, current_continuation_chars))
 
+                if ':' not in line:
+                    self.messages.error(f"Line {line_no+1}: line is neither continuation nor valid attribute [{line}]")
+                    return
                 current_attr, current_value = line.split(":", maxsplit=1)
                 current_attr = current_attr.lower()
                 current_value = current_value.strip()
@@ -223,10 +226,11 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         (see the docstring for __init__).
         """
         self.parsed_data: Dict[str, Any[str, List]] = {}
-        self._validate_attribute_counts()
+        if not self.messages.errors():
+            self._validate_attribute_counts()
         self._parse_attribute_data()
 
-        if self.strict_validation:
+        if self.strict_validation and not self.messages.errors():
             self.clean()
 
     def _validate_attribute_counts(self) -> None:

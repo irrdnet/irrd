@@ -651,6 +651,14 @@ changed:        2009-10-15T09:32:17Z
 source:         +TEST$$$
 """
 
+SAMPLE_LINE_NEITHER_CONTINUATION_NOR_ATTR = """route:          192.0.2.0/24
+origin:         AS65537
+mnt-by:         TEST-MNT
+or
+changed:        2009-10-15T09:32:17Z
+source:         TEST
+"""
+
 KEY_CERT_SIGNED_MESSAGE_VALID = """-----BEGIN PGP SIGNED MESSAGE-----
 Hash: SHA256
 

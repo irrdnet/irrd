@@ -9,13 +9,13 @@ import os
 import sys
 from typing import Set
 
-from irrd.utils.text import split_paragraphs_rpsl
 
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), '../'))
 
 from irrd.storage.api import DatabaseHandler
 from irrd.rpsl.parser import UnknownRPSLObjectClassException
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
+from irrd.utils.text import split_paragraphs_rpsl
 
 
 class RPSLParse:
