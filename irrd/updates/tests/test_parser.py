@@ -405,6 +405,10 @@ class TestSingleUpdateRequestHandling:
         auth_validator.pre_approve([result_mntner])
         assert result_mntner._check_auth()
         assert not result_mntner.error_messages
+        assert result_mntner.info_messages == ['As you submitted dummy hash values, all password hashes on this object '
+                                               'were replaced with a new MD5-PW hash of the password you provided for '
+                                               'authentication.']
+
         auth_pgp, auth_hash = splitline_unicodesafe(result_mntner.rpsl_obj_new.parsed_data['auth'])
         assert auth_pgp == 'PGPKey-80F238C6'
         assert auth_hash.startswith('MD5-PW ')
@@ -458,7 +462,7 @@ class TestSingleUpdateRequestHandling:
         result_mntner._check_auth()
         assert not result_mntner.is_valid()
         assert result_mntner.error_messages == [
-            'Object submitted with dummy hash values, but multiple passwords submitted. '
+            'Object submitted with dummy hash values, but multiple or no passwords submitted. '
             'Either submit all full hashes, or a single password.'
         ]
 

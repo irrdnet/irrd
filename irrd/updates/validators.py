@@ -175,8 +175,11 @@ class AuthValidator:
             if rpsl_obj_new.has_dummy_auth_value() and rpsl_obj_new.pk() not in self._pre_approved:
                 if len(self.passwords) == 1:
                     rpsl_obj_new.force_single_new_password(self.passwords[0])
+                    result.info_messages.add('As you submitted dummy hash values, all password hashes on this object '
+                                             'were replaced with a new MD5-PW hash of the password you provided for '
+                                             'authentication.')
                 else:
-                    result.error_messages.add(f'Object submitted with dummy hash values, but multiple passwords '
+                    result.error_messages.add(f'Object submitted with dummy hash values, but multiple or no passwords '
                                               f'submitted. Either submit all full hashes, or a single password.')
             elif not rpsl_obj_new.verify_auth(self.passwords, self.keycert_obj_pk):
                 result.error_messages.add(f'Authorisation failed for the auth methods on this mntner object.')
