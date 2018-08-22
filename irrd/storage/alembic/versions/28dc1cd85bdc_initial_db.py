@@ -28,7 +28,9 @@ def upgrade():
                     sa.Column('serial_oldest_journal', sa.Integer(), nullable=True),
                     sa.Column('serial_newest_journal', sa.Integer(), nullable=True),
                     sa.Column('serial_last_dump', sa.Integer(), nullable=True),
+                    sa.Column('database_status', sa.Boolean(), nullable=True),
                     sa.Column('last_error', sa.Text(), nullable=True),
+                    sa.Column('last_error_timestamp', sa.DateTime(timezone=True), nullable=True),
                     sa.Column('created', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
                     sa.Column('updated', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
                     sa.PrimaryKeyConstraint('pk')

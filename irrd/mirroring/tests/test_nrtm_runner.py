@@ -29,6 +29,25 @@ class TestMirrorUpdateRunner:
         assert len(mock_full_import_runner.mock_calls) == 1
         assert mock_full_import_runner.mock_calls[0][0] == 'run'
 
+    def test_force_reload(self, monkeypatch):
+        mock_dh = Mock()
+        mock_dq = Mock()
+        mock_full_import_runner = Mock()
+
+        monkeypatch.setattr('irrd.mirroring.nrtm_runner.DatabaseHandler', lambda: mock_dh)
+        monkeypatch.setattr('irrd.mirroring.nrtm_runner.RPSLDatabaseStatusQuery', lambda: mock_dq)
+        monkeypatch.setattr('irrd.mirroring.nrtm_runner.MirrorFullImportRunner', lambda source: mock_full_import_runner)
+
+        mock_dh.execute_query = lambda q: iter([{'serial_newest_seen': 424242, 'force_reload': True}])
+        runner = MirrorUpdateRunner(source='TEST')
+        runner.run()
+
+        assert flatten_mock_calls(mock_dq) == [['source', ('TEST',), {}]]
+        assert flatten_mock_calls(mock_dh) == [['commit', (), {}], ['close', (), {}]]
+
+        assert len(mock_full_import_runner.mock_calls) == 1
+        assert mock_full_import_runner.mock_calls[0][0] == 'run'
+
     def test_update_stream_call(self, monkeypatch):
         mock_dh = Mock()
         mock_dq = Mock()
@@ -38,7 +57,7 @@ class TestMirrorUpdateRunner:
         monkeypatch.setattr('irrd.mirroring.nrtm_runner.RPSLDatabaseStatusQuery', lambda: mock_dq)
         monkeypatch.setattr('irrd.mirroring.nrtm_runner.NRTMUpdateStreamRunner', lambda source: mock_stream_runner)
 
-        mock_dh.execute_query = lambda q: iter([{'serial_newest_seen': 424242}])
+        mock_dh.execute_query = lambda q: iter([{'serial_newest_seen': 424242, 'force_reload': False}])
         runner = MirrorUpdateRunner(source='TEST')
         runner.run()
 
@@ -73,6 +92,10 @@ class TestMirrorFullImportRunner:
         MirrorFullImportRunner('TEST').run(mock_dh)
 
         assert MockMirrorFullImportParser.rpsl_data_calls == ['source1', 'source2']
+        assert flatten_mock_calls(mock_dh) == [
+            ['delete_all_rpsl_objects', ('TEST',), {}],
+            ['disable_journaling', (), {}],
+        ]
 
     def test_missing_source_settings(self):
         DEFAULT_SETTINGS['sources'] = {'TEST': {

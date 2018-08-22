@@ -37,9 +37,11 @@ class TestMirrorFullImportParser:
                 serial=424242,
                 database_handler=mock_dh,
             )
-        assert len(mock_dh.mock_calls) == 1
+        assert len(mock_dh.mock_calls) == 3
         assert mock_dh.mock_calls[0][0] == 'upsert_rpsl_object'
         assert mock_dh.mock_calls[0][1][0].pk() == '192.0.2.0/24,AS65537'
+        assert mock_dh.mock_calls[1][0] == 'record_mirror_error'
+        assert mock_dh.mock_calls[2][0] == 'record_mirror_error'
 
         assert 'Invalid source BADSOURCE for object' in caplog.text
         assert 'Invalid address prefix' in caplog.text
@@ -71,42 +73,74 @@ class TestNRTMStreamParser:
         mock_dh = Mock()
         with pytest.raises(ValueError) as ve:
             NRTMStreamParser('TEST', SAMPLE_NRTM_V3_SERIAL_OUT_OF_ORDER, mock_dh)
-        assert 'expected at least' in str(ve)
-        assert flatten_mock_calls(mock_dh) == [['force_record_serial_seen', ('TEST', 11012703), {}]]
+
+        error_msg = 'expected at least'
+        assert error_msg in str(ve)
+        assert len(mock_dh.mock_calls) == 1
+        assert mock_dh.mock_calls[0][0] == 'record_mirror_error'
+        assert mock_dh.mock_calls[0][1][0] == 'TEST'
+        assert error_msg in mock_dh.mock_calls[0][1][1]
 
     def test_test_parse_nrtm_v3_invalid_unexpected_source(self):
         mock_dh = Mock()
         with pytest.raises(ValueError) as ve:
             NRTMStreamParser('BADSOURCE', SAMPLE_NRTM_V3, mock_dh)
-        assert 'Invalid NRTM source in START line: expected BADSOURCE but found TEST ' in str(ve)
-        assert not len(mock_dh.mock_calls)
+
+        error_msg = 'Invalid NRTM source in START line: expected BADSOURCE but found TEST '
+        assert error_msg in str(ve)
+        assert len(mock_dh.mock_calls) == 1
+        assert mock_dh.mock_calls[0][0] == 'record_mirror_error'
+        assert mock_dh.mock_calls[0][1][0] == 'BADSOURCE'
+        assert error_msg in mock_dh.mock_calls[0][1][1]
 
     def test_test_parse_nrtm_v1_invalid_too_many_items(self):
         mock_dh = Mock()
         with pytest.raises(ValueError) as ve:
             NRTMStreamParser('TEST', SAMPLE_NRTM_V1_TOO_MANY_ITEMS, mock_dh)
-        assert 'expected operations up to and including' in str(ve)
-        assert flatten_mock_calls(mock_dh) == [['force_record_serial_seen', ('TEST', 11012700), {}]]
+        error_msg = 'expected operations up to and including'
+        assert error_msg in str(ve)
+
+        assert len(mock_dh.mock_calls) == 1
+        assert mock_dh.mock_calls[0][0] == 'record_mirror_error'
+        assert mock_dh.mock_calls[0][1][0] == 'TEST'
+        assert error_msg in mock_dh.mock_calls[0][1][1]
 
     def test_test_parse_nrtm_invalid_invalid_version(self):
         mock_dh = Mock()
         with pytest.raises(ValueError) as ve:
             NRTMStreamParser('TEST', SAMPLE_NRTM_INVALID_VERSION, mock_dh)
-        assert 'Invalid NRTM version 99 in START line' in str(ve)
-        assert not len(mock_dh.mock_calls)
+
+        error_msg = 'Invalid NRTM version 99 in START line'
+        assert error_msg in str(ve)
+        assert len(mock_dh.mock_calls) == 1
+        assert mock_dh.mock_calls[0][0] == 'record_mirror_error'
+        assert mock_dh.mock_calls[0][1][0] == 'TEST'
+        assert error_msg in mock_dh.mock_calls[0][1][1]
 
     def test_test_parse_nrtm_invalid_multiple_start_lines(self):
         mock_dh = Mock()
         with pytest.raises(ValueError) as ve:
             NRTMStreamParser('TEST', SAMPLE_NRTM_V3_INVALID_MULTIPLE_START_LINES, mock_dh)
-        assert 'Encountered second START line' in str(ve)
+
+        error_msg = 'Encountered second START line'
+        assert error_msg in str(ve)
+
+        assert len(mock_dh.mock_calls) == 1
+        assert mock_dh.mock_calls[0][0] == 'record_mirror_error'
+        assert mock_dh.mock_calls[0][1][0] == 'TEST'
+        assert error_msg in mock_dh.mock_calls[0][1][1]
 
     def test_test_parse_nrtm_invalid_no_start_line(self):
         mock_dh = Mock()
         with pytest.raises(ValueError) as ve:
             NRTMStreamParser('TEST', SAMPLE_NRTM_INVALID_NO_START_LINE, mock_dh)
-        assert 'Encountered operation before valid NRTM START line' in str(ve)
-        assert not len(mock_dh.mock_calls)
+
+        error_msg = 'Encountered operation before valid NRTM START line'
+        assert error_msg in str(ve)
+        assert len(mock_dh.mock_calls) == 1
+        assert mock_dh.mock_calls[0][0] == 'record_mirror_error'
+        assert mock_dh.mock_calls[0][1][0] == 'TEST'
+        assert error_msg in mock_dh.mock_calls[0][1][1]
 
     def _assert_valid(self, parser: NRTMStreamParser):
         assert parser.operations[0].operation == DatabaseOperation.add_or_update

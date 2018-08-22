@@ -61,11 +61,15 @@ class MirrorFullImportParser(MirrorParser):
                                 f'this update, without errors, will still be processed and cause the inconsistency to '
                                 f'be resolved. Parser error messages: {obj.messages.errors()}; '
                                 f'original object text follows:\n{rpsl_text}')
+                self.database_handler.record_mirror_error(self.source, f'Parsing errors: {obj.messages.errors()}, '
+                                                                       f'original object text follows:\n{rpsl_text}')
                 self.obj_errors += 1
                 return
 
             if obj.source() != self.source:
-                logger.critical(f'Invalid source {obj.source()} for object {obj.pk()}, expected {self.source}')
+                msg = f'Invalid source {obj.source()} for object {obj.pk()}, expected {self.source}'
+                logger.critical(msg)
+                self.database_handler.record_mirror_error(self.source, msg)
                 self.obj_errors += 1
                 return
 
@@ -124,7 +128,6 @@ class NRTMStreamParser(MirrorParser):
 
         for paragraph in paragraphs:
             if self._handle_possible_start_line(paragraph):
-                self.database_handler.force_record_serial_seen(self.source, self.last_serial)
                 continue
             elif paragraph.startswith("%") or paragraph.startswith("#"):
                 continue  # pragma: no cover -- falsely detected as not run by coverage library
@@ -135,7 +138,11 @@ class NRTMStreamParser(MirrorParser):
             msg = f'NRTM stream error: expected operations up to and including serial {self.last_serial}, ' \
                   f'last operation was {self._current_op_serial}'
             logger.error(msg)
+            self.database_handler.record_mirror_error(self.source, msg)
             raise ValueError(msg)
+
+        if self.last_serial > 0:
+            self.database_handler.force_record_serial_seen(self.source, self.last_serial)
 
     def _handle_possible_start_line(self, line: str) -> bool:
         """Check whether a line is an NRTM START line, and if so, handle it."""
@@ -146,6 +153,7 @@ class NRTMStreamParser(MirrorParser):
         if self.nrtm_source:  # nrtm_source can only be defined if this is a second START line
             msg = f'Encountered second START line in NRTM stream, first was {self.source} ' \
                   f'{self.first_serial}-{self.last_serial}, new line is: {line}'
+            self.database_handler.record_mirror_error(self.source, msg)
             logger.error(msg)
             raise ValueError(msg)
 
@@ -157,11 +165,13 @@ class NRTMStreamParser(MirrorParser):
         if self.source != self.nrtm_source:
             msg = f'Invalid NRTM source in START line: expected {self.source} but found ' \
                   f'{self.nrtm_source} in line: {line}'
+            self.database_handler.record_mirror_error(self.source, msg)
             logger.error(msg)
             raise ValueError(msg)
 
         if self.version not in ['1', '3']:
             msg = f'Invalid NRTM version {self.version} in START line: {line}'
+            self.database_handler.record_mirror_error(self.source, msg)
             logger.error(msg)
             raise ValueError(msg)
 
@@ -173,6 +183,7 @@ class NRTMStreamParser(MirrorParser):
         """Handle a single ADD/DEL operation."""
         if not self.nrtm_source:
             msg = f'Encountered operation before valid NRTM START line, paragraph encountered: {current_paragraph}'
+            self.database_handler.record_mirror_error(self.source, msg)
             logger.error(msg)
             raise ValueError(msg)
 
@@ -190,6 +201,7 @@ class NRTMStreamParser(MirrorParser):
                 msg = f'Invalid NRTM serial for {self.source}: ADD/DEL has serial {line_serial}, ' \
                       f'expected at least {self._current_op_serial}'
                 logger.error(msg)
+                self.database_handler.record_mirror_error(self.source, msg)
                 raise ValueError(msg)
             self._current_op_serial = line_serial
         else:

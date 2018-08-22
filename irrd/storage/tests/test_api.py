@@ -138,6 +138,8 @@ class TestDatabaseHandlerLive:
         query = RPSLDatabaseQuery()
         result = list(self.dh.execute_query(query))
         assert len(result) == 1
+
+        self.dh.record_mirror_error('TEST2', 'error')
         self.dh.commit()
 
         journal = self._clean_result(self.dh.execute_query(RPSLDatabaseJournalQuery()))
@@ -158,20 +160,33 @@ class TestDatabaseHandlerLive:
              'operation': DatabaseOperation.delete, 'object_class': 'route', 'object_text': 'object-text'},
         ]
 
-        status_test = self._clean_result(self.dh.execute_query(RPSLDatabaseStatusQuery().source('TEST')))
-        assert status_test == [
+        status_test = list(self.dh.execute_query(RPSLDatabaseStatusQuery().source('TEST')))
+        assert self._clean_result(status_test) == [
             {'source': 'TEST', 'serial_oldest_journal': 42, 'serial_newest_journal': 43,
              'serial_oldest_seen': 42, 'serial_newest_seen': 43,
-             'serial_last_dump': None, 'last_error': None},
+             'serial_last_dump': None, 'last_error': None, 'force_reload': False},
         ]
-        status_test2 = self._clean_result(self.dh.execute_query(RPSLDatabaseStatusQuery().source('TEST2')))
-        assert status_test2 == [
+        assert status_test[0]['created']
+        assert status_test[0]['updated']
+        assert not status_test[0]['last_error_timestamp']
+
+        status_test2 = list(self.dh.execute_query(RPSLDatabaseStatusQuery().source('TEST2')))
+        assert self._clean_result(status_test2) == [
             {'source': 'TEST2', 'serial_oldest_journal': 1, 'serial_newest_journal': 3,
              'serial_oldest_seen': 1, 'serial_newest_seen': 3,
-             'serial_last_dump': None, 'last_error': None},
+             'serial_last_dump': None, 'last_error': 'error', 'force_reload': False},
         ]
+        assert status_test2[0]['created']
+        assert status_test2[0]['updated']
+        assert status_test2[0]['last_error_timestamp']
 
-        self.dh.rollback()
+        self.dh.upsert_rpsl_object(rpsl_object_route_v6)
+        assert len(list(self.dh.execute_query(RPSLDatabaseQuery().sources(['TEST'])))) == 1
+        assert len(list(self.dh.execute_query(RPSLDatabaseQuery().sources(['TEST2'])))) == 1
+        self.dh.delete_all_rpsl_objects('TEST')
+        assert not len(list(self.dh.execute_query(RPSLDatabaseQuery().sources(['TEST']))))
+        assert len(list(self.dh.execute_query(RPSLDatabaseQuery().sources(['TEST2'])))) == 1
+
         self.dh.close()
 
     def test_updates_database_status_forced_serials(self, monkeypatch, irrd_database):
@@ -213,7 +228,7 @@ class TestDatabaseHandlerLive:
         assert status == [
             {'source': 'TEST', 'serial_oldest_journal': None, 'serial_newest_journal': None,
              'serial_oldest_seen': 42, 'serial_newest_seen': 4242,
-             'serial_last_dump': None, 'last_error': None},
+             'serial_last_dump': None, 'last_error': None, 'force_reload': False},
         ]
 
         self.dh.force_record_serial_seen('TEST', 424242)
@@ -223,7 +238,7 @@ class TestDatabaseHandlerLive:
         assert status == [
             {'source': 'TEST', 'serial_oldest_journal': None, 'serial_newest_journal': None,
              'serial_oldest_seen': 42, 'serial_newest_seen': 424242,
-             'serial_last_dump': None, 'last_error': None},
+             'serial_last_dump': None, 'last_error': None, 'force_reload': False},
         ]
 
         self.dh.close()
@@ -256,12 +271,12 @@ class TestDatabaseHandlerLive:
         assert status_test == [
             {'source': 'TEST', 'serial_oldest_journal': None, 'serial_newest_journal': None,
              'serial_oldest_seen': 42, 'serial_newest_seen': 42,
-             'serial_last_dump': None, 'last_error': None},
+             'serial_last_dump': None, 'last_error': None, 'force_reload': False},
         ]
         self.dh.close()
 
     def _clean_result(self, results):
-        variable_fields = ['pk', 'timestamp', 'created', 'updated']
+        variable_fields = ['pk', 'timestamp', 'created', 'updated', 'last_error_timestamp']
         return [{k: v for k, v in result.items() if k not in variable_fields} for result in list(results)]
 
 

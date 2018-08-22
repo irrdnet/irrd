@@ -109,7 +109,11 @@ class RPSLDatabaseStatus(Base):  # type: ignore
     serial_oldest_journal = sa.Column(sa.Integer)
     serial_newest_journal = sa.Column(sa.Integer)
     serial_last_dump = sa.Column(sa.Integer)
+
+    force_reload = sa.Column(sa.Boolean(), default=False)
+
     last_error = sa.Column(sa.Text)
+    last_error_timestamp = sa.Column(sa.DateTime(timezone=True))
 
     created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
     updated = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now(), nullable=False)

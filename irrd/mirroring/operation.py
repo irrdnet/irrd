@@ -39,12 +39,16 @@ class NRTMOperation:
                             f'causing potential data inconsistencies. A new operation for this update, without errors, '
                             f'will still be processed and cause the inconsistency to be resolved. '
                             f'Parser error messages: {errors}; original object text follows:\n{self.object_text}')
+            database_handler.record_mirror_error(self.source, f'Parsing errors: {obj.messages.errors()}, '
+                                                              f'original object text follows:\n{self.object_text}')
             return False
 
         if 'source' in obj.parsed_data and obj.parsed_data['source'].upper() != self.source:
-            logger.critical(f'Incorrect source in NRTM object: stream has source {self.source}, found object with '
-                            f'source {obj.source()} in operation {self.serial}/{self.operation.value}/{obj.pk()}. '
-                            f'This operation is ignored, causing potential data inconsistencies.')
+            msg = (f'Incorrect source in NRTM object: stream has source {self.source}, found object with '
+                   f'source {obj.source()} in operation {self.serial}/{self.operation.value}/{obj.pk()}. '
+                   f'This operation is ignored, causing potential data inconsistencies.')
+            database_handler.record_mirror_error(self.source, msg)
+            logger.critical(msg)
             return False
 
         if self.operation == DatabaseOperation.add_or_update:

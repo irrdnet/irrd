@@ -345,7 +345,9 @@ class RPSLDatabaseStatusQuery:
             self.columns.serial_oldest_journal,
             self.columns.serial_newest_journal,
             self.columns.serial_last_dump,
+            self.columns.force_reload,
             self.columns.last_error,
+            self.columns.last_error_timestamp,
             self.columns.created,
             self.columns.updated,
         ])
@@ -564,7 +566,18 @@ class DatabaseHandler:
         self._rpsl_upsert_cache = []
         self._rpsl_pk_source_seen = set()
 
-    def force_record_serial_seen(self, source: str, serial: int):
+    def delete_all_rpsl_objects(self, source):
+        """
+        Delete all RPSL objects for a source from the database.
+        This is intended for cases where a full re-import is done.
+        Note that no journal records are kept of this change.
+        """
+        self._flush_rpsl_object_upsert_cache()
+        table = RPSLDatabaseObject.__table__
+        stmt = table.delete(table.c.source == source)
+        self._connection.execute(stmt)
+
+    def force_record_serial_seen(self, source: str, serial: int) -> None:
         """
         Forcibly record the max serial seen for a source.
 
@@ -575,7 +588,14 @@ class DatabaseHandler:
         """
         self.status_tracker.force_record_serial_seen(source, serial)
 
-    def close(self):
+    def record_mirror_error(self, source: str, error: str) -> None:
+        """
+        Record an error seen in a mirrored database.
+        Only the most recent error is stored in the DB status.
+        """
+        self.status_tracker.record_mirror_error(source, error)
+
+    def close(self) -> None:
         self._connection.close()
 
 
@@ -594,6 +614,7 @@ class DatabaseStatusTracker:
     """
     journaling_enabled: bool
     _new_serials_per_source: Dict[str, Set[int]]
+    _mirroring_error: Dict[str, str]
 
     c_journal = RPSLDatabaseJournal.__table__.c
     c_status = RPSLDatabaseStatus.__table__.c
@@ -604,7 +625,18 @@ class DatabaseStatusTracker:
         self._reset()
 
     def force_record_serial_seen(self, source: str, serial: int):
+        """
+        Forcibly record the max serial seen for a source.
+        See DatabaseHandler.force_record_serial_seen for more info.
+        """
         self._new_serials_per_source[source].add(serial)
+
+    def record_mirror_error(self, source: str, error: str) -> None:
+        """
+        Record an error seen in a mirrored database.
+        Only the most recent error is stored in the DB status.
+        """
+        self._mirroring_error[source] = error
 
     def record_operation(self, operation: DatabaseOperation, rpsl_pk: str, source: str, object_class: str,
                          object_text: str, forced_serial: Optional[int]) -> None:
@@ -671,23 +703,31 @@ class DatabaseStatusTracker:
                 serial_newest_seen=serial_newest_seen,
                 serial_oldest_journal=serial_oldest_journal,
                 serial_newest_journal=serial_newest_journal,
+                force_reload=False,
                 source=source,
                 updated=datetime.now(timezone.utc),
             )
             columns_to_update = {
                 c.name: c
                 for c in stmt.excluded
-                if c.name != 'source'
+                if c.name not in ['source', 'last_error', 'last_error_timestamp']
             }
 
             stmt = stmt.on_conflict_do_update(
                 index_elements=['source'],
                 set_=columns_to_update,
             )
-
             self.database_handler.execute_statement(stmt)
+
+            if source in self._mirroring_error:
+                stmt = RPSLDatabaseStatus.__table__.update().where(self.c_status.source == source).values(
+                    last_error=self._mirroring_error[source],
+                    last_error_timestamp=datetime.now(timezone.utc),
+                )
+                self.database_handler.execute_statement(stmt)
 
         self._reset()
 
     def _reset(self):
         self._new_serials_per_source = defaultdict(set)
+        self._mirroring_error = dict()

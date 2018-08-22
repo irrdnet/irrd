@@ -5,7 +5,7 @@ import shutil
 from ftplib import FTP
 from io import BytesIO
 from tempfile import NamedTemporaryFile
-from typing import Optional
+from typing import Optional, Tuple
 from urllib.parse import urlparse
 
 from irrd.conf import get_setting
@@ -33,9 +33,9 @@ class MirrorUpdateRunner:
     def run(self) -> None:
         self.database_handler = DatabaseHandler()
 
-        serial_newest_seen = self._serial_newest_seen()
-        logger.debug(f'Most recent serial seen for {self.source}: {serial_newest_seen}')
-        if not serial_newest_seen:
+        serial_newest_seen, force_reload = self._status()
+        logger.debug(f'Most recent serial seen for {self.source}: {serial_newest_seen}, force_reload: {force_reload}')
+        if not serial_newest_seen or force_reload:
             self.full_import_runner.run(database_handler=self.database_handler)
         else:
             self.update_stream_runner.run(serial_newest_seen, database_handler=self.database_handler)
@@ -43,13 +43,14 @@ class MirrorUpdateRunner:
         self.database_handler.commit()
         self.database_handler.close()
 
-    def _serial_newest_seen(self) -> Optional[int]:
+    def _status(self) -> Tuple[Optional[int], Optional[bool]]:
         query = RPSLDatabaseStatusQuery().source(self.source)
         result = self.database_handler.execute_query(query)
         try:
-            return next(result)['serial_newest_seen']
+            status = next(result)
+            return status['serial_newest_seen'], status['force_reload']
         except StopIteration:
-            return None
+            return None, None
 
 
 class MirrorFullImportRunner:
@@ -65,7 +66,8 @@ class MirrorFullImportRunner:
         self.source = source
 
     def run(self, database_handler: DatabaseHandler):
-        # TODO: delete old RPSL objects from the DB
+        database_handler.delete_all_rpsl_objects(self.source)
+
         dump_sources = get_setting(f'sources.{self.source}.dump_source').split(',')
         dump_serial_source = get_setting(f'sources.{self.source}.dump_serial_source')
 
