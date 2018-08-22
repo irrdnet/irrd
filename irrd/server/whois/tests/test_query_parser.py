@@ -803,5 +803,5 @@ class TestWhoisQueryParserIRRD:
         response = parser.handle_query('!v')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
-        assert response.result.startswith('IRRD4')
+        assert response.result.startswith('IRRD')
         assert not mock_dq.mock_calls

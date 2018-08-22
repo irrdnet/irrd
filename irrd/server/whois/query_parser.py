@@ -388,7 +388,7 @@ class WhoisQueryParser:
 
     def handle_irrd_version(self):
         """!v query - return version"""
-        return f'IRRD4 -- version {__version__}'
+        return f'IRRD -- version {__version__}'
 
     def handle_ripe_command(self, full_query: str) -> WhoisQueryResponse:
         """

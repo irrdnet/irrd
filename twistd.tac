@@ -16,7 +16,7 @@ from irrd.conf import get_setting
 from irrd.mirroring.scheduler import MirrorScheduler
 from irrd.server.whois.protocol import WhoisQueryReceiverFactory
 
-application = service.Application("IRRDv4")
+application = service.Application("IRRD")
 application.setComponent(ILogObserver, PythonLoggingObserver().emit)
 
 server = internet.TCPServer(

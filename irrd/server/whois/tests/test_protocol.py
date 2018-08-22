@@ -29,7 +29,7 @@ def test_whois_protocol():
 
     receiver.lineReceived(b' !v ')
     assert mock_transport.mock_calls[0][0] == 'write'
-    expected_output_start = b'A24\nIRRD4'
+    expected_output_start = b'A23\nIRRD'
     assert mock_transport.mock_calls[0][1][0][:len(expected_output_start)] == expected_output_start
     assert mock_transport.mock_calls[1][0] == 'loseConnection'
     assert len(mock_transport.mock_calls) == 2
