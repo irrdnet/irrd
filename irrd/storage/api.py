@@ -564,6 +564,17 @@ class DatabaseHandler:
         self._rpsl_upsert_cache = []
         self._rpsl_pk_source_seen = set()
 
+    def force_record_serial_seen(self, source: str, serial: int):
+        """
+        Forcibly record the max serial seen for a source.
+
+        This is used when receiving NRTM streams in which some objects are
+        ignored or missing . Because their operations are never saved, the
+        serial needs to be manually advanced, to prevent re-querying the
+        same objects all the time.
+        """
+        self.status_tracker.force_record_serial_seen(source, serial)
+
     def close(self):
         self._connection.close()
 
@@ -591,6 +602,9 @@ class DatabaseStatusTracker:
         self.database_handler = database_handler
         self.journaling_enabled = journaling_enabled
         self._reset()
+
+    def force_record_serial_seen(self, source: str, serial: int):
+        self._new_serials_per_source[source].add(serial)
 
     def record_operation(self, operation: DatabaseOperation, rpsl_pk: str, source: str, object_class: str,
                          object_text: str, forced_serial: Optional[int]) -> None:

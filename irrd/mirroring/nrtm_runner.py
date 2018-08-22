@@ -39,6 +39,7 @@ class MirrorUpdateRunner:
             self.full_import_runner.run(database_handler=self.database_handler)
         else:
             self.update_stream_runner.run(serial_newest_seen, database_handler=self.database_handler)
+
         self.database_handler.commit()
         self.database_handler.close()
 
@@ -159,6 +160,6 @@ class NRTMUpdateStreamRunner:
         response = whois_query(nrtm_host, nrtm_port, query, end_markings)
         logger.debug(f'{self.source} Received buffer: {response.strip()}')
 
-        stream_parser = NRTMStreamParser(self.source, response)
+        stream_parser = NRTMStreamParser(self.source, response, database_handler)
         for operation in stream_parser.operations:
             operation.save(database_handler)

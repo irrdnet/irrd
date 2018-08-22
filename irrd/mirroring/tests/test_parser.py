@@ -4,6 +4,7 @@ from unittest.mock import Mock
 import pytest
 
 from irrd.utils.rpsl_samples import SAMPLE_ROUTE, SAMPLE_UNKNOWN_CLASS, SAMPLE_UNKNOWN_ATTRIBUTE, SAMPLE_MALFORMED_PK
+from irrd.utils.test_utils import flatten_mock_calls
 from .nrtm_samples import (SAMPLE_NRTM_V3, SAMPLE_NRTM_V1, SAMPLE_NRTM_V1_TOO_MANY_ITEMS, SAMPLE_NRTM_INVALID_VERSION,
                            SAMPLE_NRTM_V3_SERIAL_GAP, SAMPLE_NRTM_V3_INVALID_MULTIPLE_START_LINES,
                            SAMPLE_NRTM_INVALID_NO_START_LINE, SAMPLE_NRTM_V3_SERIAL_OUT_OF_ORDER)
@@ -47,46 +48,63 @@ class TestMirrorFullImportParser:
 
 class TestNRTMStreamParser:
     def test_test_parse_nrtm_v3_valid(self):
-        parser = NRTMStreamParser('RIPE', SAMPLE_NRTM_V3)
+        mock_dh = Mock()
+        parser = NRTMStreamParser('RIPE', SAMPLE_NRTM_V3, mock_dh)
         self._assert_valid(parser)
+        assert flatten_mock_calls(mock_dh) == [['force_record_serial_seen', ('RIPE', 11012701), {}]]
 
     def test_test_parse_nrtm_v1_valid(self):
-        parser = NRTMStreamParser('RIPE', SAMPLE_NRTM_V1)
+        mock_dh = Mock()
+        parser = NRTMStreamParser('RIPE', SAMPLE_NRTM_V1, mock_dh)
         self._assert_valid(parser)
+        assert flatten_mock_calls(mock_dh) == [['force_record_serial_seen', ('RIPE', 11012701), {}]]
 
     def test_test_parse_nrtm_v3_valid_serial_gap(self):
-        parser = NRTMStreamParser('RIPE', SAMPLE_NRTM_V3_SERIAL_GAP)
+        mock_dh = Mock()
+        parser = NRTMStreamParser('RIPE', SAMPLE_NRTM_V3_SERIAL_GAP, mock_dh)
         self._assert_valid(parser)
+        assert flatten_mock_calls(mock_dh) == [['force_record_serial_seen', ('RIPE', 11012703), {}]]
 
     def test_test_parse_nrtm_v3_invalid_serial_out_of_order(self):
+        mock_dh = Mock()
         with pytest.raises(ValueError) as ve:
-            NRTMStreamParser('RIPE', SAMPLE_NRTM_V3_SERIAL_OUT_OF_ORDER)
+            NRTMStreamParser('RIPE', SAMPLE_NRTM_V3_SERIAL_OUT_OF_ORDER, mock_dh)
         assert 'expected at least' in str(ve)
+        assert flatten_mock_calls(mock_dh) == [['force_record_serial_seen', ('RIPE', 11012703), {}]]
 
     def test_test_parse_nrtm_v3_invalid_unexpected_source(self):
+        mock_dh = Mock()
         with pytest.raises(ValueError) as ve:
-            NRTMStreamParser('BADSOURCE', SAMPLE_NRTM_V3)
+            NRTMStreamParser('BADSOURCE', SAMPLE_NRTM_V3, mock_dh)
         assert 'Invalid NRTM source in START line: expected BADSOURCE but found RIPE ' in str(ve)
+        assert not len(mock_dh.mock_calls)
 
     def test_test_parse_nrtm_v1_invalid_too_many_items(self):
+        mock_dh = Mock()
         with pytest.raises(ValueError) as ve:
-            NRTMStreamParser('RIPE', SAMPLE_NRTM_V1_TOO_MANY_ITEMS)
+            NRTMStreamParser('RIPE', SAMPLE_NRTM_V1_TOO_MANY_ITEMS, mock_dh)
         assert 'expected operations up to and including' in str(ve)
+        assert flatten_mock_calls(mock_dh) == [['force_record_serial_seen', ('RIPE', 11012700), {}]]
 
     def test_test_parse_nrtm_invalid_invalid_version(self):
+        mock_dh = Mock()
         with pytest.raises(ValueError) as ve:
-            NRTMStreamParser('RIPE', SAMPLE_NRTM_INVALID_VERSION)
+            NRTMStreamParser('RIPE', SAMPLE_NRTM_INVALID_VERSION, mock_dh)
         assert 'Invalid NRTM version 99 in START line' in str(ve)
+        assert not len(mock_dh.mock_calls)
 
     def test_test_parse_nrtm_invalid_multiple_start_lines(self):
+        mock_dh = Mock()
         with pytest.raises(ValueError) as ve:
-            NRTMStreamParser('RIPE', SAMPLE_NRTM_V3_INVALID_MULTIPLE_START_LINES)
+            NRTMStreamParser('RIPE', SAMPLE_NRTM_V3_INVALID_MULTIPLE_START_LINES, mock_dh)
         assert 'Encountered second START line' in str(ve)
 
     def test_test_parse_nrtm_invalid_no_start_line(self):
+        mock_dh = Mock()
         with pytest.raises(ValueError) as ve:
-            NRTMStreamParser('RIPE', SAMPLE_NRTM_INVALID_NO_START_LINE)
+            NRTMStreamParser('RIPE', SAMPLE_NRTM_INVALID_NO_START_LINE, mock_dh)
         assert 'Encountered operation before valid NRTM START line' in str(ve)
+        assert not len(mock_dh.mock_calls)
 
     def _assert_valid(self, parser: NRTMStreamParser):
         assert parser.operations[0].operation == DatabaseOperation.add_or_update

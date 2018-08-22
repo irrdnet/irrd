@@ -134,7 +134,7 @@ class TestNRTMUpdateStreamRunner:
 
 
 class MockNRTMStreamParser(object):
-    def __init__(self, source, response):
+    def __init__(self, source, response, database_handler):
         assert source == 'TEST'
         assert response == 'response'
         self.operations = [Mock()]

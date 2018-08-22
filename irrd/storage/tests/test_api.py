@@ -210,14 +210,22 @@ class TestDatabaseHandlerLive:
         self.dh.commit()
 
         status = self._clean_result(self.dh.execute_query(RPSLDatabaseStatusQuery()))
-        print(status)
         assert status == [
             {'source': 'TEST', 'serial_oldest_journal': None, 'serial_newest_journal': None,
              'serial_oldest_seen': 42, 'serial_newest_seen': 4242,
              'serial_last_dump': None, 'last_error': None},
         ]
 
-        self.dh.rollback()
+        self.dh.force_record_serial_seen('TEST', 424242)
+        self.dh.commit()
+
+        status = self._clean_result(self.dh.execute_query(RPSLDatabaseStatusQuery()))
+        assert status == [
+            {'source': 'TEST', 'serial_oldest_journal': None, 'serial_newest_journal': None,
+             'serial_oldest_seen': 42, 'serial_newest_seen': 424242,
+             'serial_last_dump': None, 'last_error': None},
+        ]
+
         self.dh.close()
 
     def test_disable_journaling(self, monkeypatch, irrd_database):

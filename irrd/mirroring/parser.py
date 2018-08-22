@@ -111,8 +111,9 @@ class NRTMStreamParser(MirrorParser):
     nrtm_source = None
     _current_op_serial = -1
 
-    def __init__(self, source: str, nrtm_data: str) -> None:
+    def __init__(self, source: str, nrtm_data: str, database_handler: DatabaseHandler) -> None:
         self.source = source
+        self.database_handler = database_handler
         super().__init__()
         self.operations: List[NRTMOperation] = []
         self._split_stream(nrtm_data)
@@ -123,13 +124,14 @@ class NRTMStreamParser(MirrorParser):
 
         for paragraph in paragraphs:
             if self._handle_possible_start_line(paragraph):
+                self.database_handler.force_record_serial_seen(self.source, self.last_serial)
                 continue
             elif paragraph.startswith("%") or paragraph.startswith("#"):
                 continue  # pragma: no cover -- falsely detected as not run by coverage library
             elif paragraph.startswith('ADD') or paragraph.startswith('DEL'):
                 self._handle_operation(paragraph, paragraphs)
 
-        if self._current_op_serial != self.last_serial and self.version != '3':
+        if self._current_op_serial > self.last_serial and self.version != '3':
             msg = f'NRTM stream error: expected operations up to and including serial {self.last_serial}, ' \
                   f'last operation was {self._current_op_serial}'
             logger.error(msg)
