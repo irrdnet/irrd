@@ -23,8 +23,7 @@ class WhoisQueryReceiver(TimeoutMixin, LineOnlyReceiver):
 
     def lineReceived(self, line_bytes: bytes):  # noqa: N802
         self.resetTimeout()
-        # TODO: gracefully handle not being able to decode
-        line = line_bytes.decode('utf-8').strip()
+        line = line_bytes.decode('utf-8', errors='ignore').strip()
 
         if not line:
             return
