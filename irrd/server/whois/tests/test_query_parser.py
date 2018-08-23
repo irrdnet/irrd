@@ -471,7 +471,7 @@ class TestWhoisQueryParserIRRD:
             {
                 'pk': uuid.uuid4(),
                 'rpsl_pk': 'AS-FIRSTLEVEL',
-                'parsed_data': {'as-set': 'AS-FIRSTLEVEL', 'members': ['AS65547', 'AS-SECONDLEVEL']},
+                'parsed_data': {'as-set': 'AS-FIRSTLEVEL', 'members': ['AS65547', 'AS-SECONDLEVEL', 'AS-2nd-UNKNOWN']},
                 'object_text': 'text',
                 'object_class': 'as-set',
                 'source': 'TEST1',
@@ -484,6 +484,14 @@ class TestWhoisQueryParserIRRD:
                 'parsed_data': {'as-set': 'AS-SECONDLEVEL', 'members': ['AS-THIRDLEVEL', 'AS65544']},
                 'object_text': 'text',
                 'object_class': 'as-set',
+                'source': 'TEST1',
+            },
+            {   # Should be ignored - only the first result per PK is accepted.
+                'pk': uuid.uuid4(),
+                'rpsl_pk': 'AS-SECONDLEVEL',
+                'parsed_data': {'as-set': 'AS-SECONDLEVEL', 'members': ['AS-IGNOREME']},
+                'object_text': 'text',
+                'object_class': 'as-set',
                 'source': 'TEST2',
             },
         ]
@@ -492,7 +500,7 @@ class TestWhoisQueryParserIRRD:
                 'pk': uuid.uuid4(),
                 'rpsl_pk': 'AS-THIRDLEVEL',
                 # Refers back to the first as-set to test infinite recursion issues
-                'parsed_data': {'as-set': 'AS-THIRDLEVEL', 'members': ['AS65545', 'AS-FIRSTLEVEL', 'AS-UNKNOWN']},
+                'parsed_data': {'as-set': 'AS-THIRDLEVEL', 'members': ['AS65545', 'AS-FIRSTLEVEL', 'AS-4th-UNKNOWN']},
                 'object_text': 'text',
                 'object_class': 'as-set',
                 'source': 'TEST2',
@@ -503,11 +511,10 @@ class TestWhoisQueryParserIRRD:
         response = parser.handle_query('!iAS-FIRSTLEVEL')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
-        assert response.result == 'AS-SECONDLEVEL AS65547'
+        assert response.result == 'AS-2nd-UNKNOWN AS-SECONDLEVEL AS65547'
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['as-set', 'route-set'],), {}],
-            ['rpsl_pk', ('AS-FIRSTLEVEL',), {}],
-            ['first_only', (), {}]
+            ['rpsl_pks', ({'AS-FIRSTLEVEL'},), {}],
         ]
         mock_dq.reset_mock()
 
@@ -517,23 +524,19 @@ class TestWhoisQueryParserIRRD:
         response = parser.handle_query('!iAS-FIRSTLEVEL,1')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
-        assert response.result == 'AS-UNKNOWN AS65544 AS65545 AS65547'
+        assert response.result == 'AS-2nd-UNKNOWN AS-4th-UNKNOWN AS65544 AS65545 AS65547'
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['as-set', 'route-set'],), {}],
-            ['rpsl_pk', ('AS-FIRSTLEVEL',), {}],
-            ['first_only', (), {}],
+            ['rpsl_pks', ({'AS-FIRSTLEVEL'},), {}],
             ['object_classes', (['as-set', 'route-set'],), {}],
-            ['rpsl_pk', ('AS-SECONDLEVEL',), {}],
+            ['rpsl_pks', ({'AS-SECONDLEVEL', 'AS-2nd-UNKNOWN'},), {}],
             ['prioritise_source', ('TEST1',), {}],
-            ['first_only', (), {}],
             ['object_classes', (['as-set', 'route-set'],), {}],
-            ['rpsl_pk', ('AS-THIRDLEVEL',), {}],
+            ['rpsl_pks', ({'AS-THIRDLEVEL'},), {}],
             ['prioritise_source', ('TEST1',), {}],
-            ['first_only', (), {}],
             ['object_classes', (['as-set', 'route-set'],), {}],
-            ['rpsl_pk', ('AS-UNKNOWN',), {}],
-            ['prioritise_source', ('TEST1',), {}],
-            ['first_only', (), {}],
+            ['rpsl_pks', ({'AS-4th-UNKNOWN'},), {}],
+            ['prioritise_source', ('TEST1',), {}]
         ]
         mock_dq.reset_mock()
 
@@ -544,8 +547,7 @@ class TestWhoisQueryParserIRRD:
         assert not response.result
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['as-set', 'route-set'],), {}],
-            ['rpsl_pk', ('AS-FIRSTLEVEL',), {}],
-            ['first_only', (), {}],
+            ['rpsl_pks', ({'AS-FIRSTLEVEL'},), {}]
         ]
 
     def test_as_route_set_mbrs_by_ref(self, prepare_parser):
@@ -582,11 +584,10 @@ class TestWhoisQueryParserIRRD:
         assert response.result == '192.0.2.0/24 192.0.2.0/32 2001:db8::/32'
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['as-set', 'route-set'],), {}],
-            ['rpsl_pk', ('RRS-TEST',), {}],
-            ['first_only', (), {}],
+            ['rpsl_pks', ({'RRS-TEST'},), {}],
             ['object_classes', (['route', 'route6'],), {}],
-            ['lookup_attr', ('member-of', 'RRS-TEST'), {}],
-            ['lookup_attrs_in', (['mnt-by'], ['MNT-TEST']), {}]
+            ['lookup_attrs_in', (['member-of'], ['RRS-TEST']), {}],
+            ['lookup_attrs_in', (['mnt-by'], ['MNT-TEST']), {}],
         ]
         mock_dq.reset_mock()
 
@@ -599,10 +600,9 @@ class TestWhoisQueryParserIRRD:
         assert response.result == '192.0.2.0/24 192.0.2.0/32 2001:db8::/32'
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['as-set', 'route-set'],), {}],
-            ['rpsl_pk', ('RRS-TEST',), {}],
-            ['first_only', (), {}],
+            ['rpsl_pks', ({'RRS-TEST'},), {}],
             ['object_classes', (['route', 'route6'],), {}],
-            ['lookup_attr', ('member-of', 'RRS-TEST'), {}],
+            ['lookup_attrs_in', (['member-of'], ['RRS-TEST']), {}],
         ]
 
     def test_database_serial_range(self, prepare_parser):

@@ -1,7 +1,7 @@
 import logging
 import re
 from enum import Enum
-from typing import Optional, List, Set
+from typing import Optional, List, Set, Tuple
 
 from IPy import IP
 
@@ -233,30 +233,33 @@ class WhoisQueryParser:
 
         self._current_set_priority_source = None
         if not recursive:
-            members = self._find_set_members(parameter)
+            members, leaf_members = self._find_set_members({parameter})
+            members.update(leaf_members)
         else:
-            members = self._recursive_set_resolve(parameter)
+            members = self._recursive_set_resolve({parameter})
             if parameter in members:
                 members.remove(parameter)
         return ' '.join(sorted(members))
 
-    def _recursive_set_resolve(self, member: str, sets_seen=None) -> Set[str]:
+    def _recursive_set_resolve(self, members: Set[str], sets_seen=None) -> Set[str]:
         """
-        Resolve all members of a set, recursively.
+        Resolve all members of a number of sets, recursively.
 
-        For each input, determines whether it has been seen already (to prevent
+        For each set in members, determines whether it has been seen already (to prevent
         infinite recursion), ignores it if already seen, and then either adds
-        it directly or calls itself again for another step of resolving.
+        it directly or adds it to a set that requires further resolving.
         """
         if not sets_seen:
             sets_seen = set()
 
-        if member in sets_seen:
+        if all([member in sets_seen for member in members]):
             return set()
-        sets_seen.add(member)
+        sets_seen.update(members)
 
         set_members = set()
-        sub_members = self._find_set_members(member)
+        sub_members, leaf_members = self._find_set_members(members)
+        set_members.update(leaf_members)
+
         for sub_member in sub_members:
             try:
                 IP(sub_member)
@@ -270,59 +273,82 @@ class WhoisQueryParser:
                 continue
             except ValueError:
                 pass
-            new_members = self._recursive_set_resolve(sub_member, sets_seen)
-            set_members.update(new_members)
-        if not sub_members:  # leaf member, always add directly
-            set_members.add(member)
+
+        further_resolving_required = sub_members - set_members - sets_seen
+        new_members = self._recursive_set_resolve(further_resolving_required, sets_seen)
+        set_members.update(new_members)
 
         return set_members
 
-    def _find_set_members(self, set_name: str) -> Set[str]:
+    def _find_set_members(self, set_names: Set[str]) -> Tuple[Set[str], Set[str]]:
         """
-        Find all members of a route-set or as-set. Includes both
+        Find all members of a number of route-sets or as-sets. Includes both
         direct members listed in members attribute, but also
-        members includes by mbrs-by-ref/member-of.
+        members included by mbrs-by-ref/member-of.
+
+        Returns a tuple of two sets:
+        - members found of the sets included in set_names, both
+          references to other sets and direct AS numbers, etc.
+        - leaf members that were included in set_names, i.e.
+          names for which no further data could be found - for
+          example references to non-existent other sets
         """
         members: Set[str] = set()
+        sets_already_resolved: Set[str] = set()
 
-        query = self._prepare_query().object_classes(['as-set', 'route-set']).rpsl_pk(set_name)
+        query = self._prepare_query().object_classes(['as-set', 'route-set']).rpsl_pks(set_names)
         if self._current_set_priority_source:
             query.prioritise_source(self._current_set_priority_source)
-        query_result = list(self.database_handler.execute_query(query.first_only()))
+        query_result = list(self.database_handler.execute_query(query))
 
         if not query_result:
-            return members
-        result = query_result[0]
+            # No sub-members are found, and apparantly all inputs were leaf members.
+            return set(), set_names
 
         # Track the source of the root object set
         if not self._current_set_priority_source:
-            self._current_set_priority_source = result['source']
+            self._current_set_priority_source = query_result[0]['source']
 
-        object_class = result['object_class']
-        object_data = result['parsed_data']
-        mbrs_by_ref = object_data.get('mbrs-by-ref', None)
-        for members_attr in ['members', 'mp-members']:
-            if members_attr in object_data:
-                members.update(set(object_data[members_attr]))
+        for result in query_result:
+            rpsl_pk = result['rpsl_pk']
 
-        if not object_class or not mbrs_by_ref:
-            return members
+            # The same PK may occur in multiple sources, but we are
+            # only interested in the first matching object, prioritised
+            # to look for the same source as the root object. This priority
+            # is part of the query ORDER BY, so basically we only process
+            # an RPSL pk once.
+            if rpsl_pk in sets_already_resolved:
+                continue
+            sets_already_resolved.add(rpsl_pk)
 
-        # If mbrs-by-ref is set, find any objects with member-of pointing to the route/as-set
-        # under query, and include a maintainer listed in mbrs-by-ref, unless mbrs-by-ref
-        # is set to ANY.
-        query_object_class = ['route', 'route6'] if object_class == 'route-set' else ['aut-num']
-        query = self._prepare_query().object_classes(query_object_class)
-        query = query.lookup_attr('member-of', set_name)
-        if 'ANY' not in [m.strip().upper() for m in mbrs_by_ref]:
-            query = query.lookup_attrs_in(['mnt-by'], mbrs_by_ref)
-        referring_objects = self.database_handler.execute_query(query)
+            object_class = result['object_class']
+            object_data = result['parsed_data']
+            mbrs_by_ref = object_data.get('mbrs-by-ref', None)
+            for members_attr in ['members', 'mp-members']:
+                if members_attr in object_data:
+                    members.update(set(object_data[members_attr]))
 
-        for result in referring_objects:
-            member_object_class = result['object_class']
-            members.add(result['parsed_data'][member_object_class])
+            if not rpsl_pk or not object_class or not mbrs_by_ref:
+                continue
 
-        return members
+            # If mbrs-by-ref is set, find any objects with member-of pointing to the route/as-set
+            # under query, and include a maintainer listed in mbrs-by-ref, unless mbrs-by-ref
+            # is set to ANY.
+            query_object_class = ['route', 'route6'] if object_class == 'route-set' else ['aut-num']
+            query = self._prepare_query().object_classes(query_object_class)
+            query = query.lookup_attrs_in(['member-of'], [rpsl_pk])
+
+            if 'ANY' not in [m.strip().upper() for m in mbrs_by_ref]:
+                query = query.lookup_attrs_in(['mnt-by'], mbrs_by_ref)
+
+            referring_objects = self.database_handler.execute_query(query)
+
+            for result in referring_objects:
+                member_object_class = result['object_class']
+                members.add(result['parsed_data'][member_object_class])
+
+        leaf_members = set_names - sets_already_resolved
+        return members, leaf_members
 
     def handle_irrd_database_serial_range(self, parameter: str) -> str:
         """!j query - mirror database serial range"""
