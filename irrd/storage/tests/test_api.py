@@ -293,6 +293,7 @@ class TestRPSLDatabaseQueryLive:
         self._assert_match(RPSLDatabaseQuery().lookup_attr('mnt-by', 'MNT-test'))  # intentional case mismatch
         self._assert_match(RPSLDatabaseQuery().ip_exact(IP('192.0.2.0/24')))
         self._assert_match(RPSLDatabaseQuery().asn(65537))
+        self._assert_match(RPSLDatabaseQuery().asn_less_specific(65537))
         self._assert_match(RPSLDatabaseQuery().ip_more_specific(IP('192.0.0.0/21')))
         self._assert_match(RPSLDatabaseQuery().ip_less_specific(IP('192.0.2.0/24')))
         self._assert_match(RPSLDatabaseQuery().ip_less_specific(IP('192.0.2.0/25')))
@@ -305,7 +306,7 @@ class TestRPSLDatabaseQueryLive:
         self.dh = database_handler_with_route
 
         q = RPSLDatabaseQuery().rpsl_pk('192.0.2.0/24,AS65537').sources(['TEST', 'X']).object_classes(['route'])
-        q = q.lookup_attr('mnt-by', 'MNT-TEST').ip_exact(IP('192.0.2.0/24')).asn(65537)
+        q = q.lookup_attr('mnt-by', 'MNT-TEST').ip_exact(IP('192.0.2.0/24')).asn_less_specific(65537)
         q = q.ip_less_specific(IP('192.0.2.0/25')).ip_less_specific(IP('192.0.2.0/24'))
         q = q.ip_more_specific(IP('192.0.0.0/21'))
 
@@ -325,6 +326,7 @@ class TestRPSLDatabaseQueryLive:
         self._assert_no_match(RPSLDatabaseQuery().lookup_attr('mnt-by', 'MNT-NOTEXIST'))
         self._assert_no_match(RPSLDatabaseQuery().ip_exact(IP('192.0.2.0/25')))
         self._assert_no_match(RPSLDatabaseQuery().asn(23455))
+        self._assert_no_match(RPSLDatabaseQuery().asn_less_specific(23455))
         self._assert_no_match(RPSLDatabaseQuery().ip_more_specific(IP('192.0.2.0/24')))
         self._assert_no_match(RPSLDatabaseQuery().ip_less_specific(IP('192.0.2.0/23')))
         self._assert_no_match(RPSLDatabaseQuery().text_search('192.0.2.0/23'))

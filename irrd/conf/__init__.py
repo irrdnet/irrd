@@ -8,7 +8,7 @@ from dotted.collection import DottedDict
 PASSWORD_HASH_DUMMY_VALUE = 'DummyValue'
 
 DEFAULT_SETTINGS = DottedDict({
-    'database_url': 'postgresql:///irrd',
+    'database_url': 'postgresql://localhost:5432/irrd',
     'server': {
         'whois': {
             'interface': '::0',

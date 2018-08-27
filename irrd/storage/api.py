@@ -127,7 +127,7 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
 
     Offers various ways to filter, which are always constructed in an AND query.
     For example:
-        q = RPSLDatabaseQuery().sources(['NTTCOM']).asn(65537)
+        q = RPSLDatabaseQuery().sources(['NTTCOM']).asn_less_specific(65537)
     would match all objects that refer or include AS65537 (i.e. aut-num, route,
     as-block, route6) from the NTTCOM source.
 
@@ -235,14 +235,16 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         return self
 
     def ip_more_specific(self, ip: IP):
-        """Filter any more specifics of a prefix.
+        """Filter any more specifics of a prefix, not including exact matches.
 
         Note that this only finds full more specifics: objects for which their
         IP range is fully encompassed by the ip parameter.
         """
         fltr = sa.and_(
             self.columns.ip_first >= str(ip.net()),
+            self.columns.ip_first <= str(ip.broadcast()),
             self.columns.ip_last <= str(ip.broadcast()),
+            self.columns.ip_last >= str(ip.net()),
             self.columns.ip_version == ip.version(),
             sa.not_(sa.and_(self.columns.ip_first == str(ip.net()), self.columns.ip_last == str(ip.broadcast()))),
         )
@@ -250,11 +252,17 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
 
     def asn(self, asn: int):
         """
-        Filter for a specific ASN.
+        Filter for exact matches on an ASN.
+        """
+        fltr = sa.and_(self.columns.asn_first == asn, self.columns.asn_last == asn)
+        return self._filter(fltr)
+
+    def asn_less_specific(self, asn: int):
+        """
+        Filter for a specific ASN, or any less specific matches.
 
         This will match all objects that refer to this ASN, or a block
         encompassing it - including route, route6, aut-num and as-block.
-        For more exact matches, add a filter on object class.
         """
         fltr = sa.and_(self.columns.asn_first <= asn, self.columns.asn_last >= asn)
         return self._filter(fltr)
@@ -275,7 +283,7 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         self._check_query_frozen()
         try:
             _, asn = parse_as_number(value)
-            return self.object_classes(['as-block', 'as-set', 'aut-num']).asn(asn)
+            return self.object_classes(['as-block', 'as-set', 'aut-num']).asn_less_specific(asn)
         except ValidationError:
             pass
 
