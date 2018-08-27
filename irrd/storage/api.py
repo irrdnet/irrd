@@ -574,14 +574,18 @@ class DatabaseHandler:
         self._rpsl_upsert_cache = []
         self._rpsl_pk_source_seen = set()
 
-    def delete_all_rpsl_objects(self, source):
+    def delete_all_rpsl_objects_with_journal(self, source):
         """
-        Delete all RPSL objects for a source from the database.
+        Delete all RPSL objects for a source from the database,
+        and all journal entries..
         This is intended for cases where a full re-import is done.
-        Note that no journal records are kept of this change.
+        Note that no journal records are kept of this change itself.
         """
         self._flush_rpsl_object_upsert_cache()
         table = RPSLDatabaseObject.__table__
+        stmt = table.delete(table.c.source == source)
+        self._connection.execute(stmt)
+        table = RPSLDatabaseJournal.__table__
         stmt = table.delete(table.c.source == source)
         self._connection.execute(stmt)
 

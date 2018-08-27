@@ -183,7 +183,7 @@ class TestDatabaseHandlerLive:
         self.dh.upsert_rpsl_object(rpsl_object_route_v6)
         assert len(list(self.dh.execute_query(RPSLDatabaseQuery().sources(['TEST'])))) == 1
         assert len(list(self.dh.execute_query(RPSLDatabaseQuery().sources(['TEST2'])))) == 1
-        self.dh.delete_all_rpsl_objects('TEST')
+        self.dh.delete_all_rpsl_objects_with_journal('TEST')
         assert not len(list(self.dh.execute_query(RPSLDatabaseQuery().sources(['TEST']))))
         assert len(list(self.dh.execute_query(RPSLDatabaseQuery().sources(['TEST2'])))) == 1
 

@@ -66,7 +66,7 @@ class MirrorFullImportRunner:
         self.source = source
 
     def run(self, database_handler: DatabaseHandler):
-        database_handler.delete_all_rpsl_objects(self.source)
+        database_handler.delete_all_rpsl_objects_with_journal(self.source)
 
         dump_sources = get_setting(f'sources.{self.source}.dump_source').split(',')
         dump_serial_source = get_setting(f'sources.{self.source}.dump_serial_source')

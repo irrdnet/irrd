@@ -93,7 +93,7 @@ class TestMirrorFullImportRunner:
 
         assert MockMirrorFullImportParser.rpsl_data_calls == ['source1', 'source2']
         assert flatten_mock_calls(mock_dh) == [
-            ['delete_all_rpsl_objects', ('TEST',), {}],
+            ['delete_all_rpsl_objects_with_journal', ('TEST',), {}],
             ['disable_journaling', (), {}],
         ]
 
