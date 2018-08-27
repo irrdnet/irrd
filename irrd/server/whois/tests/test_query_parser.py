@@ -605,11 +605,33 @@ class TestWhoisQueryParserIRRD:
             ['lookup_attrs_in', (['member-of'], ['RRS-TEST']), {}],
         ]
 
-    def test_database_serial_range(self, prepare_parser):
+    def test_database_serial_range(self, monkeypatch, prepare_parser):
         mock_dq, mock_dh, parser = prepare_parser
+        mock_dsq = Mock()
+        monkeypatch.setattr("irrd.server.whois.query_parser.RPSLDatabaseStatusQuery", lambda: mock_dsq)
 
-        with raises(NotImplementedError):
-            parser.handle_query('!j-*')
+        mock_query_result = [
+            {'source': 'TEST1', 'serial_oldest_journal': 10, 'serial_newest_journal': 20, 'serial_last_dump': 10},
+            {'source': 'TEST2', 'serial_oldest_journal': None, 'serial_newest_journal': None, 'serial_last_dump': None},
+        ]
+        mock_dh.execute_query = lambda query: mock_query_result
+
+        response = parser.handle_query('!j-*')
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert response.result == 'TEST1:N:10-20:10\nTEST2:N:-'
+        assert flatten_mock_calls(mock_dsq) == [
+            ['sources', (['TEST1', 'TEST2'],), {}]
+        ]
+        mock_dsq.reset_mock()
+
+        response = parser.handle_query('!jtest1,test-invalid')
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert response.result == 'TEST1:N:10-20:10\nTEST2:N:-\nTEST-INVALID:X:Database unknown'
+        assert flatten_mock_calls(mock_dsq) == [
+            ['sources', (['TEST1', 'TEST-INVALID'],), {}]
+        ]
 
     def test_exact_key(self, prepare_parser):
         mock_dq, mock_dh, parser = prepare_parser

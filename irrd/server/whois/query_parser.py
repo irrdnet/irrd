@@ -7,7 +7,7 @@ from IPy import IP
 
 from irrd import __version__
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE, get_setting
-from irrd.storage.api import DatabaseHandler, RPSLDatabaseQuery
+from irrd.storage.api import DatabaseHandler, RPSLDatabaseQuery, RPSLDatabaseStatusQuery
 from irrd.rpsl.config import PASSWORD_HASHERS
 from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING, lookup_field_names
 from irrd.utils.validators import parse_as_number, ValidationError
@@ -351,8 +351,33 @@ class WhoisQueryParser:
         return members, leaf_members
 
     def handle_irrd_database_serial_range(self, parameter: str) -> str:
-        """!j query - mirror database serial range"""
-        raise NotImplementedError()
+        """!j query - database serial range"""
+        if parameter == '-*':
+            sources = self.all_valid_sources
+        else:
+            sources = [s.upper() for s in parameter.split(',')]
+        invalid_sources = [s for s in sources if s not in self.all_valid_sources]
+        query = RPSLDatabaseStatusQuery().sources(sources)
+        query_results = self.database_handler.execute_query(query)
+
+        result_txt = ''
+        for query_result in query_results:
+            source = query_result['source'].upper()
+            keep_journal = 'Y' if get_setting(f'sources.{source}.keep_journal') else 'N'
+            serial_oldest = query_result['serial_oldest_journal']
+            serial_newest = query_result['serial_newest_journal']
+            fields = [
+                source,
+                keep_journal,
+                f'{serial_oldest}-{serial_newest}' if serial_oldest and serial_newest else '-',
+            ]
+            if query_result['serial_last_dump']:
+                fields.append(str(query_result['serial_last_dump']))
+            result_txt += ':'.join(fields) + '\n'
+
+        for invalid_source in invalid_sources:
+            result_txt += f'{invalid_source.upper()}:X:Database unknown\n'
+        return result_txt.strip()
 
     def handle_irrd_exact_key(self, parameter: str):
         """!m query - exact object key lookup, e.g. !maut-num,AS65537"""

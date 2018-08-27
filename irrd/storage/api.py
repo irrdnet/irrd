@@ -358,11 +358,16 @@ class RPSLDatabaseStatusQuery:
             self.columns.last_error_timestamp,
             self.columns.created,
             self.columns.updated,
-        ])
+        ]).order_by(self.columns.source.asc())
 
     def source(self, source: str):
         """Filter on a source."""
-        fltr = self.columns.source == source.upper()
+        return self.sources([source])
+
+    def sources(self, sources: List[str]):
+        """Filter on one or more sources."""
+        sources = [s.upper() for s in sources]
+        fltr = self.columns.source.in_(sources)
         return self._filter(fltr)
 
     def finalise_statement(self):

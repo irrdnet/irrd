@@ -25,6 +25,7 @@ DEFAULT_SETTINGS = DottedDict({
         'homedir': os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), '../gnupg/'),
     },
     'sources': {
+        # TODO: validate that source names are upper case
         'AFRINIC': {
             'authoritative': False,
             'keep_journal': True,
@@ -36,6 +37,7 @@ DEFAULT_SETTINGS = DottedDict({
         },
         'ALTDB': {
             'nrtm_host': 'rr.ntt.net',
+            'keep_journal': True,
             'nrtm_port': 43,
             'dump_source': 'ftp://ftp.radb.net/radb/dbase/altdb.db.gz',
             'dump_serial_source': 'ftp://ftp.radb.net/radb/dbase/ALTDB.CURRENTSERIAL',
@@ -75,6 +77,7 @@ DEFAULT_SETTINGS = DottedDict({
             'dump_serial_source': 'ftp://irr.bboi.net/BBOI.CURRENTSERIAL',
         },
         'BELL': {
+            'keep_journal': True,
             'nrtm_host': 'rr.ntt.net',
             'nrtm_port': 43,
             'dump_source': 'ftp://ftp.radb.net/radb/dbase/bell.db.gz',
@@ -82,6 +85,7 @@ DEFAULT_SETTINGS = DottedDict({
         },
         # INTERNAL source unknown
         'JPIRR': {
+            'keep_journal': True,
             'nrtm_host': 'rr.ntt.net',
             'nrtm_port': 43,
             'dump_source': 'ftp://ftp.radb.net/radb/dbase/jpirr.db.gz',
@@ -162,6 +166,7 @@ DEFAULT_SETTINGS = DottedDict({
         },
         # RPKI source unknown
         'TC': {
+            'keep_journal': True,
             'nrtm_host': 'rr.ntt.net',
             'nrtm_port': 43,
             'dump_source': 'ftp://ftp.radb.net/radb/dbase/tc.db.gz',
