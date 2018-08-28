@@ -39,7 +39,8 @@ def split_paragraphs_rpsl(input: Union[str, TextIO], strip_comments=True) -> Ite
         if line:
             current_paragraph += line + "\n"
         if not line:
-            yield current_paragraph
+            if current_paragraph:
+                yield current_paragraph
             current_paragraph = ''
 
     if current_paragraph.strip():

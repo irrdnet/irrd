@@ -48,8 +48,6 @@ class RPSLParse:
             self.database_handler.close()
 
     def parse_object(self, rpsl_text, strict_validation):
-        if not rpsl_text.strip():
-            return
         try:
             self.obj_parsed += 1
             obj = rpsl_object_from_text(rpsl_text.strip(), strict_validation=strict_validation)
