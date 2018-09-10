@@ -7,7 +7,7 @@ dotted==0.1.8          # Dotted path dictionary resolving for settings
 
 # Database connections and management
 psycopg2-binary==2.7.5
-SQLAlchemy==1.2.10
+SQLAlchemy==1.2.11
 alembic==1.0.0
 
 # Network handling
