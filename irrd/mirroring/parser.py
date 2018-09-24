@@ -34,7 +34,7 @@ class MirrorFullImportParser(MirrorParser):
     unknown_object_classes: Set[str] = set()  # Set of encountered unknown classes
 
     def __init__(self, source: str, filename: str, serial: int, database_handler: DatabaseHandler) -> None:
-        logger.debug(f'Starting full import of {source} from {filename}, setting serial {serial}')
+        logger.debug(f'Starting file import of {source} from {filename}, setting serial {serial}')
         self.source = source
         self.filename = filename
         self.serial = serial
@@ -56,7 +56,7 @@ class MirrorFullImportParser(MirrorParser):
             obj = rpsl_object_from_text(rpsl_text.strip(), strict_validation=False)
 
             if obj.messages.errors():
-                logger.critical(f'Parsing errors occurred while importing initial dump from {self.source}. '
+                logger.critical(f'Parsing errors occurred while importing from file for {self.source}. '
                                 f'This object is ignored, causing potential data inconsistencies. A new operation for '
                                 f'this update, without errors, will still be processed and cause the inconsistency to '
                                 f'be resolved. Parser error messages: {obj.messages.errors()}; '
@@ -85,14 +85,14 @@ class MirrorFullImportParser(MirrorParser):
 
     def log_report(self) -> None:
         obj_successful = self.obj_parsed - self.obj_unknown - self.obj_errors - self.obj_ignored_class
-        logger.info(f"Full import for {self.source}: {self.obj_parsed} objects read, "
+        logger.info(f"File import for {self.source}: {self.obj_parsed} objects read, "
                     f"{obj_successful} objects inserted, "
                     f"ignored {self.obj_errors} due to errors, "
                     f"ignored {self.obj_ignored_class} due to object_class_filter, "
                     f"serial {self.serial}, source {self.filename}")
         if self.obj_unknown:
             unknown_formatted = ', '.join(self.unknown_object_classes)
-            logger.error(f"Ignored {self.obj_unknown} objects found in full import for {self.source} due to unknown "
+            logger.error(f"Ignored {self.obj_unknown} objects found in file import for {self.source} due to unknown "
                          f"object classes: {unknown_formatted}")
 
 

@@ -45,9 +45,9 @@ class TestMirrorFullImportParser:
 
         assert 'Invalid source BADSOURCE for object' in caplog.text
         assert 'Invalid address prefix' in caplog.text
-        assert 'Full import for TEST: 5 objects read, 1 objects inserted, ignored 2 due to errors' in caplog.text
+        assert 'File import for TEST: 5 objects read, 1 objects inserted, ignored 2 due to errors' in caplog.text
         assert 'ignored 1 due to object_class_filter' in caplog.text
-        assert 'Ignored 1 objects found in full import for TEST due to unknown object classes' in caplog.text
+        assert 'Ignored 1 objects found in file import for TEST due to unknown object classes' in caplog.text
 
 
 class TestNRTMStreamParser:
