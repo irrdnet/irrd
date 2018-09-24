@@ -9,7 +9,8 @@ from typing import Optional, Tuple
 from urllib.parse import urlparse
 
 from irrd.conf import get_setting
-from irrd.storage.api import DatabaseHandler, RPSLDatabaseStatusQuery
+from irrd.storage.api import DatabaseHandler
+from irrd.storage.queries import RPSLDatabaseStatusQuery
 from irrd.utils.whois_client import whois_query
 from .parser import MirrorFullImportParser, NRTMStreamParser
 

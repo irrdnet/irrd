@@ -7,7 +7,8 @@ from IPy import IP
 
 from irrd import __version__
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE, get_setting
-from irrd.storage.api import DatabaseHandler, RPSLDatabaseQuery, RPSLDatabaseStatusQuery
+from irrd.storage.api import DatabaseHandler
+from irrd.storage.queries import RPSLDatabaseQuery, RPSLDatabaseStatusQuery
 from irrd.rpsl.config import PASSWORD_HASHERS
 from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING, lookup_field_names
 from irrd.utils.validators import parse_as_number, ValidationError

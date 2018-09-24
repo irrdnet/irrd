@@ -14,6 +14,10 @@ DEFAULT_SETTINGS = DottedDict({
             'interface': '::0',
             'port': 8043,
             'max_connections': 50,
+        },
+        'http': {
+            'interface': '::0',
+            'port': 8080,
         }
     },
     'email': {

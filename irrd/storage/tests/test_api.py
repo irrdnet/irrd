@@ -6,7 +6,9 @@ from IPy import IP
 from pytest import raises
 
 from .. import engine
-from ..api import DatabaseHandler, RPSLDatabaseQuery, RPSLDatabaseJournalQuery, RPSLDatabaseStatusQuery
+from ..api import DatabaseHandler
+from irrd.storage.queries import (RPSLDatabaseQuery, RPSLDatabaseJournalQuery, RPSLDatabaseStatusQuery,
+                                  RPSLDatabaseObjectStatisticsQuery)
 from ..models import RPSLDatabaseObject, DatabaseOperation
 
 """
@@ -16,6 +18,9 @@ a very useful test. Using in-memory SQLite is not an option due to
 using specific PostgreSQL features.
 
 To improve performance, these tests do not run full migrations.
+
+The tests also cover both api.py and queries.py, as they closely
+interact with the database.
 """
 
 
@@ -60,7 +65,7 @@ class TestDatabaseHandlerLive:
     """
     This test covers mainly DatabaseHandler and DatabaseStatusTracker.
     """
-    def test_object_writing(self, monkeypatch, irrd_database):
+    def test_object_writing_and_status_checking(self, monkeypatch, irrd_database):
         monkeypatch.setenv('IRRD_SOURCES_TEST_AUTHORITATIVE', '1')
         monkeypatch.setenv('IRRD_SOURCES_TEST2_KEEP_JOURNAL', '1')
         monkeypatch.setattr('irrd.storage.api.MAX_RECORDS_CACHE_BEFORE_INSERT', 1)
@@ -128,6 +133,12 @@ class TestDatabaseHandlerLive:
         self.dh.upsert_rpsl_object(rpsl_obj_ignored)
         assert len(self.dh._rpsl_upsert_cache) == 1
         self.dh.rollback()
+
+        statistics = list(self.dh.execute_query(RPSLDatabaseObjectStatisticsQuery()))
+        assert statistics == [
+            {'source': 'TEST', 'object_class': 'route', 'count': 1},
+            {'source': 'TEST2', 'object_class': 'route', 'count': 1}
+        ]
 
         query = RPSLDatabaseQuery()
         result = list(self.dh.execute_query(query))

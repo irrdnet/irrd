@@ -68,9 +68,8 @@ def whois_query_irrd(host: str, port: int, query: str) -> str:
     return buffer[data_offset:expected_data_length+data_offset-1].decode('utf-8', errors='backslashreplace')
 
 
-def whois_query_source_status(host: str, port: int, source: str) -> Optional[Tuple[Optional[bool], int, int, Optional[int]]]:
+def whois_query_source_status(host: str, port: int, source: str) -> Tuple[Optional[bool], int, int, Optional[int]]:
     remote_status = whois_query_irrd(host, port, f'!j{source}')
-    print(remote_status)
 
     # Fields are: source, mirrorable, serials in journal, optional dump serial
     fields = remote_status.split(':')

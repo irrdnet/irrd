@@ -14,16 +14,22 @@ from twisted.python.log import ILogObserver, PythonLoggingObserver
 
 from irrd.conf import get_setting
 from irrd.mirroring.scheduler import MirrorScheduler
+from irrd.server.http.http_resources import http_site
 from irrd.server.whois.protocol import WhoisQueryReceiverFactory
 
 application = service.Application("IRRD")
 application.setComponent(ILogObserver, PythonLoggingObserver().emit)
 
-server = internet.TCPServer(
+internet.TCPServer(
     get_setting('server.whois.port'),
     WhoisQueryReceiverFactory(),
     interface=get_setting('server.whois.interface')
-)
-server.setServiceParent(application)
+).setServiceParent(application)
+
+internet.TCPServer(
+    get_setting('server.http.port'),
+    http_site,
+    interface=get_setting('server.http.interface')
+).setServiceParent(application)
 
 TimerService(600, MirrorScheduler().run).setServiceParent(application)
