@@ -33,7 +33,7 @@ DEFAULT_SETTINGS = DottedDict({
             'nrtm_port': 43,
             'dump_source': 'ftp://ftp.afrinic.net/pub/dbase/afrinic.db.gz',
             'dump_serial_source': 'ftp://ftp.afrinic.net/pub/dbase/AFRINIC.CURRENTSERIAL',
-            'object_class_filter': 'as-block,as-set,autnum,filter-set,inet-rtr,peering-set,role,route-set,route,route6,rtr-set',
+            'object_class_filter': 'as-set,aut-num,filter-set,inet-rtr,key-cert,mntner,peering-set,route,route6,route-set,rtr-set',
         },
         'ALTDB': {
             'nrtm_host': 'rr.ntt.net',
@@ -47,11 +47,13 @@ DEFAULT_SETTINGS = DottedDict({
             'keep_journal': True,
             'nrtm_host': 'rr.ntt.net',
             'nrtm_port': 43,
-            'dump_source': 'ftp://ftp.apnic.net/pub/apnic/whois/apnic.db.as-block.gz,'
-                           'ftp://ftp.apnic.net/pub/apnic/whois/apnic.db.as-set.gz,'
+            'object_class_filter': 'as-set,aut-num,filter-set,inet-rtr,key-cert,mntner,peering-set,route,route6,route-set,rtr-set',
+            'dump_source': 'ftp://ftp.apnic.net/pub/apnic/whois/apnic.db.as-set.gz,'
                            'ftp://ftp.apnic.net/pub/apnic/whois/apnic.db.aut-num.gz,'
                            'ftp://ftp.apnic.net/pub/apnic/whois/apnic.db.filter-set.gz,'
                            'ftp://ftp.apnic.net/pub/apnic/whois/apnic.db.inet-rtr.gz,'
+                           'ftp://ftp.apnic.net/pub/apnic/whois/apnic.db.key-cert.gz,'
+                           'ftp://ftp.apnic.net/pub/apnic/whois/apnic.db.mntner.gz,'
                            'ftp://ftp.apnic.net/pub/apnic/whois/apnic.db.peering-set.gz,'
                            'ftp://ftp.apnic.net/pub/apnic/whois/apnic.db.route-set.gz,'
                            'ftp://ftp.apnic.net/pub/apnic/whois/apnic.db.route.gz,'
@@ -64,6 +66,7 @@ DEFAULT_SETTINGS = DottedDict({
             'keep_journal': True,
             'nrtm_host': 'rr.arin.net',
             'nrtm_port': 4444,
+            'object_class_filter': 'as-set,aut-num,filter-set,inet-rtr,key-cert,mntner,peering-set,route,route6,route-set,rtr-set',
             'dump_source': 'ftp://ftp.arin.net/pub/rr/arin.db',
             'dump_serial_source': 'ftp://ftp.arin.net/pub/rr/ARIN.CURRENTSERIAL',
         },
@@ -73,6 +76,7 @@ DEFAULT_SETTINGS = DottedDict({
             'keep_journal': True,
             'nrtm_host': 'irr.bboi.net',
             'nrtm_port': 43,
+            'object_class_filter': 'as-set,aut-num,filter-set,inet-rtr,key-cert,mntner,peering-set,route,route6,route-set,rtr-set',
             'dump_source': 'ftp://irr.bboi.net/bboi.db.gz',
             'dump_serial_source': 'ftp://irr.bboi.net/BBOI.CURRENTSERIAL',
         },
@@ -80,6 +84,7 @@ DEFAULT_SETTINGS = DottedDict({
             'keep_journal': True,
             'nrtm_host': 'rr.ntt.net',
             'nrtm_port': 43,
+            'object_class_filter': 'as-set,aut-num,filter-set,inet-rtr,key-cert,mntner,peering-set,route,route6,route-set,rtr-set',
             'dump_source': 'ftp://ftp.radb.net/radb/dbase/bell.db.gz',
             'dump_serial_source': 'ftp://ftp.radb.net/radb/dbase/BELL.CURRENTSERIAL',
         },
@@ -88,6 +93,7 @@ DEFAULT_SETTINGS = DottedDict({
             'keep_journal': True,
             'nrtm_host': 'rr.ntt.net',
             'nrtm_port': 43,
+            'object_class_filter': 'as-set,aut-num,filter-set,inet-rtr,key-cert,mntner,peering-set,route,route6,route-set,rtr-set',
             'dump_source': 'ftp://ftp.radb.net/radb/dbase/jpirr.db.gz',
             'dump_serial_source': 'ftp://ftp.radb.net/radb/dbase/JPIRR.CURRENTSERIAL',
         },
@@ -96,6 +102,7 @@ DEFAULT_SETTINGS = DottedDict({
             'keep_journal': True,
             'nrtm_host': 'rr.level3.net',
             'nrtm_port': 43,
+            'object_class_filter': 'as-set,aut-num,filter-set,inet-rtr,key-cert,mntner,peering-set,route,route6,route-set,rtr-set',
             'dump_source': 'ftp://rr.Level3.net/pub/rr/level3.db.gz',
             'dump_serial_source': 'ftp://rr.level3.net/pub/rr/LEVEL3.CURRENTSERIAL',
         },
@@ -114,6 +121,7 @@ DEFAULT_SETTINGS = DottedDict({
             'keep_journal': True,
             'nrtm_host': 'whois.radb.net',
             'nrtm_port': 43,
+            'object_class_filter': 'as-set,aut-num,filter-set,inet-rtr,key-cert,mntner,peering-set,route,route6,route-set,rtr-set',
             'dump_source': 'ftp://ftp.radb.net/radb/dbase/radb.db.gz',
             'dump_serial_source': 'ftp://ftp.radb.net/radb/dbase/RADB.CURRENTSERIAL',
         },
@@ -123,46 +131,39 @@ DEFAULT_SETTINGS = DottedDict({
             'keep_journal': True,
             'nrtm_host': 'whois.rg.net',
             'nrtm_port': 43,
+            'object_class_filter': 'as-set,aut-num,filter-set,inet-rtr,key-cert,mntner,peering-set,route,route6,route-set,rtr-set',
             'dump_source': 'ftp://rg.net/rgnet/RGNET.db.gz',
             'dump_serial_source': 'ftp://rg.net/rgnet/RGNET.CURRENTSERIAL',
         },
         'RIPE': {
             'authoritative': False,
             'keep_journal': True,
-            'nrtm_host': '193.0.6.145',
+            'nrtm_host': '193.0.6.135',
             'nrtm_port': 4444,
-            'dump_source': 'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe.db.as-block.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe.db.as-set.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe.db.aut-num.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe.db.filter-set.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe.db.inet-rtr.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe.db.organisation.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe.db.peering-set.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe.db.role.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe.db.route.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe.db.route6.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe.db.route-set.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe.db.rtr-set.gz',
-            'dump_serial_source': 'ftp://ftp.ripe.net/ripe/dbase/rc/RIPE.CURRENTSERIAL',
+            'object_class_filter': 'as-set,aut-num,filter-set,inet-rtr,key-cert,mntner,peering-set,route,route6,route-set,rtr-set',
+            'dump_source': 'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.as-set.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.aut-num.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.filter-set.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.inet-rtr.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.key-cert.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.mntner.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.peering-set.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.route.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.route6.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.route-set.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe.db.rtr-set.gz',
+            'dump_serial_source': 'ftp://ftp.ripe.net/ripe/dbase/RIPE.CURRENTSERIAL',
         },
         'RIPE-NONAUTH': {
             'authoritative': False,
             'keep_journal': True,
-            'nrtm_host': '193.0.6.145',
+            'nrtm_host': '193.0.6.135',
             'nrtm_port': 4444,
-            'dump_source': 'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe-nonauth.db.as-block.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe-nonauth.db.as-set.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe-nonauth.db.aut-num.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe-nonauth.db.filter-set.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe-nonauth.db.inet-rtr.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe-nonauth.db.organisation.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe-nonauth.db.peering-set.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe-nonauth.db.role.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe-nonauth.db.route.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe-nonauth.db.route6.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe-nonauth.db.route-set.gz,'
-                           'ftp://ftp.ripe.net/ripe/dbase/rc/split/ripe-nonauth.db.rtr-set.gz',
-            'dump_serial_source': 'ftp://ftp.ripe.net/ripe/dbase/rc/RIPE-NONAUTH.CURRENTSERIAL',
+            'object_class_filter': 'as-set,aut-num,filter-set,inet-rtr,key-cert,mntner,peering-set,route,route6,route-set,rtr-set',
+            'dump_source': 'ftp://ftp.ripe.net/ripe/dbase/split/ripe-nonauth.db.aut-num.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe-nonauth.db.route.gz,'
+                           'ftp://ftp.ripe.net/ripe/dbase/split/ripe-nonauth.db.route6.gz',
+            'dump_serial_source': 'ftp://ftp.ripe.net/ripe/dbase/RIPE-NONAUTH.CURRENTSERIAL',
         },
         # RPKI source unknown
         'TC': {
