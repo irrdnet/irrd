@@ -7,27 +7,27 @@ dotted==0.1.8          # Dotted path dictionary resolving for settings
 
 # Database connections and management
 psycopg2-binary==2.7.5
-SQLAlchemy==1.2.10
+SQLAlchemy==1.2.11
 alembic==1.0.0
 
 # Network handling
 twisted==18.7.0
 
 # Testing and related packages
-pytest==3.7.2
-pytest-cov==2.5.1
+pytest==3.8.0
+pytest-cov==2.6.0
 coverage==4.5.1
-coveralls==1.3.0
+coveralls==1.5.0
 
 # Documentation generation
-Sphinx==1.7.7
+Sphinx==1.8.0
 
 # Code style and type checks
-mypy==0.620
+mypy==0.630
 flake8==3.5.0
 pep8-naming==0.7.0
 
 # Creating python packages
-setuptools==40.1.0
+setuptools==40.3.0
 wheel==0.31.1
 twine==1.11.0
