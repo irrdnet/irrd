@@ -34,7 +34,7 @@ class DatabaseStatusResource(resource.Resource):
             client_ip = IP(request.getClientAddress().host)
         except (ValueError, AttributeError) as e:
             logger.error(f'Rejecting request as HTTP client IP could not be read from '
-                            f'{request.getClientAddress()}: {e}')
+                         f'{request.getClientAddress()}: {e}')
             return False
 
         access_list_name = get_setting('server.http.access_list')
