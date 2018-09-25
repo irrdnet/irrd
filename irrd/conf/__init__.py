@@ -14,6 +14,11 @@ DEFAULT_SETTINGS = DottedDict({
             'interface': '::0',
             'port': 8043,
             'max_connections': 50,
+        },
+        'http': {
+            'interface': '::0',
+            'port': 8080,
+            'access_list': 'http_database_status',
         }
     },
     'email': {
@@ -23,6 +28,13 @@ DEFAULT_SETTINGS = DottedDict({
     },
     'gnupg': {
         'homedir': os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), '../gnupg/'),
+    },
+    'access_lists': {
+        # TODO: these addresses should be validated and perhaps processed into IP objects
+        'http_database_status': {
+            '::/32',
+            '127.0.0.1',
+        },
     },
     'sources': {
         # TODO: validate that source names are upper case

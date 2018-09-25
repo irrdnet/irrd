@@ -4,7 +4,8 @@ from typing import Set, Tuple, List, Optional, TYPE_CHECKING
 from dataclasses import dataclass, field
 from orderedset import OrderedSet
 
-from irrd.storage.api import DatabaseHandler, RPSLDatabaseQuery
+from irrd.storage.api import DatabaseHandler
+from irrd.storage.queries import RPSLDatabaseQuery
 from irrd.rpsl.parser import RPSLObject
 from irrd.rpsl.rpsl_objects import RPSLMntner, rpsl_object_from_text
 from .parser_state import UpdateRequestType

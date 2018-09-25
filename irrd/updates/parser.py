@@ -1,7 +1,8 @@
 import logging
 from typing import List, Optional
 
-from irrd.storage.api import DatabaseHandler, RPSLDatabaseQuery
+from irrd.storage.api import DatabaseHandler
+from irrd.storage.queries import RPSLDatabaseQuery
 from irrd.rpsl.parser import UnknownRPSLObjectClassException, RPSLObject
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.utils.text import splitline_unicodesafe
