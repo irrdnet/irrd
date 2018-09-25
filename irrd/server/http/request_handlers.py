@@ -20,6 +20,9 @@ logger = logging.getLogger(__name__)
 class DatabaseStatusRequest:
 
     def generate_status(self) -> str:
+        """
+        Generate a human-readable overview of database status.
+        """
         database_handler = DatabaseHandler()
 
         statistics_query = RPSLDatabaseObjectStatisticsQuery()
@@ -27,11 +30,15 @@ class DatabaseStatusRequest:
         status_query = RPSLDatabaseStatusQuery()
         self.status_results = list(database_handler.execute_query(status_query))
 
-        results = [self._generate_header(), self._generate_statistics_table(), self._generate_mirror_detail()]
+        results = [self._generate_header(), self._generate_statistics_table(), self._generate_source_detail()]
         database_handler.close()
         return '\n\n'.join(results)
 
     def _generate_header(self) -> str:
+        """
+        Generate the header of the report, containing basic info like version
+        and time until the next mirror update.
+        """
         return textwrap.dedent(f"""
         IRRD version {__version__}
         Listening on {get_setting("server.whois.interface")} port {get_setting("server.whois.port")}
@@ -39,6 +46,9 @@ class DatabaseStatusRequest:
         """).lstrip()
 
     def _generate_statistics_table(self) -> str:
+        """
+        Generate a table with an overview of basic stats for each database.
+        """
         table = BeautifulTable(default_alignment=BeautifulTable.ALIGN_RIGHT)
         table.column_headers = ['source', 'total obj', 'rt obj', 'aut-num obj', 'serial', 'last export']
         table.column_alignments['source'] = BeautifulTable.ALIGN_LEFT
@@ -62,6 +72,11 @@ class DatabaseStatusRequest:
         return str(table)
 
     def _statistics_for_source(self, source: Optional[str]):
+        """
+        Extract counts of total objects, route objects and aut-num objects,
+        from the results of a previous SQL query.
+        If source is None, all sources are counted.
+        """
         if source:
             source_statistics = [s for s in self.statistics_results if s['source'] == source]
         else:
@@ -72,44 +87,27 @@ class DatabaseStatusRequest:
         autnum_obj = sum([s['count'] for s in source_statistics if s['object_class'] == 'aut-num'])
         return total_obj, route_obj, autnum_obj
 
-    def _generate_mirror_detail(self) -> str:
+    def _generate_source_detail(self) -> str:
+        """
+        Generate status details for each database.
+
+        This includes local configuration, local database status metadata,
+        and serial information queried from the remote NRTM host,
+        queried by _generate_remote_status_info().
+        """
         result_txt = ''
         for status_result in self.status_results:
             source = status_result['source'].upper()
             keep_journal = 'Yes' if get_setting(f'sources.{source}.keep_journal') else 'No'
             authoritative = 'Yes' if get_setting(f'sources.{source}.authoritative') else 'No'
             object_class_filter = get_setting(f'sources.{source}.object_class_filter')
+
             nrtm_host = get_setting(f'sources.{source}.nrtm_host')
             nrtm_port = get_setting(f'sources.{source}.nrtm_port')
 
-            if nrtm_host and nrtm_port:
-                try:
-                    source_status = whois_query_source_status(nrtm_host, nrtm_port, source)
-                    mirrorable, mirror_serial_oldest, mirror_serial_newest, mirror_dump_serial = source_status
-                    mirrorable_str = 'Yes' if mirrorable else 'No'
-                    remote_information = textwrap.dedent(f"""
-                    NRTM host: {nrtm_host} port {nrtm_port}
-                    Mirrorable: {mirrorable_str}
-                    Oldest journal serial number: {mirror_serial_oldest}
-                    Newest journal serial number: {mirror_serial_newest}
-                    Last export at serial number: {mirror_dump_serial}
-                    """)
-                except ValueError:
-                    remote_information = textwrap.dedent(f"""
-                    NRTM host: {nrtm_host} port {nrtm_port}
-                    Remote status query unsupported
-                    """)
-                except socket.timeout:
-                    remote_information = textwrap.dedent(f"""
-                    NRTM host: {nrtm_host} port {nrtm_port}
-                    Unable to reach remote server for status query
-                    """)
-            else:
-                remote_information = textwrap.dedent(f"""
-                No NRTM host configured.
-                """)
-
+            remote_information = self._generate_remote_status_info(nrtm_host, nrtm_port, source)
             remote_information = textwrap.indent(remote_information, ' ' * 16)
+
             result_txt += textwrap.dedent(f"""
             Status for {source}
             -------------------
@@ -129,7 +127,50 @@ class DatabaseStatusRequest:
             """)
         return result_txt
 
+    def _generate_remote_status_info(self, nrtm_host: Optional[str], nrtm_port: Optional[int], source: str) -> str:
+        """
+        Determine the remote status.
+
+        If NRTM is configured, this will include querying the NRTM
+        source for serial information. Various error states will produce
+        an appropriate remote status message for the report.
+        """
+        if nrtm_host and nrtm_port:
+            try:
+                source_status = whois_query_source_status(nrtm_host, nrtm_port, source)
+                mirrorable, mirror_serial_oldest, mirror_serial_newest, mirror_dump_serial = source_status
+                mirrorable_str = 'Yes' if mirrorable else 'No'
+
+                return textwrap.dedent(f"""
+                    NRTM host: {nrtm_host} port {nrtm_port}
+                    Mirrorable: {mirrorable_str}
+                    Oldest journal serial number: {mirror_serial_oldest}
+                    Newest journal serial number: {mirror_serial_newest}
+                    Last export at serial number: {mirror_dump_serial}
+                    """)
+            except ValueError:
+                return textwrap.dedent(f"""
+                    NRTM host: {nrtm_host} port {nrtm_port}
+                    Remote status query unsupported
+                    """)
+            except socket.timeout:
+                return textwrap.dedent(f"""
+                    NRTM host: {nrtm_host} port {nrtm_port}
+                    Unable to reach remote server for status query
+                    """)
+        else:
+            return textwrap.dedent(f"""
+                No NRTM host configured.
+                """)
+
     def _next_mirror_update(self) -> str:  # pragma: no cover
+        """
+        Determine when the next mirror update is scheduled.
+
+        This function is not tested, due to the large complexity of
+        mocking sufficient parts of the twisted framework, combined
+        with the small risk that a failure in this function poses.
+        """
         next_mirror_update: Optional[int] = None
         for call in reactor.getDelayedCalls():
             try:
