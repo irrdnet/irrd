@@ -33,7 +33,7 @@ class DatabaseStatusResource(resource.Resource):
         try:
             client_ip = IP(request.getClientAddress().host)
         except (ValueError, AttributeError) as e:
-            logger.critical(f'Rejecting request as HTTP client IP could not be read from '
+            logger.error(f'Rejecting request as HTTP client IP could not be read from '
                             f'{request.getClientAddress()}: {e}')
             return False
 
