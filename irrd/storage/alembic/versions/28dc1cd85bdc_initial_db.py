@@ -27,7 +27,7 @@ def upgrade():
                     sa.Column('serial_newest_seen', sa.Integer(), nullable=True),
                     sa.Column('serial_oldest_journal', sa.Integer(), nullable=True),
                     sa.Column('serial_newest_journal', sa.Integer(), nullable=True),
-                    sa.Column('serial_last_dump', sa.Integer(), nullable=True),
+                    sa.Column('serial_last_export', sa.Integer(), nullable=True),
                     sa.Column('force_reload', sa.Boolean(), nullable=False),
                     sa.Column('last_error', sa.Text(), nullable=True),
                     sa.Column('last_error_timestamp', sa.DateTime(timezone=True), nullable=True),

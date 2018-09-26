@@ -6,7 +6,7 @@ from IPy import IP
 from pytest import raises
 
 from .. import engine
-from ..api import DatabaseHandler
+from ..database_handler import DatabaseHandler
 from irrd.storage.queries import (RPSLDatabaseQuery, RPSLDatabaseJournalQuery, RPSLDatabaseStatusQuery,
                                   RPSLDatabaseObjectStatisticsQuery)
 from ..models import RPSLDatabaseObject, DatabaseOperation
@@ -68,7 +68,7 @@ class TestDatabaseHandlerLive:
     def test_object_writing_and_status_checking(self, monkeypatch, irrd_database):
         monkeypatch.setenv('IRRD_SOURCES_TEST_AUTHORITATIVE', '1')
         monkeypatch.setenv('IRRD_SOURCES_TEST2_KEEP_JOURNAL', '1')
-        monkeypatch.setattr('irrd.storage.api.MAX_RECORDS_CACHE_BEFORE_INSERT', 1)
+        monkeypatch.setattr('irrd.storage.database_handler.MAX_RECORDS_CACHE_BEFORE_INSERT', 1)
 
         rpsl_object_route_v4 = Mock(
             pk=lambda: '192.0.2.0/24,AS65537',
@@ -175,7 +175,7 @@ class TestDatabaseHandlerLive:
         assert self._clean_result(status_test) == [
             {'source': 'TEST', 'serial_oldest_journal': 42, 'serial_newest_journal': 43,
              'serial_oldest_seen': 42, 'serial_newest_seen': 43,
-             'serial_last_dump': None, 'last_error': None, 'force_reload': False},
+             'serial_last_export': None, 'last_error': None, 'force_reload': False},
         ]
         assert status_test[0]['created']
         assert status_test[0]['updated']
@@ -185,7 +185,7 @@ class TestDatabaseHandlerLive:
         assert self._clean_result(status_test2) == [
             {'source': 'TEST2', 'serial_oldest_journal': 1, 'serial_newest_journal': 3,
              'serial_oldest_seen': 1, 'serial_newest_seen': 3,
-             'serial_last_dump': None, 'last_error': 'error', 'force_reload': False},
+             'serial_last_export': None, 'last_error': 'error', 'force_reload': False},
         ]
         assert status_test2[0]['created']
         assert status_test2[0]['updated']
@@ -239,7 +239,7 @@ class TestDatabaseHandlerLive:
         assert status == [
             {'source': 'TEST', 'serial_oldest_journal': None, 'serial_newest_journal': None,
              'serial_oldest_seen': 42, 'serial_newest_seen': 4242,
-             'serial_last_dump': None, 'last_error': None, 'force_reload': False},
+             'serial_last_export': None, 'last_error': None, 'force_reload': False},
         ]
 
         self.dh.force_record_serial_seen('TEST', 424242)
@@ -249,7 +249,7 @@ class TestDatabaseHandlerLive:
         assert status == [
             {'source': 'TEST', 'serial_oldest_journal': None, 'serial_newest_journal': None,
              'serial_oldest_seen': 42, 'serial_newest_seen': 424242,
-             'serial_last_dump': None, 'last_error': None, 'force_reload': False},
+             'serial_last_export': None, 'last_error': None, 'force_reload': False},
         ]
 
         self.dh.close()
@@ -282,7 +282,7 @@ class TestDatabaseHandlerLive:
         assert status_test == [
             {'source': 'TEST', 'serial_oldest_journal': None, 'serial_newest_journal': None,
              'serial_oldest_seen': 42, 'serial_newest_seen': 42,
-             'serial_last_dump': None, 'last_error': None, 'force_reload': False},
+             'serial_last_export': None, 'last_error': None, 'force_reload': False},
         ]
         self.dh.close()
 

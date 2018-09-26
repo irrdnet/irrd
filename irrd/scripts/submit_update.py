@@ -1,5 +1,16 @@
 #!/usr/bin/env python
 # flake8: noqa: E402
+
+"""
+Submit a raw update message, i.e. without e-mail headers.
+This supports password/override attributes, but is not
+compatible with PGP signatures.
+
+The message is always read from stdin.
+
+Prints a report of the results, which would otherwise
+be sent to a user by e-mail.
+"""
 import os
 import sys
 

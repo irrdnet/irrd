@@ -3,7 +3,7 @@ from unittest.mock import Mock
 from irrd.conf import DEFAULT_SETTINGS
 from irrd.storage.models import DatabaseOperation
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER, SAMPLE_UNKNOWN_CLASS, SAMPLE_MALFORMED_EMPTY_LINE
-from ..operation import NRTMOperation
+from ..nrtm_operation import NRTMOperation
 
 
 class TestNRTMOperation:

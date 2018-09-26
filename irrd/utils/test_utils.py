@@ -4,6 +4,10 @@ import pytest
 
 
 def flatten_mock_calls(mock):
+    """
+    Flatten the calls performed on a particular mock object,
+    into a list of calls with arguments.
+    """
     result = []
     for call in mock.mock_calls:
         call = list(call)
@@ -25,5 +29,4 @@ def tmp_gpg_dir(tmpdir, monkeypatch):
     Default tmpdirs on Mac OS X are affected, to prevent this run pytest with:
         --basetemp=.tmpdirs
     """
-
     os.environ['IRRD_GNUPG_HOMEDIR'] = str(tmpdir) + "/gnupg"

@@ -18,7 +18,7 @@ def validate_pgp_signature(message: str, detached_signature: Optional[str]=None)
     Verify a PGP signature in a message.
 
     If there is a valid signature, returns a tuple of an optional signed message
-    part, and the PGP fingerprint, or None,None if there was no valid fingerprint.
+    part, and the PGP fingerprint, or None,None if there was no (valid) signature.
     The signed message part is relevant for inline signing, where only part of
     the message may be signed. If it is None, the entire message was signed.
 
@@ -35,7 +35,7 @@ def validate_pgp_signature(message: str, detached_signature: Optional[str]=None)
     Note that PGP validation is dependent on the PGP key already being in the
     keychain contained in the gnupg.homedir setting. This is usually done by
     importing a key-cert, which will add the certificate to the keychain during
-    validation.
+    validation, in RPSLKeyCert.clean().
     """
     gpg = gnupg.GPG(gnupghome=get_setting('gnupg.homedir'))
 
@@ -59,7 +59,7 @@ def validate_pgp_signature(message: str, detached_signature: Optional[str]=None)
         return None, None
 
     log_message = result.stderr.replace('\n', ' -- ').replace('gpg:                ', '')
-    logger.info(f'validated PGP signature, response: {log_message}')
+    logger.info(f'checked PGP signature, response: {log_message}')
     if result.valid and result.key_status is None:
         return new_message, result.fingerprint
     return None, None

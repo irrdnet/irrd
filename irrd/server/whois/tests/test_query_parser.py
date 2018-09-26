@@ -3,12 +3,11 @@ from unittest.mock import Mock
 
 import pytest
 from IPy import IP
-from pytest import raises
 
-from irrd.conf import PASSWORD_HASH_DUMMY_VALUE, DEFAULT_SETTINGS
-from irrd.utils.rpsl_samples import SAMPLE_MNTNER
+from irrd.conf import DEFAULT_SETTINGS
 from irrd.utils.test_utils import flatten_mock_calls
-from ..query_parser import WhoisQueryParser, WhoisQueryResponseMode, WhoisQueryResponseType, WhoisQueryResponse
+from ..query_parser import WhoisQueryParser
+from ..query_response import WhoisQueryResponseType, WhoisQueryResponseMode
 
 # Note that these mock objects are not entirely valid RPSL objects,
 # as they are meant to test all the scenarios in the query parser.
@@ -90,55 +89,6 @@ def prepare_parser(monkeypatch):
     mock_database_handler.execute_query = lambda query: mock_query_result
 
     yield (mock_database_query, mock_database_handler, parser)
-
-
-class TestWhoisQueryResponse:
-    def test_response(self):
-        response = WhoisQueryResponse(mode=WhoisQueryResponseMode.IRRD,
-                                      response_type=WhoisQueryResponseType.SUCCESS,
-                                      result='test').generate_response()
-        assert response == 'A5\ntest\nC\n'
-        response = WhoisQueryResponse(mode=WhoisQueryResponseMode.IRRD,
-                                      response_type=WhoisQueryResponseType.SUCCESS,
-                                      result='').generate_response()
-        assert response == 'C\n'
-        response = WhoisQueryResponse(mode=WhoisQueryResponseMode.IRRD,
-                                      response_type=WhoisQueryResponseType.KEY_NOT_FOUND,
-                                      result='test').generate_response()
-        assert response == 'D\n'
-        response = WhoisQueryResponse(mode=WhoisQueryResponseMode.IRRD,
-                                      response_type=WhoisQueryResponseType.ERROR,
-                                      result='test').generate_response()
-        assert response == 'F test\n'
-        response = WhoisQueryResponse(mode=WhoisQueryResponseMode.RIPE,
-                                      response_type=WhoisQueryResponseType.SUCCESS,
-                                      result='test').generate_response()
-        assert response == 'test\n\n'
-        response = WhoisQueryResponse(mode=WhoisQueryResponseMode.RIPE,
-                                      response_type=WhoisQueryResponseType.SUCCESS,
-                                      result='').generate_response()
-        assert response == '%  No entries found for the selected source(s).\n'
-        response = WhoisQueryResponse(mode=WhoisQueryResponseMode.RIPE,
-                                      response_type=WhoisQueryResponseType.KEY_NOT_FOUND,
-                                      result='test').generate_response()
-        assert response == '%  No entries found for the selected source(s).\n'
-        response = WhoisQueryResponse(mode=WhoisQueryResponseMode.RIPE,
-                                      response_type=WhoisQueryResponseType.ERROR,
-                                      result='test').generate_response()
-        assert response == '%% test\n'
-
-        with raises(RuntimeError) as ve:
-            # noinspection PyTypeChecker
-            WhoisQueryResponse(response_type='bar', mode='foo', result='foo').generate_response()  # type:ignore
-        assert 'foo' in str(ve)
-
-    def test_auth_hash_removal(self):
-        response = WhoisQueryResponse(mode=WhoisQueryResponseMode.RIPE,
-                                      response_type=WhoisQueryResponseType.ERROR,
-                                      result=SAMPLE_MNTNER).generate_response()
-        assert 'CRYPT-PW ' + PASSWORD_HASH_DUMMY_VALUE in response
-        assert 'CRYPT-PW LEuuhsBJNFV0Q' not in response
-        assert 'MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.' not in response
 
 
 class TestWhoisQueryParserRIPE:
@@ -611,8 +561,8 @@ class TestWhoisQueryParserIRRD:
         monkeypatch.setattr("irrd.server.whois.query_parser.RPSLDatabaseStatusQuery", lambda: mock_dsq)
 
         mock_query_result = [
-            {'source': 'TEST1', 'serial_oldest_journal': 10, 'serial_newest_journal': 20, 'serial_last_dump': 10},
-            {'source': 'TEST2', 'serial_oldest_journal': None, 'serial_newest_journal': None, 'serial_last_dump': None},
+            {'source': 'TEST1', 'serial_oldest_journal': 10, 'serial_newest_journal': 20, 'serial_last_export': 10},
+            {'source': 'TEST2', 'serial_oldest_journal': None, 'serial_newest_journal': None, 'serial_last_export': None},
         ]
         mock_dh.execute_query = lambda query: mock_query_result
 

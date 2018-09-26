@@ -5,13 +5,13 @@ from typing import List, Set
 from irrd.conf import get_setting
 from irrd.rpsl.parser import UnknownRPSLObjectClassException
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
-from irrd.storage.api import DatabaseHandler
+from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.models import DatabaseOperation
 from irrd.utils.text import split_paragraphs_rpsl
-from .operation import NRTMOperation
+from .nrtm_operation import NRTMOperation
 
 logger = logging.getLogger(__name__)
-start_line_re = re.compile(r'^% *START *Version: *(?P<version>\d+) +(?P<source>[\w-]+) +(?P<first_serial>\d+)-(?P<last_serial>\d+)( FILTERED)?\n$', flags=re.MULTILINE)
+nrtm_start_line_re = re.compile(r'^% *START *Version: *(?P<version>\d+) +(?P<source>[\w-]+) +(?P<first_serial>\d+)-(?P<last_serial>\d+)( FILTERED)?\n$', flags=re.MULTILINE)
 
 
 class MirrorParser:
@@ -23,9 +23,11 @@ class MirrorParser:
             self.object_class_filter = None
 
 
-class MirrorFullImportParser(MirrorParser):
+class MirrorFileImportParser(MirrorParser):
     """
-    This parser handles full imports of mirror databases.
+    This parser handles imports of files for mirror databases.
+    Note that this parser can be called multiple times for a single
+    full import, as some databases use split files.
     """
     obj_parsed = 0  # Total objects found
     obj_errors = 0  # Objects with errors
@@ -146,7 +148,7 @@ class NRTMStreamParser(MirrorParser):
 
     def _handle_possible_start_line(self, line: str) -> bool:
         """Check whether a line is an NRTM START line, and if so, handle it."""
-        start_line_match = start_line_re.match(line)
+        start_line_match = nrtm_start_line_re.match(line)
         if not start_line_match:
             return False
 

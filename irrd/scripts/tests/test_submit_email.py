@@ -9,5 +9,3 @@ def test_submit_email(capsys, monkeypatch):
     mock_update_handler.user_report = lambda: 'output'
 
     main('test input')
-    captured = capsys.readouterr().out
-    assert captured == 'output\n'

@@ -111,7 +111,7 @@ class RPSLDatabaseStatus(Base):  # type: ignore
     serial_newest_seen = sa.Column(sa.Integer)
     serial_oldest_journal = sa.Column(sa.Integer)
     serial_newest_journal = sa.Column(sa.Integer)
-    serial_last_dump = sa.Column(sa.Integer)
+    serial_last_export = sa.Column(sa.Integer)
 
     force_reload = sa.Column(sa.Boolean(), default=False, nullable=False)
 

@@ -3,7 +3,7 @@ import threading
 from typing import Dict
 
 from irrd.conf import get_setting
-from .nrtm_runner import MirrorUpdateRunner
+from .mirror_runners import MirrorUpdateRunner
 
 logger = logging.getLogger(__name__)
 
@@ -21,11 +21,11 @@ class MirrorScheduler:
 
     def run(self) -> None:
         for source in get_setting('sources').keys():
-            is_mirror = get_setting(f'sources.{source}.dump_source') or get_setting(f'sources.{source}.nrtm_host')
+            is_mirror = get_setting(f'sources.{source}.export_source') or get_setting(f'sources.{source}.nrtm_host')
             if is_mirror and not self._is_thread_running(source):
-                logger.debug(f'Started new thread for NRTM initiator for {source}')
+                logger.debug(f'Started new thread for mirror update for {source}')
                 initiator = MirrorUpdateRunner(source=source)
-                thread = threading.Thread(target=initiator.run)
+                thread = threading.Thread(target=initiator.run, name=f'Thread-MirrorUpdateRunner-{source}')
                 self.threads[source] = thread
                 thread.start()
 

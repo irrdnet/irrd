@@ -6,7 +6,7 @@ RPSLParserMessagesType = TypeVar("RPSLParserMessagesType", bound="RPSLParserMess
 
 
 class RPSLParserMessages:
-    levels = ["INFO", "SUCCESS", "WARNING", "ERROR"]
+    levels = ["INFO", "ERROR"]
 
     def __init__(self) -> None:
         self._messages: List[tuple] = []

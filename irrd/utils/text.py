@@ -19,7 +19,7 @@ def split_paragraphs_rpsl(input: Union[str, TextIO], strip_comments=True) -> Ite
     """
     Split an input into paragraphs, and return an iterator of the paragraphs.
 
-    A paragraph is a block of text, seperated by at least one empty line.
+    A paragraph is a block of text, separated by at least one empty line.
     Note that a line with other whitespace, e.g. a space, is not considered
     empty.
 

@@ -3,7 +3,7 @@ from typing import Optional, List
 
 from irrd.rpsl.parser import UnknownRPSLObjectClassException
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
-from irrd.storage.api import DatabaseHandler
+from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.models import DatabaseOperation
 
 logger = logging.getLogger(__name__)

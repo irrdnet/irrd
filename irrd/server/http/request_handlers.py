@@ -10,7 +10,7 @@ from twisted.internet import reactor
 from irrd import __version__
 from irrd.conf import get_setting
 from irrd.mirroring.scheduler import MirrorScheduler
-from irrd.storage.api import DatabaseHandler
+from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseStatusQuery, RPSLDatabaseObjectStatisticsQuery
 from irrd.utils.whois_client import whois_query_source_status
 
@@ -61,7 +61,7 @@ class DatabaseStatusRequest:
             source = status_result['source'].upper()
             total_obj, route_obj, autnum_obj = self._statistics_for_source(source)
             serial = status_result['serial_newest_seen']
-            last_export = status_result['serial_last_dump']
+            last_export = status_result['serial_last_export']
             if not last_export:
                 last_export = ''
             table.append_row([source, total_obj, route_obj, autnum_obj, serial, last_export])
@@ -118,7 +118,7 @@ class DatabaseStatusRequest:
                 Newest serial seen: {status_result['serial_newest_seen']}
                 Oldest journal serial number: {status_result['serial_oldest_journal']}
                 Newest journal serial number: {status_result['serial_newest_journal']}
-                Last export at serial number: {status_result['serial_last_dump']}
+                Last export at serial number: {status_result['serial_last_export']}
                 Last update: {status_result['updated']}
                 Local journal kept: {keep_journal}
                 Last import error occurred at: {status_result['last_error_timestamp']}
@@ -138,7 +138,7 @@ class DatabaseStatusRequest:
         if nrtm_host and nrtm_port:
             try:
                 source_status = whois_query_source_status(nrtm_host, nrtm_port, source)
-                mirrorable, mirror_serial_oldest, mirror_serial_newest, mirror_dump_serial = source_status
+                mirrorable, mirror_serial_oldest, mirror_serial_newest, mirror_export_serial = source_status
                 mirrorable_str = 'Yes' if mirrorable else 'No'
 
                 return textwrap.dedent(f"""
@@ -146,7 +146,7 @@ class DatabaseStatusRequest:
                     Mirrorable: {mirrorable_str}
                     Oldest journal serial number: {mirror_serial_oldest}
                     Newest journal serial number: {mirror_serial_newest}
-                    Last export at serial number: {mirror_dump_serial}
+                    Last export at serial number: {mirror_export_serial}
                     """)
             except ValueError:
                 return textwrap.dedent(f"""

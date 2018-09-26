@@ -6,7 +6,7 @@ import pytest
 
 from irrd.conf import DEFAULT_SETTINGS
 from irrd.utils.test_utils import flatten_mock_calls
-from ..nrtm_runner import MirrorUpdateRunner, MirrorFullImportRunner, NRTMUpdateStreamRunner
+from ..mirror_runners import MirrorUpdateRunner, MirrorFullImportRunner, NRTMUpdateStreamRunner
 
 
 class TestMirrorUpdateRunner:
@@ -15,9 +15,9 @@ class TestMirrorUpdateRunner:
         mock_dq = Mock()
         mock_full_import_runner = Mock()
 
-        monkeypatch.setattr('irrd.mirroring.nrtm_runner.DatabaseHandler', lambda: mock_dh)
-        monkeypatch.setattr('irrd.mirroring.nrtm_runner.RPSLDatabaseStatusQuery', lambda: mock_dq)
-        monkeypatch.setattr('irrd.mirroring.nrtm_runner.MirrorFullImportRunner', lambda source: mock_full_import_runner)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners.DatabaseHandler', lambda: mock_dh)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners.RPSLDatabaseStatusQuery', lambda: mock_dq)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners.MirrorFullImportRunner', lambda source: mock_full_import_runner)
 
         mock_dh.execute_query = lambda q: iter([])
         runner = MirrorUpdateRunner(source='TEST')
@@ -34,9 +34,9 @@ class TestMirrorUpdateRunner:
         mock_dq = Mock()
         mock_full_import_runner = Mock()
 
-        monkeypatch.setattr('irrd.mirroring.nrtm_runner.DatabaseHandler', lambda: mock_dh)
-        monkeypatch.setattr('irrd.mirroring.nrtm_runner.RPSLDatabaseStatusQuery', lambda: mock_dq)
-        monkeypatch.setattr('irrd.mirroring.nrtm_runner.MirrorFullImportRunner', lambda source: mock_full_import_runner)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners.DatabaseHandler', lambda: mock_dh)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners.RPSLDatabaseStatusQuery', lambda: mock_dq)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners.MirrorFullImportRunner', lambda source: mock_full_import_runner)
 
         mock_dh.execute_query = lambda q: iter([{'serial_newest_seen': 424242, 'force_reload': True}])
         runner = MirrorUpdateRunner(source='TEST')
@@ -53,9 +53,9 @@ class TestMirrorUpdateRunner:
         mock_dq = Mock()
         mock_stream_runner = Mock()
 
-        monkeypatch.setattr('irrd.mirroring.nrtm_runner.DatabaseHandler', lambda: mock_dh)
-        monkeypatch.setattr('irrd.mirroring.nrtm_runner.RPSLDatabaseStatusQuery', lambda: mock_dq)
-        monkeypatch.setattr('irrd.mirroring.nrtm_runner.NRTMUpdateStreamRunner', lambda source: mock_stream_runner)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners.DatabaseHandler', lambda: mock_dh)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners.RPSLDatabaseStatusQuery', lambda: mock_dq)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners.NRTMUpdateStreamRunner', lambda source: mock_stream_runner)
 
         mock_dh.execute_query = lambda q: iter([{'serial_newest_seen': 424242, 'force_reload': False}])
         runner = MirrorUpdateRunner(source='TEST')
@@ -72,15 +72,15 @@ class TestMirrorUpdateRunner:
 class TestMirrorFullImportRunner:
     def test_run_import(self, monkeypatch):
         DEFAULT_SETTINGS['sources'] = {'TEST': {
-            'dump_source': 'ftp://host/source1.gz,ftp://host/source2',
-            'dump_serial_source': 'ftp://host/serial',
+            'export_source': 'ftp://host/source1.gz,ftp://host/source2',
+            'export_serial_source': 'ftp://host/serial',
         }}
 
         mock_dh = Mock()
         mock_ftp = Mock()
-        MockMirrorFullImportParser.rpsl_data_calls = []
-        monkeypatch.setattr('irrd.mirroring.nrtm_runner.MirrorFullImportParser', MockMirrorFullImportParser)
-        monkeypatch.setattr('irrd.mirroring.nrtm_runner.FTP', lambda url: mock_ftp)
+        MockMirrorFileImportParser.rpsl_data_calls = []
+        monkeypatch.setattr('irrd.mirroring.mirror_runners.MirrorFileImportParser', MockMirrorFileImportParser)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners.FTP', lambda url: mock_ftp)
 
         responses = {
             # gzipped data, contains 'source1'
@@ -91,7 +91,7 @@ class TestMirrorFullImportRunner:
         mock_ftp.retrbinary = lambda path, callback: callback(responses[path])
         MirrorFullImportRunner('TEST').run(mock_dh)
 
-        assert MockMirrorFullImportParser.rpsl_data_calls == ['source1', 'source2']
+        assert MockMirrorFileImportParser.rpsl_data_calls == ['source1', 'source2']
         assert flatten_mock_calls(mock_dh) == [
             ['delete_all_rpsl_objects_with_journal', ('TEST',), {}],
             ['disable_journaling', (), {}],
@@ -99,7 +99,7 @@ class TestMirrorFullImportRunner:
 
     def test_missing_source_settings(self):
         DEFAULT_SETTINGS['sources'] = {'TEST': {
-            'dump_source': 'ftp://host/source1.gz,ftp://host/source2',
+            'export_source': 'ftp://host/source1.gz,ftp://host/source2',
         }}
 
         mock_dh = Mock()
@@ -107,8 +107,8 @@ class TestMirrorFullImportRunner:
 
     def test_unsupported_protocol(self):
         DEFAULT_SETTINGS['sources'] = {'TEST': {
-            'dump_source': 'ftp://host/source1.gz,ftp://host/source2',
-            'dump_serial_source': 'gopher://host/serial',
+            'export_source': 'ftp://host/source1.gz,ftp://host/source2',
+            'export_serial_source': 'gopher://host/serial',
         }}
 
         mock_dh = Mock()
@@ -117,7 +117,7 @@ class TestMirrorFullImportRunner:
         assert 'scheme gopher is not supported' in str(ve)
 
 
-class MockMirrorFullImportParser:
+class MockMirrorFileImportParser:
     rpsl_data_calls: List[str] = []
 
     def __init__(self, source, filename, serial, database_handler):
@@ -142,8 +142,8 @@ class TestNRTMUpdateStreamRunner:
             return 'response'
 
         mock_dh = Mock()
-        monkeypatch.setattr('irrd.mirroring.nrtm_runner.NRTMStreamParser', MockNRTMStreamParser)
-        monkeypatch.setattr('irrd.mirroring.nrtm_runner.whois_query', mock_whois_query)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners.NRTMStreamParser', MockNRTMStreamParser)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners.whois_query', mock_whois_query)
 
         NRTMUpdateStreamRunner('TEST').run(424242, mock_dh)
 

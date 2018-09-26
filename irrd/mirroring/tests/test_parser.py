@@ -11,10 +11,10 @@ from .nrtm_samples import (SAMPLE_NRTM_V3, SAMPLE_NRTM_V1, SAMPLE_NRTM_V1_TOO_MA
                            SAMPLE_NRTM_V3_SERIAL_GAP, SAMPLE_NRTM_V3_INVALID_MULTIPLE_START_LINES,
                            SAMPLE_NRTM_INVALID_NO_START_LINE, SAMPLE_NRTM_V3_SERIAL_OUT_OF_ORDER)
 from irrd.storage.models import DatabaseOperation
-from ..parser import NRTMStreamParser, MirrorFullImportParser
+from ..parser import NRTMStreamParser, MirrorFileImportParser
 
 
-class TestMirrorFullImportParser:
+class TestMirrorFileImportParser:
     def test_parse(self, monkeypatch, caplog):
         DEFAULT_SETTINGS['sources'] = {'TEST': {'object_class_filter': 'route'}}
         mock_dh = Mock()
@@ -31,7 +31,7 @@ class TestMirrorFullImportParser:
         with tempfile.NamedTemporaryFile() as fp:
             fp.write(test_input.encode('utf-8'))
             fp.seek(0)
-            MirrorFullImportParser(
+            MirrorFileImportParser(
                 source='TEST',
                 filename=fp.name,
                 serial=424242,

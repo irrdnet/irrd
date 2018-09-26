@@ -9,10 +9,10 @@ from typing import Optional, Tuple
 from urllib.parse import urlparse
 
 from irrd.conf import get_setting
-from irrd.storage.api import DatabaseHandler
+from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseStatusQuery
 from irrd.utils.whois_client import whois_query
-from .parser import MirrorFullImportParser, NRTMStreamParser
+from .parser import MirrorFileImportParser, NRTMStreamParser
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ class MirrorUpdateRunner:
     database mirror, depending on current state.
 
     If there is no current mirrored data, will call MirrorFullImportRunner
-    to run a new import from full dump files. Otherwise, will call
+    to run a new import from full export files. Otherwise, will call
     NRTMUpdateStreamRunner to retrieve new updates from NRTM.
     """
     def __init__(self, source: str) -> None:
@@ -56,12 +56,12 @@ class MirrorUpdateRunner:
 
 class MirrorFullImportRunner:
     """
-    This runner performs a full import from database dumps for a single
-    mirrored source. URLs for full dump file(s), and the URL for the serial
+    This runner performs a full import from database exports for a single
+    mirrored source. URLs for full export file(s), and the URL for the serial
     they match, are provided in configuration.
 
     Files are downloaded, gunzipped if needed, and then sent through the
-    MirrorFullImportParser.
+    MirrorFileImportParser.
     """
     def __init__(self, source: str) -> None:
         self.source = source
@@ -69,23 +69,23 @@ class MirrorFullImportRunner:
     def run(self, database_handler: DatabaseHandler):
         database_handler.delete_all_rpsl_objects_with_journal(self.source)
 
-        dump_sources = get_setting(f'sources.{self.source}.dump_source').split(',')
-        dump_serial_source = get_setting(f'sources.{self.source}.dump_serial_source')
+        export_sources = get_setting(f'sources.{self.source}.export_source').split(',')
+        export_serial_source = get_setting(f'sources.{self.source}.export_serial_source')
 
-        if not dump_sources or not dump_serial_source:
-            logger.debug(f'Skipping full import for {self.source}, dump_source or dump_serial_source not set.')
+        if not export_sources or not export_serial_source:
+            logger.debug(f'Skipping full import for {self.source}, export_source or export_serial_source not set.')
             return
 
-        logger.info(f'Running full import of {self.source} from {dump_sources}, serial from {dump_serial_source}')
+        logger.info(f'Running full import of {self.source} from {export_sources}, serial from {export_serial_source}')
 
-        dump_serial = int(self._retrieve_file(dump_serial_source, use_tempfile=False))
-        dump_filenames = [self._retrieve_file(dump_source, use_tempfile=True) for dump_source in dump_sources]
+        export_serial = int(self._retrieve_file(export_serial_source, use_tempfile=False))
+        export_filenames = [self._retrieve_file(export_source, use_tempfile=True) for export_source in export_sources]
 
         database_handler.disable_journaling()
-        for dump_filename in dump_filenames:
-            MirrorFullImportParser(source=self.source, filename=dump_filename, serial=dump_serial,
+        for export_filename in export_filenames:
+            MirrorFileImportParser(source=self.source, filename=export_filename, serial=export_serial,
                                    database_handler=database_handler)
-            os.unlink(dump_filename)
+            os.unlink(export_filename)
 
     def _retrieve_file(self, url: str, use_tempfile=True) -> str:
         """

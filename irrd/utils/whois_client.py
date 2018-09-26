@@ -3,6 +3,13 @@ from typing import List, Tuple, Optional
 
 
 def whois_query(host: str, port: int, query: str, end_markings: List[str]=None) -> str:
+    """
+    Perform a query on a whois server, connecting to the specified host and port.
+
+    Will continue to read until no more data can be read, until no more data has
+    been sent for 5 seconds, or until an optional end_marking is encountered.
+    The end marking could be e.g. "END NTTCOM" in case of an NRTM stream.
+    """
     query = query.strip() + '\n'
     if end_markings:
         end_markings_bytes = [mark.encode('utf-8') for mark in end_markings]
@@ -30,6 +37,13 @@ def whois_query(host: str, port: int, query: str, end_markings: List[str]=None) 
 
 
 def whois_query_irrd(host: str, port: int, query: str) -> str:
+    """
+    Perform a whois query, expecting an IRRD-style output format.
+
+    This is a variant of whois_query(), as it uses the additional metadata
+    provided by the IRRD output format to know when the full response has
+    been received, and whether the full response has been received.
+    """
     query = query.strip() + '\n'
 
     s = socket.socket()
@@ -69,9 +83,19 @@ def whois_query_irrd(host: str, port: int, query: str) -> str:
 
 
 def whois_query_source_status(host: str, port: int, source: str) -> Tuple[Optional[bool], int, int, Optional[int]]:
+    """
+    Query the status of a particular source against an NRTM server,
+    which supports IRRD-style !j queries.
+
+    Will return a tuple with:
+    - is this server mirrorable
+    - the oldest serial available
+    - the newest serial available
+    - the serial of the latest export
+    """
     remote_status = whois_query_irrd(host, port, f'!j{source}')
 
-    # Fields are: source, mirrorable, serials in journal, optional dump serial
+    # Fields are: source, mirrorable, serials in journal, optional last export serial
     fields = remote_status.split(':')
     match_source = fields[0].upper()
     if match_source != source.upper():
@@ -81,10 +105,10 @@ def whois_query_source_status(host: str, port: int, source: str) -> Tuple[Option
     mirrorable = mirrorable_choices.get(fields[1].upper())
 
     serial_oldest, serial_newest = fields[2].split('-')
-    dump_serial: Optional[int]
+    export_serial: Optional[int]
     try:
-        dump_serial = int(fields[3])
+        export_serial = int(fields[3])
     except IndexError:
-        dump_serial = None
+        export_serial = None
 
-    return mirrorable, int(serial_oldest), int(serial_newest), dump_serial
+    return mirrorable, int(serial_oldest), int(serial_newest), export_serial

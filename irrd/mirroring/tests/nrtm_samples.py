@@ -18,6 +18,7 @@ source: TEST
 
 %END TEST
 """
+
 # NRTM v1 has no serials per object
 SAMPLE_NRTM_V1 = """%START Version: 1 TEST 11012700-11012701
 
