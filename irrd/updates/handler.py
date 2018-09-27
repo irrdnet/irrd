@@ -1,3 +1,4 @@
+import logging
 import textwrap
 from typing import List, Optional, Dict
 
@@ -6,6 +7,8 @@ from irrd.storage.queries import RPSLDatabaseQuery
 from .parser import parse_update_requests, UpdateRequest
 from .parser_state import UpdateRequestStatus, UpdateRequestType
 from .validators import ReferenceValidator, AuthValidator
+
+logger = logging.getLogger(__name__)
 
 
 class UpdateRequestHandler:
@@ -55,7 +58,9 @@ class UpdateRequestHandler:
 
             loop_count += 1
             if loop_count > loop_max:  # pragma: no cover
-                msg = 'Update validity resolver ran an excessive amount of loops, may be stuck, aborting processing'
+                msg = f'Update validity resolver ran an excessive amount of loops, may be stuck, aborting ' \
+                      f'processing. Message metadata: {self.request_meta}'
+                logger.error(msg)
                 raise ValueError(msg)
 
         for result in results:
@@ -78,6 +83,8 @@ class UpdateRequestHandler:
         for result in results:
             if result['parsed_data'].get('fingerpr', '').replace(' ', '') == clean_fingerprint:
                 return key_id
+        logger.info(f'Message was signed with key {key_id}, but key was not found in the database. Treating message '
+                    f'as unsigned. Message metadata: {self.request_meta}')
         return None
 
     def status(self) -> str:

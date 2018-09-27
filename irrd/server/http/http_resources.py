@@ -39,7 +39,10 @@ class DatabaseStatusResource(resource.Resource):
 
         access_list_name = get_setting('server.http.access_list')
         access_list = get_setting(f'access_lists.{access_list_name}')
-        return any([client_ip in IP(allowed) for allowed in access_list])
+        allowed = any([client_ip in IP(allowed) for allowed in access_list])
+        if not allowed:
+            logger.info(f'Rejecting HTTP request, IP not in access list: {client_ip}')
+        return allowed
 
 
 root = resource.Resource()

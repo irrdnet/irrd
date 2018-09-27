@@ -40,6 +40,7 @@ class EmailUpdateParser:
         """
         message: email.message.Message = email.message_from_string(email_txt)
 
+        # self._raw_body will include headers like Content-Type, self.body contains the decoded contents
         if message.is_multipart():
             for part in message.walk():
                 charset = part.get_content_charset()
@@ -49,12 +50,12 @@ class EmailUpdateParser:
                     self.body = part.get_payload(decode=True).decode(str(charset), 'ignore')  # type: ignore
                     self._raw_body = part.as_string()
                 if part.get_content_type() == 'application/pgp-signature':
-                    self._pgp_signature = part.get_payload(decode=True).decode(str(charset), 'ignore').strip()  # type: ignore
+                    self._pgp_signature = part.get_payload(decode=True).decode(str(charset), 'backslashreplace').strip()  # type: ignore
         else:
             charset = message.get_content_charset()
             if not charset:
                 charset = self._default_encoding
-            self.body = message.get_payload(decode=True).decode(charset, 'ignore')  # type: ignore
+            self.body = message.get_payload(decode=True).decode(charset, 'backslashreplace')  # type: ignore
             self._raw_body = message.as_string()
 
         self.message_id = message['Message-ID']  # type: ignore
@@ -79,6 +80,7 @@ def handle_email_update(email_txt: str) -> Optional[UpdateRequestHandler]:
         'Subject': email.message_subject,
     }
     if not email.body:
+        logger.warning(f'Unable to extract message body from e-mail {email.message_id} from {email.message_from}')
         handler = None
         subject = f'FAILED: {email.message_subject}'
         reply_content = textwrap.dedent(f"""
@@ -89,6 +91,9 @@ def handle_email_update(email_txt: str) -> Optional[UpdateRequestHandler]:
         """)
     else:
         handler = UpdateRequestHandler(email.body, email.pgp_fingerprint, request_meta)
+        logger.info(f'Processed e-mail {email.message_id} from {email.message_from}: {handler.status()}')
+        logger.debug(f'Report for e-mail {email.message_id} from {email.message_from}: {handler.user_report()}')
+
         subject = f'{handler.status()}: {email.message_subject}'
         reply_content = handler.user_report()
 

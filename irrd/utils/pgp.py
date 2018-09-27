@@ -50,8 +50,8 @@ def validate_pgp_signature(message: str, detached_signature: Optional[str]=None)
         result = gpg.verify(message)
         match = pgp_inline_re.search(message.replace('\r\n', '\n').replace('\r', '\n'))
         if not match:  # pragma: no cover
-            msg = "message contained an inline PGP signature, but regular expression failed to extract body"
-            logger.warning(msg)
+            msg = f'message contained an inline PGP signature, but regular expression failed to extract body: {message}'
+            logger.info(msg)
             return None, None
         new_message = match.group(2) + "\n"
 
@@ -59,7 +59,8 @@ def validate_pgp_signature(message: str, detached_signature: Optional[str]=None)
         return None, None
 
     log_message = result.stderr.replace('\n', ' -- ').replace('gpg:                ', '')
-    logger.info(f'checked PGP signature, response: {log_message}')
+    logger.debug(f'checked PGP signature, response: {log_message}')
     if result.valid and result.key_status is None:
+        logger.info(f'Found valid PGP signature, fingerprint {result.fingerprint}')
         return new_message, result.fingerprint
     return None, None

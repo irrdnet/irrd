@@ -84,6 +84,11 @@ class DatabaseHandler:
 
     def execute_statement(self, statement):
         """Execute a raw SQLAlchemy statement, without flushing the upsert cache."""
+        if isinstance(statement, str):
+            logger.debug(f'Executing statement: {statement}')
+        else:
+            compiled_statement = statement.compile(bind=self._connection)
+            logger.debug(f'Executing statement: {compiled_statement}')
         return self._connection.execute(statement)
 
     def upsert_rpsl_object(self, rpsl_object: RPSLObject, forced_serial: Optional[int]=None) -> None:
@@ -151,16 +156,16 @@ class DatabaseHandler:
         results = self._connection.execute(stmt)
 
         if results.rowcount == 0:
-            logger.warning(f'attempted to remove object {rpsl_object.pk()}/{source}, but no database row matched')
+            logger.error(f'Attempted to remove object {rpsl_object.pk()}/{source}, but no database row matched')
             return None
         if results.rowcount > 1:  # pragma: no cover
             # This should not be possible, as rpsl_pk/source are a composite unique value in the database scheme.
             # Therefore, a query should not be able to affect more than one row - and we also can not test this
             # scenario. Due to the possible harm of a bug in this area, we still check for it anyways.
             affected_pks = ','.join([r[0] for r in results.fetchall()])
-            msg = f'attempted to remove object {rpsl_object.pk()}/{source}, but multiple objects were affected, '
+            msg = f'Attempted to remove object {rpsl_object.pk()}/{source}, but multiple objects were affected, '
             msg += f'internal pks affected: {affected_pks}'
-            logger.error(msg)
+            logger.critical(msg)
             raise ValueError(msg)
 
         result = results.fetchone()
@@ -361,6 +366,7 @@ class DatabaseStatusTracker:
                 source=source,
                 updated=datetime.now(timezone.utc),
             )
+            # TODO: is this query correct?
             columns_to_update = {
                 c.name: c
                 for c in stmt.excluded

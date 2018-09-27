@@ -463,7 +463,7 @@ class TestSingleUpdateRequestHandling:
         assert not result_mntner.is_valid()
         assert result_mntner.error_messages == [
             'Object submitted with dummy hash values, but multiple or no passwords submitted. '
-            'Either submit all full hashes, or a single password.'
+            'Either submit only full hashes, or a single password.'
         ]
 
     def test_check_auth_invalid_update_mntner_wrong_password_current_db_object(self, prepare_mocks):

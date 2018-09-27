@@ -163,13 +163,14 @@ class AuthValidator:
         result = ValidatorResult()
 
         mntners_new = rpsl_obj_new.parsed_data['mnt-by']
-        logger.debug(f'Checking auth for {rpsl_obj_new}, mntners in new object: {mntners_new}')
+        logger.debug(f'Checking auth for new object {rpsl_obj_new}, mntners in new object: {mntners_new}')
         if not self._check_mntners(mntners_new, source):
             self._generate_failure_message(result, mntners_new, rpsl_obj_new)
 
         if rpsl_obj_current:
             mntners_current = rpsl_obj_current.parsed_data['mnt-by']
-            logger.debug(f'Checking auth for {rpsl_obj_current}, mntners in new object: {mntners_current}')
+            logger.debug(f'Checking auth for current object {rpsl_obj_current}, '
+                         f'mntners in new object: {mntners_current}')
             if not self._check_mntners(mntners_current, source):
                 self._generate_failure_message(result, mntners_current, rpsl_obj_new)
 
@@ -185,7 +186,7 @@ class AuthValidator:
                                              'authentication.')
                 else:
                     result.error_messages.add(f'Object submitted with dummy hash values, but multiple or no passwords '
-                                              f'submitted. Either submit all full hashes, or a single password.')
+                                              f'submitted. Either submit only full hashes, or a single password.')
             elif not rpsl_obj_new.verify_auth(self.passwords, self.keycert_obj_pk):
                 result.error_messages.add(f'Authorisation failed for the auth methods on this mntner object.')
 

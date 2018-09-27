@@ -73,7 +73,7 @@ class MirrorFullImportRunner:
         export_serial_source = get_setting(f'sources.{self.source}.export_serial_source')
 
         if not export_sources or not export_serial_source:
-            logger.debug(f'Skipping full import for {self.source}, export_source or export_serial_source not set.')
+            logger.info(f'Skipping full import for {self.source}, export_source or export_serial_source not set.')
             return
 
         logger.info(f'Running full import of {self.source} from {export_sources}, serial from {export_serial_source}')
@@ -125,7 +125,7 @@ class MirrorFullImportRunner:
 
             destination.close()
 
-            logger.info(f'Downloaded {url} to {destination.name}')
+            logger.info(f'Downloaded (and gunzipped if applicable) {url} to {destination.name}')
             return destination.name
         else:
             value = destination.getvalue().decode('ascii').strip()  # type: ignore
@@ -161,7 +161,7 @@ class NRTMUpdateStreamRunner:
         logger.info(f'Retrieving NRTM updates for {self.source} from serial {serial_start} on {nrtm_host}:{nrtm_port}')
         query = f'-g {self.source}:3:{serial_start}-LAST'
         response = whois_query(nrtm_host, nrtm_port, query, end_markings)
-        logger.debug(f'{self.source} Received buffer: {response.strip()}')
+        logger.debug(f'Received NRTM response for {self.source}: {response.strip()}')
 
         stream_parser = NRTMStreamParser(self.source, response, database_handler)
         for operation in stream_parser.operations:

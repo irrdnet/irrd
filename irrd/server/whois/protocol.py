@@ -19,7 +19,7 @@ class WhoisQueryReceiver(TimeoutMixin, LineOnlyReceiver):
         self.peer = f"[{peer.host}]:{peer.port}"
         self.query_parser = WhoisQueryParser(self.peer)
         self.setTimeout(self.time_out)
-        logger.info(f'{self.peer}: new connection opened')
+        logger.debug(f'{self.peer}: new connection opened')
 
     def lineReceived(self, line_bytes: bytes):  # noqa: N802
         self.resetTimeout()
@@ -28,7 +28,7 @@ class WhoisQueryReceiver(TimeoutMixin, LineOnlyReceiver):
         if not line:
             return
 
-        logger.debug(f'{self.peer}: received query: {line}')
+        logger.info(f'{self.peer}: received query: {line}')
 
         if line.upper() == '!Q':
             self.transport.loseConnection()

@@ -232,8 +232,8 @@ LOGGING = {
             'level': 'WARNING',
             'propagate': True,
         },
-        'irrd.storage.api': {
-            'level': 'WARNING',
+        'irrd.storage': {
+            'level': 'INFO',
             'propagate': True,
         },
         '': {

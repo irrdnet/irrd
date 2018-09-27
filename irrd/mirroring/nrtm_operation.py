@@ -26,7 +26,7 @@ class NRTMOperation:
         try:
             obj = rpsl_object_from_text(self.object_text.strip(), strict_validation=False)
         except UnknownRPSLObjectClassException as exc:
-            logger.warning(f'Ignoring NRTM from {self.source} operation {self.serial}/{self.operation.value}: {exc}')
+            logger.info(f'Ignoring NRTM operation {str(self)}: {exc}')
             return False
 
         if self.object_class_filter and obj.rpsl_object_class.lower() not in self.object_class_filter:
@@ -34,9 +34,9 @@ class NRTMOperation:
 
         if obj.messages.errors():
             errors = '; '.join(obj.messages.errors())
-            logger.critical(f'Parsing errors occurred while processing NRTM from {self.source}, '
-                            f'operation {self.serial}/{self.operation.value}. This operation is ignored, '
-                            f'causing potential data inconsistencies. A new operation for this update, without errors, '
+            logger.critical(f'Parsing errors occurred while processing NRTM operation {str(self)}. '
+                            f'This operation is ignored, causing potential data inconsistencies. '
+                            f'A new operation for this update, without errors, '
                             f'will still be processed and cause the inconsistency to be resolved. '
                             f'Parser error messages: {errors}; original object text follows:\n{self.object_text}')
             database_handler.record_mirror_error(self.source, f'Parsing errors: {obj.messages.errors()}, '
@@ -56,7 +56,7 @@ class NRTMOperation:
         elif self.operation == DatabaseOperation.delete:
             database_handler.delete_rpsl_object(obj, self.serial)
 
-        logger.info(f'Completed NRTM operation in {self.source}: {self.serial}/{self.operation.value}/{obj.pk()}')
+        logger.info(f'Completed NRTM operation {str(self)}/{obj.pk()}')
         return True
 
     def __repr__(self):

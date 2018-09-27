@@ -94,8 +94,8 @@ class MirrorFileImportParser(MirrorParser):
                     f"serial {self.serial}, source {self.filename}")
         if self.obj_unknown:
             unknown_formatted = ', '.join(self.unknown_object_classes)
-            logger.error(f"Ignored {self.obj_unknown} objects found in file import for {self.source} due to unknown "
-                         f"object classes: {unknown_formatted}")
+            logger.warning(f"Ignored {self.obj_unknown} objects found in file import for {self.source} due to unknown "
+                           f"object classes: {unknown_formatted}")
 
 
 class NRTMStreamParser(MirrorParser):
@@ -137,8 +137,8 @@ class NRTMStreamParser(MirrorParser):
                 self._handle_operation(paragraph, paragraphs)
 
         if self._current_op_serial > self.last_serial and self.version != '3':
-            msg = f'NRTM stream error: expected operations up to and including serial {self.last_serial}, ' \
-                  f'last operation was {self._current_op_serial}'
+            msg = f'NRTM stream error for {self.source}: expected operations up to and including serial ' \
+                  f'{self.last_serial}, last operation was {self._current_op_serial}'
             logger.error(msg)
             self.database_handler.record_mirror_error(self.source, msg)
             raise ValueError(msg)

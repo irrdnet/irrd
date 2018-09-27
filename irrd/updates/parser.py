@@ -61,6 +61,7 @@ class UpdateRequest:
                 self.status = UpdateRequestStatus.ERROR_PARSING
             self.error_messages = self.rpsl_obj_new.messages.errors()
             self.info_messages = self.rpsl_obj_new.messages.infos()
+            logger.debug(f'Processing new UpdateRequest for object {self.rpsl_obj_new}: request {id(self)}')
 
         except UnknownRPSLObjectClassException as exc:
             self.rpsl_obj_new = None
@@ -77,6 +78,8 @@ class UpdateRequest:
             if not self.rpsl_obj_current:
                 self.status = UpdateRequestStatus.ERROR_PARSING
                 self.error_messages.append(f"Can not delete object: no object found for this key in this database.")
+                logger.debug(f'{id(self)}: Request attempts to delete object {self.rpsl_obj_new}, '
+                             f'but no existing object found.')
 
     def _retrieve_existing_version(self):
         """
@@ -89,14 +92,16 @@ class UpdateRequest:
 
         if not results:
             self.request_type = UpdateRequestType.CREATE
+            logger.debug(f'{id(self)}: Did not find existing version for object {self.rpsl_obj_new}, request is CREATE')
         elif len(results) == 1:
             self.request_type = UpdateRequestType.MODIFY
             self.rpsl_obj_current = rpsl_object_from_text(results[0]['object_text'], strict_validation=False)
+            logger.debug(f'{id(self)}: Retrieved existing version for object {self.rpsl_obj_current}, request is MODIFY')
         else:  # pragma: no cover
             # This should not be possible, as rpsl_pk/source are a composite unique value in the database scheme.
             # Therefore, a query should not be able to affect more than one row.
             affected_pks = ', '.join([r['pk'] for r in results])
-            msg = f'attempted to retrieve current version of object {self.rpsl_obj_new.pk()}/'
+            msg = f'{id(self)}: Attempted to retrieve current version of object {self.rpsl_obj_new.pk()}/'
             msg += f'{self.rpsl_obj_new.source()}, but multiple '
             msg += f'objects were found, internal pks found: {affected_pks}'
             logger.error(msg)
@@ -107,8 +112,10 @@ class UpdateRequest:
         if self.status != UpdateRequestStatus.PROCESSING or not self.rpsl_obj_new:
             raise ValueError("UpdateRequest can only be saved in status PROCESSING")
         if self.request_type == UpdateRequestType.DELETE and self.rpsl_obj_current is not None:
+            logger.info(f'{id(self)}: Saving update for {self.rpsl_obj_new}: deleting current object')
             database_handler.delete_rpsl_object(self.rpsl_obj_current)
         else:
+            logger.info(f'{id(self)}: Saving update for {self.rpsl_obj_new}: inserting/updating current object')
             database_handler.upsert_rpsl_object(self.rpsl_obj_new)
         self.status = UpdateRequestStatus.SAVED
 
@@ -144,7 +151,10 @@ class UpdateRequest:
         if not auth_result.is_valid():
             self.status = UpdateRequestStatus.ERROR_AUTH
             self.error_messages += auth_result.error_messages
+            logger.debug(f'{id(self)}: authentication check failed: {auth_result.error_messages}')
             return False
+
+        logger.debug(f'{id(self)}: authentication check succeeded')
         return True
 
     def _check_references(self) -> bool:
@@ -167,7 +177,10 @@ class UpdateRequest:
             self.error_messages += references_result.error_messages
             if self.is_valid():  # Only update the status if this object was valid prior, so this is the first failure
                 self.status = UpdateRequestStatus.ERROR_REFERENCE
+                logger.debug(f'{id(self)}: reference check failed: {references_result.error_messages}')
                 return False
+
+        logger.debug(f'{id(self)}: authentication check succeeded')
         return True
 
 
