@@ -18,7 +18,7 @@ twisted==18.7.0
 pytest==3.8.1
 pytest-cov==2.6.0
 coverage==4.5.1
-coveralls==1.5.0
+coveralls==1.5.1
 
 # Documentation generation
 Sphinx==1.8.0
