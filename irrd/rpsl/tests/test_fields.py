@@ -158,6 +158,7 @@ def test_route_set_members_field():
 
     assert field.parse("192.0.2.0/24^12-23", messages).value == "192.0.2.0/24^12-23"
     assert field.parse("AS065537:RS-TEST^32", messages).value == "AS65537:RS-TEST^32"
+    assert field.parse("AS065537^32", messages).value == "AS65537^32"
     assert field.parse("192.0.2.0/25^+", messages).value == "192.0.2.0/25^+"
     assert field.parse("192.0.2.0/25^32", messages).value == "192.0.2.0/25^32"
     assert field.parse("192.00.02.0/25^-", messages).value == "192.0.2.0/25^-"
@@ -165,6 +166,7 @@ def test_route_set_members_field():
     assert not messages.errors()
     assert messages.infos() == [
         "Route set member AS065537:RS-TEST^32 was reformatted as AS65537:RS-TEST^32",
+        "Route set member AS065537^32 was reformatted as AS65537^32",
         "Route set member 192.00.02.0/25^- was reformatted as 192.0.2.0/25^-",
         "Route set member 192.0.02.0/32 was reformatted as 192.0.2.0/32",
     ]
