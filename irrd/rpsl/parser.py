@@ -51,6 +51,10 @@ class RPSLObject(metaclass=RPSLObjectMeta):
     attrs_allowed: List[str] = []
     attrs_required: List[str] = []
     attrs_multiple: List[str] = []
+    ip_first: IP = None
+    ip_last: IP = None
+    asn_first: IP = None
+    asn_last: IP = None
 
     _re_attr_name = re.compile(r"^[a-z0-9_-]+$")
 
@@ -63,16 +67,13 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         verified. Non-strict validation is limited to primary and lookup
         keys.
         """
+        self.messages = RPSLParserMessages()
+        self._object_data: TypeRPSLObjectData = []
         self.strict_validation = strict_validation
-        self._reset_internal_state()
-        if from_text:
-            self.read_rpsl_text(from_text)
 
-    def read_rpsl_text(self, text: str) -> None:
-        """Parse and validate RPSL object from string form."""
-        self._reset_internal_state()
-        self._extract_attributes_values(text)
-        self._validate_object()
+        if from_text:
+            self._extract_attributes_values(from_text)
+            self._validate_object()
 
     def pk(self) -> str:
         """Get the primary key value of an RPSL object. The PK is always converted to uppercase."""
@@ -363,15 +364,6 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         for new_value in new_values:
             self._object_data.insert(insert_idx, (attribute, new_value, []))
             insert_idx += 1
-
-    def _reset_internal_state(self) -> None:
-        """Reset the internal state of this object to prepare for parsing a new text."""
-        self.messages = RPSLParserMessages()
-        self._object_data: TypeRPSLObjectData = []
-        self.ip_first: IP = None
-        self.ip_last: IP = None
-        self.asn_first: IP = None
-        self.asn_last: IP = None
 
     def __repr__(self):
         source = self.parsed_data.get('source', '')
