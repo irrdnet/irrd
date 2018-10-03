@@ -26,7 +26,9 @@ class NRTMOperation:
         try:
             obj = rpsl_object_from_text(self.object_text.strip(), strict_validation=False)
         except UnknownRPSLObjectClassException as exc:
-            logger.info(f'Ignoring NRTM operation {str(self)}: {exc}')
+            # Unknown object classes are only logged if they have not been filtered out.
+            if not self.object_class_filter or exc.rpsl_object_class.lower() in self.object_class_filter:
+                logger.info(f'Ignoring NRTM operation {str(self)}: {exc}')
             return False
 
         if self.object_class_filter and obj.rpsl_object_class.lower() not in self.object_class_filter:

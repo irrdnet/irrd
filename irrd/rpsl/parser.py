@@ -379,4 +379,9 @@ class RPSLObject(metaclass=RPSLObjectMeta):
 
 
 class UnknownRPSLObjectClassException(Exception):
-    pass
+    def __init__(self, message: str, rpsl_object_class: str) -> None:
+        self.message = message
+        self.rpsl_object_class = rpsl_object_class
+
+    def __str__(self):
+        return self.message

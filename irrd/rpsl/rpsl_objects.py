@@ -18,7 +18,8 @@ def rpsl_object_from_text(text, strict_validation=True) -> RPSLObject:
     try:
         klass = OBJECT_CLASS_MAPPING[rpsl_object_class]
     except KeyError:
-        raise UnknownRPSLObjectClassException(f"unknown object class: {rpsl_object_class}")
+        raise UnknownRPSLObjectClassException(f"unknown object class: {rpsl_object_class}",
+                                              rpsl_object_class=rpsl_object_class)
     return klass(from_text=text, strict_validation=strict_validation)
 
 
