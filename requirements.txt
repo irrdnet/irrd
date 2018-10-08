@@ -15,7 +15,7 @@ alembic==1.0.0
 twisted==18.7.0
 
 # Testing and related packages
-pytest==3.8.1
+pytest==3.8.2
 pytest-cov==2.6.0
 coverage==4.5.1
 coveralls==1.5.1
