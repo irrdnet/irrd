@@ -12,7 +12,7 @@ SQLAlchemy==1.2.12
 alembic==1.0.1
 
 # Network handling
-twisted==18.7.0
+twisted==18.9.0
 
 # Testing and related packages
 pytest==3.8.2
