@@ -88,7 +88,7 @@ class TestEmailUpdateParser:
         Date: Thu, 05 Jan 2018 10:04:48 +0100
         Content-Type: multipart/alternative;
          boundary="Apple-Mail=_01FE5B2D-C7F3-4DDD-AB42-B92C88CFBF0F"
-        Mime-Version: 1.0 (Mac OS X Mail 10.3 \(3273\))
+        Mime-Version: 1.0 (Mac OS X Mail 10.3 
         To: sasha@localhost
         X-Mailer: Apple Mail (2.3273)
         
@@ -125,7 +125,7 @@ class TestEmailUpdateParser:
         Date: Thu, 05 Jan 2018 10:04:48 +0100
         Content-Type: multipart/alternative;
          boundary="Apple-Mail=_01FE5B2D-C7F3-4DDD-AB42-B92C88CFBF0F"
-        Mime-Version: 1.0 (Mac OS X Mail 10.3 \(3273\))
+        Mime-Version: 1.0 (Mac OS X Mail 10.3 
         To: sasha@localhost
         X-Mailer: Apple Mail (2.3273)
 
@@ -164,7 +164,7 @@ class TestEmailUpdateParser:
         Date: Thu, 05 Jan 2018 10:04:48 +0100
         Content-Type: multipart/alternative;
          boundary="Apple-Mail=_01FE5B2D-C7F3-4DDD-AB42-B92C88CFBF0F"
-        Mime-Version: 1.0 (Mac OS X Mail 10.3 \(3273\))
+        Mime-Version: 1.0 (Mac OS X Mail 10.3 
         To: sasha@localhost
         X-Mailer: Apple Mail (2.3273)
 
@@ -204,7 +204,7 @@ class TestEmailUpdateParser:
         Date: Thu, 05 Jan 2018 10:04:48 +0100
         Content-Type: multipart/signed;
          boundary="Apple-Mail=_368A6867-FE85-4AFB-AACA-CDBA53C7DB25"
-        Mime-Version: 1.0 (Mac OS X Mail 10.3 \(3273\))
+        Mime-Version: 1.0 (Mac OS X Mail 10.3 
         To: sasha@localhost
         X-Mailer: Apple Mail (2.3273)
         
@@ -276,7 +276,7 @@ class TestEmailUpdateParser:
         Date: Thu, 05 Jan 2018 10:04:48 +0100
         Content-Type: multipart/signed;
          boundary="Apple-Mail=_368A6867-FE85-4AFB-AACA-CDBA53C7DB25"
-        Mime-Version: 1.0 (Mac OS X Mail 10.3 \(3273\))
+        Mime-Version: 1.0 (Mac OS X Mail 10.3 
         To: sasha@localhost
         X-Mailer: Apple Mail (2.3273)
 
@@ -338,7 +338,7 @@ class TestEmailUpdateParser:
         To: sasha@localhost
         Date: Thu, 05 Jan 2018 10:04:48 +0100
         Content-Type: text/plain
-        Mime-Version: 1.0 (Mac OS X Mail 10.3 \(3273\))
+        Mime-Version: 1.0 (Mac OS X Mail 10.3 
         To: sasha@localhost
         X-Mailer: Apple Mail (2.3273)
         
@@ -382,7 +382,7 @@ class TestEmailUpdateParser:
         To: sasha@localhost
         Date: Thu, 05 Jan 2018 10:04:48 +0100
         Content-Type: text/plain
-        Mime-Version: 1.0 (Mac OS X Mail 10.3 \(3273\))
+        Mime-Version: 1.0 (Mac OS X Mail 10.3 
         To: sasha@localhost
         X-Mailer: Apple Mail (2.3273)
 
@@ -445,7 +445,7 @@ class TestEmailUpdateParser:
         Date: Thu, 05 Jan 2018 10:04:48 +0100
         Content-Type: multipart/signed;
          boundary="Apple-Mail=_18B291D9-548C-4458-8F17-B76537227FDF"
-        Mime-Version: 1.0 (Mac OS X Mail 10.3 \(3273\))
+        Mime-Version: 1.0 (Mac OS X Mail 10.3 
         To: sasha@localhost
         X-Mailer: Apple Mail (2.3273)
 
@@ -501,7 +501,7 @@ class TestEmailUpdateParser:
         Date: Thu, 05 Jan 2018 10:04:48 +0100
         Content-Type: multipart/signed;
          boundary="Apple-Mail=_368A6867-FE85-4AFB-AACA-CDBA53C7DB25"
-        Mime-Version: 1.0 (Mac OS X Mail 10.3 \(3273\))
+        Mime-Version: 1.0 (Mac OS X Mail 10.3 
         To: sasha@localhost
         X-Mailer: Apple Mail (2.3273)
 
@@ -555,7 +555,7 @@ class TestEmailUpdateParser:
         Date: Thu, 05 Jan 2018 10:04:48 +0100
         Content-Type: multipart/signed;
          boundary="Apple-Mail=_368A6867-FE85-4AFB-AACA-CDBA53C7DB25"
-        Mime-Version: 1.0 (Mac OS X Mail 10.3 \(3273\))
+        Mime-Version: 1.0 (Mac OS X Mail 10.3 
         To: sasha@localhost
         X-Mailer: Apple Mail (2.3273)
         """).strip()
@@ -565,11 +565,7 @@ class TestEmailUpdateParser:
 
 
 class TestHandleEmailUpdate:
-    def test_valid_plain(self, monkeypatch):
-        mock_smtp = Mock()
-        monkeypatch.setattr('irrd.updates.email.SMTP', lambda server: mock_smtp)
-
-        email = textwrap.dedent("""
+    default_email = textwrap.dedent("""
         From sasha@localhost  Thu Jan  5 10:04:48 2018
         Received: from [127.0.0.1] (localhost.localdomain [127.0.0.1])
           by hostname (Postfix) with ESMTPS id 740AD310597
@@ -584,13 +580,24 @@ class TestHandleEmailUpdate:
         X-Mailer: Python 3.7
         Content-Transfer-Encoding: 7bit
         Mime-Version: 1.0
-    
+
         aut-num: AS12345
         """).strip()
-        handler = handle_email_update(email)
+
+    def test_valid_plain(self, monkeypatch):
+        mock_smtp = Mock()
+        monkeypatch.setattr('irrd.updates.email.SMTP', lambda server: mock_smtp)
+
+        handler = handle_email_update(self.default_email)
         assert handler.request_meta['Message-ID'] == '<1325754288.4989.6.camel@hostname>'
         assert len(handler.results) == 1
         assert len(handler.results[0].error_messages)
+        assert mock_smtp.mock_calls[0][0] == 'send_message'
+        assert mock_smtp.mock_calls[0][1][0]['From'] == get_setting('email.from')
+        assert mock_smtp.mock_calls[0][1][0]['To'] == 'Sasha <sasha@example.com>'
+        assert mock_smtp.mock_calls[0][1][0]['Subject'] == 'FAILED: my subject'
+        assert "DETAILED EXPLANATION" in mock_smtp.mock_calls[0][1][0].get_payload()
+        assert mock_smtp.mock_calls[1][0] == 'quit'
 
     def test_invalid_no_text_plain(self, monkeypatch):
         mock_smtp = Mock()
@@ -608,7 +615,7 @@ class TestHandleEmailUpdate:
         Date: Thu, 05 Jan 2018 10:04:48 +0100
         Content-Type: multipart/alternative;
          boundary="Apple-Mail=_01FE5B2D-C7F3-4DDD-AB42-B92C88CFBF0F"
-        Mime-Version: 1.0 (Mac OS X Mail 10.3 \(3273\))
+        Mime-Version: 1.0 (Mac OS X Mail 10.3 
         To: sasha@localhost
         X-Mailer: Apple Mail (2.3273)
 
@@ -627,3 +634,42 @@ class TestHandleEmailUpdate:
         assert mock_smtp.mock_calls[0][1][0]['Subject'] == 'FAILED: my subject'
         assert "no text/plain" in mock_smtp.mock_calls[0][1][0].get_payload()
         assert mock_smtp.mock_calls[1][0] == 'quit'
+
+    def test_handles_exception_email_parser(self, monkeypatch, caplog):
+        mock_smtp = Mock()
+        monkeypatch.setattr('irrd.updates.email.SMTP', lambda server: mock_smtp)
+        mock_parser = Mock(side_effect=Exception('test-error'))
+        monkeypatch.setattr('irrd.updates.email.EmailUpdateParser', mock_parser)
+
+        handle_email_update(self.default_email)
+        assert not mock_smtp.mock_calls
+        assert 'An exception occurred while attempting to send a reply to an update: FAILED'
+        assert 'traceback for test-error follows' in caplog.text
+        assert 'test-error' in caplog.text
+
+    def test_handles_exception_update_request_handler(self, monkeypatch, caplog):
+        mock_smtp = Mock()
+        monkeypatch.setattr('irrd.updates.email.SMTP', lambda server: mock_smtp)
+        mock_handler = Mock(side_effect=Exception('test-error'))
+        monkeypatch.setattr('irrd.updates.email.UpdateRequestHandler', mock_handler)
+
+        handle_email_update(self.default_email)
+        assert mock_smtp.mock_calls[0][0] == 'send_message'
+        assert mock_smtp.mock_calls[0][1][0]['From'] == get_setting('email.from')
+        assert mock_smtp.mock_calls[0][1][0]['To'] == 'Sasha <sasha@example.com>'
+        assert mock_smtp.mock_calls[0][1][0]['Subject'] == 'ERROR: my subject'
+        assert "internal error" in mock_smtp.mock_calls[0][1][0].get_payload()
+        assert mock_smtp.mock_calls[1][0] == 'quit'
+        assert 'An exception occurred while attempting to send a reply to an update: FAILED'
+        assert 'traceback for test-error follows' in caplog.text
+        assert 'test-error' in caplog.text
+
+    def test_handles_exception_smtp(self, monkeypatch, caplog):
+        mock_smtp = Mock(side_effect=Exception('test-error'))
+        monkeypatch.setattr('irrd.updates.email.SMTP', mock_smtp)
+
+        handle_email_update(self.default_email)
+        assert not mock_smtp.mock_calls[0][0]
+        assert 'An exception occurred while attempting to send a reply to an update: FAILED'
+        assert 'traceback for test-error follows' in caplog.text
+        assert 'test-error' in caplog.text

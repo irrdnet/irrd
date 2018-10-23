@@ -58,11 +58,18 @@ class WhoisQueryParser:
             try:
                 return self.handle_irrd_command(query[1:])
             except WhoisQueryParserException as exc:
-                logger.info(f'{self.peer}: encountered parsing error while parsing query {query}: {exc}')
+                logger.info(f'{self.peer}: encountered parsing error while parsing query "{query}": {exc}')
                 return WhoisQueryResponse(
                     response_type=WhoisQueryResponseType.ERROR,
                     mode=WhoisQueryResponseMode.IRRD,
                     result=str(exc)
+                )
+            except Exception as exc:
+                logger.critical(f'An exception occurred while processing whois query "{query}": {exc}', exc_info=exc)
+                return WhoisQueryResponse(
+                    response_type=WhoisQueryResponseType.ERROR,
+                    mode=WhoisQueryResponseMode.IRRD,
+                    result='An internal error occurred while processing this query.'
                 )
             finally:
                 self.database_handler.close()
@@ -70,11 +77,18 @@ class WhoisQueryParser:
         try:
             return self.handle_ripe_command(query)
         except WhoisQueryParserException as exc:
-            logger.info(f'{self.peer}: encountered parsing error while parsing query {query}: {exc}')
+            logger.info(f'{self.peer}: encountered parsing error while parsing query "{query}": {exc}')
             return WhoisQueryResponse(
                 response_type=WhoisQueryResponseType.ERROR,
                 mode=WhoisQueryResponseMode.RIPE,
                 result=str(exc)
+            )
+        except Exception as exc:
+            logger.critical(f'An exception occurred while processing whois query "{query}": {exc}', exc_info=exc)
+            return WhoisQueryResponse(
+                response_type=WhoisQueryResponseType.ERROR,
+                mode=WhoisQueryResponseMode.RIPE,
+                result='An internal error occurred while processing this query.'
             )
         finally:
             self.database_handler.close()

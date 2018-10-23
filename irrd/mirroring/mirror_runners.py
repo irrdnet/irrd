@@ -34,15 +34,20 @@ class MirrorUpdateRunner:
     def run(self) -> None:
         self.database_handler = DatabaseHandler()
 
-        serial_newest_seen, force_reload = self._status()
-        logger.debug(f'Most recent serial seen for {self.source}: {serial_newest_seen}, force_reload: {force_reload}')
-        if not serial_newest_seen or force_reload:
-            self.full_import_runner.run(database_handler=self.database_handler)
-        else:
-            self.update_stream_runner.run(serial_newest_seen, database_handler=self.database_handler)
+        try:
+            serial_newest_seen, force_reload = self._status()
+            logger.debug(f'Most recent serial seen for {self.source}: {serial_newest_seen}, force_reload: {force_reload}')
+            if not serial_newest_seen or force_reload:
+                self.full_import_runner.run(database_handler=self.database_handler)
+            else:
+                self.update_stream_runner.run(serial_newest_seen, database_handler=self.database_handler)
 
-        self.database_handler.commit()
-        self.database_handler.close()
+            self.database_handler.commit()
+        except Exception as exc:
+            logger.critical(f'An exception occurred while attempting a mirror update or initial import '
+                            f'for {self.source}: {exc}', exc_info=exc)
+        finally:
+            self.database_handler.close()
 
     def _status(self) -> Tuple[Optional[int], Optional[bool]]:
         query = RPSLDatabaseStatusQuery().source(self.source)

@@ -68,6 +68,24 @@ class TestMirrorUpdateRunner:
         assert mock_stream_runner.mock_calls[0][0] == 'run'
         assert mock_stream_runner.mock_calls[0][1] == (424242,)
 
+    def test_exception_handling(self, monkeypatch, caplog):
+        mock_dh = Mock()
+        mock_dq = Mock()
+        mock_stream_runner = Mock()
+
+        monkeypatch.setattr('irrd.mirroring.mirror_runners.DatabaseHandler', lambda: mock_dh)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners.RPSLDatabaseStatusQuery', lambda: mock_dq)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners.NRTMUpdateStreamRunner', lambda source: mock_stream_runner)
+        mock_stream_runner.run = Mock(side_effect=Exception('test-error'))
+
+        mock_dh.execute_query = lambda q: iter([{'serial_newest_seen': 424242, 'force_reload': False}])
+        runner = MirrorUpdateRunner(source='TEST')
+        runner.run()
+
+        assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
+        assert 'An exception occurred while attempting a mirror update or initial import for TEST' in caplog.text
+        assert 'test-error' in caplog.text
+
 
 class TestMirrorFullImportRunner:
     def test_run_import(self, monkeypatch):

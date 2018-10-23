@@ -72,32 +72,53 @@ class EmailUpdateParser:
 
 
 def handle_email_update(email_txt: str) -> Optional[UpdateRequestHandler]:
-    email = EmailUpdateParser(email_txt)
-    request_meta = {
-        'Message-ID': email.message_id,
-        'From': email.message_from,
-        'Date': email.message_date,
-        'Subject': email.message_subject,
-    }
-    if not email.body:
-        logger.warning(f'Unable to extract message body from e-mail {email.message_id} from {email.message_from}')
-        handler = None
-        subject = f'FAILED: {email.message_subject}'
+    handler = None
+    try:
+        msg = EmailUpdateParser(email_txt)
+        request_meta = {
+            'Message-ID': msg.message_id,
+            'From': msg.message_from,
+            'Date': msg.message_date,
+            'Subject': msg.message_subject,
+        }
+    except Exception as exc:
+        logger.critical(f'An exception occurred while attempting to parse the following update e-mail: {email_txt}\n'
+                        f'--- traceback for {exc} follows:', exc_info=exc)
+        return None
+
+    try:
+        if not msg.body:
+            logger.warning(f'Unable to extract message body from e-mail {msg.message_id} from {msg.message_from}')
+            subject = f'FAILED: {msg.message_subject}'
+            reply_content = textwrap.dedent(f"""
+            Unfortunately, your message with ID {msg.message_id}
+            could not be processed, as no text/plain part could be found.
+            
+            Please try to resend your message as plain text email.
+            """)
+        else:
+            handler = UpdateRequestHandler(msg.body, msg.pgp_fingerprint, request_meta)
+            logger.info(f'Processed e-mail {msg.message_id} from {msg.message_from}: {handler.status()}')
+            logger.debug(f'Report for e-mail {msg.message_id} from {msg.message_from}: {handler.user_report()}')
+
+            subject = f'{handler.status()}: {msg.message_subject}'
+            reply_content = handler.user_report()
+
+    except Exception as exc:
+        logger.critical(f'An exception occurred while attempting to process the following update: {email_txt}\n'
+                        f'--- traceback for {exc} follows:', exc_info=exc)
+        subject = f'ERROR: {msg.message_subject}'
         reply_content = textwrap.dedent(f"""
-        Unfortunately, your message with ID {email.message_id}
-        could not be processed, as no text/plain part could be found.
-        
-        Please try to resend your message as plain text email.
+        Unfortunately, your message with ID {msg.message_id}
+        could not be processed, due to an internal error.
         """)
-    else:
-        handler = UpdateRequestHandler(email.body, email.pgp_fingerprint, request_meta)
-        logger.info(f'Processed e-mail {email.message_id} from {email.message_from}: {handler.status()}')
-        logger.debug(f'Report for e-mail {email.message_id} from {email.message_from}: {handler.user_report()}')
 
-        subject = f'{handler.status()}: {email.message_subject}'
-        reply_content = handler.user_report()
+    try:
+        send_email(msg.message_from, subject, reply_content)
+    except Exception as exc:
+        logger.critical(f'An exception occurred while attempting to send a reply to an update: '
+                        f'{subject}\n{reply_content}\n --- traceback for {exc} follows:', exc_info=exc)
 
-    send_email(email.message_from, subject, reply_content)
     return handler
 
 

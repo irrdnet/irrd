@@ -333,6 +333,20 @@ class TestWhoisQueryParserRIPE:
             assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
             mock_dh.reset_mock()
 
+    def test_exception_handling(self, prepare_parser, caplog):
+        mock_dq, mock_dh, parser = prepare_parser
+        mock_dh.reset_mock()
+        mock_dh.execute_query = Mock(side_effect=Exception('test-error'))
+
+        response = parser.handle_query('foo')
+        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.mode == WhoisQueryResponseMode.RIPE
+        assert response.result == 'An internal error occurred while processing this query.'
+        assert flatten_mock_calls(mock_dh)[1] == ['close', (), {}]
+
+        assert 'An exception occurred while processing whois query' in caplog.text
+        assert 'test-error' in caplog.text
+
 
 class TestWhoisQueryParserIRRD:
     """Test IRRD-style queries"""
@@ -783,3 +797,17 @@ class TestWhoisQueryParserIRRD:
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result.startswith('IRRD')
         assert not mock_dq.mock_calls
+
+    def test_exception_handling(self, prepare_parser, caplog):
+        mock_dq, mock_dh, parser = prepare_parser
+        mock_dh.reset_mock()
+        mock_dh.execute_query = Mock(side_effect=Exception('test-error'))
+
+        response = parser.handle_query('!gAS123')
+        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert response.result == 'An internal error occurred while processing this query.'
+        assert flatten_mock_calls(mock_dh)[1] == ['close', (), {}]
+
+        assert 'An exception occurred while processing whois query' in caplog.text
+        assert 'test-error' in caplog.text
