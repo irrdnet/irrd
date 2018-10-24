@@ -651,6 +651,12 @@ changed:        2009-10-15T09:32:17Z
 source:         +TEST$$$
 """
 
+SAMPLE_MISSING_SOURCE = """route:          192.0.2.0/24
+origin:         AS65537
+mnt-by:         TEST-MNT
+changed:        2009-10-15T09:32:17Z
+"""
+
 SAMPLE_LINE_NEITHER_CONTINUATION_NOR_ATTR = """route:          192.0.2.0/24
 origin:         AS65537
 mnt-by:         TEST-MNT

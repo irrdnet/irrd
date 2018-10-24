@@ -55,10 +55,11 @@ class RPSLObject(metaclass=RPSLObjectMeta):
     ip_last: IP = None
     asn_first: IP = None
     asn_last: IP = None
+    default_source: Optional[str] = None  # noqa: E704 (flake8 bug)
 
     _re_attr_name = re.compile(r"^[a-z0-9_-]+$")
 
-    def __init__(self, from_text: Optional[str]=None, strict_validation=True) -> None:
+    def __init__(self, from_text: Optional[str]=None, strict_validation=True, default_source=None) -> None:
         """
         Create a new RPSL object, optionally instantiated from a string.
 
@@ -66,10 +67,16 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         attribute values are validated, and attribute presence/absence is
         verified. Non-strict validation is limited to primary and lookup
         keys.
+
+        If you set default_source, and strict_validation is False, the
+        parser will accept objects without a source attribute, and treat
+        them as if their source was default_source.
         """
         self.messages = RPSLParserMessages()
         self._object_data: TypeRPSLObjectData = []
         self.strict_validation = strict_validation
+        if default_source:
+            self.default_source = default_source.strip().upper()
 
         if from_text:
             self._extract_attributes_values(from_text)
@@ -258,7 +265,9 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                         f"Mandatory attribute '{attr_required}' on object {self.rpsl_object_class} is missing"
                     )
         else:
-            required_fields = self.pk_fields + ['source']
+            required_fields = self.pk_fields
+            if not self.default_source:
+                required_fields = required_fields + ['source']
             for attr_pk in required_fields:
                 if attr_pk not in attrs_present:
                     self.messages.error(
@@ -314,6 +323,9 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                                     raise ValueError(f"Parsing of {parsed_value.value} reads {attr_value} for {attr},"
                                                      f"but value {existing_attr_value} is already set.")
                                 setattr(self, attr, attr_value)
+
+        if 'source' not in self.parsed_data and self.default_source:
+            self.parsed_data['source'] = self.default_source
 
     def _normalise_rpsl_value(self, value: str) -> str:
         """

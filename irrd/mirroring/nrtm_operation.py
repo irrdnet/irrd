@@ -13,6 +13,10 @@ class NRTMOperation:
     """
     NRTMOperation represents a single NRTM operation, i.e. an ADD/DEL
     with a serial number and source, from an NRTM stream.
+
+    Note that the operation may contain an incomplete object, without a
+    source attribute, but with other PK attribute(s) present.
+    For deletion operations, this is permitted.
     """
     def __init__(self, source: str, operation: DatabaseOperation, serial: int, object_text: str,
                  object_class_filter: Optional[List[str]] = None) -> None:
@@ -23,8 +27,9 @@ class NRTMOperation:
         self.object_class_filter = object_class_filter
 
     def save(self, database_handler: DatabaseHandler) -> bool:
+        default_source = self.source if self.operation == DatabaseOperation.delete else None
         try:
-            obj = rpsl_object_from_text(self.object_text.strip(), strict_validation=False)
+            obj = rpsl_object_from_text(self.object_text.strip(), strict_validation=False, default_source=default_source)
         except UnknownRPSLObjectClassException as exc:
             # Unknown object classes are only logged if they have not been filtered out.
             if not self.object_class_filter or exc.rpsl_object_class.lower() in self.object_class_filter:

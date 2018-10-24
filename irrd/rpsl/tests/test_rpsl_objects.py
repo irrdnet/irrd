@@ -10,7 +10,8 @@ from irrd.utils.rpsl_samples import (object_sample_mapping, SAMPLE_MALFORMED_EMP
                                      KEY_CERT_SIGNED_MESSAGE_VALID, KEY_CERT_SIGNED_MESSAGE_INVALID,
                                      KEY_CERT_SIGNED_MESSAGE_CORRUPT, KEY_CERT_SIGNED_MESSAGE_WRONG_KEY,
                                      TEMPLATE_ROUTE_OBJECT,
-                                     TEMPLATE_PERSON_OBJECT, SAMPLE_LINE_NEITHER_CONTINUATION_NOR_ATTR)
+                                     TEMPLATE_PERSON_OBJECT, SAMPLE_LINE_NEITHER_CONTINUATION_NOR_ATTR,
+                                     SAMPLE_MISSING_SOURCE)
 
 # noinspection PyUnresolvedReferences
 from irrd.utils.test_utils import tmp_gpg_dir   # noqa: F401
@@ -80,6 +81,15 @@ class TestRPSLParsingGeneric:
         obj = rpsl_object_from_text(SAMPLE_MALFORMED_SOURCE, strict_validation=False)
         assert len(obj.messages.errors()) == 1, f"Unexpected extra errors: {obj.messages.errors()}"
         assert "contains invalid characters" in obj.messages.errors()[0]
+
+    def test_missing_source_optional_default_source(self):
+        obj = rpsl_object_from_text(SAMPLE_MISSING_SOURCE, strict_validation=False, default_source='TEST')
+        assert len(obj.messages.errors()) == 0, f"Unexpected extra errors: {obj.messages.errors()}"
+        assert obj.source() == 'TEST'
+
+        obj = rpsl_object_from_text(SAMPLE_MISSING_SOURCE, strict_validation=False)
+        assert len(obj.messages.errors()) == 1, f"Unexpected extra errors: {obj.messages.errors()}"
+        assert "attribute 'source' on object route is missing" in obj.messages.errors()[0]
 
     def test_line_neither_continuation_nor_attribute(self):
         obj = rpsl_object_from_text(SAMPLE_LINE_NEITHER_CONTINUATION_NOR_ATTR, strict_validation=False)

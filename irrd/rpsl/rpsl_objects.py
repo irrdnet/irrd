@@ -13,14 +13,14 @@ from .fields import (RPSLTextField, RPSLIPv4PrefixField, RPSLIPv4PrefixesField, 
 from .parser import RPSLObject, UnknownRPSLObjectClassException
 
 
-def rpsl_object_from_text(text, strict_validation=True) -> RPSLObject:
+def rpsl_object_from_text(text, strict_validation=True, default_source: Optional[str]=None) -> RPSLObject:
     rpsl_object_class = text.split(":", maxsplit=1)[0].strip()
     try:
         klass = OBJECT_CLASS_MAPPING[rpsl_object_class]
     except KeyError:
         raise UnknownRPSLObjectClassException(f"unknown object class: {rpsl_object_class}",
                                               rpsl_object_class=rpsl_object_class)
-    return klass(from_text=text, strict_validation=strict_validation)
+    return klass(from_text=text, strict_validation=strict_validation, default_source=default_source)
 
 
 class RPSLAsBlock(RPSLObject):

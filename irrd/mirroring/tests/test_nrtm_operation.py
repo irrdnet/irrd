@@ -93,3 +93,40 @@ class TestNRTMOperation:
         )
         assert not operation.save(database_handler=mock_dh)
         assert mock_dh.upsert_rpsl_object.call_count == 0
+
+    def test_nrtm_delete_valid_incomplete_object(self):
+        # In some rare cases, NRTM updates will arrive without
+        # a source attribute. However, as the source of the NRTM
+        # stream is known, we can guess this.
+        # This is accepted for deletions only.
+        obj_text = 'route: 192.0.02.0/24\norigin: AS65537'
+        DEFAULT_SETTINGS['sources'] = {'TEST': {}}
+        mock_dh = Mock()
+
+        operation = NRTMOperation(
+            source='TEST',
+            operation=DatabaseOperation.delete,
+            serial=42424242,
+            object_text=obj_text,
+        )
+        assert operation.save(database_handler=mock_dh)
+
+        assert mock_dh.delete_rpsl_object.call_count == 1
+        assert mock_dh.mock_calls[0][1][0].pk() == '192.0.2.0/24,AS65537'
+        assert mock_dh.mock_calls[0][1][0].source() == 'TEST'
+        assert mock_dh.mock_calls[0][1][1] == 42424242
+
+    def test_nrtm_add_invalid_incomplete_object(self):
+        # Source-less objects are not accepted for add/update
+        obj_text = 'route: 192.0.02.0/24\norigin: AS65537'
+        DEFAULT_SETTINGS['sources'] = {'TEST': {}}
+        mock_dh = Mock()
+
+        operation = NRTMOperation(
+            source='TEST',
+            operation=DatabaseOperation.add_or_update,
+            serial=42424242,
+            object_text=obj_text,
+        )
+        assert not operation.save(database_handler=mock_dh)
+        assert not mock_dh.upsert_rpsl_object.call_count
