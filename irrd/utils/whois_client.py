@@ -14,7 +14,7 @@ def whois_query(host: str, port: int, query: str, end_markings: List[str]=None) 
     The end marking could be e.g. "END NTTCOM" in case of an NRTM stream.
     """
     query = query.strip() + '\n'
-    logger.debug(f'Running whois query {query} on {host} port {port}')
+    logger.debug(f'Running whois query {query.strip()} on {host} port {port}')
     if end_markings:
         end_markings_bytes = [mark.encode('utf-8') for mark in end_markings]
     else:
@@ -49,7 +49,7 @@ def whois_query_irrd(host: str, port: int, query: str) -> str:
     been received, and whether the full response has been received.
     """
     query = query.strip() + '\n'
-    logger.debug(f'Running IRRD whois query {query} on {host} port {port}')
+    logger.debug(f'Running IRRD whois query {query.strip()} on {host} port {port}')
 
     s = socket.socket()
     s.settimeout(5)
