@@ -225,7 +225,7 @@ class RPSLRouteSetMemberField(RPSLTextField):
             if result_value != value:
                 messages.info(f'Route set member {value} was reformatted as {result_value}')
             return RPSLFieldParseResult(value=result_value)
-        except ValidationError as ve:
+        except ValidationError:
             pass
 
         try:
