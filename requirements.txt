@@ -15,7 +15,7 @@ alembic==1.0.1
 twisted==18.9.0
 
 # Testing and related packages
-pytest==3.9.1
+pytest==3.9.3
 pytest-cov==2.6.0
 coverage==4.5.1
 coveralls==1.5.1
@@ -25,10 +25,10 @@ Sphinx==1.8.1
 
 # Code style and type checks
 mypy==0.641
-flake8==3.5.0
+flake8==3.6.0
 pep8-naming==0.7.0
 
 # Creating python packages
-setuptools==40.4.3
+setuptools==40.5.0
 wheel==0.32.2
 twine==1.12.1
