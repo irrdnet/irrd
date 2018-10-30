@@ -17,9 +17,9 @@ from irrd.utils.rpsl_samples import (object_sample_mapping, SAMPLE_MALFORMED_EMP
 from irrd.utils.test_utils import tmp_gpg_dir   # noqa: F401
 
 from ..parser import UnknownRPSLObjectClassException
-from ..rpsl_objects import (RPSLAsBlock, RPSLAsSet, RPSLAutNum, RPSLDictionary, RPSLDomain, RPSLFilterSet, RPSLInetRtr,
-                            RPSLInet6Num, RPSLInetnum, RPSLKeyCert, RPSLLimerick, RPSLMntner, RPSLPeeringSet,
-                            RPSLPerson, RPSLRepository, RPSLRole, RPSLRoute, RPSLRouteSet, RPSLRoute6, RPSLRtrSet,
+from ..rpsl_objects import (RPSLAsBlock, RPSLAsSet, RPSLAutNum, RPSLDomain, RPSLFilterSet, RPSLInetRtr,
+                            RPSLInet6Num, RPSLInetnum, RPSLKeyCert, RPSLMntner, RPSLPeeringSet,
+                            RPSLPerson, RPSLRole, RPSLRoute, RPSLRouteSet, RPSLRoute6, RPSLRtrSet,
                             OBJECT_CLASS_MAPPING, rpsl_object_from_text)
 
 
@@ -154,12 +154,6 @@ class TestRPSLAutNum:
         assert obj.ip_version() is None
         # Field parsing will cause our object to look slightly different than the original, hence the replace()
         assert obj.render_rpsl_text() == rpsl_text.replace("as065537", "AS65537")
-
-
-class TestRPSLDictionary:
-    def test_has_mapping(self):
-        obj = RPSLDictionary()
-        assert OBJECT_CLASS_MAPPING[obj.rpsl_object_class] == obj.__class__
 
 
 class TestRPSLDomain:
@@ -303,12 +297,6 @@ class TestRPSLKeyCert:
         assert not obj.verify(KEY_CERT_SIGNED_MESSAGE_WRONG_KEY)
 
 
-class TestRPSLLimerick:
-    def test_has_mapping(self):
-        obj = RPSLLimerick()
-        assert OBJECT_CLASS_MAPPING[obj.rpsl_object_class] == obj.__class__
-
-
 class TestRPSLMntner:
     def test_has_mapping(self):
         obj = RPSLMntner()
@@ -379,12 +367,6 @@ class TestRPSLPerson:
     def test_generate_template(self):
         template = RPSLPerson().generate_template()
         assert template == TEMPLATE_PERSON_OBJECT
-
-
-class TestRPSLRepository:
-    def test_has_mapping(self):
-        obj = RPSLRepository()
-        assert OBJECT_CLASS_MAPPING[obj.rpsl_object_class] == obj.__class__
 
 
 class TestRPSLRole:

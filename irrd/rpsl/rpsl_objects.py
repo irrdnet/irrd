@@ -77,24 +77,6 @@ class RPSLAutNum(RPSLObject):
     ])
 
 
-class RPSLDictionary(RPSLObject):
-    fields = OrderedDict([
-        ("dictionary", RPSLGenericNameField(primary_key=True, lookup_key=True)),
-        ("descr", RPSLTextField(multiple=True, optional=True)),
-        ("admin-c", RPSLReferenceField(lookup_key=True, optional=True, multiple=True, referring=["role", "person"])),
-        ("tech-c", RPSLReferenceField(lookup_key=True, optional=True, multiple=True, referring=["role", "person"])),
-        ("typedef", RPSLTextField(optional=True, multiple=True)),
-        ("rp-attribute", RPSLTextField(optional=True, multiple=True)),
-        ("protocol", RPSLTextField(optional=True, multiple=True)),
-        ("afi", RPSLTextField(optional=True, multiple=True)),
-        ("remarks", RPSLTextField(optional=True, multiple=True)),
-        ("notify", RPSLEmailField(optional=True, multiple=True)),
-        ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
-        ("changed", RPSLTextField(multiple=True)),
-        ("source", RPSLGenericNameField(lookup_key=True)),
-    ])
-
-
 class RPSLDomain(RPSLObject):
     fields = OrderedDict([
         ("domain", RPSLTextField(primary_key=True, lookup_key=True)),  # reverse delegation address (range), v4/v6/enum
@@ -269,21 +251,6 @@ class RPSLKeyCert(RPSLObject):
         return " ".join(string_parts)
 
 
-class RPSLLimerick(RPSLObject):
-    fields = OrderedDict([
-        ("limerick", RPSLTextField(primary_key=True, lookup_key=True)),  # ????
-        ("descr", RPSLTextField(multiple=True, optional=True)),
-        ("text", RPSLTextField(multiple=True)),
-        ("admin-c", RPSLReferenceField(lookup_key=True, multiple=True, referring=["role", "person"])),
-        ("author", RPSLTextField(multiple=True)),
-        ("remarks", RPSLTextField(optional=True, multiple=True)),
-        ("notify", RPSLEmailField(optional=True, multiple=True)),
-        ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
-        ("changed", RPSLTextField(multiple=True)),
-        ("source", RPSLGenericNameField()),
-    ])
-
-
 class RPSLMntner(RPSLObject):
     fields = OrderedDict([
         ("mntner", RPSLGenericNameField(primary_key=True, lookup_key=True)),
@@ -387,27 +354,6 @@ class RPSLPerson(RPSLObject):
         ("fax-no", RPSLTextField(optional=True, multiple=True)),
         ("e-mail", RPSLEmailField(multiple=True)),
         ("nic-hdl", RPSLGenericNameField(primary_key=True, lookup_key=True, non_strict_allow_any=True)),
-        ("remarks", RPSLTextField(optional=True, multiple=True)),
-        ("notify", RPSLEmailField(optional=True, multiple=True)),
-        ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
-        ("changed", RPSLTextField(multiple=True)),
-        ("source", RPSLGenericNameField()),
-    ])
-
-
-class RPSLRepository(RPSLObject):
-    fields = OrderedDict([
-        ("repository", RPSLGenericNameField(primary_key=True, lookup_key=True)),
-        ("query-address", RPSLTextField(multiple=True)),
-        ("response-auth-type", RPSLTextField(multiple=True)),
-        ("submit-address", RPSLTextField(multiple=True)),
-        ("submit-auth-type", RPSLTextField(multiple=True)),
-        ("repository-cert", RPSLTextField(multiple=True)),
-        ("expire", RPSLTextField()),
-        ("heartbeat-interval", RPSLTextField()),
-        ("descr", RPSLTextField(multiple=True, optional=True)),
-        ("admin-c", RPSLReferenceField(lookup_key=True, multiple=True, referring=["role", "person"])),
-        ("tech-c", RPSLReferenceField(lookup_key=True, multiple=True, referring=["role", "person"])),
         ("remarks", RPSLTextField(optional=True, multiple=True)),
         ("notify", RPSLEmailField(optional=True, multiple=True)),
         ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
@@ -521,18 +467,15 @@ OBJECT_CLASS_MAPPING = {
     "as-block": RPSLAsBlock,
     "as-set": RPSLAsSet,
     "aut-num": RPSLAutNum,
-    "dictionary": RPSLDictionary,
     "domain": RPSLDomain,
     "filter-set": RPSLFilterSet,
     "inet-rtr": RPSLInetRtr,
     "inet6num": RPSLInet6Num,
     "inetnum": RPSLInetnum,
     "key-cert": RPSLKeyCert,
-    "limerick": RPSLLimerick,
     "mntner": RPSLMntner,
     "peering-set": RPSLPeeringSet,
     "person": RPSLPerson,
-    "repository": RPSLRepository,
     "role": RPSLRole,
     "route": RPSLRoute,
     "route-set": RPSLRouteSet,

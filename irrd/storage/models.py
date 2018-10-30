@@ -128,7 +128,7 @@ class RPSLDatabaseStatus(Base):  # type: ignore
 # Before you update this, please check the documentation for changing lookup fields.
 expected_lookup_field_names = {
     'admin-c', 'tech-c', 'zone-c', 'member-of', 'mnt-by', 'role', 'members', 'person',
-    'source', 'mp-members', 'origin', 'mbrs-by-ref',
+    'mp-members', 'origin', 'mbrs-by-ref',
 }
 if sorted(lookup_field_names()) != sorted(expected_lookup_field_names):  # pragma: no cover
     raise RuntimeError(f"Field names of lookup fields do not match expected set. Indexes may be missing. "
