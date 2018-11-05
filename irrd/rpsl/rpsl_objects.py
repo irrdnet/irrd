@@ -283,7 +283,7 @@ class RPSLMntner(RPSLObject):
         keycert object PK.
         """
         for auth in splitline_unicodesafe(self.parsed_data.get('auth', '')):
-            if keycert_obj_pk and auth.upper() == keycert_obj_pk:
+            if keycert_obj_pk and auth.upper() == keycert_obj_pk.upper():
                 return True
             if " " not in auth:
                 continue

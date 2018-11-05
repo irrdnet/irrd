@@ -151,10 +151,10 @@ class UpdateRequest:
         if not auth_result.is_valid():
             self.status = UpdateRequestStatus.ERROR_AUTH
             self.error_messages += auth_result.error_messages
-            logger.debug(f'{id(self)}: authentication check failed: {auth_result.error_messages}')
+            logger.debug(f'{id(self)}: Authentication check failed: {auth_result.error_messages}')
             return False
 
-        logger.debug(f'{id(self)}: authentication check succeeded')
+        logger.debug(f'{id(self)}: Authentication check succeeded')
         return True
 
     def _check_references(self) -> bool:
@@ -177,10 +177,10 @@ class UpdateRequest:
             self.error_messages += references_result.error_messages
             if self.is_valid():  # Only update the status if this object was valid prior, so this is the first failure
                 self.status = UpdateRequestStatus.ERROR_REFERENCE
-                logger.debug(f'{id(self)}: reference check failed: {references_result.error_messages}')
+                logger.debug(f'{id(self)}: Reference check failed: {references_result.error_messages}')
                 return False
 
-        logger.debug(f'{id(self)}: authentication check succeeded')
+        logger.debug(f'{id(self)}: Reference check succeeded')
         return True
 
 

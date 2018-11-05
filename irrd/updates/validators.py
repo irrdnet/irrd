@@ -135,7 +135,7 @@ class AuthValidator:
 
     def __init__(self, database_handler: DatabaseHandler, keycert_obj_pk=None) -> None:
         self.database_handler = database_handler
-        self._passed_cache: Set[str] = set()
+        self._mntner_db_cache: Set[RPSLMntner] = set()
         self._pre_approved: Set[str] = set()
         self.keycert_obj_pk = keycert_obj_pk
 
@@ -164,14 +164,16 @@ class AuthValidator:
 
         mntners_new = rpsl_obj_new.parsed_data['mnt-by']
         logger.debug(f'Checking auth for new object {rpsl_obj_new}, mntners in new object: {mntners_new}')
-        if not self._check_mntners(mntners_new, source):
+        valid, mntners_new_objs = self._check_mntners(mntners_new, source)
+        if not valid:
             self._generate_failure_message(result, mntners_new, rpsl_obj_new)
 
         if rpsl_obj_current:
             mntners_current = rpsl_obj_current.parsed_data['mnt-by']
             logger.debug(f'Checking auth for current object {rpsl_obj_current}, '
                          f'mntners in new object: {mntners_current}')
-            if not self._check_mntners(mntners_current, source):
+            valid, mntner_current_objs = self._check_mntners(mntners_current, source)
+            if not valid:
                 self._generate_failure_message(result, mntners_current, rpsl_obj_new)
 
         if isinstance(rpsl_obj_new, RPSLMntner):
@@ -191,9 +193,8 @@ class AuthValidator:
                 result.error_messages.add(f'Authorisation failed for the auth methods on this mntner object.')
 
         return result
-        # TODO: further sets pending https://github.com/irrdnet/irrd4/issues/21#issuecomment-407105924
 
-    def _check_mntners(self, mntner_list: List[str], source: str) -> bool:
+    def _check_mntners(self, mntner_pk_list: List[str], source: str) -> Tuple[bool, List[RPSLMntner]]:
         """
         Check whether authentication passes for a list of maintainers.
 
@@ -202,22 +203,34 @@ class AuthValidator:
         self.keycert_obj_pk. Updates and checks self.passed_mntner_cache
         to prevent double checking of maintainers.
         """
-        for mntner_name in mntner_list:
-            if mntner_name in self._passed_cache or mntner_name in self._pre_approved:
-                return True
+        print(f"Attempting to resolve {mntner_pk_list}, current cache {self._mntner_db_cache}, preapprove {self._pre_approved}")
+        mntner_pk_set = set(mntner_pk_list)
+        mntner_objs: List[RPSLMntner] = [m for m in self._mntner_db_cache if m.pk() in mntner_pk_set and m.source() == source]
+        mntner_pks_to_resolve: Set[str] = mntner_pk_set - {m.pk() for m in mntner_objs}
+        print(f"Found objs {mntner_objs}, still to resolve {mntner_pks_to_resolve}")
 
-        query = RPSLDatabaseQuery().sources([source])
-        query = query.object_classes(['mntner']).rpsl_pks(mntner_list)
-        results = list(self.database_handler.execute_query(query))
-        mntner_objs: List[RPSLMntner] = [rpsl_object_from_text(r['object_text']) for r in results]  # type: ignore
+        if mntner_pks_to_resolve:
+            query = RPSLDatabaseQuery().sources([source])
+            query = query.object_classes(['mntner']).rpsl_pks(mntner_pks_to_resolve)
+            results = list(self.database_handler.execute_query(query))
+
+            retrieved_mntner_objs: List[RPSLMntner] = [rpsl_object_from_text(r['object_text']) for r in results]   # type: ignore
+            self._mntner_db_cache.update(retrieved_mntner_objs)
+            print(f"Retrieved new objs {retrieved_mntner_objs}, adding to cache")
+            mntner_objs += retrieved_mntner_objs
+
+        for mntner_name in mntner_pk_list:
+            if mntner_name in self._pre_approved:
+                print(f"Found mntner {mntner_name} in preapprove, valid")
+                return True, mntner_objs
 
         for mntner_obj in mntner_objs:
             if mntner_obj.verify_auth(self.passwords, self.keycert_obj_pk):
-                self._passed_cache.add(mntner_obj.pk())
+                print(f"Passed auth for mntner {mntner_name}, valid")
+                return True, mntner_objs
 
-                return True
-
-        return False
+        print(f"Not valid")
+        return False, mntner_objs
 
     def _generate_failure_message(self, result: ValidatorResult, failed_mntner_list: List[str], rpsl_obj) -> None:
         mntner_str = ', '.join(failed_mntner_list)

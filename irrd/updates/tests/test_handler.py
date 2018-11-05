@@ -72,6 +72,9 @@ class TestUpdateRequestHandler:
             ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pk', ('TEST-MNT',), {}],
             ['sources', (['TEST'],), {}], ['object_classes', (['inetnum'],), {}],
             ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}]
         ]
 
         assert mock_dh.mock_calls[0][0] == 'upsert_rpsl_object'
@@ -168,7 +171,7 @@ class TestUpdateRequestHandler:
             ['object_classes', (['key-cert'],), {}], ['rpsl_pk', ('PGPKEY-80F238C6',), {}],
             ['sources', (['TEST'],), {}], ['object_classes', (['person'],), {}], ['rpsl_pk', ('PERSON-TEST',), {}],
             ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pk', ('TEST-MNT',), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['TEST-MNT'],), {}]
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
         ]
 
         assert mock_dh.mock_calls[0][0] == 'upsert_rpsl_object'
@@ -249,9 +252,7 @@ class TestUpdateRequestHandler:
             ['object_classes', (['key-cert'],), {}], ['rpsl_pk', ('PGPKEY-80F238C6',), {}],
             ['sources', (['TEST'],), {}], ['object_classes', (['person'],), {}], ['rpsl_pk', ('PERSON-TEST',), {}],
             ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pk', ('TEST-MNT',), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['TEST-MNT'],), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['TEST-MNT'],), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['TEST-MNT'],), {}]
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
         ]
 
         assert mock_dh.mock_calls[0][0] == 'commit'
@@ -284,7 +285,7 @@ class TestUpdateRequestHandler:
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}], ['object_classes', (['person'],), {}],
             ['rpsl_pk', ('PERSON-TEST',), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['TEST-MNT'],), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
             ['sources', (['TEST'],), {}],
             ['lookup_attrs_in', ({'tech-c', 'zone-c', 'admin-c'}, ['PERSON-TEST']), {}]
         ]
@@ -360,13 +361,18 @@ class TestUpdateRequestHandler:
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pk', ('TEST-MNT',), {}],
             ['sources', (['TEST'],), {}], ['object_classes', (['inetnum'],), {}],
-            ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}], ['sources', (['TEST'],), {}],
-            ['object_classes', (['person'],), {}], ['rpsl_pk', ('PERSON-TEST',), {}], ['sources', (['TEST'],), {}],
-            ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['OTHER-MNT'],), {}], ['sources', (['TEST'],), {}],
-            ['object_classes', (['role', 'person'],), {}], ['rpsl_pk', ('PERSON-TEST',), {}],
+            ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['person'],), {}], ['rpsl_pk', ('PERSON-TEST',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'OTHER-MNT'},), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
             ['sources', (['TEST'],), {}], ['object_classes', (['role', 'person'],), {}],
-            ['rpsl_pk', ('PERSON-TEST',), {}], ['sources', (['TEST'],), {}],
-            ['object_classes', (['role', 'person'],), {}], ['rpsl_pk', ('PERSON-TEST',), {}]
+            ['rpsl_pk', ('PERSON-TEST',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['role', 'person'],), {}],
+            ['rpsl_pk', ('PERSON-TEST',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['role', 'person'],), {}], ['rpsl_pk', ('PERSON-TEST',), {}],
         ]
         assert flatten_mock_calls(mock_dh) == [
             ['commit', (), {}],
@@ -482,13 +488,18 @@ class TestUpdateRequestHandler:
         handler = UpdateRequestHandler(rpsl_text)
         assert handler.status() == 'FAILED'
 
+        print(flatten_mock_calls(mock_dq))
+
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}], ['object_classes', (['person'],), {}], ['rpsl_pk', ('PERSON-TEST',), {}],
             ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pk', ('TEST-MNT',), {}],
             ['sources', (['TEST'],), {}], ['object_classes', (['inetnum'],), {}],
-            ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}], ['sources', (['TEST'],), {}],
-            ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['TEST-MNT'],), {}], ['sources', (['TEST'],), {}],
-            ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['TEST-MNT'],), {}]
+            ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
         ]
         assert flatten_mock_calls(mock_dh) == [
             ['commit', (), {}],

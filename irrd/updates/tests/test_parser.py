@@ -304,13 +304,14 @@ class TestSingleUpdateRequestHandling:
                                                mock_dh, auth_validator, reference_validator)[0]
         assert result_inetnum._check_auth()
         assert not result_inetnum.error_messages
+        print(flatten_mock_calls(mock_dq))
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}],
             ['object_classes', (['inetnum'],), {}],
             ['rpsl_pk', ('192.0.2.0 - 192.0.2.255',), {}],
             ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
-            ['rpsl_pks', (['TEST-MNT'],), {}]
+            ['rpsl_pks', ({'TEST-MNT'},), {}]
         ]
 
         auth_validator = AuthValidator(mock_dh)
@@ -338,10 +339,14 @@ class TestSingleUpdateRequestHandling:
 
         assert result_mntner._check_auth()
         assert not result_mntner.error_messages
+        print(flatten_mock_calls(mock_dq))
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
             ['rpsl_pk', ('TEST-MNT',), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', ({'OTHER1-MNT', 'OTHER2-MNT', 'TEST-MNT'},), {}],
         ]
 
     def test_check_auth_invalid_create_mntner_referencing_self_wrong_password(self, prepare_mocks):
@@ -358,10 +363,14 @@ class TestSingleUpdateRequestHandling:
 
         assert not result_mntner._check_auth()
         assert result_mntner.error_messages == ['Authorisation failed for the auth methods on this mntner object.']
+        print(flatten_mock_calls(mock_dq))
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
             ['rpsl_pk', ('TEST-MNT',), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', ({'OTHER1-MNT', 'OTHER2-MNT', 'TEST-MNT'},), {}],
         ]
 
     def test_check_auth_invalid_create_mntner_referencing_self_with_dummy_passwords(self, prepare_mocks):
@@ -382,10 +391,14 @@ class TestSingleUpdateRequestHandling:
 
         assert not result_mntner._check_auth()
         assert result_mntner.error_messages == ['Authorisation failed for the auth methods on this mntner object.']
+        print(flatten_mock_calls(mock_dq))
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
             ['rpsl_pk', ('TEST-MNT',), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', ({'OTHER1-MNT', 'OTHER2-MNT', 'TEST-MNT'},), {}],
         ]
 
     def test_check_auth_valid_update_mntner_submits_new_object_with_all_dummy_hash_values(self, prepare_mocks):
@@ -414,14 +427,16 @@ class TestSingleUpdateRequestHandling:
         assert auth_hash.startswith('MD5-PW ')
         assert md5_crypt.verify('crypt-password', auth_hash[7:])
         assert auth_hash in result_mntner.rpsl_obj_new.render_rpsl_text()
-
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
             ['rpsl_pk', ('TEST-MNT',), {}],
             ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
-            ['rpsl_pks', (['TEST-MNT', 'OTHER1-MNT', 'OTHER2-MNT'],), {}],
+            ['rpsl_pks', ({'OTHER1-MNT', 'OTHER2-MNT', 'TEST-MNT'},), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', ({'OTHER1-MNT', 'OTHER2-MNT'},), {}],
         ]
 
     def test_check_auth_invalid_update_mntner_submits_new_object_with_mixed_dummy_hash_real_hash(self, prepare_mocks):
@@ -485,11 +500,15 @@ class TestSingleUpdateRequestHandling:
             'OTHER1-MNT, OTHER2-MNT'
         ]
         assert flatten_mock_calls(mock_dq) == [
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pk', ('TEST-MNT',), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}],
-            ['rpsl_pks', (['TEST-MNT', 'OTHER1-MNT', 'OTHER2-MNT'],), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}],
-            ['rpsl_pks', (['TEST-MNT', 'OTHER1-MNT', 'OTHER2-MNT'],), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pk', ('TEST-MNT',), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', ({'TEST-MNT', 'OTHER1-MNT', 'OTHER2-MNT'},), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', ({'OTHER1-MNT', 'OTHER2-MNT'},), {}],
         ]
 
     def test_check_auth_invalid_create_with_incorrect_password_referenced_mntner(self, prepare_mocks):
@@ -506,13 +525,14 @@ class TestSingleUpdateRequestHandling:
         assert not result_inetnum._check_auth()
         assert 'Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed' in result_inetnum.error_messages[0]
         assert 'one of: TEST-MNT' in result_inetnum.error_messages[0]
+
         assert flatten_mock_calls(mock_dq) == [
-            ['sources', (['TEST'],), {}], ['object_classes', (['inetnum'],), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['inetnum'],), {}],
             ['rpsl_pk', ('192.0.2.0 - 192.0.2.255',), {}],
             ['sources', (['TEST'],), {}],
-            ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['TEST-MNT'],), {}],
-            ['sources', (['TEST'],), {}],
-            ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['TEST-MNT'],), {}]
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', ({'TEST-MNT'},), {}],
         ]
 
     def test_check_auth_invalid_update_with_incorrect_password_referenced_mntner(self, prepare_mocks):
@@ -539,10 +559,10 @@ class TestSingleUpdateRequestHandling:
             ['rpsl_pk', ('192.0.2.0 - 192.0.2.255',), {}],
             ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
-            ['rpsl_pks', (['TEST-MNT'],), {}],
+            ['rpsl_pks', ({'TEST-MNT'},), {}],
             ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
-            ['rpsl_pks', (['FAIL-MNT'],), {}],
+            ['rpsl_pks', ({'FAIL-MNT'},), {}],
         ]
 
     def test_user_report(self, prepare_mocks):
