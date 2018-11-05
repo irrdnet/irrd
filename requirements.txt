@@ -8,7 +8,7 @@ beautifultable==0.5.3  # generating nice-looking ascii tables
 
 # Database connections and management
 psycopg2-binary==2.7.5
-SQLAlchemy==1.2.12
+SQLAlchemy==1.2.13
 alembic==1.0.1
 
 # Network handling
