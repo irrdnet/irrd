@@ -1,10 +1,10 @@
 import logging
-from typing import List, Optional
+from typing import List, Optional, Set
 
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseQuery
 from irrd.rpsl.parser import UnknownRPSLObjectClassException, RPSLObject
-from irrd.rpsl.rpsl_objects import rpsl_object_from_text
+from irrd.rpsl.rpsl_objects import rpsl_object_from_text, RPSLMntner
 from irrd.utils.text import splitline_unicodesafe
 from .parser_state import UpdateRequestType, UpdateRequestStatus
 from .validators import ReferenceValidator, AuthValidator
@@ -23,6 +23,7 @@ class UpdateRequest:
     rpsl_obj_current: Optional[RPSLObject] = None
     status = UpdateRequestStatus.PROCESSING
     request_type: Optional[UpdateRequestType] = None
+    mntners_notify: List[RPSLMntner]
 
     error_messages: List[str]
     info_messages: List[str]
@@ -54,6 +55,7 @@ class UpdateRequest:
         self.auth_validator = auth_validator
         self.reference_validator = reference_validator
         self.rpsl_text_submitted = rpsl_text_submitted
+        self.mntners_notify = []
 
         try:
             self.rpsl_obj_new = rpsl_object_from_text(rpsl_text_submitted, strict_validation=True)
@@ -136,17 +138,36 @@ class UpdateRequest:
     def is_valid(self):
         return self.status in [UpdateRequestStatus.SAVED, UpdateRequestStatus.PROCESSING]
 
+    def notification_targets(self) -> Set[str]:
+        targets: Set[str] = set()
+        if not self.is_valid() and self.status != UpdateRequestStatus.ERROR_AUTH:
+            return targets
+
+        mntner_attr = 'upd-to' if self.status == UpdateRequestStatus.ERROR_AUTH else 'mnt-nfy'
+        print(f'mntners to notify {self.mntners_notify} on {mntner_attr}')
+        for mntner in self.mntners_notify:
+            for email in mntner.parsed_data.get(mntner_attr, []):
+                targets.add(email)
+
+        if self.is_valid() and self.rpsl_obj_current:
+            for email in self.rpsl_obj_current.parsed_data.get('notify', []):
+                targets.add(email)
+        print(f'Notification targets: {targets}')
+        return targets
+
     def validate(self) -> bool:
         auth_valid = self._check_auth()
         if not auth_valid:
             return False
         references_valid = self._check_references()
+        self.notification_targets()
         return references_valid
 
     def _check_auth(self) -> bool:
         assert self.rpsl_obj_new
-        auth_result = self.auth_validator.check_auth(self.rpsl_obj_new, self.rpsl_obj_current)
+        auth_result = self.auth_validator.process_auth(self.rpsl_obj_new, self.rpsl_obj_current)
         self.info_messages += auth_result.info_messages
+        self.mntners_notify = auth_result.mntners_notify
 
         if not auth_result.is_valid():
             self.status = UpdateRequestStatus.ERROR_AUTH

@@ -79,13 +79,13 @@ Authentication and notification overview
    * - Update or delete, auth success
      - Existing object and new object
      -
-       * ``mnt-nfy`` for all maintainers of new object and parent objects
+       * ``mnt-nfy`` for all maintainers of existing object and parent objects
        * ``notify`` attribute of the existing object
        * report sent to the submitter of the change
    * - Update or delete, auth fail
      - Existing object and new object
      -
-       * ``upd-to`` for all maintainers of new object and parent objects
+       * ``upd-to`` for all maintainers of existing object and parent objects
        * ``notify`` attribute of the existing object
        * report sent to the submitter of the change
    * - Any change, syntax failure

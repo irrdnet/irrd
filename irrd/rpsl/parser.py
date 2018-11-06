@@ -124,8 +124,6 @@ class RPSLObject(metaclass=RPSLObjectMeta):
             data = self.parsed_data.get(field_name)
             if not data:
                 continue
-            if isinstance(data, str):
-                data = [data]
             result.append((field_name, referred_objects, data))
         return result
 
@@ -285,9 +283,14 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         """
         for idx, (attr_name, value, continuation_chars) in enumerate(self._object_data):
             field = self.fields.get(attr_name)
-            if field and (self.strict_validation or field.primary_key or field.lookup_key or attr_name == 'source'):
+            if field:
                 normalised_value = self._normalise_rpsl_value(value)
-                parsed_value = field.parse(normalised_value, self.messages, self.strict_validation)
+                # TODO: this is a messy hack
+                if self.strict_validation or field.primary_key or field.lookup_key or attr_name == 'source':
+                    field_messages = self.messages
+                else:
+                    field_messages = RPSLParserMessages()
+                parsed_value = field.parse(normalised_value, field_messages, self.strict_validation)
                 if parsed_value:
                     parsed_value_str = parsed_value.value
                     if parsed_value_str != normalised_value:
@@ -307,10 +310,16 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                     else:
                         if not field.keep_case:
                             parsed_value_str = parsed_value_str.upper()
-                        if attr_name in self.parsed_data:
-                            self.parsed_data[attr_name] += "\n" + parsed_value_str
+                        if field.multiple:
+                            if attr_name in self.parsed_data:
+                                self.parsed_data[attr_name].append(parsed_value_str)
+                            else:
+                                self.parsed_data[attr_name] = [parsed_value_str]
                         else:
-                            self.parsed_data[attr_name] = parsed_value_str
+                            if attr_name in self.parsed_data:
+                                self.parsed_data[attr_name] = '\n' + parsed_value_str
+                            else:
+                                self.parsed_data[attr_name] = parsed_value_str
 
                     # Some fields provide additional metadata about the resources to
                     # which this object pertains.

@@ -150,6 +150,7 @@ class TestSingleUpdateRequestHandling:
         result_inetnum = parse_update_requests(SAMPLE_INETNUM, mock_dh, AuthValidator(mock_dh), validator)[0]
         assert not result_inetnum._check_references()
         assert not result_inetnum.is_valid()
+        assert not result_inetnum.notification_targets()
         assert result_inetnum.error_messages == [
             'Object PERSON-TEST referenced in field admin-c not found in database TEST - must reference one of role, person.',
             'Object PERSON-TEST referenced in field tech-c not found in database TEST - must reference one of role, person.',
@@ -319,6 +320,8 @@ class TestSingleUpdateRequestHandling:
                                                mock_dh, auth_validator, reference_validator)[0]
         assert result_inetnum._check_auth()
         assert not result_inetnum.error_messages
+        assert result_inetnum.notification_targets() == {
+            'mnt-nfy@example.net', 'mnt-nfy2@example.net', 'notify@example.com'}
 
         auth_validator = AuthValidator(mock_dh, 'PGPKEY-80F238C6')
         result_inetnum = parse_update_requests(SAMPLE_INETNUM, mock_dh, auth_validator, reference_validator)[0]
@@ -339,7 +342,7 @@ class TestSingleUpdateRequestHandling:
 
         assert result_mntner._check_auth()
         assert not result_mntner.error_messages
-        print(flatten_mock_calls(mock_dq))
+
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
@@ -363,7 +366,7 @@ class TestSingleUpdateRequestHandling:
 
         assert not result_mntner._check_auth()
         assert result_mntner.error_messages == ['Authorisation failed for the auth methods on this mntner object.']
-        print(flatten_mock_calls(mock_dq))
+
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
@@ -499,6 +502,8 @@ class TestSingleUpdateRequestHandling:
             'Authorisation for mntner TEST-MNT failed: must by authenticated by one of: TEST-MNT, '
             'OTHER1-MNT, OTHER2-MNT'
         ]
+        assert result_mntner.notification_targets() == {'upd-to@example.net'}
+
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
@@ -525,6 +530,7 @@ class TestSingleUpdateRequestHandling:
         assert not result_inetnum._check_auth()
         assert 'Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed' in result_inetnum.error_messages[0]
         assert 'one of: TEST-MNT' in result_inetnum.error_messages[0]
+        assert result_inetnum.notification_targets() == {'upd-to@example.net'}
 
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}],
@@ -535,7 +541,8 @@ class TestSingleUpdateRequestHandling:
             ['rpsl_pks', ({'TEST-MNT'},), {}],
         ]
 
-    def test_check_auth_invalid_update_with_incorrect_password_referenced_mntner(self, prepare_mocks):
+    def test_check_auth_invalid_update_with_nonexistent_referenced_mntner(self, prepare_mocks):
+        # This is a case that shouldn't happen, but in legacy databases it might.
         mock_dq, mock_dh = prepare_mocks
 
         query_results = iter([
@@ -553,6 +560,8 @@ class TestSingleUpdateRequestHandling:
         assert not result_inetnum._check_auth(), result_inetnum
         assert 'Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed' in result_inetnum.error_messages[0]
         assert 'one of: FAIL-MNT' in result_inetnum.error_messages[0]
+        assert not result_inetnum.notification_targets()
+
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}],
             ['object_classes', (['inetnum'],), {}],

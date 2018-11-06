@@ -264,10 +264,11 @@ class TestUpdateRequestHandler:
         rpsl_person = textwrap.dedent("""
         person:         Placeholder Person Object
         address:        The Netherlands
-        phone:          +31 20 535 4444
+        phone:          +31 20 00000000
         nic-hdl:        PERSON-TEST
         mnt-by:         TEST-MNT
-        e-mail:         bitbucket@ripe.net
+        e-mail:         email@example.com
+        notify:         notify@example.com
         changed:        2009-07-24T17:00:00Z
         source:         TEST
         """)

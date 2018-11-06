@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 class ValidatorResult:
     error_messages: Set[str] = field(default_factory=OrderedSet)
     info_messages: Set[str] = field(default_factory=OrderedSet)
+    mntners_notify: List[RPSLMntner] = field(default_factory=list)
 
     def is_valid(self):
         return len(self.error_messages) == 0
@@ -155,7 +156,7 @@ class AuthValidator:
             if request.is_valid() and request.request_type == UpdateRequestType.CREATE and isinstance(request.rpsl_obj_new, RPSLMntner):
                 self._pre_approved.add(request.rpsl_obj_new.pk())
 
-    def check_auth(self, rpsl_obj_new: RPSLObject, rpsl_obj_current: Optional[RPSLObject]) -> ValidatorResult:
+    def process_auth(self, rpsl_obj_new: RPSLObject, rpsl_obj_current: Optional[RPSLObject]) -> ValidatorResult:
         """
         Check whether authentication passes for all required objects.
         """
@@ -164,7 +165,7 @@ class AuthValidator:
 
         mntners_new = rpsl_obj_new.parsed_data['mnt-by']
         logger.debug(f'Checking auth for new object {rpsl_obj_new}, mntners in new object: {mntners_new}')
-        valid, mntners_new_objs = self._check_mntners(mntners_new, source)
+        valid, mntner_objs_new = self._check_mntners(mntners_new, source)
         if not valid:
             self._generate_failure_message(result, mntners_new, rpsl_obj_new)
 
@@ -172,9 +173,13 @@ class AuthValidator:
             mntners_current = rpsl_obj_current.parsed_data['mnt-by']
             logger.debug(f'Checking auth for current object {rpsl_obj_current}, '
                          f'mntners in new object: {mntners_current}')
-            valid, mntner_current_objs = self._check_mntners(mntners_current, source)
+            valid, mntner_objs_current = self._check_mntners(mntners_current, source)
             if not valid:
                 self._generate_failure_message(result, mntners_current, rpsl_obj_new)
+
+            result.mntners_notify = mntner_objs_current
+        else:
+            result.mntners_notify = mntner_objs_new
 
         if isinstance(rpsl_obj_new, RPSLMntner):
             # Dummy auth values are only permitted in existing objects, which are never pre-approved.
@@ -216,7 +221,7 @@ class AuthValidator:
 
             retrieved_mntner_objs: List[RPSLMntner] = [rpsl_object_from_text(r['object_text']) for r in results]   # type: ignore
             self._mntner_db_cache.update(retrieved_mntner_objs)
-            print(f"Retrieved new objs {retrieved_mntner_objs}, adding to cache")
+            print(f"Retrieved new objs {retrieved_mntner_objs}, adding to cache, resolved now {mntner_objs}")
             mntner_objs += retrieved_mntner_objs
 
         for mntner_name in mntner_pk_list:
