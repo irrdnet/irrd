@@ -86,7 +86,7 @@ class TestUpdateRequestHandler:
         assert mock_dh.mock_calls[3][0] == 'commit'
         assert mock_dh.mock_calls[4][0] == 'close'
 
-        assert handler.user_report() == textwrap.dedent("""
+        assert handler.submitter_report() == textwrap.dedent("""
         SUMMARY OF UPDATE:
 
         Number of objects found:                    3
@@ -165,7 +165,7 @@ class TestUpdateRequestHandler:
 
         handler = UpdateRequestHandler(rpsl_text, pgp_fingerprint='8626 1D8DBEBD A4F5 4692  D64D A838 3BA7 80F2 38C6',
                                        request_meta={'Message-ID': 'test', 'From': 'example@example.com'})
-        assert handler.status() == 'SUCCESS', handler.user_report()
+        assert handler.status() == 'SUCCESS', handler.submitter_report()
 
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['key-cert'],), {}], ['rpsl_pk', ('PGPKEY-80F238C6',), {}],
@@ -181,7 +181,7 @@ class TestUpdateRequestHandler:
         assert mock_dh.mock_calls[2][0] == 'commit'
         assert mock_dh.mock_calls[3][0] == 'close'
 
-        assert handler.user_report() == textwrap.dedent("""
+        assert handler.submitter_report() == textwrap.dedent("""
         > Message-ID: test
         > From: example@example.com
         
@@ -246,7 +246,7 @@ class TestUpdateRequestHandler:
         mock_dh.execute_query = lambda query: next(query_responses)
 
         handler = UpdateRequestHandler(rpsl_text, pgp_fingerprint='8626 1D8DBEBD A4F5 4692  D64D A838 3BA7 80F2 38C6')
-        assert handler.status() == 'FAILED', handler.user_report()
+        assert handler.status() == 'FAILED', handler.submitter_report()
 
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['key-cert'],), {}], ['rpsl_pk', ('PGPKEY-80F238C6',), {}],
@@ -295,7 +295,7 @@ class TestUpdateRequestHandler:
         assert mock_dh.mock_calls[1][0] == 'commit'
         assert mock_dh.mock_calls[2][0] == 'close'
 
-        assert handler.user_report() == textwrap.dedent("""
+        assert handler.submitter_report() == textwrap.dedent("""
             SUMMARY OF UPDATE:
 
             Number of objects found:                    1
@@ -380,7 +380,7 @@ class TestUpdateRequestHandler:
             ['close', (), {}],
         ]
 
-        assert handler.user_report() == textwrap.dedent("""
+        assert handler.submitter_report() == textwrap.dedent("""
         SUMMARY OF UPDATE:
         
         Number of objects found:                    3
@@ -507,7 +507,7 @@ class TestUpdateRequestHandler:
             ['close', (), {}],
         ]
 
-        assert handler.user_report() == textwrap.dedent("""
+        assert handler.submitter_report() == textwrap.dedent("""
         SUMMARY OF UPDATE:
 
         Number of objects found:                    3
@@ -591,7 +591,7 @@ class TestUpdateRequestHandler:
         assert mock_dh.mock_calls[0][0] == 'commit'
         assert mock_dh.mock_calls[1][0] == 'close'
 
-        assert handler.user_report() == textwrap.dedent("""
+        assert handler.submitter_report() == textwrap.dedent("""
         SUMMARY OF UPDATE:
         
         Number of objects found:                    1

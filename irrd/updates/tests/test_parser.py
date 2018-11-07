@@ -1,4 +1,7 @@
+# flake8: noqa: W293
 import itertools
+
+import textwrap
 from unittest.mock import Mock
 
 import pytest
@@ -585,10 +588,10 @@ class TestSingleUpdateRequestHandling:
 
         result_inetnum, result_as_set, result_unknown, result_invalid = parse_update_requests(
             self._request_text(), mock_dh, AuthValidator(mock_dh), None)
-        report_inetnum = result_inetnum.user_report()
-        report_as_set = result_as_set.user_report()
-        report_unknown = result_unknown.user_report()
-        report_invalid = result_invalid.user_report()
+        report_inetnum = result_inetnum.submitter_report()
+        report_as_set = result_as_set.submitter_report()
+        report_unknown = result_unknown.submitter_report()
+        report_invalid = result_invalid.submitter_report()
 
         assert 'Delete succeeded' in report_inetnum
         assert 'remarks: ' in report_inetnum  # full RPSL object should be included
@@ -603,6 +606,115 @@ class TestSingleUpdateRequestHandling:
         assert 'aut-num: pw1'  # full RPSL object should be included
         assert 'ERROR: Mandatory attribute' in report_invalid
         assert 'ERROR: Invalid AS number PW1' in report_invalid
+
+        query_results = iter([
+            [{'object_text': SAMPLE_INETNUM}],
+            [],
+        ])
+        mock_dh.execute_query = lambda query: next(query_results)
+
+        assert result_inetnum.notification_target_report() == textwrap.dedent("""
+            Delete succeeded for object below: [inetnum] 192.0.2.0 - 192.0.2.255:
+            
+            inetnum:        192.0.2.0 - 192.0.2.255
+            netname:        NET-TEST-V4
+            descr:          description
+            country:        IT
+            notify:         notify@example.com
+            admin-c:        PERSON-TEST
+            tech-c:         PERSON-TEST
+            status:         ASSIGNED PA
+            mnt-by:         test-MNT
+            changed:        2001-09-21T22:08:01Z
+            source:         TEST
+            remarks:        remark
+        """).strip() + '\n'
+
+        assert result_as_set.notification_target_report() == textwrap.dedent("""
+            Create succeeded for object below: [as-set] AS-SETTEST:
+            
+            as-set:         AS-SETTEST
+            descr:          description
+            members:        AS2602,AS42909,AS51966
+            members:        AS49624
+            tech-c:         PERSON-TEST
+            admin-c:        PERSON-TEST
+            notify:         notify@example.com
+            mnt-by:         TEST-MNT
+            changed:        2017-05-19T12:22:08Z
+            source:         TEST
+            remarks:        remark
+        """).strip() + '\n'
+
+        inetnum_modify = SAMPLE_INETNUM.replace('PERSON-TEST', 'NEW-TEST')
+        result_inetnum_modify = parse_update_requests(inetnum_modify, mock_dh, AuthValidator(mock_dh), None)[0]
+        assert result_inetnum_modify.notification_target_report() == textwrap.dedent("""
+            Modify succeeded for object below: [inetnum] 192.0.2.0 - 192.0.2.255:
+            
+            @@ -3,8 +3,8 @@
+             descr:          description
+             country:        IT
+             notify:         notify@example.com
+            -admin-c:        PERSON-TEST
+            -tech-c:         PERSON-TEST
+            +admin-c:        NEW-TEST
+            +tech-c:         NEW-TEST
+             status:         ASSIGNED PA
+             mnt-by:         test-MNT
+             changed:        2001-09-21T22:08:01Z
+            
+            New version of this object:
+            
+            inetnum:        192.0.2.0 - 192.0.2.255
+            netname:        NET-TEST-V4
+            descr:          description
+            country:        IT
+            notify:         notify@example.com
+            admin-c:        NEW-TEST
+            tech-c:         NEW-TEST
+            status:         ASSIGNED PA
+            mnt-by:         test-MNT
+            changed:        2001-09-21T22:08:01Z
+            source:         TEST
+            remarks:        remark
+        """).strip() + '\n'
+
+        # Fake the result to look like an authentication failure
+        result_inetnum_modify.status = UpdateRequestStatus.ERROR_AUTH
+        assert result_inetnum_modify.notification_target_report() == textwrap.dedent("""
+            Modify FAILED AUTHORISATION for object below: [inetnum] 192.0.2.0 - 192.0.2.255:
+            
+            @@ -3,8 +3,8 @@
+             descr:          description
+             country:        IT
+             notify:         notify@example.com
+            -admin-c:        PERSON-TEST
+            -tech-c:         PERSON-TEST
+            +admin-c:        NEW-TEST
+            +tech-c:         NEW-TEST
+             status:         ASSIGNED PA
+             mnt-by:         test-MNT
+             changed:        2001-09-21T22:08:01Z
+            
+            Rejected new version of this object:
+            
+            inetnum:        192.0.2.0 - 192.0.2.255
+            netname:        NET-TEST-V4
+            descr:          description
+            country:        IT
+            notify:         notify@example.com
+            admin-c:        NEW-TEST
+            tech-c:         NEW-TEST
+            status:         ASSIGNED PA
+            mnt-by:         test-MNT
+            changed:        2001-09-21T22:08:01Z
+            source:         TEST
+            remarks:        remark
+        """).strip() + '\n'
+
+        with pytest.raises(ValueError) as ve:
+            result_unknown.notification_target_report()
+        assert 'updates that are valid or have failed authorisation' in str(ve)
 
     def _request_text(self):
         unknown_class = 'unknown-object: foo\n'

@@ -93,8 +93,8 @@ class UpdateRequestHandler:
             return "SUCCESS"
         return "FAILED"
 
-    def user_report(self) -> str:
-        """Produce a human-readable report for the user."""
+    def submitter_report(self) -> str:
+        """Produce a human-readable report for the submitter."""
         # flake8: noqa: W293
         successful = [r for r in self.results if r.status == UpdateRequestStatus.SAVED]
         failed = [r for r in self.results if r.status != UpdateRequestStatus.SAVED]
@@ -127,7 +127,7 @@ class UpdateRequestHandler:
         """)
         for result in self.results:
             user_report += "---\n"
-            user_report += result.user_report()
+            user_report += result.submitter_report()
             user_report += "\n"
         user_report += '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n'
         return user_report

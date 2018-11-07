@@ -1,3 +1,4 @@
+import difflib
 import logging
 from typing import List, Optional, Set
 
@@ -98,7 +99,8 @@ class UpdateRequest:
         elif len(results) == 1:
             self.request_type = UpdateRequestType.MODIFY
             self.rpsl_obj_current = rpsl_object_from_text(results[0]['object_text'], strict_validation=False)
-            logger.debug(f'{id(self)}: Retrieved existing version for object {self.rpsl_obj_current}, request is MODIFY')
+            logger.debug(f'{id(self)}: Retrieved existing version for object '
+                         f'{self.rpsl_obj_current}, request is MODIFY/DELETE')
         else:  # pragma: no cover
             # This should not be possible, as rpsl_pk/source are a composite unique value in the database scheme.
             # Therefore, a query should not be able to affect more than one row.
@@ -121,8 +123,11 @@ class UpdateRequest:
             database_handler.upsert_rpsl_object(self.rpsl_obj_new)
         self.status = UpdateRequestStatus.SAVED
 
-    def user_report(self) -> str:
-        """Produce a string suitable for reporting back status and messages to a human user."""
+    def is_valid(self):
+        return self.status in [UpdateRequestStatus.SAVED, UpdateRequestStatus.PROCESSING]
+
+    def submitter_report(self) -> str:
+        """Produce a string suitable for reporting back status and messages to the human submitter."""
         object_class = self.rpsl_obj_new.rpsl_object_class if self.rpsl_obj_new else '(unreadable object class)'
         pk = self.rpsl_obj_new.pk() if self.rpsl_obj_new else '(unreadable object key)'
         status = 'succeeded' if self.is_valid() else 'FAILED'
@@ -135,13 +140,37 @@ class UpdateRequest:
             report += ''.join([f'INFO: {e}\n' for e in self.info_messages])
         return report
 
-    def is_valid(self):
-        return self.status in [UpdateRequestStatus.SAVED, UpdateRequestStatus.PROCESSING]
+    def notification_target_report(self):
+        """Produce a string suitable for reporting back status and messages to a human notification target."""
+        if not self.is_valid() and self.status != UpdateRequestStatus.ERROR_AUTH:
+            raise ValueError('Notification reports can only be made for updates that are valid '
+                             'or have failed authorisation.')
+
+        object_class = self.rpsl_obj_new.rpsl_object_class if self.rpsl_obj_new else '(unreadable object class)'
+        pk = self.rpsl_obj_new.pk() if self.rpsl_obj_new else '(unreadable object key)'
+        status = 'succeeded' if self.is_valid() else 'FAILED AUTHORISATION'
+        request_type = self.request_type.value if self.request_type else "request"
+
+        report = f'{request_type.title()} {status} for object below: [{object_class}] {pk}:\n\n'
+        if self.request_type == UpdateRequestType.MODIFY:
+            current_text = list(splitline_unicodesafe(self.rpsl_obj_current.render_rpsl_text()))
+            new_text = list(splitline_unicodesafe(self.rpsl_obj_new.render_rpsl_text()))
+            diff = list(difflib.unified_diff(current_text, new_text, lineterm=''))
+
+            report += '\n'.join(diff[2:])  # skip the lines from the diff which would have filenames
+            if self.status == UpdateRequestStatus.ERROR_AUTH:
+                report += '\n\nRejected new version of this object:\n\n'
+            else:
+                report += '\n\nNew version of this object:\n\n'
+        report += self.rpsl_obj_new.render_rpsl_text()
+
+        return report
 
     def notification_targets(self) -> Set[str]:
         targets: Set[str] = set()
         if not self.is_valid() and self.status != UpdateRequestStatus.ERROR_AUTH:
             return targets
+        # TODO: no notifications for override
 
         mntner_attr = 'upd-to' if self.status == UpdateRequestStatus.ERROR_AUTH else 'mnt-nfy'
         print(f'mntners to notify {self.mntners_notify} on {mntner_attr}')

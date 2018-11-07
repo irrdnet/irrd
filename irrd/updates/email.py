@@ -99,10 +99,10 @@ def handle_email_update(email_txt: str) -> Optional[UpdateRequestHandler]:
         else:
             handler = UpdateRequestHandler(msg.body, msg.pgp_fingerprint, request_meta)
             logger.info(f'Processed e-mail {msg.message_id} from {msg.message_from}: {handler.status()}')
-            logger.debug(f'Report for e-mail {msg.message_id} from {msg.message_from}: {handler.user_report()}')
+            logger.debug(f'Report for e-mail {msg.message_id} from {msg.message_from}: {handler.submitter_report()}')
 
             subject = f'{handler.status()}: {msg.message_subject}'
-            reply_content = handler.user_report()
+            reply_content = handler.submitter_report()
 
     except Exception as exc:
         logger.critical(f'An exception occurred while attempting to process the following update: {email_txt}\n'
