@@ -208,11 +208,9 @@ class AuthValidator:
         self.keycert_obj_pk. Updates and checks self.passed_mntner_cache
         to prevent double checking of maintainers.
         """
-        print(f"Attempting to resolve {mntner_pk_list}, current cache {self._mntner_db_cache}, preapprove {self._pre_approved}")
         mntner_pk_set = set(mntner_pk_list)
         mntner_objs: List[RPSLMntner] = [m for m in self._mntner_db_cache if m.pk() in mntner_pk_set and m.source() == source]
         mntner_pks_to_resolve: Set[str] = mntner_pk_set - {m.pk() for m in mntner_objs}
-        print(f"Found objs {mntner_objs}, still to resolve {mntner_pks_to_resolve}")
 
         if mntner_pks_to_resolve:
             query = RPSLDatabaseQuery().sources([source])
@@ -221,20 +219,16 @@ class AuthValidator:
 
             retrieved_mntner_objs: List[RPSLMntner] = [rpsl_object_from_text(r['object_text']) for r in results]   # type: ignore
             self._mntner_db_cache.update(retrieved_mntner_objs)
-            print(f"Retrieved new objs {retrieved_mntner_objs}, adding to cache, resolved now {mntner_objs}")
             mntner_objs += retrieved_mntner_objs
 
         for mntner_name in mntner_pk_list:
             if mntner_name in self._pre_approved:
-                print(f"Found mntner {mntner_name} in preapprove, valid")
                 return True, mntner_objs
 
         for mntner_obj in mntner_objs:
             if mntner_obj.verify_auth(self.passwords, self.keycert_obj_pk):
-                print(f"Passed auth for mntner {mntner_name}, valid")
                 return True, mntner_objs
 
-        print(f"Not valid")
         return False, mntner_objs
 
     def _generate_failure_message(self, result: ValidatorResult, failed_mntner_list: List[str], rpsl_obj) -> None:

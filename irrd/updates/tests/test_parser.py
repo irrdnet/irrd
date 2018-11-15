@@ -308,7 +308,7 @@ class TestSingleUpdateRequestHandling:
                                                mock_dh, auth_validator, reference_validator)[0]
         assert result_inetnum._check_auth()
         assert not result_inetnum.error_messages
-        print(flatten_mock_calls(mock_dq))
+
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}],
             ['object_classes', (['inetnum'],), {}],
@@ -397,7 +397,7 @@ class TestSingleUpdateRequestHandling:
 
         assert not result_mntner._check_auth()
         assert result_mntner.error_messages == ['Authorisation failed for the auth methods on this mntner object.']
-        print(flatten_mock_calls(mock_dq))
+
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
@@ -505,7 +505,7 @@ class TestSingleUpdateRequestHandling:
             'Authorisation for mntner TEST-MNT failed: must by authenticated by one of: TEST-MNT, '
             'OTHER1-MNT, OTHER2-MNT'
         ]
-        assert result_mntner.notification_targets() == {'upd-to@example.net'}
+        assert result_mntner.notification_targets() == {'notify@example.net', 'upd-to@example.net'}
 
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}],
@@ -533,7 +533,7 @@ class TestSingleUpdateRequestHandling:
         assert not result_inetnum._check_auth()
         assert 'Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed' in result_inetnum.error_messages[0]
         assert 'one of: TEST-MNT' in result_inetnum.error_messages[0]
-        assert result_inetnum.notification_targets() == {'upd-to@example.net'}
+        assert result_inetnum.notification_targets() == {'notify@example.com', 'upd-to@example.net'}
 
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}],
@@ -563,7 +563,7 @@ class TestSingleUpdateRequestHandling:
         assert not result_inetnum._check_auth(), result_inetnum
         assert 'Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed' in result_inetnum.error_messages[0]
         assert 'one of: FAIL-MNT' in result_inetnum.error_messages[0]
-        assert not result_inetnum.notification_targets()
+        assert result_inetnum.notification_targets() == {'notify@example.com'}
 
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}],
@@ -696,7 +696,7 @@ class TestSingleUpdateRequestHandling:
              mnt-by:         test-MNT
              changed:        2001-09-21T22:08:01Z
             
-            Rejected new version of this object:
+            *Rejected* new version of this object:
             
             inetnum:        192.0.2.0 - 192.0.2.255
             netname:        NET-TEST-V4

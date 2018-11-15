@@ -159,7 +159,7 @@ class UpdateRequest:
 
             report += '\n'.join(diff[2:])  # skip the lines from the diff which would have filenames
             if self.status == UpdateRequestStatus.ERROR_AUTH:
-                report += '\n\nRejected new version of this object:\n\n'
+                report += '\n\n*Rejected* new version of this object:\n\n'
             else:
                 report += '\n\nNew version of this object:\n\n'
         report += self.rpsl_obj_new.render_rpsl_text()
@@ -173,15 +173,13 @@ class UpdateRequest:
         # TODO: no notifications for override
 
         mntner_attr = 'upd-to' if self.status == UpdateRequestStatus.ERROR_AUTH else 'mnt-nfy'
-        print(f'mntners to notify {self.mntners_notify} on {mntner_attr}')
         for mntner in self.mntners_notify:
             for email in mntner.parsed_data.get(mntner_attr, []):
                 targets.add(email)
 
-        if self.is_valid() and self.rpsl_obj_current:
+        if self.rpsl_obj_current:
             for email in self.rpsl_obj_current.parsed_data.get('notify', []):
                 targets.add(email)
-        print(f'Notification targets: {targets}')
         return targets
 
     def validate(self) -> bool:
