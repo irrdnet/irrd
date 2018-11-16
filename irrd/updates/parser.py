@@ -137,12 +137,9 @@ class UpdateRequest:
 
     def submitter_report(self) -> str:
         """Produce a string suitable for reporting back status and messages to the human submitter."""
-        object_class = self.rpsl_obj_new.rpsl_object_class if self.rpsl_obj_new else '(unreadable object class)'
-        pk = self.rpsl_obj_new.pk() if self.rpsl_obj_new else '(unreadable object key)'
         status = 'succeeded' if self.is_valid() else 'FAILED'
-        request_type = self.request_type.value.title() if self.request_type else "Request"
 
-        report = f'{request_type} {status}: [{object_class}] {pk}\n'
+        report = f'{self.request_type_str().title()} {status}: [{self.object_class_str()}] {self.object_pk_str()}\n'
         if self.info_messages or self.error_messages:
             report += '\n' + self.rpsl_text_submitted + '\n'
             report += ''.join([f'ERROR: {e}\n' for e in self.error_messages])
@@ -150,17 +147,19 @@ class UpdateRequest:
         return report
 
     def notification_target_report(self):
-        """Produce a string suitable for reporting back status and messages to a human notification target."""
+        """
+        Produce a string suitable for reporting back status and messages
+        to a human notification target, i.e. someone listed
+        in notify/upd-to/mnt-nfy.
+        """
         if not self.is_valid() and self.status != UpdateRequestStatus.ERROR_AUTH:
             raise ValueError('Notification reports can only be made for updates that are valid '
                              'or have failed authorisation.')
 
-        object_class = self.rpsl_obj_new.rpsl_object_class if self.rpsl_obj_new else '(unreadable object class)'
-        pk = self.rpsl_obj_new.pk() if self.rpsl_obj_new else '(unreadable object key)'
         status = 'succeeded' if self.is_valid() else 'FAILED AUTHORISATION'
-        request_type = self.request_type.value if self.request_type else "request"
+        report = f'{self.request_type_str().title()} {status} for object below: '
+        report += f'[{self.object_class_str()}] {self.object_pk_str()}:\n\n'
 
-        report = f'{request_type.title()} {status} for object below: [{object_class}] {pk}:\n\n'
         if self.request_type == UpdateRequestType.MODIFY:
             current_text = list(splitline_unicodesafe(self.rpsl_obj_current.render_rpsl_text()))
             new_text = list(splitline_unicodesafe(self.rpsl_obj_new.render_rpsl_text()))
@@ -171,13 +170,23 @@ class UpdateRequest:
                 report += '\n\n*Rejected* new version of this object:\n\n'
             else:
                 report += '\n\nNew version of this object:\n\n'
-        report += self.rpsl_obj_new.render_rpsl_text()
 
+        report += self.rpsl_obj_new.render_rpsl_text()
         return report
+
+    def request_type_str(self) -> str:
+        return self.request_type.value if self.request_type else "request"
+
+    def object_pk_str(self) -> str:
+        return self.rpsl_obj_new.pk() if self.rpsl_obj_new else '(unreadable object key)'
+
+    def object_class_str(self) -> str:
+        return self.rpsl_obj_new.rpsl_object_class if self.rpsl_obj_new else '(unreadable object class)'
 
     def notification_targets(self) -> Set[str]:
         targets: Set[str] = set()
-        if self.used_override or (not self.is_valid() and self.status != UpdateRequestStatus.ERROR_AUTH):
+        status_qualifies_notification = self.is_valid() or self.status == UpdateRequestStatus.ERROR_AUTH
+        if self.used_override or not status_qualifies_notification:
             return targets
 
         mntner_attr = 'upd-to' if self.status == UpdateRequestStatus.ERROR_AUTH else 'mnt-nfy'
@@ -188,6 +197,7 @@ class UpdateRequest:
         if self.rpsl_obj_current:
             for email in self.rpsl_obj_current.parsed_data.get('notify', []):
                 targets.add(email)
+
         return targets
 
     def validate(self) -> bool:

@@ -2,6 +2,7 @@ from collections import defaultdict
 
 import logging
 import textwrap
+from orderedset import OrderedSet
 from typing import List, Optional, Dict, Set
 
 from irrd.storage.database_handler import DatabaseHandler
@@ -135,15 +136,15 @@ class UpdateRequestHandler:
     def send_notification_target_reports(self):
         # First key is e-mail address of recipient, second is UpdateRequestStatus.SAVED
         # or UpdateRequestStatus.ERROR_AUTH
-        reports_per_recipient: Dict[str, Dict[UpdateRequestStatus, set]] = defaultdict(dict)
-        sources: Set[str] = set()
+        reports_per_recipient: Dict[str, Dict[UpdateRequestStatus, OrderedSet]] = defaultdict(dict)
+        sources: OrderedSet[str] = OrderedSet()
 
         for result in self.results:
             for target in result.notification_targets():
                 if result.status in [UpdateRequestStatus.SAVED, UpdateRequestStatus.ERROR_AUTH]:
-                    if not result.status in reports_per_recipient[target]:
-                        reports_per_recipient[target][result.status] = set()
-                        reports_per_recipient[target][result.status].add(result.notification_target_report())
+                    if result.status not in reports_per_recipient[target]:
+                        reports_per_recipient[target][result.status] = OrderedSet()
+                    reports_per_recipient[target][result.status].add(result.notification_target_report())
                     sources.add(result.rpsl_obj_new.source())
 
         sources_str = '/'.join(sources)

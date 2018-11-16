@@ -246,6 +246,22 @@ class TestUpdateRequestHandler:
             changed:        2009-07-24T17:00:00Z
             source:         TEST
             
+            ---
+            Modify succeeded for object below: [mntner] TEST-MNT:
+            
+            
+            
+            New version of this object:
+            
+            mntner:         TEST-MNT
+            admin-c:        PERSON-TEST
+            upd-to:         upd-to@example.com
+            mnt-nfy:        mnt-nfy@example.com
+            auth:           PGPKey-80F238C6
+            mnt-by:         TEST-MNT
+            changed:        2016-10-05T10:41:15Z
+            source:         TEST
+            
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
         """)
