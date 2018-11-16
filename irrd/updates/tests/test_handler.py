@@ -12,6 +12,7 @@ from ..handler import UpdateRequestHandler
 
 @pytest.fixture()
 def prepare_mocks(monkeypatch):
+    monkeypatch.setenv('IRRD_SOURCES_TEST_AUTHORITATIVE', '1')
     mock_dh = Mock()
     monkeypatch.setattr('irrd.updates.handler.DatabaseHandler', lambda: mock_dh)
     mock_dq = Mock()

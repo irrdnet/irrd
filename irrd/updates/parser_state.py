@@ -15,6 +15,5 @@ class UpdateRequestStatus(Enum):
     ERROR_UNKNOWN_CLASS = 'error: unknown RPSL class'
     ERROR_PARSING = 'errors encountered during object parsing'
     ERROR_AUTH = 'error: update not authorised'
-    ERROR_OVERRIDE_INCORRECT = 'error: incorrect override password'
     ERROR_REFERENCE = 'error: reference to object that does not exist'
     ERROR_NON_AUTHORITIVE = 'error: attempt to update object in non-authoritive database'

@@ -19,6 +19,7 @@ from ..validators import ReferenceValidator, AuthValidator
 
 @pytest.fixture()
 def prepare_mocks(monkeypatch):
+    monkeypatch.setenv('IRRD_SOURCES_TEST_AUTHORITATIVE', '1')
     mock_dh = Mock()
     mock_dq = Mock()
     monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
@@ -29,7 +30,7 @@ def prepare_mocks(monkeypatch):
 class TestSingleUpdateRequestHandling:
     # NOTE: the scope of this test includes UpdateRequest, ReferenceValidator and AuthValidator
 
-    def test_parse_valid(self, prepare_mocks):
+    def test_parse(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
 
         query_results = iter([
@@ -91,6 +92,18 @@ class TestSingleUpdateRequestHandling:
             ['delete_rpsl_object', (result_inetnum.rpsl_obj_current,), {}],
             ['upsert_rpsl_object', (result_as_set.rpsl_obj_new,), {}],
         ]
+
+    def test_non_authorative_source(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
+
+        mock_dh.execute_query = lambda query: []
+
+        auth_validator = AuthValidator(mock_dh)
+        result = parse_update_requests(SAMPLE_MNTNER.replace('TEST', 'TEST2'), mock_dh, auth_validator, None)[0]
+
+        assert result.status == UpdateRequestStatus.ERROR_NON_AUTHORITIVE
+        assert not result.is_valid()
+        assert result.error_messages == ['This instance is not authoritative for source TEST2']
 
     def test_save_nonexistent_object(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks

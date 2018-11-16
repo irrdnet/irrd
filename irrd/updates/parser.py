@@ -2,6 +2,7 @@ import difflib
 import logging
 from typing import List, Optional, Set
 
+from irrd.conf import get_setting
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseQuery
 from irrd.rpsl.parser import UnknownRPSLObjectClassException, RPSLObject
@@ -74,14 +75,21 @@ class UpdateRequest:
             self.info_messages = []
             self.error_messages = [str(exc)]
 
-        if self.is_valid():
+        if self.is_valid() and self.rpsl_obj_new:
+            source = f'{self.rpsl_obj_new.source()}'
+            if not get_setting(f'sources.{source}.authoritative'):
+                logger.debug(f'{id(self)}: update is for non-authoritative source {source}, rejected')
+                self.error_messages.append(f'This instance is not authoritative for source {source}')
+                self.status = UpdateRequestStatus.ERROR_NON_AUTHORITIVE
+                return
+
             self._retrieve_existing_version()
 
         if delete_reason:
             self.request_type = UpdateRequestType.DELETE
             if not self.rpsl_obj_current:
                 self.status = UpdateRequestStatus.ERROR_PARSING
-                self.error_messages.append(f"Can not delete object: no object found for this key in this database.")
+                self.error_messages.append(f'Can not delete object: no object found for this key in this database.')
                 logger.debug(f'{id(self)}: Request attempts to delete object {self.rpsl_obj_new}, '
                              f'but no existing object found.')
 
