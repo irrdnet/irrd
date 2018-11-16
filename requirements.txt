@@ -7,21 +7,21 @@ dotted==0.1.8          # Dotted path dictionary resolving for settings
 beautifultable==0.5.3  # generating nice-looking ascii tables
 
 # Database connections and management
-psycopg2-binary==2.7.5
-SQLAlchemy==1.2.13
+psycopg2-binary==2.7.6.1
+SQLAlchemy==1.2.14
 alembic==1.0.2
 
 # Network handling
 twisted==18.9.0
 
 # Testing and related packages
-pytest==3.10.0
+pytest==3.10.1
 pytest-cov==2.6.0
 coverage==4.5.1
 coveralls==1.5.1
 
 # Documentation generation
-Sphinx==1.8.1
+Sphinx==1.8.2
 
 # Code style and type checks
 mypy==0.641
