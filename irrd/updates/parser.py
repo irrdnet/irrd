@@ -57,6 +57,7 @@ class UpdateRequest:
         self.reference_validator = reference_validator
         self.rpsl_text_submitted = rpsl_text_submitted
         self.mntners_notify = []
+        self.used_override = False
 
         try:
             self.rpsl_obj_new = rpsl_object_from_text(rpsl_text_submitted, strict_validation=True)
@@ -64,7 +65,7 @@ class UpdateRequest:
                 self.status = UpdateRequestStatus.ERROR_PARSING
             self.error_messages = self.rpsl_obj_new.messages.errors()
             self.info_messages = self.rpsl_obj_new.messages.infos()
-            logger.debug(f'Processing new UpdateRequest for object {self.rpsl_obj_new}: request {id(self)}')
+            logger.debug(f'{id(self)}: Processing new UpdateRequest for object {self.rpsl_obj_new}: request {id(self)}')
 
         except UnknownRPSLObjectClassException as exc:
             self.rpsl_obj_new = None
@@ -168,9 +169,8 @@ class UpdateRequest:
 
     def notification_targets(self) -> Set[str]:
         targets: Set[str] = set()
-        if not self.is_valid() and self.status != UpdateRequestStatus.ERROR_AUTH:
+        if self.used_override or (not self.is_valid() and self.status != UpdateRequestStatus.ERROR_AUTH):
             return targets
-        # TODO: no notifications for override
 
         mntner_attr = 'upd-to' if self.status == UpdateRequestStatus.ERROR_AUTH else 'mnt-nfy'
         for mntner in self.mntners_notify:
@@ -201,6 +201,8 @@ class UpdateRequest:
             self.error_messages += auth_result.error_messages
             logger.debug(f'{id(self)}: Authentication check failed: {auth_result.error_messages}')
             return False
+
+        self.used_override = auth_result.used_override
 
         logger.debug(f'{id(self)}: Authentication check succeeded')
         return True

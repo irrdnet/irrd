@@ -1,9 +1,11 @@
 import logging
+from passlib.hash import md5_crypt
 from typing import Set, Tuple, List, Optional, TYPE_CHECKING
 
 from dataclasses import dataclass, field
 from orderedset import OrderedSet
 
+from irrd.conf import get_setting
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseQuery
 from irrd.rpsl.parser import RPSLObject
@@ -21,7 +23,10 @@ logger = logging.getLogger(__name__)
 class ValidatorResult:
     error_messages: Set[str] = field(default_factory=OrderedSet)
     info_messages: Set[str] = field(default_factory=OrderedSet)
+    # mntners that may need to be notified
     mntners_notify: List[RPSLMntner] = field(default_factory=list)
+    # whether the authentication succeeded due to use of an override password
+    used_override: bool = field(default=False)
 
     def is_valid(self):
         return len(self.error_messages) == 0
@@ -159,9 +164,24 @@ class AuthValidator:
     def process_auth(self, rpsl_obj_new: RPSLObject, rpsl_obj_current: Optional[RPSLObject]) -> ValidatorResult:
         """
         Check whether authentication passes for all required objects.
+        Returns a ValidatorResult object with error/info messages, and fills
+        result.mntners_notify with the RPSLMntner objects that may have
+        to be notified.
+
+        If a valid override password is provided, changes are immediately approved.
+        On the result object, used_override is set to True, but mntners_notify is
+        not filled, as mntner resolving does not take place.
         """
         source = rpsl_obj_new.source()
         result = ValidatorResult()
+
+        for override in self.overrides:
+            result.used_override = True
+            if md5_crypt.verify(override, get_setting('auth.override_password')):
+                logger.debug(f'Found valid override password')
+                return result
+            else:
+                logger.debug(f'Found invalid override password, ignoring')
 
         mntners_new = rpsl_obj_new.parsed_data['mnt-by']
         logger.debug(f'Checking auth for new object {rpsl_obj_new}, mntners in new object: {mntners_new}')

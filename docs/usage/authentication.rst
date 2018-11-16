@@ -114,3 +114,6 @@ Example
 In this case, authentication must pass for the `inetnum` for
 ``192.0.2.0-192.0.2.1``, the `route` for ``192.0.2.0/24``, and the maintainers
 on the newly submitted object.
+
+
+TODO: details on invalid override password.

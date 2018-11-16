@@ -26,8 +26,12 @@ DEFAULT_SETTINGS = DottedDict({
         'footer': '',
         'smtp': 'localhost',
     },
-    'gnupg': {
-        'homedir': os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), '../gnupg/'),
+    'auth': {
+        # Salted MD5, https://www.arin.net/public/hashTool.xhtml
+        'override_password': '$1$J6KycItM$MbPaBU6iFSGFV299Rk7Di0',  # override-password
+        'gnupg': {
+            'homedir': os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), '../gnupg/'),
+        },
     },
     'access_lists': {
         # TODO: these addresses should be validated and perhaps processed into IP objects

@@ -331,6 +331,7 @@ class TestSingleUpdateRequestHandling:
         assert result_inetnum._check_auth()
         assert not result_inetnum.error_messages
 
+
     def test_check_auth_valid_create_mntner_referencing_self(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
 
@@ -576,6 +577,42 @@ class TestSingleUpdateRequestHandling:
             ['object_classes', (['mntner'],), {}],
             ['rpsl_pks', ({'FAIL-MNT'},), {}],
         ]
+
+    def test_check_auth_valid_update_mntner_using_override(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
+
+        query_result1 = {'object_text': SAMPLE_INETNUM}
+        query_result2 = {'object_text': SAMPLE_MNTNER}
+        query_results = itertools.cycle([[query_result1], [query_result2]])
+        mock_dh.execute_query = lambda query: next(query_results)
+
+        reference_validator = ReferenceValidator(mock_dh)
+        auth_validator = AuthValidator(mock_dh)
+
+        result_inetnum = parse_update_requests(SAMPLE_INETNUM + 'override: override-password',
+                                               mock_dh, auth_validator, reference_validator)[0]
+        assert result_inetnum._check_auth()
+        assert not result_inetnum.error_messages
+        assert not result_inetnum.notification_targets()
+
+    def test_check_auth_invalid_update_mntner_using_incorrect_override(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
+
+        query_result1 = {'object_text': SAMPLE_INETNUM}
+        query_result2 = {'object_text': SAMPLE_MNTNER}
+        query_results = itertools.cycle([[query_result1], [query_result2]])
+        mock_dh.execute_query = lambda query: next(query_results)
+
+        reference_validator = ReferenceValidator(mock_dh)
+        auth_validator = AuthValidator(mock_dh)
+
+        result_inetnum = parse_update_requests(SAMPLE_INETNUM + 'override: wrong-override',
+                                               mock_dh, auth_validator, reference_validator)[0]
+        assert not result_inetnum._check_auth()
+        assert result_inetnum.error_messages == [
+            'Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed: must by authenticated by one of: TEST-MNT',
+        ]
+        assert result_inetnum.notification_targets() == {'notify@example.com', 'upd-to@example.net'}
 
     def test_user_report(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
