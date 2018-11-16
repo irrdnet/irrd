@@ -176,12 +176,15 @@ class AuthValidator:
         result = ValidatorResult()
 
         for override in self.overrides:
-            result.used_override = True
-            if md5_crypt.verify(override, get_setting('auth.override_password')):
-                logger.debug(f'Found valid override password')
-                return result
-            else:
-                logger.debug(f'Found invalid override password, ignoring')
+            try:
+                if md5_crypt.verify(override, get_setting('auth.override_password')):
+                    result.used_override = True
+                    logger.debug(f'Found valid override password')
+                    return result
+                else:
+                    logger.info(f'Found invalid override password, ignoring')
+            except ValueError as ve:
+                logger.error(f'Exception occurred while checking override password: {ve} (possible misconfigured hash?')
 
         mntners_new = rpsl_obj_new.parsed_data['mnt-by']
         logger.debug(f'Checking auth for new object {rpsl_obj_new}, mntners in new object: {mntners_new}')
