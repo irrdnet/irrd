@@ -1,9 +1,13 @@
+from collections import defaultdict
+
 import logging
 import textwrap
-from typing import List, Optional, Dict
+from orderedset import OrderedSet
+from typing import List, Optional, Dict, Set
 
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseQuery
+from irrd.utils import email
 from .parser import parse_update_requests, UpdateRequest
 from .parser_state import UpdateRequestStatus, UpdateRequestType
 from .validators import ReferenceValidator, AuthValidator
@@ -93,8 +97,8 @@ class UpdateRequestHandler:
             return "SUCCESS"
         return "FAILED"
 
-    def user_report(self) -> str:
-        """Produce a human-readable report for the user."""
+    def submitter_report(self) -> str:
+        """Produce a human-readable report for the submitter."""
         # flake8: noqa: W293
         successful = [r for r in self.results if r.status == UpdateRequestStatus.SAVED]
         failed = [r for r in self.results if r.status != UpdateRequestStatus.SAVED]
@@ -105,10 +109,7 @@ class UpdateRequestHandler:
         number_failed_modify = len([r for r in failed if r.request_type == UpdateRequestType.MODIFY])
         number_failed_delete = len([r for r in failed if r.request_type == UpdateRequestType.DELETE])
 
-        request_meta_str = '\n'.join([f"> {k}: {v}" for k, v in self.request_meta.items() if v])
-        if request_meta_str:
-            request_meta_str = "\n" + request_meta_str + "\n\n"
-        user_report = request_meta_str + textwrap.dedent(f"""
+        user_report = self._request_meta_str() + textwrap.dedent(f"""
         SUMMARY OF UPDATE:
 
         Number of objects found:                  {len(self.results):3}
@@ -127,7 +128,72 @@ class UpdateRequestHandler:
         """)
         for result in self.results:
             user_report += "---\n"
-            user_report += result.user_report()
+            user_report += result.submitter_report()
             user_report += "\n"
         user_report += '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n'
         return user_report
+
+    def send_notification_target_reports(self):
+        # First key is e-mail address of recipient, second is UpdateRequestStatus.SAVED
+        # or UpdateRequestStatus.ERROR_AUTH
+        reports_per_recipient: Dict[str, Dict[UpdateRequestStatus, OrderedSet]] = defaultdict(dict)
+        sources: OrderedSet[str] = OrderedSet()
+
+        for result in self.results:
+            for target in result.notification_targets():
+                if result.status in [UpdateRequestStatus.SAVED, UpdateRequestStatus.ERROR_AUTH]:
+                    if result.status not in reports_per_recipient[target]:
+                        reports_per_recipient[target][result.status] = OrderedSet()
+                    reports_per_recipient[target][result.status].add(result.notification_target_report())
+                    sources.add(result.rpsl_obj_new.source())
+
+        sources_str = '/'.join(sources)
+        subject = f'Notification of {sources_str} database changes'
+        header = textwrap.dedent(f"""
+            This is to notify you of changes in the {sources_str} database
+            or object authorisation failures.
+            
+            You may receive this message because you are listed in
+            the notify attribute on the changed object(s), or because
+            you are listed in the mnt-nfy or upd-to attribute on a maintainer
+            of the object(s).
+            
+            This message is auto-generated.
+            The request was made by email, with the following details:
+        """)
+        header_saved = textwrap.dedent("""
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Some objects in which you are referenced have been created,
+            deleted or changed.
+            
+        """)
+
+        header_failed = textwrap.dedent("""
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Some objects in which you are referenced were requested
+            to be created, deleted or changed, but *failed* the 
+            proper authorisation for any of the referenced maintainers.
+            
+        """)
+
+        for recipient, reports_per_status in reports_per_recipient.items():
+            user_report = header + self._request_meta_str()
+            if UpdateRequestStatus.ERROR_AUTH in reports_per_status:
+                user_report += header_failed
+                for report in reports_per_status[UpdateRequestStatus.ERROR_AUTH]:
+                    user_report += f"---\n{report}\n"
+                user_report += '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n'
+            if UpdateRequestStatus.SAVED in reports_per_status:
+                user_report += header_saved
+                for report in reports_per_status[UpdateRequestStatus.SAVED]:
+                    user_report += f"---\n{report}\n"
+                user_report += '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n'
+
+            email.send_email(recipient, subject, user_report)
+
+    def _request_meta_str(self):
+        request_meta_str = '\n'.join([f"> {k}: {v}" for k, v in self.request_meta.items() if v])
+        if request_meta_str:
+            request_meta_str = "\n" + request_meta_str + "\n\n"
+        return request_meta_str
+

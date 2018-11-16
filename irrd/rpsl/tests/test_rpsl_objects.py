@@ -346,7 +346,7 @@ class TestRPSLPeeringSet:
         assert obj.__class__ == RPSLPeeringSet
         assert not obj.messages.errors()
         assert obj.pk() == "PRNG-SETTEST"
-        assert obj.parsed_data['tech-c'] == "PERSON-TEST\nDUMY2-TEST"
+        assert obj.parsed_data['tech-c'] == ['PERSON-TEST', 'DUMY2-TEST']
         assert obj.render_rpsl_text() == rpsl_text
 
 

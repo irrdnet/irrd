@@ -8,7 +8,6 @@ import gnupg
 from irrd.conf import get_setting
 
 logger = logging.getLogger(__name__)
-# noinspection RegExpUnexpectedAnchor
 pgp_inline_re = re.compile(r'-----BEGIN PGP SIGNED MESSAGE-----(\n.+)?\n\n(.+)\n-----BEGIN PGP SIGNATURE-----\n',
                            flags=re.MULTILINE)
 
@@ -33,11 +32,11 @@ def validate_pgp_signature(message: str, detached_signature: Optional[str]=None)
     None,None.
 
     Note that PGP validation is dependent on the PGP key already being in the
-    keychain contained in the gnupg.homedir setting. This is usually done by
+    keychain contained in the auth.gnupg.homedir setting. This is usually done by
     importing a key-cert, which will add the certificate to the keychain during
     validation, in RPSLKeyCert.clean().
     """
-    gpg = gnupg.GPG(gnupghome=get_setting('gnupg.homedir'))
+    gpg = gnupg.GPG(gnupghome=get_setting('auth.gnupg.homedir'))
 
     new_message = None
     if detached_signature:

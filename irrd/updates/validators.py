@@ -1,9 +1,11 @@
 import logging
+from passlib.hash import md5_crypt
 from typing import Set, Tuple, List, Optional, TYPE_CHECKING
 
 from dataclasses import dataclass, field
 from orderedset import OrderedSet
 
+from irrd.conf import get_setting
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseQuery
 from irrd.rpsl.parser import RPSLObject
@@ -21,6 +23,10 @@ logger = logging.getLogger(__name__)
 class ValidatorResult:
     error_messages: Set[str] = field(default_factory=OrderedSet)
     info_messages: Set[str] = field(default_factory=OrderedSet)
+    # mntners that may need to be notified
+    mntners_notify: List[RPSLMntner] = field(default_factory=list)
+    # whether the authentication succeeded due to use of an override password
+    used_override: bool = field(default=False)
 
     def is_valid(self):
         return len(self.error_messages) == 0
@@ -135,7 +141,7 @@ class AuthValidator:
 
     def __init__(self, database_handler: DatabaseHandler, keycert_obj_pk=None) -> None:
         self.database_handler = database_handler
-        self._passed_cache: Set[str] = set()
+        self._mntner_db_cache: Set[RPSLMntner] = set()
         self._pre_approved: Set[str] = set()
         self.keycert_obj_pk = keycert_obj_pk
 
@@ -155,24 +161,48 @@ class AuthValidator:
             if request.is_valid() and request.request_type == UpdateRequestType.CREATE and isinstance(request.rpsl_obj_new, RPSLMntner):
                 self._pre_approved.add(request.rpsl_obj_new.pk())
 
-    def check_auth(self, rpsl_obj_new: RPSLObject, rpsl_obj_current: Optional[RPSLObject]) -> ValidatorResult:
+    def process_auth(self, rpsl_obj_new: RPSLObject, rpsl_obj_current: Optional[RPSLObject]) -> ValidatorResult:
         """
         Check whether authentication passes for all required objects.
+        Returns a ValidatorResult object with error/info messages, and fills
+        result.mntners_notify with the RPSLMntner objects that may have
+        to be notified.
+
+        If a valid override password is provided, changes are immediately approved.
+        On the result object, used_override is set to True, but mntners_notify is
+        not filled, as mntner resolving does not take place.
         """
         source = rpsl_obj_new.source()
         result = ValidatorResult()
 
+        for override in self.overrides:
+            try:
+                if md5_crypt.verify(override, get_setting('auth.override_password')):
+                    result.used_override = True
+                    logger.debug(f'Found valid override password')
+                    return result
+                else:
+                    logger.info(f'Found invalid override password, ignoring')
+            except ValueError as ve:
+                logger.error(f'Exception occurred while checking override password: {ve} (possible misconfigured hash?')
+
         mntners_new = rpsl_obj_new.parsed_data['mnt-by']
         logger.debug(f'Checking auth for new object {rpsl_obj_new}, mntners in new object: {mntners_new}')
-        if not self._check_mntners(mntners_new, source):
+        valid, mntner_objs_new = self._check_mntners(mntners_new, source)
+        if not valid:
             self._generate_failure_message(result, mntners_new, rpsl_obj_new)
 
         if rpsl_obj_current:
             mntners_current = rpsl_obj_current.parsed_data['mnt-by']
             logger.debug(f'Checking auth for current object {rpsl_obj_current}, '
                          f'mntners in new object: {mntners_current}')
-            if not self._check_mntners(mntners_current, source):
+            valid, mntner_objs_current = self._check_mntners(mntners_current, source)
+            if not valid:
                 self._generate_failure_message(result, mntners_current, rpsl_obj_new)
+
+            result.mntners_notify = mntner_objs_current
+        else:
+            result.mntners_notify = mntner_objs_new
 
         if isinstance(rpsl_obj_new, RPSLMntner):
             # Dummy auth values are only permitted in existing objects, which are never pre-approved.
@@ -191,9 +221,8 @@ class AuthValidator:
                 result.error_messages.add(f'Authorisation failed for the auth methods on this mntner object.')
 
         return result
-        # TODO: further sets pending https://github.com/irrdnet/irrd4/issues/21#issuecomment-407105924
 
-    def _check_mntners(self, mntner_list: List[str], source: str) -> bool:
+    def _check_mntners(self, mntner_pk_list: List[str], source: str) -> Tuple[bool, List[RPSLMntner]]:
         """
         Check whether authentication passes for a list of maintainers.
 
@@ -202,22 +231,28 @@ class AuthValidator:
         self.keycert_obj_pk. Updates and checks self.passed_mntner_cache
         to prevent double checking of maintainers.
         """
-        for mntner_name in mntner_list:
-            if mntner_name in self._passed_cache or mntner_name in self._pre_approved:
-                return True
+        mntner_pk_set = set(mntner_pk_list)
+        mntner_objs: List[RPSLMntner] = [m for m in self._mntner_db_cache if m.pk() in mntner_pk_set and m.source() == source]
+        mntner_pks_to_resolve: Set[str] = mntner_pk_set - {m.pk() for m in mntner_objs}
 
-        query = RPSLDatabaseQuery().sources([source])
-        query = query.object_classes(['mntner']).rpsl_pks(mntner_list)
-        results = list(self.database_handler.execute_query(query))
-        mntner_objs: List[RPSLMntner] = [rpsl_object_from_text(r['object_text']) for r in results]  # type: ignore
+        if mntner_pks_to_resolve:
+            query = RPSLDatabaseQuery().sources([source])
+            query = query.object_classes(['mntner']).rpsl_pks(mntner_pks_to_resolve)
+            results = list(self.database_handler.execute_query(query))
+
+            retrieved_mntner_objs: List[RPSLMntner] = [rpsl_object_from_text(r['object_text']) for r in results]   # type: ignore
+            self._mntner_db_cache.update(retrieved_mntner_objs)
+            mntner_objs += retrieved_mntner_objs
+
+        for mntner_name in mntner_pk_list:
+            if mntner_name in self._pre_approved:
+                return True, mntner_objs
 
         for mntner_obj in mntner_objs:
             if mntner_obj.verify_auth(self.passwords, self.keycert_obj_pk):
-                self._passed_cache.add(mntner_obj.pk())
+                return True, mntner_objs
 
-                return True
-
-        return False
+        return False, mntner_objs
 
     def _generate_failure_message(self, result: ValidatorResult, failed_mntner_list: List[str], rpsl_obj) -> None:
         mntner_str = ', '.join(failed_mntner_list)

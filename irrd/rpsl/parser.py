@@ -1,3 +1,4 @@
+import json
 import re
 from collections import OrderedDict, Counter
 from typing import Dict, List, Optional, Tuple, Any, Set
@@ -124,8 +125,6 @@ class RPSLObject(metaclass=RPSLObjectMeta):
             data = self.parsed_data.get(field_name)
             if not data:
                 continue
-            if isinstance(data, str):
-                data = [data]
             result.append((field_name, referred_objects, data))
         return result
 
@@ -285,9 +284,18 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         """
         for idx, (attr_name, value, continuation_chars) in enumerate(self._object_data):
             field = self.fields.get(attr_name)
-            if field and (self.strict_validation or field.primary_key or field.lookup_key or attr_name == 'source'):
+            if field:
                 normalised_value = self._normalise_rpsl_value(value)
-                parsed_value = field.parse(normalised_value, self.messages, self.strict_validation)
+
+                # We always parse all fields, but only care about errors if we're running
+                # in strict validation mode, if the field is primary or lookup, or if it's
+                # the source field. In all other cases, the field parsing is best effort.
+                # In all these other cases we pass a new parser messages object to the
+                # field parser, so that we basically discard any errors.
+                raise_errors = self.strict_validation or field.primary_key or field.lookup_key or attr_name == 'source'
+                field_messages = self.messages if raise_errors else RPSLParserMessages()
+                parsed_value = field.parse(normalised_value, field_messages, self.strict_validation)
+
                 if parsed_value:
                     parsed_value_str = parsed_value.value
                     if parsed_value_str != normalised_value:
@@ -307,10 +315,16 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                     else:
                         if not field.keep_case:
                             parsed_value_str = parsed_value_str.upper()
-                        if attr_name in self.parsed_data:
-                            self.parsed_data[attr_name] += "\n" + parsed_value_str
+                        if field.multiple:
+                            if attr_name in self.parsed_data:
+                                self.parsed_data[attr_name].append(parsed_value_str)
+                            else:
+                                self.parsed_data[attr_name] = [parsed_value_str]
                         else:
-                            self.parsed_data[attr_name] = parsed_value_str
+                            if attr_name in self.parsed_data:
+                                self.parsed_data[attr_name] = '\n' + parsed_value_str
+                            else:
+                                self.parsed_data[attr_name] = parsed_value_str
 
                     # Some fields provide additional metadata about the resources to
                     # which this object pertains.
@@ -380,6 +394,15 @@ class RPSLObject(metaclass=RPSLObjectMeta):
     def __repr__(self):
         source = self.parsed_data.get('source', '')
         return f'{self.rpsl_object_class}/{self.pk()}/{source}'
+
+    def __key(self):
+        return self.rpsl_object_class, self.pk(), json.dumps(self.parsed_data, sort_keys=True)
+
+    def __hash__(self):
+        return hash(self.__key())
+
+    def __eq__(self, other):
+        return isinstance(self, type(other)) and self.__key() == other.__key()
 
 
 class UnknownRPSLObjectClassException(Exception):

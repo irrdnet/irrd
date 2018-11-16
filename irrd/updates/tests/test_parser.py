@@ -1,4 +1,7 @@
+# flake8: noqa: W293
 import itertools
+
+import textwrap
 from unittest.mock import Mock
 
 import pytest
@@ -16,6 +19,7 @@ from ..validators import ReferenceValidator, AuthValidator
 
 @pytest.fixture()
 def prepare_mocks(monkeypatch):
+    monkeypatch.setenv('IRRD_SOURCES_TEST_AUTHORITATIVE', '1')
     mock_dh = Mock()
     mock_dq = Mock()
     monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
@@ -26,7 +30,7 @@ def prepare_mocks(monkeypatch):
 class TestSingleUpdateRequestHandling:
     # NOTE: the scope of this test includes UpdateRequest, ReferenceValidator and AuthValidator
 
-    def test_parse_valid(self, prepare_mocks):
+    def test_parse(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
 
         query_results = iter([
@@ -89,6 +93,18 @@ class TestSingleUpdateRequestHandling:
             ['upsert_rpsl_object', (result_as_set.rpsl_obj_new,), {}],
         ]
 
+    def test_non_authorative_source(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
+
+        mock_dh.execute_query = lambda query: []
+
+        auth_validator = AuthValidator(mock_dh)
+        result = parse_update_requests(SAMPLE_MNTNER.replace('TEST', 'TEST2'), mock_dh, auth_validator, None)[0]
+
+        assert result.status == UpdateRequestStatus.ERROR_NON_AUTHORITIVE
+        assert not result.is_valid()
+        assert result.error_messages == ['This instance is not authoritative for source TEST2']
+
     def test_save_nonexistent_object(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
         mock_dh.execute_query = lambda query: []
@@ -150,6 +166,7 @@ class TestSingleUpdateRequestHandling:
         result_inetnum = parse_update_requests(SAMPLE_INETNUM, mock_dh, AuthValidator(mock_dh), validator)[0]
         assert not result_inetnum._check_references()
         assert not result_inetnum.is_valid()
+        assert not result_inetnum.notification_targets()
         assert result_inetnum.error_messages == [
             'Object PERSON-TEST referenced in field admin-c not found in database TEST - must reference one of role, person.',
             'Object PERSON-TEST referenced in field tech-c not found in database TEST - must reference one of role, person.',
@@ -304,13 +321,14 @@ class TestSingleUpdateRequestHandling:
                                                mock_dh, auth_validator, reference_validator)[0]
         assert result_inetnum._check_auth()
         assert not result_inetnum.error_messages
+
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}],
             ['object_classes', (['inetnum'],), {}],
             ['rpsl_pk', ('192.0.2.0 - 192.0.2.255',), {}],
             ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
-            ['rpsl_pks', (['TEST-MNT'],), {}]
+            ['rpsl_pks', ({'TEST-MNT'},), {}]
         ]
 
         auth_validator = AuthValidator(mock_dh)
@@ -318,11 +336,14 @@ class TestSingleUpdateRequestHandling:
                                                mock_dh, auth_validator, reference_validator)[0]
         assert result_inetnum._check_auth()
         assert not result_inetnum.error_messages
+        assert result_inetnum.notification_targets() == {
+            'mnt-nfy@example.net', 'mnt-nfy2@example.net', 'notify@example.com'}
 
         auth_validator = AuthValidator(mock_dh, 'PGPKEY-80F238C6')
         result_inetnum = parse_update_requests(SAMPLE_INETNUM, mock_dh, auth_validator, reference_validator)[0]
         assert result_inetnum._check_auth()
         assert not result_inetnum.error_messages
+
 
     def test_check_auth_valid_create_mntner_referencing_self(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
@@ -338,10 +359,14 @@ class TestSingleUpdateRequestHandling:
 
         assert result_mntner._check_auth()
         assert not result_mntner.error_messages
+
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
             ['rpsl_pk', ('TEST-MNT',), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', ({'OTHER1-MNT', 'OTHER2-MNT', 'TEST-MNT'},), {}],
         ]
 
     def test_check_auth_invalid_create_mntner_referencing_self_wrong_password(self, prepare_mocks):
@@ -358,10 +383,14 @@ class TestSingleUpdateRequestHandling:
 
         assert not result_mntner._check_auth()
         assert result_mntner.error_messages == ['Authorisation failed for the auth methods on this mntner object.']
+
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
             ['rpsl_pk', ('TEST-MNT',), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', ({'OTHER1-MNT', 'OTHER2-MNT', 'TEST-MNT'},), {}],
         ]
 
     def test_check_auth_invalid_create_mntner_referencing_self_with_dummy_passwords(self, prepare_mocks):
@@ -382,10 +411,14 @@ class TestSingleUpdateRequestHandling:
 
         assert not result_mntner._check_auth()
         assert result_mntner.error_messages == ['Authorisation failed for the auth methods on this mntner object.']
+
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
             ['rpsl_pk', ('TEST-MNT',), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', ({'OTHER1-MNT', 'OTHER2-MNT', 'TEST-MNT'},), {}],
         ]
 
     def test_check_auth_valid_update_mntner_submits_new_object_with_all_dummy_hash_values(self, prepare_mocks):
@@ -414,14 +447,16 @@ class TestSingleUpdateRequestHandling:
         assert auth_hash.startswith('MD5-PW ')
         assert md5_crypt.verify('crypt-password', auth_hash[7:])
         assert auth_hash in result_mntner.rpsl_obj_new.render_rpsl_text()
-
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
             ['rpsl_pk', ('TEST-MNT',), {}],
             ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
-            ['rpsl_pks', (['TEST-MNT', 'OTHER1-MNT', 'OTHER2-MNT'],), {}],
+            ['rpsl_pks', ({'OTHER1-MNT', 'OTHER2-MNT', 'TEST-MNT'},), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', ({'OTHER1-MNT', 'OTHER2-MNT'},), {}],
         ]
 
     def test_check_auth_invalid_update_mntner_submits_new_object_with_mixed_dummy_hash_real_hash(self, prepare_mocks):
@@ -484,12 +519,18 @@ class TestSingleUpdateRequestHandling:
             'Authorisation for mntner TEST-MNT failed: must by authenticated by one of: TEST-MNT, '
             'OTHER1-MNT, OTHER2-MNT'
         ]
+        assert result_mntner.notification_targets() == {'notify@example.net', 'upd-to@example.net'}
+
         assert flatten_mock_calls(mock_dq) == [
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pk', ('TEST-MNT',), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}],
-            ['rpsl_pks', (['TEST-MNT', 'OTHER1-MNT', 'OTHER2-MNT'],), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}],
-            ['rpsl_pks', (['TEST-MNT', 'OTHER1-MNT', 'OTHER2-MNT'],), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pk', ('TEST-MNT',), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', ({'TEST-MNT', 'OTHER1-MNT', 'OTHER2-MNT'},), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', ({'OTHER1-MNT', 'OTHER2-MNT'},), {}],
         ]
 
     def test_check_auth_invalid_create_with_incorrect_password_referenced_mntner(self, prepare_mocks):
@@ -506,16 +547,19 @@ class TestSingleUpdateRequestHandling:
         assert not result_inetnum._check_auth()
         assert 'Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed' in result_inetnum.error_messages[0]
         assert 'one of: TEST-MNT' in result_inetnum.error_messages[0]
+        assert result_inetnum.notification_targets() == {'notify@example.com', 'upd-to@example.net'}
+
         assert flatten_mock_calls(mock_dq) == [
-            ['sources', (['TEST'],), {}], ['object_classes', (['inetnum'],), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['inetnum'],), {}],
             ['rpsl_pk', ('192.0.2.0 - 192.0.2.255',), {}],
             ['sources', (['TEST'],), {}],
-            ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['TEST-MNT'],), {}],
-            ['sources', (['TEST'],), {}],
-            ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['TEST-MNT'],), {}]
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', ({'TEST-MNT'},), {}],
         ]
 
-    def test_check_auth_invalid_update_with_incorrect_password_referenced_mntner(self, prepare_mocks):
+    def test_check_auth_invalid_update_with_nonexistent_referenced_mntner(self, prepare_mocks):
+        # This is a case that shouldn't happen, but in legacy databases it might.
         mock_dq, mock_dh = prepare_mocks
 
         query_results = iter([
@@ -533,17 +577,75 @@ class TestSingleUpdateRequestHandling:
         assert not result_inetnum._check_auth(), result_inetnum
         assert 'Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed' in result_inetnum.error_messages[0]
         assert 'one of: FAIL-MNT' in result_inetnum.error_messages[0]
+        assert result_inetnum.notification_targets() == {'notify@example.com'}
+
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}],
             ['object_classes', (['inetnum'],), {}],
             ['rpsl_pk', ('192.0.2.0 - 192.0.2.255',), {}],
             ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
-            ['rpsl_pks', (['TEST-MNT'],), {}],
+            ['rpsl_pks', ({'TEST-MNT'},), {}],
             ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
-            ['rpsl_pks', (['FAIL-MNT'],), {}],
+            ['rpsl_pks', ({'FAIL-MNT'},), {}],
         ]
+
+    def test_check_auth_valid_update_mntner_using_override(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
+
+        query_result1 = {'object_text': SAMPLE_INETNUM}
+        query_result2 = {'object_text': SAMPLE_MNTNER}
+        query_results = itertools.cycle([[query_result1], [query_result2]])
+        mock_dh.execute_query = lambda query: next(query_results)
+
+        reference_validator = ReferenceValidator(mock_dh)
+        auth_validator = AuthValidator(mock_dh)
+
+        result_inetnum = parse_update_requests(SAMPLE_INETNUM + 'override: override-password',
+                                               mock_dh, auth_validator, reference_validator)[0]
+        assert result_inetnum._check_auth()
+        assert not result_inetnum.error_messages
+        assert not result_inetnum.notification_targets()
+
+    def test_check_auth_invalid_update_mntner_using_incorrect_override(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
+
+        query_result1 = {'object_text': SAMPLE_INETNUM}
+        query_result2 = {'object_text': SAMPLE_MNTNER}
+        query_results = itertools.cycle([[query_result1], [query_result2]])
+        mock_dh.execute_query = lambda query: next(query_results)
+
+        reference_validator = ReferenceValidator(mock_dh)
+        auth_validator = AuthValidator(mock_dh)
+
+        result_inetnum = parse_update_requests(SAMPLE_INETNUM + 'override: wrong-override',
+                                               mock_dh, auth_validator, reference_validator)[0]
+        assert not result_inetnum._check_auth()
+        assert result_inetnum.error_messages == [
+            'Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed: must by authenticated by one of: TEST-MNT',
+        ]
+        assert result_inetnum.notification_targets() == {'notify@example.com', 'upd-to@example.net'}
+
+    def test_check_auth_invalid_update_mntner_override_hash_misconfigured(self, prepare_mocks, monkeypatch):
+        mock_dq, mock_dh = prepare_mocks
+        monkeypatch.setenv('IRRD_AUTH_OVERRIDE_PASSWORD', '')
+
+        query_result1 = {'object_text': SAMPLE_INETNUM}
+        query_result2 = {'object_text': SAMPLE_MNTNER}
+        query_results = itertools.cycle([[query_result1], [query_result2]])
+        mock_dh.execute_query = lambda query: next(query_results)
+
+        reference_validator = ReferenceValidator(mock_dh)
+        auth_validator = AuthValidator(mock_dh)
+
+        result_inetnum = parse_update_requests(SAMPLE_INETNUM + 'override: override-password',
+                                               mock_dh, auth_validator, reference_validator)[0]
+        assert not result_inetnum._check_auth()
+        assert result_inetnum.error_messages == [
+            'Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed: must by authenticated by one of: TEST-MNT',
+        ]
+        assert result_inetnum.notification_targets() == {'notify@example.com', 'upd-to@example.net'}
 
     def test_user_report(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
@@ -556,10 +658,10 @@ class TestSingleUpdateRequestHandling:
 
         result_inetnum, result_as_set, result_unknown, result_invalid = parse_update_requests(
             self._request_text(), mock_dh, AuthValidator(mock_dh), None)
-        report_inetnum = result_inetnum.user_report()
-        report_as_set = result_as_set.user_report()
-        report_unknown = result_unknown.user_report()
-        report_invalid = result_invalid.user_report()
+        report_inetnum = result_inetnum.submitter_report()
+        report_as_set = result_as_set.submitter_report()
+        report_unknown = result_unknown.submitter_report()
+        report_invalid = result_invalid.submitter_report()
 
         assert 'Delete succeeded' in report_inetnum
         assert 'remarks: ' in report_inetnum  # full RPSL object should be included
@@ -574,6 +676,115 @@ class TestSingleUpdateRequestHandling:
         assert 'aut-num: pw1'  # full RPSL object should be included
         assert 'ERROR: Mandatory attribute' in report_invalid
         assert 'ERROR: Invalid AS number PW1' in report_invalid
+
+        query_results = iter([
+            [{'object_text': SAMPLE_INETNUM}],
+            [],
+        ])
+        mock_dh.execute_query = lambda query: next(query_results)
+
+        assert result_inetnum.notification_target_report() == textwrap.dedent("""
+            Delete succeeded for object below: [inetnum] 192.0.2.0 - 192.0.2.255:
+            
+            inetnum:        192.0.2.0 - 192.0.2.255
+            netname:        NET-TEST-V4
+            descr:          description
+            country:        IT
+            notify:         notify@example.com
+            admin-c:        PERSON-TEST
+            tech-c:         PERSON-TEST
+            status:         ASSIGNED PA
+            mnt-by:         test-MNT
+            changed:        2001-09-21T22:08:01Z
+            source:         TEST
+            remarks:        remark
+        """).strip() + '\n'
+
+        assert result_as_set.notification_target_report() == textwrap.dedent("""
+            Create succeeded for object below: [as-set] AS-SETTEST:
+            
+            as-set:         AS-SETTEST
+            descr:          description
+            members:        AS2602,AS42909,AS51966
+            members:        AS49624
+            tech-c:         PERSON-TEST
+            admin-c:        PERSON-TEST
+            notify:         notify@example.com
+            mnt-by:         TEST-MNT
+            changed:        2017-05-19T12:22:08Z
+            source:         TEST
+            remarks:        remark
+        """).strip() + '\n'
+
+        inetnum_modify = SAMPLE_INETNUM.replace('PERSON-TEST', 'NEW-TEST')
+        result_inetnum_modify = parse_update_requests(inetnum_modify, mock_dh, AuthValidator(mock_dh), None)[0]
+        assert result_inetnum_modify.notification_target_report() == textwrap.dedent("""
+            Modify succeeded for object below: [inetnum] 192.0.2.0 - 192.0.2.255:
+            
+            @@ -3,8 +3,8 @@
+             descr:          description
+             country:        IT
+             notify:         notify@example.com
+            -admin-c:        PERSON-TEST
+            -tech-c:         PERSON-TEST
+            +admin-c:        NEW-TEST
+            +tech-c:         NEW-TEST
+             status:         ASSIGNED PA
+             mnt-by:         test-MNT
+             changed:        2001-09-21T22:08:01Z
+            
+            New version of this object:
+            
+            inetnum:        192.0.2.0 - 192.0.2.255
+            netname:        NET-TEST-V4
+            descr:          description
+            country:        IT
+            notify:         notify@example.com
+            admin-c:        NEW-TEST
+            tech-c:         NEW-TEST
+            status:         ASSIGNED PA
+            mnt-by:         test-MNT
+            changed:        2001-09-21T22:08:01Z
+            source:         TEST
+            remarks:        remark
+        """).strip() + '\n'
+
+        # Fake the result to look like an authentication failure
+        result_inetnum_modify.status = UpdateRequestStatus.ERROR_AUTH
+        assert result_inetnum_modify.notification_target_report() == textwrap.dedent("""
+            Modify FAILED AUTHORISATION for object below: [inetnum] 192.0.2.0 - 192.0.2.255:
+            
+            @@ -3,8 +3,8 @@
+             descr:          description
+             country:        IT
+             notify:         notify@example.com
+            -admin-c:        PERSON-TEST
+            -tech-c:         PERSON-TEST
+            +admin-c:        NEW-TEST
+            +tech-c:         NEW-TEST
+             status:         ASSIGNED PA
+             mnt-by:         test-MNT
+             changed:        2001-09-21T22:08:01Z
+            
+            *Rejected* new version of this object:
+            
+            inetnum:        192.0.2.0 - 192.0.2.255
+            netname:        NET-TEST-V4
+            descr:          description
+            country:        IT
+            notify:         notify@example.com
+            admin-c:        NEW-TEST
+            tech-c:         NEW-TEST
+            status:         ASSIGNED PA
+            mnt-by:         test-MNT
+            changed:        2001-09-21T22:08:01Z
+            source:         TEST
+            remarks:        remark
+        """).strip() + '\n'
+
+        with pytest.raises(ValueError) as ve:
+            result_unknown.notification_target_report()
+        assert 'updates that are valid or have failed authorisation' in str(ve)
 
     def _request_text(self):
         unknown_class = 'unknown-object: foo\n'

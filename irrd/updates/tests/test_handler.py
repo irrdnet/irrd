@@ -12,13 +12,16 @@ from ..handler import UpdateRequestHandler
 
 @pytest.fixture()
 def prepare_mocks(monkeypatch):
+    monkeypatch.setenv('IRRD_SOURCES_TEST_AUTHORITATIVE', '1')
     mock_dh = Mock()
     monkeypatch.setattr('irrd.updates.handler.DatabaseHandler', lambda: mock_dh)
     mock_dq = Mock()
     monkeypatch.setattr('irrd.updates.handler.RPSLDatabaseQuery', lambda: mock_dq)
     monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
     monkeypatch.setattr('irrd.updates.validators.RPSLDatabaseQuery', lambda: mock_dq)
-    yield mock_dq, mock_dh
+    mock_email = Mock()
+    monkeypatch.setattr('irrd.utils.email.send_email', mock_email)
+    yield mock_dq, mock_dh, mock_email
 
 
 class TestUpdateRequestHandler:
@@ -26,16 +29,16 @@ class TestUpdateRequestHandler:
     # this is more of an update handler integration test.
 
     def test_parse_valid_new_objects(self, prepare_mocks):
-        mock_dq, mock_dh = prepare_mocks
+        mock_dq, mock_dh, mock_email = prepare_mocks
         mock_dh.execute_query = lambda query: []
 
         rpsl_text = textwrap.dedent("""
         person:         Placeholder Person Object
         address:        The Netherlands
-        phone:          +31 20 535 4444
+        phone:          +31 20 000 0000
         nic-hdl:        PERSON-TEST
         mnt-by:         TEST-MNT
-        e-mail:         bitbucket@ripe.net
+        e-mail:         email@example.com
         changed:        2009-07-24T17:00:00Z
         source:         TEST
 
@@ -72,6 +75,9 @@ class TestUpdateRequestHandler:
             ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pk', ('TEST-MNT',), {}],
             ['sources', (['TEST'],), {}], ['object_classes', (['inetnum'],), {}],
             ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}]
         ]
 
         assert mock_dh.mock_calls[0][0] == 'upsert_rpsl_object'
@@ -83,7 +89,7 @@ class TestUpdateRequestHandler:
         assert mock_dh.mock_calls[3][0] == 'commit'
         assert mock_dh.mock_calls[4][0] == 'close'
 
-        assert handler.user_report() == textwrap.dedent("""
+        assert handler.submitter_report() == textwrap.dedent("""
         SUMMARY OF UPDATE:
 
         Number of objects found:                    3
@@ -127,15 +133,15 @@ class TestUpdateRequestHandler:
         """)
 
     def test_parse_valid_new_objects_pgp_key(self, prepare_mocks):
-        mock_dq, mock_dh = prepare_mocks
+        mock_dq, mock_dh, mock_email = prepare_mocks
 
         person_text = textwrap.dedent("""
         person:         Placeholder Person Object
         address:        The Netherlands
-        phone:          +31 20 535 4444
+        phone:          +31 20 000 0000
         nic-hdl:        PERSON-TEST
         mnt-by:         TEST-MNT
-        e-mail:         bitbucket@ripe.net
+        e-mail:         email@example.com
         changed:        2009-07-24T17:00:00Z
         source:         TEST
         """)
@@ -143,7 +149,8 @@ class TestUpdateRequestHandler:
         mntner_text = textwrap.dedent("""
         mntner:         TEST-MNT
         admin-c:        PERSON-TEST
-        upd-to:         unread@ripe.net
+        upd-to:         upd-to@example.com
+        mnt-nfy:        mnt-nfy@example.com
         auth:           PGPKey-80F238C6
         mnt-by:         TEST-MNT
         changed:        2016-10-05T10:41:15Z
@@ -162,13 +169,13 @@ class TestUpdateRequestHandler:
 
         handler = UpdateRequestHandler(rpsl_text, pgp_fingerprint='8626 1D8DBEBD A4F5 4692  D64D A838 3BA7 80F2 38C6',
                                        request_meta={'Message-ID': 'test', 'From': 'example@example.com'})
-        assert handler.status() == 'SUCCESS', handler.user_report()
+        assert handler.status() == 'SUCCESS', handler.submitter_report()
 
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['key-cert'],), {}], ['rpsl_pk', ('PGPKEY-80F238C6',), {}],
             ['sources', (['TEST'],), {}], ['object_classes', (['person'],), {}], ['rpsl_pk', ('PERSON-TEST',), {}],
             ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pk', ('TEST-MNT',), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['TEST-MNT'],), {}]
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
         ]
 
         assert mock_dh.mock_calls[0][0] == 'upsert_rpsl_object'
@@ -178,7 +185,7 @@ class TestUpdateRequestHandler:
         assert mock_dh.mock_calls[2][0] == 'commit'
         assert mock_dh.mock_calls[3][0] == 'close'
 
-        assert handler.user_report() == textwrap.dedent("""
+        assert handler.submitter_report() == textwrap.dedent("""
         > Message-ID: test
         > From: example@example.com
         
@@ -207,16 +214,72 @@ class TestUpdateRequestHandler:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """)
 
+        expected_notification = textwrap.dedent("""
+            This is to notify you of changes in the TEST database
+            or object authorisation failures.
+            
+            You may receive this message because you are listed in
+            the notify attribute on the changed object(s), or because
+            you are listed in the mnt-nfy or upd-to attribute on a maintainer
+            of the object(s).
+            
+            This message is auto-generated.
+            The request was made by email, with the following details:
+            
+            > Message-ID: test
+            > From: example@example.com
+            
+            
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Some objects in which you are referenced have been created,
+            deleted or changed.
+            
+            ---
+            Create succeeded for object below: [person] PERSON-TEST:
+            
+            person:         Placeholder Person Object
+            address:        The Netherlands
+            phone:          +31 20 000 0000
+            nic-hdl:        PERSON-TEST
+            mnt-by:         TEST-MNT
+            e-mail:         email@example.com
+            changed:        2009-07-24T17:00:00Z
+            source:         TEST
+            
+            ---
+            Modify succeeded for object below: [mntner] TEST-MNT:
+            
+            
+            
+            New version of this object:
+            
+            mntner:         TEST-MNT
+            admin-c:        PERSON-TEST
+            upd-to:         upd-to@example.com
+            mnt-nfy:        mnt-nfy@example.com
+            auth:           PGPKey-80F238C6
+            mnt-by:         TEST-MNT
+            changed:        2016-10-05T10:41:15Z
+            source:         TEST
+            
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        """)
+        handler.send_notification_target_reports()
+        assert flatten_mock_calls(mock_email) == [
+            ['', ('mnt-nfy@example.com', 'Notification of TEST database changes', expected_notification), {}]
+        ]
+
     def test_parse_invalid_new_objects_pgp_key_does_not_exist(self, prepare_mocks):
-        mock_dq, mock_dh = prepare_mocks
+        mock_dq, mock_dh, mock_email = prepare_mocks
 
         person_text = textwrap.dedent("""
         person:         Placeholder Person Object
         address:        The Netherlands
-        phone:          +31 20 535 4444
+        phone:          +31 20 000 0000
         nic-hdl:        PERSON-TEST
         mnt-by:         TEST-MNT
-        e-mail:         bitbucket@ripe.net
+        e-mail:         email@example.com
         changed:        2009-07-24T17:00:00Z
         source:         TEST
         """)
@@ -243,30 +306,29 @@ class TestUpdateRequestHandler:
         mock_dh.execute_query = lambda query: next(query_responses)
 
         handler = UpdateRequestHandler(rpsl_text, pgp_fingerprint='8626 1D8DBEBD A4F5 4692  D64D A838 3BA7 80F2 38C6')
-        assert handler.status() == 'FAILED', handler.user_report()
+        assert handler.status() == 'FAILED', handler.submitter_report()
 
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['key-cert'],), {}], ['rpsl_pk', ('PGPKEY-80F238C6',), {}],
             ['sources', (['TEST'],), {}], ['object_classes', (['person'],), {}], ['rpsl_pk', ('PERSON-TEST',), {}],
             ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pk', ('TEST-MNT',), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['TEST-MNT'],), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['TEST-MNT'],), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['TEST-MNT'],), {}]
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
         ]
 
         assert mock_dh.mock_calls[0][0] == 'commit'
         assert mock_dh.mock_calls[1][0] == 'close'
 
     def test_parse_valid_delete(self, prepare_mocks):
-        mock_dq, mock_dh = prepare_mocks
+        mock_dq, mock_dh, mock_email = prepare_mocks
 
         rpsl_person = textwrap.dedent("""
         person:         Placeholder Person Object
         address:        The Netherlands
-        phone:          +31 20 535 4444
+        phone:          +31 20 00000000
         nic-hdl:        PERSON-TEST
         mnt-by:         TEST-MNT
-        e-mail:         bitbucket@ripe.net
+        e-mail:         email@example.com
+        notify:         notify@example.com
         changed:        2009-07-24T17:00:00Z
         source:         TEST
         """)
@@ -284,7 +346,7 @@ class TestUpdateRequestHandler:
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}], ['object_classes', (['person'],), {}],
             ['rpsl_pk', ('PERSON-TEST',), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['TEST-MNT'],), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
             ['sources', (['TEST'],), {}],
             ['lookup_attrs_in', ({'tech-c', 'zone-c', 'admin-c'}, ['PERSON-TEST']), {}]
         ]
@@ -293,7 +355,7 @@ class TestUpdateRequestHandler:
         assert mock_dh.mock_calls[1][0] == 'commit'
         assert mock_dh.mock_calls[2][0] == 'close'
 
-        assert handler.user_report() == textwrap.dedent("""
+        assert handler.submitter_report() == textwrap.dedent("""
             SUMMARY OF UPDATE:
 
             Number of objects found:                    1
@@ -315,8 +377,49 @@ class TestUpdateRequestHandler:
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """)
 
+        expected_notification = textwrap.dedent("""
+            This is to notify you of changes in the TEST database
+            or object authorisation failures.
+            
+            You may receive this message because you are listed in
+            the notify attribute on the changed object(s), or because
+            you are listed in the mnt-nfy or upd-to attribute on a maintainer
+            of the object(s).
+            
+            This message is auto-generated.
+            The request was made by email, with the following details:
+            
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Some objects in which you are referenced have been created,
+            deleted or changed.
+            
+            ---
+            Delete succeeded for object below: [person] PERSON-TEST:
+            
+            person:         Placeholder Person Object
+            address:        The Netherlands
+            phone:          +31 20 00000000
+            nic-hdl:        PERSON-TEST
+            mnt-by:         TEST-MNT
+            e-mail:         email@example.com
+            notify:         notify@example.com
+            changed:        2009-07-24T17:00:00Z
+            source:         TEST
+            
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        """)
+        handler.send_notification_target_reports()
+        # Notification recipients are kept in unordered items at times, so call order may vary.
+        sorted_mock_calls = sorted(flatten_mock_calls(mock_email), key=lambda x: x[1][0])
+        assert sorted_mock_calls == [
+            ['', ('mnt-nfy2@example.net', 'Notification of TEST database changes', expected_notification), {}],
+            ['', ('mnt-nfy@example.net', 'Notification of TEST database changes', expected_notification), {}],
+            ['', ('notify@example.com', 'Notification of TEST database changes', expected_notification), {}],
+        ]
+
     def test_parse_invalid_cascading_failure(self, prepare_mocks):
-        mock_dq, mock_dh = prepare_mocks
+        mock_dq, mock_dh, mock_email = prepare_mocks
         mock_dh.execute_query = lambda query: []
 
         rpsl_text = textwrap.dedent("""
@@ -346,10 +449,10 @@ class TestUpdateRequestHandler:
         
         person:         Placeholder Person Object
         address:        The Netherlands
-        phone:          +31 20 535 4444
+        phone:          +31 20 000 0000
         nic-hdl:        PERSON-TEST
         mnt-by:         OTHER-MNT
-        e-mail:         bitbucket@ripe.net
+        e-mail:         email@example.com
         changed:        2009-07-24T17:00:00Z
         source:         TEST
         """)
@@ -360,20 +463,25 @@ class TestUpdateRequestHandler:
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pk', ('TEST-MNT',), {}],
             ['sources', (['TEST'],), {}], ['object_classes', (['inetnum'],), {}],
-            ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}], ['sources', (['TEST'],), {}],
-            ['object_classes', (['person'],), {}], ['rpsl_pk', ('PERSON-TEST',), {}], ['sources', (['TEST'],), {}],
-            ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['OTHER-MNT'],), {}], ['sources', (['TEST'],), {}],
-            ['object_classes', (['role', 'person'],), {}], ['rpsl_pk', ('PERSON-TEST',), {}],
+            ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['person'],), {}], ['rpsl_pk', ('PERSON-TEST',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'OTHER-MNT'},), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
             ['sources', (['TEST'],), {}], ['object_classes', (['role', 'person'],), {}],
-            ['rpsl_pk', ('PERSON-TEST',), {}], ['sources', (['TEST'],), {}],
-            ['object_classes', (['role', 'person'],), {}], ['rpsl_pk', ('PERSON-TEST',), {}]
+            ['rpsl_pk', ('PERSON-TEST',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['role', 'person'],), {}],
+            ['rpsl_pk', ('PERSON-TEST',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['role', 'person'],), {}], ['rpsl_pk', ('PERSON-TEST',), {}],
         ]
         assert flatten_mock_calls(mock_dh) == [
             ['commit', (), {}],
             ['close', (), {}],
         ]
 
-        assert handler.user_report() == textwrap.dedent("""
+        assert handler.submitter_report() == textwrap.dedent("""
         SUMMARY OF UPDATE:
         
         Number of objects found:                    3
@@ -428,10 +536,10 @@ class TestUpdateRequestHandler:
         
         person:         Placeholder Person Object
         address:        The Netherlands
-        phone:          +31 20 535 4444
+        phone:          +31 20 000 0000
         nic-hdl:        PERSON-TEST
         mnt-by:         OTHER-MNT
-        e-mail:         bitbucket@ripe.net
+        e-mail:         email@example.com
         changed:        2009-07-24T17:00:00Z
         source:         TEST
         
@@ -440,17 +548,118 @@ class TestUpdateRequestHandler:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """)
 
+    def test_parse_invalid_single_failure_invalid_password(self, prepare_mocks):
+        mock_dq, mock_dh, mock_email = prepare_mocks
+        query_results = iter([
+            [],
+            [{'object_text': SAMPLE_MNTNER}],
+        ])
+        mock_dh.execute_query = lambda query: next(query_results)
+
+        rpsl_text = textwrap.dedent("""
+        person:         Placeholder Person Object
+        address:        The Netherlands
+        phone:          +31 20 000 0000
+        nic-hdl:        PERSON-TEST
+        mnt-by:         TEST-MNT
+        e-mail:         email@example.com
+        changed:        2009-07-24T17:00:00Z
+        source:         TEST
+        """)
+
+        handler = UpdateRequestHandler(rpsl_text)
+        assert handler.status() == 'FAILED'
+
+        assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['TEST'],), {}], ['object_classes', (['person'],), {}], ['rpsl_pk', ('PERSON-TEST',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}]
+        ]
+        assert flatten_mock_calls(mock_dh) == [
+            ['commit', (), {}],
+            ['close', (), {}],
+        ]
+
+        assert handler.submitter_report() == textwrap.dedent("""
+            SUMMARY OF UPDATE:
+            
+            Number of objects found:                    1
+            Number of objects processed successfully:   0
+                Create:        0
+                Modify:        0
+                Delete:        0
+            Number of objects processed with errors:    1
+                Create:        1
+                Modify:        0
+                Delete:        0
+            
+            DETAILED EXPLANATION:
+            
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            ---
+            Create FAILED: [person] PERSON-TEST
+            
+            person:         Placeholder Person Object
+            address:        The Netherlands
+            phone:          +31 20 000 0000
+            nic-hdl:        PERSON-TEST
+            mnt-by:         TEST-MNT
+            e-mail:         email@example.com
+            changed:        2009-07-24T17:00:00Z
+            source:         TEST
+            
+            ERROR: Authorisation for person PERSON-TEST failed: must by authenticated by one of: TEST-MNT
+            
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        """)
+
+        expected_notification = textwrap.dedent("""
+            This is to notify you of changes in the TEST database
+            or object authorisation failures.
+            
+            You may receive this message because you are listed in
+            the notify attribute on the changed object(s), or because
+            you are listed in the mnt-nfy or upd-to attribute on a maintainer
+            of the object(s).
+            
+            This message is auto-generated.
+            The request was made by email, with the following details:
+            
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Some objects in which you are referenced were requested
+            to be created, deleted or changed, but *failed* the 
+            proper authorisation for any of the referenced maintainers.
+            
+            ---
+            Create FAILED AUTHORISATION for object below: [person] PERSON-TEST:
+            
+            person:         Placeholder Person Object
+            address:        The Netherlands
+            phone:          +31 20 000 0000
+            nic-hdl:        PERSON-TEST
+            mnt-by:         TEST-MNT
+            e-mail:         email@example.com
+            changed:        2009-07-24T17:00:00Z
+            source:         TEST
+            
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        """)
+        handler.send_notification_target_reports()
+        assert flatten_mock_calls(mock_email) == [
+            ['', ('upd-to@example.net', 'Notification of TEST database changes', expected_notification), {}],
+        ]
+
     def test_parse_invalid_cascading_failure_invalid_password(self, prepare_mocks):
-        mock_dq, mock_dh = prepare_mocks
+        mock_dq, mock_dh, mock_email = prepare_mocks
         mock_dh.execute_query = lambda query: []
 
         rpsl_text = textwrap.dedent("""
         person:         Placeholder Person Object
         address:        The Netherlands
-        phone:          +31 20 535 4444
+        phone:          +31 20 000 0000
         nic-hdl:        PERSON-TEST
         mnt-by:         TEST-MNT
-        e-mail:         bitbucket@ripe.net
+        e-mail:         email@example.com
         changed:        2009-07-24T17:00:00Z
         source:         TEST
 
@@ -486,16 +695,19 @@ class TestUpdateRequestHandler:
             ['sources', (['TEST'],), {}], ['object_classes', (['person'],), {}], ['rpsl_pk', ('PERSON-TEST',), {}],
             ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pk', ('TEST-MNT',), {}],
             ['sources', (['TEST'],), {}], ['object_classes', (['inetnum'],), {}],
-            ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}], ['sources', (['TEST'],), {}],
-            ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['TEST-MNT'],), {}], ['sources', (['TEST'],), {}],
-            ['object_classes', (['mntner'],), {}], ['rpsl_pks', (['TEST-MNT'],), {}]
+            ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
         ]
         assert flatten_mock_calls(mock_dh) == [
             ['commit', (), {}],
             ['close', (), {}],
         ]
 
-        assert handler.user_report() == textwrap.dedent("""
+        assert handler.submitter_report() == textwrap.dedent("""
         SUMMARY OF UPDATE:
 
         Number of objects found:                    3
@@ -516,10 +728,10 @@ class TestUpdateRequestHandler:
         
         person:         Placeholder Person Object
         address:        The Netherlands
-        phone:          +31 20 535 4444
+        phone:          +31 20 000 0000
         nic-hdl:        PERSON-TEST
         mnt-by:         TEST-MNT
-        e-mail:         bitbucket@ripe.net
+        e-mail:         email@example.com
         changed:        2009-07-24T17:00:00Z
         source:         TEST
         
@@ -562,7 +774,7 @@ class TestUpdateRequestHandler:
         """)
 
     def test_parse_invalid_object_syntax(self, prepare_mocks):
-        mock_dq, mock_dh = prepare_mocks
+        mock_dq, mock_dh, mock_email = prepare_mocks
         mock_dh.execute_query = lambda query: []
 
         rpsl_text = textwrap.dedent("""
@@ -579,7 +791,7 @@ class TestUpdateRequestHandler:
         assert mock_dh.mock_calls[0][0] == 'commit'
         assert mock_dh.mock_calls[1][0] == 'close'
 
-        assert handler.user_report() == textwrap.dedent("""
+        assert handler.submitter_report() == textwrap.dedent("""
         SUMMARY OF UPDATE:
         
         Number of objects found:                    1

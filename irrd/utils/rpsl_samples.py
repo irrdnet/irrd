@@ -206,6 +206,7 @@ SAMPLE_INETNUM = """inetnum:        192.0.2.0 - 192.0.02.255
 netname:        NET-TEST-V4
 descr:          description
 country:        IT
+notify:         notify@example.com
 admin-c:        PERSON-TEST
 tech-c:         PERSON-TEST
 status:         ASSIGNED PA
@@ -494,7 +495,10 @@ source:         TEST
 
 SAMPLE_MNTNER = """mntner:         TEST-MNT
 admin-c:        PERSON-TEST
-upd-to:         unread@example.net
+notify:         notify@example.net
+upd-to:         upd-to@example.net
+mnt-nfy:        mnt-nfy@example.net
+mnt-nfy:        mnt-nfy2@example.net
 auth:           PGPKey-80F238C6
 auth:           CRYPT-PW LEuuhsBJNFV0Q  # crypt-password
 auth:           MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.  # md5-password

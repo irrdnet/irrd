@@ -29,4 +29,4 @@ def tmp_gpg_dir(tmpdir, monkeypatch):
     Default tmpdirs on Mac OS X are affected, to prevent this run pytest with:
         --basetemp=.tmpdirs
     """
-    os.environ['IRRD_GNUPG_HOMEDIR'] = str(tmpdir) + "/gnupg"
+    os.environ['IRRD_AUTH_GNUPG_HOMEDIR'] = str(tmpdir) + "/gnupg"
