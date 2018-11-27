@@ -5,6 +5,10 @@ from typing import List, Tuple, Optional
 logger = logging.getLogger(__name__)
 
 
+class WhoisQueryError(ValueError):
+    pass
+
+
 def whois_query(host: str, port: int, query: str, end_markings: List[str]=None) -> str:
     """
     Perform a query on a whois server, connecting to the specified host and port.
@@ -29,7 +33,7 @@ def whois_query(host: str, port: int, query: str, end_markings: List[str]=None) 
     buffer = b''
     while not any([end_marking in buffer for end_marking in end_markings_bytes]):
         try:
-            data = s.recv(1024)
+            data = s.recv(1024*1024)
         except socket.timeout:
             break
         if not data:
@@ -40,7 +44,7 @@ def whois_query(host: str, port: int, query: str, end_markings: List[str]=None) 
     return buffer.decode('utf-8', errors='backslashreplace')
 
 
-def whois_query_irrd(host: str, port: int, query: str) -> str:
+def whois_query_irrd(host: str, port: int, query: str) -> Optional[str]:
     """
     Perform a whois query, expecting an IRRD-style output format.
 
@@ -60,6 +64,8 @@ def whois_query_irrd(host: str, port: int, query: str) -> str:
     buffer = b''
     expected_data_length = None
     data_offset = None
+    error = None
+
     while True:
         try:
             data = s.recv(1024)
@@ -75,10 +81,19 @@ def whois_query_irrd(host: str, port: int, query: str) -> str:
                 if length_line.startswith('A'):
                     expected_data_length = int(length_line[1:])
                     data_offset = len(length_line) + 1
+                elif length_line in ['C', 'D']:
+                    break
+                elif length_line.startswith('F'):
+                    error = length_line[2:]
+                    break
         if expected_data_length and data_offset and len(buffer) > (expected_data_length + data_offset):
             break
     s.close()
 
+    if error:
+        raise WhoisQueryError(error)
+    if not expected_data_length and buffer in [b'C\n', b'D\n']:
+        return None
     if not expected_data_length or not data_offset:
         raise ValueError(f'Data receiving ended without a valid IRRD-format response.')
     if len(buffer) < (expected_data_length + data_offset):
@@ -101,6 +116,8 @@ def whois_query_source_status(host: str, port: int, source: str) -> Tuple[Option
     remote_status = whois_query_irrd(host, port, f'!j{source}')
 
     # Fields are: source, mirrorable, serials in journal, optional last export serial
+    if not remote_status:
+        raise ValueError(f'Source status query on {host}:{port} failed: empty response')
     fields = remote_status.split(':')
     match_source = fields[0].upper()
     if match_source != source.upper():

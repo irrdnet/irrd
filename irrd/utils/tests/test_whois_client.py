@@ -1,10 +1,11 @@
 import socket
+from typing import Optional
 from unittest.mock import Mock
 
 import pytest
 
 from ..test_utils import flatten_mock_calls
-from ..whois_client import whois_query, whois_query_irrd, whois_query_source_status
+from ..whois_client import whois_query, whois_query_irrd, whois_query_source_status, WhoisQueryError
 
 
 class TestWhoisQuery:
@@ -91,7 +92,7 @@ class TestWhoisQueryIRRD:
         def mock_socket_recv(bytes) -> bytes:
             self.recv_calls += 1
             if self.recv_calls == 1:
-                return "A2\n".encode('utf-8')
+                return b'A2\n'
             if self.recv_calls > 2:
                 return b'C\n'
             return str(self.recv_calls).encode('utf-8')
@@ -107,6 +108,70 @@ class TestWhoisQueryIRRD:
             ['close', (), {}]
         ]
         assert self.recv_calls == 3
+
+    def test_query_valid_empty_c_response(self, monkeypatch):
+        self.recv_calls = 0
+        mock_socket = Mock()
+        monkeypatch.setattr('irrd.utils.whois_client.socket.socket', lambda: mock_socket)
+
+        def mock_socket_recv(bytes) -> bytes:
+            self.recv_calls += 1
+            return b'C\n'
+
+        mock_socket.recv = mock_socket_recv
+        response = whois_query_irrd('192.0.2.1', 43, 'query')
+        assert response is None
+
+        assert flatten_mock_calls(mock_socket) == [
+            ['settimeout', (5,), {}],
+            ['connect', (('192.0.2.1', 43),), {}],
+            ['sendall', (b'query\n',), {}],
+            ['close', (), {}]
+        ]
+        assert self.recv_calls == 1
+
+    def test_query_valid_empty_d_response(self, monkeypatch):
+        self.recv_calls = 0
+        mock_socket = Mock()
+        monkeypatch.setattr('irrd.utils.whois_client.socket.socket', lambda: mock_socket)
+
+        def mock_socket_recv(bytes) -> bytes:
+            self.recv_calls += 1
+            return b'D\n'
+
+        mock_socket.recv = mock_socket_recv
+        response = whois_query_irrd('192.0.2.1', 43, 'query')
+        assert response is None
+
+        assert flatten_mock_calls(mock_socket) == [
+            ['settimeout', (5,), {}],
+            ['connect', (('192.0.2.1', 43),), {}],
+            ['sendall', (b'query\n',), {}],
+            ['close', (), {}]
+        ]
+        assert self.recv_calls == 1
+
+    def test_query_invalid_f_response(self, monkeypatch):
+        self.recv_calls = 0
+        mock_socket = Mock()
+        monkeypatch.setattr('irrd.utils.whois_client.socket.socket', lambda: mock_socket)
+
+        def mock_socket_recv(bytes) -> bytes:
+            self.recv_calls += 1
+            return b'F unrecognized command\n'
+
+        mock_socket.recv = mock_socket_recv
+        with pytest.raises(WhoisQueryError) as wqe:
+            whois_query_irrd('192.0.2.1', 43, 'query')
+        assert 'unrecognized command' in str(wqe)
+
+        assert flatten_mock_calls(mock_socket) == [
+            ['settimeout', (5,), {}],
+            ['connect', (('192.0.2.1', 43),), {}],
+            ['sendall', (b'query\n',), {}],
+            ['close', (), {}]
+        ]
+        assert self.recv_calls == 1
 
     def test_no_valid_start(self, monkeypatch):
         self.recv_calls = 0
@@ -188,7 +253,7 @@ class TestWhoisQueryIRRD:
 class TestQuerySourceStatus:
 
     def test_query_valid_with_export(self, monkeypatch):
-        def mock_whois_query_irrd(host: str, port: int, query: str) -> str:
+        def mock_whois_query_irrd(host: str, port: int, query: str) -> Optional[str]:
             assert host == 'host'
             assert port == 43
             assert query == '!jTEST'
@@ -203,7 +268,7 @@ class TestQuerySourceStatus:
         assert export_serial == 1
 
     def test_query_valid_without_export(self, monkeypatch):
-        def mock_whois_query_irrd(host: str, port: int, query: str) -> str:
+        def mock_whois_query_irrd(host: str, port: int, query: str) -> Optional[str]:
             assert host == 'host'
             assert port == 43
             assert query == '!jTEST'
@@ -218,7 +283,7 @@ class TestQuerySourceStatus:
         assert export_serial is None
 
     def test_query_invalid_source(self, monkeypatch):
-        def mock_whois_query_irrd(host: str, port: int, query: str) -> str:
+        def mock_whois_query_irrd(host: str, port: int, query: str) -> Optional[str]:
             assert host == 'host'
             assert port == 43
             assert query == '!jTEST'
@@ -229,3 +294,16 @@ class TestQuerySourceStatus:
         with pytest.raises(ValueError) as ve:
             whois_query_source_status('host', 43, 'TEST')
         assert 'Received invalid source NOT-TEST' in str(ve)
+
+    def test_query_empty_response(self, monkeypatch):
+        def mock_whois_query_irrd(host: str, port: int, query: str) -> Optional[str]:
+            assert host == 'host'
+            assert port == 43
+            assert query == '!jTEST'
+            return None
+
+        monkeypatch.setattr('irrd.utils.whois_client.whois_query_irrd', mock_whois_query_irrd)
+
+        with pytest.raises(ValueError) as ve:
+            whois_query_source_status('host', 43, 'TEST')
+        assert 'empty response' in str(ve)
