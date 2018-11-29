@@ -1,5 +1,6 @@
 import logging
 import re
+from orderedset import OrderedSet
 from typing import Optional, List, Set, Tuple
 
 from IPy import IP
@@ -549,10 +550,11 @@ class WhoisQueryParser:
         return result.strip('\n\r')
 
     def _filter_key_fields(self, query_response) -> str:
-        result = ''
+        results = OrderedSet()
         for obj in query_response:
+            result = ''
             rpsl_object_class = OBJECT_CLASS_MAPPING[obj['object_class']]
-            fields_included = rpsl_object_class.pk_fields + ['members', 'mp-members', 'member-of']
+            fields_included = rpsl_object_class.pk_fields + ['members', 'mp-members']
 
             for field_name in fields_included:
                 field_data = obj['parsed_data'].get(field_name)
@@ -562,5 +564,5 @@ class WhoisQueryParser:
                             result += f'{field_name}: {item}\n'
                     else:
                         result += f'{field_name}: {field_data}\n'
-            result += '\n'
-        return result
+            results.add(result)
+        return '\n'.join(results)
