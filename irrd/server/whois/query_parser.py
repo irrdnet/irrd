@@ -414,7 +414,7 @@ class WhoisQueryParser:
                 try:
                     if command == 'k':
                         self.multiple_command_mode = True
-                    elif command in 'lLMx':
+                    elif command in ['l', 'L', 'M', 'x']:
                         result = self.handle_ripe_route_search(command, components.pop(0))
                         if not result:
                             response_type = WhoisQueryResponseType.KEY_NOT_FOUND
@@ -435,9 +435,9 @@ class WhoisQueryParser:
                         break
                     elif command == 'K':
                         self.handle_ripe_key_fields_only()
-                    elif command in 'V':
+                    elif command == 'V':
                         self.handle_user_agent(components.pop(0))
-                    elif command in 'Fr':
+                    elif command in ['F', 'r']:
                         continue  # These flags disable recursion, but IRRd never performs recursion anyways
                     else:
                         raise WhoisQueryParserException(f'Unrecognised flag/search: {command}')
