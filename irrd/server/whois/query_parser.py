@@ -169,12 +169,7 @@ class WhoisQueryParser:
         query_result = self.database_handler.execute_query(query)
 
         prefixes = [r['parsed_data'][object_class] for r in query_result]
-        unique_prefixes: List[str] = []
-        for prefix in prefixes:
-            if prefix not in unique_prefixes:
-                unique_prefixes.append(prefix)
-
-        return ' '.join(unique_prefixes)
+        return ' '.join(OrderedSet(prefixes))
 
     def handle_irrd_set_members(self, parameter: str) -> str:
         """
