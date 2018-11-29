@@ -1,4 +1,5 @@
 import uuid
+from sqlalchemy.exc import ProgrammingError
 from unittest.mock import Mock
 
 import pytest
@@ -7,8 +8,8 @@ from pytest import raises
 
 from .. import engine
 from ..database_handler import DatabaseHandler
-from irrd.storage.queries import (RPSLDatabaseQuery, RPSLDatabaseJournalQuery, RPSLDatabaseStatusQuery,
-                                  RPSLDatabaseObjectStatisticsQuery)
+from ..queries import (RPSLDatabaseQuery, RPSLDatabaseJournalQuery, RPSLDatabaseStatusQuery,
+                       RPSLDatabaseObjectStatisticsQuery)
 from ..models import RPSLDatabaseObject, DatabaseOperation
 
 """
@@ -26,7 +27,10 @@ interact with the database.
 
 @pytest.fixture()
 def irrd_database(monkeypatch):
-    engine.execute('CREATE EXTENSION IF NOT EXISTS pgcrypto')
+    try:
+        engine.execute('CREATE EXTENSION IF NOT EXISTS pgcrypto')
+    except ProgrammingError as pe:  # pragma: no cover
+        print(f'WARNING: unable to create extension pgcrypto on the database. Queries may fail: {pe}')
 
     table_name = RPSLDatabaseObject.__tablename__
     if engine.dialect.has_table(engine, table_name):  # pragma: no cover
