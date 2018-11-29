@@ -5,7 +5,7 @@ from typing import Optional
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
 from irrd.rpsl.config import PASSWORD_HASHERS
 
-re_remove_passwords = re.compile(r'(%s)[\W\w]+' % '|'.join(PASSWORD_HASHERS.keys()))
+re_remove_passwords = re.compile(r'(%s)[^\n]+' % '|'.join(PASSWORD_HASHERS.keys()), flags=re.IGNORECASE)
 
 
 class WhoisQueryResponseType(Enum):
