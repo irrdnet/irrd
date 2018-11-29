@@ -488,7 +488,7 @@ class TestWhoisQueryParserIRRD:
         response = parser.handle_query('!iAS-FIRSTLEVEL,1')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
-        assert response.result == 'AS-2nd-UNKNOWN AS-4th-UNKNOWN AS65544 AS65545 AS65547'
+        assert response.result == 'AS65544 AS65545 AS65547'
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['as-set', 'route-set'],), {}],
             ['rpsl_pks', ({'AS-FIRSTLEVEL'},), {}],
