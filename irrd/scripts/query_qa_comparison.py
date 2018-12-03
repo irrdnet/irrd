@@ -31,7 +31,7 @@ class QueryComparison:
     queries_run = 0
     queries_different = 0
     queries_both_error = 0
-    queries_asdot = 0
+    queries_invalid = 0
     queries_mirror = 0
 
     def __init__(self, input_file, host_reference, port_reference, host_tested, port_tested):
@@ -59,8 +59,8 @@ class QueryComparison:
             if query.lower().startswith('!v') or query.lower().startswith('!s'):
                 continue
 
-            if re.search(ASDOT_RE, query):
-                self.queries_asdot += 1
+            if (query.startswith('-x') and not query.startswith('-x ')) or re.search(ASDOT_RE, query):
+                self.queries_invalid += 1
                 continue
 
             # ignore queries asking for NRTM data or mirror serial status
@@ -120,7 +120,7 @@ class QueryComparison:
 
         print(f"Ran {self.queries_run} objects, {self.queries_different} had different results, "
               f"{self.queries_both_error} produced errors on both instances, "
-              f"{self.queries_asdot} asdot queries were skipped, "
+              f"{self.queries_invalid} invalid queries were skipped, "
               f"{self.queries_mirror} NRTM queries were skipped")
 
     def clean(self, query: str, response: Optional[str]) -> Optional[str]:
