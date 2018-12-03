@@ -50,6 +50,7 @@ origin: AS65545"""
 @pytest.fixture()
 def prepare_parser(monkeypatch):
     DEFAULT_SETTINGS['sources'] = {'TEST1': {}, 'TEST2': {}}
+    DEFAULT_SETTINGS['source_priority_default'] = []
 
     mock_database_handler = Mock()
     monkeypatch.setattr("irrd.server.whois.query_parser.DatabaseHandler", lambda: mock_database_handler)
@@ -227,6 +228,20 @@ class TestWhoisQueryParserRIPE:
         assert not response.result
         assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
         assert parser.sources == []
+
+    def test_sources_default(self, prepare_parser):
+        mock_dq, mock_dh, parser = prepare_parser
+        mock_dh.reset_mock()
+        DEFAULT_SETTINGS['source_priority_default'] = ['TEST2', 'TEST1']
+
+        response = parser.handle_query(' -r  -x 192.0.2.0/25')
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.RIPE
+        assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['TEST2', 'TEST1'],), {}],
+            ['object_classes', (['route', 'route6'],), {}],
+            ['ip_exact', (IP('192.0.2.0/25'),), {}],
+        ]
 
     def test_sources_invalid_unknown_source(self, prepare_parser):
         mock_dq, mock_dh, parser = prepare_parser

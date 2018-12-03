@@ -40,6 +40,26 @@ DEFAULT_SETTINGS = DottedDict({
             '127.0.0.1',
         },
     },
+    'source_priority_default': [
+        'NTTCOM',
+        'INTERNAL',
+        'RADB',
+        'RIPE',
+        'RIPE-NONAUTH',
+        'ALTDB',
+        'BELL',
+        'LEVEL3',
+        'RGNET',
+        'APNIC',
+        'JPIRR',
+        'ARIN',
+        'BBOI',
+        'TC',
+        'AFRINIC',
+        'ARIN-WHOIS',
+        'RPKI',
+        'REGISTROBR',
+    ],
     'sources': {
         # TODO: validate that source names are upper case
         'AFRINIC': {
