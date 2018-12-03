@@ -187,6 +187,8 @@ class WhoisQueryParser:
             members.update(leaf_members)
         else:
             members = self._recursive_set_resolve({parameter})
+        if parameter in members:
+            members.remove(parameter)
         return ' '.join(sorted(members))
 
     def _recursive_set_resolve(self, members: Set[str], sets_seen=None) -> Set[str]:

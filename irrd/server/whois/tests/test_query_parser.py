@@ -520,13 +520,13 @@ class TestWhoisQueryParserIRRD:
         mock_dq.reset_mock()
 
         mock_dh.execute_query = lambda query: iter([])
-        response = parser.handle_query('!iAS-FIRSTLEVEL,1')
+        response = parser.handle_query('!iAS-NOTEXIST')
         assert response.response_type == WhoisQueryResponseType.KEY_NOT_FOUND
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert not response.result
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['as-set', 'route-set'],), {}],
-            ['rpsl_pks', ({'AS-FIRSTLEVEL'},), {}]
+            ['rpsl_pks', ({'AS-NOTEXIST'},), {}]
         ]
 
     def test_as_route_set_mbrs_by_ref(self, prepare_parser):
