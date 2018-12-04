@@ -465,10 +465,15 @@ def parse_set_name(prefixes: List[str], value: str, messages: RPSLParserMessages
     output_components: List[str] = []
     prefix_display = '/'.join(prefixes)
 
+    if strict_validation and len(input_components) > 5:
+        messages.error(f'Set names can have a maximum of five components.')
+        return None
+
     if strict_validation and not any([c.upper().startswith(tuple(prefixes)) for c in input_components]):
         messages.error(f"Invalid set name {value}: at least one component must be "
                        f"an actual set name (i.e. start with {prefix_display})")
         return None
+
     for component in input_components:
         if strict_validation and component.upper() in reserved_words:
             messages.error(f"Invalid set name {value}: component {component} is a reserved word")

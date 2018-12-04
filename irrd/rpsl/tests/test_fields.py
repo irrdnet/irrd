@@ -249,14 +249,17 @@ def test_validate_set_name_field():
         "Set name AS01:AS-3 was reformatted as AS1:AS-3"
     ]
 
+    long_set = "AS1:AS-B:AS-C:AS-D:AS-E:AS-F"
     assert_validation_err("at least one component must be an actual set name", field.parse, "AS1",)
     assert_validation_err("at least one component must be an actual set name", field.parse, "AS1:AS3")
     assert_validation_err("not a valid AS number, nor does it start with AS-", field.parse, "AS1:AS-FOO:RS-FORBIDDEN")
     assert_validation_err("not a valid AS number nor a valid set name", field.parse, ":AS-FOO")
     assert_validation_err("not a valid AS number nor a valid set name", field.parse, "AS-FOO:")
+    assert_validation_err("can have a maximum of five components", field.parse, long_set)
     assert_validation_err("reserved word", field.parse, "AS1:AS-ANY")
 
     assert field.parse("AS-ANY", messages, strict_validation=False).value == "AS-ANY"
+    assert field.parse(long_set, messages, strict_validation=False).value == long_set
 
     field = RPSLSetNameField(prefix="RS")
     messages = RPSLParserMessages()
