@@ -261,11 +261,11 @@ class TestQuerySourceStatus:
 
         monkeypatch.setattr('irrd.utils.whois_client.whois_query_irrd', mock_whois_query_irrd)
 
-        mirrorable, serial_oldest, serial_newest, export_serial = whois_query_source_status('host', 43, 'TEST')
+        mirrorable, serial_oldest, serial_newest, import_serial = whois_query_source_status('host', 43, 'TEST')
         assert mirrorable is True
         assert serial_oldest == 1
         assert serial_newest == 2
-        assert export_serial == 1
+        assert import_serial == 1
 
     def test_query_valid_without_export(self, monkeypatch):
         def mock_whois_query_irrd(host: str, port: int, query: str) -> Optional[str]:
@@ -276,11 +276,11 @@ class TestQuerySourceStatus:
 
         monkeypatch.setattr('irrd.utils.whois_client.whois_query_irrd', mock_whois_query_irrd)
 
-        mirrorable, serial_oldest, serial_newest, export_serial = whois_query_source_status('host', 43, 'TEST')
+        mirrorable, serial_oldest, serial_newest, import_serial = whois_query_source_status('host', 43, 'TEST')
         assert mirrorable is None
         assert serial_oldest == 1
         assert serial_newest == 2
-        assert export_serial is None
+        assert import_serial is None
 
     def test_query_invalid_source(self, monkeypatch):
         def mock_whois_query_irrd(host: str, port: int, query: str) -> Optional[str]:

@@ -4,7 +4,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from irrd.conf import DEFAULT_SETTINGS
+from irrd.conf import default_config
 from irrd.utils.test_utils import flatten_mock_calls
 from ..mirror_runners import MirrorUpdateRunner, MirrorFullImportRunner, NRTMUpdateStreamRunner
 
@@ -89,9 +89,9 @@ class TestMirrorUpdateRunner:
 
 class TestMirrorFullImportRunner:
     def test_run_import(self, monkeypatch):
-        DEFAULT_SETTINGS['sources'] = {'TEST': {
-            'export_source': 'ftp://host/source1.gz,ftp://host/source2',
-            'export_serial_source': 'ftp://host/serial',
+        default_config['sources'] = {'TEST': {
+            'import_source': 'ftp://host/source1.gz,ftp://host/source2',
+            'import_serial_source': 'ftp://host/serial',
         }}
 
         mock_dh = Mock()
@@ -116,17 +116,17 @@ class TestMirrorFullImportRunner:
         ]
 
     def test_missing_source_settings(self):
-        DEFAULT_SETTINGS['sources'] = {'TEST': {
-            'export_source': 'ftp://host/source1.gz,ftp://host/source2',
+        default_config['sources'] = {'TEST': {
+            'import_source': 'ftp://host/source1.gz,ftp://host/source2',
         }}
 
         mock_dh = Mock()
         MirrorFullImportRunner('TEST').run(mock_dh)
 
     def test_unsupported_protocol(self):
-        DEFAULT_SETTINGS['sources'] = {'TEST': {
-            'export_source': 'ftp://host/source1.gz,ftp://host/source2',
-            'export_serial_source': 'gopher://host/serial',
+        default_config['sources'] = {'TEST': {
+            'import_source': 'ftp://host/source1.gz,ftp://host/source2',
+            'import_serial_source': 'gopher://host/serial',
         }}
 
         mock_dh = Mock()
@@ -147,7 +147,7 @@ class MockMirrorFileImportParser:
 
 class TestNRTMUpdateStreamRunner:
     def test_run_import(self, monkeypatch):
-        DEFAULT_SETTINGS['sources'] = {'TEST': {
+        default_config['sources'] = {'TEST': {
             'nrtm_host': '192.0.2.1',
             'nrtm_port': 43,
         }}
@@ -166,7 +166,7 @@ class TestNRTMUpdateStreamRunner:
         NRTMUpdateStreamRunner('TEST').run(424242, mock_dh)
 
     def test_missing_source_settings(self):
-        DEFAULT_SETTINGS['sources'] = {'TEST': {
+        default_config['sources'] = {'TEST': {
             'nrtm_host': '192.0.2.1',
         }}
 

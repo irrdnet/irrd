@@ -529,7 +529,7 @@ class WhoisQueryParser:
         if self.sources:
             query.sources(self.sources)
         else:
-            default = get_setting('source_priority_default')
+            default = get_setting('sources_default')
             if default:
                 query.sources(list(default))
         if self.object_classes:

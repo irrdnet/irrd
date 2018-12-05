@@ -1,6 +1,6 @@
 from unittest.mock import Mock
 
-from irrd.conf import DEFAULT_SETTINGS
+from irrd.conf import default_config
 from irrd.storage.models import DatabaseOperation
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER, SAMPLE_UNKNOWN_CLASS, SAMPLE_MALFORMED_EMPTY_LINE
 from ..nrtm_operation import NRTMOperation
@@ -9,7 +9,7 @@ from ..nrtm_operation import NRTMOperation
 class TestNRTMOperation:
 
     def test_nrtm_add_valid(self):
-        DEFAULT_SETTINGS['sources'] = {'TEST': {}}
+        default_config['sources'] = {'TEST': {}}
         mock_dh = Mock()
 
         operation = NRTMOperation(
@@ -26,7 +26,7 @@ class TestNRTMOperation:
         assert mock_dh.mock_calls[0][1][1] == 42424242
 
     def test_nrtm_add_valid_ignored_object_class(self):
-        DEFAULT_SETTINGS['sources'] = {'TEST': {}}
+        default_config['sources'] = {'TEST': {}}
         mock_dh = Mock()
 
         operation = NRTMOperation(
@@ -40,7 +40,7 @@ class TestNRTMOperation:
         assert mock_dh.upsert_rpsl_object.call_count == 0
 
     def test_nrtm_delete_valid(self):
-        DEFAULT_SETTINGS['sources'] = {'TEST': {}}
+        default_config['sources'] = {'TEST': {}}
         mock_dh = Mock()
 
         operation = NRTMOperation(
@@ -56,7 +56,7 @@ class TestNRTMOperation:
         assert mock_dh.mock_calls[0][1][1] == 42424242
 
     def test_nrtm_add_invalid_unknown_object_class(self):
-        DEFAULT_SETTINGS['sources'] = {'TEST': {}}
+        default_config['sources'] = {'TEST': {}}
         mock_dh = Mock()
 
         operation = NRTMOperation(
@@ -69,7 +69,7 @@ class TestNRTMOperation:
         assert mock_dh.upsert_rpsl_object.call_count == 0
 
     def test_nrtm_add_invalid_inconsistent_source(self):
-        DEFAULT_SETTINGS['sources'] = {'TEST': {}}
+        default_config['sources'] = {'TEST': {}}
         mock_dh = Mock()
 
         operation = NRTMOperation(
@@ -82,7 +82,7 @@ class TestNRTMOperation:
         assert mock_dh.upsert_rpsl_object.call_count == 0
 
     def test_nrtm_add_invalid_rpsl_errors(self):
-        DEFAULT_SETTINGS['sources'] = {'TEST': {}}
+        default_config['sources'] = {'TEST': {}}
         mock_dh = Mock()
 
         operation = NRTMOperation(
@@ -100,7 +100,7 @@ class TestNRTMOperation:
         # stream is known, we can guess this.
         # This is accepted for deletions only.
         obj_text = 'route: 192.0.02.0/24\norigin: AS65537'
-        DEFAULT_SETTINGS['sources'] = {'TEST': {}}
+        default_config['sources'] = {'TEST': {}}
         mock_dh = Mock()
 
         operation = NRTMOperation(
@@ -119,7 +119,7 @@ class TestNRTMOperation:
     def test_nrtm_add_invalid_incomplete_object(self):
         # Source-less objects are not accepted for add/update
         obj_text = 'route: 192.0.02.0/24\norigin: AS65537'
-        DEFAULT_SETTINGS['sources'] = {'TEST': {}}
+        default_config['sources'] = {'TEST': {}}
         mock_dh = Mock()
 
         operation = NRTMOperation(

@@ -5,7 +5,7 @@ import textwrap
 from datetime import datetime, timezone
 from unittest.mock import Mock
 
-from irrd.conf import DEFAULT_SETTINGS
+from irrd.conf import default_config
 from ..request_handlers import DatabaseStatusRequest
 
 
@@ -33,7 +33,7 @@ class TestDatabaseStatusRequest:
 
         monkeypatch.setattr("irrd.server.http.request_handlers.whois_query_source_status", mock_whois_query)
 
-        DEFAULT_SETTINGS['sources'] = {
+        default_config['sources'] = {
             'TEST1': {
                 'authoritative': False,
                 'keep_journal': True,
@@ -114,7 +114,7 @@ class TestDatabaseStatusRequest:
         status_report = DatabaseStatusRequest().generate_status()
         expected_report = textwrap.dedent("""
         IRRD version master
-        Listening on ::0 port 8043
+        Listening on ::0 port 43
         Next mirror update: in unknown
         
         

@@ -74,23 +74,23 @@ class MirrorFullImportRunner:
     def run(self, database_handler: DatabaseHandler):
         database_handler.delete_all_rpsl_objects_with_journal(self.source)
 
-        export_sources = get_setting(f'sources.{self.source}.export_source').split(',')
-        export_serial_source = get_setting(f'sources.{self.source}.export_serial_source')
+        import_sources = get_setting(f'sources.{self.source}.import_source').split(',')
+        import_serial_source = get_setting(f'sources.{self.source}.import_serial_source')
 
-        if not export_sources or not export_serial_source:
-            logger.info(f'Skipping full import for {self.source}, export_source or export_serial_source not set.')
+        if not import_sources or not import_serial_source:
+            logger.info(f'Skipping full import for {self.source}, import_source or import_serial_source not set.')
             return
 
-        logger.info(f'Running full import of {self.source} from {export_sources}, serial from {export_serial_source}')
+        logger.info(f'Running full import of {self.source} from {import_sources}, serial from {import_serial_source}')
 
-        export_serial = int(self._retrieve_file(export_serial_source, use_tempfile=False))
-        export_filenames = [self._retrieve_file(export_source, use_tempfile=True) for export_source in export_sources]
+        import_serial = int(self._retrieve_file(import_serial_source, use_tempfile=False))
+        import_filenames = [self._retrieve_file(import_source, use_tempfile=True) for import_source in import_sources]
 
         database_handler.disable_journaling()
-        for export_filename in export_filenames:
-            MirrorFileImportParser(source=self.source, filename=export_filename, serial=export_serial,
+        for import_filename in import_filenames:
+            MirrorFileImportParser(source=self.source, filename=import_filename, serial=import_serial,
                                    database_handler=database_handler)
-            os.unlink(export_filename)
+            os.unlink(import_filename)
 
     def _retrieve_file(self, url: str, use_tempfile=True) -> str:
         """

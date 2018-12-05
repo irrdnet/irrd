@@ -127,10 +127,10 @@ def whois_query_source_status(host: str, port: int, source: str) -> Tuple[Option
     mirrorable = mirrorable_choices.get(fields[1].upper())
 
     serial_oldest, serial_newest = fields[2].split('-')
-    export_serial: Optional[int]
+    import_serial: Optional[int]
     try:
-        export_serial = int(fields[3])
+        import_serial = int(fields[3])
     except IndexError:
-        export_serial = None
+        import_serial = None
 
-    return mirrorable, int(serial_oldest), int(serial_newest), export_serial
+    return mirrorable, int(serial_oldest), int(serial_newest), import_serial

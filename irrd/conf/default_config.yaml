@@ -1,0 +1,16 @@
+irrd:
+    database_url: null
+    server:
+        http:
+            interface: '::0'
+            port: 80
+        whois:
+            interface: '::0'
+            port: 43
+            max_connections: 50
+    auth:
+        gnuppg_keyring: null
+    email:
+        footer: ''
+        from: null
+        smtp: null

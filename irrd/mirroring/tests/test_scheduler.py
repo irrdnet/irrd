@@ -1,6 +1,6 @@
 import time
 
-from irrd.conf import DEFAULT_SETTINGS
+from irrd.conf import default_config
 from ..scheduler import MirrorScheduler
 
 thread_run_count = 0
@@ -11,7 +11,7 @@ class TestMirrorScheduler:
         global thread_run_count
         thread_run_count = 0
 
-        DEFAULT_SETTINGS['sources'] = {'TEST': {'export_source': 'url'}}
+        default_config['sources'] = {'TEST': {'import_source': 'url'}}
         monkeypatch.setattr("irrd.mirroring.scheduler.MirrorUpdateRunner", MockUpdateRunner)
 
         scheduler = MirrorScheduler()

@@ -20,6 +20,7 @@ from ..validators import ReferenceValidator, AuthValidator
 @pytest.fixture()
 def prepare_mocks(monkeypatch):
     monkeypatch.setenv('IRRD_SOURCES_TEST_AUTHORITATIVE', '1')
+    monkeypatch.setenv('IRRD_AUTH_OVERRIDE_PASSWORD', '$1$J6KycItM$MbPaBU6iFSGFV299Rk7Di0')
     mock_dh = Mock()
     mock_dq = Mock()
     monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
