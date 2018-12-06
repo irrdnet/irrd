@@ -302,7 +302,8 @@ class WhoisQueryParser:
     def handle_irrd_database_serial_range(self, parameter: str) -> str:
         """!j query - database serial range"""
         if parameter == '-*':
-            sources = self.all_valid_sources
+            default = get_setting('sources_default')
+            sources = default if default else self.all_valid_sources
         else:
             sources = [s.upper() for s in parameter.split(',')]
         invalid_sources = [s for s in sources if s not in self.all_valid_sources]
@@ -381,7 +382,9 @@ class WhoisQueryParser:
            !sripe,nttcom limits sources to ripe and nttcom
         """
         if parameter == '-lc':
-            return ','.join(self.all_valid_sources)
+            default = get_setting('sources_default')
+            sources_selected = default if default else self.all_valid_sources
+            return ','.join(sources_selected)
         if parameter:
             sources = parameter.upper().split(',')
             if not all([source in self.all_valid_sources for source in sources]):

@@ -5,18 +5,7 @@ import textwrap
 from unittest.mock import Mock
 
 from irrd.conf import get_setting
-from irrd.rpsl.rpsl_objects import rpsl_object_from_text
-from irrd.utils.rpsl_samples import SAMPLE_KEY_CERT
-# noinspection PyUnresolvedReferences
-from irrd.utils.test_utils import tmp_gpg_dir  # noqa: F401
 from ..email import EmailParser, send_email
-
-
-@pytest.fixture()
-def preload_gpg_key():
-    # Simply parsing the key-cert will load it into the GPG keychain
-    rpsl_text = SAMPLE_KEY_CERT
-    rpsl_object_from_text(rpsl_text)
 
 
 class TestEmailParser:

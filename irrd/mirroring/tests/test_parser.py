@@ -3,7 +3,6 @@ from unittest.mock import Mock
 
 import pytest
 
-from irrd.conf import default_config
 from irrd.utils.rpsl_samples import SAMPLE_ROUTE, SAMPLE_UNKNOWN_CLASS, SAMPLE_UNKNOWN_ATTRIBUTE, SAMPLE_MALFORMED_PK, \
     SAMPLE_ROUTE6
 from irrd.utils.test_utils import flatten_mock_calls
@@ -16,7 +15,7 @@ from ..parser import NRTMStreamParser, MirrorFileImportParser
 
 class TestMirrorFileImportParser:
     def test_parse(self, monkeypatch, caplog):
-        default_config['sources'] = {'TEST': {'object_class_filter': 'route'}}
+        monkeypatch.setenv('IRRD_SOURCES_TEST_OBJECT_CLASS_FILTER', 'route')
         mock_dh = Mock()
 
         test_data = [

@@ -9,7 +9,7 @@ irrd:
             port: 43
             max_connections: 50
     auth:
-        gnuppg_keyring: null
+        gnupg_keyring: null
     email:
         footer: ''
         from: null

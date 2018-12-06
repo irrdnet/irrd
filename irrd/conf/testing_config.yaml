@@ -8,7 +8,7 @@ irrd:
         http:
             access_list: http_database_status
     auth:
-        gnuppg_keyring: /Users/sasha/dev/irrd4/gnupg/
+        gnupg_keyring: /Users/sasha/dev/irrd4/gnupg/
         override_password: $1$J6KycItM$MbPaBU6iFSGFV299Rk7Di0
     email:
         footer: ""
@@ -16,7 +16,7 @@ irrd:
         smtp: localhost
     sources_default:
         - NTTCOM
-        - INTERNAL
+#        - INTERNAL
         - RADB
         - RIPE
         - RIPE-NONAUTH
@@ -30,9 +30,9 @@ irrd:
         - BBOI
         - TC
         - AFRINIC
-        - ARIN-WHOIS
-        - RPKI
-        - REGISTROBR
+#        - ARIN-WHOIS
+#        - RPKI
+#        - REGISTROBR
     sources:
         AFRINIC:
             authoritative: false

@@ -13,9 +13,6 @@ from irrd.utils.rpsl_samples import (object_sample_mapping, SAMPLE_MALFORMED_EMP
                                      TEMPLATE_PERSON_OBJECT, SAMPLE_LINE_NEITHER_CONTINUATION_NOR_ATTR,
                                      SAMPLE_MISSING_SOURCE)
 
-# noinspection PyUnresolvedReferences
-from irrd.utils.test_utils import tmp_gpg_dir   # noqa: F401
-
 from ..parser import UnknownRPSLObjectClassException
 from ..rpsl_objects import (RPSLAsBlock, RPSLAsSet, RPSLAutNum, RPSLDomain, RPSLFilterSet, RPSLInetRtr,
                             RPSLInet6Num, RPSLInetnum, RPSLKeyCert, RPSLMntner, RPSLPeeringSet,

@@ -4,7 +4,6 @@ from unittest.mock import Mock
 
 import pytest
 
-from irrd.conf import default_config
 from irrd.utils.test_utils import flatten_mock_calls
 from ..mirror_runners import MirrorUpdateRunner, MirrorFullImportRunner, NRTMUpdateStreamRunner
 
@@ -88,11 +87,15 @@ class TestMirrorUpdateRunner:
 
 
 class TestMirrorFullImportRunner:
-    def test_run_import(self, monkeypatch):
-        default_config['sources'] = {'TEST': {
-            'import_source': ['ftp://host/source1.gz', 'ftp://host/source2'],
-            'import_serial_source': 'ftp://host/serial',
-        }}
+    def test_run_import(self, monkeypatch, config_override):
+        config_override({
+            'sources': {
+                'TEST': {
+                    'import_source': ['ftp://host/source1.gz', 'ftp://host/source2'],
+                    'import_serial_source': 'ftp://host/serial',
+                }
+            }
+        })
 
         mock_dh = Mock()
         mock_ftp = Mock()
@@ -115,20 +118,28 @@ class TestMirrorFullImportRunner:
             ['disable_journaling', (), {}],
         ]
 
-    def test_missing_source_settings(self):
-        default_config['sources'] = {'TEST': {
-            'import_serial_source': 'ftp://host/serial',
-        }}
+    def test_missing_source_settings(self, config_override):
+        config_override({
+            'sources': {
+                'TEST': {
+                    'import_serial_source': 'ftp://host/serial',
+                }
+            }
+        })
 
         mock_dh = Mock()
         MirrorFullImportRunner('TEST').run(mock_dh)
         assert not flatten_mock_calls(mock_dh)
 
-    def test_unsupported_protocol(self):
-        default_config['sources'] = {'TEST': {
-            'import_source': 'ftp://host/source1.gz',
-            'import_serial_source': 'gopher://host/serial',
-        }}
+    def test_unsupported_protocol(self, config_override):
+        config_override({
+            'sources': {
+                'TEST': {
+                    'import_source': 'ftp://host/source1.gz',
+                    'import_serial_source': 'gopher://host/serial',
+                }
+            }
+        })
 
         mock_dh = Mock()
         with pytest.raises(ValueError) as ve:
@@ -147,11 +158,15 @@ class MockMirrorFileImportParser:
 
 
 class TestNRTMUpdateStreamRunner:
-    def test_run_import(self, monkeypatch):
-        default_config['sources'] = {'TEST': {
-            'nrtm_host': '192.0.2.1',
-            'nrtm_port': 43,
-        }}
+    def test_run_import(self, monkeypatch, config_override):
+        config_override({
+            'sources': {
+                'TEST': {
+                    'nrtm_host': '192.0.2.1',
+                    'nrtm_port': 43,
+                }
+            }
+        })
 
         def mock_whois_query(host, port, query, end_markings) -> str:
             assert host == '192.0.2.1'
@@ -166,10 +181,14 @@ class TestNRTMUpdateStreamRunner:
 
         NRTMUpdateStreamRunner('TEST').run(424242, mock_dh)
 
-    def test_missing_source_settings(self):
-        default_config['sources'] = {'TEST': {
-            'nrtm_host': '192.0.2.1',
-        }}
+    def test_missing_source_settings(self, monkeypatch, config_override):
+        config_override({
+            'sources': {
+                'TEST': {
+                    'nrtm_host': '192.0.2.1',
+                }
+            }
+        })
 
         mock_dh = Mock()
         NRTMUpdateStreamRunner('TEST').run(424242, mock_dh)

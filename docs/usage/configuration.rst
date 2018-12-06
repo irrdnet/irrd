@@ -36,7 +36,7 @@ This sample shows the hierarchy of all configuration options::
                 port: 8043
 
         auth:
-            gnuppg_keyring: /home/irrd/gnupg-keyring/
+            gnupg_keyring: /home/irrd/gnupg-keyring/
             override_password: {hash}
 
         email:

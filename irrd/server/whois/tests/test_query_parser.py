@@ -4,7 +4,6 @@ from unittest.mock import Mock
 import pytest
 from IPy import IP
 
-from irrd.conf import default_config
 from irrd.utils.test_utils import flatten_mock_calls
 from ..query_parser import WhoisQueryParser
 from ..query_response import WhoisQueryResponseType, WhoisQueryResponseMode
@@ -48,9 +47,11 @@ origin: AS65545"""
 
 
 @pytest.fixture()
-def prepare_parser(monkeypatch):
-    default_config['sources'] = {'TEST1': {}, 'TEST2': {}}
-    default_config['sources_default'] = []
+def prepare_parser(monkeypatch, config_override):
+    config_override({
+        'sources': {'TEST1': {}, 'TEST2': {}},
+        'sources_default': [],
+    })
 
     mock_database_handler = Mock()
     monkeypatch.setattr("irrd.server.whois.query_parser.DatabaseHandler", lambda: mock_database_handler)
@@ -229,10 +230,13 @@ class TestWhoisQueryParserRIPE:
         assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
         assert parser.sources == []
 
-    def test_sources_default(self, prepare_parser):
+    def test_sources_default(self, prepare_parser, config_override):
         mock_dq, mock_dh, parser = prepare_parser
         mock_dh.reset_mock()
-        default_config['sources_default'] = ['TEST2', 'TEST1']
+        config_override({
+            'sources': {'TEST1': {}, 'TEST2': {}},
+            'sources_default': ['TEST2', 'TEST1'],
+        })
 
         response = parser.handle_query(' -r  -x 192.0.2.0/25')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
