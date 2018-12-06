@@ -1,6 +1,7 @@
 import os
 
 import pytest
+import yaml
 from dotted.collection import DottedDict
 from typing import Dict, Any
 
@@ -45,3 +46,7 @@ def preload_gpg_key():
     rpsl_text = SAMPLE_KEY_CERT
     rpsl_object_from_text(rpsl_text)
 
+
+def pytest_configure(config):
+    import sys
+    sys._called_from_test = True

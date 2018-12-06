@@ -1,3 +1,5 @@
+import sys
+
 import logging.config
 import time
 
@@ -8,6 +10,10 @@ import os
 
 from dotted.collection import DottedDict
 
+IRRD_CONFIG_PATH_ENV = 'IRRD_CONFIG_PATH'
+IRRD_CONFIG_CHECK_FORCE_ENV = 'IRRD_CONFIG_CHECK_FORCE_ENV'
+
+logger = logging.getLogger(__name__)
 PASSWORD_HASH_DUMMY_VALUE = 'DummyValue'
 
 
@@ -19,24 +25,59 @@ overrides = None
 
 
 class Configuration:
+    user_config_staging: DottedDict
+    user_config_live: DottedDict
+
     def __init__(self):
         default_config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'default_config.yaml')
         default_config_yaml = yaml.safe_load(open(default_config_path))
         self.default_config = DottedDict(default_config_yaml['irrd'])
 
-        self.staging_reload()
-        errors = self.check_staging_config()
+        errors = self._staging_reload_check()
         if errors:
-            error_str = "\n - ".join(errors)
-            raise ConfigurationError(f'Errors found in settings, unable to start:\n - {error_str}')
-        self.commit_staging()
+            raise ConfigurationError(f'Errors found in configuration, unable to start: {errors}')
+        self._commit_staging()
 
-    def staging_reload(self):
-        user_config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'testing_config.yaml')
-        user_config_yaml = yaml.safe_load(open(user_config_path))
+    def reload(self) -> bool:
+        errors = self._staging_reload_check()
+        if errors:
+            logger.error(f'Errors found in configuration, continuing with current settings: {errors}')
+            return False
+
+        self._commit_staging()
+        return True
+
+    def _staging_reload_check(self) -> List[str]:
+        if all([
+            sys._called_from_test,  # type: ignore
+            IRRD_CONFIG_PATH_ENV not in os.environ,
+            IRRD_CONFIG_CHECK_FORCE_ENV not in os.environ
+        ]):
+            self.user_config_staging = DottedDict({})
+            return []
+        # user_config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'testing_config.yaml')
+        try:
+            user_config_path = os.environ[IRRD_CONFIG_PATH_ENV]
+        except KeyError:
+            return [f'Environment variable {IRRD_CONFIG_PATH_ENV} not set.']
+
+        try:
+            user_config_yaml = yaml.safe_load(open(user_config_path))
+        except OSError as oe:
+            return [f'Error opening config file {user_config_path}: {oe}']
+        except yaml.YAMLError as ye:
+            return [f'Error parsing YAML file: {ye}']
+
+        if not isinstance(user_config_yaml, dict) or 'irrd' not in user_config_yaml:
+            return [f'Could not find root item "irrd" in config file {user_config_path}']
         self.user_config_staging = DottedDict(user_config_yaml['irrd'])
 
-    def commit_staging(self):
+        errors = self._check_staging_config()
+        if not errors:
+            logger.info(f'Configuration successfully (re)loaded from {user_config_path}')
+        return errors
+
+    def _commit_staging(self):
         self.user_config_live = self.user_config_staging
 
     def get_setting_live(self, setting_name: str, default: Any=None) -> Any:
@@ -48,13 +89,12 @@ class Configuration:
                 return overrides[setting_name]
             except KeyError:
                 pass
-        # try:
-        #     return self.user_config_live[setting_name]
-        # except KeyError:
-        #     return self.default_config.get(setting_name, default)
-        return self.default_config.get(setting_name, default)
+        try:
+            return self.user_config_live[setting_name]
+        except KeyError:
+            return self.default_config.get(setting_name, default)
 
-    def check_staging_config(self) -> List[str]:
+    def _check_staging_config(self) -> List[str]:
         errors = []
 
         config = self.user_config_staging
@@ -89,12 +129,12 @@ class Configuration:
                 except ValueError as ve:
                     errors.append(f'Invalid item in access list {name}: {ve}.')
 
-        known_sources = set(config.get('sources').keys())
-        unknown_default_sources = set(config.get('sources_default')).difference(known_sources)
+        known_sources = set(config.get('sources', {}).keys())
+        unknown_default_sources = set(config.get('sources_default', [])).difference(known_sources)
         if unknown_default_sources:
             errors.append(f'Setting sources_default contains unknown sources: {", ".join(unknown_default_sources)}')
 
-        for name, details in config.get('sources').items():
+        for name, details in config.get('sources', {}).items():
             nrtm_mirror = details.get('nrtm_host') and details.get('nrtm_port') and details.get('import_serial_source')
             if details.get('keep_journal') and not (nrtm_mirror or details.get('authoritative')):
                 errors.append(f'Setting keep_journal for source {name} can not be enabled unless either authoritative '
@@ -108,10 +148,13 @@ class Configuration:
         return config.get(key) is None or isinstance(config.get(key), str)
 
 
-configuration = Configuration()
+configuration = None
 
 
 def get_setting(setting_name: str, default: Any=None) -> Any:
+    global configuration
+    if not configuration:
+        configuration = Configuration()
     return configuration.get_setting_live(setting_name, default)
 
 
