@@ -72,15 +72,16 @@ class MirrorFullImportRunner:
         self.source = source
 
     def run(self, database_handler: DatabaseHandler):
-        database_handler.delete_all_rpsl_objects_with_journal(self.source)
-
-        import_sources = get_setting(f'sources.{self.source}.import_source').split(',')
+        import_sources = get_setting(f'sources.{self.source}.import_source')
+        if isinstance(import_sources, str):
+            import_sources = [import_sources]
         import_serial_source = get_setting(f'sources.{self.source}.import_serial_source')
 
-        if not import_sources or not import_serial_source:
-            logger.info(f'Skipping full import for {self.source}, import_source or import_serial_source not set.')
+        if not import_sources:
+            logger.info(f'Skipping full import for {self.source}, import_source not set.')
             return
 
+        database_handler.delete_all_rpsl_objects_with_journal(self.source)
         logger.info(f'Running full import of {self.source} from {import_sources}, serial from {import_serial_source}')
 
         import_serial = int(self._retrieve_file(import_serial_source, use_tempfile=False))

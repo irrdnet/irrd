@@ -10,17 +10,23 @@ from dotted.collection import DottedDict
 PASSWORD_HASH_DUMMY_VALUE = 'DummyValue'
 
 default_config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'default_config.yaml')
-
 default_config_yaml = yaml.safe_load(open(default_config_path))
 default_config = DottedDict(default_config_yaml['irrd'])
 
+user_config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'testing_config.yaml')
+user_config_yaml = yaml.safe_load(open(user_config_path))
+user_config = DottedDict(user_config_yaml['irrd'])
+
 
 def get_setting(setting_name: str, default: Any=None) -> Any:
-    default = default_config.get(setting_name, default)
     env_key = 'IRRD_' + setting_name.upper().replace('.', '_')
     if env_key in os.environ:
         return os.environ[env_key]
-    return default
+    # try:
+    #     return user_config[setting_name]
+    # except KeyError:
+    #     return default_config.get(setting_name, default)
+    return default_config.get(setting_name, default)
 
 
 LOGGING = {

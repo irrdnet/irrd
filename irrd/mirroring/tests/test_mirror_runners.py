@@ -90,7 +90,7 @@ class TestMirrorUpdateRunner:
 class TestMirrorFullImportRunner:
     def test_run_import(self, monkeypatch):
         default_config['sources'] = {'TEST': {
-            'import_source': 'ftp://host/source1.gz,ftp://host/source2',
+            'import_source': ['ftp://host/source1.gz', 'ftp://host/source2'],
             'import_serial_source': 'ftp://host/serial',
         }}
 
@@ -117,15 +117,16 @@ class TestMirrorFullImportRunner:
 
     def test_missing_source_settings(self):
         default_config['sources'] = {'TEST': {
-            'import_source': 'ftp://host/source1.gz,ftp://host/source2',
+            'import_serial_source': 'ftp://host/serial',
         }}
 
         mock_dh = Mock()
         MirrorFullImportRunner('TEST').run(mock_dh)
+        assert not flatten_mock_calls(mock_dh)
 
     def test_unsupported_protocol(self):
         default_config['sources'] = {'TEST': {
-            'import_source': 'ftp://host/source1.gz,ftp://host/source2',
+            'import_source': 'ftp://host/source1.gz',
             'import_serial_source': 'gopher://host/serial',
         }}
 

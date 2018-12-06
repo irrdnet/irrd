@@ -17,8 +17,10 @@ nrtm_start_line_re = re.compile(r'^% *START *Version: *(?P<version>\d+) +(?P<sou
 class MirrorParser:
     def __init__(self):
         object_class_filter = get_setting(f'sources.{self.source}.object_class_filter')
+        if isinstance(object_class_filter, str):
+            object_class_filter = [object_class_filter]
         if object_class_filter:
-            self.object_class_filter = [c.strip().lower() for c in object_class_filter.split(',')]
+            self.object_class_filter = [c.strip().lower() for c in object_class_filter]
         else:
             self.object_class_filter = None
 

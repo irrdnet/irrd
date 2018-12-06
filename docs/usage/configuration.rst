@@ -161,7 +161,7 @@ Sources
   |br| **Change takes effect**:
 * ``sources.{name}``: settings for a particular source.
 * ``sources.{name}.authoritative``: a boolean for whether this source is authoritative, i.e. changes are allowed
-  to be submitted
+  to be submitted to this IRRd instance through e.g. email updates
   |br| **Default**: ``false``
   |br| **Change takes effect**: after SIGHUP, for all subsequent requests.
 * ``sources.{name}.keep_journal``: a boolean for whether a local journal is retained of changes to objects from
