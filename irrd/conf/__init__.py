@@ -3,6 +3,7 @@ import sys
 import logging.config
 import time
 
+import signal
 import yaml
 from IPy import IP
 from typing import Any, List
@@ -198,6 +199,16 @@ def get_setting(setting_name: str, default: Any=None) -> Any:
     if not configuration:
         configuration = Configuration()
     return configuration.get_setting_live(setting_name, default)
+
+
+def sighup_handler(signum, frame):
+    global configuration
+    if not configuration:  # pragma: no cover
+        configuration = Configuration()
+    configuration.reload()
+
+
+signal.signal(signal.SIGHUP, sighup_handler)
 
 
 LOGGING = {

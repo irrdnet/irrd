@@ -1,4 +1,7 @@
+import os
+
 import pytest
+import signal
 import yaml
 from typing import Dict
 
@@ -55,7 +58,7 @@ class TestConfiguration:
             Configuration()
         assert 'Could not find root item "irrd" in config file' in str(ce)
 
-    def test_load_valid_reload_valid_config(self, save_yaml_config, tmpdir, caplog):
+    def test_load_valid_reload_valid_config(self, monkeypatch, save_yaml_config, tmpdir, caplog):
         config = {
             'irrd': {
                 'database_url': 'invalid-url',
@@ -97,7 +100,10 @@ class TestConfiguration:
         save_yaml_config(config)
 
         assert list(c.get_setting_live('sources_default')) == ['TESTDB2', 'TESTDB']
-        c.reload()
+
+        monkeypatch.setattr('irrd.conf.configuration', c)
+        os.kill(os.getpid(), signal.SIGHUP)
+
         assert list(c.get_setting_live('sources_default')) == ['TESTDB2']
 
         assert 'Configuration successfully (re)loaded from ' in caplog.text

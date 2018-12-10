@@ -90,6 +90,21 @@ This sample shows the hierarchy of all configuration options::
                 import_timer: 3600
 
 
+Loading and reloading
+---------------------
+
+The configuration is loaded when IRRd starts. If the configuration is invalid, the daemon will refuse to start.
+While running, the configuration can be reloaded by sending a `SIGHUP` signal. Most settings will take effect
+immediately, but some require a full restart. If a `SIGHUP` is sent and the new configuration is invalid,
+errors will be written to the logfile, but IRRd will keep running with the last valid configuration.
+A successful reload after a `SIGHUP` is also logged.
+
+.. important::
+
+    Not all configuration errors are caught when reloading, e.g. making IRRd bind to a TCP port that
+    is already in use, will not be caught by the configuration checker. An incorrect password for
+    the PostgreSQL database is only detected when IRRd restarts and attempts to connect.
+
 Configuration options
 ---------------------
 
