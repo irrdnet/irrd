@@ -241,5 +241,9 @@ Sources
 
 Logging
 ~~~~~~~
-* ``log.destination``: the full path where the logfile will be written
+* ``log.destination``: the full path where the logfile will be written.
+  |br| **Default**: not defined, logs will be sent to the console
+  |br| **Change takes effect**: after full IRRd restart.
 * ``log.level``: the loglevel, one of `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`. The recommended level is `INFO`.
+  |br| **Default**: `INFO`
+  |br| **Change takes effect**: after SIGHUP.

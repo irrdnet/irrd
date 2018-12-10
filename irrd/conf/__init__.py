@@ -18,6 +18,52 @@ logger = logging.getLogger(__name__)
 PASSWORD_HASH_DUMMY_VALUE = 'DummyValue'
 
 
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '%(asctime)s irrd[%(process)d]: [%(name)s#%(levelname)s] %(message)s'
+        },
+        'simple': {
+            'format': '%(levelname)s %(name)s: %(message)s'
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose'
+        },
+        'file': {
+            'class': 'logging.NullHandler',
+        }
+    },
+    'loggers': {
+        'passlib.registry': {
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'gnupg': {
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'sqlalchemy': {
+            'level': 'WARNING',
+            'propagate': True,
+        },
+        '': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    }
+}
+
+
+logging.config.dictConfig(LOGGING)
+logging.Formatter.converter = time.gmtime
+
+
 class ConfigurationError(ValueError):
     pass
 
@@ -48,6 +94,16 @@ class Configuration:
         if errors:
             raise ConfigurationError(f'Errors found in configuration, unable to start: {errors}')
         self._commit_staging()
+
+        log_filename = self.get_setting_live('log.destination')
+        if log_filename:
+            LOGGING['handlers']['file'] = {
+                'class': 'logging.handlers.WatchedFileHandler',
+                'filename': log_filename,
+                'formatter': 'verbose',
+            }
+            LOGGING['loggers']['']['handlers'] = ['file']
+            logging.config.dictConfig(LOGGING)
 
     def reload(self) -> bool:
         """
@@ -101,6 +157,7 @@ class Configuration:
         Activate the current staging config as the live config.
         """
         self.user_config_live = self.user_config_staging
+        logging.getLogger('').setLevel(self.get_setting_live('log.level', default='INFO'))
 
     def get_setting_live(self, setting_name: str, default: Any=None) -> Any:
         """
@@ -178,6 +235,10 @@ class Configuration:
                 errors.append(f'Setting keep_journal for source {name} can not be enabled unless either authoritative '
                               f'is enabled, or all three of nrtm_host, nrtm_port and import_serial_source.')
 
+        if config.get('log.level') and not config.get('log.level') in ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']:
+            errors.append(f'Invalid log.level: {config.get("log.level")}. '
+                          f'Valid settings for log.level are `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`.')
+
         return errors
 
     def _check_is_str(self, config, key, required=True):
@@ -209,54 +270,3 @@ def sighup_handler(signum, frame):
 
 
 signal.signal(signal.SIGHUP, sighup_handler)
-
-
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '%(asctime)s irrd[%(process)d]: [%(name)s#%(levelname)s] %(message)s'
-        },
-        'simple': {
-            'format': '%(levelname)s %(name)s: %(message)s'
-        },
-    },
-    'handlers': {
-        'null': {
-            'level': 'DEBUG',
-            'class': 'logging.NullHandler',
-        },
-        'console': {
-            'level': 'DEBUG',
-            'class': 'logging.StreamHandler',
-            'formatter': 'verbose'
-        },
-    },
-    'loggers': {
-        'passlib.registry': {
-            'level': 'INFO',
-            'propagate': True,
-        },
-        'gnupg': {
-            'level': 'INFO',
-            'propagate': True,
-        },
-        'sqlalchemy': {
-            'level': 'WARNING',
-            'propagate': True,
-        },
-        'irrd.storage': {
-            'level': 'INFO',
-            'propagate': True,
-        },
-        '': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
-    }
-}
-
-logging.config.dictConfig(LOGGING)
-logging.Formatter.converter = time.gmtime

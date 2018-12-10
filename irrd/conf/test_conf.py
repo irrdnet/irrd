@@ -59,6 +59,7 @@ class TestConfiguration:
         assert 'Could not find root item "irrd" in config file' in str(ce)
 
     def test_load_valid_reload_valid_config(self, monkeypatch, save_yaml_config, tmpdir, caplog):
+        logfile = str(tmpdir + '/logfile.txt')
         config = {
             'irrd': {
                 'database_url': 'invalid-url',
@@ -90,6 +91,10 @@ class TestConfiguration:
                         'keep_journal': True,
                     },
                 },
+                'log': {
+                    'level': 'DEBUG',
+                    'destination': logfile
+                },
 
             }
         }
@@ -107,6 +112,8 @@ class TestConfiguration:
         assert list(c.get_setting_live('sources_default')) == ['TESTDB2']
 
         assert 'Configuration successfully (re)loaded from ' in caplog.text
+        logfile_contents = open(logfile).read()
+        assert 'Configuration successfully (re)loaded from ' in logfile_contents
 
     def test_load_valid_reload_invalid_config(self, save_yaml_config, tmpdir, caplog):
         save_yaml_config({
@@ -173,7 +180,9 @@ class TestConfiguration:
                         'keep_journal': True,
                     },
                 },
-
+                'log': {
+                    'level': 'INVALID',
+                }
             }
         })
 
@@ -188,6 +197,8 @@ class TestConfiguration:
         assert 'Invalid item in access list bad-list: IPv4 Address with more than 4 bytes.' in str(ce)
         assert 'Setting sources_default contains unknown sources: DOESNOTEXIST-DB' in str(ce)
         assert 'Setting keep_journal for source TESTDB can not be enabled unless either ' in str(ce)
+        assert 'Setting keep_journal for source TESTDB can not be enabled unless either ' in str(ce)
+        assert 'Invalid log.level: INVALID' in str(ce)
 
 
 class TestGetSetting:
