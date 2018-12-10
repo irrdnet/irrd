@@ -1,7 +1,10 @@
+"""
+Testing configuration, used by py.test.
+Fixtures defined here are available to all tests.
+"""
 import os
 
 import pytest
-import yaml
 from dotted.collection import DottedDict
 from typing import Dict, Any
 
@@ -19,7 +22,7 @@ def config_override(monkeypatch):
     override dict must be supplied every time.
     """
     def _override(override_data: Dict[Any, Any]):
-        monkeypatch.setattr('irrd.conf.overrides', DottedDict(override_data))
+        monkeypatch.setattr('irrd.conf.testing_overrides', DottedDict(override_data))
     return _override
 
 
@@ -48,5 +51,12 @@ def preload_gpg_key():
 
 
 def pytest_configure(config):
+    """
+    This function is called by py.test, and will set a flag to
+    indicate tests are running. This is used by the configuration
+    checker to not require a full working config for most tests.
+    Can be checked with:
+        hasattr(sys, '_called_from_test')
+    """
     import sys
     sys._called_from_test = True

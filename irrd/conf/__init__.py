@@ -21,14 +21,24 @@ class ConfigurationError(ValueError):
     pass
 
 
+# Testing overrides can be set to a DottedDict, and is used
+# to override settings while testing, using the config_override
+# fixture.
 testing_overrides = None
 
 
 class Configuration:
+    """
+    The Configuration class stores the current IRRD configuration,
+    checks the validity of the settings, and offers graceful reloads.
+    """
     user_config_staging: DottedDict
     user_config_live: DottedDict
 
     def __init__(self):
+        """
+        Load the default config and load and check the user provided config.
+        """
         default_config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'default_config.yaml')
         default_config_yaml = yaml.safe_load(open(default_config_path))
         self.default_config = DottedDict(default_config_yaml['irrd'])
@@ -39,6 +49,9 @@ class Configuration:
         self._commit_staging()
 
     def reload(self) -> bool:
+        """
+        Reload the configuration, if it passes the checks.
+        """
         errors = self._staging_reload_check()
         if errors:
             logger.error(f'Errors found in configuration, continuing with current settings: {errors}')
@@ -48,6 +61,11 @@ class Configuration:
         return True
 
     def _staging_reload_check(self) -> List[str]:
+        """
+        Reload the staging configuration, and run the config checks on it.
+        Returns a list of errors if any were found, or an empty list of the
+        staging config is valid.
+        """
         if all([
             hasattr(sys, '_called_from_test'),
             IRRD_CONFIG_PATH_ENV not in os.environ,
@@ -78,9 +96,24 @@ class Configuration:
         return errors
 
     def _commit_staging(self):
+        """
+        Activate the current staging config as the live config.
+        """
         self.user_config_live = self.user_config_staging
 
     def get_setting_live(self, setting_name: str, default: Any=None) -> Any:
+        """
+        Get a setting from the live config.
+        In order, this will look in:
+        - A env variable, uppercase and dots replaced by underscores, e.g.
+          IRRD_SERVER_WHOIS_INTERFACE
+        - The testing_overrides DottedDict
+        - The live user config.
+        - The default config.
+
+        If it is not found in any, the value of the default paramater
+        is returned, which is None by default.
+        """
         env_key = 'IRRD_' + setting_name.upper().replace('.', '_')
         if env_key in os.environ:
             return os.environ[env_key]
@@ -95,6 +128,10 @@ class Configuration:
             return self.default_config.get(setting_name, default)
 
     def _check_staging_config(self) -> List[str]:
+        """
+        Validate the current staging configuration.
+        Returns a list of any errors, or an empty list for a valid config.
+        """
         errors = []
 
         config = self.user_config_staging
@@ -152,6 +189,11 @@ configuration = None
 
 
 def get_setting(setting_name: str, default: Any=None) -> Any:
+    """
+    Convenience wrapper to get the value of a setting.
+    Creates a Configuration object if none exists, and
+    retrieves the live setting from that object.
+    """
     global configuration
     if not configuration:
         configuration = Configuration()
