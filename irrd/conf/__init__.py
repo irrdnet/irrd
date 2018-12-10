@@ -11,7 +11,7 @@ import os
 from dotted.collection import DottedDict
 
 IRRD_CONFIG_PATH_ENV = 'IRRD_CONFIG_PATH'
-IRRD_CONFIG_CHECK_FORCE_ENV = 'IRRD_CONFIG_CHECK_FORCE_ENV'
+IRRD_CONFIG_CHECK_FORCE_ENV = 'IRRD_CONFIG_CHECK_FORCE'
 
 logger = logging.getLogger(__name__)
 PASSWORD_HASH_DUMMY_VALUE = 'DummyValue'
@@ -21,7 +21,7 @@ class ConfigurationError(ValueError):
     pass
 
 
-overrides = None
+testing_overrides = None
 
 
 class Configuration:
@@ -49,13 +49,13 @@ class Configuration:
 
     def _staging_reload_check(self) -> List[str]:
         if all([
-            sys._called_from_test,  # type: ignore
+            hasattr(sys, '_called_from_test'),
             IRRD_CONFIG_PATH_ENV not in os.environ,
             IRRD_CONFIG_CHECK_FORCE_ENV not in os.environ
         ]):
             self.user_config_staging = DottedDict({})
             return []
-        # user_config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'testing_config.yaml')
+
         try:
             user_config_path = os.environ[IRRD_CONFIG_PATH_ENV]
         except KeyError:
@@ -84,9 +84,9 @@ class Configuration:
         env_key = 'IRRD_' + setting_name.upper().replace('.', '_')
         if env_key in os.environ:
             return os.environ[env_key]
-        if overrides:
+        if testing_overrides:
             try:
-                return overrides[setting_name]
+                return testing_overrides[setting_name]
             except KeyError:
                 pass
         try:

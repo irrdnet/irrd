@@ -206,8 +206,8 @@ Sources
 .. caution::
 
     Journal-keeping for NRTM streams is dependent on providing a single uninterrupted stream of updates.
-    Therefore, briefly disabling it and then re-enabling it for a source that is mirrored by others,
-    will cause gaps in the journal, causing the databases to go out of sync silently until the mirror
+    This stream is only kept while ``keep_journal`` is enabled. Disabling it while mirrors are dependent
+    on it, even briefly, will cause the databases to go out of sync silently until the mirror
     runs a new full import.
 
 .. note::
