@@ -93,7 +93,7 @@ class TestConfiguration:
                 },
                 'log': {
                     'level': 'DEBUG',
-                    'destination': logfile
+                    'logfile_path': logfile
                 },
 
             }
