@@ -25,20 +25,15 @@ LOGGING = {
         'verbose': {
             'format': '%(asctime)s irrd[%(process)d]: [%(name)s#%(levelname)s] %(message)s'
         },
-        'simple': {
-            'format': '%(levelname)s %(name)s: %(message)s'
-        },
     },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose'
         },
-        'file': {
-            'class': 'logging.NullHandler',
-        }
     },
     'loggers': {
+        # Tune down some very loud and not very useful loggers from libraries.
         'passlib.registry': {
             'level': 'INFO',
             'propagate': True,
@@ -53,7 +48,7 @@ LOGGING = {
         },
         '': {
             'handlers': ['console'],
-            'level': 'DEBUG',
+            'level': 'INFO',
             'propagate': True,
         },
     }
@@ -68,7 +63,7 @@ class ConfigurationError(ValueError):
     pass
 
 
-# Testing overrides can be set to a DottedDict, and is used
+# testing_overrides can be set to a DottedDict, and is used
 # to override settings while testing, using the config_override
 # fixture.
 testing_overrides = None
@@ -85,6 +80,7 @@ class Configuration:
     def __init__(self):
         """
         Load the default config and load and check the user provided config.
+        If a logfile was specified, direct logs there.
         """
         default_config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'default_config.yaml')
         default_config_yaml = yaml.safe_load(open(default_config_path))
@@ -95,13 +91,14 @@ class Configuration:
             raise ConfigurationError(f'Errors found in configuration, unable to start: {errors}')
         self._commit_staging()
 
-        log_filename = self.get_setting_live('log.destination')
+        log_filename = self.get_setting_live('log.logfile_path')
         if log_filename:
             LOGGING['handlers']['file'] = {
                 'class': 'logging.handlers.WatchedFileHandler',
                 'filename': log_filename,
                 'formatter': 'verbose',
             }
+            # noinspection PyTypeChecker
             LOGGING['loggers']['']['handlers'] = ['file']
             logging.config.dictConfig(LOGGING)
 

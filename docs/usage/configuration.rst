@@ -15,7 +15,7 @@ Example configuration file
 .. highlight:: yaml
     :linenothreshold: 5
 
-This sample shows the hierarchy of all configuration options::
+This sample shows most configuration options::
 
     irrd:
         database_url: 'postgresql://localhost:5432/irrd'
@@ -43,6 +43,10 @@ This sample shows the hierarchy of all configuration options::
             footer: 'email footer'
             from: example@example.com
             smtp: localhost
+
+        log:
+            logfile_path: /var/log/irrd/irrd.log
+            loglevel: DEBUG
 
         sources_default:
             - AUTHDATABASE
@@ -93,7 +97,8 @@ This sample shows the hierarchy of all configuration options::
 Loading and reloading
 ---------------------
 
-The configuration is loaded when IRRd starts. If the configuration is invalid, the daemon will refuse to start.
+The configuration is loaded when IRRd starts. The path to the config file is read from the ``IRRD_CONFIG_PATH``
+environment variable. If the configuration is invalid, the daemon will refuse to start.
 While running, the configuration can be reloaded by sending a `SIGHUP` signal. Most settings will take effect
 immediately, but some require a full restart. If a `SIGHUP` is sent and the new configuration is invalid,
 errors will be written to the logfile, but IRRd will keep running with the last valid configuration.
@@ -238,10 +243,20 @@ Sources
       other details. Every ``import_timer``, the entire database will be reloaded from the full copies.
       Journals can not be generated.
 
+.. note::
+
+    Source names are case sensitive and must be an exact match to ``sources_default``, and the source
+    attribute value in any objects imported from files or NRTM. E.g. if ``sources.EXAMPLE`` is defined,
+    and ``sources_default`` contains ``example``, this is a configuration error. If an object is
+    encountered with ``source: EXAMPLe``, it is rejected and an error is logged.
+
 
 Logging
 ~~~~~~~
-* ``log.destination``: the full path where the logfile will be written.
+* ``log.logfile_path``: the full path where the logfile will be written. IRRd will attempt to create the file if it
+  does not exist. If the file is removed, e.g. by a log rotation process, IRRd will create a new file in the same
+  location, and continue writing to that file. Timestamps in logs are always in UTC, regardless of local machine
+  timezone.
   |br| **Default**: not defined, logs will be sent to the console
   |br| **Change takes effect**: after full IRRd restart.
 * ``log.level``: the loglevel, one of `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`. The recommended level is `INFO`.
