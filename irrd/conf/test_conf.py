@@ -164,7 +164,10 @@ class TestConfiguration:
                 'server': {
                     'whois': {
                         'access_list': 'doesnotexist',
-                    }
+                    },
+                    'http': {
+                        'access_list': ['foo'],
+                    },
                 },
                 'email': {
                     'footer': {'a': 1},
@@ -188,15 +191,16 @@ class TestConfiguration:
 
         with pytest.raises(ConfigurationError) as ce:
             Configuration()
+
         assert 'Setting database_url is required.' in str(ce)
         assert 'Setting email.from is required and must be an email address.' in str(ce)
         assert 'Setting email.smtp is required.' in str(ce)
-        assert 'Setting email.footer must be a string.' in str(ce)
+        assert 'Setting email.footer must be a string, if defined.' in str(ce)
         assert 'Setting auth.gnupg_keyring is required.' in str(ce)
         assert 'Access lists doesnotexist referenced in settings, but not defined.' in str(ce)
+        assert 'Setting server.http.access_list must be a string, if defined.' in str(ce)
         assert 'Invalid item in access list bad-list: IPv4 Address with more than 4 bytes.' in str(ce)
         assert 'Setting sources_default contains unknown sources: DOESNOTEXIST-DB' in str(ce)
-        assert 'Setting keep_journal for source TESTDB can not be enabled unless either ' in str(ce)
         assert 'Setting keep_journal for source TESTDB can not be enabled unless either ' in str(ce)
         assert 'Invalid log.level: INVALID' in str(ce)
 

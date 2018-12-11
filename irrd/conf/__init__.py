@@ -91,16 +91,42 @@ class Configuration:
             raise ConfigurationError(f'Errors found in configuration, unable to start: {errors}')
         self._commit_staging()
 
-        log_filename = self.get_setting_live('log.logfile_path')
-        if log_filename:
+        logfile_path = self.get_setting_live('log.logfile_path')
+        if logfile_path:
             LOGGING['handlers']['file'] = {
                 'class': 'logging.handlers.WatchedFileHandler',
-                'filename': log_filename,
+                'filename': logfile_path,
                 'formatter': 'verbose',
             }
             # noinspection PyTypeChecker
             LOGGING['loggers']['']['handlers'] = ['file']
             logging.config.dictConfig(LOGGING)
+
+    def get_setting_live(self, setting_name: str, default: Any=None) -> Any:
+        """
+        Get a setting from the live config.
+        In order, this will look in:
+        - A env variable, uppercase and dots replaced by underscores, e.g.
+          IRRD_SERVER_WHOIS_INTERFACE
+        - The testing_overrides DottedDict
+        - The live user config.
+        - The default config.
+
+        If it is not found in any, the value of the default paramater
+        is returned, which is None by default.
+        """
+        env_key = 'IRRD_' + setting_name.upper().replace('.', '_')
+        if env_key in os.environ:
+            return os.environ[env_key]
+        if testing_overrides:
+            try:
+                return testing_overrides[setting_name]
+            except KeyError:
+                pass
+        try:
+            return self.user_config_live[setting_name]
+        except KeyError:
+            return self.default_config.get(setting_name, default)
 
     def reload(self) -> bool:
         """
@@ -114,12 +140,24 @@ class Configuration:
         self._commit_staging()
         return True
 
+    def _commit_staging(self):
+        """
+        Activate the current staging config as the live config.
+        """
+        self.user_config_live = self.user_config_staging
+        logging.getLogger('').setLevel(self.get_setting_live('log.level', default='INFO'))
+
     def _staging_reload_check(self) -> List[str]:
         """
         Reload the staging configuration, and run the config checks on it.
         Returns a list of errors if any were found, or an empty list of the
         staging config is valid.
         """
+        # While in testing, Configuration does not demand a valid config file
+        # in IRRD_CONFIG_PATH_ENV. This simplifies test setup, as most tests
+        # do not need it. If IRRD_CONFIG_PATH_ENV is set, it is checked,
+        # and the check is forced with IRRD_CONFIG_CHECK_FORCE_ENV (to test
+        # the error message for the empty environment variable).
         if all([
             hasattr(sys, '_called_from_test'),
             IRRD_CONFIG_PATH_ENV not in os.environ,
@@ -149,39 +187,6 @@ class Configuration:
             logger.info(f'Configuration successfully (re)loaded from {user_config_path}')
         return errors
 
-    def _commit_staging(self):
-        """
-        Activate the current staging config as the live config.
-        """
-        self.user_config_live = self.user_config_staging
-        logging.getLogger('').setLevel(self.get_setting_live('log.level', default='INFO'))
-
-    def get_setting_live(self, setting_name: str, default: Any=None) -> Any:
-        """
-        Get a setting from the live config.
-        In order, this will look in:
-        - A env variable, uppercase and dots replaced by underscores, e.g.
-          IRRD_SERVER_WHOIS_INTERFACE
-        - The testing_overrides DottedDict
-        - The live user config.
-        - The default config.
-
-        If it is not found in any, the value of the default paramater
-        is returned, which is None by default.
-        """
-        env_key = 'IRRD_' + setting_name.upper().replace('.', '_')
-        if env_key in os.environ:
-            return os.environ[env_key]
-        if testing_overrides:
-            try:
-                return testing_overrides[setting_name]
-            except KeyError:
-                pass
-        try:
-            return self.user_config_live[setting_name]
-        except KeyError:
-            return self.default_config.get(setting_name, default)
-
     def _check_staging_config(self) -> List[str]:
         """
         Validate the current staging configuration.
@@ -203,14 +208,17 @@ class Configuration:
             errors.append(f'Setting email.from is required and must be an email address.')
         if not self._check_is_str(config, 'email.smtp'):
             errors.append(f'Setting email.smtp is required.')
-        if not self._check_is_str(config, 'email.footer', required=False):
-            errors.append(f'Setting email.footer must be a string.')
+
+        string_not_required = ['email.footer', 'server.whois.access_list', 'server.http.access_list']
+        for setting in string_not_required:
+            if not self._check_is_str(config, setting, required=False):
+                errors.append(f'Setting {setting} must be a string, if defined.')
 
         if not self._check_is_str(config, 'auth.gnupg_keyring'):
             errors.append(f'Setting auth.gnupg_keyring is required.')
 
         access_lists = set(config.get('access_lists', {}).keys())
-        unresolved_access_lists = {x for x in expected_access_lists.difference(access_lists) if x}
+        unresolved_access_lists = {x for x in expected_access_lists.difference(access_lists) if x and isinstance(x, str)}
         if unresolved_access_lists:
             errors.append(f'Access lists {", ".join(unresolved_access_lists)} referenced in settings, but not defined.')
 
@@ -260,6 +268,11 @@ def get_setting(setting_name: str, default: Any=None) -> Any:
 
 
 def sighup_handler(signum, frame):
+    """
+    Reload the settings when a SIGHUP is received.
+    Note that not all processes re-read their settings on every run,
+    so not all settings can be changed while running.
+    """
     global configuration
     if not configuration:  # pragma: no cover
         configuration = Configuration()
