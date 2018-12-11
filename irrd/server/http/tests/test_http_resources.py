@@ -72,6 +72,25 @@ class TestDatabaseStatusResource:
             ['setResponseCode', (403,), {}]
         ]
 
+    def test_database_status_get_denied_no_access_list(self, prepare_resource_mocks, config_override):
+        mock_database_status_request, mock_http_request = prepare_resource_mocks
+        config_override({
+            'server': {
+                'http': {
+                    'access_list': None,
+                }
+            },
+        })
+
+        resource = DatabaseStatusResource()
+        mock_database_status_request.generate_status = lambda: 'test 🦄'
+        response = resource.render_GET(mock_http_request)
+
+        assert response == b'Access denied'
+        assert flatten_mock_calls(mock_http_request) == [
+            ['setResponseCode', (403,), {}]
+        ]
+
     def test_database_status_get_denied_unknown_client_address(self, prepare_resource_mocks):
         mock_database_status_request, mock_http_request = prepare_resource_mocks
         mock_http_request.getClientAddress = lambda: UNIXAddress('not-supported')
