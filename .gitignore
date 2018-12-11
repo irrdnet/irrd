@@ -4,6 +4,7 @@
 .mypy_cache
 .tmpdirs
 .pytest_cache
+local_config.yaml
 
 syntax: glob
 __pycache__

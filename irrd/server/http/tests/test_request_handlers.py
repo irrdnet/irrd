@@ -5,13 +5,12 @@ import textwrap
 from datetime import datetime, timezone
 from unittest.mock import Mock
 
-from irrd.conf import DEFAULT_SETTINGS
 from ..request_handlers import DatabaseStatusRequest
 
 
 class TestDatabaseStatusRequest:
 
-    def test_request(self, monkeypatch):
+    def test_request(self, monkeypatch, config_override):
         mock_database_handler = Mock()
         monkeypatch.setattr("irrd.server.http.request_handlers.DatabaseHandler", lambda: mock_database_handler)
         mock_status_query = Mock()
@@ -33,31 +32,33 @@ class TestDatabaseStatusRequest:
 
         monkeypatch.setattr("irrd.server.http.request_handlers.whois_query_source_status", mock_whois_query)
 
-        DEFAULT_SETTINGS['sources'] = {
-            'TEST1': {
-                'authoritative': False,
-                'keep_journal': True,
-                'nrtm_host': 'nrtm1.example.com',
-                'nrtm_port': 43,
-                'object_class_filter': 'object-class-filter',
-            },
-            'TEST2': {
-                'authoritative': True,
-                'keep_journal': False,
-                'nrtm_host': 'nrtm2.example.com',
-                'nrtm_port': 44,
-            },
-            'TEST3': {
-                'authoritative': True,
-                'keep_journal': False,
-                'nrtm_host': 'nrtm3.example.com',
-                'nrtm_port': 45,
-            },
-            'TEST4': {
-                'authoritative': False,
-                'keep_journal': False,
-            },
-        }
+        config_override({
+            'sources': {
+                'TEST1': {
+                    'authoritative': False,
+                    'keep_journal': True,
+                    'nrtm_host': 'nrtm1.example.com',
+                    'nrtm_port': 43,
+                    'object_class_filter': 'object-class-filter',
+                },
+                'TEST2': {
+                    'authoritative': True,
+                    'keep_journal': False,
+                    'nrtm_host': 'nrtm2.example.com',
+                    'nrtm_port': 44,
+                },
+                'TEST3': {
+                    'authoritative': True,
+                    'keep_journal': False,
+                    'nrtm_host': 'nrtm3.example.com',
+                    'nrtm_port': 45,
+                },
+                'TEST4': {
+                    'authoritative': False,
+                    'keep_journal': False,
+                },
+            }
+        })
 
         mock_query_result = iter([
             [
@@ -114,7 +115,7 @@ class TestDatabaseStatusRequest:
         status_report = DatabaseStatusRequest().generate_status()
         expected_report = textwrap.dedent("""
         IRRD version master
-        Listening on ::0 port 8043
+        Listening on ::0 port 43
         Next mirror update: in unknown
         
         

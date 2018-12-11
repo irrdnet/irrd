@@ -4,18 +4,7 @@ import textwrap
 
 import pytest
 
-from irrd.rpsl.rpsl_objects import rpsl_object_from_text
-from irrd.utils.rpsl_samples import SAMPLE_KEY_CERT
-# noinspection PyUnresolvedReferences
-from irrd.utils.test_utils import tmp_gpg_dir  # noqa: F401
 from ..pgp import validate_pgp_signature
-
-
-@pytest.fixture()
-def preload_gpg_key():
-    # Simply parsing the key-cert will load it into the GPG keychain
-    rpsl_text = SAMPLE_KEY_CERT
-    rpsl_object_from_text(rpsl_text)
 
 
 class TestValidatePGPSignature:

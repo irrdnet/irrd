@@ -5,7 +5,11 @@ from twisted.internet.address import IPv4Address
 from ..protocol import WhoisQueryReceiver, WhoisQueryReceiverFactory
 
 
-def test_whois_protocol():
+def test_whois_protocol(config_override):
+    config_override({
+        'sources': {'TEST1': {}},
+    })
+
     # Note that these tests do not mock WhoisQueryParser, on purpose.
     # However, they only run version queries, so no database interaction occurs.
     mock_transport = Mock()

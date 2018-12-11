@@ -3,15 +3,24 @@ from unittest.mock import Mock
 import pytest
 from twisted.internet.address import IPv4Address, UNIXAddress
 
-from irrd.conf import DEFAULT_SETTINGS
 from irrd.utils.test_utils import flatten_mock_calls
 from ..http_resources import DatabaseStatusResource, http_site
 
 
 @pytest.fixture()
-def prepare_resource_mocks(monkeypatch):
-    DEFAULT_SETTINGS['server']['http']['access_list'] = 'test_access_list'
-    DEFAULT_SETTINGS['access_lists']['test_access_list'] = ['192.0.2.0/25']
+def prepare_resource_mocks(monkeypatch, config_override):
+    config_override({
+        'server': {
+            'http': {
+                'access_list': 'test_access_list',
+            }
+        },
+        'access_lists': {
+            'test_access_list': {
+                '192.0.2.0/25',
+            }
+        },
+    })
 
     mock_database_status_request = Mock()
     monkeypatch.setattr("irrd.server.http.http_resources.DatabaseStatusRequest",
@@ -39,9 +48,20 @@ class TestDatabaseStatusResource:
             ['setHeader', (b'Content-Type', b'text/plain; charset=utf-8'), {}]
         ]
 
-    def test_database_status_get_denied_client_not_in_access_list(self, prepare_resource_mocks):
+    def test_database_status_get_denied_client_not_in_access_list(self, prepare_resource_mocks, config_override):
         mock_database_status_request, mock_http_request = prepare_resource_mocks
-        DEFAULT_SETTINGS['access_lists']['test_access_list'] = ['192.0.2.128/25']
+        config_override({
+            'server': {
+                'http': {
+                    'access_list': 'test_access_list',
+                }
+            },
+            'access_lists': {
+                'test_access_list': {
+                    '192.0.2.128/25',
+                }
+            },
+        })
 
         resource = DatabaseStatusResource()
         mock_database_status_request.generate_status = lambda: 'test 🦄'

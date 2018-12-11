@@ -32,11 +32,11 @@ def validate_pgp_signature(message: str, detached_signature: Optional[str]=None)
     None,None.
 
     Note that PGP validation is dependent on the PGP key already being in the
-    keychain contained in the auth.gnupg.homedir setting. This is usually done by
+    keychain contained in the auth.gnupg_keyring setting. This is usually done by
     importing a key-cert, which will add the certificate to the keychain during
     validation, in RPSLKeyCert.clean().
     """
-    gpg = gnupg.GPG(gnupghome=get_setting('auth.gnupg.homedir'))
+    gpg = gnupg.GPG(gnupghome=get_setting('auth.gnupg_keyring'))
 
     new_message = None
     if detached_signature:

@@ -21,7 +21,7 @@ class MirrorScheduler:
 
     def run(self) -> None:
         for source in get_setting('sources').keys():
-            is_mirror = get_setting(f'sources.{source}.export_source') or get_setting(f'sources.{source}.nrtm_host')
+            is_mirror = get_setting(f'sources.{source}.import_source') or get_setting(f'sources.{source}.nrtm_host')
             if is_mirror and not self._is_thread_running(source):
                 logger.debug(f'Started new thread for mirror update for {source}')
                 initiator = MirrorUpdateRunner(source=source)

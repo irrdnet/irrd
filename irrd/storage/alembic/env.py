@@ -4,17 +4,11 @@ import sys
 
 from alembic import context
 from sqlalchemy import create_engine
-from logging.config import fileConfig
 
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), '../../'))
 
 from irrd.conf import get_setting
 from irrd.storage.models import Base
-
-# Load alembic config file
-config = context.config
-# Logger setup
-fileConfig(config.config_file_name)
 
 target_metadata = Base.metadata
 
