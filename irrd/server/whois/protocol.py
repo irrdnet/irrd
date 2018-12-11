@@ -1,4 +1,5 @@
 import logging
+from IPy import IP
 
 from twisted.internet.protocol import Factory, connectionDone
 from twisted.protocols.basic import LineOnlyReceiver
@@ -16,6 +17,11 @@ class WhoisQueryReceiver(TimeoutMixin, LineOnlyReceiver):
 
     def connectionMade(self):  # noqa: N802
         peer = self.transport.getPeer()
+        if not self.is_client_permitted(peer):
+            self.transport.write(b'%% Access denied')
+            self.transport.loseConnection()
+            return
+
         self.peer = f"[{peer.host}]:{peer.port}"
         self.query_parser = WhoisQueryParser(self.peer)
         self.setTimeout(self.time_out)
@@ -44,6 +50,24 @@ class WhoisQueryReceiver(TimeoutMixin, LineOnlyReceiver):
 
     def connectionLost(self, reason=connectionDone):  # noqa: N802
         self.factory.current_connections -= 1
+
+    def is_client_permitted(self, peer):
+        try:
+            client_ip = IP(peer.host)
+        except (ValueError, AttributeError) as e:
+            logger.error(f'Rejecting request as whois client IP could not be read from '
+                         f'{peer}: {e}')
+            return False
+
+        access_list_name = get_setting('server.whois.access_list')
+        access_list = get_setting(f'access_lists.{access_list_name}')
+        if not access_list:
+            return True
+
+        allowed = any([client_ip in IP(allowed) for allowed in access_list])
+        if not allowed:
+            logger.info(f'Rejecting whois request, IP not in access list: {client_ip}')
+        return allowed
 
 
 class WhoisQueryReceiverFactory(Factory):
