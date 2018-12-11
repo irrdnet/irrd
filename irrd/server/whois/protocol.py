@@ -1,5 +1,6 @@
 import logging
 from IPy import IP
+from twisted.internet import threads
 
 from twisted.internet.protocol import Factory, connectionDone
 from twisted.protocols.basic import LineOnlyReceiver
@@ -41,7 +42,10 @@ class WhoisQueryReceiver(TimeoutMixin, LineOnlyReceiver):
             logger.debug(f'{self.peer}: closed connection per request')
             return
 
-        response = self.query_parser.handle_query(line).generate_response()
+        threads.deferToThread(self.query_parser.handle_query, query=line).addCallback(self.returnResult)
+
+    def returnResult(self, response_obj):  # noqa: N802
+        response = response_obj.generate_response()
         self.transport.write(response.encode('utf-8'))
 
         if not self.query_parser.multiple_command_mode:

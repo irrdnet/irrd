@@ -1,3 +1,4 @@
+import pytest
 from unittest.mock import Mock
 
 from twisted.internet.address import IPv4Address, UNIXAddress
@@ -5,9 +6,24 @@ from twisted.internet.address import IPv4Address, UNIXAddress
 from ..protocol import WhoisQueryReceiver, WhoisQueryReceiverFactory
 
 
+@pytest.fixture()
+def mock_twisted_defertothread(monkeypatch):
+    def _defer_to_thread_mock(callable, *args, **kwargs):
+        result = callable(*args, **kwargs)
+
+        def _add_callback_mock(callback):
+            return callback(result)
+
+        obj = lambda: None  # noqa: E731
+        obj.addCallback = _add_callback_mock
+        return obj
+
+    monkeypatch.setattr('irrd.server.whois.protocol.threads.deferToThread', _defer_to_thread_mock)
+
+
 class TestWhoisProtocol:
 
-    def test_whois_protocol_no_access_list(self, config_override):
+    def test_whois_protocol_no_access_list(self, config_override, mock_twisted_defertothread):
         config_override({
             'sources': {'TEST1': {}},
         })
@@ -49,7 +65,7 @@ class TestWhoisProtocol:
         receiver.connectionLost()
         assert mock_factory.current_connections == 9
 
-    def test_whois_protocol_access_list_permitted(self, config_override):
+    def test_whois_protocol_access_list_permitted(self, config_override, mock_twisted_defertothread):
         config_override({
             'sources': {'TEST1': {}},
             'server': {
