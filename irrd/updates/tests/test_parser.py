@@ -628,7 +628,28 @@ class TestSingleUpdateRequestHandling:
         ]
         assert result_inetnum.notification_targets() == {'notify@example.com', 'upd-to@example.net'}
 
-    def test_check_auth_invalid_update_mntner_override_hash_misconfigured(self, prepare_mocks, monkeypatch):
+    def test_check_auth_invalid_update_mntner_override_hash_misconfigured(self, prepare_mocks, monkeypatch, caplog):
+        mock_dq, mock_dh = prepare_mocks
+        monkeypatch.setenv('IRRD_AUTH_OVERRIDE_PASSWORD', 'invalid-hash')
+
+        query_result1 = {'object_text': SAMPLE_INETNUM}
+        query_result2 = {'object_text': SAMPLE_MNTNER}
+        query_results = itertools.cycle([[query_result1], [query_result2]])
+        mock_dh.execute_query = lambda query: next(query_results)
+
+        reference_validator = ReferenceValidator(mock_dh)
+        auth_validator = AuthValidator(mock_dh)
+
+        result_inetnum = parse_update_requests(SAMPLE_INETNUM + 'override: override-password',
+                                               mock_dh, auth_validator, reference_validator)[0]
+        assert not result_inetnum._check_auth()
+        assert result_inetnum.error_messages == [
+            'Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed: must by authenticated by one of: TEST-MNT',
+        ]
+        assert result_inetnum.notification_targets() == {'notify@example.com', 'upd-to@example.net'}
+        assert 'possible misconfigured hash' in caplog.text
+
+    def test_check_auth_invalid_update_mntner_override_hash_empty(self, prepare_mocks, monkeypatch, caplog):
         mock_dq, mock_dh = prepare_mocks
         monkeypatch.setenv('IRRD_AUTH_OVERRIDE_PASSWORD', '')
 
@@ -647,6 +668,7 @@ class TestSingleUpdateRequestHandling:
             'Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed: must by authenticated by one of: TEST-MNT',
         ]
         assert result_inetnum.notification_targets() == {'notify@example.com', 'upd-to@example.net'}
+        assert 'Ignoring override password, auth.override_password not set.' in caplog.text
 
     def test_user_report(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
