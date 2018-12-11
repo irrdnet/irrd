@@ -305,15 +305,12 @@ class DatabaseStatusTracker:
         Make a record in the journal of a change to an object.
 
         Will only record changes when self.journaling_enabled is set,
-        and the database.SOURCE.authoritative or database.SOURCE.keep_journal
-        settings are set.
+        and the database.SOURCE.keep_journal is set.
 
         Note that this method locks the journal table for writing to ensure a
         gapless set of NRTM serials.
         """
-        if self.journaling_enabled and (
-                get_setting(f'sources.{source}.authoritative') or get_setting(f'sources.{source}.keep_journal')
-        ):
+        if self.journaling_enabled and get_setting(f'sources.{source}.keep_journal'):
             journal_tablename = RPSLDatabaseJournal.__tablename__
 
             if forced_serial is None:
