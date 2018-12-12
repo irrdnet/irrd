@@ -3,10 +3,10 @@
 import textwrap
 from unittest.mock import Mock
 
-from irrd.updates.email import handle_email_update
+from irrd.updates.email import handle_email_submission
 
 
-class TestHandleEmailUpdate:
+class TestHandleEmailSubmission:
     default_email = textwrap.dedent("""
         From sasha@localhost  Thu Jan  5 10:04:48 2018
         Received: from [127.0.0.1] (localhost.localdomain [127.0.0.1])
@@ -30,7 +30,7 @@ class TestHandleEmailUpdate:
         mock_email = Mock()
         monkeypatch.setattr('irrd.utils.email.send_email', mock_email)
 
-        handler = handle_email_update(self.default_email)
+        handler = handle_email_submission(self.default_email)
         assert handler.request_meta['Message-ID'] == '<1325754288.4989.6.camel@hostname>'
         assert len(handler.results) == 1
         assert len(handler.results[0].error_messages)
@@ -67,7 +67,7 @@ class TestHandleEmailUpdate:
         <html><head><meta http-equiv="Content-Type" content="text/html charset=us-ascii"></head><body style="word-wrap: break-word; -webkit-nbsp-mode: space; -webkit-line-break: after-white-space;" class=""><b class="">test 1 2 3</b><div class=""><br class=""></div></body></html>
         --Apple-Mail=_01FE5B2D-C7F3-4DDD-AB42-B92C88CFBF0F--
         """).strip()
-        assert handle_email_update(email) is None
+        assert handle_email_submission(email) is None
 
         assert mock_email.mock_calls[0][0] == ''
         assert mock_email.mock_calls[0][1][0] == 'Sasha <sasha@example.com>'
@@ -81,27 +81,27 @@ class TestHandleEmailUpdate:
         mock_parser = Mock(side_effect=Exception('test-error'))
         monkeypatch.setattr('irrd.utils.email.EmailParser', mock_parser)
 
-        handle_email_update(self.default_email)
+        handle_email_submission(self.default_email)
         assert not mock_email.mock_calls
-        assert 'An exception occurred while attempting to send a reply to an update: FAILED'
+        assert 'An exception occurred while attempting to send a reply to an submission: FAILED'
         assert 'traceback for test-error follows' in caplog.text
         assert 'test-error' in caplog.text
 
-    def test_handles_exception_update_request_handler(self, monkeypatch, caplog):
+    def test_handles_exception_submission_request_handler(self, monkeypatch, caplog):
         mock_email = Mock()
         monkeypatch.setattr('irrd.utils.email.send_email', mock_email)
 
         mock_handler = Mock(side_effect=Exception('test-error'))
-        monkeypatch.setattr('irrd.updates.email.UpdateRequestHandler', mock_handler)
+        monkeypatch.setattr('irrd.updates.email.ChangeSubmissionHandler', mock_handler)
 
-        handle_email_update(self.default_email)
+        handle_email_submission(self.default_email)
 
         assert mock_email.mock_calls[0][0] == ''
         assert mock_email.mock_calls[0][1][0] == 'Sasha <sasha@example.com>'
         assert mock_email.mock_calls[0][1][1] == 'ERROR: my subject'
         assert 'internal error' in mock_email.mock_calls[0][1][2]
 
-        assert 'An exception occurred while attempting to send a reply to an update: FAILED'
+        assert 'An exception occurred while attempting to send a reply to an submission: FAILED'
         assert 'traceback for test-error follows' in caplog.text
         assert 'test-error' in caplog.text
 
@@ -109,14 +109,14 @@ class TestHandleEmailUpdate:
         mock_email = Mock(side_effect=Exception('test-error'))
         monkeypatch.setattr('irrd.utils.email.send_email', mock_email)
 
-        handle_email_update(self.default_email)
+        handle_email_submission(self.default_email)
 
         assert mock_email.mock_calls[0][0] == ''
         assert mock_email.mock_calls[0][1][0] == 'Sasha <sasha@example.com>'
         assert mock_email.mock_calls[0][1][1] == 'FAILED: my subject'
         assert 'DETAILED EXPLANATION' in mock_email.mock_calls[0][1][2]
 
-        assert 'An exception occurred while attempting to send a reply to an update: FAILED'
+        assert 'An exception occurred while attempting to send a reply to an submission: FAILED'
         assert 'traceback for test-error follows' in caplog.text
         assert 'test-error' in caplog.text
 

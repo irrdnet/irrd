@@ -4,12 +4,12 @@ import textwrap
 from typing import Optional
 
 from irrd.utils import email
-from .handler import UpdateRequestHandler
+from .handler import ChangeSubmissionHandler
 
 logger = logging.getLogger(__name__)
 
 
-def handle_email_update(email_txt: str) -> Optional[UpdateRequestHandler]:
+def handle_email_submission(email_txt: str) -> Optional[ChangeSubmissionHandler]:
     handler = None
     try:
         msg = email.EmailParser(email_txt)
@@ -35,7 +35,7 @@ def handle_email_update(email_txt: str) -> Optional[UpdateRequestHandler]:
             Please try to resend your message as plain text email.
             """)
         else:
-            handler = UpdateRequestHandler(msg.body, msg.pgp_fingerprint, request_meta)
+            handler = ChangeSubmissionHandler(msg.body, msg.pgp_fingerprint, request_meta)
             logger.info(f'Processed e-mail {msg.message_id} from {msg.message_from}: {handler.status()}')
             logger.debug(f'Report for e-mail {msg.message_id} from {msg.message_from}: {handler.submitter_report()}')
 
