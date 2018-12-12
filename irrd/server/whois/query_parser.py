@@ -1,5 +1,6 @@
 import logging
 import re
+import threading
 from orderedset import OrderedSet
 from typing import Optional, List, Set, Tuple
 
@@ -48,9 +49,16 @@ class WhoisQueryParser:
         self.key_fields_only = False
         self.peer = peer
 
+        # The WhoisQueryParser itself should not run concurrently,
+        # as answers could arrive out of order.
+        self.safe_to_run_query = threading.Event()
+        self.safe_to_run_query.set()
+
     def handle_query(self, query: str) -> WhoisQueryResponse:
         """Process a single query. Always returns a WhoisQueryResponse object."""
         # These flags are reset with every query.
+        self.safe_to_run_query.wait()
+        self.safe_to_run_query.clear()
         self.database_handler = DatabaseHandler()
         self.key_fields_only = False
         self.object_classes = []
@@ -74,6 +82,7 @@ class WhoisQueryParser:
                 )
             finally:
                 self.database_handler.close()
+                self.safe_to_run_query.set()
 
         try:
             return self.handle_ripe_command(query)
@@ -93,6 +102,7 @@ class WhoisQueryParser:
             )
         finally:
             self.database_handler.close()
+            self.safe_to_run_query.set()
 
     def handle_irrd_command(self, full_command: str) -> WhoisQueryResponse:
         """Handle an IRRD-style query. full_command should not include the first exclamation mark. """
