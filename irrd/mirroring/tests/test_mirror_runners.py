@@ -15,7 +15,7 @@ class TestMirrorUpdateRunner:
         mock_full_import_runner = Mock()
 
         monkeypatch.setattr('irrd.mirroring.mirror_runners.DatabaseHandler', lambda: mock_dh)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners.RPSLDatabaseStatusQuery', lambda: mock_dq)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners.DatabaseStatusQuery', lambda: mock_dq)
         monkeypatch.setattr('irrd.mirroring.mirror_runners.MirrorFullImportRunner', lambda source: mock_full_import_runner)
 
         mock_dh.execute_query = lambda q: iter([])
@@ -34,7 +34,7 @@ class TestMirrorUpdateRunner:
         mock_full_import_runner = Mock()
 
         monkeypatch.setattr('irrd.mirroring.mirror_runners.DatabaseHandler', lambda: mock_dh)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners.RPSLDatabaseStatusQuery', lambda: mock_dq)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners.DatabaseStatusQuery', lambda: mock_dq)
         monkeypatch.setattr('irrd.mirroring.mirror_runners.MirrorFullImportRunner', lambda source: mock_full_import_runner)
 
         mock_dh.execute_query = lambda q: iter([{'serial_newest_seen': 424242, 'force_reload': True}])
@@ -53,7 +53,7 @@ class TestMirrorUpdateRunner:
         mock_stream_runner = Mock()
 
         monkeypatch.setattr('irrd.mirroring.mirror_runners.DatabaseHandler', lambda: mock_dh)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners.RPSLDatabaseStatusQuery', lambda: mock_dq)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners.DatabaseStatusQuery', lambda: mock_dq)
         monkeypatch.setattr('irrd.mirroring.mirror_runners.NRTMUpdateStreamRunner', lambda source: mock_stream_runner)
 
         mock_dh.execute_query = lambda q: iter([{'serial_newest_seen': 424242, 'force_reload': False}])
@@ -73,7 +73,7 @@ class TestMirrorUpdateRunner:
         mock_stream_runner = Mock()
 
         monkeypatch.setattr('irrd.mirroring.mirror_runners.DatabaseHandler', lambda: mock_dh)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners.RPSLDatabaseStatusQuery', lambda: mock_dq)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners.DatabaseStatusQuery', lambda: mock_dq)
         monkeypatch.setattr('irrd.mirroring.mirror_runners.NRTMUpdateStreamRunner', lambda source: mock_stream_runner)
         mock_stream_runner.run = Mock(side_effect=Exception('test-error'))
 

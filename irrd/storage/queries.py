@@ -333,7 +333,7 @@ class RPSLDatabaseJournalQuery(BaseRPSLObjectDatabaseQuery):
         return f"RPSLDatabaseJournalQuery: {self.statement}\nPARAMS: {self.statement.compile().params}"
 
 
-class RPSLDatabaseStatusQuery:
+class DatabaseStatusQuery:
     table = RPSLDatabaseStatus.__table__
     columns = RPSLDatabaseStatus.__table__.c
 
@@ -371,7 +371,7 @@ class RPSLDatabaseStatusQuery:
         return self
 
     def __repr__(self):
-        return f"RPSLDatabaseStatusQuery: {self.statement}\nPARAMS: {self.statement.compile().params}"
+        return f"DatabaseStatusQuery: {self.statement}\nPARAMS: {self.statement.compile().params}"
 
 
 class RPSLDatabaseObjectStatisticsQuery:

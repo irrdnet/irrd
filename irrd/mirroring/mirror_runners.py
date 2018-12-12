@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 
 from irrd.conf import get_setting
 from irrd.storage.database_handler import DatabaseHandler
-from irrd.storage.queries import RPSLDatabaseStatusQuery
+from irrd.storage.queries import DatabaseStatusQuery
 from irrd.utils.whois_client import whois_query
 from .parser import MirrorFileImportParser, NRTMStreamParser
 
@@ -50,7 +50,7 @@ class MirrorUpdateRunner:
             self.database_handler.close()
 
     def _status(self) -> Tuple[Optional[int], Optional[bool]]:
-        query = RPSLDatabaseStatusQuery().source(self.source)
+        query = DatabaseStatusQuery().source(self.source)
         result = self.database_handler.execute_query(query)
         try:
             status = next(result)

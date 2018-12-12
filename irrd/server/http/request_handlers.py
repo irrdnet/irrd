@@ -11,7 +11,7 @@ from irrd import __version__
 from irrd.conf import get_setting
 from irrd.mirroring.scheduler import MirrorScheduler
 from irrd.storage.database_handler import DatabaseHandler
-from irrd.storage.queries import RPSLDatabaseStatusQuery, RPSLDatabaseObjectStatisticsQuery
+from irrd.storage.queries import DatabaseStatusQuery, RPSLDatabaseObjectStatisticsQuery
 from irrd.utils.whois_client import whois_query_source_status
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ class DatabaseStatusRequest:
 
         statistics_query = RPSLDatabaseObjectStatisticsQuery()
         self.statistics_results = list(database_handler.execute_query(statistics_query))
-        status_query = RPSLDatabaseStatusQuery()
+        status_query = DatabaseStatusQuery()
         self.status_results = list(database_handler.execute_query(status_query))
 
         results = [self._generate_header(), self._generate_statistics_table(), self._generate_source_detail()]
