@@ -8,7 +8,7 @@ from sqlalchemy.dialects import postgresql as pg
 
 from irrd.conf import get_setting
 from irrd.rpsl.parser import RPSLObject
-from irrd.storage.queries import (BaseRPSLObjectDatabaseQuery, RPSLDatabaseStatusQuery,
+from irrd.storage.queries import (BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery,
                                   RPSLDatabaseObjectStatisticsQuery)
 from . import engine
 from .models import RPSLDatabaseObject, RPSLDatabaseJournal, DatabaseOperation, RPSLDatabaseStatus
@@ -72,7 +72,7 @@ class DatabaseHandler:
         self._transaction.rollback()
         self._start_transaction()
 
-    def execute_query(self, query: Union[BaseRPSLObjectDatabaseQuery, RPSLDatabaseStatusQuery, RPSLDatabaseObjectStatisticsQuery]) -> Iterator[Dict[str, Any]]:
+    def execute_query(self, query: Union[BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery, RPSLDatabaseObjectStatisticsQuery]) -> Iterator[Dict[str, Any]]:
         """Execute an RPSLDatabaseQuery within the current transaction."""
         # To be able to query objects that were just created, flush the cache.
         self._flush_rpsl_object_upsert_cache()

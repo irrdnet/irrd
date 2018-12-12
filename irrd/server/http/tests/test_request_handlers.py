@@ -14,7 +14,7 @@ class TestDatabaseStatusRequest:
         mock_database_handler = Mock()
         monkeypatch.setattr("irrd.server.http.request_handlers.DatabaseHandler", lambda: mock_database_handler)
         mock_status_query = Mock()
-        monkeypatch.setattr("irrd.server.http.request_handlers.RPSLDatabaseStatusQuery", lambda: mock_status_query)
+        monkeypatch.setattr("irrd.server.http.request_handlers.DatabaseStatusQuery", lambda: mock_status_query)
         mock_statistics_query = Mock()
         monkeypatch.setattr("irrd.server.http.request_handlers.RPSLDatabaseObjectStatisticsQuery",
                             lambda: mock_statistics_query)

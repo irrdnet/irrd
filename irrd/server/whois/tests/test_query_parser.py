@@ -591,7 +591,7 @@ class TestWhoisQueryParserIRRD:
     def test_database_serial_range(self, monkeypatch, prepare_parser):
         mock_dq, mock_dh, parser = prepare_parser
         mock_dsq = Mock()
-        monkeypatch.setattr("irrd.server.whois.query_parser.RPSLDatabaseStatusQuery", lambda: mock_dsq)
+        monkeypatch.setattr("irrd.server.whois.query_parser.DatabaseStatusQuery", lambda: mock_dsq)
 
         mock_query_result = [
             {'source': 'TEST1', 'serial_oldest_journal': 10, 'serial_newest_journal': 20, 'serial_last_export': 10},

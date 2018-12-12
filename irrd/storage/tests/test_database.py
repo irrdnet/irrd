@@ -8,7 +8,7 @@ from pytest import raises
 
 from .. import engine
 from ..database_handler import DatabaseHandler
-from ..queries import (RPSLDatabaseQuery, RPSLDatabaseJournalQuery, RPSLDatabaseStatusQuery,
+from ..queries import (RPSLDatabaseQuery, RPSLDatabaseJournalQuery, DatabaseStatusQuery,
                        RPSLDatabaseObjectStatisticsQuery)
 from ..models import RPSLDatabaseObject, DatabaseOperation
 
@@ -175,7 +175,7 @@ class TestDatabaseHandlerLive:
              'operation': DatabaseOperation.delete, 'object_class': 'route', 'object_text': 'object-text'},
         ]
 
-        status_test = list(self.dh.execute_query(RPSLDatabaseStatusQuery().source('TEST')))
+        status_test = list(self.dh.execute_query(DatabaseStatusQuery().source('TEST')))
         assert self._clean_result(status_test) == [
             {'source': 'TEST', 'serial_oldest_journal': 42, 'serial_newest_journal': 43,
              'serial_oldest_seen': 42, 'serial_newest_seen': 43,
@@ -185,7 +185,7 @@ class TestDatabaseHandlerLive:
         assert status_test[0]['updated']
         assert not status_test[0]['last_error_timestamp']
 
-        status_test2 = list(self.dh.execute_query(RPSLDatabaseStatusQuery().source('TEST2')))
+        status_test2 = list(self.dh.execute_query(DatabaseStatusQuery().source('TEST2')))
         assert self._clean_result(status_test2) == [
             {'source': 'TEST2', 'serial_oldest_journal': 1, 'serial_newest_journal': 3,
              'serial_oldest_seen': 1, 'serial_newest_seen': 3,
@@ -239,7 +239,7 @@ class TestDatabaseHandlerLive:
         self.dh.upsert_rpsl_object(rpsl_object_route_v6)
         self.dh.commit()
 
-        status = self._clean_result(self.dh.execute_query(RPSLDatabaseStatusQuery()))
+        status = self._clean_result(self.dh.execute_query(DatabaseStatusQuery()))
         assert status == [
             {'source': 'TEST', 'serial_oldest_journal': None, 'serial_newest_journal': None,
              'serial_oldest_seen': 42, 'serial_newest_seen': 4242,
@@ -249,7 +249,7 @@ class TestDatabaseHandlerLive:
         self.dh.force_record_serial_seen('TEST', 424242)
         self.dh.commit()
 
-        status = self._clean_result(self.dh.execute_query(RPSLDatabaseStatusQuery()))
+        status = self._clean_result(self.dh.execute_query(DatabaseStatusQuery()))
         assert status == [
             {'source': 'TEST', 'serial_oldest_journal': None, 'serial_newest_journal': None,
              'serial_oldest_seen': 42, 'serial_newest_seen': 424242,
@@ -282,7 +282,7 @@ class TestDatabaseHandlerLive:
         journal = self._clean_result(self.dh.execute_query(RPSLDatabaseJournalQuery()))
         assert journal == []
 
-        status_test = self._clean_result(self.dh.execute_query(RPSLDatabaseStatusQuery()))
+        status_test = self._clean_result(self.dh.execute_query(DatabaseStatusQuery()))
         assert status_test == [
             {'source': 'TEST', 'serial_oldest_journal': None, 'serial_newest_journal': None,
              'serial_oldest_seen': 42, 'serial_newest_seen': 42,
