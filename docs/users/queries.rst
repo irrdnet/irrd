@@ -1,25 +1,30 @@
-=======
-Queries
-=======
+=====================
+Running whois queries
+=====================
 
-IRRd accepts queries on port 43. The encoding used is always UTF-8, though
-many objects are 7-bit ASCII. Line seperators are a single newline (``\n``)
-character.
+IRRd accepts whois queries on port 43 (by default).
+The encoding used is always UTF-8, though many objects fit 7-bit ASCII.
+Line seperators are a single newline (``\n``) character.
+
+.. contents:: :backlinks: none
 
 IRRd vs RIPE style
 ------------------
 IRRd supports two styles of queries:
 
-* IRRd style queries, which are powerful but quite specific. For example,
+* IRRd style queries, many of which return processed data
+  rather than raw RPSL object text. For example,
   ``!iRS-EXAMPLE,1`` finds all members of route-set `RS-EXAMPLE`,
-  recursively.
+  recursively and returns them as a space-separated list of prefixes.
 * RIPE style queries, which you may know from the RIPE whois database and many
   similar implementations. For example, ``-s APNIC -M 192.0.2/21`` finds
   all more specific objects of 192.0.2/21 from source APNIC.
 
+The two styles can not be combined in a single query, but can be mixed in
+a single connection.
+
 IRRd style queries
 ------------------
-
 * ``!!`` activates multiple command mode. The connection will be kept open
   after a query has been sent. Queries are answered in the order they were
   submitted. Takes no parameters.
@@ -27,21 +32,24 @@ IRRd style queries
   prefixes of the routes are returned, seperated by spaces.
 * ``!6AS<asn>`` finds all IPv6 routes for an origin AS. Only distinct
   prefixes of the routes are returned, seperated by spaces.
-* ``!i<set-name>`` returns all members of an as-set or a route-set. If
+* ``!i<set-name>`` returns all members of an `as-set` or a `route-set`. If
   ``,1`` is appended, the search is performed recursively. Returns all members
-  (and possibly names of other sets, if the search was not recursive or
-  member sets could not be resolved), separated by spaces. For example:
+  (and possibly names of other sets, if the search was not recursive),
+  separated by spaces. For example:
   ``!iRS-EXAMPLE,1`` returns all members of `RS-EXAMPLE`, recursively.
-* ``!j`` TBD
+* ``!j`` returns the serial range for each source, available in the local
+  journal, along with the most recent export serial from this IRRd instance.
+  For all sources, query ``!j-*``, for a specific source, query
+  ``!jEXAMPLE-SOURCE``.
 * ``!m<object-class>,<primary-key>`` searches for objects exactly matching
   the primary key, of the specified RPSL object class. For example:
   ``!maut-num,AS23456``. Stops at the first object. The key is case
   sensitive.
 * ``!o<mntner-name>`` searches for all objects with the specified maintainer
-  in it's `mnt-by` attribute.
+  in its `mnt-by` attribute.
 * ``!n<free-text>`` identifies the client querying IRRd. Optional, but may
   be helpful when debugging issues.
-* ``!r<prefix>,<option>`` searches for route or route6 objects. The options
+* ``!r<prefix>[,<option>]`` searches for `route` or `route6` objects. The options
   are:
 
   * no option, e.g. ``!r192.0.2.0/24``, to find exact matching objects and
@@ -61,7 +69,6 @@ IRRd style queries
 
 Responses
 ^^^^^^^^^
-
 For a succesful response returning data, the response is::
 
     A<length>
@@ -69,8 +76,8 @@ For a succesful response returning data, the response is::
     C
 
 The length is the number of bytes in the response, including the newline
-immediately after the response. Different objects are part of one block of
-response content, each object separated by a blank line.
+immediately after the response content. Different objects are part of one
+lock of response content, each object separated by a blank line.
 
 If the query was valid, but no entries were found, the response is::
 
@@ -87,7 +94,6 @@ If the query was invalid::
 
 RIPE style queries
 ------------------
-
 Unlike IRRd style queries, RIPE style queries can combine multiple
 parameters in one line, e.g::
 
@@ -105,21 +111,20 @@ will set the client name to `my-client` and return all as-sets named
 
 Supported flags
 ^^^^^^^^^^^^^^^
-
 * ``-k`` activates keepalive mode. The connection will be kept open
   after a query has been sent. Queries are answered in the order they were
   submitted.
-* ``-l``, ``-L``, ``-M`` and ``-x`` search for route or route6 objects.
+* ``-l``, ``-L``, ``-M`` and ``-x`` search for `route` or `route6` objects.
   The differences are:
 
-  * ``-x``, e.g. ``-x 192.0.2.0/24``, to find exact matching objects and
-    return them
-  * ``-l``, e.g. ``-l 192.0.2.0/24``, to find one level less specific objects,
-    excluding exact matches, and return them
-  * ``-L``, e.g. ``-L 192.0.2.0/24``, to find all level less specific objects,
-    including exact matches, and return them
-  * ``-M``, e.g. ``-M 192.0.2.0/24``, to find one level more specific objects,
-    excluding exact matches, and return them
+  * ``-x``, e.g. ``-x 192.0.2.0/24``, finds exact matching objects and
+    returnss them
+  * ``-l``, e.g. ``-l 192.0.2.0/24``, finds one level less specific objects,
+    excluding exact matches, and returns them
+  * ``-L``, e.g. ``-L 192.0.2.0/24``, finds all level less specific objects,
+    including exact matches, and returns them
+  * ``-M``, e.g. ``-M 192.0.2.0/24``, finds one level more specific objects,
+    excluding exact matches, and returns them
 * ``-i <attribute> <value>`` searches for objects where the attribute has this
   particular value. Only available for some fields. For example,
   ``-i origin AS23456`` finds all objects with an `origin` attribute set to
@@ -132,7 +137,8 @@ Supported flags
 * ``-T <object-classes>`` restricts a query to certain object classes,
   comma-separated. This does not persist across queries.
 * ``-t <object-class>`` returns the template for a particular object class.
-* ``-K`` restricts the output to primary key fields only.
+* ``-K`` restricts the output to primary key fields and the `members` and
+  `mp-members` attributes.
 * ``-V <free-text>`` identifies the client querying IRRd. Optional, but may
   be helpful when debugging issues.
 * Any other (part of) the query is interpreted as a free text search:
@@ -150,7 +156,6 @@ recursion.
 
 Responses
 ^^^^^^^^^
-
 For a succesful response returning data, the response is simply the object
 data, with different objects separated by a blank line, followed by an
 extra newline.
@@ -162,4 +167,15 @@ If the query was valid, but no entries were found, the response is::
 If the query was invalid::
 
     %% <error message>
+
+Source search order
+-------------------
+IRRd queries have a default set of sources enabled, which can be changed
+with the ``!s`` command or the ``-s`` flag. When enabling multiple sources,
+the order in whch they are listed defines their prioritisation, which can
+make a significant difference in some queries. For example, ``!m`` will find
+the first object with a given primary key, from the highest priority source
+it was found. Set expansion with ``!i`` will start from the object from
+the highest priority source, which matches the given primary key.
+The currently enabled sources and their priority can be seen with ``!s-lc``.
 
