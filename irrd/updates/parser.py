@@ -14,9 +14,9 @@ from .validators import ReferenceValidator, AuthValidator
 logger = logging.getLogger(__name__)
 
 
-class UpdateRequest:
+class ChangeRequest:
     """
-    A UpdateRequest tracks and processes a request for a single change.
+    A ChangeRequest tracks and processes a request for a single change.
     In this context, a change can be creating, modifying or deleting an
     RPSL object.
     """
@@ -33,7 +33,7 @@ class UpdateRequest:
     def __init__(self, rpsl_text_submitted: str, database_handler: DatabaseHandler, auth_validator: AuthValidator,
                  reference_validator: ReferenceValidator, delete_reason=Optional[str]) -> None:
         """
-        Initialise a new update request for a single RPSL object.
+        Initialise a new change request for a single RPSL object.
 
         :param rpsl_text_submitted: the object text
         :param database_handler: a DatabaseHandler instance
@@ -45,13 +45,10 @@ class UpdateRequest:
         meta attributes like delete/override/password. Those should be passed
         into this method as delete_reason, or provided to the AuthValidator.
 
-        The passed_mntner_cache and reference_validator must be shared between
+        The auth_validator and reference_validator must be shared between
         different instances, to benefit from caching, and to resolve references
-        between different objects that are part of the same update.
-
-        NOTE: passed_mntner_cache and keycert_obj_pk are trusted without
-        further verification. User provided values must never be passed
-        into them without prior validation.
+        between different objects that are part of the same submission with
+        possibly multiple changes.
         """
         self.database_handler = database_handler
         self.auth_validator = auth_validator
@@ -66,7 +63,7 @@ class UpdateRequest:
                 self.status = UpdateRequestStatus.ERROR_PARSING
             self.error_messages = self.rpsl_obj_new.messages.errors()
             self.info_messages = self.rpsl_obj_new.messages.infos()
-            logger.debug(f'{id(self)}: Processing new UpdateRequest for object {self.rpsl_obj_new}: request {id(self)}')
+            logger.debug(f'{id(self)}: Processing new ChangeRequest for object {self.rpsl_obj_new}: request {id(self)}')
 
         except UnknownRPSLObjectClassException as exc:
             self.rpsl_obj_new = None
@@ -78,7 +75,7 @@ class UpdateRequest:
         if self.is_valid() and self.rpsl_obj_new:
             source = f'{self.rpsl_obj_new.source()}'
             if not get_setting(f'sources.{source}.authoritative'):
-                logger.debug(f'{id(self)}: update is for non-authoritative source {source}, rejected')
+                logger.debug(f'{id(self)}: change is for non-authoritative source {source}, rejected')
                 self.error_messages.append(f'This instance is not authoritative for source {source}')
                 self.status = UpdateRequestStatus.ERROR_NON_AUTHORITIVE
                 return
@@ -121,14 +118,14 @@ class UpdateRequest:
             raise ValueError(msg)
 
     def save(self, database_handler: DatabaseHandler) -> None:
-        """Save the update to the database."""
+        """Save the change to the database."""
         if self.status != UpdateRequestStatus.PROCESSING or not self.rpsl_obj_new:
-            raise ValueError("UpdateRequest can only be saved in status PROCESSING")
+            raise ValueError("ChangeRequest can only be saved in status PROCESSING")
         if self.request_type == UpdateRequestType.DELETE and self.rpsl_obj_current is not None:
-            logger.info(f'{id(self)}: Saving update for {self.rpsl_obj_new}: deleting current object')
+            logger.info(f'{id(self)}: Saving change for {self.rpsl_obj_new}: deleting current object')
             database_handler.delete_rpsl_object(self.rpsl_obj_current)
         else:
-            logger.info(f'{id(self)}: Saving update for {self.rpsl_obj_new}: inserting/updating current object')
+            logger.info(f'{id(self)}: Saving change for {self.rpsl_obj_new}: inserting/updating current object')
             database_handler.upsert_rpsl_object(self.rpsl_obj_new)
         self.status = UpdateRequestStatus.SAVED
 
@@ -153,7 +150,7 @@ class UpdateRequest:
         in notify/upd-to/mnt-nfy.
         """
         if not self.is_valid() and self.status != UpdateRequestStatus.ERROR_AUTH:
-            raise ValueError('Notification reports can only be made for updates that are valid '
+            raise ValueError('Notification reports can only be made for changes that are valid '
                              'or have failed authorisation.')
 
         status = 'succeeded' if self.is_valid() else 'FAILED AUTHORISATION'
@@ -243,7 +240,7 @@ class UpdateRequest:
 
         if not references_result.is_valid():
             self.error_messages += references_result.error_messages
-            if self.is_valid():  # Only update the status if this object was valid prior, so this is the first failure
+            if self.is_valid():  # Only change the status if this object was valid prior, so this is the first failure
                 self.status = UpdateRequestStatus.ERROR_REFERENCE
                 logger.debug(f'{id(self)}: Reference check failed: {references_result.error_messages}')
                 return False
@@ -252,20 +249,20 @@ class UpdateRequest:
         return True
 
 
-def parse_update_requests(requests_text: str,
+def parse_change_requests(requests_text: str,
                           database_handler: DatabaseHandler,
                           auth_validator: AuthValidator,
                           reference_validator: ReferenceValidator,
-                          ) -> List[UpdateRequest]:
+                          ) -> List[ChangeRequest]:
     """
-    Parse update requests, a text of RPSL objects along with metadata like
+    Parse change requests, a text of RPSL objects along with metadata like
     passwords or deletion requests.
 
-    :param requests_text: a string containing all update requests
+    :param requests_text: a string containing all change requests
     :param database_handler: a DatabaseHandler instance
         :param auth_validator: a AuthValidator instance, to resolve authentication requirements
     :param reference_validator: a ReferenceValidator instance
-    :return: a list of UpdateRequest instances
+    :return: a list of ChangeRequest instances
     """
     results = []
     passwords = []
@@ -298,7 +295,7 @@ def parse_update_requests(requests_text: str,
         if not rpsl_text:
             continue
 
-        results.append(UpdateRequest(rpsl_text, database_handler, auth_validator, reference_validator,
+        results.append(ChangeRequest(rpsl_text, database_handler, auth_validator, reference_validator,
                                      delete_reason=delete_reason))
 
     if auth_validator:

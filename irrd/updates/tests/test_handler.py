@@ -7,7 +7,7 @@ import pytest
 
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
 from irrd.utils.test_utils import flatten_mock_calls
-from ..handler import UpdateRequestHandler
+from ..handler import ChangeSubmissionHandler
 
 
 @pytest.fixture()
@@ -24,8 +24,8 @@ def prepare_mocks(monkeypatch):
     yield mock_dq, mock_dh, mock_email
 
 
-class TestUpdateRequestHandler:
-    # NOTE: the scope of this test also includes UpdateRequest, ReferenceValidator and AuthValidator -
+class TestChangeSubmissionHandler:
+    # NOTE: the scope of this test also includes ChangeRequest, ReferenceValidator and AuthValidator -
     # this is more of an update handler integration test.
 
     def test_parse_valid_new_objects(self, prepare_mocks):
@@ -67,7 +67,7 @@ class TestUpdateRequestHandler:
         remarks:        remark
         """)
 
-        handler = UpdateRequestHandler(rpsl_text)
+        handler = ChangeSubmissionHandler(rpsl_text)
         assert handler.status() == 'SUCCESS'
 
         assert flatten_mock_calls(mock_dq) == [
@@ -167,8 +167,8 @@ class TestUpdateRequestHandler:
         ])
         mock_dh.execute_query = lambda query: next(query_responses)
 
-        handler = UpdateRequestHandler(rpsl_text, pgp_fingerprint='8626 1D8DBEBD A4F5 4692  D64D A838 3BA7 80F2 38C6',
-                                       request_meta={'Message-ID': 'test', 'From': 'example@example.com'})
+        handler = ChangeSubmissionHandler(rpsl_text, pgp_fingerprint='8626 1D8DBEBD A4F5 4692  D64D A838 3BA7 80F2 38C6',
+                                          request_meta={'Message-ID': 'test', 'From': 'example@example.com'})
         assert handler.status() == 'SUCCESS', handler.submitter_report()
 
         assert flatten_mock_calls(mock_dq) == [
@@ -305,7 +305,7 @@ class TestUpdateRequestHandler:
         ])
         mock_dh.execute_query = lambda query: next(query_responses)
 
-        handler = UpdateRequestHandler(rpsl_text, pgp_fingerprint='8626 1D8DBEBD A4F5 4692  D64D A838 3BA7 80F2 38C6')
+        handler = ChangeSubmissionHandler(rpsl_text, pgp_fingerprint='8626 1D8DBEBD A4F5 4692  D64D A838 3BA7 80F2 38C6')
         assert handler.status() == 'FAILED', handler.submitter_report()
 
         assert flatten_mock_calls(mock_dq) == [
@@ -340,7 +340,7 @@ class TestUpdateRequestHandler:
         ])
         mock_dh.execute_query = lambda query: next(query_responses)
 
-        handler = UpdateRequestHandler(rpsl_person + 'delete: delete\npassword: crypt-password\n')
+        handler = ChangeSubmissionHandler(rpsl_person + 'delete: delete\npassword: crypt-password\n')
         assert handler.status() == 'SUCCESS'
 
         assert flatten_mock_calls(mock_dq) == [
@@ -457,7 +457,7 @@ class TestUpdateRequestHandler:
         source:         TEST
         """)
 
-        handler = UpdateRequestHandler(rpsl_text)
+        handler = ChangeSubmissionHandler(rpsl_text)
         assert handler.status() == 'FAILED'
 
         assert flatten_mock_calls(mock_dq) == [
@@ -567,7 +567,7 @@ class TestUpdateRequestHandler:
         source:         TEST
         """)
 
-        handler = UpdateRequestHandler(rpsl_text)
+        handler = ChangeSubmissionHandler(rpsl_text)
         assert handler.status() == 'FAILED'
 
         assert flatten_mock_calls(mock_dq) == [
@@ -688,7 +688,7 @@ class TestUpdateRequestHandler:
         remarks:        remark
         """)
 
-        handler = UpdateRequestHandler(rpsl_text)
+        handler = ChangeSubmissionHandler(rpsl_text)
         assert handler.status() == 'FAILED'
 
         assert flatten_mock_calls(mock_dq) == [
@@ -784,7 +784,7 @@ class TestUpdateRequestHandler:
         source:         TEST
         """)
 
-        handler = UpdateRequestHandler(rpsl_text)
+        handler = ChangeSubmissionHandler(rpsl_text)
         assert handler.status() == 'FAILED'
 
         assert flatten_mock_calls(mock_dq) == []

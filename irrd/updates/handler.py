@@ -8,19 +8,19 @@ from typing import List, Optional, Dict, Set
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseQuery
 from irrd.utils import email
-from .parser import parse_update_requests, UpdateRequest
+from .parser import parse_change_requests, ChangeRequest
 from .parser_state import UpdateRequestStatus, UpdateRequestType
 from .validators import ReferenceValidator, AuthValidator
 
 logger = logging.getLogger(__name__)
 
 
-class UpdateRequestHandler:
+class ChangeSubmissionHandler:
     """
-    The UpdateRequestHandler handles the text of one or more RPSL updates
+    The ChangeSubmissionHandler handles the text of one or more requested RPSL changes
     (create, modify or delete), parses, validates and eventually saves
     them. This includes validating references between objects, including
-    those part of the same update message, and checking authentication.
+    those part of the same message, and checking authentication.
     """
 
     def __init__(self, object_texts: str, pgp_fingerprint: str=None, request_meta: Dict[str, Optional[str]]=None) -> None:
@@ -34,31 +34,31 @@ class UpdateRequestHandler:
     def _handle_object_texts(self, object_texts: str) -> None:
         reference_validator = ReferenceValidator(self.database_handler)
         auth_validator = AuthValidator(self.database_handler, self._pgp_key_id)
-        results = parse_update_requests(object_texts, self.database_handler, auth_validator, reference_validator)
+        results = parse_change_requests(object_texts, self.database_handler, auth_validator, reference_validator)
 
         # When an object references another object, e.g. tech-c referring a person or mntner,
         # an add/update is only valid if those referred objects exist. To complicate matters,
-        # the object referred to may be part of this very same update. For this reason, the
-        # reference validator can be provided with all new objects to be added in this update.
+        # the object referred to may be part of this very same submission. For this reason, the
+        # reference validator can be provided with all new objects to be added in this submission.
         # However, a possible scenario is that A, B and C are submitted. Object A refers to B,
         # B refers to C, C refers to D and D does not exist - or C fails authentication.
         # At a first scan, A is valid because B exists, B is valid because C exists. C
         # becomes invalid on the first scan, which is why another scan is performed, which
         # will mark B invalid due to the reference to an invalid C, etc. This continues until
         # all references are resolved and repeated scans lead to the same conclusions.
-        valid_updates = [r for r in results if r.is_valid()]
-        previous_valid_updates: List[UpdateRequest] = []
+        valid_changes = [r for r in results if r.is_valid()]
+        previous_valid_changes: List[ChangeRequest] = []
         loop_count = 0
         loop_max = len(results) + 10
 
-        while valid_updates != previous_valid_updates:
-            previous_valid_updates = valid_updates
-            reference_validator.preload(valid_updates)
-            auth_validator.pre_approve(valid_updates)
+        while valid_changes != previous_valid_changes:
+            previous_valid_changes = valid_changes
+            reference_validator.preload(valid_changes)
+            auth_validator.pre_approve(valid_changes)
 
-            for result in valid_updates:
+            for result in valid_changes:
                 result.validate()
-            valid_updates = [r for r in results if r.is_valid()]
+            valid_changes = [r for r in results if r.is_valid()]
 
             loop_count += 1
             if loop_count > loop_max:  # pragma: no cover

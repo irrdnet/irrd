@@ -47,8 +47,8 @@ class ReferenceValidator:
         self._preloaded_new: Set[Tuple[str, str, str]] = set()
         self._preloaded_deleted: Set[Tuple[str, str, str]] = set()
 
-    def preload(self, results: List['parser.UpdateRequest']) -> None:
-        """Preload an iterable of UpdateRequest objects to be considered valid, or to be considered deleted."""
+    def preload(self, results: List['parser.ChangeRequest']) -> None:
+        """Preload an iterable of ChangeRequest objects to be considered valid, or to be considered deleted."""
         self._preloaded_new = set()
         self._preloaded_deleted = set()
         for request in results:
@@ -145,7 +145,7 @@ class AuthValidator:
         self._pre_approved: Set[str] = set()
         self.keycert_obj_pk = keycert_obj_pk
 
-    def pre_approve(self, results: List['parser.UpdateRequest']) -> None:
+    def pre_approve(self, results: List['parser.ChangeRequest']) -> None:
         """
         Pre-approve certain maintainers that are part of this batch of updates.
         This is required for creating new maintainers along with other objects.

@@ -16,11 +16,11 @@ import sys
 
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), '../'))
 
-from irrd.updates.handler import UpdateRequestHandler
+from irrd.updates.handler import ChangeSubmissionHandler
 
 
 def main(data):
-    handler = UpdateRequestHandler(data)
+    handler = ChangeSubmissionHandler(data)
     print(handler.submitter_report())
 
 

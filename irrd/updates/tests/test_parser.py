@@ -12,7 +12,7 @@ from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
 from irrd.utils.text import splitline_unicodesafe
 from irrd.utils.rpsl_samples import SAMPLE_INETNUM, SAMPLE_AS_SET, SAMPLE_PERSON, SAMPLE_MNTNER
 from irrd.utils.test_utils import flatten_mock_calls
-from ..parser import parse_update_requests
+from ..parser import parse_change_requests
 from ..parser_state import UpdateRequestType, UpdateRequestStatus
 from ..validators import ReferenceValidator, AuthValidator
 
@@ -28,8 +28,8 @@ def prepare_mocks(monkeypatch):
     yield mock_dq, mock_dh
 
 
-class TestSingleUpdateRequestHandling:
-    # NOTE: the scope of this test includes UpdateRequest, ReferenceValidator and AuthValidator
+class TestSingleUChangeRequestHandling:
+    # NOTE: the scope of this test includes ChangeRequest, ReferenceValidator and AuthValidator
 
     def test_parse(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
@@ -41,7 +41,7 @@ class TestSingleUpdateRequestHandling:
         mock_dh.execute_query = lambda query: next(query_results)
 
         auth_validator = AuthValidator(mock_dh)
-        result_inetnum, result_as_set, result_unknown, result_invalid = parse_update_requests(
+        result_inetnum, result_as_set, result_unknown, result_invalid = parse_change_requests(
             self._request_text(), mock_dh, auth_validator, None)
 
         assert result_inetnum.status == UpdateRequestStatus.PROCESSING, result_inetnum.error_messages
@@ -100,7 +100,7 @@ class TestSingleUpdateRequestHandling:
         mock_dh.execute_query = lambda query: []
 
         auth_validator = AuthValidator(mock_dh)
-        result = parse_update_requests(SAMPLE_MNTNER.replace('TEST', 'TEST2'), mock_dh, auth_validator, None)[0]
+        result = parse_change_requests(SAMPLE_MNTNER.replace('TEST', 'TEST2'), mock_dh, auth_validator, None)[0]
 
         assert result.status == UpdateRequestStatus.ERROR_NON_AUTHORITIVE
         assert not result.is_valid()
@@ -110,7 +110,7 @@ class TestSingleUpdateRequestHandling:
         mock_dq, mock_dh = prepare_mocks
         mock_dh.execute_query = lambda query: []
 
-        result_inetnum = parse_update_requests(self._request_text(), mock_dh, AuthValidator(mock_dh), None)[0]
+        result_inetnum = parse_change_requests(self._request_text(), mock_dh, AuthValidator(mock_dh), None)[0]
 
         assert result_inetnum.status == UpdateRequestStatus.ERROR_PARSING
         assert not result_inetnum.is_valid()
@@ -139,7 +139,7 @@ class TestSingleUpdateRequestHandling:
 
         validator = ReferenceValidator(mock_dh)
 
-        result_inetnum = parse_update_requests(SAMPLE_INETNUM, mock_dh, AuthValidator(mock_dh), validator)[0]
+        result_inetnum = parse_change_requests(SAMPLE_INETNUM, mock_dh, AuthValidator(mock_dh), validator)[0]
         assert result_inetnum._check_references()
         assert result_inetnum.is_valid()
         assert flatten_mock_calls(mock_dq) == [
@@ -164,7 +164,7 @@ class TestSingleUpdateRequestHandling:
         mock_dh.execute_query = lambda query: next(query_results)
         validator = ReferenceValidator(mock_dh)
 
-        result_inetnum = parse_update_requests(SAMPLE_INETNUM, mock_dh, AuthValidator(mock_dh), validator)[0]
+        result_inetnum = parse_change_requests(SAMPLE_INETNUM, mock_dh, AuthValidator(mock_dh), validator)[0]
         assert not result_inetnum._check_references()
         assert not result_inetnum.is_valid()
         assert not result_inetnum.notification_targets()
@@ -194,12 +194,12 @@ class TestSingleUpdateRequestHandling:
         mock_dh.execute_query = lambda query: next(iter([[{'object_text': SAMPLE_PERSON}], [{'object_text': SAMPLE_MNTNER}]]))
         validator = ReferenceValidator(mock_dh)
 
-        preload = parse_update_requests(SAMPLE_PERSON + '\n' + SAMPLE_MNTNER,
+        preload = parse_change_requests(SAMPLE_PERSON + '\n' + SAMPLE_MNTNER,
                                         mock_dh, AuthValidator(mock_dh), validator)
         mock_dq.reset_mock()
         validator.preload(preload)
 
-        result_inetnum = parse_update_requests(SAMPLE_INETNUM, mock_dh, AuthValidator(mock_dh), validator)[0]
+        result_inetnum = parse_change_requests(SAMPLE_INETNUM, mock_dh, AuthValidator(mock_dh), validator)[0]
         assert result_inetnum._check_references()
         assert result_inetnum.is_valid()
         assert flatten_mock_calls(mock_dq) == [
@@ -220,7 +220,7 @@ class TestSingleUpdateRequestHandling:
         ])
         mock_dh.execute_query = lambda query: next(query_results)
 
-        result = parse_update_requests(SAMPLE_PERSON + "delete: delete",
+        result = parse_change_requests(SAMPLE_PERSON + "delete: delete",
                                        mock_dh, AuthValidator(mock_dh), validator)[0]
         result._check_references()
         assert not result.is_valid()
@@ -250,7 +250,7 @@ class TestSingleUpdateRequestHandling:
         ])
         mock_dh.execute_query = lambda query: next(query_results)
 
-        results = parse_update_requests(SAMPLE_PERSON + "delete: delete" + "\n\n" + SAMPLE_INETNUM,
+        results = parse_change_requests(SAMPLE_PERSON + "delete: delete" + "\n\n" + SAMPLE_INETNUM,
                                         mock_dh, AuthValidator(mock_dh), validator)
         validator.preload(results)
         result_inetnum = results[1]
@@ -282,7 +282,7 @@ class TestSingleUpdateRequestHandling:
 
         validator = ReferenceValidator(mock_dh)
         mock_dh.execute_query = lambda query: []
-        result_inetnum = parse_update_requests(SAMPLE_INETNUM + "delete: delete",
+        result_inetnum = parse_change_requests(SAMPLE_INETNUM + "delete: delete",
                                                mock_dh, AuthValidator(mock_dh), validator)
         validator.preload(result_inetnum)
         mock_dq.reset_mock()
@@ -294,7 +294,7 @@ class TestSingleUpdateRequestHandling:
         ])
         mock_dh.execute_query = lambda query: next(query_results)
 
-        result = parse_update_requests(SAMPLE_PERSON + "delete: delete" + "\n",
+        result = parse_change_requests(SAMPLE_PERSON + "delete: delete" + "\n",
                                        mock_dh, AuthValidator(mock_dh), validator)[0]
         result._check_references()
         assert result.is_valid(), result.error_messages
@@ -318,7 +318,7 @@ class TestSingleUpdateRequestHandling:
         reference_validator = ReferenceValidator(mock_dh)
         auth_validator = AuthValidator(mock_dh)
 
-        result_inetnum = parse_update_requests(SAMPLE_INETNUM + 'password: crypt-password',
+        result_inetnum = parse_change_requests(SAMPLE_INETNUM + 'password: crypt-password',
                                                mock_dh, auth_validator, reference_validator)[0]
         assert result_inetnum._check_auth()
         assert not result_inetnum.error_messages
@@ -333,7 +333,7 @@ class TestSingleUpdateRequestHandling:
         ]
 
         auth_validator = AuthValidator(mock_dh)
-        result_inetnum = parse_update_requests(SAMPLE_INETNUM + 'password: md5-password',
+        result_inetnum = parse_change_requests(SAMPLE_INETNUM + 'password: md5-password',
                                                mock_dh, auth_validator, reference_validator)[0]
         assert result_inetnum._check_auth()
         assert not result_inetnum.error_messages
@@ -341,7 +341,7 @@ class TestSingleUpdateRequestHandling:
             'mnt-nfy@example.net', 'mnt-nfy2@example.net', 'notify@example.com'}
 
         auth_validator = AuthValidator(mock_dh, 'PGPKEY-80F238C6')
-        result_inetnum = parse_update_requests(SAMPLE_INETNUM, mock_dh, auth_validator, reference_validator)[0]
+        result_inetnum = parse_change_requests(SAMPLE_INETNUM, mock_dh, auth_validator, reference_validator)[0]
         assert result_inetnum._check_auth()
         assert not result_inetnum.error_messages
 
@@ -354,7 +354,7 @@ class TestSingleUpdateRequestHandling:
         reference_validator = ReferenceValidator(mock_dh)
         auth_validator = AuthValidator(mock_dh)
 
-        result_mntner = parse_update_requests(SAMPLE_MNTNER + 'password: md5-password',
+        result_mntner = parse_change_requests(SAMPLE_MNTNER + 'password: md5-password',
                                               mock_dh, auth_validator, reference_validator)[0]
         auth_validator.pre_approve([result_mntner])
 
@@ -378,7 +378,7 @@ class TestSingleUpdateRequestHandling:
         reference_validator = ReferenceValidator(mock_dh)
         auth_validator = AuthValidator(mock_dh)
 
-        result_mntner = parse_update_requests(SAMPLE_MNTNER + 'password: invalid-password',
+        result_mntner = parse_change_requests(SAMPLE_MNTNER + 'password: invalid-password',
                                               mock_dh, auth_validator, reference_validator)[0]
         auth_validator.pre_approve([result_mntner])
 
@@ -406,7 +406,7 @@ class TestSingleUpdateRequestHandling:
         # This should not be allowed in new objects.
         data = SAMPLE_MNTNER.replace('LEuuhsBJNFV0Q', PASSWORD_HASH_DUMMY_VALUE)
         data = data.replace('$1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.', PASSWORD_HASH_DUMMY_VALUE)
-        result_mntner = parse_update_requests(data + 'password: crypt-password',
+        result_mntner = parse_change_requests(data + 'password: crypt-password',
                                               mock_dh, auth_validator, reference_validator)[0]
         auth_validator.pre_approve([result_mntner])
 
@@ -434,7 +434,7 @@ class TestSingleUpdateRequestHandling:
         # but a password attribute that is valid for the current DB object.
         data = SAMPLE_MNTNER.replace('LEuuhsBJNFV0Q', PASSWORD_HASH_DUMMY_VALUE)
         data = data.replace('$1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.', PASSWORD_HASH_DUMMY_VALUE)
-        result_mntner = parse_update_requests(data + 'password: crypt-password',
+        result_mntner = parse_change_requests(data + 'password: crypt-password',
                                               mock_dh, auth_validator, reference_validator)[0]
         auth_validator.pre_approve([result_mntner])
         assert result_mntner._check_auth()
@@ -471,7 +471,7 @@ class TestSingleUpdateRequestHandling:
         # Submit the mntner with dummy password values as would be returned by queries,
         # but a password attribute that is valid for the current DB object.
         data = SAMPLE_MNTNER.replace('LEuuhsBJNFV0Q', PASSWORD_HASH_DUMMY_VALUE)
-        result_mntner = parse_update_requests(data + 'password: md5-password',
+        result_mntner = parse_change_requests(data + 'password: md5-password',
                                               mock_dh, auth_validator, reference_validator)[0]
         auth_validator.pre_approve([result_mntner])
         result_mntner._check_auth()
@@ -492,7 +492,7 @@ class TestSingleUpdateRequestHandling:
         # but multiple password attributes, which means we wouldn't know which password to set.
         data = SAMPLE_MNTNER.replace('LEuuhsBJNFV0Q', PASSWORD_HASH_DUMMY_VALUE)
         data = data.replace('$1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.', PASSWORD_HASH_DUMMY_VALUE)
-        result_mntner = parse_update_requests(data + 'password: md5-password\npassword: other-password',
+        result_mntner = parse_change_requests(data + 'password: md5-password\npassword: other-password',
                                               mock_dh, auth_validator, reference_validator)[0]
         auth_validator.pre_approve([result_mntner])
         result_mntner._check_auth()
@@ -512,7 +512,7 @@ class TestSingleUpdateRequestHandling:
         auth_validator = AuthValidator(mock_dh)
 
         # This password is valid for the new object, but invalid for the current version in the DB
-        result_mntner = parse_update_requests(SAMPLE_MNTNER + 'password: crypt-password',
+        result_mntner = parse_change_requests(SAMPLE_MNTNER + 'password: crypt-password',
                                               mock_dh, auth_validator, reference_validator)[0]
         auth_validator.pre_approve([result_mntner])
         assert not result_mntner._check_auth()
@@ -543,7 +543,7 @@ class TestSingleUpdateRequestHandling:
         reference_validator = ReferenceValidator(mock_dh)
         auth_validator = AuthValidator(mock_dh)
 
-        result_inetnum = parse_update_requests(SAMPLE_INETNUM + 'password: wrong-pw',
+        result_inetnum = parse_change_requests(SAMPLE_INETNUM + 'password: wrong-pw',
                                                mock_dh, auth_validator, reference_validator)[0]
         assert not result_inetnum._check_auth()
         assert 'Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed' in result_inetnum.error_messages[0]
@@ -573,7 +573,7 @@ class TestSingleUpdateRequestHandling:
         reference_validator = ReferenceValidator(mock_dh)
         auth_validator = AuthValidator(mock_dh)
 
-        result_inetnum = parse_update_requests(SAMPLE_INETNUM + 'password: md5-password',
+        result_inetnum = parse_change_requests(SAMPLE_INETNUM + 'password: md5-password',
                                                mock_dh, auth_validator, reference_validator)[0]
         assert not result_inetnum._check_auth(), result_inetnum
         assert 'Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed' in result_inetnum.error_messages[0]
@@ -603,7 +603,7 @@ class TestSingleUpdateRequestHandling:
         reference_validator = ReferenceValidator(mock_dh)
         auth_validator = AuthValidator(mock_dh)
 
-        result_inetnum = parse_update_requests(SAMPLE_INETNUM + 'override: override-password',
+        result_inetnum = parse_change_requests(SAMPLE_INETNUM + 'override: override-password',
                                                mock_dh, auth_validator, reference_validator)[0]
         assert result_inetnum._check_auth()
         assert not result_inetnum.error_messages
@@ -620,7 +620,7 @@ class TestSingleUpdateRequestHandling:
         reference_validator = ReferenceValidator(mock_dh)
         auth_validator = AuthValidator(mock_dh)
 
-        result_inetnum = parse_update_requests(SAMPLE_INETNUM + 'override: wrong-override',
+        result_inetnum = parse_change_requests(SAMPLE_INETNUM + 'override: wrong-override',
                                                mock_dh, auth_validator, reference_validator)[0]
         assert not result_inetnum._check_auth()
         assert result_inetnum.error_messages == [
@@ -640,7 +640,7 @@ class TestSingleUpdateRequestHandling:
         reference_validator = ReferenceValidator(mock_dh)
         auth_validator = AuthValidator(mock_dh)
 
-        result_inetnum = parse_update_requests(SAMPLE_INETNUM + 'override: override-password',
+        result_inetnum = parse_change_requests(SAMPLE_INETNUM + 'override: override-password',
                                                mock_dh, auth_validator, reference_validator)[0]
         assert not result_inetnum._check_auth()
         assert result_inetnum.error_messages == [
@@ -661,7 +661,7 @@ class TestSingleUpdateRequestHandling:
         reference_validator = ReferenceValidator(mock_dh)
         auth_validator = AuthValidator(mock_dh)
 
-        result_inetnum = parse_update_requests(SAMPLE_INETNUM + 'override: override-password',
+        result_inetnum = parse_change_requests(SAMPLE_INETNUM + 'override: override-password',
                                                mock_dh, auth_validator, reference_validator)[0]
         assert not result_inetnum._check_auth()
         assert result_inetnum.error_messages == [
@@ -679,7 +679,7 @@ class TestSingleUpdateRequestHandling:
         ])
         mock_dh.execute_query = lambda query: next(query_results)
 
-        result_inetnum, result_as_set, result_unknown, result_invalid = parse_update_requests(
+        result_inetnum, result_as_set, result_unknown, result_invalid = parse_change_requests(
             self._request_text(), mock_dh, AuthValidator(mock_dh), None)
         report_inetnum = result_inetnum.submitter_report()
         report_as_set = result_as_set.submitter_report()
@@ -740,7 +740,7 @@ class TestSingleUpdateRequestHandling:
         """).strip() + '\n'
 
         inetnum_modify = SAMPLE_INETNUM.replace('PERSON-TEST', 'NEW-TEST')
-        result_inetnum_modify = parse_update_requests(inetnum_modify, mock_dh, AuthValidator(mock_dh), None)[0]
+        result_inetnum_modify = parse_change_requests(inetnum_modify, mock_dh, AuthValidator(mock_dh), None)[0]
         assert result_inetnum_modify.notification_target_report() == textwrap.dedent("""
             Modify succeeded for object below: [inetnum] 192.0.2.0 - 192.0.2.255:
             
@@ -807,7 +807,7 @@ class TestSingleUpdateRequestHandling:
 
         with pytest.raises(ValueError) as ve:
             result_unknown.notification_target_report()
-        assert 'updates that are valid or have failed authorisation' in str(ve)
+        assert 'changes that are valid or have failed authorisation' in str(ve)
 
     def _request_text(self):
         unknown_class = 'unknown-object: foo\n'
