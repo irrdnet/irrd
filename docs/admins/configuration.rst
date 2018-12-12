@@ -6,8 +6,10 @@
 Configuration
 =============
 
-IRRd reads its configuration from a YAML file, in a specified location. Many
+IRRd reads its configuration from a YAML file in a specified location. Many
 configuration options can be changed without restarting IRRd, but not all.
+
+.. contents:: :backlinks: none
 
 Example configuration file
 --------------------------
@@ -224,6 +226,17 @@ Sources
   |br| **Default**: 3600
   |br| **Change takes effect**: after SIGHUP
 
+There are fundamentally two different ways to mirror other databases:
+
+* **NRTM mode**: providing a location to download full copies of the database, the serial belonging to
+  that copy, and then updating this using an NRTM stream. This method is recommended, as it is efficient
+  and allows IRRd to generate a journal, if enabled, so that others can mirror the source from this
+  IRRd instance too.
+
+* **Periodic full import mode**: providing a location to download full copies of the database, and no
+  other details. Every ``import_timer``, the entire database will be reloaded from the full copies.
+  Journals can not be generated.
+
 .. caution::
 
     **Journal-keeping is the only full object history that is kept of the database, and is therefore strongly
@@ -233,19 +246,6 @@ Sources
     This stream is only kept while ``keep_journal`` is enabled. Disabling it while mirrors are dependent
     on it, even briefly, will cause the databases to go out of sync silently until the mirror
     runs a new full import.
-
-.. note::
-
-    There are fundamentally two different ways to mirror other databases:
-
-    * **NRTM mode**: providing a location to download full copies of the database, the serial belonging to
-      that copy, and then updating this using an NRTM stream. This method is recommended, as it is efficient
-      and allows IRRd to generate a journal, if enabled, so that others can mirror the source from this
-      IRRd instance too.
-
-    * **Periodic full import mode**: providing a location to download full copies of the database, and no
-      other details. Every ``import_timer``, the entire database will be reloaded from the full copies.
-      Journals can not be generated.
 
 .. note::
 

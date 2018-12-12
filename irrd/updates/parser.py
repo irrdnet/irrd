@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 
 class UpdateRequest:
     """
-    An UpdateRequest tracks and processes a request for a single update.
-    In this context, an update can be creating, modifying or deleting an
+    A UpdateRequest tracks and processes a request for a single change.
+    In this context, a change can be creating, modifying or deleting an
     RPSL object.
     """
     rpsl_text_submitted: str
