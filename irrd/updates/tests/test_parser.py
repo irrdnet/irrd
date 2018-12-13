@@ -28,7 +28,7 @@ def prepare_mocks(monkeypatch):
     yield mock_dq, mock_dh
 
 
-class TestSingleUChangeRequestHandling:
+class TestSingleChangeRequestHandling:
     # NOTE: the scope of this test includes ChangeRequest, ReferenceValidator and AuthValidator
 
     def test_parse(self, prepare_mocks):

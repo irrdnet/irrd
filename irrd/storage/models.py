@@ -14,8 +14,6 @@ class DatabaseOperation(enum.Enum):
 
 Base = declarative_base()
 
-# TODO: run ANALYZE after large inserts?
-
 
 class RPSLDatabaseObject(Base):  # type: ignore
     """
@@ -66,7 +64,7 @@ class RPSLDatabaseObject(Base):  # type: ignore
 
 class RPSLDatabaseJournal(Base):  # type: ignore
     """
-    SQLAlchemy ORM object for history of RPSL database objects.
+    SQLAlchemy ORM object for change history of RPSL database objects.
     """
     __tablename__ = 'rpsl_database_journal'
 
@@ -125,7 +123,7 @@ class RPSLDatabaseStatus(Base):  # type: ignore
         return self.source
 
 
-# Before you update this, please check the documentation for changing lookup fields.
+# Before you update this, please check the storage documentation for changing lookup fields.
 expected_lookup_field_names = {
     'admin-c', 'tech-c', 'zone-c', 'member-of', 'mnt-by', 'role', 'members', 'person',
     'mp-members', 'origin', 'mbrs-by-ref',
