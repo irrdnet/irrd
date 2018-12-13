@@ -103,7 +103,8 @@ class DatabaseHandler:
         Writes may not be issued to the database immediately for performance
         reasons, but commit() will ensure all writes are flushed to the DB first.
 
-        See the comment on the instance declaration for an explanation of forced_serial.
+        The forced serial is needed for mirrored sources, where this basically means:
+        this call was triggered by an NRTM operation with this serial.
         """
         ip_first = str(rpsl_object.ip_first) if rpsl_object.ip_first else None
         ip_last = str(rpsl_object.ip_last) if rpsl_object.ip_last else None
@@ -146,7 +147,9 @@ class DatabaseHandler:
     def delete_rpsl_object(self, rpsl_object: RPSLObject, forced_serial: Optional[int]=None) -> None:
         """
         Delete an RPSL object from the database.
-        See the comment on the instance declaration for an explanation of forced_serial.
+
+        The forced serial is needed for mirrored sources, where this basically means:
+        this call was triggered by an NRTM operation with this serial.
         """
         self._flush_rpsl_object_upsert_cache()
         table = RPSLDatabaseObject.__table__
@@ -266,7 +269,7 @@ class DatabaseStatusTracker:
     Changes to the database should always call record_operation() on this object,
     and finalise_transaction() before committing.
 
-    If journalling is enabled, a new entry in the journal will be made.
+    If journaling is enabled, a new entry in the journal will be made.
     If a journal entry was made, or forced_serial was set, a record is kept in
     memory with all serials encountered/created for this source.
 
@@ -378,12 +381,12 @@ class DatabaseStatusTracker:
             )
             self.database_handler.execute_statement(stmt)
 
-            if source in self._mirroring_error:
-                stmt = RPSLDatabaseStatus.__table__.update().where(self.c_status.source == source).values(
-                    last_error=self._mirroring_error[source],
-                    last_error_timestamp=datetime.now(timezone.utc),
-                )
-                self.database_handler.execute_statement(stmt)
+        for source, error in self._mirroring_error.items():
+            stmt = RPSLDatabaseStatus.__table__.update().where(self.c_status.source == source).values(
+                last_error=error,
+                last_error_timestamp=datetime.now(timezone.utc),
+            )
+            self.database_handler.execute_statement(stmt)
 
         self._reset()
 
