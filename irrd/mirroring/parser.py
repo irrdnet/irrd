@@ -53,6 +53,7 @@ class MirrorFileImportParser(MirrorParser):
             self.parse_object(paragraph)
 
         self.log_report()
+        f.close()
 
     def parse_object(self, rpsl_text: str) -> None:
         try:
