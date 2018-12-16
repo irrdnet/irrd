@@ -104,7 +104,7 @@ class TestNRTMOperation:
         assert operation.save(database_handler=mock_dh)
 
         assert mock_dh.delete_rpsl_object.call_count == 1
-        assert mock_dh.mock_calls[0][1][0].pk() == '192.0.2.0/24,AS65537'
+        assert mock_dh.mock_calls[0][1][0].pk() == '192.0.2.0/24AS65537'
         assert mock_dh.mock_calls[0][1][0].source() == 'TEST'
         assert mock_dh.mock_calls[0][1][1] == 42424242
 
