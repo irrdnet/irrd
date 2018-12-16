@@ -90,7 +90,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         composite_values = []
         for field in self.pk_fields:
             composite_values.append(self.parsed_data.get(field, ""))
-        return ",".join(composite_values).upper()
+        return ''.join(composite_values).upper()
 
     def source(self) -> str:
         """Shortcut to retrieve object source"""

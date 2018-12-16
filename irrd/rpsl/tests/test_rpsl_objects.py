@@ -390,7 +390,7 @@ class TestRPSLRoute:
         obj = rpsl_object_from_text(rpsl_text)
         assert obj.__class__ == RPSLRoute
         assert not obj.messages.errors()
-        assert obj.pk() == "192.0.2.0/24,AS65537"
+        assert obj.pk() == "192.0.2.0/24AS65537"
         assert obj.ip_first == IP("192.0.2.0")
         assert obj.ip_last == IP("192.0.2.255")
         assert obj.asn_first == 65537
@@ -441,7 +441,7 @@ class TestRPSLRoute6:
         obj = rpsl_object_from_text(rpsl_text)
         assert obj.__class__ == RPSLRoute6
         assert not obj.messages.errors()
-        assert obj.pk() == "2001:DB8::/48,AS65537"
+        assert obj.pk() == "2001:DB8::/48AS65537"
         assert obj.ip_first == IP("2001:db8::")
         assert obj.ip_last == IP("2001:db8::ffff:ffff:ffff:ffff:ffff")
         assert obj.asn_first == 65537

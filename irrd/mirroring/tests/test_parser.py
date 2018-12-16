@@ -38,7 +38,7 @@ class TestMirrorFileImportParser:
             )
         assert len(mock_dh.mock_calls) == 3
         assert mock_dh.mock_calls[0][0] == 'upsert_rpsl_object'
-        assert mock_dh.mock_calls[0][1][0].pk() == '192.0.2.0/24,AS65537'
+        assert mock_dh.mock_calls[0][1][0].pk() == '192.0.2.0/24AS65537'
         assert mock_dh.mock_calls[1][0] == 'record_mirror_error'
         assert mock_dh.mock_calls[2][0] == 'record_mirror_error'
 
