@@ -144,6 +144,7 @@ class TestConfiguration:
                         'nrtm_port': 43,
                         'import_serial_source': 'ftp://example.com/serial',
                         'keep_journal': True,
+                        'import_timer': '1234',
                     },
                 },
 
@@ -180,6 +181,8 @@ class TestConfiguration:
                 'sources': {
                     'TESTDB': {
                         'keep_journal': True,
+                        'import_timer': 'foo',
+                        'export_timer': 'bar',
                     },
                 },
                 'log': {
@@ -201,6 +204,8 @@ class TestConfiguration:
         assert 'Invalid item in access list bad-list: IPv4 Address with more than 4 bytes.' in str(ce)
         assert 'Setting sources_default contains unknown sources: DOESNOTEXIST-DB' in str(ce)
         assert 'Setting keep_journal for source TESTDB can not be enabled unless either ' in str(ce)
+        assert 'Setting import_timer for source TESTDB must be a number.' in str(ce)
+        assert 'Setting export_timer for source TESTDB must be a number.' in str(ce)
         assert 'Invalid log.level: INVALID' in str(ce)
 
 

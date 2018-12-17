@@ -240,6 +240,11 @@ class Configuration:
                 errors.append(f'Setting keep_journal for source {name} can not be enabled unless either authoritative '
                               f'is enabled, or all three of nrtm_host, nrtm_port and import_serial_source.')
 
+            if not details.get('import_timer', '0').isnumeric():
+                errors.append(f'Setting import_timer for source {name} must be a number.')
+            if not details.get('export_timer', '0').isnumeric():
+                errors.append(f'Setting export_timer for source {name} must be a number.')
+
         if config.get('log.level') and not config.get('log.level') in ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']:
             errors.append(f'Invalid log.level: {config.get("log.level")}. '
                           f'Valid settings for log.level are `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`.')
