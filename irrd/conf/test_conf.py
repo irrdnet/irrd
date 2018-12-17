@@ -12,9 +12,8 @@ from . import get_setting, Configuration, ConfigurationError, IRRD_CONFIG_PATH_E
 def save_yaml_config(tmpdir, monkeypatch):
     def _save(config: Dict):
         tmp_file = tmpdir + "/config.yaml"
-        fh = open(tmp_file, "w")
-        fh.write(yaml.safe_dump(config))
-        fh.close()
+        with open(tmp_file, "w") as fh:
+            fh.write(yaml.safe_dump(config))
         monkeypatch.setenv(IRRD_CONFIG_PATH_ENV, str(tmp_file))
     return _save
 

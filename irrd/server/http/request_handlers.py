@@ -42,7 +42,7 @@ class DatabaseStatusRequest:
         return textwrap.dedent(f"""
         IRRD version {__version__}
         Listening on {get_setting('server.whois.interface')} port {get_setting('server.whois.port')}
-        Next mirror update: in {self._next_mirror_update()}
+        Next mirror update run: in {self._next_mirror_update()}
         """).lstrip()
 
     def _generate_statistics_table(self) -> str:
