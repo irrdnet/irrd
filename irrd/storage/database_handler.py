@@ -335,7 +335,7 @@ class DatabaseStatusTracker:
             insert_result = self.database_handler.execute_statement(stmt)
             inserted_serial = insert_result.fetchone()['serial_nrtm']
             self._new_serials_per_source[source].add(inserted_serial)
-        elif forced_serial:
+        elif forced_serial is not None:
             self._new_serials_per_source[source].add(forced_serial)
 
     def finalise_transaction(self):

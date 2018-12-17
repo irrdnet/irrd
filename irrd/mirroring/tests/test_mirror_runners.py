@@ -87,7 +87,7 @@ class TestMirrorUpdateRunner:
 
 
 class TestMirrorFullImportRunner:
-    def test_run_import(self, monkeypatch, config_override):
+    def test_run_import_ftp(self, monkeypatch, config_override):
         config_override({
             'sources': {
                 'TEST': {
@@ -102,6 +102,7 @@ class TestMirrorFullImportRunner:
         MockMirrorFileImportParser.rpsl_data_calls = []
         monkeypatch.setattr('irrd.mirroring.mirror_runners.MirrorFileImportParser', MockMirrorFileImportParser)
         monkeypatch.setattr('irrd.mirroring.mirror_runners.FTP', lambda url: mock_ftp)
+        MockMirrorFileImportParser.expected_serial = 424242
 
         responses = {
             # gzipped data, contains 'source1'
@@ -118,7 +119,70 @@ class TestMirrorFullImportRunner:
             ['disable_journaling', (), {}],
         ]
 
-    def test_missing_source_settings(self, config_override):
+    def test_run_import_local_file(self, monkeypatch, config_override, tmpdir):
+        tmp_import_source1 = tmpdir + '/source1.rpsl'
+        with open(tmp_import_source1, 'w') as fh:
+            fh.write('source1')
+        tmp_import_source2 = tmpdir + '/source2.rpsl'
+        with open(tmp_import_source2, 'w') as fh:
+            fh.write('source2')
+        tmp_import_serial = tmpdir + '/serial'
+        with open(tmp_import_serial, 'w') as fh:
+            fh.write('424242')
+
+        config_override({
+            'sources': {
+                'TEST': {
+                    'import_source': ['file://' + str(tmp_import_source1), 'file://' + str(tmp_import_source2)],
+                    'import_serial_source': 'file://' + str(tmp_import_serial),
+                }
+            }
+        })
+
+        mock_dh = Mock()
+        MockMirrorFileImportParser.rpsl_data_calls = []
+        monkeypatch.setattr('irrd.mirroring.mirror_runners.MirrorFileImportParser', MockMirrorFileImportParser)
+        MockMirrorFileImportParser.expected_serial = 424242
+
+        MirrorFullImportRunner('TEST').run(mock_dh)
+
+        assert MockMirrorFileImportParser.rpsl_data_calls == ['source1', 'source2']
+        assert flatten_mock_calls(mock_dh) == [
+            ['delete_all_rpsl_objects_with_journal', ('TEST',), {}],
+            ['disable_journaling', (), {}],
+        ]
+
+    def test_no_serial_ftp(self, monkeypatch, config_override):
+        config_override({
+            'sources': {
+                'TEST': {
+                    'import_source': ['ftp://host/source1.gz', 'ftp://host/source2'],
+                }
+            }
+        })
+
+        mock_dh = Mock()
+        mock_ftp = Mock()
+        MockMirrorFileImportParser.rpsl_data_calls = []
+        monkeypatch.setattr('irrd.mirroring.mirror_runners.MirrorFileImportParser', MockMirrorFileImportParser)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners.FTP', lambda url: mock_ftp)
+        MockMirrorFileImportParser.expected_serial = 0
+
+        responses = {
+            # gzipped data, contains 'source1'
+            'RETR /source1.gz': b64decode('H4sIAE4CfFsAAyvOLy1KTjUEAE5Fj0oHAAAA'),
+            'RETR /source2': b'source2',
+        }
+        mock_ftp.retrbinary = lambda path, callback: callback(responses[path])
+        MirrorFullImportRunner('TEST').run(mock_dh)
+
+        assert MockMirrorFileImportParser.rpsl_data_calls == ['source1', 'source2']
+        assert flatten_mock_calls(mock_dh) == [
+            ['delete_all_rpsl_objects_with_journal', ('TEST',), {}],
+            ['disable_journaling', (), {}],
+        ]
+
+    def test_missing_source_settings_ftp(self, config_override):
         config_override({
             'sources': {
                 'TEST': {
@@ -149,12 +213,13 @@ class TestMirrorFullImportRunner:
 
 class MockMirrorFileImportParser:
     rpsl_data_calls: List[str] = []
+    expected_serial = 424242
 
     def __init__(self, source, filename, serial, database_handler):
         with open(filename, 'r') as f:
             self.rpsl_data_calls.append(f.read())
         assert source == 'TEST'
-        assert serial == 424242
+        assert serial == self.expected_serial
 
 
 class TestNRTMUpdateStreamRunner:

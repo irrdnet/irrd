@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import List, Set
+from typing import List, Set, Optional
 
 from irrd.conf import get_setting
 from irrd.rpsl.parser import UnknownRPSLObjectClassException
@@ -37,7 +37,7 @@ class MirrorFileImportParser(MirrorParser):
     obj_unknown = 0  # Objects with unknown classes
     unknown_object_classes: Set[str] = set()  # Set of encountered unknown classes
 
-    def __init__(self, source: str, filename: str, serial: int, database_handler: DatabaseHandler) -> None:
+    def __init__(self, source: str, filename: str, serial: Optional[int], database_handler: DatabaseHandler) -> None:
         logger.debug(f'Starting file import of {source} from {filename}, setting serial {serial}')
         self.source = source
         self.filename = filename

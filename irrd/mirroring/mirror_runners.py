@@ -5,7 +5,7 @@ import shutil
 from ftplib import FTP
 from io import BytesIO
 from tempfile import NamedTemporaryFile
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Any, IO
 from urllib.parse import urlparse
 
 from irrd.conf import get_setting
@@ -84,42 +84,69 @@ class MirrorFullImportRunner:
         database_handler.delete_all_rpsl_objects_with_journal(self.source)
         logger.info(f'Running full import of {self.source} from {import_sources}, serial from {import_serial_source}')
 
-        import_serial = int(self._retrieve_file(import_serial_source, use_tempfile=False))
-        import_filenames = [self._retrieve_file(import_source, use_tempfile=True) for import_source in import_sources]
+        import_serial = 0
+        if import_serial_source:
+            import_serial = int(self._retrieve_file(import_serial_source, return_contents=True)[0])
+
+        import_data = [self._retrieve_file(import_source, return_contents=False) for import_source in import_sources]
 
         database_handler.disable_journaling()
-        for import_filename in import_filenames:
+        for import_filename, to_delete in import_data:
             MirrorFileImportParser(source=self.source, filename=import_filename, serial=import_serial,
                                    database_handler=database_handler)
-            os.unlink(import_filename)
+            if to_delete:
+                os.unlink(import_filename)
 
-    def _retrieve_file(self, url: str, use_tempfile=True) -> str:
+    def _retrieve_file(self, url: str, return_contents=True) -> Tuple[str, bool]:
         """
-        Retrieve a file (currently only from FTP).
+        Retrieve a file from either FTP or local disk.
 
-        If use_tempfile is False, the file is read, stripped and then the
-        contents are returned. If use_tempfile is True, the data is written
-        to a temporary file, and the path of this file is returned.
-        It is the responsibility of the caller to unlink thi spath later.
+        If return_contents is True, the file is read, stripped and then the
+        contents are returned. If return_contents is False, the path to a
+        local file is returned where the data can be read.
 
-        If the URL ends in .gz, the file is gunzipped before being processed.
+        Return value is a tuple of the contents of the file, or the path to
+        the local file, and a boolean to indicate whether the caller should
+        unlink the path later.
+
+        If the URL ends in .gz, the file is gunzipped before being processed,
+        but only for FTP downloads.
         """
         url_parsed = urlparse(url)
 
-        if not url_parsed.scheme == 'ftp':
-            raise ValueError(f'Invalid URL: {url} - scheme {url_parsed.scheme} is not supported')
+        if url_parsed.scheme == 'ftp':
+            return self._retrieve_file_ftp(url, url_parsed, return_contents)
+        if url_parsed.scheme == 'file':
+            return self._retrieve_file_local(url_parsed.path, return_contents)
 
-        if use_tempfile:
-            destination = NamedTemporaryFile(delete=False)
-        else:
+        raise ValueError(f'Invalid URL: {url} - scheme {url_parsed.scheme} is not supported')
+
+    def _retrieve_file_ftp(self, url, url_parsed, return_contents=False) -> Tuple[str, bool]:
+        """
+        Retrieve a file from FTP
+
+        If return_contents is False, the file is read, stripped and then the
+        contents are returned. If return_contents is True, the data is written
+        to a temporary file, and the path of this file is returned.
+        It is the responsibility of the caller to unlink this path later.
+
+        If the URL ends in .gz, the file is gunzipped before being processed,
+        but only if return_contents is False.
+        """
+        destination: IO[Any]
+        if return_contents:
             destination = BytesIO()
-
+        else:
+            destination = NamedTemporaryFile(delete=False)
         ftp = FTP(url_parsed.netloc)
         ftp.login()
         ftp.retrbinary(f'RETR {url_parsed.path}', destination.write)
         ftp.quit()
-
-        if use_tempfile:
+        if return_contents:
+            value = destination.getvalue().decode('ascii').strip()  # type: ignore
+            logger.info(f'Downloaded {url}, contained {value}')
+            return value, False
+        else:
             if url.endswith('.gz'):
                 zipped_file = destination
                 zipped_file.close()
@@ -132,11 +159,14 @@ class MirrorFullImportRunner:
             destination.close()
 
             logger.info(f'Downloaded (and gunzipped if applicable) {url} to {destination.name}')
-            return destination.name
-        else:
-            value = destination.getvalue().decode('ascii').strip()  # type: ignore
-            logger.info(f'Downloaded {url}, contained {value}')
-            return value
+            return destination.name, True
+
+    def _retrieve_file_local(self, path, return_contents=False) -> Tuple[str, bool]:
+        if not return_contents:
+            return path, False
+        with open(path) as fh:
+            value = fh.read().strip()
+        return value, False
 
 
 class NRTMUpdateStreamRunner:

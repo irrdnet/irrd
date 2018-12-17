@@ -199,14 +199,15 @@ Sources
 * ``sources.{name}.nrtm_port``: the TCP port to connect to for an NRTM stream
   |br| **Default**: not defined, no NRTM requests attempted
   |br| **Change takes effect**: after SIGHUP, at the next NRTM update.
-* ``sources.{name}.import_source``: the FTP URL or list of URLs where the full copies of this source can be
-  retrieved. You can provide a list of URLs for sources that offer split files.
+* ``sources.{name}.import_source``: the URL or list of URLs where the full copies of this source can be
+  retrieved. You can provide a list of URLs for sources that offer split files. Supports FTP or local file
+  URLs. Automatic gzip decompression is supported for FTP URLs.
   |br| **Default**: not defined, no imports attempted
   |br| **Change takes effect**: after SIGHUP, at the next full import. This will only occur if this source is
   forced to reload, i.e. changing this URL will not cause a new full import by itself in sources that use NRTM.
   For sources that do not use NRTM, every mirror update is a full import.
-* ``sources.{name}.import_serial_source``: the FTP URL where the file with serial belonging to the ``import_source``
-  can be retrieved
+* ``sources.{name}.import_serial_source``: the URL where the file with serial belonging to the ``import_source``
+  can be retrieved. Supports FTP or local file URLs.
   |br| **Default**: not defined, no imports attempted
   |br| **Change takes effect**: see ``import_source``.
 * ``sources.{name}.import_timer``: the time between two updates, either by full import or NRTM.
