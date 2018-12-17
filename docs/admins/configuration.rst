@@ -221,7 +221,9 @@ Sources
   classes will be ignored. Without a filter, all objects are mirrored.
   |br| **Default**: no filter, all object classes permitted
   |br| **Change takes effect**: after SIGHUP, at the next NRTM update or full import.
-* ``sources.{name}.export_destination``: a path to save full exports, including a serial file, of this source
+* ``sources.{name}.export_destination``: a path to save full exports, including a serial file, of this source.
+  The data is initially written to a temporary file, and then moved to the destination path. The export of
+  RPSL data is always gzipped.
   |br| **Default**: not defined, no exports made.
   |br| **Change takes effect**: after SIGHUP, at the next ``export_timer``
 * ``sources.{name}.export_timer``: the time between two full exports.

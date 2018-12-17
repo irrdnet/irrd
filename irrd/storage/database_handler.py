@@ -259,6 +259,12 @@ class DatabaseHandler:
         """
         self.status_tracker.record_mirror_error(source, error)
 
+    def record_serial_exported(self, source: str, serial: int) -> None:
+        """
+        Record an export of a source at a particular serial.
+        """
+        self.status_tracker.record_serial_exported(source, serial)
+
     def close(self) -> None:
         self._connection.close()
 
@@ -279,6 +285,7 @@ class DatabaseStatusTracker:
     journaling_enabled: bool
     _new_serials_per_source: Dict[str, Set[int]]
     _mirroring_error: Dict[str, str]
+    _exported_serials: Dict[str, int]
 
     c_journal = RPSLDatabaseJournal.__table__.c
     c_status = RPSLDatabaseStatus.__table__.c
@@ -301,6 +308,13 @@ class DatabaseStatusTracker:
         Only the most recent error is stored in the DB status.
         """
         self._mirroring_error[source] = error
+
+    def record_serial_exported(self, source: str, serial: int) -> None:
+        """
+        Record an export of a source at a particular serial.
+        Only the most recent error is stored in the DB status.
+        """
+        self._exported_serials[source] = serial
 
     def record_operation(self, operation: DatabaseOperation, rpsl_pk: str, source: str, object_class: str,
                          object_text: str, forced_serial: Optional[int]) -> None:
@@ -387,8 +401,15 @@ class DatabaseStatusTracker:
             )
             self.database_handler.execute_statement(stmt)
 
+        for source, serial in self._exported_serials.items():
+            stmt = RPSLDatabaseStatus.__table__.update().where(self.c_status.source == source).values(
+                serial_last_export=serial,
+            )
+            self.database_handler.execute_statement(stmt)
+
         self._reset()
 
     def _reset(self):
         self._new_serials_per_source = defaultdict(set)
         self._mirroring_error = dict()
+        self._exported_serials = dict()

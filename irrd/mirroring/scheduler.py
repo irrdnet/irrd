@@ -6,7 +6,8 @@ import threading
 from typing import Dict
 
 from irrd.conf import get_setting
-from .mirror_runners import MirrorUpdateRunner
+from .mirror_runners_export import SourceExportRunner
+from .mirror_runners_import import MirrorImportUpdateRunner
 
 logger = logging.getLogger(__name__)
 
@@ -29,20 +30,33 @@ class MirrorScheduler:
     def run(self) -> None:
         for source in get_setting('sources').keys():
             is_mirror = get_setting(f'sources.{source}.import_source') or get_setting(f'sources.{source}.nrtm_host')
-
             import_timer = int(get_setting(f'sources.{source}.import_timer', 300))
-            current_time = time.time()
-            has_expired = (self.last_started_time[source] + import_timer) < current_time
 
-            if is_mirror and has_expired and not self._is_thread_running(source):
-                logger.debug(f'Started new thread for mirror update for {source}')
-                initiator = MirrorUpdateRunner(source=source)
-                thread = threading.Thread(target=initiator.run, name=f'Thread-MirrorUpdateRunner-{source}')
-                self.threads[source] = thread
-                thread.start()
-                self.last_started_time[source] = int(current_time)
+            if is_mirror:
+                self.run_if_relevant(source, MirrorImportUpdateRunner, import_timer)
 
-    def _is_thread_running(self, source):
-        if source not in self.threads:
+            runs_export = get_setting(f'sources.{source}.export_destination')
+            export_timer = int(get_setting(f'sources.{source}.export_timer', 3600))
+
+            if runs_export:
+                self.run_if_relevant(source, SourceExportRunner, export_timer)
+
+    def run_if_relevant(self, source: str, runner_class, timer: int):
+        thread_name = f'Thread-{runner_class.__name__}-{source}'
+
+        current_time = time.time()
+        has_expired = (self.last_started_time[thread_name] + timer) < current_time
+        if not has_expired or self._is_thread_running(thread_name):
+            return
+
+        logger.debug(f'Started new thread for mirror update for {source}')
+        initiator = runner_class(source=source)
+        thread = threading.Thread(target=initiator.run, name=thread_name)
+        self.threads[thread_name] = thread
+        thread.start()
+        self.last_started_time[thread_name] = int(current_time)
+
+    def _is_thread_running(self, thread_name: str):
+        if thread_name not in self.threads:
             return False
-        return self.threads[source].is_alive()
+        return self.threads[thread_name].is_alive()

@@ -155,6 +155,7 @@ class TestDatabaseHandlerLive:
         assert len(result) == 1
 
         self.dh.record_mirror_error('TEST2', 'error')
+        self.dh.record_serial_exported('TEST2', '424242')
         self.dh.commit()
 
         journal = self._clean_result(self.dh.execute_query(RPSLDatabaseJournalQuery()))
@@ -189,7 +190,7 @@ class TestDatabaseHandlerLive:
         assert self._clean_result(status_test2) == [
             {'source': 'TEST2', 'serial_oldest_journal': 1, 'serial_newest_journal': 3,
              'serial_oldest_seen': 1, 'serial_newest_seen': 3,
-             'serial_last_export': None, 'last_error': 'error', 'force_reload': False},
+             'serial_last_export': 424242, 'last_error': 'error', 'force_reload': False},
         ]
         assert status_test2[0]['created']
         assert status_test2[0]['updated']
