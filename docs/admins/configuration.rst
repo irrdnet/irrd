@@ -213,7 +213,8 @@ Sources
 * ``sources.{name}.import_timer``: the time between two updates, either by full import or NRTM.
   This is particularly significant for sources that do not offer an NRTM stream, as they will instead run a 
   full import every time this timer expires. The default is rather frequent for sources that work exclusively 
-  with periodic full imports.
+  with periodic full imports. The minimum effective time is 15 seconds, and this is also the granularity
+  of the timer.
   |br| **Default**: 300 
   |br| **Change takes effect**: after SIGHUP
 * ``sources.{name}.object_class_filter``: a list of object classes that will be mirrored. Objects of other RPSL object
@@ -223,7 +224,8 @@ Sources
 * ``sources.{name}.export_destination``: a path to save full exports, including a serial file, of this source
   |br| **Default**: not defined, no exports made.
   |br| **Change takes effect**: after SIGHUP, at the next ``export_timer``
-* ``sources.{name}.export_timer``: the time between two full exports
+* ``sources.{name}.export_timer``: the time between two full exports.
+  The minimum effective time is 15 seconds, and this is also the granularity of the timer.
   |br| **Default**: 3600
   |br| **Change takes effect**: after SIGHUP
 

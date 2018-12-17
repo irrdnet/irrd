@@ -32,4 +32,4 @@ internet.TCPServer(
     interface=get_setting('server.http.interface')
 ).setServiceParent(application)
 
-TimerService(600, MirrorScheduler().run).setServiceParent(application)
+TimerService(15, MirrorScheduler().run).setServiceParent(application)
