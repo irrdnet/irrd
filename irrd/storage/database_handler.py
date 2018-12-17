@@ -368,7 +368,6 @@ class DatabaseStatusTracker:
                 source=source,
                 updated=datetime.now(timezone.utc),
             )
-            # TODO: is this query correct?
             columns_to_update = {
                 c.name: c
                 for c in stmt.excluded
