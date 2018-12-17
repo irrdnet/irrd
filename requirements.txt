@@ -9,7 +9,7 @@ PyYAML==3.13           # parsing YAML config files
 
 # Database connections and management
 psycopg2-binary==2.7.6.1
-SQLAlchemy==1.2.14
+SQLAlchemy==1.2.15
 alembic==1.0.5
 
 # Network handling
