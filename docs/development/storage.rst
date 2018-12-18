@@ -102,7 +102,7 @@ For each source, a record is kept of:
   recorded in the RPSL journal.
 * `serial_last_export`: the serial at which the database was last exported.
 * `force_reload`: flag that can be set by an admin to force an full re-import
-  of the database. This will be performed at the next update for this mirror.
+  of a mirrored source. This will be performed at the next update for this mirror.
   The flag will automatically be set back to false.
 * `last_error`, `last_error_timestamp`: the last error that occurred on
   NRTM or file imports for this source, and when it occurred. All errors are
@@ -113,6 +113,13 @@ For each source, a record is kept of:
     `serial_oldest_journal` and `serial_newest_journal` are actually in the
     journal. In NRTM, serials may have gaps, and there it's not
     possible to verify whether any operations are missing.
+
+.. danger::
+    Setting `force_reload` will discard the entire local journal and all
+    local data for this source, and then start a new import from the URLs
+    in the configuration. If others mirror the reloaded source from this
+    IRRd instance, they will also have to discard their local data and
+    reimport, as the journal used for NRTM queries will be reset.
 
 
 Updating the database
