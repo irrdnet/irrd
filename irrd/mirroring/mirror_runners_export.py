@@ -14,6 +14,16 @@ logger = logging.getLogger(__name__)
 
 
 class SourceExportRunner:
+    """
+    This SourceExportRunner is the entry point for the expect process
+    for a single source.
+
+    If an export destination is defined, a gzipped file will be created
+    with the contents of the source, along with a CURRENTSERIAL file.
+
+    The contents of the source are first written to a temporary file, and
+    then moved in place.
+    """
     def __init__(self, source: str) -> None:
         self.source = source
 

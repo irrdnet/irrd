@@ -8,6 +8,7 @@ from IPy import IP
 
 from irrd import __version__
 from irrd.conf import get_setting
+from irrd.mirroring.nrtm_generator import NRTMGenerator, NRTMGeneratorException
 from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING, lookup_field_names
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseQuery, DatabaseStatusQuery
@@ -448,6 +449,8 @@ class WhoisQueryParser:
                         self.handle_ripe_key_fields_only()
                     elif command == 'V':
                         self.handle_user_agent(components.pop(0))
+                    elif command == 'g':
+                        result = self.handle_nrtm_request(components.pop(0))
                     elif command in ['F', 'r']:
                         continue  # These flags disable recursion, but IRRd never performs recursion anyways
                     else:
@@ -521,6 +524,27 @@ class WhoisQueryParser:
         """-V/!n parameter/query - set a user agent for the client"""
         self.user_agent = user_agent
         logger.info(f'{self.peer}: user agent set to: {user_agent}')
+
+    def handle_nrtm_request(self, param):
+        try:
+            source, version, serial_range = param.split(':')
+        except ValueError:
+            raise WhoisQueryParserException(f'Invalid parameter: must contain three elements')
+
+        try:
+            serial_start, serial_end = serial_range.split('-')
+            serial_start = int(serial_start)
+            serial_end = None if serial_end == 'LAST' else int(serial_end)
+        except ValueError:
+            raise WhoisQueryParserException(f'Invalid serial range: {serial_range}')
+
+        if version not in ['1', '3']:
+            raise WhoisQueryParserException(f'Invalid NRTM version: {version}')
+
+        try:
+            return NRTMGenerator().generate(source, version, serial_start, serial_end)
+        except NRTMGeneratorException as nge:
+            raise WhoisQueryParserException(str(nge))
 
     def handle_inverse_attr_search(self, attribute: str, value: str) -> str:
         """
