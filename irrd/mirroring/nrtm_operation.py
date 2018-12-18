@@ -29,8 +29,7 @@ class NRTMOperation:
     def save(self, database_handler: DatabaseHandler) -> bool:
         default_source = self.source if self.operation == DatabaseOperation.delete else None
         try:
-            strict = self.source == 'NTTCOM'
-            obj = rpsl_object_from_text(self.object_text.strip(), strict_validation=strict, default_source=default_source)
+            obj = rpsl_object_from_text(self.object_text.strip(), strict_validation=False, default_source=default_source)
         except UnknownRPSLObjectClassException as exc:
             # Unknown object classes are only logged if they have not been filtered out.
             if not self.object_class_filter or exc.rpsl_object_class.lower() in self.object_class_filter:
