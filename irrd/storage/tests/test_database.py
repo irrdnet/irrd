@@ -20,8 +20,8 @@ using specific PostgreSQL features.
 
 To improve performance, these tests do not run full migrations.
 
-The tests also cover both api.py and queries.py, as they closely
-interact with the database.
+The tests also cover both database_handler.py and queries.py, as they
+closely interact with the database.
 """
 
 
