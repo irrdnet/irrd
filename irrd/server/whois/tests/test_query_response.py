@@ -38,7 +38,7 @@ class TestWhoisQueryResponse:
         response = WhoisQueryResponse(mode=WhoisQueryResponseMode.RIPE,
                                       response_type=WhoisQueryResponseType.ERROR,
                                       result='test').generate_response()
-        assert response == '%% test\n'
+        assert response == '%% ERROR: test\n'
 
         with raises(RuntimeError) as ve:
             # noinspection PyTypeChecker

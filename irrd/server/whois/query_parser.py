@@ -534,15 +534,19 @@ class WhoisQueryParser:
         try:
             serial_start, serial_end = serial_range.split('-')
             serial_start = int(serial_start)
-            serial_end = None if serial_end == 'LAST' else int(serial_end)
+            if serial_end == 'LAST':
+                serial_end = None
+            else:
+                serial_end = int(serial_end)
         except ValueError:
             raise WhoisQueryParserException(f'Invalid serial range: {serial_range}')
 
         if version not in ['1', '3']:
             raise WhoisQueryParserException(f'Invalid NRTM version: {version}')
 
+        # Check whether source is valid
         try:
-            return NRTMGenerator().generate(source, version, serial_start, serial_end)
+            return NRTMGenerator().generate(source, version, serial_start, serial_end, self.database_handler)
         except NRTMGeneratorException as nge:
             raise WhoisQueryParserException(str(nge))
 

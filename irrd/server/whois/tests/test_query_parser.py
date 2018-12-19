@@ -334,7 +334,7 @@ class TestWhoisQueryParserRIPE:
 
         mock_nrg = Mock()
         monkeypatch.setattr("irrd.server.whois.query_parser.NRTMGenerator", lambda: mock_nrg)
-        mock_nrg.generate = lambda source, version, serial_start, serial_end: f'{source}/{version}/{serial_start}/{serial_end}'
+        mock_nrg.generate = lambda source, version, serial_start, serial_end, dh: f'{source}/{version}/{serial_start}/{serial_end}'
 
         response = parser.handle_query('-g TEST:3:1-5')
         assert response.response_type == WhoisQueryResponseType.SUCCESS

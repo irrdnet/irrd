@@ -176,6 +176,35 @@ class TestDatabaseHandlerLive:
              'operation': DatabaseOperation.delete, 'object_class': 'route', 'object_text': 'object-text'},
         ]
 
+        partial_journal = self._clean_result(self.dh.execute_query(RPSLDatabaseJournalQuery().serial_range(42, 42)))
+        assert partial_journal == [
+            {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 42,
+             'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
+        ]
+        partial_journal = self._clean_result(self.dh.execute_query(RPSLDatabaseJournalQuery().serial_range(42)))
+        assert partial_journal == [
+            {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 42,
+             'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
+            {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 43,
+             'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
+        ]
+
+        # The IPv6 object was created in a different source, so it should
+        # have a separate sequence of NRTM serials. Serial for TEST was forced
+        # to 42 at the first upsert query.
+        assert journal == [
+            {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 42,
+             'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
+            {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 43,
+             'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
+            {'rpsl_pk': '2001:db8::/64,AS65537', 'source': 'TEST2', 'serial_nrtm': 1,
+             'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
+            {'rpsl_pk': '2001:db8::/64,AS65537', 'source': 'TEST2', 'serial_nrtm': 2,
+             'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
+            {'rpsl_pk': '2001:db8::/64,AS65537', 'source': 'TEST2', 'serial_nrtm': 3,
+             'operation': DatabaseOperation.delete, 'object_class': 'route', 'object_text': 'object-text'},
+        ]
+
         status_test = list(self.dh.execute_query(DatabaseStatusQuery().source('TEST')))
         assert self._clean_result(status_test) == [
             {'source': 'TEST', 'serial_oldest_journal': 42, 'serial_newest_journal': 43,

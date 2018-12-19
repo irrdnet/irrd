@@ -79,5 +79,5 @@ class WhoisQueryResponse:
         elif self.response_type == WhoisQueryResponseType.KEY_NOT_FOUND:
             return '%  No entries found for the selected source(s).\n'
         elif self.response_type == WhoisQueryResponseType.ERROR:
-            return f'%% {self.result}\n'
+            return f'%% ERROR: {self.result}\n'
         return None
