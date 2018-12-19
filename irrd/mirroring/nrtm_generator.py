@@ -1,5 +1,6 @@
 from typing import Optional
 
+from irrd.conf import get_setting
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseJournalQuery, DatabaseStatusQuery
 
@@ -16,6 +17,8 @@ class NRTMGenerator:
         Generate an NRTM response for a particular source, serial range and
         NRTM version. Raises NRTMGeneratorException for various error conditions.
         """
+        if not get_setting(f'sources.{source}.keep_journal'):
+            raise NRTMGeneratorException('No journal kept for this database, unable to serve NRTM queries')
 
         q = DatabaseStatusQuery().source(source)
         status = next(database_handler.execute_query(q))
@@ -26,6 +29,9 @@ class NRTMGenerator:
 
         serial_start_available = status['serial_oldest_journal']
         serial_end_available = status['serial_newest_journal']
+
+        if serial_start_available is None or serial_end_available is None:
+            return '% Warning: there are no updates available'
 
         if serial_start_requested < serial_start_available:
             raise NRTMGeneratorException(f'Serials {serial_start_requested} - {serial_start_available} do not exist')

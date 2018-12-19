@@ -1,15 +1,12 @@
-import datetime
 import logging
 import socket
 import textwrap
 from typing import Optional
 
 from beautifultable import BeautifulTable
-from twisted.internet import reactor
 
 from irrd import __version__
 from irrd.conf import get_setting
-from irrd.mirroring.scheduler import MirrorScheduler
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import DatabaseStatusQuery, RPSLDatabaseObjectStatisticsQuery
 from irrd.utils.whois_client import whois_query_source_status
@@ -42,7 +39,6 @@ class DatabaseStatusRequest:
         return textwrap.dedent(f"""
         IRRD version {__version__}
         Listening on {get_setting('server.whois.interface')} port {get_setting('server.whois.port')}
-        Next mirror update run: in {self._next_mirror_update()}
         """).lstrip()
 
     def _generate_statistics_table(self) -> str:
@@ -162,24 +158,3 @@ class DatabaseStatusRequest:
             return textwrap.dedent(f"""
                 No NRTM host configured.
                 """)
-
-    def _next_mirror_update(self) -> str:  # pragma: no cover
-        """
-        Determine when the next mirror update is scheduled.
-
-        This function is not tested, due to the large complexity of
-        mocking sufficient parts of the twisted framework, combined
-        with the small risk that a failure in this function poses.
-        """
-        next_mirror_update: Optional[int] = None
-        for call in reactor.getDelayedCalls():
-            try:
-                if call.func.f.__func__ == MirrorScheduler.run:
-                    next_mirror_update = int(call.getTime() - reactor.seconds())
-            except AttributeError:
-                pass
-        if not next_mirror_update:
-            return 'unknown'
-        if next_mirror_update < 60:
-            return f'{next_mirror_update} seconds'
-        return str(datetime.timedelta(seconds=next_mirror_update))

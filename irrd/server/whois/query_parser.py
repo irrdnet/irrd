@@ -544,7 +544,10 @@ class WhoisQueryParser:
         if version not in ['1', '3']:
             raise WhoisQueryParserException(f'Invalid NRTM version: {version}')
 
-        # Check whether source is valid
+        source = source.upper()
+        if source not in self.all_valid_sources:
+            raise WhoisQueryParserException(f'Unknown source: {source}')
+
         try:
             return NRTMGenerator().generate(source, version, serial_start, serial_end, self.database_handler)
         except NRTMGeneratorException as nge:

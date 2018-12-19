@@ -10,7 +10,15 @@ from ..nrtm_generator import NRTMGenerator, NRTMGeneratorException
 
 
 @pytest.fixture()
-def prepare_generator(monkeypatch):
+def prepare_generator(monkeypatch, config_override):
+    config_override({
+        'sources': {
+            'TEST': {
+                'keep_journal': True,
+            }
+        }
+    })
+
     mock_dh = Mock()
     mock_djq = Mock()
     mock_dsq = Mock()
@@ -125,3 +133,26 @@ class TestNRTMGenerator:
 
         result = generator.generate('TEST', '3', 201, None, mock_dh)
         assert result == '% Warning: there are no newer updates available'
+
+    def test_no_updates(self, prepare_generator):
+        generator, mock_dh = prepare_generator
+
+        responses = repeat({'serial_oldest_journal': None, 'serial_newest_journal': None})
+        mock_dh.execute_query = lambda q: responses
+
+        result = generator.generate('TEST', '3', 201, None, mock_dh)
+        assert result == '% Warning: there are no updates available'
+
+    def test_no_journal_kept(self, prepare_generator, config_override):
+        generator, mock_dh = prepare_generator
+        config_override({
+            'sources': {
+                'TEST': {
+                    'keep_journal': False,
+                }
+            }
+        })
+
+        with pytest.raises(NRTMGeneratorException) as nge:
+            generator.generate('TEST', '3', 110, 300, mock_dh)
+        assert 'No journal kept for this database, unable to serve NRTM queries' in str(nge)

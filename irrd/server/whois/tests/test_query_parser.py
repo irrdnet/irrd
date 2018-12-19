@@ -336,34 +336,39 @@ class TestWhoisQueryParserRIPE:
         monkeypatch.setattr("irrd.server.whois.query_parser.NRTMGenerator", lambda: mock_nrg)
         mock_nrg.generate = lambda source, version, serial_start, serial_end, dh: f'{source}/{version}/{serial_start}/{serial_end}'
 
-        response = parser.handle_query('-g TEST:3:1-5')
+        response = parser.handle_query('-g TEST1:3:1-5')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.RIPE
-        assert response.result == 'TEST/3/1/5'
+        assert response.result == 'TEST1/3/1/5'
 
-        response = parser.handle_query('-g TEST:3:1-LAST')
+        response = parser.handle_query('-g TEST1:3:1-LAST')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.RIPE
-        assert response.result == 'TEST/3/1/None'
+        assert response.result == 'TEST1/3/1/None'
 
-        response = parser.handle_query('-g TEST:9:1-LAST')
+        response = parser.handle_query('-g TEST1:9:1-LAST')
         assert response.response_type == WhoisQueryResponseType.ERROR
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert response.result == 'Invalid NRTM version: 9'
 
-        response = parser.handle_query('-g TEST:1:1-LAST:foo')
+        response = parser.handle_query('-g TEST1:1:1-LAST:foo')
         assert response.response_type == WhoisQueryResponseType.ERROR
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert response.result == 'Invalid parameter: must contain three elements'
 
+        response = parser.handle_query('-g UNKNOWN:1:1-LAST')
+        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.mode == WhoisQueryResponseMode.RIPE
+        assert response.result == 'Unknown source: UNKNOWN'
+
         for invalid_range in ['1', 'LAST-1', 'LAST', '1-last']:
-            response = parser.handle_query(f'-g TEST:3:{invalid_range}')
+            response = parser.handle_query(f'-g TEST1:3:{invalid_range}')
             assert response.response_type == WhoisQueryResponseType.ERROR
             assert response.mode == WhoisQueryResponseMode.RIPE
             assert response.result == f'Invalid serial range: {invalid_range}'
 
         mock_nrg.generate = Mock(side_effect=NRTMGeneratorException('expected-test-error'))
-        response = parser.handle_query('-g TEST:3:1-5')
+        response = parser.handle_query('-g TEST1:3:1-5')
         assert response.response_type == WhoisQueryResponseType.ERROR
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert response.result == 'expected-test-error'
