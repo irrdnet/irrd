@@ -327,7 +327,7 @@ class RPSLDatabaseJournalQuery(BaseRPSLObjectDatabaseQuery):
             self.columns.object_class,
             self.columns.object_text,
             self.columns.timestamp,
-        ])
+        ]).order_by(self.columns.source.asc(), self.columns.serial_nrtm.asc())
 
     def serial_range(self, start: int, end: Optional[int]=None):
         """
