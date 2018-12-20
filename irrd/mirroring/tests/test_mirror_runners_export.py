@@ -28,7 +28,8 @@ class TestSourceExportRunner:
         responses = cycle([
             repeat({'serial_newest_seen': '424242'}),
             [
-                {'object_text': 'object 1 🦄\n'},
+                # The CRYPT-PW hash must not appear in the output
+                {'object_text': 'object 1 🦄\nauth: CRYPT-PW foobar\n'},
                 {'object_text': 'object 2 🌈\n'},
             ],
         ])
@@ -42,7 +43,8 @@ class TestSourceExportRunner:
             assert fh.read() == '424242'
 
         with gzip.open(tmpdir + '/test.db.gz') as fh:
-            assert fh.read().decode('utf-8') == 'object 1 🦄\n\nobject 2 🌈\n\n'
+            assert fh.read().decode('utf-8') == 'object 1 🦄\nauth: CRYPT-PW DummyValue  # Filtered for security\n\n' \
+                                                'object 2 🌈\n\n'
 
         assert flatten_mock_calls(mock_dh) == [
             ['record_serial_exported', ('TEST', '424242'), {}],

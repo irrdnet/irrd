@@ -30,7 +30,8 @@ def prepare_generator(monkeypatch, config_override):
         repeat({'serial_oldest_journal': 100, 'serial_newest_journal': 200}),
         [
             {
-                'object_text': 'object 1 🦄\n',
+                # The CRYPT-PW hash must not appear in the output
+                'object_text': 'object 1 🦄\nauth: CRYPT-PW foobar\n',
                 'operation': DatabaseOperation.add_or_update,
                 'serial_nrtm': 120,
             },
@@ -57,6 +58,7 @@ class TestNRTMGenerator:
         ADD 120
         
         object 1 🦄
+        auth: CRYPT-PW DummyValue  # Filtered for security
         
         DEL 180
         
@@ -74,6 +76,7 @@ class TestNRTMGenerator:
         ADD
 
         object 1 🦄
+        auth: CRYPT-PW DummyValue  # Filtered for security
 
         DEL
 
@@ -91,6 +94,7 @@ class TestNRTMGenerator:
         ADD 120
 
         object 1 🦄
+        auth: CRYPT-PW DummyValue  # Filtered for security
 
         DEL 180
 

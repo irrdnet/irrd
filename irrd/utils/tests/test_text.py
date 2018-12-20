@@ -1,6 +1,20 @@
 from io import StringIO
 
-from ..text import splitline_unicodesafe, split_paragraphs_rpsl
+from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
+from irrd.utils.rpsl_samples import SAMPLE_MNTNER
+from ..text import splitline_unicodesafe, split_paragraphs_rpsl, remove_auth_hashes
+
+
+def test_remove_auth_hashes():
+    original_text = SAMPLE_MNTNER
+    assert 'CRYPT-PW LEuuhsBJNFV0Q' in original_text
+    assert 'MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.' in original_text
+
+    result = remove_auth_hashes(original_text)
+    assert 'CRYPT-PW ' + PASSWORD_HASH_DUMMY_VALUE in result
+    assert 'CRYPT-PW LEuuhsBJNFV0Q' not in result
+    assert 'MD5-pw ' + PASSWORD_HASH_DUMMY_VALUE in result
+    assert 'MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.' not in result
 
 
 def test_splitline_unicodesafe():

@@ -9,6 +9,7 @@ from tempfile import NamedTemporaryFile
 from irrd.conf import get_setting
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseQuery, DatabaseStatusQuery
+from irrd.utils.text import remove_auth_hashes
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +53,8 @@ class SourceExportRunner:
         with gzip.open(export_tmpfile, 'wb') as fh:
             query = RPSLDatabaseQuery().sources([self.source])
             for obj in self.database_handler.execute_query(query):
-                fh.write(obj['object_text'].encode('utf-8') + b'\n')
+                object_bytes = remove_auth_hashes(obj['object_text']).encode('utf-8')
+                fh.write(object_bytes + b'\n')
 
         if filename_export.exists():
             os.unlink(filename_export)

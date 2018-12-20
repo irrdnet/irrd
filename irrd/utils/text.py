@@ -1,4 +1,16 @@
-from typing import Iterator, Union, TextIO
+import re
+from typing import Iterator, Union, TextIO, Optional
+
+from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
+from irrd.rpsl.config import PASSWORD_HASHERS
+
+re_remove_passwords = re.compile(r'(%s)[^\n]+' % '|'.join(PASSWORD_HASHERS.keys()), flags=re.IGNORECASE)
+
+
+def remove_auth_hashes(input: Optional[str]):
+    if not input:
+        return input
+    return re_remove_passwords.sub(r'\1 %s  # Filtered for security' % PASSWORD_HASH_DUMMY_VALUE, input)
 
 
 def splitline_unicodesafe(input: str) -> Iterator[str]:

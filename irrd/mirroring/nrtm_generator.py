@@ -3,6 +3,7 @@ from typing import Optional
 from irrd.conf import get_setting
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseJournalQuery, DatabaseStatusQuery
+from irrd.utils.text import remove_auth_hashes
 
 
 class NRTMGeneratorException(Exception):
@@ -58,7 +59,7 @@ class NRTMGenerator:
             output += '\n' + operation['operation'].value
             if version == '3':
                 output += ' ' + str(operation['serial_nrtm'])
-            output += '\n\n' + operation['object_text']
+            output += '\n\n' + remove_auth_hashes(operation['object_text'])
 
         output += f'\n%END {source}'
         return output
