@@ -26,7 +26,7 @@ DashCare_.
 For administrators
 ------------------
 
-This documentation is for administrators of IRRd deployments.
+This documentation is mainly for administrators of IRRd deployments.
 
 .. toctree::
    :maxdepth: 1
@@ -38,21 +38,22 @@ This documentation is for administrators of IRRd deployments.
 For end users
 -------------
 
-This documentation is for end users, who are performing queries on IRRd
-instances, or trying to add objects to an instance, regardless of whether
-they are running that instance.
+This documentation is mainly for end users, who are performing queries on IRRd
+instances, or trying to add objects to an instance, or running mirrors of
+an IRRd instance.
 
 .. toctree::
    :maxdepth: 1
 
    users/queries
    users/database-changes
+   users/mirroring
 
 For developers
 --------------
 
-This documentation is for people who want to develop on the IRRd codebase
-itself, or are curious how it works.
+This documentation is mainly for people who want to develop on the IRRd codebase
+itself, or want to know how it works.
 
 .. toctree::
    :maxdepth: 1

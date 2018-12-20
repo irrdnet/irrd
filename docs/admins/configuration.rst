@@ -239,16 +239,8 @@ Sources
   |br| **Default**: not defined, all access denied
   |br| **Change takes effect**: after SIGHUP, upon next request
 
-There are fundamentally two different ways to mirror other databases:
-
-* **NRTM mode**: providing a location to download full copies of the database, the serial belonging to
-  that copy, and then updating this using an NRTM stream. This method is recommended, as it is efficient
-  and allows IRRd to generate a journal, if enabled, so that others can mirror the source from this
-  IRRd instance too.
-
-* **Periodic full import mode**: providing a location to download full copies of the database, and no
-  other details. Every ``import_timer``, the entire database will be reloaded from the full copies.
-  Journals can not be generated.
+For more detail on mirroring other sources, and providing mirroring services
+to others, see the :doc:`mirroring documentation </users/mirroring>`.
 
 .. caution::
 

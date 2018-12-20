@@ -1,6 +1,6 @@
-===============================================
-Important notes when migrating from legacy IRRd
-===============================================
+==========================
+Migrating from legacy IRRd
+==========================
 
 There are a number of things to keep in mind when migrating from a legacy
 (version < 4) IRRd instance to IRRd 4.0.0.
@@ -8,9 +8,9 @@ There are a number of things to keep in mind when migrating from a legacy
 In general, there are many legacy IRRd versions out there. They come with
 different versions of documentation, and are not all consistent with each
 other or their own documentation.
-Therefore, there may be unknown inconsistencies between IRRd version 4 and
-a legacy version of IRRd. The significant known changes that may affect
-end users are in whois query handling.
+Therefore, there may be an unknown number of unknown inconsistencies
+between IRRd version 4 and a legacy version of IRRd. The significant
+known changes are listed below
 
 
 Configuration and data storage
@@ -75,3 +75,13 @@ are primarily due to bugs in legacy IRRd, which do not occur in version 4.
   not occur, and therefore will not return these duplicates. This particularly
   affected the ARIN-WHOIS and RPKI sources.
 
+
+Other known changes
+-------------------
+* Some legacy IRRd versions supported `MAIL-FROM` authentication. This
+  is considered an invalid authentication scheme in version 4,
+  due to its poor security.
+* When filtering objects from a mirror using `object_class_filter` /
+  `irr_database <source> filter` legacy IRRd would not apply the filter
+  consistently. In version 4, filtered objects are discarded immediately
+  in the import parsing process, and not recorded in the database.

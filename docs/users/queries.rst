@@ -141,6 +141,8 @@ Supported flags
   `mp-members` attributes.
 * ``-V <free-text>`` identifies the client querying IRRd. Optional, but may
   be helpful when debugging issues.
+* ``-g`` returns an NRTM response, used for mirroring. See the
+  :doc:`mirroring documentation </users/mirroring>`.
 * Any other (part of) the query is interpreted as a free text search:
 
   * If the input is a valid AS number, the query will look for any matching
