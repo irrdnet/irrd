@@ -1,4 +1,5 @@
 import uuid
+from twisted.internet.address import IPv4Address
 from unittest.mock import Mock
 
 import pytest
@@ -58,7 +59,7 @@ def prepare_parser(monkeypatch, config_override):
     monkeypatch.setattr("irrd.server.whois.query_parser.DatabaseHandler", lambda: mock_database_handler)
     mock_database_query = Mock()
     monkeypatch.setattr("irrd.server.whois.query_parser.RPSLDatabaseQuery", lambda: mock_database_query)
-    parser = WhoisQueryParser('[127.0.0.1]:99999')
+    parser = WhoisQueryParser(IPv4Address('TCP', '127.0.0.1', 99999), '[127.0.0.1]:99999')
 
     mock_query_result = [
         {
@@ -328,13 +329,28 @@ class TestWhoisQueryParserRIPE:
         assert not response.result
         assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
 
-    def test_nrtm_request(self, prepare_parser, monkeypatch):
+    def test_nrtm_request(self, prepare_parser, monkeypatch, config_override):
         mock_dq, mock_dh, parser = prepare_parser
         mock_dh.reset_mock()
 
         mock_nrg = Mock()
         monkeypatch.setattr("irrd.server.whois.query_parser.NRTMGenerator", lambda: mock_nrg)
         mock_nrg.generate = lambda source, version, serial_start, serial_end, dh: f'{source}/{version}/{serial_start}/{serial_end}'
+
+        response = parser.handle_query('-g TEST1:3:1-5')
+        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.mode == WhoisQueryResponseMode.RIPE
+        assert response.result == 'Access denied'
+
+        config_override({
+            'sources': {
+                'TEST1': {'nrtm_access_list': 'nrtm_access'},
+            },
+            'access_lists': {
+                'nrtm_access': ['0/0', '0::/0'],
+            },
+            'sources_default': [],
+        })
 
         response = parser.handle_query('-g TEST1:3:1-5')
         assert response.response_type == WhoisQueryResponseType.SUCCESS

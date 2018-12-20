@@ -27,6 +27,9 @@ This sample shows most configuration options::
                 - '::/32'
                 - '127.0.0.1'
 
+            generic_nrtm_access:
+                - '192.0.2.0/24'
+
         server:
             http:
                 access_list: http_database_status
@@ -62,6 +65,7 @@ This sample shows most configuration options::
                 keep_journal: true
                 export_destination: /var/ftp/
                 export_timer: 7200
+                nrtm_access_list: generic_nrtm_access
             MIRROR-FIRST:
                 # Run a full import at first, then periodic NRTM updates.
                 authoritative: false
@@ -230,6 +234,10 @@ Sources
   The minimum effective time is 15 seconds, and this is also the granularity of the timer.
   |br| **Default**: 3600
   |br| **Change takes effect**: after SIGHUP
+* ``sources.{name}.nrtm_access_list``: a reference to an access list in the configuration, where only IPs in
+  the access list are permitted access to the NRTM stream for this particular source (``-g`` queries).
+  |br| **Default**: not defined, all access denied
+  |br| **Change takes effect**: after SIGHUP, upon next request
 
 There are fundamentally two different ways to mirror other databases:
 

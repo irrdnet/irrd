@@ -1,10 +1,8 @@
 import logging
-
-from IPy import IP
 from twisted.web import server, resource
 
-from irrd.conf import get_setting
 from .request_handlers import DatabaseStatusRequest
+from ..access_check import is_client_permitted
 
 logger = logging.getLogger(__name__)
 
@@ -30,23 +28,7 @@ class DatabaseStatusResource(resource.Resource):
         Determine whether a client is permitted to access this interface,
         based on the server.http.access_list setting.
         """
-        try:
-            client_ip = IP(request.getClientAddress().host)
-        except (ValueError, AttributeError) as e:
-            logger.error(f'Rejecting request as HTTP client IP could not be read from '
-                         f'{request.getClientAddress()}: {e}')
-            return False
-
-        access_list_name = get_setting('server.http.access_list')
-        access_list = get_setting(f'access_lists.{access_list_name}')
-        if not access_list:
-            logger.info(f'Rejecting HTTP request, access list empty or undefined: {client_ip}')
-            return False
-
-        allowed = any([client_ip in IP(allowed) for allowed in access_list])
-        if not allowed:
-            logger.info(f'Rejecting HTTP request, IP not in access list: {client_ip}')
-        return allowed
+        return is_client_permitted(request.getClientAddress(), 'server.http.access_list')
 
 
 root = resource.Resource()
