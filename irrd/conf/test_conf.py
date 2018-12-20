@@ -185,6 +185,14 @@ class TestConfiguration:
                         'export_timer': 'bar',
                         'nrtm_host': '192.0.2.1',
                     },
+                    'TESTDB2': {
+                        'authoritative': True,
+                        'nrtm_host': '192.0.2.1',
+                    },
+                    'TESTDB3': {
+                        'authoritative': True,
+                        'import_source': '192.0.2.1',
+                    },
                 },
                 'log': {
                     'level': 'INVALID',
@@ -206,6 +214,8 @@ class TestConfiguration:
         assert 'Setting sources_default contains unknown sources: DOESNOTEXIST-DB' in str(ce)
         assert 'Setting keep_journal for source TESTDB can not be enabled unless either ' in str(ce)
         assert 'Setting nrtm_host for source TESTDB can not be enabled without setting import_serial_source.' in str(ce)
+        assert 'Setting authoritative for source TESTDB2 can not be enabled when either nrtm_host or import_source are set.' in str(ce)
+        assert 'Setting authoritative for source TESTDB3 can not be enabled when either nrtm_host or import_source are set.' in str(ce)
         assert 'Setting import_timer for source TESTDB must be a number.' in str(ce)
         assert 'Setting export_timer for source TESTDB must be a number.' in str(ce)
         assert 'Invalid log.level: INVALID' in str(ce)
