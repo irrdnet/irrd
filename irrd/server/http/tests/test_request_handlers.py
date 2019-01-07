@@ -114,95 +114,95 @@ class TestDatabaseStatusRequest:
 
         status_report = DatabaseStatusRequest().generate_status()
         expected_report = textwrap.dedent("""
-        IRRD version master
-        Listening on ::0 port 43
-        
-        
-        ---------------------------------------------------------------------------------
-         source    total obj    rt obj         aut-num obj    serial         last export 
-        ---------------------------------------------------------------------------------
-         TEST1            25        10                  10        21                  16 
-         TEST2            42        42                   0       221                     
-         TEST3             0         0                   0      None                     
-         TEST4             0         0                   0      None                     
-         TOTAL            67        52                  10                               
-        
-        
-        Status for TEST1
-        -------------------
-        Local information:
-            Authoritative: No
-            Object class filter: object-class-filter
-            Oldest serial seen: 10
-            Newest serial seen: 21
-            Oldest journal serial number: 15
-            Newest journal serial number: 20
-            Last export at serial number: 16
-            Last update: 2018-06-01 00:00:00+00:00
-            Local journal kept: Yes
-            Last import error occurred at: 2018-01-01 00:00:00+00:00
-        
-        Remote information:
-            NRTM host: nrtm1.example.com port 43
-            Mirrorable: Yes
-            Oldest journal serial number: 142
-            Newest journal serial number: 143
-            Last export at serial number: 144
-        
-        
-        Status for TEST2
-        -------------------
-        Local information:
-            Authoritative: Yes
-            Object class filter: None
-            Oldest serial seen: 210
-            Newest serial seen: 221
-            Oldest journal serial number: None
-            Newest journal serial number: None
-            Last export at serial number: None
-            Last update: 2019-06-01 00:00:00+00:00
-            Local journal kept: No
-            Last import error occurred at: 2019-01-01 00:00:00+00:00
-        
-        Remote information:
-            NRTM host: nrtm2.example.com port 44
-            Remote status query unsupported
-        
-        
-        Status for TEST3
-        -------------------
-        Local information:
-            Authoritative: Yes
-            Object class filter: None
-            Oldest serial seen: None
-            Newest serial seen: None
-            Oldest journal serial number: None
-            Newest journal serial number: None
-            Last export at serial number: None
-            Last update: None
-            Local journal kept: No
-            Last import error occurred at: None
-        
-        Remote information:
-            NRTM host: nrtm3.example.com port 45
-            Unable to reach remote server for status query
-        
-        
-        Status for TEST4
-        -------------------
-        Local information:
-            Authoritative: No
-            Object class filter: None
-            Oldest serial seen: None
-            Newest serial seen: None
-            Oldest journal serial number: None
-            Newest journal serial number: None
-            Last export at serial number: None
-            Last update: None
-            Local journal kept: No
-            Last import error occurred at: None
-        
-        Remote information:
-            No NRTM host configured.\n\n""").lstrip()
+            IRRD version master
+            Listening on ::0 port 43
+            
+            
+            -----------------------------------------------------------------------
+             source    total obj    rt obj    aut-num obj    serial    last export 
+            -----------------------------------------------------------------------
+             TEST1            25        10             10        21             16 
+             TEST2            42        42              0       221                
+             TEST3             0         0              0      None                
+             TEST4             0         0              0      None                
+             TOTAL            67        52             10                          
+            
+            
+            Status for TEST1
+            -------------------
+            Local information:
+                Authoritative: No
+                Object class filter: object-class-filter
+                Oldest serial seen: 10
+                Newest serial seen: 21
+                Oldest journal serial number: 15
+                Newest journal serial number: 20
+                Last export at serial number: 16
+                Last update: 2018-06-01 00:00:00+00:00
+                Local journal kept: Yes
+                Last import error occurred at: 2018-01-01 00:00:00+00:00
+            
+            Remote information:
+                NRTM host: nrtm1.example.com port 43
+                Mirrorable: Yes
+                Oldest journal serial number: 142
+                Newest journal serial number: 143
+                Last export at serial number: 144
+            
+            
+            Status for TEST2
+            -------------------
+            Local information:
+                Authoritative: Yes
+                Object class filter: None
+                Oldest serial seen: 210
+                Newest serial seen: 221
+                Oldest journal serial number: None
+                Newest journal serial number: None
+                Last export at serial number: None
+                Last update: 2019-06-01 00:00:00+00:00
+                Local journal kept: No
+                Last import error occurred at: 2019-01-01 00:00:00+00:00
+            
+            Remote information:
+                NRTM host: nrtm2.example.com port 44
+                Remote status query unsupported
+            
+            
+            Status for TEST3
+            -------------------
+            Local information:
+                Authoritative: Yes
+                Object class filter: None
+                Oldest serial seen: None
+                Newest serial seen: None
+                Oldest journal serial number: None
+                Newest journal serial number: None
+                Last export at serial number: None
+                Last update: None
+                Local journal kept: No
+                Last import error occurred at: None
+            
+            Remote information:
+                NRTM host: nrtm3.example.com port 45
+                Unable to reach remote server for status query
+            
+            
+            Status for TEST4
+            -------------------
+            Local information:
+                Authoritative: No
+                Object class filter: None
+                Oldest serial seen: None
+                Newest serial seen: None
+                Oldest journal serial number: None
+                Newest journal serial number: None
+                Last export at serial number: None
+                Last update: None
+                Local journal kept: No
+                Last import error occurred at: None
+            
+            Remote information:
+                No NRTM host configured.\n\n""").lstrip()
 
         assert expected_report == status_report
