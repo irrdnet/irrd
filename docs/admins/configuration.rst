@@ -186,7 +186,9 @@ Sources
   all known sources in the default selection.
   |br| **Default**: not defined. All sources are enabled, but results are not ordered by source.
   |br| **Change takes effect**:
-* ``sources.{name}``: settings for a particular source.
+* ``sources.{name}``: settings for a particular source. The name must be all-uppercase, start with a
+  letter, and end with a letter or digit. Valid characters are letters, digits and dashes. The minimum
+  length is two characters.
 * ``sources.{name}.authoritative``: a boolean for whether this source is authoritative, i.e. changes are allowed
   to be submitted to this IRRd instance through e.g. email updates
   |br| **Default**: ``false``

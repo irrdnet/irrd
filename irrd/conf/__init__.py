@@ -3,6 +3,7 @@ import sys
 import logging.config
 import time
 
+import re
 import signal
 import yaml
 from IPy import IP
@@ -16,6 +17,7 @@ IRRD_CONFIG_CHECK_FORCE_ENV = 'IRRD_CONFIG_CHECK_FORCE'
 
 logger = logging.getLogger(__name__)
 PASSWORD_HASH_DUMMY_VALUE = 'DummyValue'
+SOURCE_NAME_RE = re.compile('^[A-Z][A-Z0-9-]*[A-Z0-9Z]$')
 
 
 LOGGING = {
@@ -235,6 +237,9 @@ class Configuration:
             errors.append(f'Setting sources_default contains unknown sources: {", ".join(unknown_default_sources)}')
 
         for name, details in config.get('sources', {}).items():
+            if not SOURCE_NAME_RE.match(name):
+                errors.append(f'Invalid source name: {name}')
+
             nrtm_mirror = details.get('nrtm_host') and details.get('nrtm_port') and details.get('import_serial_source')
             if details.get('keep_journal') and not (nrtm_mirror or details.get('authoritative')):
                 errors.append(f'Setting keep_journal for source {name} can not be enabled unless either authoritative '

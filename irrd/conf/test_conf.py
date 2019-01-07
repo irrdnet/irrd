@@ -193,6 +193,8 @@ class TestConfiguration:
                         'authoritative': True,
                         'import_source': '192.0.2.1',
                     },
+                    'lowercase': {},
+                    'invalid char': {},
                 },
                 'log': {
                     'level': 'INVALID',
@@ -218,6 +220,8 @@ class TestConfiguration:
         assert 'Setting authoritative for source TESTDB3 can not be enabled when either nrtm_host or import_source are set.' in str(ce)
         assert 'Setting import_timer for source TESTDB must be a number.' in str(ce)
         assert 'Setting export_timer for source TESTDB must be a number.' in str(ce)
+        assert 'Invalid source name: lowercase' in str(ce)
+        assert 'Invalid source name: invalid char' in str(ce)
         assert 'Invalid log.level: INVALID' in str(ce)
 
 
