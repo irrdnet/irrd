@@ -77,3 +77,23 @@ class TestSourceExportRunner:
 
         assert 'An exception occurred while attempting to run an export for TEST' in caplog.text
         assert 'expected-test-error' in caplog.text
+
+    def test_no_status(self, tmpdir, config_override, monkeypatch, caplog):
+        config_override({
+            'sources': {
+                'TEST': {
+                    'export_destination': str(tmpdir),
+                }
+            }
+        })
+
+        mock_dh = Mock()
+        mock_dsq = Mock()
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_export.DatabaseHandler', lambda: mock_dh)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_export.DatabaseStatusQuery', lambda: mock_dsq)
+        mock_dh.execute_query = Mock(side_effect=StopIteration())
+
+        runner = SourceExportRunner('TEST')
+        runner.run()
+
+        assert 'Unable to run export for TEST, internal database status is empty.' in caplog.text

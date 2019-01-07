@@ -229,7 +229,8 @@ Sources
   |br| **Change takes effect**: after SIGHUP, at the next NRTM update or full import.
 * ``sources.{name}.export_destination``: a path to save full exports, including a serial file, of this source.
   The data is initially written to a temporary file, and then moved to the destination path. The export of
-  RPSL data is always gzipped.
+  RPSL data is always gzipped. If there is no serial information available (i.e. the journal is empty) no
+  serial file is produced. If the database is entirely empty, an error is logged and no files are exported.
   |br| **Default**: not defined, no exports made.
   |br| **Change takes effect**: after SIGHUP, at the next ``export_timer``.
 * ``sources.{name}.export_timer``: the time between two full exports of all data for this source.

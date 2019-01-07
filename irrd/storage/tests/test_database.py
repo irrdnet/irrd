@@ -264,26 +264,33 @@ class TestDatabaseHandlerLive:
             asn_first=65537,
             asn_last=65537,
         )
-        # This upsert has no serial, and journal keeping is not enabled,
-        # so there should be no record of the DB status.
         self.dh.upsert_rpsl_object(rpsl_object_route_v6)
         self.dh.commit()
 
-        status = self._clean_result(self.dh.execute_query(DatabaseStatusQuery()))
+        status = self._clean_result(self.dh.execute_query(DatabaseStatusQuery().source('TEST')))
         assert status == [
-            {'source': 'TEST', 'serial_oldest_journal': None, 'serial_newest_journal': None,
-             'serial_oldest_seen': 42, 'serial_newest_seen': 4242,
-             'serial_last_export': None, 'last_error': None, 'force_reload': False},
+            {'source': 'TEST', 'serial_oldest_seen': 42, 'serial_newest_seen': 4242,
+             'serial_oldest_journal': None, 'serial_newest_journal': None,
+             'serial_last_export': None, 'force_reload': False, 'last_error': None},
+        ]
+
+        # The insert of rpsl_object_route_v6 had no forced serial and no
+        # journal keeping enabled, so there should be an empty status record.
+        status = self._clean_result(self.dh.execute_query(DatabaseStatusQuery().source('TEST2')))
+        assert status == [
+            {'source': 'TEST2', 'serial_oldest_seen': None, 'serial_newest_seen': None,
+             'serial_oldest_journal': None, 'serial_newest_journal': None,
+             'serial_last_export': None, 'force_reload': False, 'last_error': None},
         ]
 
         self.dh.force_record_serial_seen('TEST', 424242)
         self.dh.commit()
 
-        status = self._clean_result(self.dh.execute_query(DatabaseStatusQuery()))
+        status = self._clean_result(self.dh.execute_query(DatabaseStatusQuery().source('TEST')))
         assert status == [
-            {'source': 'TEST', 'serial_oldest_journal': None, 'serial_newest_journal': None,
-             'serial_oldest_seen': 42, 'serial_newest_seen': 424242,
-             'serial_last_export': None, 'last_error': None, 'force_reload': False},
+            {'source': 'TEST', 'serial_oldest_seen': 42, 'serial_newest_seen': 424242,
+             'serial_oldest_journal': None, 'serial_newest_journal': None,
+             'serial_last_export': None, 'force_reload': False, 'last_error': None},
         ]
 
         self.dh.close()

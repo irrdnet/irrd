@@ -37,7 +37,9 @@ mirroring of authoritative or mirrored data by other users.
 
 Periodic exports of the database can be produced for all sources. They consist
 of a full export of the text of all objects for a source, gzipped and encoded
-in UTF-8.
+in UTF-8. If a local journal is kept, another file is exported with the serial
+number of this export. If the database is entirely empty, an error is logged
+and no files are exported.
 
 NRTM responses can be generated for all sources that have `keep_journal`
 enabled, as the NRTM response is based on the journal, which records changes

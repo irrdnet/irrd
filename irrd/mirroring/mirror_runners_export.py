@@ -48,7 +48,12 @@ class SourceExportRunner:
         filename_serial = Path(export_destination) / f'{self.source.upper()}.CURRENTSERIAL'
 
         query = DatabaseStatusQuery().source(self.source)
-        serial = next(self.database_handler.execute_query(query))['serial_newest_seen']
+
+        try:
+            serial = next(self.database_handler.execute_query(query))['serial_newest_seen']
+        except StopIteration:
+            logger.error(f'Unable to run export for {self.source}, internal database status is empty.')
+            return
 
         with gzip.open(export_tmpfile, 'wb') as fh:
             query = RPSLDatabaseQuery().sources([self.source])
@@ -62,8 +67,9 @@ class SourceExportRunner:
             os.unlink(filename_serial)
         shutil.move(export_tmpfile.name, filename_export)
 
-        with open(filename_serial, 'w') as fh:
-            fh.write(str(serial))
+        if serial is not None:
+            with open(filename_serial, 'w') as fh:
+                fh.write(str(serial))
 
         self.database_handler.record_serial_exported(self.source, serial)
         logger.info(f'Export for {self.source} complete, stored in {filename_export} / {filename_serial}')

@@ -284,6 +284,7 @@ class DatabaseStatusTracker:
     """
     journaling_enabled: bool
     _new_serials_per_source: Dict[str, Set[int]]
+    _sources_seen: Set[str]
     _mirroring_error: Dict[str, str]
     _exported_serials: Dict[str, int]
 
@@ -300,6 +301,7 @@ class DatabaseStatusTracker:
         Forcibly record that a serial was seen for a source.
         See DatabaseHandler.force_record_serial_seen for more info.
         """
+        self._sources_seen.add(source)
         self._new_serials_per_source[source].add(serial)
 
     def record_mirror_error(self, source: str, error: str) -> None:
@@ -307,6 +309,7 @@ class DatabaseStatusTracker:
         Record an error seen in a mirrored database.
         Only the most recent error is stored in the DB status.
         """
+        self._sources_seen.add(source)
         self._mirroring_error[source] = error
 
     def record_serial_exported(self, source: str, serial: int) -> None:
@@ -314,6 +317,7 @@ class DatabaseStatusTracker:
         Record an export of a source at a particular serial.
         Only the most recent serial is stored in the DB status.
         """
+        self._sources_seen.add(source)
         self._exported_serials[source] = serial
 
     def record_operation(self, operation: DatabaseOperation, rpsl_pk: str, source: str, object_class: str,
@@ -323,10 +327,12 @@ class DatabaseStatusTracker:
 
         Will only record changes when self.journaling_enabled is set,
         and the database.SOURCE.keep_journal is set.
+        The source will always be added to _sources_seen.
 
         Note that this method locks the journal table for writing to ensure a
         gapless set of NRTM serials.
         """
+        self._sources_seen.add(source)
         if self.journaling_enabled and get_setting(f'sources.{source}.keep_journal'):
             journal_tablename = RPSLDatabaseJournal.__tablename__
 
@@ -354,10 +360,24 @@ class DatabaseStatusTracker:
 
     def finalise_transaction(self):
         """
-        Update the status of all database serials, based on a list of
-        new serials for this database.
-        If there is no status object for this database, it is created.
+        - Create a new status object for all seen sources if it does not exist.
+        - Reset the force_reload flag.
+        - If new serials were recorded for a source, update the database
+          serial stats in the status object.
+        - Update the latest source errors.
         """
+        for source in self._sources_seen:
+            stmt = pg.insert(RPSLDatabaseStatus).values(
+                source=source,
+                force_reload=False,
+                updated=datetime.now(timezone.utc),
+            )
+            stmt = stmt.on_conflict_do_update(
+                index_elements=['source'],
+                set_={'force_reload': False},
+            )
+            self.database_handler.execute_statement(stmt)
+
         for source, serials in self._new_serials_per_source.items():
             serial_oldest_seen = sa.select([
                 sa.func.least(sa.func.min(self.c_status.serial_oldest_seen), min(serials))
@@ -373,24 +393,12 @@ class DatabaseStatusTracker:
                 sa.func.max(self.c_journal.serial_nrtm)
             ]).where(self.c_journal.source == source)
 
-            stmt = pg.insert(RPSLDatabaseStatus).values(
+            stmt = RPSLDatabaseStatus.__table__.update().where(self.c_status.source == source).values(
                 serial_oldest_seen=serial_oldest_seen,
                 serial_newest_seen=serial_newest_seen,
                 serial_oldest_journal=serial_oldest_journal,
                 serial_newest_journal=serial_newest_journal,
-                force_reload=False,
-                source=source,
                 updated=datetime.now(timezone.utc),
-            )
-            columns_to_update = {
-                c.name: c
-                for c in stmt.excluded
-                if c.name not in ['source', 'last_error', 'last_error_timestamp']
-            }
-
-            stmt = stmt.on_conflict_do_update(
-                index_elements=['source'],
-                set_=columns_to_update,
             )
             self.database_handler.execute_statement(stmt)
 
@@ -398,12 +406,14 @@ class DatabaseStatusTracker:
             stmt = RPSLDatabaseStatus.__table__.update().where(self.c_status.source == source).values(
                 last_error=error,
                 last_error_timestamp=datetime.now(timezone.utc),
+                updated=datetime.now(timezone.utc),
             )
             self.database_handler.execute_statement(stmt)
 
         for source, serial in self._exported_serials.items():
             stmt = RPSLDatabaseStatus.__table__.update().where(self.c_status.source == source).values(
                 serial_last_export=serial,
+                updated=datetime.now(timezone.utc),
             )
             self.database_handler.execute_statement(stmt)
 
@@ -411,5 +421,6 @@ class DatabaseStatusTracker:
 
     def _reset(self):
         self._new_serials_per_source = defaultdict(set)
+        self._sources_seen = set()
         self._mirroring_error = dict()
         self._exported_serials = dict()
