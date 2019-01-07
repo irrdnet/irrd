@@ -17,7 +17,7 @@ IRRD_CONFIG_CHECK_FORCE_ENV = 'IRRD_CONFIG_CHECK_FORCE'
 
 logger = logging.getLogger(__name__)
 PASSWORD_HASH_DUMMY_VALUE = 'DummyValue'
-SOURCE_NAME_RE = re.compile('^[A-Z][A-Z0-9-]*[A-Z0-9Z]$')
+SOURCE_NAME_RE = re.compile('^[A-Z][A-Z0-9-]*[A-Z0-9]$')
 
 
 LOGGING = {
