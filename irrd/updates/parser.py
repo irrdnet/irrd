@@ -73,7 +73,7 @@ class ChangeRequest:
             self.error_messages = [str(exc)]
 
         if self.is_valid() and self.rpsl_obj_new:
-            source = f'{self.rpsl_obj_new.source()}'
+            source = self.rpsl_obj_new.source()
             if not get_setting(f'sources.{source}.authoritative'):
                 logger.debug(f'{id(self)}: change is for non-authoritative source {source}, rejected')
                 self.error_messages.append(f'This instance is not authoritative for source {source}')

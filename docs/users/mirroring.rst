@@ -9,24 +9,44 @@ This page explains the processes and caveats involved in mirroring.
 For details on all configuration options, see
 the :doc:`configuration documentation </admins/configuration>`.
 
-Mirroring services for others
------------------------------
+Scheduling
+----------
+
+All mirroring processes, except answering NRTM queries, are run in a separate
+thread for each source. The frequencies at which they run can be configured
+for each source and for importing and exporting separately, but there are
+default settings.
+
+A global scheduler runs every 15 seconds, which will start mirror import and/or
+export processes for every source for which the `import_timer` or `export_timer`
+has expired. On startup, all mirror processes are started, as all their timers
+are considered expired.
+
+If a previously scheduled process is still running, no new process will be
+run, until the current run for this source is finished and the timer
+expires again. This means that, for example, when mirroring a source in NRTM
+mode, `import_timer` can be safely kept low, even though the initial large
+full import may take some time.
+
+
+Mirroring services for others (exporting)
+-----------------------------------------
 
 IRRd can produce periodic exports and generate NRTM responses to support
 mirroring of authoritative or mirrored data by other users.
 
 Periodic exports of the database can be produced for all sources. They consist
 of a full export of the text of all objects for a source, gzipped and encoded
-in UTF-8. Each source can have a different schedule for exports.
+in UTF-8.
 
 NRTM responses can be generated for all sources that have `keep_journal`
-enabled, as the NRTM response is based on the journal, which records change
-to objects. This can be kept for both authoritative sources and mirrors.
+enabled, as the NRTM response is based on the journal, which records changes
+to objects. A journal can be kept for both authoritative sources and mirrors.
 
-Generally, the files exported to `export_destination` are published over FTP
-to allow mirrors to load all initial data. After that, NRTM requests can be made
-to receive recent changes. If a mirroring client lags behind too far, it may
-need to reimport the entire database to catch up.
+In typical setups, the files exported to `export_destination` will be published
+over FTP to allow mirrors to load all initial data. After that, NRTM requests
+can be made to receive recent changes. If a mirroring client lags behind too
+far, it may need to reimport the entire database to catch up.
 
 The NRTM query format is::
 
@@ -66,7 +86,8 @@ like this::
 
     %END EXAMPLESOURCE
 
-In NRTM version 1, serials for individual operations (on the `ADD`/`DEL` lines are ommitted.
+In NRTM version 1, serials for individual operations (on the `ADD`/`DEL` lines
+are omitted, and the version in the header is `1`.
 
 .. caution::
     NRTM version 1 can be ambiguous when there are gaps in NRTM serials. These
@@ -74,19 +95,18 @@ In NRTM version 1, serials for individual operations (on the `ADD`/`DEL` lines a
     use NRTM version 3.
 
 For authoritative databases in IRRd, serials are guaranteed to be sequential
-without any gaps. However, various other scenarios can result in gaps in
+without any gaps. However, various scenarios can result in gaps in
 serials from mirrored databases.
 
 
-Mirroring other databases
--------------------------
+Mirroring other databases (importing)
+-------------------------------------
 
 There are fundamentally two different modes to mirror other databases: NRTM mode
 and periodic full imports. Regardless of mode, all updates are performed in a
 single transaction. This means that, for example, when a full reload of a mirror
 is performed, clients will keep seeing the old objects until the import is
 entirely ready. Clients should never see half-finished imports.
-
 
 NRTM mode
 ~~~~~~~~~
@@ -105,20 +125,11 @@ Periodic full imports
 ~~~~~~~~~~~~~~~~~~~~~
 For sources that do not offer NRTM, simply configuring a source of the data in
 `import_source` will make IRRd perform a new full import, every `import_timer`.
-Journals can not be generated, NRTM queries by clients for this source will be rejected.
+Journals can not be generated, and NRTM queries by clients for this source will
+be rejected.
 
-Scheduling and downloads
-~~~~~~~~~~~~~~~~~~~~~~~~
-The mirror update frequency for each source can be changed with the
-`import_timer` setting. A global scheduler runs every 15 seconds, and starts
-the mirror updates whose timer has expired. This means the granularity and
-minimum frequency are both 15 seconds.
-
-If a previously scheduled update is still running, the next run is delayed
-until the current run is finished. This occurs, for example, during the
-initial large full import for a source in NRTM mode, where `import_timer`
-is usually kept low/default to frequently process NRTM updates.
-
+Downloads
+~~~~~~~~~
 For downloads, FTP and local files are supported. The full copy to be
 imported can consist of one or multiple files.
 

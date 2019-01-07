@@ -49,7 +49,7 @@ class MirrorScheduler:
         if not has_expired or self._is_thread_running(thread_name):
             return
 
-        logger.debug(f'Started new thread for mirror update for {source}')
+        logger.debug(f'Started new thread {thread_name} for mirror import/export for {source}')
         initiator = runner_class(source=source)
         thread = threading.Thread(target=initiator.run, name=thread_name)
         self.threads[thread_name] = thread

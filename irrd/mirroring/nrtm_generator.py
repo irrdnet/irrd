@@ -17,6 +17,9 @@ class NRTMGenerator:
         """
         Generate an NRTM response for a particular source, serial range and
         NRTM version. Raises NRTMGeneratorException for various error conditions.
+
+        For queries where the user requested NRTM updates up to LAST,
+        serial_end_requested is None.
         """
         if not get_setting(f'sources.{source}.keep_journal'):
             raise NRTMGeneratorException('No journal kept for this database, unable to serve NRTM queries')
@@ -41,8 +44,9 @@ class NRTMGenerator:
             raise NRTMGeneratorException(f'Serials {serial_end_available} - {serial_end_requested} do not exist')
 
         if serial_end_requested is None:
-            #
             if serial_start_requested == serial_end_available + 1:
+                # A specific message is triggered when starting from a serial
+                # that is the current plus one, until LAST
                 return '% Warning: there are no newer updates available'
             elif serial_start_requested > serial_end_available:
                 raise NRTMGeneratorException(

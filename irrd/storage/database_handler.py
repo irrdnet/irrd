@@ -312,7 +312,7 @@ class DatabaseStatusTracker:
     def record_serial_exported(self, source: str, serial: int) -> None:
         """
         Record an export of a source at a particular serial.
-        Only the most recent error is stored in the DB status.
+        Only the most recent serial is stored in the DB status.
         """
         self._exported_serials[source] = serial
 

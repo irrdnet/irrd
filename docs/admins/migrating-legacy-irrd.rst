@@ -84,4 +84,5 @@ Other known changes
 * When filtering objects from a mirror using `object_class_filter` /
   `irr_database <source> filter` legacy IRRd would not apply the filter
   consistently. In version 4, filtered objects are discarded immediately
-  in the import parsing process, and not recorded in the database.
+  in the import parsing process, and not recorded in the database or any
+  kind of exports.

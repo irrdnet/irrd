@@ -19,7 +19,7 @@ class SourceExportRunner:
     This SourceExportRunner is the entry point for the expect process
     for a single source.
 
-    If an export destination is defined, a gzipped file will be created
+    A gzipped file will be created in the export_destination directory
     with the contents of the source, along with a CURRENTSERIAL file.
 
     The contents of the source are first written to a temporary file, and
@@ -66,5 +66,4 @@ class SourceExportRunner:
             fh.write(str(serial))
 
         self.database_handler.record_serial_exported(self.source, serial)
-
         logger.info(f'Export for {self.source} complete, stored in {filename_export} / {filename_serial}')
