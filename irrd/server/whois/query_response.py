@@ -1,11 +1,7 @@
-import re
 from enum import Enum
 from typing import Optional
 
-from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
-from irrd.rpsl.config import PASSWORD_HASHERS
-
-re_remove_passwords = re.compile(r'(%s)[^\n]+' % '|'.join(PASSWORD_HASHERS.keys()), flags=re.IGNORECASE)
+from irrd.utils.text import remove_auth_hashes
 
 
 class WhoisQueryResponseType(Enum):
@@ -43,8 +39,7 @@ class WhoisQueryResponse:
         self.result = result
 
     def generate_response(self) -> str:
-        if self.result:
-            self.result = re_remove_passwords.sub(r'\1 %s  # Filtered for security' % PASSWORD_HASH_DUMMY_VALUE, self.result)
+        self.result = remove_auth_hashes(self.result)
 
         if self.mode == WhoisQueryResponseMode.IRRD:
             response = self._generate_response_irrd()
@@ -79,5 +74,5 @@ class WhoisQueryResponse:
         elif self.response_type == WhoisQueryResponseType.KEY_NOT_FOUND:
             return '%  No entries found for the selected source(s).\n'
         elif self.response_type == WhoisQueryResponseType.ERROR:
-            return f'%% {self.result}\n'
+            return f'%% ERROR: {self.result}\n'
         return None

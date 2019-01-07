@@ -239,9 +239,13 @@ class Configuration:
             if details.get('keep_journal') and not (nrtm_mirror or details.get('authoritative')):
                 errors.append(f'Setting keep_journal for source {name} can not be enabled unless either authoritative '
                               f'is enabled, or all three of nrtm_host, nrtm_port and import_serial_source.')
-            if details.get('nrtm_host') and not (details.get('import_serial_source')):
+            if details.get('nrtm_host') and not details.get('import_serial_source'):
                 errors.append(f'Setting nrtm_host for source {name} can not be enabled without setting '
                               f'import_serial_source.')
+
+            if details.get('authoritative') and (details.get('nrtm_host') or details.get('import_source')):
+                errors.append(f'Setting authoritative for source {name} can not be enabled when either '
+                              f'nrtm_host or import_source are set.')
 
             if not details.get('import_timer', '0').isnumeric():
                 errors.append(f'Setting import_timer for source {name} must be a number.')

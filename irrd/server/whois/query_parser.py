@@ -1,18 +1,19 @@
 import logging
 import re
 import threading
+from IPy import IP
 from orderedset import OrderedSet
 from typing import Optional, List, Set, Tuple
 
-from IPy import IP
-
 from irrd import __version__
 from irrd.conf import get_setting
+from irrd.mirroring.nrtm_generator import NRTMGenerator, NRTMGeneratorException
 from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING, lookup_field_names
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseQuery, DatabaseStatusQuery
 from irrd.utils.validators import parse_as_number, ValidationError
 from .query_response import WhoisQueryResponseType, WhoisQueryResponseMode, WhoisQueryResponse
+from ..access_check import is_client_permitted
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ class WhoisQueryParser:
     lookup_field_names = lookup_field_names()
     database_handler: DatabaseHandler
 
-    def __init__(self, peer: str) -> None:
+    def __init__(self, peer, peer_str: str) -> None:
         self.all_valid_sources = list(get_setting('sources').keys())
         self.sources: List[str] = []
         self.object_classes: List[str] = []
@@ -48,13 +49,14 @@ class WhoisQueryParser:
         self.multiple_command_mode = False
         self.key_fields_only = False
         self.peer = peer
+        self.peer_str = peer_str
 
         # The WhoisQueryParser itself should not run concurrently,
         # as answers could arrive out of order.
         self.safe_to_run_query = threading.Event()
         self.safe_to_run_query.set()
 
-    def handle_query(self, query: str) -> WhoisQueryResponse:
+    def handle_query(self, query) -> WhoisQueryResponse:
         """Process a single query. Always returns a WhoisQueryResponse object."""
         # These flags are reset with every query.
         self.safe_to_run_query.wait()
@@ -67,7 +69,7 @@ class WhoisQueryParser:
             try:
                 return self.handle_irrd_command(query[1:])
             except WhoisQueryParserException as exc:
-                logger.info(f'{self.peer}: encountered parsing error while parsing query "{query}": {exc}')
+                logger.info(f'{self.peer_str}: encountered parsing error while parsing query "{query}": {exc}')
                 return WhoisQueryResponse(
                     response_type=WhoisQueryResponseType.ERROR,
                     mode=WhoisQueryResponseMode.IRRD,
@@ -87,7 +89,7 @@ class WhoisQueryParser:
         try:
             return self.handle_ripe_command(query)
         except WhoisQueryParserException as exc:
-            logger.info(f'{self.peer}: encountered parsing error while parsing query "{query}": {exc}')
+            logger.info(f'{self.peer_str}: encountered parsing error while parsing query "{query}": {exc}')
             return WhoisQueryResponse(
                 response_type=WhoisQueryResponseType.ERROR,
                 mode=WhoisQueryResponseMode.RIPE,
@@ -448,6 +450,8 @@ class WhoisQueryParser:
                         self.handle_ripe_key_fields_only()
                     elif command == 'V':
                         self.handle_user_agent(components.pop(0))
+                    elif command == 'g':
+                        result = self.handle_nrtm_request(components.pop(0))
                     elif command in ['F', 'r']:
                         continue  # These flags disable recursion, but IRRd never performs recursion anyways
                     else:
@@ -520,7 +524,38 @@ class WhoisQueryParser:
     def handle_user_agent(self, user_agent: str):
         """-V/!n parameter/query - set a user agent for the client"""
         self.user_agent = user_agent
-        logger.info(f'{self.peer}: user agent set to: {user_agent}')
+        logger.info(f'{self.peer_str}: user agent set to: {user_agent}')
+
+    def handle_nrtm_request(self, param):
+        try:
+            source, version, serial_range = param.split(':')
+        except ValueError:
+            raise WhoisQueryParserException(f'Invalid parameter: must contain three elements')
+
+        try:
+            serial_start, serial_end = serial_range.split('-')
+            serial_start = int(serial_start)
+            if serial_end == 'LAST':
+                serial_end = None
+            else:
+                serial_end = int(serial_end)
+        except ValueError:
+            raise WhoisQueryParserException(f'Invalid serial range: {serial_range}')
+
+        if version not in ['1', '3']:
+            raise WhoisQueryParserException(f'Invalid NRTM version: {version}')
+
+        source = source.upper()
+        if source not in self.all_valid_sources:
+            raise WhoisQueryParserException(f'Unknown source: {source}')
+
+        if not is_client_permitted(self.peer, f'sources.{source}.nrtm_access_list'):
+            raise WhoisQueryParserException(f'Access denied')
+
+        try:
+            return NRTMGenerator().generate(source, version, serial_start, serial_end, self.database_handler)
+        except NRTMGeneratorException as nge:
+            raise WhoisQueryParserException(str(nge))
 
     def handle_inverse_attr_search(self, attribute: str, value: str) -> str:
         """

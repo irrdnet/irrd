@@ -114,6 +114,7 @@ an admin by setting a flag in the database.
 Upon each full import, the entire RPSL journal for this mirror is discarded,
 as the local copy can no longer be guaranteed to be complete.
 
+See the :doc:`mirroring documentation </users/mirroring>` for more details.
 All objects received from mirrors are processed with
 :doc:`non-strict object validation </admins/object-validation>`.
 

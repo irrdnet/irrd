@@ -1,9 +1,11 @@
 import uuid
+from twisted.internet.address import IPv4Address
 from unittest.mock import Mock
 
 import pytest
 from IPy import IP
 
+from irrd.mirroring.nrtm_generator import NRTMGeneratorException
 from irrd.utils.test_utils import flatten_mock_calls
 from ..query_parser import WhoisQueryParser
 from ..query_response import WhoisQueryResponseType, WhoisQueryResponseMode
@@ -57,7 +59,7 @@ def prepare_parser(monkeypatch, config_override):
     monkeypatch.setattr("irrd.server.whois.query_parser.DatabaseHandler", lambda: mock_database_handler)
     mock_database_query = Mock()
     monkeypatch.setattr("irrd.server.whois.query_parser.RPSLDatabaseQuery", lambda: mock_database_query)
-    parser = WhoisQueryParser('[127.0.0.1]:99999')
+    parser = WhoisQueryParser(IPv4Address('TCP', '127.0.0.1', 99999), '[127.0.0.1]:99999')
 
     mock_query_result = [
         {
@@ -326,6 +328,66 @@ class TestWhoisQueryParserRIPE:
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert not response.result
         assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
+
+    def test_nrtm_request(self, prepare_parser, monkeypatch, config_override):
+        mock_dq, mock_dh, parser = prepare_parser
+        mock_dh.reset_mock()
+
+        mock_nrg = Mock()
+        monkeypatch.setattr("irrd.server.whois.query_parser.NRTMGenerator", lambda: mock_nrg)
+        mock_nrg.generate = lambda source, version, serial_start, serial_end, dh: f'{source}/{version}/{serial_start}/{serial_end}'
+
+        response = parser.handle_query('-g TEST1:3:1-5')
+        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.mode == WhoisQueryResponseMode.RIPE
+        assert response.result == 'Access denied'
+
+        config_override({
+            'sources': {
+                'TEST1': {'nrtm_access_list': 'nrtm_access'},
+            },
+            'access_lists': {
+                'nrtm_access': ['0/0', '0::/0'],
+            },
+            'sources_default': [],
+        })
+
+        response = parser.handle_query('-g TEST1:3:1-5')
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.RIPE
+        assert response.result == 'TEST1/3/1/5'
+
+        response = parser.handle_query('-g TEST1:3:1-LAST')
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.RIPE
+        assert response.result == 'TEST1/3/1/None'
+
+        response = parser.handle_query('-g TEST1:9:1-LAST')
+        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.mode == WhoisQueryResponseMode.RIPE
+        assert response.result == 'Invalid NRTM version: 9'
+
+        response = parser.handle_query('-g TEST1:1:1-LAST:foo')
+        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.mode == WhoisQueryResponseMode.RIPE
+        assert response.result == 'Invalid parameter: must contain three elements'
+
+        response = parser.handle_query('-g UNKNOWN:1:1-LAST')
+        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.mode == WhoisQueryResponseMode.RIPE
+        assert response.result == 'Unknown source: UNKNOWN'
+
+        for invalid_range in ['1', 'LAST-1', 'LAST', '1-last']:
+            response = parser.handle_query(f'-g TEST1:3:{invalid_range}')
+            assert response.response_type == WhoisQueryResponseType.ERROR
+            assert response.mode == WhoisQueryResponseMode.RIPE
+            assert response.result == f'Invalid serial range: {invalid_range}'
+
+        mock_nrg.generate = Mock(side_effect=NRTMGeneratorException('expected-test-error'))
+        response = parser.handle_query('-g TEST1:3:1-5')
+        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.mode == WhoisQueryResponseMode.RIPE
+        assert response.result == 'expected-test-error'
 
     def test_text_search(self, prepare_parser):
         mock_dq, mock_dh, parser = prepare_parser

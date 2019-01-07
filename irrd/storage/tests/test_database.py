@@ -20,8 +20,8 @@ using specific PostgreSQL features.
 
 To improve performance, these tests do not run full migrations.
 
-The tests also cover both api.py and queries.py, as they closely
-interact with the database.
+The tests also cover both database_handler.py and queries.py, as they
+closely interact with the database.
 """
 
 
@@ -155,9 +155,39 @@ class TestDatabaseHandlerLive:
         assert len(result) == 1
 
         self.dh.record_mirror_error('TEST2', 'error')
+        self.dh.record_serial_exported('TEST2', '424242')
         self.dh.commit()
 
         journal = self._clean_result(self.dh.execute_query(RPSLDatabaseJournalQuery()))
+
+        # The IPv6 object was created in a different source, so it should
+        # have a separate sequence of NRTM serials. Serial for TEST was forced
+        # to 42 at the first upsert query.
+        assert journal == [
+            {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 42,
+             'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
+            {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 43,
+             'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
+            {'rpsl_pk': '2001:db8::/64,AS65537', 'source': 'TEST2', 'serial_nrtm': 1,
+             'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
+            {'rpsl_pk': '2001:db8::/64,AS65537', 'source': 'TEST2', 'serial_nrtm': 2,
+             'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
+            {'rpsl_pk': '2001:db8::/64,AS65537', 'source': 'TEST2', 'serial_nrtm': 3,
+             'operation': DatabaseOperation.delete, 'object_class': 'route', 'object_text': 'object-text'},
+        ]
+
+        partial_journal = self._clean_result(self.dh.execute_query(RPSLDatabaseJournalQuery().serial_range(42, 42)))
+        assert partial_journal == [
+            {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 42,
+             'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
+        ]
+        partial_journal = self._clean_result(self.dh.execute_query(RPSLDatabaseJournalQuery().serial_range(42)))
+        assert partial_journal == [
+            {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 42,
+             'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
+            {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 43,
+             'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
+        ]
 
         # The IPv6 object was created in a different source, so it should
         # have a separate sequence of NRTM serials. Serial for TEST was forced
@@ -189,7 +219,7 @@ class TestDatabaseHandlerLive:
         assert self._clean_result(status_test2) == [
             {'source': 'TEST2', 'serial_oldest_journal': 1, 'serial_newest_journal': 3,
              'serial_oldest_seen': 1, 'serial_newest_seen': 3,
-             'serial_last_export': None, 'last_error': 'error', 'force_reload': False},
+             'serial_last_export': 424242, 'last_error': 'error', 'force_reload': False},
         ]
         assert status_test2[0]['created']
         assert status_test2[0]['updated']

@@ -27,6 +27,9 @@ This sample shows most configuration options::
                 - '::/32'
                 - '127.0.0.1'
 
+            generic_nrtm_access:
+                - '192.0.2.0/24'
+
         server:
             http:
                 access_list: http_database_status
@@ -62,6 +65,7 @@ This sample shows most configuration options::
                 keep_journal: true
                 export_destination: /var/ftp/
                 export_timer: 7200
+                nrtm_access_list: generic_nrtm_access
             MIRROR-FIRST:
                 # Run a full import at first, then periodic NRTM updates.
                 authoritative: false
@@ -210,35 +214,33 @@ Sources
   can be retrieved. Supports FTP or local file URLs.
   |br| **Default**: not defined, no imports attempted
   |br| **Change takes effect**: see ``import_source``.
-* ``sources.{name}.import_timer``: the time between two updates, either by full import or NRTM.
-  This is particularly significant for sources that do not offer an NRTM stream, as they will instead run a 
-  full import every time this timer expires. The default is rather frequent for sources that work exclusively 
-  with periodic full imports. The minimum effective time is 15 seconds, and this is also the granularity
-  of the timer.
+* ``sources.{name}.import_timer``: the time between two attempts to retrieve updates from a mirrored source,
+  either by full import or NRTM. This is particularly significant for sources that do not offer an NRTM stream,
+  as they will instead run a full import every time this timer expires. The default is rather frequent for
+  sources that work exclusively with periodic full imports. The minimum effective time is 15 seconds,
+  and this is also the granularity of the timer.
   |br| **Default**: 300 
   |br| **Change takes effect**: after SIGHUP
 * ``sources.{name}.object_class_filter``: a list of object classes that will be mirrored. Objects of other RPSL object
   classes will be ignored. Without a filter, all objects are mirrored.
   |br| **Default**: no filter, all object classes permitted
   |br| **Change takes effect**: after SIGHUP, at the next NRTM update or full import.
-* ``sources.{name}.export_destination``: a path to save full exports, including a serial file, of this source
+* ``sources.{name}.export_destination``: a path to save full exports, including a serial file, of this source.
+  The data is initially written to a temporary file, and then moved to the destination path. The export of
+  RPSL data is always gzipped.
   |br| **Default**: not defined, no exports made.
   |br| **Change takes effect**: after SIGHUP, at the next ``export_timer``
-* ``sources.{name}.export_timer``: the time between two full exports.
+* ``sources.{name}.export_timer``: the time between two full exports of all data for this source.
   The minimum effective time is 15 seconds, and this is also the granularity of the timer.
   |br| **Default**: 3600
   |br| **Change takes effect**: after SIGHUP
+* ``sources.{name}.nrtm_access_list``: a reference to an access list in the configuration, where only IPs in
+  the access list are permitted access to the NRTM stream for this particular source (``-g`` queries).
+  |br| **Default**: not defined, all access denied
+  |br| **Change takes effect**: after SIGHUP, upon next request
 
-There are fundamentally two different ways to mirror other databases:
-
-* **NRTM mode**: providing a location to download full copies of the database, the serial belonging to
-  that copy, and then updating this using an NRTM stream. This method is recommended, as it is efficient
-  and allows IRRd to generate a journal, if enabled, so that others can mirror the source from this
-  IRRd instance too.
-
-* **Periodic full import mode**: providing a location to download full copies of the database, and no
-  other details. Every ``import_timer``, the entire database will be reloaded from the full copies.
-  Journals can not be generated.
+For more detail on mirroring other sources, and providing mirroring services
+to others, see the :doc:`mirroring documentation </users/mirroring>`.
 
 .. caution::
 

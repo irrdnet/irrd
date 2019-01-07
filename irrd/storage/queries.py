@@ -1,5 +1,5 @@
 import logging
-from typing import List
+from typing import List, Optional
 
 import sqlalchemy as sa
 from IPy import IP
@@ -327,7 +327,17 @@ class RPSLDatabaseJournalQuery(BaseRPSLObjectDatabaseQuery):
             self.columns.object_class,
             self.columns.object_text,
             self.columns.timestamp,
-        ])
+        ]).order_by(self.columns.source.asc(), self.columns.serial_nrtm.asc())
+
+    def serial_range(self, start: int, end: Optional[int]=None):
+        """
+        Filter for a serials within a specific range, inclusive.
+        """
+        if end is not None:
+            fltr = sa.and_(self.columns.serial_nrtm >= start, self.columns.serial_nrtm <= end)
+        else:
+            fltr = self.columns.serial_nrtm >= start
+        return self._filter(fltr)
 
     def __repr__(self):
         return f"RPSLDatabaseJournalQuery: {self.statement}\nPARAMS: {self.statement.compile().params}"

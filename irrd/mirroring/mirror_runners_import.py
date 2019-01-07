@@ -17,19 +17,19 @@ from .parser import MirrorFileImportParser, NRTMStreamParser
 logger = logging.getLogger(__name__)
 
 
-class MirrorUpdateRunner:
+class MirrorImportUpdateRunner:
     """
-    This MirrorUpdateRunner is the entry point for updating a single
+    This MirrorImportUpdateRunner is the entry point for updating a single
     database mirror, depending on current state.
 
     If there is no current mirrored data, will call MirrorFullImportRunner
     to run a new import from full export files. Otherwise, will call
-    NRTMUpdateStreamRunner to retrieve new updates from NRTM.
+    NRTMImportUpdateStreamRunner to retrieve new updates from NRTM.
     """
     def __init__(self, source: str) -> None:
         self.source = source
         self.full_import_runner = MirrorFullImportRunner(source)
-        self.update_stream_runner = NRTMUpdateStreamRunner(source)
+        self.update_stream_runner = NRTMImportUpdateStreamRunner(source)
 
     def run(self) -> None:
         self.database_handler = DatabaseHandler()
@@ -169,7 +169,7 @@ class MirrorFullImportRunner:
         return value, False
 
 
-class NRTMUpdateStreamRunner:
+class NRTMImportUpdateStreamRunner:
     """
     This runner attempts to pull updates from an NRTM stream for a specific
     mirrored database.

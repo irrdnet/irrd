@@ -5,21 +5,21 @@ from unittest.mock import Mock
 import pytest
 
 from irrd.utils.test_utils import flatten_mock_calls
-from ..mirror_runners import MirrorUpdateRunner, MirrorFullImportRunner, NRTMUpdateStreamRunner
+from ..mirror_runners_import import MirrorImportUpdateRunner, MirrorFullImportRunner, NRTMImportUpdateStreamRunner
 
 
-class TestMirrorUpdateRunner:
+class TestMirrorImportUpdateRunner:
     def test_full_import_call(self, monkeypatch):
         mock_dh = Mock()
         mock_dq = Mock()
         mock_full_import_runner = Mock()
 
-        monkeypatch.setattr('irrd.mirroring.mirror_runners.DatabaseHandler', lambda: mock_dh)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners.DatabaseStatusQuery', lambda: mock_dq)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners.MirrorFullImportRunner', lambda source: mock_full_import_runner)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseHandler', lambda: mock_dh)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseStatusQuery', lambda: mock_dq)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.MirrorFullImportRunner', lambda source: mock_full_import_runner)
 
         mock_dh.execute_query = lambda q: iter([])
-        runner = MirrorUpdateRunner(source='TEST')
+        runner = MirrorImportUpdateRunner(source='TEST')
         runner.run()
 
         assert flatten_mock_calls(mock_dq) == [['source', ('TEST',), {}]]
@@ -33,12 +33,12 @@ class TestMirrorUpdateRunner:
         mock_dq = Mock()
         mock_full_import_runner = Mock()
 
-        monkeypatch.setattr('irrd.mirroring.mirror_runners.DatabaseHandler', lambda: mock_dh)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners.DatabaseStatusQuery', lambda: mock_dq)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners.MirrorFullImportRunner', lambda source: mock_full_import_runner)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseHandler', lambda: mock_dh)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseStatusQuery', lambda: mock_dq)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.MirrorFullImportRunner', lambda source: mock_full_import_runner)
 
         mock_dh.execute_query = lambda q: iter([{'serial_newest_seen': 424242, 'force_reload': True}])
-        runner = MirrorUpdateRunner(source='TEST')
+        runner = MirrorImportUpdateRunner(source='TEST')
         runner.run()
 
         assert flatten_mock_calls(mock_dq) == [['source', ('TEST',), {}]]
@@ -52,12 +52,12 @@ class TestMirrorUpdateRunner:
         mock_dq = Mock()
         mock_stream_runner = Mock()
 
-        monkeypatch.setattr('irrd.mirroring.mirror_runners.DatabaseHandler', lambda: mock_dh)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners.DatabaseStatusQuery', lambda: mock_dq)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners.NRTMUpdateStreamRunner', lambda source: mock_stream_runner)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseHandler', lambda: mock_dh)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseStatusQuery', lambda: mock_dq)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.NRTMImportUpdateStreamRunner', lambda source: mock_stream_runner)
 
         mock_dh.execute_query = lambda q: iter([{'serial_newest_seen': 424242, 'force_reload': False}])
-        runner = MirrorUpdateRunner(source='TEST')
+        runner = MirrorImportUpdateRunner(source='TEST')
         runner.run()
 
         assert flatten_mock_calls(mock_dq) == [['source', ('TEST',), {}]]
@@ -72,13 +72,13 @@ class TestMirrorUpdateRunner:
         mock_dq = Mock()
         mock_stream_runner = Mock()
 
-        monkeypatch.setattr('irrd.mirroring.mirror_runners.DatabaseHandler', lambda: mock_dh)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners.DatabaseStatusQuery', lambda: mock_dq)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners.NRTMUpdateStreamRunner', lambda source: mock_stream_runner)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseHandler', lambda: mock_dh)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseStatusQuery', lambda: mock_dq)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.NRTMImportUpdateStreamRunner', lambda source: mock_stream_runner)
         mock_stream_runner.run = Mock(side_effect=Exception('test-error'))
 
         mock_dh.execute_query = lambda q: iter([{'serial_newest_seen': 424242, 'force_reload': False}])
-        runner = MirrorUpdateRunner(source='TEST')
+        runner = MirrorImportUpdateRunner(source='TEST')
         runner.run()
 
         assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
@@ -100,8 +100,8 @@ class TestMirrorFullImportRunner:
         mock_dh = Mock()
         mock_ftp = Mock()
         MockMirrorFileImportParser.rpsl_data_calls = []
-        monkeypatch.setattr('irrd.mirroring.mirror_runners.MirrorFileImportParser', MockMirrorFileImportParser)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners.FTP', lambda url: mock_ftp)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.MirrorFileImportParser', MockMirrorFileImportParser)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.FTP', lambda url: mock_ftp)
         MockMirrorFileImportParser.expected_serial = 424242
 
         responses = {
@@ -141,7 +141,7 @@ class TestMirrorFullImportRunner:
 
         mock_dh = Mock()
         MockMirrorFileImportParser.rpsl_data_calls = []
-        monkeypatch.setattr('irrd.mirroring.mirror_runners.MirrorFileImportParser', MockMirrorFileImportParser)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.MirrorFileImportParser', MockMirrorFileImportParser)
         MockMirrorFileImportParser.expected_serial = 424242
 
         MirrorFullImportRunner('TEST').run(mock_dh)
@@ -164,8 +164,8 @@ class TestMirrorFullImportRunner:
         mock_dh = Mock()
         mock_ftp = Mock()
         MockMirrorFileImportParser.rpsl_data_calls = []
-        monkeypatch.setattr('irrd.mirroring.mirror_runners.MirrorFileImportParser', MockMirrorFileImportParser)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners.FTP', lambda url: mock_ftp)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.MirrorFileImportParser', MockMirrorFileImportParser)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.FTP', lambda url: mock_ftp)
         MockMirrorFileImportParser.expected_serial = 0
 
         responses = {
@@ -222,7 +222,7 @@ class MockMirrorFileImportParser:
         assert serial == self.expected_serial
 
 
-class TestNRTMUpdateStreamRunner:
+class TestNRTMImportUpdateStreamRunner:
     def test_run_import(self, monkeypatch, config_override):
         config_override({
             'sources': {
@@ -241,10 +241,10 @@ class TestNRTMUpdateStreamRunner:
             return 'response'
 
         mock_dh = Mock()
-        monkeypatch.setattr('irrd.mirroring.mirror_runners.NRTMStreamParser', MockNRTMStreamParser)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners.whois_query', mock_whois_query)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.NRTMStreamParser', MockNRTMStreamParser)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.whois_query', mock_whois_query)
 
-        NRTMUpdateStreamRunner('TEST').run(424242, mock_dh)
+        NRTMImportUpdateStreamRunner('TEST').run(424242, mock_dh)
 
     def test_missing_source_settings(self, monkeypatch, config_override):
         config_override({
@@ -256,7 +256,7 @@ class TestNRTMUpdateStreamRunner:
         })
 
         mock_dh = Mock()
-        NRTMUpdateStreamRunner('TEST').run(424242, mock_dh)
+        NRTMImportUpdateStreamRunner('TEST').run(424242, mock_dh)
 
 
 class MockNRTMStreamParser(object):

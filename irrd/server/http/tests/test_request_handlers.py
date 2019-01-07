@@ -116,7 +116,6 @@ class TestDatabaseStatusRequest:
         expected_report = textwrap.dedent("""
         IRRD version master
         Listening on ::0 port 43
-        Next mirror update run: in unknown
         
         
         ---------------------------------------------------------------------------------

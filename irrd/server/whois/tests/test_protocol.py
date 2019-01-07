@@ -40,7 +40,7 @@ class TestWhoisProtocol:
         receiver.factory = mock_factory
 
         receiver.connectionMade()
-        assert receiver.peer == '[127.0.0.1]:99999'
+        assert receiver.peer_str == '[127.0.0.1]:99999'
         mock_transport.reset_mock()
 
         receiver.lineReceived(b' ')
@@ -140,7 +140,7 @@ class TestWhoisProtocol:
         })
 
         mock_transport = Mock()
-        mock_transport.getPeer = lambda: UNIXAddress('not-supported')
+        mock_transport.getPeer = lambda: UNIXAddress(b'not-supported')
         mock_factory = Mock()
         mock_factory.current_connections = 10
 

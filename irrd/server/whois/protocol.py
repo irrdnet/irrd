@@ -1,13 +1,12 @@
 import logging
-from IPy import IP
 from twisted.internet import threads
-
 from twisted.internet.protocol import Factory, connectionDone
 from twisted.protocols.basic import LineOnlyReceiver
 from twisted.protocols.policies import TimeoutMixin
 
 from irrd.conf import get_setting
 from .query_parser import WhoisQueryParser
+from ..access_check import is_client_permitted
 
 logger = logging.getLogger(__name__)
 
@@ -18,15 +17,17 @@ class WhoisQueryReceiver(TimeoutMixin, LineOnlyReceiver):
 
     def connectionMade(self):  # noqa: N802
         peer = self.transport.getPeer()
+
         if not self.is_client_permitted(peer):
             self.transport.write(b'%% Access denied')
             self.transport.loseConnection()
             return
 
-        self.peer = f"[{peer.host}]:{peer.port}"
-        self.query_parser = WhoisQueryParser(self.peer)
+        self.peer_str = f"[{peer.host}]:{peer.port}"
+
+        self.query_parser = WhoisQueryParser(peer, self.peer_str)
         self.setTimeout(self.time_out)
-        logger.debug(f'{self.peer}: new connection opened')
+        logger.debug(f'{self.peer_str}: new connection opened')
 
     def lineReceived(self, line_bytes: bytes):  # noqa: N802
         self.resetTimeout()
@@ -35,11 +36,11 @@ class WhoisQueryReceiver(TimeoutMixin, LineOnlyReceiver):
         if not line:
             return
 
-        logger.info(f'{self.peer}: received query: {line}')
+        logger.info(f'{self.peer_str}: received query: {line}')
 
         if line.upper() == '!Q':
             self.transport.loseConnection()
-            logger.debug(f'{self.peer}: closed connection per request')
+            logger.debug(f'{self.peer_str}: closed connection per request')
             return
 
         threads.deferToThread(self.query_parser.handle_query, query=line).addCallback(self.returnResult)
@@ -50,28 +51,13 @@ class WhoisQueryReceiver(TimeoutMixin, LineOnlyReceiver):
 
         if not self.query_parser.multiple_command_mode:
             self.transport.loseConnection()
-            logger.debug(f'{self.peer}: auto-closed connection')
+            logger.debug(f'{self.peer_str}: auto-closed connection')
 
     def connectionLost(self, reason=connectionDone):  # noqa: N802
         self.factory.current_connections -= 1
 
     def is_client_permitted(self, peer):
-        try:
-            client_ip = IP(peer.host)
-        except (ValueError, AttributeError) as e:
-            logger.error(f'Rejecting request as whois client IP could not be read from '
-                         f'{peer}: {e}')
-            return False
-
-        access_list_name = get_setting('server.whois.access_list')
-        access_list = get_setting(f'access_lists.{access_list_name}')
-        if not access_list:
-            return True
-
-        allowed = any([client_ip in IP(allowed) for allowed in access_list])
-        if not allowed:
-            logger.info(f'Rejecting whois request, IP not in access list: {client_ip}')
-        return allowed
+        return is_client_permitted(peer, 'server.whois.access_list', default_deny=False)
 
 
 class WhoisQueryReceiverFactory(Factory):
