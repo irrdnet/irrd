@@ -10,7 +10,7 @@ from irrd.conf import get_setting
 from irrd.rpsl.parser import RPSLObject
 from irrd.storage.queries import (BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery,
                                   RPSLDatabaseObjectStatisticsQuery)
-from . import engine
+from . import get_engine
 from .models import RPSLDatabaseObject, RPSLDatabaseJournal, DatabaseOperation, RPSLDatabaseStatus
 
 logger = logging.getLogger(__name__)
@@ -37,7 +37,7 @@ class DatabaseHandler:
 
     def __init__(self, journaling_enabled=True):
         self.journaling_enabled = journaling_enabled
-        self._connection = engine.connect()
+        self._connection = get_engine().connect()
         self._start_transaction()
 
     def _start_transaction(self) -> None:

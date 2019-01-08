@@ -6,7 +6,7 @@ import pytest
 from IPy import IP
 from pytest import raises
 
-from .. import engine
+from .. import get_engine
 from ..database_handler import DatabaseHandler
 from ..queries import (RPSLDatabaseQuery, RPSLDatabaseJournalQuery, DatabaseStatusQuery,
                        RPSLDatabaseObjectStatisticsQuery)
@@ -27,6 +27,7 @@ closely interact with the database.
 
 @pytest.fixture()
 def irrd_database(monkeypatch):
+    engine = get_engine()
     try:
         engine.execute('CREATE EXTENSION IF NOT EXISTS pgcrypto')
     except ProgrammingError as pe:  # pragma: no cover

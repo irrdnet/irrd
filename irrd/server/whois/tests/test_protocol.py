@@ -3,6 +3,7 @@ from unittest.mock import Mock
 
 from twisted.internet.address import IPv4Address, UNIXAddress
 
+from irrd import __version__
 from ..protocol import WhoisQueryReceiver, WhoisQueryReceiverFactory
 
 
@@ -22,6 +23,8 @@ def mock_twisted_defertothread(monkeypatch):
 
 
 class TestWhoisProtocol:
+    expected_version = f'IRRd -- version {__version__}'
+    expsected_version_reply = f'A{len(expected_version)+1}\n{expected_version}'.encode('ascii')
 
     def test_whois_protocol_no_access_list(self, config_override, mock_twisted_defertothread):
         config_override({
@@ -51,7 +54,7 @@ class TestWhoisProtocol:
 
         receiver.lineReceived(b' !v ')
         assert mock_transport.mock_calls[0][0] == 'write'
-        expected_output_start = b'A23\nIRRD'
+        expected_output_start = self.expsected_version_reply
         assert mock_transport.mock_calls[0][1][0][:len(expected_output_start)] == expected_output_start
         assert mock_transport.mock_calls[1][0] == 'loseConnection'
         assert len(mock_transport.mock_calls) == 2
@@ -92,7 +95,7 @@ class TestWhoisProtocol:
 
         receiver.lineReceived(b' !v ')
         assert mock_transport.mock_calls[0][0] == 'write'
-        expected_output_start = b'A23\nIRRD'
+        expected_output_start = self.expsected_version_reply
         assert mock_transport.mock_calls[0][1][0][:len(expected_output_start)] == expected_output_start
         assert mock_transport.mock_calls[1][0] == 'loseConnection'
         assert len(mock_transport.mock_calls) == 2

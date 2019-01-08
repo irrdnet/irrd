@@ -16,7 +16,7 @@ from orderedset import OrderedSet
 from typing import Optional
 
 
-sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), '../'))
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))))
 
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.utils.text import splitline_unicodesafe, split_paragraphs_rpsl

@@ -563,6 +563,6 @@ class TestSendEmail:
         assert mock_smtp.mock_calls[0][1][0]['Subject'] == 'subject'
         payload = mock_smtp.mock_calls[0][1][0].get_payload()
         assert 'body' in payload
-        assert 'IRRD version' in payload
+        assert 'IRRd version' in payload
         assert get_setting('email.footer') in payload
         assert mock_smtp.mock_calls[1][0] == 'quit'

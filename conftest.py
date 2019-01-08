@@ -8,6 +8,7 @@ import pytest
 from dotted.collection import DottedDict
 from typing import Dict, Any
 
+from irrd.conf import config_init
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.utils.rpsl_samples import SAMPLE_KEY_CERT
 
@@ -60,3 +61,4 @@ def pytest_configure(config):
     """
     import sys
     sys._called_from_test = True
+    config_init(None)

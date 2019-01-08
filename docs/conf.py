@@ -48,7 +48,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'IRRd'
-copyright = u""
+copyright = u'2018, NTT Communications'
 author = u"IRRd developers"
 
 # The version info for the project you're documenting, acts as replacement
@@ -90,7 +90,12 @@ html_theme = 'alabaster'
 # theme further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
+html_theme_options = {
+    'github_user': 'irrdnet',
+    'github_repo': 'irrd4',
+    'github_banner': True,
+    'show_powered_by': False,
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

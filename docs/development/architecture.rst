@@ -136,14 +136,16 @@ Most are aimed at development, except ``submit_email``:
 
 * ``submit_email`` will read an email with updates from stdin and process
   them. This is the expected entry point for processing incoming email.
-  Note that as a separate script, it **always acts on the current configuration
-  file** - not on the configuration that IRRd started with.
 * ``submit_changes`` will read direct RPSL submissions from stdin and process
   them. It does not support PGP.
 * ``rpsl_read`` reads files with RPSL data, and inserts them into the
   database. It is mainly intended for testing, as it does not include
   aspects like source status metadata updates.
 * ``query_qa_comparison`` is used for QA tests in query handling.
+
+Note that as separate scripts, they **always acts on the current configuration
+file** - not on the configuration that IRRd started with.
+The latter two scripts are not included in distributions.
 
 irrd.utils
 ^^^^^^^^^^

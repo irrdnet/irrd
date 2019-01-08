@@ -5,31 +5,24 @@ import signal
 import yaml
 from typing import Dict
 
-from . import get_setting, Configuration, ConfigurationError, IRRD_CONFIG_PATH_ENV, IRRD_CONFIG_CHECK_FORCE_ENV
+from . import get_setting, ConfigurationError, config_init
 
 
 @pytest.fixture()
 def save_yaml_config(tmpdir, monkeypatch):
-    def _save(config: Dict):
+    def _save(config: Dict, run_init=True):
         tmp_file = tmpdir + "/config.yaml"
         with open(tmp_file, "w") as fh:
             fh.write(yaml.safe_dump(config))
-        monkeypatch.setenv(IRRD_CONFIG_PATH_ENV, str(tmp_file))
+        if run_init:
+            config_init(str(tmp_file))
     return _save
 
 
 class TestConfiguration:
-    def test_environment_not_set(self, monkeypatch):
-        monkeypatch.setenv(IRRD_CONFIG_CHECK_FORCE_ENV, "1")
-        with pytest.raises(ConfigurationError) as ce:
-            Configuration()
-        assert 'Environment variable IRRD_CONFIG_PATH not set' in str(ce)
-
     def test_file_not_existing(self, monkeypatch, tmpdir):
-        monkeypatch.setenv(IRRD_CONFIG_PATH_ENV, str(tmpdir + '/doesnotexist.yaml'))
-
         with pytest.raises(ConfigurationError) as ce:
-            Configuration()
+            config_init(str(tmpdir + '/doesnotexist.yaml'))
         assert 'Error opening config file' in str(ce)
 
     def test_load_invalid_yaml(self, monkeypatch, tmpdir):
@@ -37,24 +30,19 @@ class TestConfiguration:
         fh = open(tmp_file, "w")
         fh.write('  >foo')
         fh.close()
-        monkeypatch.setenv(IRRD_CONFIG_PATH_ENV, str(tmp_file))
 
         with pytest.raises(ConfigurationError) as ce:
-            Configuration()
+            config_init(str(tmp_file))
         assert 'Error parsing YAML file' in str(ce)
 
     def test_load_string_file(self, save_yaml_config):
-        save_yaml_config("foo")
-
         with pytest.raises(ConfigurationError) as ce:
-            Configuration()
+            save_yaml_config("foo")
         assert 'Could not find root item "irrd" in config file' in str(ce)
 
     def test_load_empty_config(self, save_yaml_config):
-        save_yaml_config({})
-
         with pytest.raises(ConfigurationError) as ce:
-            Configuration()
+            save_yaml_config({})
         assert 'Could not find root item "irrd" in config file' in str(ce)
 
     def test_load_valid_reload_valid_config(self, monkeypatch, save_yaml_config, tmpdir, caplog):
@@ -98,19 +86,17 @@ class TestConfiguration:
             }
         }
         save_yaml_config(config)
-        c = Configuration()
+        assert list(get_setting('sources_default')) == ['TESTDB2', 'TESTDB']
 
         config['irrd']['sources_default'] = ['TESTDB2']
-        save_yaml_config(config)
+        save_yaml_config(config, run_init=False)
 
-        assert list(c.get_setting_live('sources_default')) == ['TESTDB2', 'TESTDB']
+        # Unchanged, no reload performed
+        assert list(get_setting('sources_default')) == ['TESTDB2', 'TESTDB']
 
-        monkeypatch.setattr('irrd.conf.configuration', c)
         os.kill(os.getpid(), signal.SIGHUP)
+        assert list(get_setting('sources_default')) == ['TESTDB2']
 
-        assert list(c.get_setting_live('sources_default')) == ['TESTDB2']
-
-        assert 'Configuration successfully (re)loaded from ' in caplog.text
         logfile_contents = open(logfile).read()
         assert 'Configuration successfully (re)loaded from ' in logfile_contents
 
@@ -151,15 +137,14 @@ class TestConfiguration:
             }
         })
 
-        c = Configuration()
-        save_yaml_config({})
-        c.reload()
-        assert list(c.get_setting_live('sources_default')) == ['TESTDB2', 'TESTDB']
+        save_yaml_config({}, run_init=False)
+        os.kill(os.getpid(), signal.SIGHUP)
+        assert list(get_setting('sources_default')) == ['TESTDB2', 'TESTDB']
         assert 'Errors found in configuration, continuing with current settings' in caplog.text
         assert 'Could not find root item "irrd"' in caplog.text
 
     def test_load_invalid_config(self, save_yaml_config, tmpdir):
-        save_yaml_config({
+        config = {
             'irrd': {
                 'server': {
                     'whois': {
@@ -200,10 +185,10 @@ class TestConfiguration:
                     'level': 'INVALID',
                 }
             }
-        })
+        }
 
         with pytest.raises(ConfigurationError) as ce:
-            Configuration()
+            save_yaml_config(config)
 
         assert 'Setting database_url is required.' in str(ce)
         assert 'Setting email.from is required and must be an email address.' in str(ce)

@@ -909,7 +909,7 @@ class TestWhoisQueryParserIRRD:
         response = parser.handle_query('!v')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
-        assert response.result.startswith('IRRD')
+        assert response.result.startswith('IRRd')
         assert not mock_dq.mock_calls
 
     def test_exception_handling(self, prepare_parser, caplog):

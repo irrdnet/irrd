@@ -10,8 +10,9 @@ import sys
 from typing import Set
 
 
-sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), '../'))
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))))
 
+from irrd.conf import CONFIG_PATH_DEFAULT, config_init
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.rpsl.parser import UnknownRPSLObjectClassException
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
@@ -78,17 +79,20 @@ def main():  # pragma: no cover
                      the parser, the object is printed followed by the messages. Optionally, insert objects into
                      the database."""
     parser = argparse.ArgumentParser(description=description)
+    parser.add_argument("--config", dest="config_file_path", type=str,
+                        help=f"use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})")
     parser.add_argument("--hide-info", dest="hide_info", action="store_true",
                         help="hide INFO messages")
-    parser.add_argument("input_file", type=str,
-                        help="the name of a file to read, or - for stdin")
     parser.add_argument("--strict", dest="strict_validation", action="store_true",
                         help="use strict validation (errors on e.g. unknown or missing attributes)")
     parser.add_argument("--database-destructive-overwrite", dest="database", action="store_true",
-                        help="insert all valid objects into the IRRD database - OVERWRITING ANY EXISTING ENTRIES, if"
+                        help="insert all valid objects into the IRRD database - OVERWRITING ANY EXISTING ENTRIES, if "
                              "they have the same RPSL primary key and source")
+    parser.add_argument("input_file", type=str,
+                        help="the name of a file to read, or - for stdin")
     args = parser.parse_args()
 
+    config_init(args.config_file_path)
     RPSLParse().main(args.input_file, args.strict_validation, args.database, not args.hide_info)
 
 

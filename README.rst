@@ -15,34 +15,25 @@ Internet Routing Registry Daemon (IRRd) Version 4
 
 ------------
 
-NTT_ has tasked DashCare_ to develop
-a new version of the Internet Routing Registry Daemon (IRRDv4). This is an IRR
-database server, its main features being storing IRR data in RPSL format,
-mirroring other IRR services and answering queries of varying complexity.
+Internet Routing Registry daemon version 4 is an IRR database server,
+processing IRR objects in the RPSL format.
+Its main features are:
 
-The v2 and v3 versions of IRRd are currently in use at NTT and RADB, amongst
-other places. The development process of IRRd up to version 3 has led to a
-project using many different architectures, styles and languages. The
-`current v3 project`_ is near impossible to maintain,
-test and extend. Many of its design choices have been made in a distant past,
-and are no longer the best choice for today.
+* Validating, cleaning and storing IRR data, and extracting
+  information for indexing.
+* Providing a whois query interface to query the IRR data.
+* Handling authoritative IRR data, and allowing users with the appropriate
+  authorisation to submit requests to change objects.
+* Mirroring other IRR databases using file imports and NRTM.
+* Offering NRTM mirroring and full export services to other databases.
 
-This project will address these issues by developing an entirely new version of
-IRRD, featuring:
+`Older versions`_ of IRRd are or were in use at NTT and RADB, amongst other
+places. Difficulties with continued maintenance and extension of these
+older versions lead to the IRRd v4 project.
 
-* A single architecture design that encompasses all current features and
-  provides room for extensibility in the future, to support new standards or
-  add other functionality at relatively low cost.
-* A single codebase that is well documented, maintainable and consistent in
-  style and approach.
-* A comprehensive suite of both unit and integration tests to ensure the
-  continued correctness of IRRD.
-* Extensive compatibility with existing data submission, RPSL queries and
-  mirroring sources, to ease upgrades to IRRDv4.
-* A proxy module which can be used to compare the results of an existing
-  IRRD deployment to a new IRRDv4 deployment to assure the correct and
-  consistent functioning, making upgrades from previous versions very low risk.
+This project was commissioned by NTT_ and designed and developed by
+DashCare_.
 
 .. _NTT: https://us.ntt.net
 .. _DashCare: https://www.dashcare.nl
-.. _current v3 project: https://github.com/irrdnet/irrd
+.. _Older versions: https://github.com/irrdnet/irrd

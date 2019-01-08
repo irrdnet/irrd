@@ -9,3 +9,4 @@ local_config.yaml
 syntax: glob
 __pycache__
 _build
+twisted/plugins/dropin.cache

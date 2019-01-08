@@ -1,24 +1,23 @@
 #!/usr/bin/env python
 # flake8: noqa: E402
-import argparse
-import os
 import sys
 
-"""
-Submit a raw e-mail message, i.e. with e-mail headers.
-The message is always read from stdin.
+import argparse
+import os
+from alembic import command
+from alembic.config import Config
 
-A report on the results will be sent to the user by e-mail.
-"""
-
-sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))))
+irrd_root = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
+sys.path.append(irrd_root)
 
 from irrd.conf import config_init, CONFIG_PATH_DEFAULT
-from irrd.updates.email import handle_email_submission
 
 
-def run(data):
-    handle_email_submission(data)
+def run(version):
+    alembic_cfg = Config()
+    alembic_cfg.set_main_option("script_location", f'{irrd_root}/irrd/storage/alembic')
+    command.upgrade(alembic_cfg, version)
+    print(f'Upgrade successful, or already on latest version.')
 
 
 def main():  # pragma: no cover
@@ -28,12 +27,13 @@ def main():  # pragma: no cover
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('--config', dest='config_file_path', type=str,
                         help=f'use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})')
+    parser.add_argument('--version', dest='version', type=str, default='head',
+                        help=f'version to upgrade to (default: head, i.e. latest)')
     args = parser.parse_args()
 
     config_init(args.config_file_path)
+    run(args.version)
 
-    run(sys.stdin.read())
 
-
-if __name__ == '__main__':  # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     main()

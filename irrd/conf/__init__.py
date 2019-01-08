@@ -7,13 +7,12 @@ import re
 import signal
 import yaml
 from IPy import IP
-from typing import Any, List
+from typing import Any, List, Optional
 import os
 
 from dotted.collection import DottedDict
 
-IRRD_CONFIG_PATH_ENV = 'IRRD_CONFIG_PATH'
-IRRD_CONFIG_CHECK_FORCE_ENV = 'IRRD_CONFIG_CHECK_FORCE'
+CONFIG_PATH_DEFAULT = '/etc/irrd.yaml'
 
 logger = logging.getLogger(__name__)
 PASSWORD_HASH_DUMMY_VALUE = 'DummyValue'
@@ -79,29 +78,30 @@ class Configuration:
     user_config_staging: DottedDict
     user_config_live: DottedDict
 
-    def __init__(self):
+    def __init__(self, user_config_path: Optional[str]=None):
         """
         Load the default config and load and check the user provided config.
         If a logfile was specified, direct logs there.
         """
+        self.user_config_path = user_config_path if user_config_path else CONFIG_PATH_DEFAULT
         default_config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'default_config.yaml')
         default_config_yaml = yaml.safe_load(open(default_config_path))
         self.default_config = DottedDict(default_config_yaml['irrd'])
 
-        errors = self._staging_reload_check()
+        errors = self._staging_reload_check(log_success=False)
         if errors:
             raise ConfigurationError(f'Errors found in configuration, unable to start: {errors}')
         self._commit_staging()
 
         logfile_path = self.get_setting_live('log.logfile_path')
         if logfile_path:
-            LOGGING['handlers']['file'] = {
+            LOGGING['handlers']['file'] = {   # type:ignore
                 'class': 'logging.handlers.WatchedFileHandler',
                 'filename': logfile_path,
                 'formatter': 'verbose',
             }
             # noinspection PyTypeChecker
-            LOGGING['loggers']['']['handlers'] = ['file']
+            LOGGING['loggers']['']['handlers'] = ['file']   # type:ignore
             logging.config.dictConfig(LOGGING)
 
     def get_setting_live(self, setting_name: str, default: Any=None) -> Any:
@@ -149,44 +149,33 @@ class Configuration:
         self.user_config_live = self.user_config_staging
         logging.getLogger('').setLevel(self.get_setting_live('log.level', default='INFO'))
 
-    def _staging_reload_check(self) -> List[str]:
+    def _staging_reload_check(self, log_success=True) -> List[str]:
         """
         Reload the staging configuration, and run the config checks on it.
         Returns a list of errors if any were found, or an empty list of the
         staging config is valid.
         """
         # While in testing, Configuration does not demand a valid config file
-        # in IRRD_CONFIG_PATH_ENV. This simplifies test setup, as most tests
-        # do not need it. If IRRD_CONFIG_PATH_ENV is set, it is checked,
-        # and the check is forced with IRRD_CONFIG_CHECK_FORCE_ENV (to test
-        # the error message for the empty environment variable).
-        if all([
-            hasattr(sys, '_called_from_test'),
-            IRRD_CONFIG_PATH_ENV not in os.environ,
-            IRRD_CONFIG_CHECK_FORCE_ENV not in os.environ
-        ]):
+        # This simplifies test setup, as most tests do not need it. If
+        # the config path is set, it is checked.
+        if hasattr(sys, '_called_from_test') and self.user_config_path == CONFIG_PATH_DEFAULT:
             self.user_config_staging = DottedDict({})
             return []
 
         try:
-            user_config_path = os.environ[IRRD_CONFIG_PATH_ENV]
-        except KeyError:
-            return [f'Environment variable {IRRD_CONFIG_PATH_ENV} not set.']
-
-        try:
-            user_config_yaml = yaml.safe_load(open(user_config_path))
+            user_config_yaml = yaml.safe_load(open(self.user_config_path))
         except OSError as oe:
-            return [f'Error opening config file {user_config_path}: {oe}']
+            return [f'Error opening config file {self.user_config_path}: {oe}']
         except yaml.YAMLError as ye:
             return [f'Error parsing YAML file: {ye}']
 
         if not isinstance(user_config_yaml, dict) or 'irrd' not in user_config_yaml:
-            return [f'Could not find root item "irrd" in config file {user_config_path}']
+            return [f'Could not find root item "irrd" in config file {self.user_config_path}']
         self.user_config_staging = DottedDict(user_config_yaml['irrd'])
 
         errors = self._check_staging_config()
-        if not errors:
-            logger.info(f'Configuration successfully (re)loaded from {user_config_path}')
+        if not errors and log_success:
+            logger.info(f'Configuration successfully (re)loaded from {self.user_config_path}')
         return errors
 
     def _check_staging_config(self) -> List[str]:
@@ -195,7 +184,6 @@ class Configuration:
         Returns a list of any errors, or an empty list for a valid config.
         """
         errors = []
-
         config = self.user_config_staging
 
         if not self._check_is_str(config, 'database_url'):
@@ -272,6 +260,11 @@ class Configuration:
 configuration = None
 
 
+def config_init(config_path):
+    global configuration
+    configuration = Configuration(config_path)
+
+
 def get_setting(setting_name: str, default: Any=None) -> Any:
     """
     Convenience wrapper to get the value of a setting.
@@ -279,8 +272,8 @@ def get_setting(setting_name: str, default: Any=None) -> Any:
     retrieves the live setting from that object.
     """
     global configuration
-    if not configuration:
-        configuration = Configuration()
+    if not configuration:  # pragma: no cover
+        raise Exception('get_setting() called before configuration is initialised')
     return configuration.get_setting_live(setting_name, default)
 
 
@@ -291,9 +284,8 @@ def sighup_handler(signum, frame):
     so not all settings can be changed while running.
     """
     global configuration
-    if not configuration:  # pragma: no cover
-        configuration = Configuration()
-    configuration.reload()
+    if configuration:
+        configuration.reload()
 
 
 signal.signal(signal.SIGHUP, sighup_handler)

@@ -31,6 +31,7 @@ This documentation is mainly for administrators of IRRd deployments.
 .. toctree::
    :maxdepth: 1
 
+   admins/deployment
    admins/configuration
    admins/migrating-legacy-irrd
    admins/object-validation
