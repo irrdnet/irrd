@@ -22,10 +22,13 @@ class NRTMGenerator:
         serial_end_requested is None.
         """
         if not get_setting(f'sources.{source}.keep_journal'):
-            raise NRTMGeneratorException('No journal kept for this database, unable to serve NRTM queries')
+            raise NRTMGeneratorException('No journal kept for this source, unable to serve NRTM queries')
 
         q = DatabaseStatusQuery().source(source)
-        status = next(database_handler.execute_query(q))
+        try:
+            status = next(database_handler.execute_query(q))
+        except StopIteration:
+            raise NRTMGeneratorException(f'There are no journal entries for this source.')
 
         if serial_end_requested and serial_end_requested < serial_start_requested:
             raise NRTMGeneratorException(f'Start of the serial range ({serial_start_requested}) must be lower or '

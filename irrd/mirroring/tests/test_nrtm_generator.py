@@ -159,4 +159,12 @@ class TestNRTMGenerator:
 
         with pytest.raises(NRTMGeneratorException) as nge:
             generator.generate('TEST', '3', 110, 300, mock_dh)
-        assert 'No journal kept for this database, unable to serve NRTM queries' in str(nge)
+        assert 'No journal kept for this source, unable to serve NRTM queries' in str(nge)
+
+    def test_no_source_status_entry(self, prepare_generator, config_override):
+        generator, mock_dh = prepare_generator
+        mock_dh.execute_query = Mock(side_effect=StopIteration())
+
+        with pytest.raises(NRTMGeneratorException) as nge:
+            generator.generate('TEST', '3', 110, 300, mock_dh)
+        assert 'There are no journal entries for this source.' in str(nge)
