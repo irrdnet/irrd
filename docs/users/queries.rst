@@ -37,6 +37,8 @@ IRRd style queries
   (and possibly names of other sets, if the search was not recursive),
   separated by spaces. For example:
   ``!iRS-EXAMPLE,1`` returns all members of `RS-EXAMPLE`, recursively.
+  If the ``compatibility.ipv4_only_route_set_members`` setting is enabled,
+  IPv6 prefixes will not be returned.
 * ``!j`` returns the serial range for each source, available in the local
   journal, along with the most recent export serial from this IRRd instance.
   For all sources, query ``!j-*``, for a specific source, query
@@ -177,7 +179,12 @@ with the ``!s`` command or the ``-s`` flag. When enabling multiple sources,
 the order in whch they are listed defines their prioritisation, which can
 make a significant difference in some queries. For example, ``!m`` will find
 the first object with a given primary key, from the highest priority source
-it was found. Set expansion with ``!i`` will start from the object from
-the highest priority source, which matches the given primary key.
+it was found.
+
+Set expansion with ``!i`` will start from the object from the highest priority
+source, which matches the given primary key. For resolving references to other
+sets, priority is first given to the source where the first (root) set was found,
+and then the normal source search order is followed.
+
 The currently enabled sources and their priority can be seen with ``!s-lc``.
 

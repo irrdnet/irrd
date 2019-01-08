@@ -74,6 +74,17 @@ are primarily due to bugs in legacy IRRd, which do not occur in version 4.
   which are therefore all returned. IRRd version 4 ensures that this bug can
   not occur, and therefore will not return these duplicates. This particularly
   affected the ARIN-WHOIS and RPKI sources.
+* Prefixes returned for ``!i`` queries on route sets may be different.
+  By default, the response includes all IPv4 and IPv6 prefixes listed in
+  `members`, `mp-members` and those referenced with `member-of`/`mbrs-by-ref`.
+  In some legacy versions of IRRd, this would only return IPv4 prefixes,
+  and also ignore IPv4 prefixes in `mp-members` attributes.
+  Some compatibility with these versions is provided with the
+  ``compatibility.ipv4_only_route_set_members`` setting, which will limit
+  the response to only include IPv4 prefixes. However, this will also include
+  IPv4 prefixes listed in `mp-members`. Therefore, responses may still differ.
+* ``!i6`` queries are not supported, as they were partially broken in
+  previous IRRd versions.
 
 
 Other known changes

@@ -201,6 +201,21 @@ class WhoisQueryParser:
             members = self._recursive_set_resolve({parameter})
         if parameter in members:
             members.remove(parameter)
+
+        if get_setting('compatibility.ipv4_only_route_set_members'):
+            original_members = set(members)
+            for member in original_members:
+                try:
+                    IP(member)
+                except ValueError:
+                    continue  # This is not a prefix, ignore.
+                try:
+                    IP(member, ipversion=4)
+                except ValueError:
+                    # This was a valid prefix, but not a valid IPv4 prefix,
+                    # and should be removed.
+                    members.remove(member)
+
         return ' '.join(sorted(members))
 
     def _recursive_set_resolve(self, members: Set[str], sets_seen=None) -> Set[str]:

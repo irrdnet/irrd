@@ -650,6 +650,39 @@ class TestWhoisQueryParserIRRD:
             ['lookup_attrs_in', (['member-of'], ['RRS-TEST']), {}],
         ]
 
+    def test_route_set_compatibility_ipv4_only_route_set_members(self, prepare_parser, config_override):
+        mock_dq, mock_dh, parser = prepare_parser
+
+        mock_query_result = [
+            {
+                'pk': uuid.uuid4(),
+                'rpsl_pk': 'RS-TEST',
+                'parsed_data': {
+                    'route-set': 'RS-TEST',
+                    'members': ['192.0.2.0/32'],
+                    'mp-members': ['192.0.2.1/32', '2001:db8::/32', 'RS-OTHER']
+                },
+                'object_text': 'text',
+                'object_class': 'route-set',
+                'source': 'TEST1',
+            },
+        ]
+        mock_dh.execute_query = lambda query: mock_query_result
+
+        response = parser.handle_query('!iRS-TEST')
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert response.result == '192.0.2.0/32 192.0.2.1/32 2001:db8::/32 RS-OTHER'
+
+        config_override({
+            'compatibility': {'ipv4_only_route_set_members': True},
+        })
+
+        response = parser.handle_query('!iRS-TEST')
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert response.result == '192.0.2.0/32 192.0.2.1/32 RS-OTHER'
+
     def test_database_serial_range(self, monkeypatch, prepare_parser):
         mock_dq, mock_dh, parser = prepare_parser
         mock_dsq = Mock()

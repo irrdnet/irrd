@@ -274,3 +274,12 @@ Logging
 * ``log.level``: the loglevel, one of `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`. The recommended level is `INFO`.
   |br| **Default**: ``INFO``.
   |br| **Change takes effect**: after SIGHUP.
+
+Compatibility
+~~~~~~~~~~~~~
+* ``compatibility.ipv4_only_route_set_members``: if set to ``true``, ``!i``
+  queries will not return IPv6 prefixes. This option can be used for limited
+  compatibility with IRRd version 2. Enabling this setting may have a
+  performance impact on very large responses.
+  |br| **Default**: ``false``, IPv6 members included
+  |br| **Change takes effect**: after SIGHUP, for all subsequent queries.
