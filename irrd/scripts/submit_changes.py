@@ -2,7 +2,7 @@
 # flake8: noqa: E402
 
 """
-Submit a raw update message, i.e. without e-mail headers.
+Submit a raw update message, i.e. without email headers.
 This supports password/override attributes, but is not
 compatible with PGP signatures.
 
@@ -11,11 +11,14 @@ The message is always read from stdin.
 Prints a report of the results, which would otherwise
 be sent to a user by e-mail.
 """
+import argparse
 import os
 import sys
 
-sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), '../'))
 
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))))
+
+from irrd.conf import config_init, CONFIG_PATH_DEFAULT
 from irrd.updates.handler import ChangeSubmissionHandler
 
 
@@ -24,5 +27,14 @@ def main(data):
     print(handler.submitter_report())
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':  # pragma: no cover
+    description = """Process a raw update message, i.e. without email headers. Authentication is still checked, 
+                     but PGP is not supported. Message is always read from stdin, and a report is printed to stdout."""
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument('--config', dest='config_file_path', type=str,
+                        help=f'use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})')
+    args = parser.parse_args()
+
+    config_init(args.config_file_path)
+
     main(sys.stdin.read())

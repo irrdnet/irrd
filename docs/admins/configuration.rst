@@ -103,8 +103,10 @@ This sample shows most configuration options::
 Loading and reloading
 ---------------------
 
-The configuration is loaded when IRRd starts. The path to the config file is read from the ``IRRD_CONFIG_PATH``
-environment variable. If the configuration is invalid, the daemon will refuse to start.
+The configuration is loaded when IRRd starts. By default, IRRd looks for the config file in ``/etc/irrd.yaml``.
+A different path can be provided with the ``--config`` parameter.
+
+If the configuration is invalid, the daemon will refuse to start.
 While running, the configuration can be reloaded by sending a `SIGHUP` signal. Most settings will take effect
 immediately, but some require a full restart. If a `SIGHUP` is sent and the new configuration is invalid,
 errors will be written to the logfile, but IRRd will keep running with the last valid configuration.

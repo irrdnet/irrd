@@ -5,6 +5,8 @@ import textwrap
 from datetime import datetime, timezone
 from unittest.mock import Mock
 
+from irrd import __version__
+from irrd.conf import get_setting
 from ..request_handlers import DatabaseStatusRequest
 
 
@@ -113,9 +115,9 @@ class TestDatabaseStatusRequest:
         mock_database_handler.execute_query = lambda query: next(mock_query_result)
 
         status_report = DatabaseStatusRequest().generate_status()
-        expected_report = textwrap.dedent("""
-            IRRD version master
-            Listening on ::0 port 43
+        expected_report = textwrap.dedent(f"""
+            IRRD version {__version__}
+            Listening on ::0 port {get_setting('server.whois.port')}
             
             
             -----------------------------------------------------------------------

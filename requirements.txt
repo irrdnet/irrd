@@ -1,3 +1,7 @@
+# Many of these packages are also specified in setup.py, and versions
+# should be kept in sync. The list in setup.py is shorter, as it only
+# includes packages needed for deployment.
+
 python-gnupg==0.4.3    # Integration with gpg for key-cert objects
 passlib==1.7.1         # Password hashing for CRYPT-PW and MD5-PW
 IPy==0.83              # IP address parsing

@@ -77,7 +77,7 @@ To create a new packaged version of IRRD:
 
 * If this is a new minor release (x.y), create a new branch for it first - otherwise
   switch to the branch of the current minor release.
-* Ensure the version is correct/updated in ``irrd/__init__.py`` and ``setup.py``.
+* Ensure the version is correct/updated in ``irrd/__init__.py``.
 * Commit the version change.
 * Tag the new release with git (`git tag -a <tagname>`),
   and push the tag (`git push origin <tag_name>`).

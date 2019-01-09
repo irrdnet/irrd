@@ -1,6 +1,6 @@
 from unittest.mock import Mock
 
-from ..submit_email import main
+from ..submit_email import run
 
 
 def test_submit_email(capsys, monkeypatch):
@@ -8,4 +8,4 @@ def test_submit_email(capsys, monkeypatch):
     monkeypatch.setattr("irrd.scripts.submit_email.handle_email_submission", lambda data: mock_update_handler)
     mock_update_handler.user_report = lambda: 'output'
 
-    main('test input')
+    run('test input')

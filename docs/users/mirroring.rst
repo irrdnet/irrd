@@ -9,6 +9,7 @@ This page explains the processes and caveats involved in mirroring.
 For details on all configuration options, see
 the :doc:`configuration documentation </admins/configuration>`.
 
+
 Scheduling
 ----------
 
@@ -116,7 +117,8 @@ NRTM mode uses a download of a full copy of the database, followed by updating
 the local data using NRTM queries. This requires a downloadable full copy,
 the serial belonging to that copy, and NRTM access. This method is recommended,
 as it is efficient and allows IRRd to generate a journal, if enabled, so that
-others can mirror the source from this IRRd instance too.
+others can mirror the source from this IRRd instance too. IRRd will record
+changes in the journal with the same serial as the original source provided.
 
 Updates will be retrieved every `import_timer`, and IRRd will automatically
 perform a full import the first time, and then use NRTM for updates.

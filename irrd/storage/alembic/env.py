@@ -5,9 +5,9 @@ import sys
 from alembic import context
 from sqlalchemy import create_engine
 
-sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), '../../'))
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))))
 
-from irrd.conf import get_setting
+from irrd.conf import get_setting, config_init
 from irrd.storage.models import Base
 
 target_metadata = Base.metadata
@@ -25,6 +25,7 @@ def run_migrations_offline():
     script output.
 
     """
+    config_init(os.environ['IRRD_CONFIG_PATH'])
     url = get_setting('database_url')
     context.configure(
         url=url, target_metadata=target_metadata, literal_binds=True)
@@ -40,6 +41,7 @@ def run_migrations_online():
     and associate a connection with the context.
 
     """
+    config_init(os.environ['IRRD_CONFIG_PATH'])
     engine = create_engine(get_setting('database_url'))
 
     with engine.connect() as connection:
