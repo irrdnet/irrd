@@ -21,9 +21,7 @@ def run(version):
 
 
 def main():  # pragma: no cover
-    description = """Process a raw email message with requested changes. Authentication is checked, message
-                     is always read from stdin. A report is sent to the user by email, along with any
-                     notifications to mntners and others."""
+    description = """Upgrade the IRRd SQL database to a particular version by running database migrations."""
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('--config', dest='config_file_path', type=str,
                         help=f'use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})')

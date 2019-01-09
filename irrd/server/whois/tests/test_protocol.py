@@ -24,7 +24,7 @@ def mock_twisted_defertothread(monkeypatch):
 
 class TestWhoisProtocol:
     expected_version = f'IRRd -- version {__version__}'
-    expsected_version_reply = f'A{len(expected_version)+1}\n{expected_version}'.encode('ascii')
+    expected_version_reply = f'A{len(expected_version)+1}\n{expected_version}\nC\n'.encode('ascii')
 
     def test_whois_protocol_no_access_list(self, config_override, mock_twisted_defertothread):
         config_override({
@@ -54,8 +54,7 @@ class TestWhoisProtocol:
 
         receiver.lineReceived(b' !v ')
         assert mock_transport.mock_calls[0][0] == 'write'
-        expected_output_start = self.expsected_version_reply
-        assert mock_transport.mock_calls[0][1][0][:len(expected_output_start)] == expected_output_start
+        assert mock_transport.mock_calls[0][1][0] == self.expected_version_reply
         assert mock_transport.mock_calls[1][0] == 'loseConnection'
         assert len(mock_transport.mock_calls) == 2
         mock_transport.reset_mock()
@@ -95,8 +94,7 @@ class TestWhoisProtocol:
 
         receiver.lineReceived(b' !v ')
         assert mock_transport.mock_calls[0][0] == 'write'
-        expected_output_start = self.expsected_version_reply
-        assert mock_transport.mock_calls[0][1][0][:len(expected_output_start)] == expected_output_start
+        assert mock_transport.mock_calls[0][1][0] == self.expected_version_reply
         assert mock_transport.mock_calls[1][0] == 'loseConnection'
         assert len(mock_transport.mock_calls) == 2
 

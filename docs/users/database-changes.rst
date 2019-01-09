@@ -58,7 +58,6 @@ Values like prefixes are also rewritten into a standard format. If this
 results in changes compared to the original submitted text, an info message
 is added in the reply.
 
-.. _override-password:
 
 Override password
 -----------------

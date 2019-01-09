@@ -156,8 +156,8 @@ class Configuration:
         staging config is valid.
         """
         # While in testing, Configuration does not demand a valid config file
-        # This simplifies test setup, as most tests do not need it. If
-        # the config path is set, it is checked.
+        # This simplifies test setup, as most tests do not need it.
+        # If a non-default path is set during testing, it is still checked.
         if hasattr(sys, '_called_from_test') and self.user_config_path == CONFIG_PATH_DEFAULT:
             self.user_config_staging = DottedDict({})
             return []
@@ -273,7 +273,7 @@ def get_setting(setting_name: str, default: Any=None) -> Any:
     """
     global configuration
     if not configuration:  # pragma: no cover
-        raise Exception('get_setting() called before configuration is initialised')
+        raise Exception('get_setting() called before configuration was initialised')
     return configuration.get_setting_live(setting_name, default)
 
 
