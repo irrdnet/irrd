@@ -4,7 +4,7 @@ from typing import List, Set, Optional
 
 from irrd.conf import get_setting
 from irrd.rpsl.parser import UnknownRPSLObjectClassException
-from irrd.rpsl.rpsl_objects import rpsl_object_from_text
+from irrd.rpsl.rpsl_objects import rpsl_object_from_text, RPSLKeyCert
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.models import DatabaseOperation
 from irrd.utils.text import split_paragraphs_rpsl
@@ -23,6 +23,8 @@ class MirrorParser:
             self.object_class_filter = [c.strip().lower() for c in object_class_filter]
         else:
             self.object_class_filter = None
+
+        self.strict_validation_key_cert = get_setting(f'sources.{self.source}.strict_import_keycert_objects', False)
 
 
 class MirrorFileImportParser(MirrorParser):
@@ -58,7 +60,11 @@ class MirrorFileImportParser(MirrorParser):
     def parse_object(self, rpsl_text: str) -> None:
         try:
             self.obj_parsed += 1
+            # If an object turns out to be a key-cert, and strict_import_keycert_objects
+            # is set, parse it again with strict validation to load it in the GPG keychain.
             obj = rpsl_object_from_text(rpsl_text.strip(), strict_validation=False)
+            if self.strict_validation_key_cert and obj.__class__ == RPSLKeyCert:
+                obj = rpsl_object_from_text(rpsl_text.strip(), strict_validation=True)
 
             if obj.messages.errors():
                 logger.critical(f'Parsing errors occurred while importing from file for {self.source}. '
@@ -215,5 +221,5 @@ class NRTMStreamParser(MirrorParser):
         operation = DatabaseOperation(operation_str)
         object_text = next(paragraphs)
         nrtm_operation = NRTMOperation(self.source, operation, self._current_op_serial,
-                                       object_text, self.object_class_filter)
+                                       object_text, self.strict_validation_key_cert, self.object_class_filter)
         self.operations.append(nrtm_operation)

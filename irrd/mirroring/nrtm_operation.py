@@ -2,7 +2,7 @@ import logging
 from typing import Optional, List
 
 from irrd.rpsl.parser import UnknownRPSLObjectClassException
-from irrd.rpsl.rpsl_objects import rpsl_object_from_text
+from irrd.rpsl.rpsl_objects import rpsl_object_from_text, RPSLKeyCert
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.models import DatabaseOperation
 
@@ -19,17 +19,24 @@ class NRTMOperation:
     For deletion operations, this is permitted.
     """
     def __init__(self, source: str, operation: DatabaseOperation, serial: int, object_text: str,
-                 object_class_filter: Optional[List[str]] = None) -> None:
+                 strict_validation_key_cert: bool, object_class_filter: Optional[List[str]] = None) -> None:
         self.source = source
         self.operation = operation
         self.serial = serial
         self.object_text = object_text
+        self.strict_validation_key_cert = strict_validation_key_cert
         self.object_class_filter = object_class_filter
 
     def save(self, database_handler: DatabaseHandler) -> bool:
         default_source = self.source if self.operation == DatabaseOperation.delete else None
         try:
-            obj = rpsl_object_from_text(self.object_text.strip(), strict_validation=False, default_source=default_source)
+            object_text = self.object_text.strip()
+            # If an object turns out to be a key-cert, and strict_import_keycert_objects
+            # is set, parse it again with strict validation to load it in the GPG keychain.
+            obj = rpsl_object_from_text(object_text, strict_validation=False, default_source=default_source)
+            if self.strict_validation_key_cert and obj.__class__ == RPSLKeyCert:
+                obj = rpsl_object_from_text(object_text, strict_validation=True, default_source=default_source)
+
         except UnknownRPSLObjectClassException as exc:
             # Unknown object classes are only logged if they have not been filtered out.
             if not self.object_class_filter or exc.rpsl_object_class.lower() in self.object_class_filter:

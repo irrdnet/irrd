@@ -243,6 +243,12 @@ Sources
   the access list are permitted access to the NRTM stream for this particular source (``-g`` queries).
   |br| **Default**: not defined, all access denied.
   |br| **Change takes effect**: after SIGHUP, upon next request.
+* ``sources.{name}.strict_import_keycert_objects``: a setting used when
+  migrating authoritative data that may contain `key-cert` objects.
+  See the :doc:`deployment guide </admins/deployment>` for more information.
+  |br| **Default**: false
+  |br| **Change takes effect**: after SIGHUP, upon next request.
+
 
 For more detail on mirroring other sources, and providing mirroring services
 to others, see the :doc:`mirroring documentation </users/mirroring>`.

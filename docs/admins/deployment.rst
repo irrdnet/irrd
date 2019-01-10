@@ -143,6 +143,27 @@ Current authoritative sources can also be configured as a mirror, of
 the current production instance, with ``keep_journal`` enabled.
 This is the most efficient way to import existing authoritative data.
 
+.. admonition:: Data validation and key-certs
+
+    Validation for objects from mirrors is
+    :doc:`less strict than authoritative data </admins/object-validation>`
+    submitted directly to IRRd. With this migration process, objects
+    may be migrated that are invalid under strict validation. This is
+    practical, because it allows migrating legacy objects, which users
+    will be forced to correct only when they try to submit new changes.
+
+    **However, if the data to be migrated contains key-cert objects,
+    a specific setting should be enabled** on the soon-to-be
+    authoritative source:
+    ``strict_import_keycert_objects``.
+    This setting forces stricter validation for `key-cert` objects,
+    which may cause some to be rejected. However, it is essential when
+    mirroring data for which the new IRRd instance will soon be authoritative,
+    as only in strict validation the PGP keys are loaded into the local
+    gpg keychain. This loading is required to be able to use them for
+    authentication once the new IRRd instance is authoritative.
+
+
 Once these mirrors are running, and you're not seeing any issues,
 the general plan for switching over to a new IRRd v4 instance would be:
 

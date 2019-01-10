@@ -12,7 +12,7 @@ from irrd.conf import get_setting
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import DatabaseStatusQuery
 from irrd.utils.whois_client import whois_query
-from .parser import MirrorFileImportParser, NRTMStreamParser
+from .parsers import MirrorFileImportParser, NRTMStreamParser
 
 logger = logging.getLogger(__name__)
 
