@@ -111,9 +111,10 @@ path to a local distribution file.
 Creating a configuration file
 -----------------------------
 IRRd uses a :doc:`YAML configuration file </admins/configuration>`,
-which has its own documentation. The logfile should either be placed
+which has its own documentation. The config file should either be placed
 in ``/etc/irrd.yaml``, or another path can be set in the
-``IRRD_CONFIG_PATH`` environment variable.
+``--config`` parameter.
+
 
 Adding a new empty source
 ~~~~~~~~~~~~~~~~~~~~~~~~~
