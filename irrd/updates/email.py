@@ -24,6 +24,11 @@ def handle_email_submission(email_txt: str) -> Optional[ChangeSubmissionHandler]
                         f'--- traceback for {exc} follows:', exc_info=exc)
         return None
 
+    if not msg.message_from:
+        logger.critical(f'No from address was found while attempting to parse the following update e-mail - '
+                        f'update not processed: {email_txt}\n')
+        return None
+
     try:
         if not msg.body:
             logger.warning(f'Unable to extract message body from e-mail {msg.message_id} from {msg.message_from}')

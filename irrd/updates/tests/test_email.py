@@ -120,3 +120,10 @@ class TestHandleEmailSubmission:
         assert 'traceback for test-error follows' in caplog.text
         assert 'test-error' in caplog.text
 
+    def test_invalid_no_from(self, monkeypatch, caplog):
+        mock_email = Mock()
+        monkeypatch.setattr('irrd.utils.email.send_email', mock_email)
+
+        assert handle_email_submission('') is None
+        assert not len(mock_email.mock_calls)
+        assert 'No from address was found' in caplog.text
