@@ -8,7 +8,7 @@ import gnupg
 from irrd.conf import get_setting
 
 logger = logging.getLogger(__name__)
-pgp_inline_re = re.compile(r'-----BEGIN PGP SIGNED MESSAGE-----(\n.+)?\n\n(.+)\n-----BEGIN PGP SIGNATURE-----\n',
+pgp_inline_re = re.compile(r'-----BEGIN PGP SIGNED MESSAGE-----(\n.+)?\n\n((?s:.+))\n-----BEGIN PGP SIGNATURE-----\n',
                            flags=re.MULTILINE)
 
 

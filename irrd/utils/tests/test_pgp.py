@@ -48,27 +48,34 @@ class TestValidatePGPSignature:
 
         -----BEGIN PGP SIGNED MESSAGE-----
         Hash: SHA256
-
-        test 1 2 3
+        
+        test
+        1
+        
+        2
+        
+        3
+        
         -----BEGIN PGP SIGNATURE-----
-
-        iQIzBAEBCAAdFiEEhiYdjb69pPVGktZNqDg7p4DyOMYFAltix/QACgkQqDg7p4Dy
-        OMYTzA//buAOavyy5mShsCu8jlAyA9Y9PZWp4fc9I2Gnef/ESwmagr10KIBJpz3M
-        qO85Oxml3kJDKXUUS5NLxUiVQnznErETbPYx04S3NLP8yRvFUV31x5D7WPwy7g0V
-        1WDr4eDBB+Nk9ib7fBGhKosjODzPt/58xTCgcD25rPYF8ie3VzIv0KzgSQNC3jqE
-        e4+eCS/IpPxoVEqfR7Dxt9j6Z7+ERcNkNYexX14IdOL+eldXlOgZgAjhDyY1FGoX
-        yZUBK1ZBXfyNY33dSMsM/LRN3TnnLeqQu4VlsgaE3syqgiHw3fLjnldAVFRaDV9g
-        BTFg/3LQ+QwjzKcKi+f2pjr/FbsqnSBZZH31M6Pmdwvz9roZJB59Hhjgr+kxpfop
-        bgZ95P4z2i7XuCOJmI5LNOaqlZmt3RebLd2QIAfKONi2GfwLl4ibk6VlCdMIQoJS
-        paQ7V2Dq9r6Pure2wn+xIPOuySQ+zVf7emY9GFxFim87Eu2aaV4E/S52EpOFqWCU
-        TgTCi98X5RJyBdvii7XBl+VcM041hww221nw2WvRECaImgwx1eNx2UjXpsLN5VrT
-        oxZBbe2zPrzKJSG3WmBRi8bekarDrCPSd1uWXRoCqUmIPLTTID52ikkPKEBTeNyv
-        4Ni0aIkkZY3cM0QR9EEHSCJgS2RVQujw/KZTeTQTLAJLtGtLbq8=
-        =Zn24
+        
+        iQIzBAEBCAAdFiEEhiYdjb69pPVGktZNqDg7p4DyOMYFAlw3Jb8ACgkQqDg7p4Dy
+        OMZEmA//RSVSModFylC660mlqkQ5kzWJEWMxJJ5hlIHHYmWjanW2XG+KxyKr/EFK
+        xgZRzdj8p7UuuVPH5Zw6YkNMBefe3mqZC/I/QKPzkvZlWy/j4jQPqL5ogTZMtjpn
+        Obb6p8rVyqyz7jS68h4zpAxp9TjciQHdBHGhMxTCIPKEHLDdW5SkFS8gXBvYqmOq
+        VicJgnC1ZY5UuPnXN7EzSL+mR7CCjLSbOCPGsoJi1dh0UXOIuEu/8t+M4V8iFkj2
+        4Ir6AIy1DTRNhUVspSS2ADYIyox1Gzg4Lr8JXQwDHD8fsLYerq6/a2fbGoAU9MAO
+        epzoAqnpDUyiEF7BuIYwHc03RhgonfT6KPTIlKph2AFifPN+h9NNi7Sr0jPvEkyQ
+        6OXFeFpHEHfrJv2m3Hbf9++xxawUXGeJ/gFTNJXwQeaTvoEyhU9uwwEzibFww77V
+        GGqBgzVjHX2RTc24e9OrKSoN8dOs3jsVj0Ucnxuh2nX0y/RaBOM95hUwhokgxGoQ
+        XZzQn3mPAPE3sZ05YyYIa1eWYxwwwI1xDxW/sC8VMYCDl1sc1w+g7riOm2eam6eg
+        YBfZyLf62EwyIj+y9TGAyfGe41cDtNzcNB2wUdoW3TEN8u3jS/euvtjFOIQ6aofs
+        JWTW+eqHBNWWC7Rfi1B7Pqh1bkk1FWPaxCJij73ekV8ZNiBBmwA=
+        =iWS2
         -----END PGP SIGNATURE-----
+
         """).strip()
         new_message, fingerprint = validate_pgp_signature(message)
-        assert new_message.strip() == 'test 1 2 3'
+        assert new_message.strip() == 'test\n1\n\n2\n\n3'
         assert fingerprint == '86261D8DBEBDA4F54692D64DA8383BA780F238C6'
 
     @pytest.mark.usefixtures("tmp_gpg_dir")
