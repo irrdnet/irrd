@@ -202,7 +202,7 @@ class RPSLKeyCert(RPSLObject):
             return False  # pragma: no cover
 
         gpg = gnupg.GPG(gnupghome=get_setting('auth.gnupg_keyring'))
-        certif_data = "\n".join(self.parsed_data.get("certif", []))
+        certif_data = "\n".join(self.parsed_data.get("certif", [])).replace(',', '\n')
         result = gpg.import_keys(certif_data)
 
         if len(result.fingerprints) != 1:
@@ -238,7 +238,8 @@ class RPSLKeyCert(RPSLObject):
     def verify(self, message: str) -> bool:
         gpg = gnupg.GPG(gnupghome=get_setting('auth.gnupg_keyring'))
         result = gpg.verify(message)
-        return result.valid and result.key_status is None and result.fingerprint == self.fingerprint
+        return result.valid and result.key_status is None and \
+            self.format_fingerprint(result.fingerprint) == self.parsed_data['fingerpr']
 
     @staticmethod
     def format_fingerprint(fingerprint: str) -> str:
