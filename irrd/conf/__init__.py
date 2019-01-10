@@ -104,6 +104,9 @@ class Configuration:
             LOGGING['loggers']['']['handlers'] = ['file']   # type:ignore
             logging.config.dictConfig(LOGGING)
 
+        # Re-commit to apply loglevel
+        self._commit_staging()
+
     def get_setting_live(self, setting_name: str, default: Any=None) -> Any:
         """
         Get a setting from the live config.
