@@ -187,7 +187,7 @@ class AuthValidator:
                         logger.info(f'Found invalid override password, ignoring.')
                 except ValueError as ve:
                     logger.error(f'Exception occurred while checking override password: {ve} (possible misconfigured hash?)')
-        else:
+        elif self.overrides:
             logger.info(f'Ignoring override password, auth.override_password not set.')
 
         mntners_new = rpsl_obj_new.parsed_data['mnt-by']
