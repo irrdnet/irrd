@@ -61,7 +61,7 @@ jobs:
 
       - run:
           name: Creating additional database
-          command: psql -U root -h localhost -c "CREATE DATABASE circle_test2;"
+          command: psql -U root -h localhost -d circle_test -c "CREATE DATABASE circle_test2;"
 
       - run:
           name: run tests
