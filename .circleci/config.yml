@@ -53,7 +53,8 @@ jobs:
 
       - run: |
           psql \
-          -U root  \
+          -U root \
+          -h localhost \
           -c "CREATE DATABASE circle_test2;"
 
       - run:
