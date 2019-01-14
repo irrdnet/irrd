@@ -51,6 +51,11 @@ jobs:
             done
             echo Failed waiting for PostgreSQL && exit 1
 
+      - run: |
+          psql \
+          -U root  \
+          -c "CREATE DATABASE circle_test2;"
+
       - run:
           name: run tests
           command: |
