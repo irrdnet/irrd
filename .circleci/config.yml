@@ -6,7 +6,7 @@ jobs:
     docker:
       - image: circleci/python:3.6.1
         environment:
-          IRRD_DATABASE_URL: 'postgresql://root@localhost/circle_test'
+          IRRD_DATABASE_URL: 'postgresql://root@localhost/circle_test2'
 
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
