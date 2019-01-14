@@ -40,6 +40,8 @@ jobs:
             - ./venv
           key: v1-dependencies-{{ checksum "requirements.txt" }}
 
+      - run: sudo apt-get install postgresql-client-9.6
+
       - run:
           name: Waiting for PostgreSQL to be ready
           command: |
@@ -52,10 +54,7 @@ jobs:
             echo Failed waiting for PostgreSQL && exit 1
 
       - run: |
-          psql \
-          -U root \
-          -h localhost \
-          -c "CREATE DATABASE circle_test2;"
+          psql -U root -h localhost -c "CREATE DATABASE circle_test2;"
 
       - run:
           name: run tests
