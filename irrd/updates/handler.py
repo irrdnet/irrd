@@ -3,8 +3,9 @@ from collections import defaultdict
 import logging
 import textwrap
 from orderedset import OrderedSet
-from typing import List, Optional, Dict, Set
+from typing import List, Optional, Dict
 
+from irrd.conf import get_setting
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseQuery
 from irrd.utils import email
@@ -149,18 +150,9 @@ class ChangeSubmissionHandler:
 
         sources_str = '/'.join(sources)
         subject = f'Notification of {sources_str} database changes'
-        header = textwrap.dedent(f"""
-            This is to notify you of changes in the {sources_str} database
-            or object authorisation failures.
-            
-            You may receive this message because you are listed in
-            the notify attribute on the changed object(s), or because
-            you are listed in the mnt-nfy or upd-to attribute on a maintainer
-            of the object(s).
-            
-            This message is auto-generated.
-            The request was made by email, with the following details:
-        """)
+        header = get_setting('email.notification_header', '').format(sources_str=sources_str)
+        header += '\nThis message is auto-generated.\n'
+        header += 'The request was made by email, with the following details:\n'
         header_saved = textwrap.dedent("""
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Some objects in which you are referenced have been created,

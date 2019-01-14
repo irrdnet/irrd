@@ -264,7 +264,7 @@ class TestChangeSubmissionHandler:
             
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        """)
+        """).lstrip()
         handler.send_notification_target_reports()
         assert flatten_mock_calls(mock_email) == [
             ['', ('mnt-nfy@example.com', 'Notification of TEST database changes', expected_notification), {}]
@@ -408,9 +408,10 @@ class TestChangeSubmissionHandler:
             
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        """)
+        """).lstrip()
         handler.send_notification_target_reports()
-        # Notification recipients are kept in unordered items at times, so call order may vary.
+
+        # Notification recipients are kept in unordered data types at times, so call order may vary.
         sorted_mock_calls = sorted(flatten_mock_calls(mock_email), key=lambda x: x[1][0])
         assert sorted_mock_calls == [
             ['', ('mnt-nfy2@example.net', 'Notification of TEST database changes', expected_notification), {}],
@@ -643,7 +644,7 @@ class TestChangeSubmissionHandler:
             
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        """)
+        """).lstrip()
         handler.send_notification_target_reports()
         assert flatten_mock_calls(mock_email) == [
             ['', ('upd-to@example.net', 'Notification of TEST database changes', expected_notification), {}],

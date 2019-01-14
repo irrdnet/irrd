@@ -48,6 +48,14 @@ This sample shows most configuration options::
             footer: 'email footer'
             from: example@example.com
             smtp: localhost
+            notification_header: |
+                This is to notify you of changes in the {sources_str} database
+                or object authorisation failures.
+
+                You may receive this message because you are listed in
+                the notify attribute on the changed object(s), or because
+                you are listed in the mnt-nfy or upd-to attribute on a maintainer
+                of the object(s).
 
         log:
             logfile_path: /var/log/irrd/irrd.log
@@ -156,6 +164,22 @@ Email
 * ``email.smtp``: the SMTP server to use for outbound emails.
   |br| **Default**: not defined, but required.
   |br| **Change takes effect**: after SIGHUP, for all subsequent emails.
+* ``email.notification_headers``: the header to use when sending notifications
+  of (attempted) changes to addresses in `notify`, `mnt-nfy` or `upd-to`
+  attributes. The string ``{sources_str}`` will be replaced with the name
+  of the source(s) (e.g. ``NTTCOM``) of the relevant objects. When adding
+  this to the configuration, use the `|` style to preserve newlines, as
+  shown in the example configuration file above.
+  |br| **Change takes effect**: after SIGHUP, for all subsequent emails.
+  |br| **Default**:
+  |br| `This is to notify you of changes in the {sources_str} database`
+  |br| `or object authorisation failures.`
+  |br|
+  |br| `You may receive this message because you are listed in`
+  |br| `the notify attribute on the changed object(s), or because`
+  |br| `you are listed in the mnt-nfy or upd-to attribute on a maintainer`
+  |br| `of the object(s).`
+
 
 Authentication
 ~~~~~~~~~~~~~~
