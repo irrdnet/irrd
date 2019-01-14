@@ -268,6 +268,10 @@ def config_init(config_path):
     configuration = Configuration(config_path)
 
 
+def is_config_initialised():
+    return bool(configuration)
+
+
 def get_setting(setting_name: str, default: Any=None) -> Any:
     """
     Convenience wrapper to get the value of a setting.
