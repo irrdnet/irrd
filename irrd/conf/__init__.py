@@ -269,7 +269,8 @@ def config_init(config_path):
 
 
 def is_config_initialised():
-    return bool(configuration)
+    global configuration
+    return configuration is not None
 
 
 def get_setting(setting_name: str, default: Any=None) -> Any:

@@ -5,7 +5,7 @@ import signal
 import yaml
 from typing import Dict
 
-from . import get_setting, ConfigurationError, config_init
+from . import get_setting, ConfigurationError, config_init, is_config_initialised
 
 
 @pytest.fixture()
@@ -87,6 +87,7 @@ class TestConfiguration:
         }
         save_yaml_config(config)
         assert list(get_setting('sources_default')) == ['TESTDB2', 'TESTDB']
+        assert is_config_initialised()
 
         config['irrd']['sources_default'] = ['TESTDB2']
         save_yaml_config(config, run_init=False)

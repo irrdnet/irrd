@@ -20,6 +20,10 @@ sys.path.append(IRRD_ROOT_PATH)
 
 
 class TestIntegration:
+    """
+    Note that this test will not be included in the default py.test discovery,
+    this is intentional.
+    """
     def test_irrd_integration(self, tmpdir):
         # IRRD_DATABASE_URL overrides the yaml config, so should be removed
         del os.environ['IRRD_DATABASE_URL']
