@@ -85,7 +85,7 @@ jobs:
           name: build docs
           command: |
             . venv/bin/activate
-            sphinx-build -nW -b html docs/ test-reports/docs-html
+            sphinx-build -nW -b html docs/ docs/build
 
       - run:
           name: run flake8
