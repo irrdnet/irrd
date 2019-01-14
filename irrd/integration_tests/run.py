@@ -1,5 +1,5 @@
+# flake8: noqa: W293
 import sys
-import time
 
 import os
 import signal
@@ -11,7 +11,6 @@ import yaml
 from alembic import command, config
 from typing import List
 
-from irrd import __version__
 from irrd.conf import config_init
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER, SAMPLE_PERSON
 from .data import EMAIL_SMTP_PORT, EMAIL_RETURN_MSGS_COMMAND, EMAIL_SEPARATOR
@@ -229,5 +228,3 @@ class TestIntegration:
                     os.kill(int(fh.read()), signal.SIGTERM)
             except (FileNotFoundError, ProcessLookupError, ValueError):
                 pass
-
-
