@@ -778,37 +778,6 @@ fqXVFwOtGh6U7r5FbwAmxr50oVLjFR3+q4ykVoghzImnX1//1wY=
 -----END PGP SIGNATURE-----
 """
 
-SIGNED_PERSON_UPDATE_INVALID = """-----BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA256
-
-person: Test person invalid signature
-address: DashCare BV
-address: Amsterdam
-address: The Netherlands
-phone: +31 20 000 0000
-nic-hdl: PERSON-TEST
-mnt-by: TEST-MNT
-e-mail: email@example.com
-changed: 2009-07-24T17:00:00Z
-source: TEST
------BEGIN PGP SIGNATURE-----
-
-iQIzBAEBCAAdFiEEhiYdjb69pPVGktZNqDg7p4DyOMYFAlw9wJAACgkQqDg7p4Dy
-OMbHLA//Zo8Q28vR/0itbb/7d6Da5f7xMFQXT0YPO4oAd2+qGUU1ruTu5VBem+hh
-t+f+SlD4AjwuinSZ1pZuzlUB/r7OQO5Ke7v9o1ZrLMdHo1G/QCfVxogleM0I7Yr+
-fuvuLHxJvTTY5XXbcs2xD10DpZv5D+TY7SUph9tlzhbfNBxGR5Bd9z4hSA9fXKuX
-1EBtrOW3Kc4xifVtRTEF7lVSDYTE02nvhfiKZkAXI93IRPGipCJDLQwXSw0Z2+Al
-DmlewyhJr3bm9RrjGSImlraHrJcnf9E6jtCeAuZmNiDo1Bu0+o/4oEVNFvakPln6
-MdjH74yQeU9b57YyV1Z4DfB70WCZhuQ8OJ1tfMbuRCdkObjiSSnaVBaL4rFwgrbQ
-YXJtQhtDbtJ5vcbeAS6Zk5dwMrCWPYrfq+Ks/Rx+zMZROt25KBOdxeGnZkmYR++7
-jLvdxNpHftyhq7VALIzlT21/vFTAhGOwUvdaJkFhOEvGxinBZWwohZdyDeRxQDPE
-YQIyIztyhvO+8ZpzEFOkxpjMDATYYP14pcSrx24SBbMQLEbvWNe7lQXdAPnEyESw
-3uXGn8rrEBfDvBZsCdGiYQQvmZIhcj5lkObtmpoRUJYxk616ib0e4V6VbbLVnv4j
-NZ8afnYq/NQpvG6roiZalY8Rs+dY66NUhnx4RgXDawLqAX/e0Fk=
-=/TRP
------END PGP SIGNATURE-----
-"""
-
 object_sample_mapping = {
     "as-block": SAMPLE_AS_BLOCK,
     "as-set": SAMPLE_AS_SET,

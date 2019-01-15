@@ -15,10 +15,9 @@ from alembic import command, config
 
 from irrd.conf import config_init, PASSWORD_HASH_DUMMY_VALUE
 from irrd.utils.rpsl_samples import (SAMPLE_MNTNER, SAMPLE_PERSON, SAMPLE_KEY_CERT, SIGNED_PERSON_UPDATE_VALID,
-                                     SIGNED_PERSON_UPDATE_INVALID, SAMPLE_AS_BLOCK,
                                      SAMPLE_AS_SET, SAMPLE_AUT_NUM, SAMPLE_DOMAIN, SAMPLE_FILTER_SET, SAMPLE_INET_RTR,
                                      SAMPLE_INET6NUM, SAMPLE_INETNUM, SAMPLE_PEERING_SET, SAMPLE_ROLE, SAMPLE_ROUTE,
-                                     SAMPLE_ROUTE_SET, SAMPLE_ROUTE6, SAMPLE_RTR_SET)
+                                     SAMPLE_ROUTE_SET, SAMPLE_ROUTE6, SAMPLE_RTR_SET, SAMPLE_AS_BLOCK)
 from irrd.utils.whois_client import whois_query, whois_query_irrd
 from .data import EMAIL_SMTP_PORT, EMAIL_DISCARD_MSGS_COMMAND, EMAIL_RETURN_MSGS_COMMAND, EMAIL_SEPARATOR, EMAIL_END
 

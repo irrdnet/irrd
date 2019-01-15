@@ -1,8 +1,13 @@
-# Copyright (c) Twisted Matrix Laboratories.
-# See LICENSE for details.
+# Based on an original example by Twisted Matrix Laboratories
+# under the following license:
+# https://github.com/twisted/twisted/blob/trunk/LICENSE
 
-# You can run this module directly with:
-#    twistd -ny emailserver.tac
+"""
+This runs a small SMTP server under twisted. All mails are stored in memory,
+and two special commands can be used to retrieve them or empty the local
+memory store. This is used to simulate actual SMTP interaction in the
+integration test.
+"""
 
 from __future__ import print_function
 
@@ -24,7 +29,6 @@ messages = []
 
 class CustomESMTP(smtp.ESMTP):
     def lineReceived(self, line):
-        print(f'Received line: {line}')
         global messages
         clean_line = line.strip().decode('utf-8')
         if clean_line == EMAIL_RETURN_MSGS_COMMAND:
@@ -38,19 +42,19 @@ class CustomESMTP(smtp.ESMTP):
 
 
 @implementer(smtp.IMessageDelivery)
-class ConsoleMessageDelivery:
+class MemoryMessageDelivery:
     def receivedHeader(self, helo, origin, recipients):
-        return b'Received: ConsoleMessageDelivery'
+        return b'Received: MemoryMessageDelivery'
 
     def validateFrom(self, helo, origin):
         return origin
 
     def validateTo(self, user):
-        return lambda: ConsoleMessage()
+        return lambda: MemoryMessage()
 
 
 @implementer(smtp.IMessage)
-class ConsoleMessage:
+class MemoryMessage:
     def __init__(self):
         self.lines = []
 
@@ -67,12 +71,12 @@ class ConsoleMessage:
         self.lines = None
 
 
-class ConsoleSMTPFactory(smtp.SMTPFactory):
+class MemorySMTPFactory(smtp.SMTPFactory):
     protocol = CustomESMTP
 
     def __init__(self, *a, **kw):
         smtp.SMTPFactory.__init__(self, *a, **kw)
-        self.delivery = ConsoleMessageDelivery()
+        self.delivery = MemoryMessageDelivery()
 
     def buildProtocol(self, addr):
         p = smtp.SMTPFactory.buildProtocol(self, addr)
@@ -85,7 +89,7 @@ def main():
     from twisted.application import service
 
     a = service.Application('Mock SMTP Server')
-    internet.TCPServer(EMAIL_SMTP_PORT, ConsoleSMTPFactory()).setServiceParent(a)
+    internet.TCPServer(EMAIL_SMTP_PORT, MemorySMTPFactory()).setServiceParent(a)
 
     return a
 

@@ -174,7 +174,7 @@ class TestConfiguration:
                     'TESTDB2': {
                         'authoritative': True,
                         'nrtm_host': '192.0.2.1',
-                        'nrtm_port': 'aaa',
+                        'nrtm_port': 'not a number',
                     },
                     'TESTDB3': {
                         'authoritative': True,
