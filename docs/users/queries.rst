@@ -111,11 +111,8 @@ The query::
 will set the client name to `my-client` and return all as-sets named
 `AS-EXAMPLE`.
 
-Supported flags
-^^^^^^^^^^^^^^^
-* ``-k`` activates keepalive mode. The connection will be kept open
-  after a query has been sent. Queries are answered in the order they were
-  submitted.
+Queries
+^^^^^^^
 * ``-l``, ``-L``, ``-M`` and ``-x`` search for `route` or `route6` objects.
   The differences are:
 
@@ -132,17 +129,7 @@ Supported flags
   ``-i origin AS23456`` finds all objects with an `origin` attribute set to
   `AS23456`. In attributes that contain multiple values, one of their values
   must match the value in the query.
-* ``-s <sources>`` and ``-a`` set the sources used for queries. ``-s``
-  restricts all responses to a specified list of sources,
-  comma-separated, e.g. ``-s RIPE,NTTCOM``. ``-a`` enables all sources.
-  This persists across queries.
-* ``-T <object-classes>`` restricts a query to certain object classes,
-  comma-separated. This does not persist across queries.
 * ``-t <object-class>`` returns the template for a particular object class.
-* ``-K`` restricts the output to primary key fields and the `members` and
-  `mp-members` attributes.
-* ``-V <free-text>`` identifies the client querying IRRd. Optional, but may
-  be helpful when debugging issues.
 * ``-g`` returns an NRTM response, used for mirroring. See the
   :doc:`mirroring documentation </users/mirroring>`.
 * Any other (part of) the query is interpreted as a free text search:
@@ -154,6 +141,22 @@ Supported flags
   * Otherwise, the query will look for any exact case insensitive matches
     on the primary key of an object, or a `person` or `role` where their
     name includes the search string, case insensitive.
+
+Supported flags
+^^^^^^^^^^^^^^^
+* ``-k`` activates keepalive mode. The connection will be kept open
+  after a query has been sent. Queries are answered in the order they were
+  submitted.
+* ``-s <sources>`` and ``-a`` set the sources used for queries. ``-s``
+  restricts all responses to a specified list of sources,
+  comma-separated, e.g. ``-s RIPE,NTTCOM``. ``-a`` enables all sources.
+  This persists across queries.
+* ``-T <object-classes>`` restricts a query to certain object classes,
+  comma-separated. This does not persist across queries.
+* ``-K`` restricts the output to primary key fields and the `members` and
+  `mp-members` attributes.
+* ``-V <free-text>`` identifies the client querying IRRd. Optional, but may
+  be helpful when debugging issues.
 
 The ``-F`` and ``-r`` flags are accepted but ignored, as IRRd does not support
 recursion.

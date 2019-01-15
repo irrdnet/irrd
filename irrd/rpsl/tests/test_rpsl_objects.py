@@ -427,7 +427,7 @@ class TestRPSLRouteSet:
         assert obj.__class__ == RPSLRouteSet
         assert not obj.messages.errors()
         assert obj.pk() == "RS-TEST"
-        assert obj.parsed_data['mp-members'] == ['2001:DB8::/48']
+        assert obj.parsed_data['mp-members'] == ['2001:db8::/48']
         assert obj.render_rpsl_text() == rpsl_text.replace('2001:0dB8::/48', '2001:db8::/48')
 
 

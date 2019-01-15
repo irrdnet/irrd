@@ -174,6 +174,7 @@ class TestConfiguration:
                     'TESTDB2': {
                         'authoritative': True,
                         'nrtm_host': '192.0.2.1',
+                        'nrtm_port': 'aaa',
                     },
                     'TESTDB3': {
                         'authoritative': True,
@@ -204,6 +205,7 @@ class TestConfiguration:
         assert 'Setting nrtm_host for source TESTDB can not be enabled without setting import_serial_source.' in str(ce)
         assert 'Setting authoritative for source TESTDB2 can not be enabled when either nrtm_host or import_source are set.' in str(ce)
         assert 'Setting authoritative for source TESTDB3 can not be enabled when either nrtm_host or import_source are set.' in str(ce)
+        assert 'Setting nrtm_port for source TESTDB2 must be a number.' in str(ce)
         assert 'Setting import_timer for source TESTDB must be a number.' in str(ce)
         assert 'Setting export_timer for source TESTDB must be a number.' in str(ce)
         assert 'Invalid source name: lowercase' in str(ce)

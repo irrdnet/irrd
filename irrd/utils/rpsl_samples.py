@@ -557,6 +557,7 @@ descr:          example route
 descr:          the route attribute should have the extra zero removed,
 +               but this value should not: 192.0.02.0/24
 origin:         AS65537
+member-of:      RS-TEST
 mnt-by:         TEST-MNT
 changed:        2009-10-15T09:32:17Z
 source:         TEST
