@@ -2,8 +2,8 @@
 Development setup
 =================
 
-Development environment & tests
--------------------------------
+Development environment & unit tests
+------------------------------------
 
 The basic method to set up a local environment is::
 
@@ -35,6 +35,40 @@ To avoid this, use ``--basetemp`` to set an alternate temporary directory, e.g.:
     pytest --cov-report term-missing --cov=irrd --basetemp=.tmpdirs/ irrd
 
 You may also want to add ``-v`` for more verbose output.
+
+Integration test
+----------------
+
+The integration test is not included when running ``pytest irrd``.
+To run the integration test, two databases need to be configured, e.g.::
+
+    export IRRD_DATABASE_URL_INTEGRATION_1=postgresql:///irrd_test1
+    export IRRD_DATABASE_URL_INTEGRATION_2=postgresql:///irrd_test2
+
+The test can then be started with::
+
+    pytest --basetemp=.tmpdirs/ -s -vv irrd/integration_tests/run.py
+
+The `-s` parameter prevents `stdout` capture, which gives some information
+about the test setup to aid in debugging. This example also uses the
+temporary directory name fix suggested for unit tests.
+
+The integration test will start two instances of IRRd, one mirroring off the
+other, and an email server that captures all mail. It will then run a series
+of updates and queries, verify the contents of mails, the state of the
+databases, mirroring, utf-8 handling and run all basic types of queries.
+
+Code coverage is not measured for the integration test, as its purpose is
+not to test all paths, but rather verify that the most important paths
+are working end-to-end.
+
+.. danger::
+    The integration test will wipe all contents of IRRd tables in the databases
+    ``IRRD_DATABASE_URL_INTEGRATION_1`` and ``IRRD_DATABASE_URL_INTEGRATION_2``
+    without further checks or confirmation.
+
+Mypy and flake8
+---------------
 
 In addition to the tests, this project uses `mypy` for type checking and `flake8`
 for style checking. To run these, run::

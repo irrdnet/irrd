@@ -160,7 +160,7 @@ class TestSingleChangeRequestHandling:
         query_result_existing_obj = {
             'object_text': SAMPLE_INETNUM,
         }
-        query_results = iter([[query_result_existing_obj], [], [], []])
+        query_results = iter([[query_result_existing_obj], iter([]), iter([]), iter([])])
         mock_dh.execute_query = lambda query: next(query_results)
         validator = ReferenceValidator(mock_dh)
 
