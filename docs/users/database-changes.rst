@@ -175,7 +175,6 @@ Authentication and notification overview
      - Existing object and new object
      -
        * ``upd-to`` for all maintainers of existing object 
-       * ``notify`` attribute of the existing object
        * report sent to the submitter of the change
    * - Any change, syntax or referential integrity failure
      - ---

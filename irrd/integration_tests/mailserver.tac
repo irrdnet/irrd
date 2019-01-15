@@ -13,8 +13,8 @@ from zope.interface import implementer
 from twisted.internet import defer
 from twisted.mail import smtp
 
-from irrd.integration_tests.data import EMAIL_SEPARATOR, EMAIL_RETURN_MSGS_COMMAND, EMAIL_DISCARD_MSGS_COMMAND, \
-    EMAIL_SMTP_PORT
+from irrd.integration_tests.data import (EMAIL_SEPARATOR, EMAIL_RETURN_MSGS_COMMAND, EMAIL_DISCARD_MSGS_COMMAND,
+                                         EMAIL_SMTP_PORT, EMAIL_END)
 
 IRRD_ROOT_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
 sys.path.append(IRRD_ROOT_PATH)
@@ -29,6 +29,7 @@ class CustomESMTP(smtp.ESMTP):
         clean_line = line.strip().decode('utf-8')
         if clean_line == EMAIL_RETURN_MSGS_COMMAND:
             self.transport.write(EMAIL_SEPARATOR.join(messages).encode('utf-8') + b'\n')
+            self.transport.write(EMAIL_END)
         elif clean_line == EMAIL_DISCARD_MSGS_COMMAND:
             messages = []
             self.transport.write(b'OK\n')

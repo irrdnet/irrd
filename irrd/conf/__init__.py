@@ -243,6 +243,8 @@ class Configuration:
                 errors.append(f'Setting authoritative for source {name} can not be enabled when either '
                               f'nrtm_host or import_source are set.')
 
+            if not details.get('nrtm_port', '43').isnumeric():
+                errors.append(f'Setting nrtm_port for source {name} must be a number.')
             if not details.get('import_timer', '0').isnumeric():
                 errors.append(f'Setting import_timer for source {name} must be a number.')
             if not details.get('export_timer', '0').isnumeric():

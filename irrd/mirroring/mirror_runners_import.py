@@ -163,7 +163,14 @@ class MirrorFullImportRunner:
 
     def _retrieve_file_local(self, path, return_contents=False) -> Tuple[str, bool]:
         if not return_contents:
-            return path, False
+            if path.endswith('.gz'):
+                destination = NamedTemporaryFile(delete=False)
+                logger.debug(f'Local file is expected to be gzipped, gunzipping from {path}')
+                with gzip.open(path, 'rb') as f_in:
+                    shutil.copyfileobj(f_in, destination)
+                return destination.name, True
+            else:
+                return path, False
         with open(path) as fh:
             value = fh.read().strip()
         return value, False
@@ -180,7 +187,7 @@ class NRTMImportUpdateStreamRunner:
     def run(self, serial_newest_seen: int, database_handler: DatabaseHandler):
         serial_start = serial_newest_seen + 1
         nrtm_host = get_setting(f'sources.{self.source}.nrtm_host')
-        nrtm_port = get_setting(f'sources.{self.source}.nrtm_port')
+        nrtm_port = int(get_setting(f'sources.{self.source}.nrtm_port', '43'))
         if not nrtm_host or not nrtm_port:
             logger.debug(f'Skipping NRTM updates for {self.source}, nrtm_host or nrtm_port not set.')
             return

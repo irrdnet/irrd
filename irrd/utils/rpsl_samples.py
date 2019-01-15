@@ -531,6 +531,7 @@ phone:          +31 20 000 0000
 nic-hdl:        PERSON-TEST
 mnt-by:         TEST-MNT
 e-mail:         email@example.com
+notify:         notify@example.com
 changed:        2009-07-24T17:00:00Z
 source:         TEST
 """
@@ -745,6 +746,68 @@ tVgmazoi0z61pc6BUCdaeSitq3NKzDCYghB9DWBrE3IatIjwWOqPmLYMDkUnp7jl
 NW7fkcpU3eaA9cSqZxUaTfUCAYgHNO8wd7sqjWfdMNxVZXTDH48=
 =SsN9
 -----END PGP SIGNATURE-----"""
+
+SIGNED_PERSON_UPDATE_VALID = """-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA256
+
+person: Test person changed by PGP signed update
+address: DashCare BV
+address: Amsterdam
+address: The Netherlands
+phone: +31 20 000 0000
+nic-hdl: PERSON-TEST
+mnt-by: TEST-MNT
+e-mail: email@example.com
+changed: 2009-07-24T17:00:00Z
+source: TEST
+-----BEGIN PGP SIGNATURE-----
+
+iQIzBAEBCAAdFiEEhiYdjb69pPVGktZNqDg7p4DyOMYFAlw9yJ8ACgkQqDg7p4Dy
+OMbALg//RVOqcJbeQcv0VO/iQQHXSGE0/0t/JLucboEVWhb5WFRr8vTyIQnjFcFS
+DD9RSS3NXOBFsTpxC0hoN7u48PdKjNUCe6vAQd4p32+KqmWpfoCLYO4COzjlmBz8
+Ppg+oJY7qSq5NgxvcYuFPatiUEYbRNQCDrO1eCoBIHAgLoV0BcqcNRIIUpLFrvvh
+JCWhhodtMskROorEi9Lv48vDte07QfZngzXw0gZFiwLit2pnwoO6BgOopTt1d0J+
+Eo1/MNCfs8UDkJLS/7t8yGGs2WhxIJViEsuEy7HBP6z+pgrXwp64zJSo7dnevrNs
+YuAnWgBSoHrWpg8qJyWBtMm+MYz6nA3ha+NgBsZEoR60jrw5PT4l277pnDLf7yv7
+bR0jZcPlSY+wLUiv+hhEZgZwgMAlXuJLwMNL4dzCF6GRZiDbbznuTApoM+OR+jp8
+Z5J1LtVOmhVrxDRBWDebogPplN3Ipwxc3THBkIl3OnJujU4t4ItO8kzuBDlXreYY
+P4EnuXRPaUfGh0rQs7SG4CmON+mILJFAixR+v48NI9MZ/nNDw+OuyCTNQSNY/5Fy
+9Noh6F2qDcMHFS0jvXSW1AXySoRLgKJmdGS5VoOlPfy+4+3cu88pk0XoBXB1nL2f
+tIE+AcgV9Gw37pgx/51bDCmiN5Fe4gWpzShsoM+SDmExpXiqEik=
+=iU9P
+-----END PGP SIGNATURE-----
+"""
+
+SIGNED_PERSON_UPDATE_INVALID = """-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA256
+
+person: Test person invalid signature
+address: DashCare BV
+address: Amsterdam
+address: The Netherlands
+phone: +31 20 000 0000
+nic-hdl: PERSON-TEST
+mnt-by: TEST-MNT
+e-mail: email@example.com
+changed: 2009-07-24T17:00:00Z
+source: TEST
+-----BEGIN PGP SIGNATURE-----
+
+iQIzBAEBCAAdFiEEhiYdjb69pPVGktZNqDg7p4DyOMYFAlw9wJAACgkQqDg7p4Dy
+OMbHLA//Zo8Q28vR/0itbb/7d6Da5f7xMFQXT0YPO4oAd2+qGUU1ruTu5VBem+hh
+t+f+SlD4AjwuinSZ1pZuzlUB/r7OQO5Ke7v9o1ZrLMdHo1G/QCfVxogleM0I7Yr+
+fuvuLHxJvTTY5XXbcs2xD10DpZv5D+TY7SUph9tlzhbfNBxGR5Bd9z4hSA9fXKuX
+1EBtrOW3Kc4xifVtRTEF7lVSDYTE02nvhfiKZkAXI93IRPGipCJDLQwXSw0Z2+Al
+DmlewyhJr3bm9RrjGSImlraHrJcnf9E6jtCeAuZmNiDo1Bu0+o/4oEVNFvakPln6
+MdjH74yQeU9b57YyV1Z4DfB70WCZhuQ8OJ1tfMbuRCdkObjiSSnaVBaL4rFwgrbQ
+YXJtQhtDbtJ5vcbeAS6Zk5dwMrCWPYrfq+Ks/Rx+zMZROt25KBOdxeGnZkmYR++7
+jLvdxNpHftyhq7VALIzlT21/vFTAhGOwUvdaJkFhOEvGxinBZWwohZdyDeRxQDPE
+YQIyIztyhvO+8ZpzEFOkxpjMDATYYP14pcSrx24SBbMQLEbvWNe7lQXdAPnEyESw
+3uXGn8rrEBfDvBZsCdGiYQQvmZIhcj5lkObtmpoRUJYxk616ib0e4V6VbbLVnv4j
+NZ8afnYq/NQpvG6roiZalY8Rs+dY66NUhnx4RgXDawLqAX/e0Fk=
+=/TRP
+-----END PGP SIGNATURE-----
+"""
 
 object_sample_mapping = {
     "as-block": SAMPLE_AS_BLOCK,
