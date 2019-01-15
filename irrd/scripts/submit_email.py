@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # flake8: noqa: E402
 import argparse
+import logging
 import os
 import sys
 
@@ -11,6 +12,8 @@ The message is always read from stdin.
 A report on the results will be sent to the user by e-mail.
 """
 
+logger = logging.getLogger(__name__)
+
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))))
 
 from irrd.conf import config_init, CONFIG_PATH_DEFAULT
@@ -18,7 +21,11 @@ from irrd.updates.email import handle_email_submission
 
 
 def run(data):
-    handle_email_submission(data)
+    try:
+        handle_email_submission(data)
+    except Exception as exc:
+        logger.critical(f'An exception occurred while attempting to process the following email: {data}', exc_info=exc)
+        print('An internal error occurred while processing this email.')
 
 
 def main():  # pragma: no cover
