@@ -45,13 +45,19 @@ To run the integration test, two databases need to be configured, e.g.::
     export IRRD_DATABASE_URL_INTEGRATION_1=postgresql:///irrd_test1
     export IRRD_DATABASE_URL_INTEGRATION_2=postgresql:///irrd_test2
 
+
+.. danger::
+    The integration test will wipe all contents of IRRd tables in the databases
+    ``IRRD_DATABASE_URL_INTEGRATION_1`` and ``IRRD_DATABASE_URL_INTEGRATION_2``
+    without further checks or confirmation.
+
 The test can then be started with::
 
     pytest --basetemp=.tmpdirs/ -s -vv irrd/integration_tests/run.py
 
 The `-s` parameter prevents `stdout` capture, which gives some information
 about the test setup to aid in debugging. This example also uses the
-temporary directory name fix suggested for unit tests.
+temporary directory name fix for Mac OS X, as suggested for unit tests.
 
 The integration test will start two instances of IRRd, one mirroring off the
 other, and an email server that captures all mail. It will then run a series
@@ -61,11 +67,6 @@ databases, mirroring, utf-8 handling and run all basic types of queries.
 Code coverage is not measured for the integration test, as its purpose is
 not to test all paths, but rather verify that the most important paths
 are working end-to-end.
-
-.. danger::
-    The integration test will wipe all contents of IRRd tables in the databases
-    ``IRRD_DATABASE_URL_INTEGRATION_1`` and ``IRRD_DATABASE_URL_INTEGRATION_2``
-    without further checks or confirmation.
 
 Mypy and flake8
 ---------------
