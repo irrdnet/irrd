@@ -58,7 +58,7 @@ def validate_pgp_signature(message: str, detached_signature: Optional[str]=None)
         return None, None
 
     log_message = result.stderr.replace('\n', ' -- ').replace('gpg:                ', '')
-    logger.debug(f'checked PGP signature, response: {log_message}')
+    logger.info(f'checked PGP signature, response: {log_message}')
     if result.valid and result.key_status is None:
         logger.info(f'Found valid PGP signature, fingerprint {result.fingerprint}')
         return new_message, result.fingerprint

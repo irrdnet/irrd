@@ -168,7 +168,10 @@ class ChangeRequest:
             else:
                 report += '\n\nNew version of this object:\n\n'
 
-        report += self.rpsl_obj_new.render_rpsl_text()
+        if self.request_type == UpdateRequestType.DELETE:
+            report += self.rpsl_obj_current.render_rpsl_text()
+        else:
+            report += self.rpsl_obj_new.render_rpsl_text()
         return report
 
     def request_type_str(self) -> str:
