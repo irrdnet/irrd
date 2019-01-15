@@ -123,16 +123,16 @@ class TestRPSLAsSet:
         assert not obj.messages.errors()
         assert obj.pk() == "AS-SETTEST"
         assert obj.referred_objects() == [
-            ('members', ['aut-num', 'as-set'], ['AS2602', 'AS42909', 'AS51966', 'AS49624']),
+            ('members', ['aut-num', 'as-set'], ['AS65538', 'AS65539', 'AS65540', 'AS65537']),
             ('admin-c', ['role', 'person'], ['PERSON-TEST']),
             ('tech-c', ['role', 'person'], ['PERSON-TEST']),
             ('mnt-by', ['mntner'], ['TEST-MNT'])
         ]
         assert obj.source() == 'TEST'
 
-        assert obj.parsed_data['members'] == ['AS2602', 'AS42909', 'AS51966', 'AS49624']
+        assert obj.parsed_data['members'] == ['AS65538', 'AS65539', 'AS65540', 'AS65537']
         # Field parsing will cause our object to look slightly different than the original, hence the replace()
-        assert obj.render_rpsl_text() == rpsl_text.replace("AS2602, AS42909, AS51966", "AS2602,AS42909,AS51966")
+        assert obj.render_rpsl_text() == rpsl_text.replace("AS65538, AS65539, AS65540", "AS65538,AS65539,AS65540")
 
 
 class TestRPSLAutNum:

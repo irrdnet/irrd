@@ -14,8 +14,8 @@ remarks:        remark
 
 SAMPLE_AS_SET = """as-set:         AS-SETTEST
 descr:          description
-members:        AS2602, AS42909, AS51966
-members:        AS49624
+members:        AS65538, AS65539, AS65540
+members:        AS65537
 tech-c:         PERSON-TEST
 admin-c:        PERSON-TEST
 notify:         notify@example.com
@@ -587,10 +587,8 @@ remarks:        remark
 
 SAMPLE_RTR_SET = """rtr-set:        rtrs-settest
 descr:          rtr-set test
-members:        router1.example.com
-members:        router2.example.com
-members:        router3.example.com
-members:        rtrs-other-set
+members:        rtr.example.com
+members:        rtrs-settest
 remarks:
 tech-c:         PERSON-TEST
 admin-c:        PERSON-TEST

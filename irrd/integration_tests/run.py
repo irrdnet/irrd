@@ -15,14 +15,42 @@ from alembic import command, config
 
 from irrd.conf import config_init, PASSWORD_HASH_DUMMY_VALUE
 from irrd.utils.rpsl_samples import (SAMPLE_MNTNER, SAMPLE_PERSON, SAMPLE_KEY_CERT, SIGNED_PERSON_UPDATE_VALID,
-                                     SIGNED_PERSON_UPDATE_INVALID, object_sample_mapping)
+                                     SIGNED_PERSON_UPDATE_INVALID, SAMPLE_AS_BLOCK,
+                                     SAMPLE_AS_SET, SAMPLE_AUT_NUM, SAMPLE_DOMAIN, SAMPLE_FILTER_SET, SAMPLE_INET_RTR,
+                                     SAMPLE_INET6NUM, SAMPLE_INETNUM, SAMPLE_PEERING_SET, SAMPLE_ROLE, SAMPLE_ROUTE,
+                                     SAMPLE_ROUTE_SET, SAMPLE_ROUTE6, SAMPLE_RTR_SET)
 from irrd.utils.whois_client import whois_query, whois_query_irrd
 from .data import EMAIL_SMTP_PORT, EMAIL_DISCARD_MSGS_COMMAND, EMAIL_RETURN_MSGS_COMMAND, EMAIL_SEPARATOR, EMAIL_END
 
 IRRD_ROOT_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
 sys.path.append(IRRD_ROOT_PATH)
 
-LARGE_UPDATE = '\n\n'.join(object_sample_mapping.values())
+SAMPLE_MNTNER_CLEAN = SAMPLE_MNTNER.replace('mnt-by:         OTHER1-MNT,OTHER2-MNT\n', '')
+LARGE_UPDATE = '\n\n'.join([
+    SAMPLE_AS_BLOCK,
+    SAMPLE_AS_SET,
+    SAMPLE_AUT_NUM,
+    SAMPLE_AUT_NUM.replace('aut-num:        as065537', 'aut-num: as65538'),
+    SAMPLE_AUT_NUM.replace('aut-num:        as065537', 'aut-num: as65539'),
+    SAMPLE_AUT_NUM.replace('aut-num:        as065537', 'aut-num: as65540'),
+    SAMPLE_DOMAIN,
+    SAMPLE_FILTER_SET,
+    SAMPLE_INET_RTR,
+    SAMPLE_INET6NUM,
+    SAMPLE_INETNUM,
+    SAMPLE_KEY_CERT,
+    SAMPLE_MNTNER_CLEAN,
+    SAMPLE_PEERING_SET,
+    SAMPLE_PERSON,
+    SAMPLE_PERSON.replace('PERSON-TEST', 'DUMY2-TEST'),
+    SAMPLE_ROLE,
+    SAMPLE_ROUTE,
+    SAMPLE_ROUTE_SET,
+    SAMPLE_ROUTE6,
+    SAMPLE_RTR_SET,
+
+])
+
 
 class TestIntegration:
     """
@@ -48,7 +76,7 @@ class TestIntegration:
         # Load a regular mntner and person into the DB, and verify
         # the contents of the result.
         self._submit_update(self.config_path1,
-                            SAMPLE_MNTNER + '\n\n' + SAMPLE_PERSON + '\n\npassword: md5-password')
+                            SAMPLE_MNTNER_CLEAN + '\n\n' + SAMPLE_PERSON + '\n\npassword: md5-password')
         messages = self._retrieve_mails()
         assert len(messages) == 1
         mail_text = self._extract_message_body(messages[0])
@@ -182,7 +210,7 @@ class TestIntegration:
         # Submit a valid delete for all our new objects.
         self._submit_update(self.config_path1,
                             f'{SAMPLE_PERSON}delete: delete\n\n{SAMPLE_KEY_CERT}delete: delete\n\n' +
-                            f'{SAMPLE_MNTNER}delete: delete\npassword: crypt-password\n')
+                            f'{SAMPLE_MNTNER_CLEAN}delete: delete\npassword: crypt-password\n')
         messages = self._retrieve_mails()
         # Expected mails are status, mnt-nfy on mntner (2x), and notify on mntner
         assert len(messages) == 4
@@ -241,6 +269,7 @@ class TestIntegration:
         messages = self._retrieve_mails()
         assert len(messages) == 1
         mail_text = self._extract_message_body(messages[0])
+        print(mail_text)
         assert messages[0]['Subject'] == 'SUCCESS: my subject'
         assert messages[0]['From'] == 'from@example.com'
         assert messages[0]['To'] == 'Sasha <sasha@example.com>'
@@ -277,7 +306,7 @@ class TestIntegration:
             query_result = whois_query_irrd('127.0.0.1', port, '!iRS-TEST')
             assert query_result == '192.0.2.0/24 2001:db8::/48'
             query_result = whois_query_irrd('127.0.0.1', port, '!iAS-SETTEST')
-            assert query_result == 'AS2602 AS42909 AS49624 AS51966'
+            assert query_result == 'AS65537 AS65538 AS65539 AS65540'
             query_result = whois_query_irrd('127.0.0.1', port, '!maut-num,as65537')
             assert 'AS65537' in query_result
             assert 'TEST-AS' in query_result
@@ -312,11 +341,11 @@ class TestIntegration:
             assert 'ROLE-TEST' in query_result
 
         query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!j-*')
-        assert query_result == 'TEST:Y:1-24:24'
+        assert query_result == 'TEST:Y:1-28:28'
         # irrd #2 missed the first two updates from NRTM, as they were done at
         # the same time and loaded from the full export
         query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!j-*')
-        assert query_result == 'TEST:Y:3-24:24'
+        assert query_result == 'TEST:Y:3-28:28'
 
     def _start_mailserver(self):
         self.pidfile_mailserver = str(self.tmpdir) + '/mailserver.pid'
@@ -495,6 +524,7 @@ class TestIntegration:
             data = s.recv(1024 * 1024)
             buffer += data
         buffer = buffer.split(b'\n', 1)[1]
+        buffer = buffer.split(EMAIL_END, 1)[0]
 
         s.sendall(f'{EMAIL_DISCARD_MSGS_COMMAND}\r\n'.encode('ascii'))
         messages = [email.message_from_string(m.strip().decode('ascii')) for m in buffer.split(EMAIL_SEPARATOR.encode('ascii'))]
