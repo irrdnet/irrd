@@ -262,3 +262,7 @@ When using the virtualenv as set up above, the full path is::
 A ``--config`` parameter can be passed to set a different configuration
 file path. Results of the request are sent to the sender of the request,
 and :doc:`any relevant notifications are also sent </users/database-changes>`.
+
+.. note::
+    As a separate script, `irrd_submit_email` **always acts on the current
+    configuration file** - not on the configuration that IRRd started with.

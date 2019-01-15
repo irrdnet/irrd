@@ -126,6 +126,12 @@ A successful reload after a `SIGHUP` is also logged.
     is already in use. An incorrect password for the PostgreSQL database is only detected when IRRd
     restarts and attempts to connect.
 
+.. note::
+    As a separate script, `irrd_submit_email`, the handler for email submissions
+    by IRRd users, **always acts on the current configuration file** - not on
+    the configuration that IRRd started with.
+
+
 Configuration options
 ---------------------
 
