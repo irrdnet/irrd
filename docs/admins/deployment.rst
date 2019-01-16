@@ -237,6 +237,9 @@ add a ``--config`` parameter after ``irrd``, like so::
 
     /home/irrd/irrd-venv/bin/twistd --uid=irrd irrd --config=other_config.yaml
 
+.. note::
+    Although ``log.logfile_path`` is not required, if it is unset and
+    IRRd is started in the background, log output is lost.
 
 Errors
 ~~~~~~
