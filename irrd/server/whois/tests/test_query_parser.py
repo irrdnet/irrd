@@ -34,7 +34,7 @@ mnt-by:         MNT-TEST
 source:         TEST2
 """
 
-MOCK_ROUTE_COMBINED = MOCK_ROUTE1 + "\n" + MOCK_ROUTE2 + "\n" + MOCK_ROUTE3.strip()
+MOCK_ROUTE_COMBINED = MOCK_ROUTE1 + '\n' + MOCK_ROUTE2 + '\n' + MOCK_ROUTE3.strip()
 
 
 MOCK_ROUTE_COMBINED_KEY_FIELDS = """route: 192.0.2.0/25
@@ -56,9 +56,9 @@ def prepare_parser(monkeypatch, config_override):
     })
 
     mock_database_handler = Mock()
-    monkeypatch.setattr("irrd.server.whois.query_parser.DatabaseHandler", lambda: mock_database_handler)
+    monkeypatch.setattr('irrd.server.whois.query_parser.DatabaseHandler', lambda: mock_database_handler)
     mock_database_query = Mock()
-    monkeypatch.setattr("irrd.server.whois.query_parser.RPSLDatabaseQuery", lambda: mock_database_query)
+    monkeypatch.setattr('irrd.server.whois.query_parser.RPSLDatabaseQuery', lambda: mock_database_query)
     parser = WhoisQueryParser(IPv4Address('TCP', '127.0.0.1', 99999), '[127.0.0.1]:99999')
 
     mock_query_result = [
@@ -334,7 +334,7 @@ class TestWhoisQueryParserRIPE:
         mock_dh.reset_mock()
 
         mock_nrg = Mock()
-        monkeypatch.setattr("irrd.server.whois.query_parser.NRTMGenerator", lambda: mock_nrg)
+        monkeypatch.setattr('irrd.server.whois.query_parser.NRTMGenerator', lambda: mock_nrg)
         mock_nrg.generate = lambda source, version, serial_start, serial_end, dh: f'{source}/{version}/{serial_start}/{serial_end}'
 
         response = parser.handle_query('-g TEST1:3:1-5')
@@ -686,7 +686,7 @@ class TestWhoisQueryParserIRRD:
     def test_database_serial_range(self, monkeypatch, prepare_parser):
         mock_dq, mock_dh, parser = prepare_parser
         mock_dsq = Mock()
-        monkeypatch.setattr("irrd.server.whois.query_parser.DatabaseStatusQuery", lambda: mock_dsq)
+        monkeypatch.setattr('irrd.server.whois.query_parser.DatabaseStatusQuery', lambda: mock_dsq)
 
         mock_query_result = [
             {'source': 'TEST1', 'serial_oldest_journal': 10, 'serial_newest_journal': 20, 'serial_last_export': 10},
@@ -858,21 +858,21 @@ class TestWhoisQueryParserIRRD:
         response = parser.handle_query('!rz')
         assert response.response_type == WhoisQueryResponseType.ERROR
         assert response.mode == WhoisQueryResponseMode.IRRD
-        assert response.result == "Invalid input for route search: z"
+        assert response.result == 'Invalid input for route search: z'
         assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
         mock_dh.reset_mock()
 
         response = parser.handle_query('!rz,o')
         assert response.response_type == WhoisQueryResponseType.ERROR
         assert response.mode == WhoisQueryResponseMode.IRRD
-        assert response.result == "Invalid input for route search: z,o"
+        assert response.result == 'Invalid input for route search: z,o'
         assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
         mock_dh.reset_mock()
 
         response = parser.handle_query('!r192.0.2.0/25,z')
         assert response.response_type == WhoisQueryResponseType.ERROR
         assert response.mode == WhoisQueryResponseMode.IRRD
-        assert response.result == "Invalid route search option: z"
+        assert response.result == 'Invalid route search option: z'
         assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
         mock_dh.reset_mock()
 

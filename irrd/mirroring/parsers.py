@@ -50,7 +50,7 @@ class MirrorFileImportParser(MirrorParser):
         self.run_import()
 
     def run_import(self):
-        f = open(self.filename, encoding="utf-8", errors='backslashreplace')
+        f = open(self.filename, encoding='utf-8', errors='backslashreplace')
         for paragraph in split_paragraphs_rpsl(f):
             self.parse_object(paragraph)
 
@@ -92,19 +92,19 @@ class MirrorFileImportParser(MirrorParser):
 
         except UnknownRPSLObjectClassException as e:
             self.obj_unknown += 1
-            self.unknown_object_classes.add(str(e).split(":")[1].strip())
+            self.unknown_object_classes.add(str(e).split(':')[1].strip())
 
     def log_report(self) -> None:
         obj_successful = self.obj_parsed - self.obj_unknown - self.obj_errors - self.obj_ignored_class
-        logger.info(f"File import for {self.source}: {self.obj_parsed} objects read, "
-                    f"{obj_successful} objects inserted, "
-                    f"ignored {self.obj_errors} due to errors, "
-                    f"ignored {self.obj_ignored_class} due to object_class_filter, "
-                    f"serial {self.serial}, source {self.filename}")
+        logger.info(f'File import for {self.source}: {self.obj_parsed} objects read, '
+                    f'{obj_successful} objects inserted, '
+                    f'ignored {self.obj_errors} due to errors, '
+                    f'ignored {self.obj_ignored_class} due to object_class_filter, '
+                    f'serial {self.serial}, source {self.filename}')
         if self.obj_unknown:
             unknown_formatted = ', '.join(self.unknown_object_classes)
-            logger.warning(f"Ignored {self.obj_unknown} objects found in file import for {self.source} due to unknown "
-                           f"object classes: {unknown_formatted}")
+            logger.warning(f'Ignored {self.obj_unknown} objects found in file import for {self.source} due to unknown '
+                           f'object classes: {unknown_formatted}')
 
 
 class NRTMStreamParser(MirrorParser):
@@ -140,7 +140,7 @@ class NRTMStreamParser(MirrorParser):
         for paragraph in paragraphs:
             if self._handle_possible_start_line(paragraph):
                 continue
-            elif paragraph.startswith("%") or paragraph.startswith("#"):
+            elif paragraph.startswith('%') or paragraph.startswith('#'):
                 continue  # pragma: no cover -- falsely detected as not run by coverage library
             elif paragraph.startswith('ADD') or paragraph.startswith('DEL'):
                 self._handle_operation(paragraph, paragraphs)

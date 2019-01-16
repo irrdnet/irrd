@@ -25,8 +25,8 @@ class RPSLDatabaseObject(Base):  # type: ignore
     __tablename__ = 'rpsl_objects'
 
     # Requires extension pgcrypto
-    # in alembic: op.execute('create EXTENSION if not EXISTS "pgcrypto";')
-    pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)
+    # in alembic: op.execute('create EXTENSION if not EXISTS 'pgcrypto';')
+    pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text('gen_random_uuid()'), primary_key=True)
     rpsl_pk = sa.Column(sa.String, index=True, nullable=False)
     source = sa.Column(sa.String, index=True, nullable=False)
 
@@ -55,11 +55,11 @@ class RPSLDatabaseObject(Base):  # type: ignore
         for name in lookup_field_names():
             index_name = 'ix_rpsl_objects_parsed_data_' + name.replace('-', '_')
             index_on = sa.text(f"(parsed_data->'{name}')")
-            args.append(sa.Index(index_name, index_on, postgresql_using="gin"))
+            args.append(sa.Index(index_name, index_on, postgresql_using='gin'))
         return tuple(args)
 
     def __repr__(self):
-        return f"<{self.rpsl_pk}/{self.source}/{self.pk}>"
+        return f'<{self.rpsl_pk}/{self.source}/{self.pk}>'
 
 
 class RPSLDatabaseJournal(Base):  # type: ignore
@@ -69,8 +69,8 @@ class RPSLDatabaseJournal(Base):  # type: ignore
     __tablename__ = 'rpsl_database_journal'
 
     # Requires extension pgcrypto
-    # in alembic: op.execute('create EXTENSION if not EXISTS "pgcrypto";')
-    pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)
+    # in alembic: op.execute('create EXTENSION if not EXISTS 'pgcrypto';')
+    pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text('gen_random_uuid()'), primary_key=True)
     rpsl_pk = sa.Column(sa.String, index=True, nullable=False)
     source = sa.Column(sa.String, index=True, nullable=False)
 
@@ -90,7 +90,7 @@ class RPSLDatabaseJournal(Base):  # type: ignore
         )
 
     def __repr__(self):
-        return f"<{self.source}/{self.serial}/{self.operation}/{self.rpsl_pk}>"
+        return f'<{self.source}/{self.serial}/{self.operation}/{self.rpsl_pk}>'
 
 
 class RPSLDatabaseStatus(Base):  # type: ignore
@@ -102,7 +102,7 @@ class RPSLDatabaseStatus(Base):  # type: ignore
     """
     __tablename__ = 'database_status'
 
-    pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)
+    pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text('gen_random_uuid()'), primary_key=True)
     source = sa.Column(sa.String, index=True, nullable=False, unique=True)
 
     serial_oldest_seen = sa.Column(sa.Integer)
@@ -129,5 +129,5 @@ expected_lookup_field_names = {
     'mp-members', 'origin', 'mbrs-by-ref',
 }
 if sorted(lookup_field_names()) != sorted(expected_lookup_field_names):  # pragma: no cover
-    raise RuntimeError(f"Field names of lookup fields do not match expected set. Indexes may be missing. "
-                       f"Expected: {expected_lookup_field_names}, actual: {lookup_field_names()}")
+    raise RuntimeError(f'Field names of lookup fields do not match expected set. Indexes may be missing. '
+                       f'Expected: {expected_lookup_field_names}, actual: {lookup_field_names()}')

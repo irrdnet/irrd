@@ -156,7 +156,7 @@ class TestChangeSubmissionHandler:
         changed:        2016-10-05T10:41:15Z
         source:         TEST
         """)
-        rpsl_text = person_text + "\n\n" + mntner_text
+        rpsl_text = person_text + '\n\n' + mntner_text
 
         query_responses = iter([
             [{'parsed_data': {'fingerpr': '8626 1D8D BEBD A4F5 4692  D64D A838 3BA7 80F2 38C6'}}],
@@ -293,7 +293,7 @@ class TestChangeSubmissionHandler:
         changed:        2016-10-05T10:41:15Z
         source:         TEST
         """)
-        rpsl_text = person_text + "\n\n" + mntner_text
+        rpsl_text = person_text + '\n\n' + mntner_text
 
         query_responses = iter([
             [{'parsed_data': {'fingerpr': '8626 1D8D BEBD A4F5 XXXX  D64D A838 3BA7 80F2 38C6'}}],
@@ -816,10 +816,10 @@ class TestChangeSubmissionHandler:
         changed:        2009-07-24T17:00:00Z
         source:         TEST
         
-        ERROR: Mandatory attribute 'address' on object person is missing
-        ERROR: Mandatory attribute 'phone' on object person is missing
-        ERROR: Mandatory attribute 'e-mail' on object person is missing
-        ERROR: Mandatory attribute 'mnt-by' on object person is missing
+        ERROR: Mandatory attribute "address" on object person is missing
+        ERROR: Mandatory attribute "phone" on object person is missing
+        ERROR: Mandatory attribute "e-mail" on object person is missing
+        ERROR: Mandatory attribute "mnt-by" on object person is missing
         
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """)

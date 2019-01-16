@@ -11,8 +11,8 @@ from . import get_setting, ConfigurationError, config_init, is_config_initialise
 @pytest.fixture()
 def save_yaml_config(tmpdir, monkeypatch):
     def _save(config: Dict, run_init=True):
-        tmp_file = tmpdir + "/config.yaml"
-        with open(tmp_file, "w") as fh:
+        tmp_file = tmpdir + '/config.yaml'
+        with open(tmp_file, 'w') as fh:
             fh.write(yaml.safe_dump(config))
         if run_init:
             config_init(str(tmp_file))
@@ -26,8 +26,8 @@ class TestConfiguration:
         assert 'Error opening config file' in str(ce)
 
     def test_load_invalid_yaml(self, monkeypatch, tmpdir):
-        tmp_file = tmpdir + "/config.yaml"
-        fh = open(tmp_file, "w")
+        tmp_file = tmpdir + '/config.yaml'
+        fh = open(tmp_file, 'w')
         fh.write('  >foo')
         fh.close()
 
@@ -37,7 +37,7 @@ class TestConfiguration:
 
     def test_load_string_file(self, save_yaml_config):
         with pytest.raises(ConfigurationError) as ce:
-            save_yaml_config("foo")
+            save_yaml_config('foo')
         assert 'Could not find root item "irrd" in config file' in str(ce)
 
     def test_load_empty_config(self, save_yaml_config):

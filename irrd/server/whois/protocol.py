@@ -23,7 +23,7 @@ class WhoisQueryReceiver(TimeoutMixin, LineOnlyReceiver):
             self.transport.loseConnection()
             return
 
-        self.peer_str = f"[{peer.host}]:{peer.port}"
+        self.peer_str = f'[{peer.host}]:{peer.port}'
 
         self.query_parser = WhoisQueryParser(peer, self.peer_str)
         self.setTimeout(self.time_out)

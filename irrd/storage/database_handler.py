@@ -118,7 +118,7 @@ class DatabaseHandler:
         # constrained values - so if a second object appears with a pk/source
         # seen before, the cache must be flushed right away, or the two updates
         # will conflict.
-        rpsl_pk_source = rpsl_object.pk() + "-" + rpsl_object.parsed_data['source']
+        rpsl_pk_source = rpsl_object.pk() + '-' + rpsl_object.parsed_data['source']
         if rpsl_pk_source in self._rpsl_pk_source_seen:
             self._flush_rpsl_object_upsert_cache()
 

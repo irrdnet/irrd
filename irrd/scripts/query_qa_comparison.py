@@ -43,7 +43,7 @@ class QueryComparison:
         if input_file == '-':
             f = sys.stdin
         else:
-            f = open(input_file, encoding="utf-8", errors='backslashreplace')
+            f = open(input_file, encoding='utf-8', errors='backslashreplace')
 
         for query in f.readlines():
             query = query.strip() + '\n'
@@ -118,10 +118,10 @@ class QueryComparison:
                 self.queries_different += 1
                 self.write_inconsistency_report(query, cleaned_reference, cleaned_tested)
 
-        print(f"Ran {self.queries_run} objects, {self.queries_different} had different results, "
-              f"{self.queries_both_error} produced errors on both instances, "
-              f"{self.queries_invalid} invalid queries were skipped, "
-              f"{self.queries_mirror} NRTM queries were skipped")
+        print(f'Ran {self.queries_run} objects, {self.queries_different} had different results, '
+              f'{self.queries_both_error} produced errors on both instances, '
+              f'{self.queries_invalid} invalid queries were skipped, '
+              f'{self.queries_mirror} NRTM queries were skipped')
 
     def clean(self, query: str, response: Optional[str]) -> Optional[str]:
         """Clean the query response, so that the text can be compared."""
@@ -152,7 +152,7 @@ class QueryComparison:
         report = open(f'qout/QR {query.strip().replace("/", "S")[:30]}', 'w')
         diff_str = self.render_diff(query, cleaned_reference, cleaned_tested)
         report.write(query.strip() + '\n')
-        report.write("\n=================================================================\n")
+        report.write('\n=================================================================\n')
         if diff_str:
             report.write(f'~~~~~~~~~[ diff clean ref->tst ]~~~~~~~~~\n')
             report.write(diff_str + '\n')
@@ -160,7 +160,7 @@ class QueryComparison:
         report.write(str(cleaned_reference) + '\n')
         report.write(f'~~~~~~~~~[ clean tst {self.host_tested}:{self.port_tested} ]~~~~~~~~~\n')
         report.write(str(cleaned_tested) + '\n')
-        report.write("\n=================================================================\n")
+        report.write('\n=================================================================\n')
         report.close()
 
     def render_diff(self, query: str, cleaned_reference: str, cleaned_tested: str) -> Optional[str]:
@@ -183,20 +183,20 @@ class QueryComparison:
 def main():  # pragma: no cover
     description = """Run a list of queries against two IRRD instances, and report significant results."""
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument("input_file", type=str,
-                        help="the name of a file to read containing queries, or - for stdin")
-    parser.add_argument("host_reference", type=str,
-                        help="host/IP of the reference IRRD server")
-    parser.add_argument("port_reference", type=int,
-                        help="port for the reference IRRD server")
-    parser.add_argument("host_tested", type=str,
-                        help="host/IP of the tested IRRD server")
-    parser.add_argument("port_tested", type=int,
-                        help="port for the tested IRRD server")
+    parser.add_argument('input_file', type=str,
+                        help='the name of a file to read containing queries, or - for stdin')
+    parser.add_argument('host_reference', type=str,
+                        help='host/IP of the reference IRRD server')
+    parser.add_argument('port_reference', type=int,
+                        help='port for the reference IRRD server')
+    parser.add_argument('host_tested', type=str,
+                        help='host/IP of the tested IRRD server')
+    parser.add_argument('port_tested', type=int,
+                        help='port for the tested IRRD server')
     args = parser.parse_args()
 
     QueryComparison(args.input_file, args.host_reference, args.port_reference, args.host_tested, args.port_tested)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

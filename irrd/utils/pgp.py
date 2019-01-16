@@ -52,7 +52,7 @@ def validate_pgp_signature(message: str, detached_signature: Optional[str]=None)
             msg = f'message contained an inline PGP signature, but regular expression failed to extract body: {message}'
             logger.info(msg)
             return None, None
-        new_message = match.group(2) + "\n"
+        new_message = match.group(2) + '\n'
 
     else:
         return None, None

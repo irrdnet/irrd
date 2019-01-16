@@ -81,7 +81,7 @@ class ChangeSubmissionHandler:
         and then returns the object's PK.
         """
         clean_fingerprint = pgp_fingerprint.replace(' ', '')
-        key_id = "PGPKEY-" + clean_fingerprint[-8:]
+        key_id = 'PGPKEY-' + clean_fingerprint[-8:]
         query = RPSLDatabaseQuery().object_classes(['key-cert']).rpsl_pk(key_id)
         results = list(self.database_handler.execute_query(query))
 
@@ -95,8 +95,8 @@ class ChangeSubmissionHandler:
     def status(self) -> str:
         """Provide a simple SUCCESS/FAILED string based - former used if all objects were saved."""
         if all([result.status == UpdateRequestStatus.SAVED for result in self.results]):
-            return "SUCCESS"
-        return "FAILED"
+            return 'SUCCESS'
+        return 'FAILED'
 
     def submitter_report(self) -> str:
         """Produce a human-readable report for the submitter."""
@@ -128,9 +128,9 @@ class ChangeSubmissionHandler:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """)
         for result in self.results:
-            user_report += "---\n"
+            user_report += '---\n'
             user_report += result.submitter_report()
-            user_report += "\n"
+            user_report += '\n'
         user_report += '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n'
         return user_report
 
@@ -173,19 +173,19 @@ class ChangeSubmissionHandler:
             if UpdateRequestStatus.ERROR_AUTH in reports_per_status:
                 user_report += header_failed
                 for report in reports_per_status[UpdateRequestStatus.ERROR_AUTH]:
-                    user_report += f"---\n{report}\n"
+                    user_report += f'---\n{report}\n'
                 user_report += '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n'
             if UpdateRequestStatus.SAVED in reports_per_status:
                 user_report += header_saved
                 for report in reports_per_status[UpdateRequestStatus.SAVED]:
-                    user_report += f"---\n{report}\n"
+                    user_report += f'---\n{report}\n'
                 user_report += '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n'
 
             email.send_email(recipient, subject, user_report)
 
     def _request_meta_str(self):
-        request_meta_str = '\n'.join([f"> {k}: {v}" for k, v in self.request_meta.items() if v])
+        request_meta_str = '\n'.join([f'> {k}: {v}' for k, v in self.request_meta.items() if v])
         if request_meta_str:
-            request_meta_str = "\n" + request_meta_str + "\n\n"
+            request_meta_str = '\n' + request_meta_str + '\n\n'
         return request_meta_str
 

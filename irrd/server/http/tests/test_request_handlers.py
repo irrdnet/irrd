@@ -14,11 +14,11 @@ class TestDatabaseStatusRequest:
 
     def test_request(self, monkeypatch, config_override):
         mock_database_handler = Mock()
-        monkeypatch.setattr("irrd.server.http.request_handlers.DatabaseHandler", lambda: mock_database_handler)
+        monkeypatch.setattr('irrd.server.http.request_handlers.DatabaseHandler', lambda: mock_database_handler)
         mock_status_query = Mock()
-        monkeypatch.setattr("irrd.server.http.request_handlers.DatabaseStatusQuery", lambda: mock_status_query)
+        monkeypatch.setattr('irrd.server.http.request_handlers.DatabaseStatusQuery', lambda: mock_status_query)
         mock_statistics_query = Mock()
-        monkeypatch.setattr("irrd.server.http.request_handlers.RPSLDatabaseObjectStatisticsQuery",
+        monkeypatch.setattr('irrd.server.http.request_handlers.RPSLDatabaseObjectStatisticsQuery',
                             lambda: mock_statistics_query)
 
         def mock_whois_query(nrtm_host, nrtm_port, source):
@@ -32,7 +32,7 @@ class TestDatabaseStatusRequest:
             elif source == 'TEST3':
                 raise socket.timeout()
 
-        monkeypatch.setattr("irrd.server.http.request_handlers.whois_query_source_status", mock_whois_query)
+        monkeypatch.setattr('irrd.server.http.request_handlers.whois_query_source_status', mock_whois_query)
 
         config_override({
             'sources': {

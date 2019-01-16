@@ -23,7 +23,7 @@ def prepare_resource_mocks(monkeypatch, config_override):
     })
 
     mock_database_status_request = Mock()
-    monkeypatch.setattr("irrd.server.http.http_resources.DatabaseStatusRequest",
+    monkeypatch.setattr('irrd.server.http.http_resources.DatabaseStatusRequest',
                         lambda: mock_database_status_request)
     mock_http_request = Mock()
     mock_http_request.getClientAddress = lambda: IPv4Address('TCP', '192.0.2.0', 99999)

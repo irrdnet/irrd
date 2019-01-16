@@ -9,7 +9,7 @@ from ..pgp import validate_pgp_signature
 
 class TestValidatePGPSignature:
 
-    @pytest.mark.usefixtures("tmp_gpg_dir")
+    @pytest.mark.usefixtures('tmp_gpg_dir')
     def test_valid_detached_signed_ascii(self, tmp_gpg_dir, preload_gpg_key):
         message = textwrap.dedent("""
         Content-Transfer-Encoding: 7bit
@@ -17,7 +17,7 @@ class TestValidatePGPSignature:
         \tcharset=us-ascii
 
         test 1 2 3
-        """).strip() + "\n"
+        """).strip() + '\n'
 
         signature = textwrap.dedent("""
         -----BEGIN PGP SIGNATURE-----
@@ -41,7 +41,7 @@ class TestValidatePGPSignature:
         assert new_message is None
         assert fingerprint == '86261D8DBEBDA4F54692D64DA8383BA780F238C6'
 
-    @pytest.mark.usefixtures("tmp_gpg_dir")
+    @pytest.mark.usefixtures('tmp_gpg_dir')
     def test_valid_inline_signed_ascii(self, tmp_gpg_dir, preload_gpg_key):
         message = textwrap.dedent("""
         UNSIGNED TEXT TO BE IGNORED
@@ -78,7 +78,7 @@ class TestValidatePGPSignature:
         assert new_message.strip() == 'test\n1\n\n2\n\n3'
         assert fingerprint == '86261D8DBEBDA4F54692D64DA8383BA780F238C6'
 
-    @pytest.mark.usefixtures("tmp_gpg_dir")
+    @pytest.mark.usefixtures('tmp_gpg_dir')
     def test_invalid_inline_signed_ascii_multiple_messages(self, tmp_gpg_dir, preload_gpg_key):
         message = textwrap.dedent("""
         -----BEGIN PGP SIGNED MESSAGE-----
@@ -127,7 +127,7 @@ class TestValidatePGPSignature:
         assert new_message is None
         assert fingerprint is None
 
-    @pytest.mark.usefixtures("tmp_gpg_dir")
+    @pytest.mark.usefixtures('tmp_gpg_dir')
     def test_invalid_signature_detached_signed_ascii(self, tmp_gpg_dir, preload_gpg_key):
         message = textwrap.dedent("""
         Content-Transfer-Encoding: 7bit
@@ -135,7 +135,7 @@ class TestValidatePGPSignature:
         \tcharset=us-ascii
 
         test 1 2 INVALID
-        """).strip() + "\n"
+        """).strip() + '\n'
         signature = textwrap.dedent("""
         -----BEGIN PGP SIGNATURE-----
 

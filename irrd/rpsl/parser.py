@@ -23,7 +23,7 @@ class RPSLObjectMeta(type):
     """
     def __init__(cls, name, bases, clsdict):  # noqa: N805
         super().__init__(name, bases, clsdict)
-        fields = clsdict.get("fields")
+        fields = clsdict.get('fields')
         if fields:
             cls.rpsl_object_class = list(fields.keys())[0]
             cls.pk_fields = [field[0] for field in fields.items() if field[1].primary_key]
@@ -58,7 +58,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
     asn_last: IP = None
     default_source: Optional[str] = None  # noqa: E704 (flake8 bug)
 
-    _re_attr_name = re.compile(r"^[a-z0-9_-]+$")
+    _re_attr_name = re.compile(r'^[a-z0-9_-]+$')
 
     def __init__(self, from_text: Optional[str]=None, strict_validation=True, default_source=None) -> None:
         """
@@ -97,7 +97,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         try:
             return self.parsed_data['source']
         except KeyError:
-            raise ValueError("RPSL object has no known source")
+            raise ValueError('RPSL object has no known source')
 
     def ip_version(self) -> Optional[int]:
         """
@@ -146,16 +146,16 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         """Render the RPSL object as an RPSL string."""
         output = ""
         for attr, value, continuation_chars in self._object_data:
-            attr_display = f"{attr}:".ljust(RPSL_ATTRIBUTE_TEXT_WIDTH)
+            attr_display = f'{attr}:'.ljust(RPSL_ATTRIBUTE_TEXT_WIDTH)
             value_lines = list(splitline_unicodesafe(value))
             if not value_lines:
-                output += f"{attr}:\n"
+                output += f'{attr}:\n'
             for idx, line in enumerate(value_lines):
                 if idx == 0:
                     output += attr_display + line
                 else:
-                    output += continuation_chars[idx-1] + (RPSL_ATTRIBUTE_TEXT_WIDTH-1) * " " + line
-                output += "\n"
+                    output += continuation_chars[idx-1] + (RPSL_ATTRIBUTE_TEXT_WIDTH-1) * ' ' + line
+                output += '\n'
         return output
 
     def generate_template(self):
@@ -163,17 +163,17 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         template = ""
         max_name_width = max(len(k) for k in self.fields.keys())
         for name, field in self.fields.items():
-            mandatory = "[optional] " if field.optional else "[mandatory]"
-            single = "[multiple]" if field.multiple else "[single]  "
-            key = "[]"
+            mandatory = '[optional] ' if field.optional else '[mandatory]'
+            single = '[multiple]' if field.multiple else '[single]  '
+            key = '[]'
             if field.primary_key and field.lookup_key:
-                key = "[primary/look-up key]"
+                key = '[primary/look-up key]'
             elif field.primary_key:
-                key = "[primary key]"
+                key = '[primary key]'
             elif field.lookup_key:
-                key = "[look-up key]"
-            name_padding = (max_name_width - len(name)) * " "
-            template += f"{name}: {name_padding}  {mandatory}  {single}  {key}\n"
+                key = '[look-up key]'
+            name_padding = (max_name_width - len(name)) * ' '
+            template += f'{name}: {name_padding}  {mandatory}  {single}  {key}\n'
         return template
 
     def clean(self) -> bool:
@@ -192,14 +192,14 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         attribute value, and the continuation characters. The continuation
         characters are needed to reconstruct the original object into a string.
         """
-        continuation_chars = (" ", "+", "\t")
+        continuation_chars = (' ', '+', '\t')
         current_attr = None
         current_value = ""
         current_continuation_chars: List[str] = []
 
         for line_no, line in enumerate(splitline_unicodesafe(text.strip())):
             if not line:
-                self.messages.error(f"Line {line_no+1}: encountered empty line in the middle of object: [{line}]")
+                self.messages.error(f'Line {line_no+1}: encountered empty line in the middle of object: [{line}]')
                 return
 
             if not line.startswith(continuation_chars):
@@ -210,19 +210,19 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                     self._object_data.append((current_attr, current_value, current_continuation_chars))
 
                 if ':' not in line:
-                    self.messages.error(f"Line {line_no+1}: line is neither continuation nor valid attribute [{line}]")
+                    self.messages.error(f'Line {line_no+1}: line is neither continuation nor valid attribute [{line}]')
                     return
-                current_attr, current_value = line.split(":", maxsplit=1)
+                current_attr, current_value = line.split(':', maxsplit=1)
                 current_attr = current_attr.lower()
                 current_value = current_value.strip()
                 current_continuation_chars = []
 
                 if current_attr not in self.attrs_allowed and not self._re_attr_name.match(current_attr):
-                    self.messages.error(f"Line {line_no+1}: encountered malformed attribute name: [{current_attr}]")
+                    self.messages.error(f'Line {line_no+1}: encountered malformed attribute name: [{current_attr}]')
                     return
             else:
                 # Whitespace between the continuation character and the start of the data is not significant.
-                current_value += "\n" + line[1:].strip()
+                current_value += '\n' + line[1:].strip()
                 current_continuation_chars += line[0]
         if current_attr:
             self._object_data.append((current_attr, current_value, current_continuation_chars))
@@ -253,15 +253,15 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         if self.strict_validation:
             for attr_name, count in attrs_present.items():
                 if attr_name not in self.attrs_allowed:
-                    self.messages.error(f"Unrecognised attribute {attr_name} on object {self.rpsl_object_class}")
+                    self.messages.error(f'Unrecognised attribute {attr_name} on object {self.rpsl_object_class}')
                 if count > 1 and attr_name not in self.attrs_multiple:
                     self.messages.error(
-                        f"Attribute '{attr_name}' on object {self.rpsl_object_class} occurs multiple times, but is "
-                        f"only allowed once")
+                        f'Attribute "{attr_name}" on object {self.rpsl_object_class} occurs multiple times, but is '
+                        f'only allowed once')
             for attr_required in self.attrs_required:
                 if attr_required not in attrs_present:
                     self.messages.error(
-                        f"Mandatory attribute '{attr_required}' on object {self.rpsl_object_class} is missing"
+                        f'Mandatory attribute "{attr_required}" on object {self.rpsl_object_class} is missing'
                     )
         else:
             required_fields = self.pk_fields
@@ -270,7 +270,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
             for attr_pk in required_fields:
                 if attr_pk not in attrs_present:
                     self.messages.error(
-                        f"Primary key attribute '{attr_pk}' on object {self.rpsl_object_class} is missing"
+                        f'Primary key attribute "{attr_pk}" on object {self.rpsl_object_class} is missing'
                     )
 
     def _parse_attribute_data(self) -> None:
@@ -334,8 +334,8 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                             if attr_value:
                                 existing_attr_value = getattr(self, attr, None)
                                 if existing_attr_value:  # pragma: no cover
-                                    raise ValueError(f"Parsing of {parsed_value.value} reads {attr_value} for {attr},"
-                                                     f"but value {existing_attr_value} is already set.")
+                                    raise ValueError(f'Parsing of {parsed_value.value} reads {attr_value} for {attr},'
+                                                     f'but value {existing_attr_value} is already set.')
                                 setattr(self, attr, attr_value)
 
         if 'source' not in self.parsed_data and self.default_source:
@@ -360,15 +360,15 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         normalized_lines = []
         # The shortcuts below are functionally inconsequential, but significantly improve performance,
         # as most values are single line without comments, and this method is called extremely often.
-        if "\n" not in value:
-            if "#" in value:
-                return value.split("#")[0].strip()
+        if '\n' not in value:
+            if '#' in value:
+                return value.split('#')[0].strip()
             return value.strip()
         for line in splitline_unicodesafe(value):
-            parsed_line = line.split("#")[0].strip("\n\t, ")
+            parsed_line = line.split('#')[0].strip('\n\t, ')
             if parsed_line:
                 normalized_lines.append(parsed_line)
-        return ",".join(normalized_lines)
+        return ','.join(normalized_lines)
 
     def _update_attribute_value(self, attribute, new_values):
         """
@@ -383,7 +383,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         """
         if isinstance(new_values, str):
             new_values = [new_values]
-        self.parsed_data[attribute] = "\n".join(new_values)
+        self.parsed_data[attribute] = '\n'.join(new_values)
 
         self._object_data = list(filter(lambda a: a[0] != attribute, self._object_data))
         insert_idx = 1

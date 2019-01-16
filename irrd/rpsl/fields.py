@@ -50,7 +50,7 @@ class RPSLTextField:
     The keep_case property affects the generation of RPSLObject.parsed_data during parsing.
     If keep_case is False, all data is converted to upper case. The original object text is not
     modified for this. As parsed_data is indexed in the databases, this is important for searches,
-    to match e.g. "mntner: FOO" to "mnt-by: foo" - as these values are equivalent.
+    to match e.g. 'mntner: FOO' to 'mnt-by: foo' - as these values are equivalent.
     """
     keep_case = True
 
@@ -66,7 +66,7 @@ class RPSLTextField:
 
 class RPSLFieldListMixin:
     """
-    Mixin to allow fields to support list values, like "AS1, AS2, AS3".
+    Mixin to allow fields to support list values, like 'AS1, AS2, AS3'.
 
     For example, if you have an RPSLASNumberField that validates a single
     AS number, you can create RPSLASNumbersField that allows a list of
@@ -77,7 +77,7 @@ class RPSLFieldListMixin:
     """
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
         parse_results = []
-        for single_value in value.split(","):
+        for single_value in value.split(','):
             single_value = single_value.strip()
             if single_value:
                 parse_result = super().parse(single_value, messages, strict_validation)  # type: ignore
@@ -85,28 +85,28 @@ class RPSLFieldListMixin:
         if not all(parse_results):
             return None
         values = [result.value for result in parse_results]
-        return RPSLFieldParseResult(",".join(values), values_list=values)
+        return RPSLFieldParseResult(','.join(values), values_list=values)
 
 
 class RPSLIPv4PrefixField(RPSLTextField):
     """Field for a single IPv4 prefix."""
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
         if not re_ipv4_prefix.match(value):
-            messages.error(f"Invalid address prefix: {value}")
+            messages.error(f'Invalid address prefix: {value}')
             return None
 
         try:
             ip = IP(value, ipversion=4)
         except ValueError as ve:
             clean_error = clean_ip_value_error(ve)
-            messages.error(f"Invalid address prefix: {value}: {clean_error}")
+            messages.error(f'Invalid address prefix: {value}: {clean_error}')
             return None
 
         parsed_ip_str = str(ip)
         if ip.prefixlen() == 32:
             parsed_ip_str += '/32'
         if parsed_ip_str != value:
-            messages.info(f"Address prefix {value} was reformatted as {parsed_ip_str}")
+            messages.info(f'Address prefix {value} was reformatted as {parsed_ip_str}')
         return RPSLFieldParseResult(parsed_ip_str, ip_first=ip.net(), ip_last=ip.broadcast())
 
 
@@ -119,21 +119,21 @@ class RPSLIPv6PrefixField(RPSLTextField):
     """Field for a single IPv6 prefix."""
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
         if not re_ipv6_prefix.match(value):
-            messages.error(f"Invalid address prefix: {value}")
+            messages.error(f'Invalid address prefix: {value}')
             return None
 
         try:
             ip = IP(value, ipversion=6)
         except ValueError as ve:
             clean_error = clean_ip_value_error(ve)
-            messages.error(f"Invalid address prefix: {value}: {clean_error}")
+            messages.error(f'Invalid address prefix: {value}: {clean_error}')
             return None
 
         parsed_ip_str = str(ip)
         if ip.prefixlen() == 128:
             parsed_ip_str += '/128'
         if parsed_ip_str != value:
-            messages.info(f"Address prefix {value} was reformatted as {parsed_ip_str}")
+            messages.info(f'Address prefix {value} was reformatted as {parsed_ip_str}')
         return RPSLFieldParseResult(parsed_ip_str, ip_first=ip.net(), ip_last=ip.broadcast())
 
 
@@ -150,8 +150,8 @@ class RPSLIPv4AddressRangeField(RPSLTextField):
     not have to align to bitwise boundaries of prefixes.
     """
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
-        if "-" in value:
-            ip1_input, ip2_input = value.split("-", 1)
+        if '-' in value:
+            ip1_input, ip2_input = value.split('-', 1)
         else:
             ip1_input = ip2_input = value
 
@@ -160,22 +160,22 @@ class RPSLIPv4AddressRangeField(RPSLTextField):
             ip2 = IP(ip2_input)
         except ValueError as ve:
             clean_error = clean_ip_value_error(ve)
-            messages.error(f"Invalid address range: {value}: {clean_error}")
+            messages.error(f'Invalid address range: {value}: {clean_error}')
             return None
 
         if not ip1.version() == ip2.version() == 4:
-            messages.error(f"Invalid address range: {value}: IP version mismatch")
+            messages.error(f'Invalid address range: {value}: IP version mismatch')
             return None
         if ip1.int() > ip2.int():
-            messages.error(f"Invalid address range: {value}: first IP is higher than second IP")
+            messages.error(f'Invalid address range: {value}: first IP is higher than second IP')
             return None
 
-        if "-" in value:
-            parsed_value = f"{ip1} - {ip2}"
+        if '-' in value:
+            parsed_value = f'{ip1} - {ip2}'
         else:
             parsed_value = str(ip1)
         if parsed_value != value:
-            messages.info(f"Address range {value} was reformatted as {parsed_value}")
+            messages.info(f'Address range {value} was reformatted as {parsed_value}')
         return RPSLFieldParseResult(parsed_value, ip_first=ip1, ip_last=ip2)
 
 
@@ -266,18 +266,18 @@ class RPSLASNumberField(RPSLTextField):
             messages.error(str(ve))
             return None
         if parsed_str and parsed_str.upper() != value.upper():
-            messages.info(f"AS number {value} was reformatted as {parsed_str}")
+            messages.info(f'AS number {value} was reformatted as {parsed_str}')
         return RPSLFieldParseResult(parsed_str, asn_first=parsed_int, asn_last=parsed_int)
 
 
 class RPSLASBlockField(RPSLTextField):
     """Field for a block of AS numbers, e.g. AS1 - AS5."""
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
-        if "-" not in value:
-            messages.error(f"Invalid AS range: {value}: does not contain a hyphen")
+        if '-' not in value:
+            messages.error(f'Invalid AS range: {value}: does not contain a hyphen')
             return None
 
-        as1_raw, as2_raw = map(str.strip, value.split("-", 1))
+        as1_raw, as2_raw = map(str.strip, value.split('-', 1))
 
         try:
             as1_str, as1_int = parse_as_number(as1_raw)
@@ -287,12 +287,12 @@ class RPSLASBlockField(RPSLTextField):
             return None
 
         if as1_int > as2_int:  # type: ignore
-            messages.error(f"Invalid AS range: {value}: first AS is higher then second AS")
+            messages.error(f'Invalid AS range: {value}: first AS is higher then second AS')
             return None
 
-        parsed_value = f"{as1_str} - {as2_str}"
+        parsed_value = f'{as1_str} - {as2_str}'
         if parsed_value != value:
-            messages.info(f"AS range {value} was reformatted as {parsed_value}")
+            messages.info(f'AS range {value} was reformatted as {parsed_value}')
         return RPSLFieldParseResult(parsed_value, asn_first=as1_int, asn_last=as2_int)
 
 
@@ -306,13 +306,13 @@ class RPSLSetNameField(RPSLTextField):
     component must be a valid set name or valid AS number, and one component
     must be a valid set name for this specific set, i.e. start with the given prefix.
 
-    The prefix provided is the expected prefix of the set name, e.g. "RS" for
-    a route-set, or "AS" for an as-set.R
+    The prefix provided is the expected prefix of the set name, e.g. 'RS' for
+    a route-set, or 'AS' for an as-set.R
     """
     keep_case = False
 
     def __init__(self, prefix: str, *args, **kwargs) -> None:
-        self.prefix = prefix + "-"
+        self.prefix = prefix + '-'
         super().__init__(*args, **kwargs)
 
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
@@ -323,7 +323,7 @@ class RPSLEmailField(RPSLTextField):
     """Field for an e-mail address. Only performs basic validation."""
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
         if not re_email.match(value):
-            messages.error(f"Invalid e-mail address: {value}")
+            messages.error(f'Invalid e-mail address: {value}')
             return None
         return RPSLFieldParseResult(value)
 
@@ -334,7 +334,7 @@ class RPSLDNSNameField(RPSLTextField):
 
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
         if not re_dnsname.match(value):
-            messages.error(f"Invalid DNS name: {value}")
+            messages.error(f'Invalid DNS name: {value}')
             return None
         return RPSLFieldParseResult(value)
 
@@ -347,7 +347,7 @@ class RPSLGenericNameField(RPSLTextField):
     such as the nic-hdl of a person.
     Optionally, a list of allowed reserved prefixes can be provided.
     For example, this is used for the as-name attribute of an aut-num, as they
-    are allowed to start with "AS".
+    are allowed to start with 'AS'.
 
     If non_strict_allow_any is set, the parser will allow any value if strict_validation
     is disabled. This is needed on nic-hdl for legacy reasons -
@@ -358,7 +358,7 @@ class RPSLGenericNameField(RPSLTextField):
     def __init__(self, allowed_prefixes: List[str]=None, non_strict_allow_any=False, *args, **kwargs) -> None:
         self.non_strict_allow_any = non_strict_allow_any
         if allowed_prefixes:
-            self.allowed_prefixes = [prefix.upper() + "-" for prefix in allowed_prefixes]
+            self.allowed_prefixes = [prefix.upper() + '-' for prefix in allowed_prefixes]
         else:
             self.allowed_prefixes = []
         super().__init__(*args, **kwargs)
@@ -370,17 +370,17 @@ class RPSLGenericNameField(RPSLTextField):
         upper_value = value.upper()
         if strict_validation:
             if upper_value in reserved_words:
-                messages.error(f"Invalid name: {value}: this is a reserved word")
+                messages.error(f'Invalid name: {value}: this is a reserved word')
                 return None
 
             for prefix in reserved_prefixes:
                 if upper_value.startswith(prefix) and prefix not in self.allowed_prefixes:
-                    messages.error(f"Invalid name: {value}: {prefix} is a reserved prefix")
+                    messages.error(f'Invalid name: {value}: {prefix} is a reserved prefix')
                     return None
 
         if not re_generic_name.match(upper_value):
-            messages.error(f"Invalid name: {value}: contains invalid characters, does not start with a letter, "
-                           f"or does not end in a letter/digit")
+            messages.error(f'Invalid name: {value}: contains invalid characters, does not start with a letter, '
+                           f'or does not end in a letter/digit')
             return None
         return RPSLFieldParseResult(value)
 
@@ -440,28 +440,28 @@ class RPSLReferenceListField(RPSLFieldListMixin, RPSLReferenceField):
         super().__init__(*args, **kwargs)
 
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
-        if self.allow_kw_any and value.upper() == "ANY":
-            return RPSLFieldParseResult("ANY", values_list=["ANY"])
+        if self.allow_kw_any and value.upper() == 'ANY':
+            return RPSLFieldParseResult('ANY', values_list=['ANY'])
         return super().parse(value, messages, strict_validation)
 
 
 class RPSLAuthField(RPSLTextField):
     """Field for the auth attribute of a mntner."""
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
-        valid_beginnings = [hasher + " " for hasher in PASSWORD_HASHERS.keys()]
+        valid_beginnings = [hasher + ' ' for hasher in PASSWORD_HASHERS.keys()]
         has_valid_beginning = any(value.upper().startswith(b) for b in valid_beginnings)
         is_valid_hash = has_valid_beginning and value.count(' ') == 1 and not value.count(',')
         if is_valid_hash or re_pgpkey.match(value.upper()):
             return RPSLFieldParseResult(value)
 
-        hashers = ", ".join(PASSWORD_HASHERS.keys())
-        messages.error(f"Invalid auth attribute: {value}: supported options are {hashers} and PGPKEY-xxxxxxxx")
+        hashers = ', '.join(PASSWORD_HASHERS.keys())
+        messages.error(f'Invalid auth attribute: {value}: supported options are {hashers} and PGPKEY-xxxxxxxx')
         return None
 
 
 def parse_set_name(prefixes: List[str], value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
     assert all([prefix in reserved_prefixes for prefix in prefixes])
-    input_components = value.split(":")
+    input_components = value.split(':')
     output_components: List[str] = []
     prefix_display = '/'.join(prefixes)
 
@@ -470,13 +470,13 @@ def parse_set_name(prefixes: List[str], value: str, messages: RPSLParserMessages
         return None
 
     if strict_validation and not any([c.upper().startswith(tuple(prefixes)) for c in input_components]):
-        messages.error(f"Invalid set name {value}: at least one component must be "
-                       f"an actual set name (i.e. start with {prefix_display})")
+        messages.error(f'Invalid set name {value}: at least one component must be '
+                       f'an actual set name (i.e. start with {prefix_display})')
         return None
 
     for component in input_components:
         if strict_validation and component.upper() in reserved_words:
-            messages.error(f"Invalid set name {value}: component {component} is a reserved word")
+            messages.error(f'Invalid set name {value}: component {component} is a reserved word')
             return None
 
         parsed_as_number = None
@@ -486,12 +486,12 @@ def parse_set_name(prefixes: List[str], value: str, messages: RPSLParserMessages
             pass
         if not re_generic_name.match(component.upper()) and not parsed_as_number:
             messages.error(
-                f"Invalid set {value}: component {component} is not a valid AS number nor a valid set name"
+                f'Invalid set {value}: component {component} is not a valid AS number nor a valid set name'
             )
             return None
         if strict_validation and not parsed_as_number and not component.upper().startswith(tuple(prefixes)):
-            messages.error(f"Invalid set {value}: component {component} is not a valid AS number, "
-                           f"nor does it start with {prefix_display}")
+            messages.error(f'Invalid set {value}: component {component} is not a valid AS number, '
+                           f'nor does it start with {prefix_display}')
             return None
 
         if parsed_as_number:
@@ -499,9 +499,9 @@ def parse_set_name(prefixes: List[str], value: str, messages: RPSLParserMessages
         else:
             output_components.append(component)
 
-    parsed_value = ":".join(output_components)
+    parsed_value = ':'.join(output_components)
     if parsed_value != value:
-        messages.info(f"Set name {value} was reformatted as {parsed_value}")
+        messages.info(f'Set name {value} was reformatted as {parsed_value}')
     return RPSLFieldParseResult(parsed_value)
 
 

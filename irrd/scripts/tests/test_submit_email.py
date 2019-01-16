@@ -5,7 +5,7 @@ from ..submit_email import run
 
 def test_submit_email_success(capsys, monkeypatch):
     mock_handle_email = Mock()
-    monkeypatch.setattr("irrd.scripts.submit_email.handle_email_submission", lambda data: mock_handle_email)
+    monkeypatch.setattr('irrd.scripts.submit_email.handle_email_submission', lambda data: mock_handle_email)
     mock_handle_email.user_report = lambda: 'output'
 
     run('test input')
@@ -13,7 +13,7 @@ def test_submit_email_success(capsys, monkeypatch):
 
 def test_submit_email_fail(capsys, monkeypatch, caplog):
     mock_handle_email = Mock(side_effect=Exception('expected-test-error'))
-    monkeypatch.setattr("irrd.scripts.submit_email.handle_email_submission", mock_handle_email)
+    monkeypatch.setattr('irrd.scripts.submit_email.handle_email_submission', mock_handle_email)
 
     run('test input')
 

@@ -207,7 +207,7 @@ class TestWhoisQueryIRRD:
             if self.recv_calls > 2:
                 return b''
             if self.recv_calls == 1:
-                return "A2\n".encode('utf-8')
+                return 'A2\n'.encode('utf-8')
             return str(self.recv_calls).encode('utf-8')
 
         mock_socket.recv = mock_socket_recv
@@ -233,7 +233,7 @@ class TestWhoisQueryIRRD:
             if self.recv_calls > 2:
                 raise socket.timeout
             if self.recv_calls == 1:
-                return "A2\n".encode('utf-8')
+                return 'A2\n'.encode('utf-8')
             return str(self.recv_calls).encode('utf-8')
 
         mock_socket.recv = mock_socket_recv

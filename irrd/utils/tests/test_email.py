@@ -171,14 +171,14 @@ class TestEmailParser:
         Content-Type: text/html;
             charset=us-ascii
 
-        <html><head><meta http-equiv="Content-Type" content="text/html charset=us-ascii"></head><body style="word-wrap: break-word; -webkit-nbsp-mode: space; -webkit-line-break: after-white-space;" class=""><b class="">test 1 2 3</b><div class=""><br class=""></div></body></html>
+        <html><head><meta http-equiv='Content-Type' content='text/html charset=us-ascii'></head><body style='word-wrap: break-word; -webkit-nbsp-mode: space; -webkit-line-break: after-white-space;' class=""><b class="">test 1 2 3</b><div class=""><br class=""></div></body></html>
         --Apple-Mail=_01FE5B2D-C7F3-4DDD-AB42-B92C88CFBF0F--
         """).strip()
         parser = EmailParser(email)
         assert parser.body.strip() == 'se font vite pdagogues'
         assert parser.pgp_fingerprint is None
 
-    @pytest.mark.usefixtures("tmp_gpg_dir")
+    @pytest.mark.usefixtures('tmp_gpg_dir')
     def test_parse_valid_multipart_signed_ascii(self, tmp_gpg_dir, preload_gpg_key):
         email = textwrap.dedent("""
         From sasha@localhost  Thu Jan  5 10:04:48 2018
@@ -250,7 +250,7 @@ class TestEmailParser:
         -----END PGP SIGNATURE-----""").strip()
         assert parser.pgp_fingerprint == '86261D8DBEBDA4F54692D64DA8383BA780F238C6'
 
-    @pytest.mark.usefixtures("tmp_gpg_dir")
+    @pytest.mark.usefixtures('tmp_gpg_dir')
     def test_parse_invalid_multipart_signed_ascii_with_additional_text_part(self, tmp_gpg_dir, preload_gpg_key):
         email = textwrap.dedent("""
         From sasha@localhost  Thu Jan  5 10:04:48 2018
@@ -313,7 +313,7 @@ class TestEmailParser:
         assert parser.body.strip() == 'additional text/plain part - not signed'
         assert parser.pgp_fingerprint is None
 
-    @pytest.mark.usefixtures("tmp_gpg_dir")
+    @pytest.mark.usefixtures('tmp_gpg_dir')
     def test_parse_valid_inline_signed_ascii(self, tmp_gpg_dir, preload_gpg_key):
         email = textwrap.dedent("""
         From sasha@localhost  Thu Jan  5 10:04:48 2018
@@ -357,7 +357,7 @@ class TestEmailParser:
         assert parser.body.strip() == 'test 1 2 3'
         assert parser.pgp_fingerprint == '86261D8DBEBDA4F54692D64DA8383BA780F238C6'
 
-    @pytest.mark.usefixtures("tmp_gpg_dir")
+    @pytest.mark.usefixtures('tmp_gpg_dir')
     def test_parse_invalid_inline_signed_ascii_multiple_messages(self, tmp_gpg_dir, preload_gpg_key):
         email = textwrap.dedent("""
         From sasha@localhost  Thu Jan  5 10:04:48 2018
@@ -419,7 +419,7 @@ class TestEmailParser:
         parser = EmailParser(email)
         assert parser.pgp_fingerprint is None
 
-    @pytest.mark.usefixtures("tmp_gpg_dir")
+    @pytest.mark.usefixtures('tmp_gpg_dir')
     def test_parse_valid_multipart_signed_unicode(self, tmp_gpg_dir, preload_gpg_key):
         email = textwrap.dedent("""
         From sasha@localhost  Thu Jan  5 10:04:48 2018
@@ -475,7 +475,7 @@ class TestEmailParser:
         assert parser.body.strip() == 'test 💩 é æ'
         assert parser.pgp_fingerprint == '86261D8DBEBDA4F54692D64DA8383BA780F238C6'
 
-    @pytest.mark.usefixtures("tmp_gpg_dir")
+    @pytest.mark.usefixtures('tmp_gpg_dir')
     def test_parse_invalid_signature_multipart_signed_ascii_bad_signature(self, tmp_gpg_dir, preload_gpg_key):
         email = textwrap.dedent("""
         From sasha@localhost  Thu Jan  5 10:04:48 2018

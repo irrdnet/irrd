@@ -23,7 +23,7 @@ def splitline_unicodesafe(input: str) -> Iterator[str]:
     """
     if not input:
         return
-    for line in input.strip("\n").split("\n"):
+    for line in input.strip('\n').split('\n'):
         yield line.strip('\r')
 
 
@@ -45,11 +45,11 @@ def split_paragraphs_rpsl(input: Union[str, TextIO], strip_comments=True) -> Ite
         generator = iter(input.readlines())
 
     for line in generator:
-        line = line.strip("\r\n")
-        if strip_comments and line.startswith("%") or line.startswith("#"):
+        line = line.strip('\r\n')
+        if strip_comments and line.startswith('%') or line.startswith('#'):
             continue
         if line:
-            current_paragraph += line + "\n"
+            current_paragraph += line + '\n'
         if not line:
             if current_paragraph:
                 yield current_paragraph

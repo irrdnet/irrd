@@ -120,7 +120,7 @@ class ChangeRequest:
     def save(self, database_handler: DatabaseHandler) -> None:
         """Save the change to the database."""
         if self.status != UpdateRequestStatus.PROCESSING or not self.rpsl_obj_new:
-            raise ValueError("ChangeRequest can only be saved in status PROCESSING")
+            raise ValueError('ChangeRequest can only be saved in status PROCESSING')
         if self.request_type == UpdateRequestType.DELETE and self.rpsl_obj_current is not None:
             logger.info(f'{id(self)}: Saving change for {self.rpsl_obj_new}: deleting current object')
             database_handler.delete_rpsl_object(self.rpsl_obj_current)
@@ -175,7 +175,7 @@ class ChangeRequest:
         return report
 
     def request_type_str(self) -> str:
-        return self.request_type.value if self.request_type else "request"
+        return self.request_type.value if self.request_type else 'request'
 
     def object_pk_str(self) -> str:
         return self.rpsl_obj_new.pk() if self.rpsl_obj_new else '(unreadable object key)'

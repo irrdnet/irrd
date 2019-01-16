@@ -118,8 +118,8 @@ class ReferenceValidator:
         query = query.lookup_attrs_in(rpsl_obj.references_inbound(), [rpsl_obj.pk()])
         query_results = self.database_handler.execute_query(query)
         for query_result in query_results:
-            reference_to_be_deleted = (query_result["object_class"], query_result["rpsl_pk"],
-                                       query_result["source"]) in self._preloaded_deleted
+            reference_to_be_deleted = (query_result['object_class'], query_result['rpsl_pk'],
+                                       query_result['source']) in self._preloaded_deleted
             if not reference_to_be_deleted:
                 result.error_messages.add(f'Object {rpsl_obj.pk()} to be deleted, but still referenced '
                                           f'by {query_result["object_class"]} {query_result["rpsl_pk"]}')

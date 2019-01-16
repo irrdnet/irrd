@@ -53,7 +53,7 @@ class BaseRPSLObjectDatabaseQuery:
 
         Results from this source will be sorted before all others.
         When combined with first_only(), this allows a query for
-        "prefer a result from this source, otherwise look for others".
+        'prefer a result from this source, otherwise look for others'.
         """
         self._prioritised_source = source.strip().upper()
         return self
@@ -111,7 +111,7 @@ class BaseRPSLObjectDatabaseQuery:
 
     def _check_query_frozen(self) -> None:
         if self._query_frozen:
-            raise ValueError("This query was frozen - no more filters can be applied.")
+            raise ValueError('This query was frozen - no more filters can be applied.')
 
 
 class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
@@ -159,7 +159,7 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         attr_names = [attr_name.lower() for attr_name in attr_names]
         for attr_name in attr_names:
             if attr_name not in self.lookup_field_names:
-                raise ValueError(f"Invalid lookup attribute: {attr_name}")
+                raise ValueError(f'Invalid lookup attribute: {attr_name}')
         self._check_query_frozen()
 
         value_filters = []
@@ -168,9 +168,9 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
             for attr_value in attr_values:
                 counter = self._lookup_attr_counter
                 self._lookup_attr_counter += 1
-                value_filters.append(sa.text(f"parsed_data->:lookup_attr_name{counter} ? :lookup_attr_value{counter}"))
-                statement_params[f"lookup_attr_name{counter}"] = attr_name
-                statement_params[f"lookup_attr_value{counter}"] = attr_value.upper()
+                value_filters.append(sa.text(f'parsed_data->:lookup_attr_name{counter} ? :lookup_attr_value{counter}'))
+                statement_params[f'lookup_attr_name{counter}'] = attr_name
+                statement_params[f'lookup_attr_value{counter}'] = attr_value.upper()
         fltr = sa.or_(*value_filters)
         self.statement = self.statement.where(fltr).params(**statement_params)
 
@@ -305,7 +305,7 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         return self
 
     def __repr__(self):
-        return f"RPSLDatabaseQuery: {self.statement}\nPARAMS: {self.statement.compile().params}"
+        return f'RPSLDatabaseQuery: {self.statement}\nPARAMS: {self.statement.compile().params}'
 
 
 class RPSLDatabaseJournalQuery(BaseRPSLObjectDatabaseQuery):
@@ -340,7 +340,7 @@ class RPSLDatabaseJournalQuery(BaseRPSLObjectDatabaseQuery):
         return self._filter(fltr)
 
     def __repr__(self):
-        return f"RPSLDatabaseJournalQuery: {self.statement}\nPARAMS: {self.statement.compile().params}"
+        return f'RPSLDatabaseJournalQuery: {self.statement}\nPARAMS: {self.statement.compile().params}'
 
 
 class DatabaseStatusQuery:
@@ -381,7 +381,7 @@ class DatabaseStatusQuery:
         return self
 
     def __repr__(self):
-        return f"DatabaseStatusQuery: {self.statement}\nPARAMS: {self.statement.compile().params}"
+        return f'DatabaseStatusQuery: {self.statement}\nPARAMS: {self.statement.compile().params}'
 
 
 class RPSLDatabaseObjectStatisticsQuery:
@@ -399,4 +399,4 @@ class RPSLDatabaseObjectStatisticsQuery:
         return self.statement
 
     def __repr__(self):
-        return f"RPSLDatabaseObjectStatisticsQuery: {self.statement}\nPARAMS: {self.statement.compile().params}"
+        return f'RPSLDatabaseObjectStatisticsQuery: {self.statement}\nPARAMS: {self.statement.compile().params}'

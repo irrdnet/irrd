@@ -74,4 +74,4 @@ class NRTMOperation:
         return True
 
     def __repr__(self):
-        return f"{self.source}/{self.serial}/{self.operation.value}"
+        return f'{self.source}/{self.serial}/{self.operation.value}'

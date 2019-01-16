@@ -42,19 +42,19 @@ remarks:        remark
 
 def test_rpsl_read(capsys, tmpdir, monkeypatch):
     mock_database_handler = Mock()
-    monkeypatch.setattr("irrd.scripts.rpsl_read.DatabaseHandler", lambda journaling_enabled: mock_database_handler)
+    monkeypatch.setattr('irrd.scripts.rpsl_read.DatabaseHandler', lambda journaling_enabled: mock_database_handler)
 
-    tmp_file = tmpdir + "/rpsl_parse_test.rpsl"
-    fh = open(tmp_file, "w")
+    tmp_file = tmpdir + '/rpsl_parse_test.rpsl'
+    fh = open(tmp_file, 'w')
     fh.write(TEST_DATA)
     fh.close()
 
     RPSLParse().main(filename=tmp_file, strict_validation=True, database=True)
     captured = capsys.readouterr().out
-    assert "ERROR: Unrecognised attribute unknown-obj on object as-block" in captured
-    assert "INFO: AS range AS65536 - as065538 was reformatted as AS65536 - AS65538" in captured
-    assert "Processed 3 objects, 1 with errors" in captured
-    assert "Ignored 1 objects due to unknown object classes: foo-block" in captured
+    assert 'ERROR: Unrecognised attribute unknown-obj on object as-block' in captured
+    assert 'INFO: AS range AS65536 - as065538 was reformatted as AS65536 - AS65538' in captured
+    assert 'Processed 3 objects, 1 with errors' in captured
+    assert 'Ignored 1 objects due to unknown object classes: foo-block' in captured
 
     assert mock_database_handler.mock_calls[0][0] == 'upsert_rpsl_object'
     assert mock_database_handler.mock_calls[0][1][0].pk() == 'AS65536 - AS65538'
@@ -63,10 +63,10 @@ def test_rpsl_read(capsys, tmpdir, monkeypatch):
 
     RPSLParse().main(filename=tmp_file, strict_validation=False, database=True)
     captured = capsys.readouterr().out
-    assert "ERROR: Unrecognised attribute unknown-obj on object as-block" not in captured
-    assert "INFO: AS range AS65536 - as065538 was reformatted as AS65536 - AS65538" in captured
-    assert "Processed 3 objects, 0 with errors" in captured
-    assert "Ignored 1 objects due to unknown object classes: foo-block" in captured
+    assert 'ERROR: Unrecognised attribute unknown-obj on object as-block' not in captured
+    assert 'INFO: AS range AS65536 - as065538 was reformatted as AS65536 - AS65538' in captured
+    assert 'Processed 3 objects, 0 with errors' in captured
+    assert 'Ignored 1 objects due to unknown object classes: foo-block' in captured
 
     assert mock_database_handler.mock_calls[0][0] == 'upsert_rpsl_object'
     assert mock_database_handler.mock_calls[0][1][0].pk() == 'AS65536 - AS65538'

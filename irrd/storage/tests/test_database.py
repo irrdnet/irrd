@@ -35,8 +35,8 @@ def irrd_database(monkeypatch):
 
     table_name = RPSLDatabaseObject.__tablename__
     if engine.dialect.has_table(engine, table_name):  # pragma: no cover
-        raise Exception(f"The database on URL {engine.url} already has a table named {table_name} - refusing "
-                        f"to overwrite existing database.")
+        raise Exception(f'The database on URL {engine.url} already has a table named {table_name} - refusing '
+                        f'to overwrite existing database.')
     RPSLDatabaseObject.metadata.create_all(engine)
 
     yield None
@@ -364,7 +364,7 @@ class TestRPSLDatabaseQueryLive:
         q = q.ip_more_specific(IP('192.0.0.0/21'))
 
         result = [i for i in self.dh.execute_query(q)]
-        assert len(result) == 1, f"Failed query: {q}"
+        assert len(result) == 1, f'Failed query: {q}'
         pk = result[0]['pk']
 
         self._assert_match(RPSLDatabaseQuery().pk(pk))
@@ -519,25 +519,25 @@ class TestRPSLDatabaseQueryLive:
 
         q = RPSLDatabaseQuery().ip_more_specific(IP('192.0.2.0/24'))
         rpsl_pks = [r['rpsl_pk'] for r in self.dh.execute_query(q)]
-        assert len(rpsl_pks) == 3, f"Failed query: {q}"
+        assert len(rpsl_pks) == 3, f'Failed query: {q}'
         assert '192.0.2.0/25,AS65537' in rpsl_pks
         assert '192.0.2.128/25,AS65537' in rpsl_pks
         assert '192.0.2.0/26,AS65537' in rpsl_pks
 
         q = RPSLDatabaseQuery().ip_less_specific(IP('192.0.2.0/25'))
         rpsl_pks = [r['rpsl_pk'] for r in self.dh.execute_query(q)]
-        assert len(rpsl_pks) == 2, f"Failed query: {q}"
+        assert len(rpsl_pks) == 2, f'Failed query: {q}'
         assert '192.0.2.0/25,AS65537' in rpsl_pks
         assert '192.0.2.0/24,AS65537' in rpsl_pks
 
         q = RPSLDatabaseQuery().ip_less_specific_one_level(IP('192.0.2.0/26'))
         rpsl_pks = [r['rpsl_pk'] for r in self.dh.execute_query(q)]
-        assert len(rpsl_pks) == 1, f"Failed query: {q}"
+        assert len(rpsl_pks) == 1, f'Failed query: {q}'
         assert '192.0.2.0/25,AS65537' in rpsl_pks
 
         q = RPSLDatabaseQuery().ip_less_specific(IP('192.0.2.0/25')).first_only()
         rpsl_pks = [r['rpsl_pk'] for r in self.dh.execute_query(q)]
-        assert len(rpsl_pks) == 1, f"Failed query: {q}"
+        assert len(rpsl_pks) == 1, f'Failed query: {q}'
         assert '192.0.2.0/25,AS65537' in rpsl_pks
 
         q = RPSLDatabaseQuery().sources(['TEST']).ip_less_specific_one_level(IP('192.0.2.0/27'))
@@ -555,9 +555,9 @@ class TestRPSLDatabaseQueryLive:
 
     def _assert_match(self, query):
         __tracebackhide__ = True
-        assert len(list(self.dh.execute_query(query))) == 1, f"Failed query: {query}"
+        assert len(list(self.dh.execute_query(query))) == 1, f'Failed query: {query}'
 
     def _assert_no_match(self, query):
         __tracebackhide__ = True
         result = list(self.dh.execute_query(query))
-        assert not len(result), f"Failed query: {query}: unexpected output: {result}"
+        assert not len(result), f'Failed query: {query}: unexpected output: {result}'

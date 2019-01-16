@@ -15,7 +15,7 @@ def whois_query(host: str, port: int, query: str, end_markings: List[str]=None) 
 
     Will continue to read until no more data can be read, until no more data has
     been sent for 5 seconds, or until an optional end_marking is encountered.
-    The end marking could be e.g. "END NTTCOM" in case of an NRTM stream.
+    The end marking could be e.g. 'END NTTCOM' in case of an NRTM stream.
     """
     query = query.strip() + '\n'
     logger.debug(f'Running whois query {query.strip()} on {host} port {port}')

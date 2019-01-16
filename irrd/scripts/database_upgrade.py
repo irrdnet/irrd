@@ -15,7 +15,7 @@ from irrd.conf import config_init, CONFIG_PATH_DEFAULT
 
 def run(version):
     alembic_cfg = Config()
-    alembic_cfg.set_main_option("script_location", f'{irrd_root}/irrd/storage/alembic')
+    alembic_cfg.set_main_option('script_location', f'{irrd_root}/irrd/storage/alembic')
     command.upgrade(alembic_cfg, version)
     print(f'Upgrade successful, or already on latest version.')
 
@@ -33,5 +33,5 @@ def main():  # pragma: no cover
     run(args.version)
 
 
-if __name__ == "__main__":  # pragma: no cover
+if __name__ == '__main__':  # pragma: no cover
     main()

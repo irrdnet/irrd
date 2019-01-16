@@ -19,7 +19,7 @@ class TestMirrorScheduler:
             }
         })
 
-        monkeypatch.setattr("irrd.mirroring.scheduler.MirrorImportUpdateRunner", MockRunner)
+        monkeypatch.setattr('irrd.mirroring.scheduler.MirrorImportUpdateRunner', MockRunner)
         MockRunner.run_sleep = True
 
         scheduler = MirrorScheduler()
@@ -42,7 +42,7 @@ class TestMirrorScheduler:
             }
         })
 
-        monkeypatch.setattr("irrd.mirroring.scheduler.MirrorImportUpdateRunner", MockRunner)
+        monkeypatch.setattr('irrd.mirroring.scheduler.MirrorImportUpdateRunner', MockRunner)
         MockRunner.run_sleep = False
 
         scheduler = MirrorScheduler()
@@ -67,7 +67,7 @@ class TestMirrorScheduler:
             }
         })
 
-        monkeypatch.setattr("irrd.mirroring.scheduler.SourceExportRunner", MockRunner)
+        monkeypatch.setattr('irrd.mirroring.scheduler.SourceExportRunner', MockRunner)
         MockRunner.run_sleep = True
 
         scheduler = MirrorScheduler()
@@ -90,7 +90,7 @@ class TestMirrorScheduler:
             }
         })
 
-        monkeypatch.setattr("irrd.mirroring.scheduler.SourceExportRunner", MockRunner)
+        monkeypatch.setattr('irrd.mirroring.scheduler.SourceExportRunner', MockRunner)
         MockRunner.run_sleep = False
 
         scheduler = MirrorScheduler()

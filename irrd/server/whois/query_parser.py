@@ -31,8 +31,8 @@ class WhoisQueryParser:
     """
     Parser for all whois-style queries.
 
-    This parser distinguishes RIPE-style, e.g. "-K 192.0.2.1" or "-i mnt-by FOO"
-    from IRRD-style, e.g. "!oFOO".
+    This parser distinguishes RIPE-style, e.g. '-K 192.0.2.1' or '-i mnt-by FOO'
+    from IRRD-style, e.g. '!oFOO'.
 
     Some query flags, particularly -k/!! and -s/!s retain state across queries,
     so a single instance of this object should be created per session, with
@@ -415,10 +415,10 @@ class WhoisQueryParser:
         if parameter:
             sources = parameter.upper().split(',')
             if not all([source in self.all_valid_sources for source in sources]):
-                raise WhoisQueryParserException("One or more selected sources are unavailable.")
+                raise WhoisQueryParserException('One or more selected sources are unavailable.')
             self.sources = sources
         else:
-            raise WhoisQueryParserException("One or more selected sources are unavailable.")
+            raise WhoisQueryParserException('One or more selected sources are unavailable.')
         return None
 
     def handle_irrd_version(self):
@@ -512,7 +512,7 @@ class WhoisQueryParser:
         if sources_list:
             sources = sources_list.upper().split(',')
             if not all([source in self.all_valid_sources for source in sources]):
-                raise WhoisQueryParserException("One or more selected sources are unavailable.")
+                raise WhoisQueryParserException('One or more selected sources are unavailable.')
             self.sources = sources
         else:
             self.sources = []
@@ -579,7 +579,7 @@ class WhoisQueryParser:
         as does `!oFOO`. Restricted to designated lookup fields.
         """
         if attribute not in self.lookup_field_names:
-            readable_lookup_field_names = ", ".join(self.lookup_field_names)
+            readable_lookup_field_names = ', '.join(self.lookup_field_names)
             msg = (f'Inverse attribute search not supported for {attribute},' +
                    f'only supported for attributes: {readable_lookup_field_names}')
             raise WhoisQueryParserException(msg)

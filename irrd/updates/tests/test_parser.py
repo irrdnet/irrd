@@ -220,7 +220,7 @@ class TestSingleChangeRequestHandling:
         ])
         mock_dh.execute_query = lambda query: next(query_results)
 
-        result = parse_change_requests(SAMPLE_PERSON + "delete: delete",
+        result = parse_change_requests(SAMPLE_PERSON + 'delete: delete',
                                        mock_dh, AuthValidator(mock_dh), validator)[0]
         result._check_references()
         assert not result.is_valid()
@@ -250,7 +250,7 @@ class TestSingleChangeRequestHandling:
         ])
         mock_dh.execute_query = lambda query: next(query_results)
 
-        results = parse_change_requests(SAMPLE_PERSON + "delete: delete" + "\n\n" + SAMPLE_INETNUM,
+        results = parse_change_requests(SAMPLE_PERSON + 'delete: delete' + '\n\n' + SAMPLE_INETNUM,
                                         mock_dh, AuthValidator(mock_dh), validator)
         validator.preload(results)
         result_inetnum = results[1]
@@ -282,7 +282,7 @@ class TestSingleChangeRequestHandling:
 
         validator = ReferenceValidator(mock_dh)
         mock_dh.execute_query = lambda query: []
-        result_inetnum = parse_change_requests(SAMPLE_INETNUM + "delete: delete",
+        result_inetnum = parse_change_requests(SAMPLE_INETNUM + 'delete: delete',
                                                mock_dh, AuthValidator(mock_dh), validator)
         validator.preload(result_inetnum)
         mock_dq.reset_mock()
@@ -294,7 +294,7 @@ class TestSingleChangeRequestHandling:
         ])
         mock_dh.execute_query = lambda query: next(query_results)
 
-        result = parse_change_requests(SAMPLE_PERSON + "delete: delete" + "\n",
+        result = parse_change_requests(SAMPLE_PERSON + 'delete: delete' + '\n',
                                        mock_dh, AuthValidator(mock_dh), validator)[0]
         result._check_references()
         assert result.is_valid(), result.error_messages
