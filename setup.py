@@ -32,8 +32,8 @@ setuptools.setup(
         'beautifultable==0.6.0',
         'PyYAML==3.13',
         'psycopg2-binary==2.7.6.1',
-        'SQLAlchemy==1.2.15',
-        'alembic==1.0.5',
+        'SQLAlchemy==1.2.16',
+        'alembic==1.0.6',
         'twisted==18.9.0',
     ],
     entry_points={
