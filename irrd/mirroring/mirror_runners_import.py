@@ -188,8 +188,8 @@ class NRTMImportUpdateStreamRunner:
         serial_start = serial_newest_seen + 1
         nrtm_host = get_setting(f'sources.{self.source}.nrtm_host')
         nrtm_port = int(get_setting(f'sources.{self.source}.nrtm_port', '43'))
-        if not nrtm_host or not nrtm_port:
-            logger.debug(f'Skipping NRTM updates for {self.source}, nrtm_host or nrtm_port not set.')
+        if not nrtm_host:
+            logger.debug(f'Skipping NRTM updates for {self.source}, nrtm_host not set.')
             return
 
         end_markings = [

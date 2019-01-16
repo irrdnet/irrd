@@ -158,6 +158,8 @@ Supported flags
 * ``-V <free-text>`` identifies the client querying IRRd. Optional, but may
   be helpful when debugging issues.
 
+Flags are placed before the query, i.e. ``-s`` should precede ``-x``.
+
 The ``-F`` and ``-r`` flags are accepted but ignored, as IRRd does not support
 recursion.
 

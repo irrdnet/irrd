@@ -18,8 +18,8 @@ from zope.interface import implementer
 from twisted.internet import defer
 from twisted.mail import smtp
 
-from irrd.integration_tests.data import (EMAIL_SEPARATOR, EMAIL_RETURN_MSGS_COMMAND, EMAIL_DISCARD_MSGS_COMMAND,
-                                         EMAIL_SMTP_PORT, EMAIL_END)
+from irrd.integration_tests.constants import (EMAIL_SEPARATOR, EMAIL_RETURN_MSGS_COMMAND, EMAIL_DISCARD_MSGS_COMMAND,
+                                              EMAIL_SMTP_PORT, EMAIL_END)
 
 IRRD_ROOT_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
 sys.path.append(IRRD_ROOT_PATH)

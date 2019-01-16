@@ -99,7 +99,7 @@ class DatabaseStatusRequest:
             object_class_filter = get_setting(f'sources.{source}.object_class_filter')
 
             nrtm_host = get_setting(f'sources.{source}.nrtm_host')
-            nrtm_port = get_setting(f'sources.{source}.nrtm_port')
+            nrtm_port = int(get_setting(f'sources.{self.source}.nrtm_port', '43'))
 
             remote_information = self._generate_remote_status_info(nrtm_host, nrtm_port, source)
             remote_information = textwrap.indent(remote_information, ' ' * 16)
@@ -123,7 +123,7 @@ class DatabaseStatusRequest:
             """)
         return result_txt
 
-    def _generate_remote_status_info(self, nrtm_host: Optional[str], nrtm_port: Optional[int], source: str) -> str:
+    def _generate_remote_status_info(self, nrtm_host: Optional[str], nrtm_port: int, source: str) -> str:
         """
         Determine the remote status.
 
@@ -131,7 +131,7 @@ class DatabaseStatusRequest:
         source for serial information. Various error states will produce
         an appropriate remote status message for the report.
         """
-        if nrtm_host and nrtm_port:
+        if nrtm_host:
             try:
                 source_status = whois_query_source_status(nrtm_host, nrtm_port, source)
                 mirrorable, mirror_serial_oldest, mirror_serial_newest, mirror_export_serial = source_status
