@@ -7,6 +7,7 @@ from beautifultable import BeautifulTable
 
 from irrd import __version__
 from irrd.conf import get_setting
+from irrd.conf.defaults import DEFAULT_SOURCE_NRTM_PORT
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import DatabaseStatusQuery, RPSLDatabaseObjectStatisticsQuery
 from irrd.utils.whois_client import whois_query_source_status
@@ -99,7 +100,7 @@ class DatabaseStatusRequest:
             object_class_filter = get_setting(f'sources.{source}.object_class_filter')
 
             nrtm_host = get_setting(f'sources.{source}.nrtm_host')
-            nrtm_port = int(get_setting(f'sources.{source}.nrtm_port', '43'))
+            nrtm_port = int(get_setting(f'sources.{source}.nrtm_port', DEFAULT_SOURCE_NRTM_PORT))
 
             remote_information = self._generate_remote_status_info(nrtm_host, nrtm_port, source)
             remote_information = textwrap.indent(remote_information, ' ' * 16)

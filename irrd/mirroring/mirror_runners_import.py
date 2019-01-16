@@ -9,6 +9,7 @@ from typing import Optional, Tuple, Any, IO
 from urllib.parse import urlparse
 
 from irrd.conf import get_setting
+from irrd.conf.defaults import DEFAULT_SOURCE_NRTM_PORT
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import DatabaseStatusQuery
 from irrd.utils.whois_client import whois_query
@@ -187,7 +188,7 @@ class NRTMImportUpdateStreamRunner:
     def run(self, serial_newest_seen: int, database_handler: DatabaseHandler):
         serial_start = serial_newest_seen + 1
         nrtm_host = get_setting(f'sources.{self.source}.nrtm_host')
-        nrtm_port = int(get_setting(f'sources.{self.source}.nrtm_port', '43'))
+        nrtm_port = int(get_setting(f'sources.{self.source}.nrtm_port', DEFAULT_SOURCE_NRTM_PORT))
         if not nrtm_host:
             logger.debug(f'Skipping NRTM updates for {self.source}, nrtm_host not set.')
             return
