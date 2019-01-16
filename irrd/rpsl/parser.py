@@ -165,15 +165,18 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         for name, field in self.fields.items():
             mandatory = '[optional] ' if field.optional else '[mandatory]'
             single = '[multiple]' if field.multiple else '[single]  '
-            key = '[]'
+            metadata = []
             if field.primary_key and field.lookup_key:
-                key = '[primary/look-up key]'
+                metadata.append('primary/look-up key')
             elif field.primary_key:
-                key = '[primary key]'
+                metadata.append('primary key')
             elif field.lookup_key:
-                key = '[look-up key]'
+                metadata.append('look-up key')
+            if getattr(field, 'referring', []):
+                metadata.append('references ' + '/'.join(field.referring))
+            metadata_str = ', '.join(metadata)
             name_padding = (max_name_width - len(name)) * ' '
-            template += f'{name}: {name_padding}  {mandatory}  {single}  {key}\n'
+            template += f'{name}: {name_padding}  {mandatory}  {single}  [{metadata_str}]\n'
         return template
 
     def clean(self) -> bool:

@@ -53,7 +53,7 @@ be sent with the results of the submitted changes, and why any failures
 occurred.
 
 All objects submitted are validated for the presence, count and syntax,
-though the syntax validation is limited for some fields.
+though the syntax validation is limited for some attributes.
 Values like prefixes are also rewritten into a standard format. If this
 results in changes compared to the original submitted text, an info message
 is added in the reply.
@@ -137,6 +137,51 @@ Changes can only be made to authoritative databases.
 When creating a new `mntner`, a submission must pass authorisation for
 one of the auth methods of the new mntner. Other objects can be submitted
 that depend on the new `mntner` in the same submission.
+
+Object templates
+----------------
+
+The ``-t`` query can be used to get the object template for a particular
+object class. This includes which attributes are permitted, which are
+mandatory, look-up keys, primary keys and references to other objects.
+
+For example, at the time of writing the template for a route object,
+retrieved with ``-t route``, looks like this::
+
+    route:          [mandatory]  [single]    [primary/look-up key]
+    descr:          [optional]   [multiple]  []
+    origin:         [mandatory]  [single]    [primary key]
+    holes:          [optional]   [multiple]  []
+    member-of:      [optional]   [multiple]  [look-up key, references route-set]
+    inject:         [optional]   [multiple]  []
+    aggr-bndry:     [optional]   [single]    []
+    aggr-mtd:       [optional]   [single]    []
+    export-comps:   [optional]   [single]    []
+    components:     [optional]   [single]    []
+    admin-c:        [optional]   [multiple]  [look-up key, references role/person]
+    tech-c:         [optional]   [multiple]  [look-up key, references role/person]
+    geoidx:         [optional]   [multiple]  []
+    roa-uri:        [optional]   [single]    []
+    remarks:        [optional]   [multiple]  []
+    notify:         [optional]   [multiple]  []
+    mnt-by:         [mandatory]  [multiple]  [look-up key, references mntner]
+    changed:        [mandatory]  [multiple]  []
+    source:         [mandatory]  [single]    []
+
+This template shows:
+
+* The primary key is the `route` combined with the `origin`. Only
+  one object with the same values for the primary key and source can exist.
+  Any change submitted with the same primary key, will be considered an
+  attempt to update the current object.
+* The `member-of` attribute is a look-up key, meaning it can be used with
+  ``-i`` queries.
+* The `member-of` attribute references to the `route-set` class. Its value
+  must be a reference to a valid, existing `route-set`. This `route-set`
+  can be created as part of the same submission. The attribute is also
+  optional, so it can be left out entirely.
+* The `admin-c` and `tech-c` attributes reference a `role` or `person`.
+  This means they may refer to either object class.
 
 Notifications
 -------------
