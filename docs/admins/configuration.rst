@@ -235,11 +235,11 @@ Sources
   |br| **Default**: not defined, no NRTM requests attempted.
   |br| **Change takes effect**: after SIGHUP, at the next NRTM update.
 * ``sources.{name}.nrtm_port``: the TCP port to connect to for an NRTM stream.
-  |br| **Default**: not defined, no NRTM requests attempted.
+  |br| **Default**: 43
   |br| **Change takes effect**: after SIGHUP, at the next NRTM update.
 * ``sources.{name}.import_source``: the URL or list of URLs where the full copies of this source can be
   retrieved. You can provide a list of URLs for sources that offer split files. Supports FTP or local file
-  URLs. Automatic gzip decompression is supported for FTP URLs.
+  URLs. Automatic gzip decompression is supported.
   |br| **Default**: not defined, no imports attempted.
   |br| **Change takes effect**: after SIGHUP, at the next full import. This will only occur if this source is
   forced to reload, i.e. changing this URL will not cause a new full import by itself in sources that use NRTM.

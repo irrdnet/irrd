@@ -17,6 +17,11 @@ depends_on = None
 
 
 def upgrade():
+    # Creating this extension requires extra permissions.
+    # However, if it is already created, this command succeeds
+    # even if this user does not have sufficient permissions.
+    op.execute('CREATE EXTENSION IF NOT EXISTS "pgcrypto";')
+
     op.create_table('database_status',
                     sa.Column('pk', postgresql.UUID(as_uuid=True), server_default=sa.text('gen_random_uuid()'),
                               nullable=False),

@@ -51,11 +51,9 @@ class EmailParser:
                 if part.get_content_type() == 'application/pgp-signature':
                     self._pgp_signature = part.get_payload(decode=True).decode(str(charset), 'backslashreplace').strip()  # type: ignore
         else:
-            charset = message.get_content_charset()
-            if not charset:
-                charset = self._default_encoding
+            charset = message.get_content_charset(failobj=self._default_encoding)
             self.body = message.get_payload(decode=True).decode(charset, 'backslashreplace')  # type: ignore
-            self._raw_body = message.as_string()
+            self._raw_body = self.body
 
         self.message_id = message['Message-ID']  # type: ignore
         self.message_from = message['From']  # type: ignore

@@ -120,9 +120,10 @@ class TestMirrorFullImportRunner:
         ]
 
     def test_run_import_local_file(self, monkeypatch, config_override, tmpdir):
-        tmp_import_source1 = tmpdir + '/source1.rpsl'
-        with open(tmp_import_source1, 'w') as fh:
-            fh.write('source1')
+        tmp_import_source1 = tmpdir + '/source1.rpsl.gz'
+        with open(tmp_import_source1, 'wb') as fh:
+            # gzipped data, contains 'source1'
+            fh.write(b64decode('H4sIAE4CfFsAAyvOLy1KTjUEAE5Fj0oHAAAA'))
         tmp_import_source2 = tmpdir + '/source2.rpsl'
         with open(tmp_import_source2, 'w') as fh:
             fh.write('source2')
@@ -250,7 +251,7 @@ class TestNRTMImportUpdateStreamRunner:
         config_override({
             'sources': {
                 'TEST': {
-                    'nrtm_host': '192.0.2.1',
+                    'nrtm_port': '4343',
                 }
             }
         })

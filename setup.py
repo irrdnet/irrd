@@ -18,7 +18,7 @@ setuptools.setup(
     long_description_content_type='text/x-rst',
     url='https://github.com/irrdnet/irrd4',
     packages=setuptools.find_packages(
-        exclude=["*.tests", "*.tests.*", "tests.*", "tests"]
+        exclude=['*.tests', '*.tests.*', 'tests.*', 'tests', 'irrd.integration_tests']
     ) + ['twisted.plugins'],
     python_requires='>=3.6',
     package_data={'': ['*.txt', '*.yaml', '*.mako']},

@@ -50,7 +50,8 @@ class ServiceMaker(object):
             interface=get_setting('server.http.interface')
         ).setServiceParent(ms)
 
-        internet.TimerService(15, MirrorScheduler().run).setServiceParent(ms)
+        mirror_frequency = int(os.environ.get('IRRD_SCHEDULER_TIMER_OVERRIDE', 15))
+        internet.TimerService(mirror_frequency, MirrorScheduler().run).setServiceParent(ms)
 
         return ms
 

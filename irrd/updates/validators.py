@@ -96,10 +96,10 @@ class ReferenceValidator:
                 return False
 
         query = RPSLDatabaseQuery().sources([source]).object_classes(object_classes).rpsl_pk(object_pk)
-        results = self.database_handler.execute_query(query)
+        results = list(self.database_handler.execute_query(query))
         for result in results:
             self._cache.add((result['object_class'], object_pk, source))
-        if results:
+        if len(results):
             return True
 
         return False

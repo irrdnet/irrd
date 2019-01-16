@@ -231,7 +231,7 @@ class Configuration:
             if not SOURCE_NAME_RE.match(name):
                 errors.append(f'Invalid source name: {name}')
 
-            nrtm_mirror = details.get('nrtm_host') and details.get('nrtm_port') and details.get('import_serial_source')
+            nrtm_mirror = details.get('nrtm_host') and details.get('import_serial_source')
             if details.get('keep_journal') and not (nrtm_mirror or details.get('authoritative')):
                 errors.append(f'Setting keep_journal for source {name} can not be enabled unless either authoritative '
                               f'is enabled, or all three of nrtm_host, nrtm_port and import_serial_source.')
@@ -243,6 +243,8 @@ class Configuration:
                 errors.append(f'Setting authoritative for source {name} can not be enabled when either '
                               f'nrtm_host or import_source are set.')
 
+            if not str(details.get('nrtm_port', '43')).isnumeric():
+                errors.append(f'Setting nrtm_port for source {name} must be a number.')
             if not details.get('import_timer', '0').isnumeric():
                 errors.append(f'Setting import_timer for source {name} must be a number.')
             if not details.get('export_timer', '0').isnumeric():
@@ -266,6 +268,11 @@ configuration = None
 def config_init(config_path):
     global configuration
     configuration = Configuration(config_path)
+
+
+def is_config_initialised():
+    global configuration
+    return configuration is not None
 
 
 def get_setting(setting_name: str, default: Any=None) -> Any:

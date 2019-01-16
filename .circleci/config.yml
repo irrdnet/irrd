@@ -7,6 +7,8 @@ jobs:
       - image: circleci/python:3.6.1
         environment:
           IRRD_DATABASE_URL: 'postgresql://root@localhost/circle_test'
+          IRRD_DATABASE_URL_INTEGRATION_1: 'postgresql://root@localhost/circle_test_integration_1'
+          IRRD_DATABASE_URL_INTEGRATION_2: 'postgresql://root@localhost/circle_test_integration_2'
 
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
@@ -41,6 +43,14 @@ jobs:
           key: v1-dependencies-{{ checksum "requirements.txt" }}
 
       - run:
+          name: apt update
+          command: sudo apt-get update
+
+      - run:
+          name: Installing psql client
+          command: sudo apt-get install postgresql-client
+
+      - run:
           name: Waiting for PostgreSQL to be ready
           command: |
             for i in `seq 1 10`;
@@ -52,16 +62,30 @@ jobs:
             echo Failed waiting for PostgreSQL && exit 1
 
       - run:
-          name: run tests
+          name: Creating additional database 1
+          command: psql -U root -h localhost -d circle_test -c "CREATE DATABASE circle_test_integration_1;"
+
+      - run:
+          name: Creating additional database 2
+          command: psql -U root -h localhost -d circle_test -c "CREATE DATABASE circle_test_integration_2;"
+
+      - run:
+          name: run regular tests
           command: |
             . venv/bin/activate
             py.test --cov=irrd irrd --junitxml=test-reports/junit.xml --cov-fail-under=100
 
       - run:
+          name: run integration tests
+          command: |
+            . venv/bin/activate
+            py.test irrd/integration_tests/run.py -s
+
+      - run:
           name: build docs
           command: |
             . venv/bin/activate
-            sphinx-build -nW -b html docs/ test-reports/docs-html
+            sphinx-build -nW -b html docs/ docs/build
 
       - run:
           name: run flake8

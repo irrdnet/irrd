@@ -190,7 +190,7 @@ class RPSLRouteSetMemberField(RPSLTextField):
           - ^[integer]
           - ^[integer]-[integer]
     """
-    keep_case = False
+    keep_case = True
 
     def __init__(self, ip_version: Optional[int], *args, **kwargs) -> None:
         if ip_version and ip_version not in [4, 6]:
