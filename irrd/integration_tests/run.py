@@ -12,6 +12,7 @@ import subprocess
 import textwrap
 import yaml
 from alembic import command, config
+from pathlib import Path
 
 from irrd.conf import config_init, PASSWORD_HASH_DUMMY_VALUE
 from irrd.utils.rpsl_samples import (SAMPLE_MNTNER, SAMPLE_PERSON, SAMPLE_KEY_CERT, SIGNED_PERSON_UPDATE_VALID,
@@ -22,7 +23,7 @@ from irrd.utils.whois_client import whois_query, whois_query_irrd
 from .constants import (EMAIL_SMTP_PORT, EMAIL_DISCARD_MSGS_COMMAND, EMAIL_RETURN_MSGS_COMMAND, EMAIL_SEPARATOR,
                         EMAIL_END)
 
-IRRD_ROOT_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
+IRRD_ROOT_PATH = str(Path(__file__).resolve().parents[2])
 sys.path.append(IRRD_ROOT_PATH)
 
 AS_SET_REFERRING_OTHER_SET = """as-set:         AS-TESTREF

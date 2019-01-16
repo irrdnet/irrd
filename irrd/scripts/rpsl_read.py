@@ -5,12 +5,13 @@ This is a helper script to run RPSL data through the parser and, optionally,
 insert it into the database.
 """
 import argparse
-import os
 import sys
+
+from pathlib import Path
 from typing import Set
 
 
-sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))))
+sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from irrd.conf import CONFIG_PATH_DEFAULT, config_init
 from irrd.storage.database_handler import DatabaseHandler

@@ -7,6 +7,7 @@ import re
 import signal
 import yaml
 from IPy import IP
+from pathlib import Path
 from typing import Any, List, Optional
 import os
 
@@ -84,7 +85,7 @@ class Configuration:
         If a logfile was specified, direct logs there.
         """
         self.user_config_path = user_config_path if user_config_path else CONFIG_PATH_DEFAULT
-        default_config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'default_config.yaml')
+        default_config_path = str(Path(__file__).resolve().parents[0] / 'default_config.yaml')
         default_config_yaml = yaml.safe_load(open(default_config_path))
         self.default_config = DottedDict(default_config_yaml['irrd'])
 

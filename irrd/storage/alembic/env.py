@@ -3,9 +3,10 @@ import os
 import sys
 
 from alembic import context
+from pathlib import Path
 from sqlalchemy import create_engine
 
-sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))))
+sys.path.append(str(Path(__file__).resolve().parents[3]))
 
 from irrd.conf import get_setting, config_init, is_config_initialised
 from irrd.storage.models import Base

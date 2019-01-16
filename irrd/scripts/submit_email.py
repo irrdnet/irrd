@@ -2,8 +2,9 @@
 # flake8: noqa: E402
 import argparse
 import logging
-import os
 import sys
+
+from pathlib import Path
 
 """
 Submit a raw e-mail message, i.e. with e-mail headers.
@@ -13,8 +14,7 @@ A report on the results will be sent to the user by e-mail.
 """
 
 logger = logging.getLogger(__name__)
-
-sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))))
+sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from irrd.conf import config_init, CONFIG_PATH_DEFAULT
 from irrd.updates.email import handle_email_submission

@@ -12,11 +12,11 @@ Prints a report of the results, which would otherwise
 be sent to a user by e-mail.
 """
 import argparse
-import os
 import sys
 
+from pathlib import Path
 
-sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))))
+sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from irrd.conf import config_init, CONFIG_PATH_DEFAULT
 from irrd.updates.handler import ChangeSubmissionHandler

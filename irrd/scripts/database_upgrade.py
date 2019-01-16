@@ -3,11 +3,11 @@
 import sys
 
 import argparse
-import os
 from alembic import command
 from alembic.config import Config
+from pathlib import Path
 
-irrd_root = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
+irrd_root = str(Path(__file__).resolve().parents[2])
 sys.path.append(irrd_root)
 
 from irrd.conf import config_init, CONFIG_PATH_DEFAULT

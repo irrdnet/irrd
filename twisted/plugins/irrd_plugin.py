@@ -2,6 +2,7 @@
 import sys
 
 import os
+from pathlib import Path
 from twisted.application import internet, service
 from twisted.application.service import IServiceMaker
 from twisted.plugin import IPlugin
@@ -9,7 +10,7 @@ from twisted.python import usage
 from twisted.python.log import PythonLoggingObserver, ILogObserver
 from zope.interface import implementer
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from irrd.conf import config_init, get_setting, CONFIG_PATH_DEFAULT
 from irrd.mirroring.scheduler import MirrorScheduler
