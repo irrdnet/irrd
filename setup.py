@@ -5,9 +5,6 @@ from irrd import __version__
 with open('README.rst', 'r') as fh:
     long_description = fh.read()
 
-with open('requirements.txt') as f:
-    required = f.read().splitlines()
-
 setuptools.setup(
     name='irrd',
     version=__version__,
