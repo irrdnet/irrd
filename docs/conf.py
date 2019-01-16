@@ -91,6 +91,7 @@ html_theme = 'alabaster'
 # documentation.
 #
 html_theme_options = {
+    'logo': 'logo.png',
     'github_user': 'irrdnet',
     'github_repo': 'irrd4',
     'github_banner': True,
