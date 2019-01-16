@@ -728,7 +728,7 @@ class TestSingleChangeRequestHandling:
             
             as-set:         AS-SETTEST
             descr:          description
-            members:        AS65538,AS65539,AS65540
+            members:        AS65538,AS65539
             members:        AS65537
             tech-c:         PERSON-TEST
             admin-c:        PERSON-TEST

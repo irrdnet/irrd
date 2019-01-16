@@ -19,10 +19,23 @@ from irrd.utils.rpsl_samples import (SAMPLE_MNTNER, SAMPLE_PERSON, SAMPLE_KEY_CE
                                      SAMPLE_INET6NUM, SAMPLE_INETNUM, SAMPLE_PEERING_SET, SAMPLE_ROLE, SAMPLE_ROUTE,
                                      SAMPLE_ROUTE_SET, SAMPLE_ROUTE6, SAMPLE_RTR_SET, SAMPLE_AS_BLOCK)
 from irrd.utils.whois_client import whois_query, whois_query_irrd
-from .constants import EMAIL_SMTP_PORT, EMAIL_DISCARD_MSGS_COMMAND, EMAIL_RETURN_MSGS_COMMAND, EMAIL_SEPARATOR, EMAIL_END
+from .constants import (EMAIL_SMTP_PORT, EMAIL_DISCARD_MSGS_COMMAND, EMAIL_RETURN_MSGS_COMMAND, EMAIL_SEPARATOR,
+                        EMAIL_END)
 
 IRRD_ROOT_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
 sys.path.append(IRRD_ROOT_PATH)
+
+AS_SET_REFERRING_OTHER_SET = """as-set:         AS-TESTREF
+descr:          description
+members:        AS-SETTEST, AS65540
+tech-c:         PERSON-TEST
+admin-c:        PERSON-TEST
+notify:         notify@example.com
+mnt-by:         TEST-MNT
+changed:        2017-05-19T12:22:08Z
+source:         TEST
+remarks:        remark
+"""
 
 SAMPLE_MNTNER_CLEAN = SAMPLE_MNTNER.replace('mnt-by:         OTHER1-MNT,OTHER2-MNT\n', '')
 LARGE_UPDATE = '\n\n'.join([
@@ -47,7 +60,7 @@ LARGE_UPDATE = '\n\n'.join([
     SAMPLE_ROUTE_SET,
     SAMPLE_ROUTE6,
     SAMPLE_RTR_SET,
-
+    AS_SET_REFERRING_OTHER_SET,
 ])
 
 
@@ -326,6 +339,10 @@ class TestIntegration:
             query_result = whois_query_irrd('127.0.0.1', port, '!iRS-TEST')
             assert query_result == '192.0.2.0/24 2001:db8::/48'
             query_result = whois_query_irrd('127.0.0.1', port, '!iAS-SETTEST')
+            assert query_result == 'AS65537 AS65538 AS65539'
+            query_result = whois_query_irrd('127.0.0.1', port, '!iAS-TESTREF')
+            assert query_result == 'AS-SETTEST AS65540'
+            query_result = whois_query_irrd('127.0.0.1', port, '!iAS-TESTREF,1')
             assert query_result == 'AS65537 AS65538 AS65539 AS65540'
             query_result = whois_query_irrd('127.0.0.1', port, '!maut-num,as65537')
             assert 'AS65537' in query_result
@@ -361,12 +378,12 @@ class TestIntegration:
             assert 'ROLE-TEST' in query_result
 
         query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!j-*')
-        assert query_result == 'TEST:Y:1-28:28'
+        assert query_result == 'TEST:Y:1-29:29'
         # irrd #2 missed the first two updates from NRTM, as they were done at
         # the same time and loaded from the full export, so its serial should
         # start at 3 rather than 1.
         query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!j-*')
-        assert query_result == 'TEST:Y:3-28:28'
+        assert query_result == 'TEST:Y:3-29:29'
 
     def _start_mailserver(self):
         """

@@ -99,7 +99,7 @@ class DatabaseStatusRequest:
             object_class_filter = get_setting(f'sources.{source}.object_class_filter')
 
             nrtm_host = get_setting(f'sources.{source}.nrtm_host')
-            nrtm_port = int(get_setting(f'sources.{self.source}.nrtm_port', '43'))
+            nrtm_port = int(get_setting(f'sources.{source}.nrtm_port', '43'))
 
             remote_information = self._generate_remote_status_info(nrtm_host, nrtm_port, source)
             remote_information = textwrap.indent(remote_information, ' ' * 16)
