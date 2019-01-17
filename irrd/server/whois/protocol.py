@@ -1,4 +1,5 @@
 import logging
+import threading
 from twisted.internet import threads
 from twisted.internet.protocol import Factory, connectionDone
 from twisted.protocols.basic import LineOnlyReceiver
@@ -27,6 +28,7 @@ class WhoisQueryReceiver(TimeoutMixin, LineOnlyReceiver):
 
         self.query_parser = WhoisQueryParser(peer, self.peer_str)
         self.setTimeout(self.time_out)
+        self.last_query_lock = None
         logger.debug(f'{self.peer_str}: new connection opened')
 
     def lineReceived(self, line_bytes: bytes):  # noqa: N802
@@ -43,7 +45,11 @@ class WhoisQueryReceiver(TimeoutMixin, LineOnlyReceiver):
             logger.debug(f'{self.peer_str}: closed connection per request')
             return
 
-        threads.deferToThread(self.query_parser.handle_query, query=line).addCallback(self.returnResult)
+        this_query_lock = threading.Event()
+        this_query_lock.clear()
+        threads.deferToThread(self.query_parser.handle_query, query=line, this_query_lock=this_query_lock,
+                              last_query_lock=self.last_query_lock).addCallback(self.returnResult)
+        self.last_query_lock = this_query_lock
 
     def returnResult(self, response_obj):  # noqa: N802
         response = response_obj.generate_response()

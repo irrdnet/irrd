@@ -59,6 +59,13 @@ class TestWhoisProtocol:
         assert len(mock_transport.mock_calls) == 2
         mock_transport.reset_mock()
 
+        receiver.lineReceived(b'-g')
+        assert mock_transport.mock_calls[0][0] == 'write'
+        assert mock_transport.mock_calls[0][1][0] == b'%% ERROR: Missing argument for flag/search: g\n'
+        assert mock_transport.mock_calls[1][0] == 'loseConnection'
+        assert len(mock_transport.mock_calls) == 2
+        mock_transport.reset_mock()
+
         receiver.query_parser.multiple_command_mode = True
         receiver.lineReceived(b' !v ')
         assert mock_transport.mock_calls[0][0] == 'write'
