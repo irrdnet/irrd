@@ -16,6 +16,7 @@ Internet Routing Registry Daemon (IRRd) Version 4
 ------------
 
 .. image:: https://irrd4.readthedocs.io/en/latest/_static/logo.png
+     :alt: IRRd logo. Copyright (c) 2019, Natasha Allegri
 
 Internet Routing Registry daemon version 4 is an IRR database server,
 processing IRR objects in the RPSL format.
