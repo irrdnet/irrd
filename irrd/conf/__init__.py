@@ -152,6 +152,8 @@ class Configuration:
         """
         self.user_config_live = self.user_config_staging
         logging.getLogger('').setLevel(self.get_setting_live('log.level', default='INFO'))
+        if hasattr(sys, '_called_from_test'):
+            logging.getLogger('').setLevel('DEBUG')
 
     def _staging_reload_check(self, log_success=True) -> List[str]:
         """
