@@ -148,9 +148,9 @@ class DatabaseStatusRequest:
             except ValueError:
                 return textwrap.dedent(f"""
                     NRTM host: {nrtm_host} port {nrtm_port}
-                    Remote status query unsupported
+                    Remote status query unsupported or query failed
                     """)
-            except socket.timeout:
+            except (socket.timeout, ConnectionError):
                 return textwrap.dedent(f"""
                     NRTM host: {nrtm_host} port {nrtm_port}
                     Unable to reach remote server for status query

@@ -69,7 +69,7 @@ def whois_query_irrd(host: str, port: int, query: str) -> Optional[str]:
     while True:
         try:
             data = s.recv(1024)
-        except socket.timeout:
+        except (socket.timeout, ConnectionError):
             break
         if not data:
             break

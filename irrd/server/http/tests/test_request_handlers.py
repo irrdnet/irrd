@@ -168,7 +168,7 @@ class TestDatabaseStatusRequest:
             
             Remote information:
                 NRTM host: nrtm2.example.com port 44
-                Remote status query unsupported
+                Remote status query unsupported or query failed
             
             
             Status for TEST3
