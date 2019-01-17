@@ -194,10 +194,11 @@ Creating tables
 IRRd uses database migrations to create and manage tables. To create
 the SQL tables, "upgrade" to the latest version::
 
-    /home/irrd/irrd-venv/bin/irrd_database_upgrade head
+    /home/irrd/irrd-venv/bin/irrd_database_upgrade
 
 A ``--config`` parameter can be passed to set a different configuration
-file path.
+file path. A ``version`` parameter can be passed to upgrade to a specific
+version, the default is the latest version (`head`).
 
 Running as a non-privileged user
 --------------------------------
