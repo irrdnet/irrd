@@ -167,7 +167,8 @@ class Configuration:
             return []
 
         try:
-            user_config_yaml = yaml.safe_load(open(self.user_config_path))
+            with open(self.user_config_path) as fh:
+                user_config_yaml = yaml.safe_load(fh)
         except OSError as oe:
             return [f'Error opening config file {self.user_config_path}: {oe}']
         except yaml.YAMLError as ye:
