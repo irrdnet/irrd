@@ -200,6 +200,7 @@ A ``--config`` parameter can be passed to set a different configuration
 file path. A ``version`` parameter can be passed to upgrade to a specific
 version, the default is the latest version (`head`).
 
+
 Running as a non-privileged user
 --------------------------------
 It is recommended to run IRRd as a non-privileged user. This user needs
@@ -241,6 +242,18 @@ add a ``--config`` parameter after ``irrd``, like so::
 .. note::
     Although ``log.logfile_path`` is not required, if it is unset and
     IRRd is started in the background, log output is lost.
+
+Using setcap
+~~~~~~~~~~~~
+IRRd can drop privileges with the ``--uid`` parameter, as used in the last
+section. Another option is to run the IRRd command as the non-privileged
+user, and use ``setcap`` to assign that user permissions to open privileged
+ports, e.g.::
+
+    # Once, as root:
+    setcap 'cap_net_bind_service=+ep' /home/irrd/irrd-venv/bin/python3
+    # To run, start without --uid, as the non-privileged user
+    /home/irrd/irrd-venv/bin/twistd --pidfile=/home/irrd/irrd.pid irrd
 
 Errors
 ~~~~~~
