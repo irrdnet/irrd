@@ -413,7 +413,6 @@ class DatabaseStatusTracker:
         for source, serial in self._exported_serials.items():
             stmt = RPSLDatabaseStatus.__table__.update().where(self.c_status.source == source).values(
                 serial_last_export=serial,
-                updated=datetime.now(timezone.utc),
             )
             self.database_handler.execute_statement(stmt)
 
