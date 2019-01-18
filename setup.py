@@ -41,6 +41,7 @@ setuptools.setup(
         'console_scripts': [
             'irrd_submit_email = irrd.scripts.submit_email:main',
             'irrd_database_upgrade = irrd.scripts.database_upgrade:main',
+            'irrd_load_database = irrd.scripts.load_database:main',
         ],
     },
     classifiers=(

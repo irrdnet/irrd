@@ -9,6 +9,7 @@ This page explains the processes and caveats involved in mirroring.
 For details on all configuration options, see
 the :doc:`configuration documentation </admins/configuration>`.
 
+.. contents:: :backlinks: none
 
 Scheduling
 ----------
@@ -38,7 +39,7 @@ mirroring of authoritative or mirrored data by other users.
 
 Periodic exports of the database can be produced for all sources. They consist
 of a full export of the text of all objects for a source, gzipped and encoded
-in UTF-8. If a local journal is kept, another file is exported with the serial
+in UTF-8. If a serial is known, another file is exported with the serial
 number of this export. If the database is entirely empty, an error is logged
 and no files are exported.
 
@@ -153,3 +154,66 @@ The mirror can be limited to certain RPSL object classes using the
 in this list, are immediately discarded. No logs are kept of this. They
 are also not kept in the local journal.
 If this setting is undefined, all known classes are accepted.
+
+
+Manually loading data
+---------------------
+
+A third option is to manually load data. This can be useful while testing,
+or when generating data files from scripts, as it provides direct feedback
+on whether loading data was successful.
+
+Manual loading uses the ``irrd_load_database`` command:
+
+* The command can be called, providing a name of a source and a path to
+  the file to import. This file can not be gzipped.
+* The source must already be in the config file, with empty settings
+  otherwise if no other settings are needed. The source does not have to
+  be authoritative.
+* Optionally, a serial number can be set. See the notes about serials below.
+* Upon encountering the first error, the process is aborted, and an error
+  is printed to stdout. No records are made/changed in the database or in
+  the logs, the previously existing objects will remain in the database.
+  The exit status is 1.
+* When no errors were encountered, all objects for this source are replaced
+  with those found in the import file. Log messages are written about the
+  result of the import. The exit status is 0. Nothing is written to stdout.
+* An error means encountering an object that raises errors in
+  :doc:`non-strict object validation </admins/object-validation>`,
+  an object with an unknown object class, or an object for which
+  the `source` attribute is inconsistent with the `--source` argument.
+* The object class filter configured, if any, is followed.
+
+On serials:
+
+* If no serial is provided, and none has in the past, no serial is
+  recorded. This is similar to sources that have ``import_source``
+  set, but not ``import_source_serial``.
+* If no serial is provided, but a serial has been provided in a past
+  command, or through another mirroring process, the existing serial
+  is kept.
+* If a lower serial is provided than in a past import, the lower
+  serial is recorded, but the existing data is still overwritten.
+  This is not recommended.
+* The data is always reloaded from the provided file regardless of
+  whether a serial was provided, or what the provided serial is.
+
+.. note::
+    When other databases mirror the source being loaded,
+    it is advisable to use incrementing serials, as they may use the
+    CURRENTSERIAL file to determine whether to run a new import.
+    Journals can not be kept of manually loaded sources.
+
+For example, to load data for source TEST with serial 10::
+
+    irrd_load_database --source TEST --serial 10 test.db
+
+The ``--config`` parameter can be used to read the configuration from a
+different config file. Note that this script always acts on the current
+configuration file - not on the configuration that IRRd started with.
+
+.. caution::
+    Upon manually loading data, all existing journal entries for the
+    source are discarded, as they may no longer be complete.
+    This only applies if loading was successful.
+

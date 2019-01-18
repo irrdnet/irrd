@@ -39,12 +39,13 @@ class TestMirrorFileImportParser:
         with tempfile.NamedTemporaryFile() as fp:
             fp.write(test_input.encode('utf-8'))
             fp.seek(0)
-            MirrorFileImportParser(
+            parser = MirrorFileImportParser(
                 source='TEST',
                 filename=fp.name,
                 serial=424242,
                 database_handler=mock_dh,
             )
+            parser.run_import()
         assert len(mock_dh.mock_calls) == 4
         assert mock_dh.mock_calls[0][0] == 'upsert_rpsl_object'
         assert mock_dh.mock_calls[0][1][0].pk() == '192.0.2.0/24AS65537'
@@ -61,6 +62,89 @@ class TestMirrorFileImportParser:
 
         key_cert_obj = rpsl_object_from_text(SAMPLE_KEY_CERT, strict_validation=False)
         assert key_cert_obj.verify(KEY_CERT_SIGNED_MESSAGE_VALID)
+
+    def test_direct_error_return_invalid_source(self, monkeypatch, caplog, tmp_gpg_dir, config_override):
+        config_override({
+            'sources': {
+                'TEST': {},
+            }
+        })
+        mock_dh = Mock()
+
+        test_data = [
+            SAMPLE_UNKNOWN_ATTRIBUTE,  # valid, because mirror imports are non-strict
+            SAMPLE_ROUTE.replace('TEST', 'BADSOURCE'),
+        ]
+        test_input = '\n\n'.join(test_data)
+
+        with tempfile.NamedTemporaryFile() as fp:
+            fp.write(test_input.encode('utf-8'))
+            fp.seek(0)
+            parser = MirrorFileImportParser(
+                source='TEST',
+                filename=fp.name,
+                serial=424242,
+                database_handler=mock_dh,
+                direct_error_return=True,
+            )
+            error = parser.run_import()
+            assert error == 'Invalid source BADSOURCE for object 192.0.2.0/24AS65537, expected TEST'
+        assert len(mock_dh.mock_calls) == 1
+        assert mock_dh.mock_calls[0][0] == 'upsert_rpsl_object'
+        assert mock_dh.mock_calls[0][1][0].pk() == '192.0.2.0/24AS65537'
+
+        assert 'Invalid source BADSOURCE for object' not in caplog.text
+        assert 'File import for TEST' not in caplog.text
+
+    def test_direct_error_return_malformed_pk(self, monkeypatch, caplog, tmp_gpg_dir, config_override):
+        config_override({
+            'sources': {
+                'TEST': {},
+            }
+        })
+        mock_dh = Mock()
+
+        with tempfile.NamedTemporaryFile() as fp:
+            fp.write(SAMPLE_MALFORMED_PK.encode('utf-8'))
+            fp.seek(0)
+            parser = MirrorFileImportParser(
+                source='TEST',
+                filename=fp.name,
+                serial=424242,
+                database_handler=mock_dh,
+                direct_error_return=True,
+            )
+            error = parser.run_import()
+            assert 'Invalid address prefix: not-a-prefix' in error
+        assert not len(mock_dh.mock_calls)
+
+        assert 'Invalid address prefix: not-a-prefix' not in caplog.text
+        assert 'File import for TEST' not in caplog.text
+
+    def test_direct_error_return_unknown_class(self, monkeypatch, caplog, tmp_gpg_dir, config_override):
+        config_override({
+            'sources': {
+                'TEST': {},
+            }
+        })
+        mock_dh = Mock()
+
+        with tempfile.NamedTemporaryFile() as fp:
+            fp.write(SAMPLE_UNKNOWN_CLASS.encode('utf-8'))
+            fp.seek(0)
+            parser = MirrorFileImportParser(
+                source='TEST',
+                filename=fp.name,
+                serial=424242,
+                database_handler=mock_dh,
+                direct_error_return=True,
+            )
+            error = parser.run_import()
+            assert error == 'Unknown object class: foo-block'
+        assert not len(mock_dh.mock_calls)
+
+        assert 'Unknown object class: foo-block' not in caplog.text
+        assert 'File import for TEST' not in caplog.text
 
 
 class TestNRTMStreamParser:

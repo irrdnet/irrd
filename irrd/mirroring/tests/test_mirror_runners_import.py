@@ -312,11 +312,14 @@ class MockMirrorFileImportParser:
     rpsl_data_calls: List[str] = []
     expected_serial = 424242
 
-    def __init__(self, source, filename, serial, database_handler):
-        with open(filename, 'r') as f:
-            self.rpsl_data_calls.append(f.read())
+    def __init__(self, source, filename, serial, database_handler, direct_error_return=False):
+        self.filename = filename
         assert source == 'TEST'
         assert serial == self.expected_serial
+
+    def run_import(self):
+        with open(self.filename, 'r') as f:
+            self.rpsl_data_calls.append(f.read())
 
 
 class TestNRTMImportUpdateStreamRunner:

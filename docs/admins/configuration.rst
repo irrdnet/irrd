@@ -131,7 +131,8 @@ configuration. A successful reload after a `SIGHUP` is also logged.
 
 .. note::
     As a separate script, `irrd_submit_email`, the handler for email submissions
-    by IRRd users, **always acts on the current configuration file** - not on
+    by IRRd users, and `irrd_load_database` for manually loading data,
+    **always act on the current configuration file** - not on
     the configuration that IRRd started with.
 
 
