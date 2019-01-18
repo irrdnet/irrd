@@ -20,6 +20,10 @@ class TestWhoisQueryResponse:
                                       result='test').generate_response()
         assert response == 'D\n'
         response = WhoisQueryResponse(mode=WhoisQueryResponseMode.IRRD,
+                                      response_type=WhoisQueryResponseType.NO_RESPONSE,
+                                      result='test').generate_response()
+        assert response == ''
+        response = WhoisQueryResponse(mode=WhoisQueryResponseMode.IRRD,
                                       response_type=WhoisQueryResponseType.ERROR,
                                       result='test').generate_response()
         assert response == 'F test\n'

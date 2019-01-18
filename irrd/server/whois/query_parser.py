@@ -121,6 +121,7 @@ class WhoisQueryParser:
         if command == '!':
             self.multiple_command_mode = True
             result = None
+            response_type = WhoisQueryResponseType.NO_RESPONSE
         elif command == 'G':
             result = self.handle_irrd_routes_for_origin_v4(parameter)
             if not result:

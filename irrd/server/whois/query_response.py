@@ -5,10 +5,15 @@ from irrd.utils.text import remove_auth_hashes
 
 
 class WhoisQueryResponseType(Enum):
-    """Types of responses to queries. KEY_NOT_FOUND is specific to IRRD-style."""
+    """
+    Types of responses to queries.
+    KEY_NOT_FOUND is specific to IRRD-style.
+    NO_RESPONSE means no response should be sent at all.
+    """
     SUCCESS = 'success'
     ERROR = 'error'
     KEY_NOT_FOUND = 'key_not_found'
+    NO_RESPONSE = 'no_response'
 
 
 class WhoisQueryResponseMode(Enum):
@@ -43,12 +48,12 @@ class WhoisQueryResponse:
 
         if self.mode == WhoisQueryResponseMode.IRRD:
             response = self._generate_response_irrd()
-            if response:
+            if response is not None:
                 return response
 
         elif self.mode == WhoisQueryResponseMode.RIPE:
             response = self._generate_response_ripe()
-            if response:
+            if response is not None:
                 return response
 
         raise RuntimeError(f'Unable to formulate response for {self.response_type} / {self.mode}: {self.result}')
@@ -64,6 +69,8 @@ class WhoisQueryResponse:
             return f'D\n'
         elif self.response_type == WhoisQueryResponseType.ERROR:
             return f'F {self.result}\n'
+        elif self.response_type == WhoisQueryResponseType.NO_RESPONSE:
+            return f''
         return None
 
     def _generate_response_ripe(self) -> Optional[str]:

@@ -27,7 +27,8 @@ IRRd style queries
 ------------------
 * ``!!`` activates multiple command mode. The connection will be kept open
   after a query has been sent. Queries are answered in the order they were
-  submitted. Takes no parameters.
+  submitted. Takes no parameters. In deviation from all other queries,
+  this query will return no response at all.
 * ``!gAS<asn>`` finds all IPv4 routes for an origin AS. Only distinct
   prefixes of the routes are returned, seperated by spaces.
 * ``!6AS<asn>`` finds all IPv6 routes for an origin AS. Only distinct
@@ -93,6 +94,7 @@ If the query was invalid::
 
     F <error message>
 
+A ``!!`` query will not return any response.
 
 RIPE style queries
 ------------------

@@ -451,7 +451,7 @@ class TestWhoisQueryParserIRRD:
         mock_dq, mock_dh, parser = prepare_parser
 
         response = parser.handle_query('!!')
-        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.response_type == WhoisQueryResponseType.NO_RESPONSE
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert not response.result
         assert not mock_dq.mock_calls
