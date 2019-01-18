@@ -35,6 +35,7 @@ This documentation is mainly for administrators of IRRd deployments.
    admins/configuration
    admins/migrating-legacy-irrd
    admins/object-validation
+   admins/status_page
 
 For end users
 -------------
