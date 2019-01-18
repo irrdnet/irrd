@@ -184,7 +184,7 @@ with the ``!s`` command or the ``-s`` flag. When enabling multiple sources,
 the order in whch they are listed defines their prioritisation, which can
 make a significant difference in some queries. For example, ``!m`` will find
 the first object with a given primary key, from the highest priority source
-it was found.
+in which it was found.
 
 Set expansion with ``!i`` will start from the object from the highest priority
 source, which matches the given primary key. For resolving references to other
