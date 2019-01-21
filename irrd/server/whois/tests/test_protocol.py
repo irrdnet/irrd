@@ -1,38 +1,53 @@
 import pytest
+import queue
+from twisted.internet.address import IPv4Address, UNIXAddress
+from typing import Callable
 from unittest.mock import Mock
 
-from twisted.internet.address import IPv4Address, UNIXAddress
-
-from irrd import __version__
 from ..protocol import WhoisQueryReceiver, WhoisQueryReceiverFactory
 
 
+class QueryPipelineMock:
+    def __init__(self, peer_str: str, query_parser,
+                 response_callback: Callable[[bytes], None], lose_connection_callback: Callable[[], None],
+                 *args, **kwargs):
+        self.peer_str = peer_str
+        self.response_callback = response_callback
+        self.lose_connection_callback = lose_connection_callback
+        self.pipeline: queue.Queue[bytes] = queue.Queue()
+        self.cancelled = False
+        self.started = False
+        self.ready_for_next_result_flag = False
+
+    def start(self):
+        self.started = True
+
+    def add_query(self, query):
+        self.pipeline.put(query, block=False)
+
+    def cancel(self):
+        self.cancelled = True
+
+    def ready_for_next_result(self):
+        self.ready_for_next_result_flag = True
+
+
 @pytest.fixture()
-def mock_twisted_defertothread(monkeypatch):
-    def _defer_to_thread_mock(callable, *args, **kwargs):
-        result = callable(*args, **kwargs)
+def mock_pipeline_reactor(monkeypatch):
+    def _call_from_thread_mock(callable, *args, **kwargs):
+        return callable(*args, **kwargs)
 
-        def _add_callback_mock(callback):
-            return callback(result)
-
-        obj = lambda: None  # noqa: E731
-        obj.addCallback = _add_callback_mock
-        return obj
-
-    monkeypatch.setattr('irrd.server.whois.protocol.threads.deferToThread', _defer_to_thread_mock)
+    monkeypatch.setattr('irrd.server.whois.protocol.reactor.callFromThread', _call_from_thread_mock)
+    monkeypatch.setattr('irrd.server.whois.protocol.QueryPipelineThread', QueryPipelineMock)
 
 
 class TestWhoisProtocol:
-    expected_version = f'IRRd -- version {__version__}'
-    expected_version_reply = f'A{len(expected_version)+1}\n{expected_version}\nC\n'.encode('ascii')
 
-    def test_whois_protocol_no_access_list(self, config_override, mock_twisted_defertothread):
+    def test_whois_protocol_no_access_list(self, config_override, mock_pipeline_reactor):
         config_override({
             'sources': {'TEST1': {}},
         })
 
-        # Note that these tests do not mock WhoisQueryParser, on purpose.
-        # However, they only run version queries, so no database interaction occurs.
         mock_transport = Mock()
         mock_transport.getPeer = lambda: IPv4Address('TCP', '127.0.0.1', 99999)
         mock_factory = Mock()
@@ -44,45 +59,43 @@ class TestWhoisProtocol:
 
         receiver.connectionMade()
         assert receiver.peer_str == '[127.0.0.1]:99999'
+        assert receiver.query_pipeline_thread.started
         mock_transport.reset_mock()
 
         receiver.lineReceived(b' ')
-        receiver.lineReceived(b' !q ')
+        receiver.lineReceived(b' !v ')
+        assert receiver.query_pipeline_thread.pipeline.get(block=False) == b' '
+        assert receiver.query_pipeline_thread.pipeline.get(block=False) == b' !v '
+
+        receiver.query_pipeline_thread.response_callback(b'response')
+        assert mock_transport.mock_calls[0][0] == 'write'
+        assert mock_transport.mock_calls[0][1][0] == b'response'
+        assert mock_transport.mock_calls[1][0] == 'loseConnection'
+        assert len(mock_transport.mock_calls) == 2
+        mock_transport.reset_mock()
+
+        receiver.query_pipeline_thread.lose_connection_callback()
         assert mock_transport.mock_calls[0][0] == 'loseConnection'
         assert len(mock_transport.mock_calls) == 1
         mock_transport.reset_mock()
 
-        receiver.lineReceived(b' !v ')
-        assert mock_transport.mock_calls[0][0] == 'write'
-        assert mock_transport.mock_calls[0][1][0] == self.expected_version_reply
-        assert mock_transport.mock_calls[1][0] == 'loseConnection'
-        assert len(mock_transport.mock_calls) == 2
-        mock_transport.reset_mock()
-
-        receiver.lineReceived(b'-g')
-        assert mock_transport.mock_calls[0][0] == 'write'
-        assert mock_transport.mock_calls[0][1][0] == b'%% ERROR: Missing argument for flag/search: g\n'
-        assert mock_transport.mock_calls[1][0] == 'loseConnection'
-        assert len(mock_transport.mock_calls) == 2
-        mock_transport.reset_mock()
-
         receiver.query_parser.multiple_command_mode = True
-        receiver.lineReceived(b' !v ')
+        receiver.query_pipeline_thread.response_callback(b'response')
         assert mock_transport.mock_calls[0][0] == 'write'
         assert len(mock_transport.mock_calls) == 1
 
         receiver.connectionLost()
         assert mock_factory.current_connections == 9
 
-    def test_whois_protocol_access_list_permitted(self, config_override, mock_twisted_defertothread):
+    def test_whois_protocol_access_list_permitted(self, config_override, mock_pipeline_reactor):
         config_override({
             'sources': {'TEST1': {}},
             'server': {
                 'whois': {
-                    'access-list': 'test-access-list',
+                    'access_list': 'test-access-list',
                 },
             },
-            'access-lists': {
+            'access_lists': {
                 'test-access-list': ['192.0.2.0/25'],
             },
         })
@@ -97,13 +110,7 @@ class TestWhoisProtocol:
         receiver.factory = mock_factory
 
         receiver.connectionMade()
-        mock_transport.reset_mock()
-
-        receiver.lineReceived(b' !v ')
-        assert mock_transport.mock_calls[0][0] == 'write'
-        assert mock_transport.mock_calls[0][1][0] == self.expected_version_reply
-        assert mock_transport.mock_calls[1][0] == 'loseConnection'
-        assert len(mock_transport.mock_calls) == 2
+        assert len(mock_transport.mock_calls) == 0
 
     def test_whois_protocol_access_list_denied(self, config_override):
         config_override({
