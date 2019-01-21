@@ -1,22 +1,34 @@
 import logging
-import threading
-from twisted.internet import threads
+from twisted.internet import reactor
 from twisted.internet.protocol import Factory, connectionDone
 from twisted.protocols.basic import LineOnlyReceiver
 from twisted.protocols.policies import TimeoutMixin
 
 from irrd.conf import get_setting
 from .query_parser import WhoisQueryParser
+from .query_pipeline import QueryPipelineThread
 from ..access_check import is_client_permitted
 
 logger = logging.getLogger(__name__)
 
 
 class WhoisQueryReceiver(TimeoutMixin, LineOnlyReceiver):
+    """
+    The query receiver is created once for each TCP connection.
+
+    It handles interaction with the socket, and passes most work
+    off to a query pipeline thread.
+    """
     delimiter = b'\n'
     time_out = 30
 
-    def connectionMade(self):  # noqa: N802
+    def connectionMade(self) -> None:  # noqa: N802
+        """
+        Handle a new connection. This includes
+        - Access checks
+        - Creating a query parser.
+        - Creating a query pipeline thread and starting the thread.
+        """
         peer = self.transport.getPeer()
 
         if not self.is_client_permitted(peer):
@@ -27,42 +39,67 @@ class WhoisQueryReceiver(TimeoutMixin, LineOnlyReceiver):
         self.peer_str = f'[{peer.host}]:{peer.port}'
 
         self.query_parser = WhoisQueryParser(peer, self.peer_str)
+        self.query_pipeline_thread = QueryPipelineThread(
+            peer_str=self.peer_str,
+            query_parser=self.query_parser,
+            response_callback=self.query_response_callback,
+            lose_connection_callback=self.lose_connection_callback,
+        )
+        self.query_pipeline_thread.start()
+
         self.setTimeout(self.time_out)
-        self.last_query_lock = None
         logger.debug(f'{self.peer_str}: new connection opened')
 
-    def lineReceived(self, line_bytes: bytes):  # noqa: N802
+    def lineReceived(self, line_bytes: bytes) -> None:  # noqa: N802
+        """
+        Handle a line sent by a user. This method is kept as light
+        as possible, to off-load most work to the pipeline thread.
+        """
         self.resetTimeout()
-        line = line_bytes.decode('utf-8', errors='backslashreplace').strip()
+        self.query_pipeline_thread.add_query(line_bytes)
 
-        if not line:
-            return
+    def query_response_callback(self, response: bytes) -> None:
+        """
+        Handle a response to a query, sent by the query pipeline thread.
+        This is a small thread-safe wrapping around return_response()
+        """
+        reactor.callFromThread(self.return_response, response)
 
-        logger.info(f'{self.peer_str}: received query: {line}')
-
-        if line.upper() == '!Q':
-            self.transport.loseConnection()
-            logger.debug(f'{self.peer_str}: closed connection per request')
-            return
-
-        this_query_lock = threading.Event()
-        this_query_lock.clear()
-        threads.deferToThread(self.query_parser.handle_query, query=line, this_query_lock=this_query_lock,
-                              last_query_lock=self.last_query_lock).addCallback(self.returnResult)
-        self.last_query_lock = this_query_lock
-
-    def returnResult(self, response_obj):  # noqa: N802
-        response = response_obj.generate_response()
-        self.transport.write(response.encode('utf-8'))
+    def return_response(self, response: bytes) -> None:
+        """
+        Process a response. This means sending the response, closing the
+        connection if needed, and telling the query pipeline thread
+        sending the response completed.
+        """
+        self.resetTimeout()
+        self.transport.write(response)
 
         if not self.query_parser.multiple_command_mode:
             self.transport.loseConnection()
             logger.debug(f'{self.peer_str}: auto-closed connection')
 
-    def connectionLost(self, reason=connectionDone):  # noqa: N802
-        self.factory.current_connections -= 1
+        self.query_pipeline_thread.ready_for_next_result()
 
-    def is_client_permitted(self, peer):
+    def lose_connection_callback(self) -> None:
+        """
+        Handle a !q query, as detected by the query pipeline thread.
+        This is a small thread-safe wrapping around transport.loseConnection()
+        """
+        reactor.callFromThread(self.transport.loseConnection)
+
+    def connectionLost(self, reason=connectionDone) -> None:  # noqa: N802
+        """
+        Handle a lost connection, either because transport.loseConnection()
+        was called, or the remote side closed it.
+        Cancels the pipeline thread, causing it to terminate within two seconds.
+        """
+        self.factory.current_connections -= 1
+        self.query_pipeline_thread.cancel()
+
+    def is_client_permitted(self, peer) -> bool:
+        """
+        Check whether a client is permitted.
+        """
         return is_client_permitted(peer, 'server.whois.access_list', default_deny=False)
 
 
