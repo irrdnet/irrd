@@ -87,7 +87,7 @@ class QueryPipelineThread(threading.Thread):
         if not query:
             return
 
-        logger.info(f'{self.peer_str}: received query: {query}')
+        logger.info(f'{self.peer_str}: processing query: {query}')
 
         if query.upper() == '!Q':
             self.lose_connection_callback()
