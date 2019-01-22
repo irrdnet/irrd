@@ -116,10 +116,14 @@ class TestDatabaseHandlerLive:
         query = RPSLDatabaseQuery()
         result = list(self.dh.execute_query(query))
         assert len(result) == 2
+        assert 'parsed_data' in result[0]
+        assert 'object_text' in result[0]
 
-        query = RPSLDatabaseQuery().lookup_attr('mnt-by', 'MNT-CORRECT')
+        query = RPSLDatabaseQuery(['parsed_data']).lookup_attr('mnt-by', 'MNT-CORRECT')
         result = list(self.dh.execute_query(query))
         assert len(result) == 2
+        assert 'parsed_data' in result[0]
+        assert 'object_text' not in result[0]
 
         # This object should be ignored due to a rollback.
         rpsl_obj_ignored = Mock(

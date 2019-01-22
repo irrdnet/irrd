@@ -130,16 +130,20 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
     columns = RPSLDatabaseObject.__table__.c
     lookup_field_names = lookup_field_names()
 
-    def __init__(self):
+    def __init__(self, column_names=None):
         super().__init__()
-        self.statement = sa.select([
-            self.columns.pk,
-            self.columns.object_class,
-            self.columns.rpsl_pk,
-            self.columns.parsed_data,
-            self.columns.object_text,
-            self.columns.source,
-        ])
+        if column_names is None:
+            columns = [
+                self.columns.pk,
+                self.columns.object_class,
+                self.columns.rpsl_pk,
+                self.columns.parsed_data,
+                self.columns.object_text,
+                self.columns.source,
+            ]
+        else:
+            columns = [self.columns.get(name) for name in column_names]
+        self.statement = sa.select(columns)
         self._lookup_attr_counter = 0
 
     def lookup_attr(self, attr_name: str, attr_value: str):

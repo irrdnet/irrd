@@ -171,7 +171,7 @@ class WhoisQueryParser:
         except ValidationError as ve:
             raise WhoisQueryParserException(str(ve))
 
-        query = self._prepare_query().object_classes([object_class]).asn(asn)
+        query = self._prepare_query(column_names=['parsed_data']).object_classes([object_class]).asn(asn)
         query_result = self.database_handler.execute_query(query)
 
         prefixes = [r['parsed_data'][object_class] for r in query_result]
@@ -266,7 +266,9 @@ class WhoisQueryParser:
         members: Set[str] = set()
         sets_already_resolved: Set[str] = set()
 
-        query = self._prepare_query().object_classes(['as-set', 'route-set']).rpsl_pks(set_names)
+        columns = ['parsed_data', 'rpsl_pk', 'source', 'object_class']
+        query = self._prepare_query(column_names=columns)
+        query = query.object_classes(['as-set', 'route-set']).rpsl_pks(set_names)
         if self._current_set_priority_source:
             query.prioritise_source(self._current_set_priority_source)
         query_result = list(self.database_handler.execute_query(query))
@@ -305,7 +307,7 @@ class WhoisQueryParser:
             # under query, and include a maintainer listed in mbrs-by-ref, unless mbrs-by-ref
             # is set to ANY.
             query_object_class = ['route', 'route6'] if object_class == 'route-set' else ['aut-num']
-            query = self._prepare_query().object_classes(query_object_class)
+            query = self._prepare_query(column_names=columns).object_classes(query_object_class)
             query = query.lookup_attrs_in(['member-of'], [rpsl_pk])
 
             if 'ANY' not in [m.strip().upper() for m in mbrs_by_ref]:
@@ -580,9 +582,9 @@ class WhoisQueryParser:
         query = self._prepare_query().lookup_attr(attribute, value)
         return self._execute_query_flatten_output(query)
 
-    def _prepare_query(self) -> RPSLDatabaseQuery:
+    def _prepare_query(self, column_names=None) -> RPSLDatabaseQuery:
         """Prepare an RPSLDatabaseQuery by applying relevant sources/class filters."""
-        query = RPSLDatabaseQuery()
+        query = RPSLDatabaseQuery(column_names)
         if self.sources:
             query.sources(self.sources)
         else:

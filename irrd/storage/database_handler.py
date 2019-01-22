@@ -77,19 +77,13 @@ class DatabaseHandler:
         # To be able to query objects that were just created, flush the cache.
         self._flush_rpsl_object_upsert_cache()
         statement = query.finalise_statement()
-        logger.debug(f'Executing query: {query}')
         result = self._connection.execute(statement)
-        for row in result:
+        for row in result.fetchall():
             yield dict(row)
         result.close()
 
     def execute_statement(self, statement):
         """Execute a raw SQLAlchemy statement, without flushing the upsert cache."""
-        if isinstance(statement, str):
-            logger.debug(f'Executing statement: {statement}')
-        else:
-            compiled_statement = statement.compile(bind=self._connection)
-            logger.debug(f'Executing statement: {compiled_statement}')
         return self._connection.execute(statement)
 
     def upsert_rpsl_object(self, rpsl_object: RPSLObject, forced_serial: Optional[int]=None) -> None:

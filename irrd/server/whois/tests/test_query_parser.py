@@ -58,7 +58,7 @@ def prepare_parser(monkeypatch, config_override):
     mock_database_handler = Mock()
     monkeypatch.setattr('irrd.server.whois.query_parser.DatabaseHandler', lambda: mock_database_handler)
     mock_database_query = Mock()
-    monkeypatch.setattr('irrd.server.whois.query_parser.RPSLDatabaseQuery', lambda: mock_database_query)
+    monkeypatch.setattr('irrd.server.whois.query_parser.RPSLDatabaseQuery', lambda columns=None: mock_database_query)
     parser = WhoisQueryParser(IPv4Address('TCP', '127.0.0.1', 99999), '[127.0.0.1]:99999')
 
     mock_query_result = [
