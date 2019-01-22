@@ -1,3 +1,5 @@
+import time
+
 import logging
 import queue
 import threading
@@ -79,6 +81,7 @@ class QueryPipelineThread(threading.Thread):
         except queue.Empty:
             return
 
+        start_time = time.perf_counter()
         query = query_bytes.decode('utf-8', errors='backslashreplace').strip()
 
         if not query:
@@ -96,6 +99,8 @@ class QueryPipelineThread(threading.Thread):
         self.ready_to_send_result.wait()
         self.ready_to_send_result.clear()
         self.response_callback(response.generate_response().encode('utf-8'))
+        elapsed = time.perf_counter() - start_time
+        logger.info(f'{self.peer_str}: sent answer to query, elapsed {elapsed}s: {query}')
 
     def ready_for_next_result(self) -> None:
         """
