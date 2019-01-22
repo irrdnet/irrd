@@ -82,7 +82,8 @@ class TestIntegration:
 
     def test_irrd_integration(self, tmpdir):
         # IRRD_DATABASE_URL overrides the yaml config, so should be removed
-        del os.environ['IRRD_DATABASE_URL']
+        if 'IRRD_DATABASE_URL' in os.environ:
+            del os.environ['IRRD_DATABASE_URL']
         # PYTHONPATH needs to contain the twisted plugin path.
         os.environ['PYTHONPATH'] = IRRD_ROOT_PATH
         os.environ['IRRD_SCHEDULER_TIMER_OVERRIDE'] = '1'
@@ -468,7 +469,7 @@ class TestIntegration:
 
                 'log': {
                     'logfile_path': None,
-                    'loglevel': 'DEBUG'
+                    'level': 'DEBUG',
                 },
 
                 'sources': {}
