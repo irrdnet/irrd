@@ -171,7 +171,8 @@ class WhoisQueryParser:
         except ValidationError as ve:
             raise WhoisQueryParserException(str(ve))
 
-        query = self._prepare_query(column_names=['parsed_data']).object_classes([object_class]).asn(asn)
+        query = self._prepare_query(column_names=['parsed_data'], ordered_by_sources=False)
+        query = query.object_classes([object_class]).asn(asn)
         query_result = self.database_handler.execute_query(query)
 
         prefixes = [r['parsed_data'][object_class] for r in query_result]
@@ -380,7 +381,7 @@ class WhoisQueryParser:
         except ValueError:
             raise WhoisQueryParserException(f'Invalid input for route search: {parameter}')
 
-        query = self._prepare_query().object_classes(['route', 'route6'])
+        query = self._prepare_query(ordered_by_sources=False).object_classes(['route', 'route6'])
         if option is None or option == 'o':
             query = query.ip_exact(address)
         elif option == 'l':
@@ -491,7 +492,7 @@ class WhoisQueryParser:
         except ValueError:
             raise WhoisQueryParserException(f'Invalid input for route search: {parameter}')
 
-        query = self._prepare_query().object_classes(['route', 'route6'])
+        query = self._prepare_query(ordered_by_sources=False).object_classes(['route', 'route6'])
         if command == 'x':
             query = query.ip_exact(address)
         elif command == 'l':
@@ -529,7 +530,7 @@ class WhoisQueryParser:
         self.key_fields_only = True
 
     def handle_ripe_text_search(self, value: str) -> str:
-        query = self._prepare_query().text_search(value)
+        query = self._prepare_query(ordered_by_sources=False).text_search(value)
         return self._execute_query_flatten_output(query)
 
     def handle_user_agent(self, user_agent: str):
@@ -579,12 +580,12 @@ class WhoisQueryParser:
             msg = (f'Inverse attribute search not supported for {attribute},' +
                    f'only supported for attributes: {readable_lookup_field_names}')
             raise WhoisQueryParserException(msg)
-        query = self._prepare_query().lookup_attr(attribute, value)
+        query = self._prepare_query(ordered_by_sources=False).lookup_attr(attribute, value)
         return self._execute_query_flatten_output(query)
 
-    def _prepare_query(self, column_names=None) -> RPSLDatabaseQuery:
+    def _prepare_query(self, column_names=None, ordered_by_sources=True) -> RPSLDatabaseQuery:
         """Prepare an RPSLDatabaseQuery by applying relevant sources/class filters."""
-        query = RPSLDatabaseQuery(column_names)
+        query = RPSLDatabaseQuery(column_names, ordered_by_sources)
         if self.sources:
             query.sources(self.sources)
         else:

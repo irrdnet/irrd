@@ -17,10 +17,11 @@ class BaseRPSLObjectDatabaseQuery:
     table: sa.Table
     columns: ColumnCollection
 
-    def __init__(self):
+    def __init__(self, ordered_by_sources=True):
         self._query_frozen = False
         self._sources_list = []
         self._prioritised_source = None
+        self._ordered_by_sources = ordered_by_sources
 
     def pk(self, pk: str):
         """Filter on an exact object PK (UUID)."""
@@ -89,7 +90,7 @@ class BaseRPSLObjectDatabaseQuery:
         if 'asn_first' in self.columns:
             order_by.append(self.columns.asn_first.asc())
 
-        if self._sources_list or self._prioritised_source:
+        if self._ordered_by_sources and (self._sources_list or self._prioritised_source):
             case_elements = []
             if self._prioritised_source:
                 element = (self.columns.source == self._prioritised_source, -1)
@@ -130,8 +131,8 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
     columns = RPSLDatabaseObject.__table__.c
     lookup_field_names = lookup_field_names()
 
-    def __init__(self, column_names=None):
-        super().__init__()
+    def __init__(self, column_names=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         if column_names is None:
             columns = [
                 self.columns.pk,
@@ -320,8 +321,8 @@ class RPSLDatabaseJournalQuery(BaseRPSLObjectDatabaseQuery):
     table = RPSLDatabaseJournal.__table__
     columns = RPSLDatabaseJournal.__table__.c
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.statement = sa.select([
             self.columns.pk,
             self.columns.rpsl_pk,
