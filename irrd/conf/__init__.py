@@ -249,9 +249,9 @@ class Configuration:
 
             if not str(details.get('nrtm_port', '43')).isnumeric():
                 errors.append(f'Setting nrtm_port for source {name} must be a number.')
-            if not details.get('import_timer', '0').isnumeric():
+            if not str(details.get('import_timer', '0')).isnumeric():
                 errors.append(f'Setting import_timer for source {name} must be a number.')
-            if not details.get('export_timer', '0').isnumeric():
+            if not str(details.get('export_timer', '0')).isnumeric():
                 errors.append(f'Setting export_timer for source {name} must be a number.')
 
         if config.get('log.level') and not config.get('log.level') in ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']:
