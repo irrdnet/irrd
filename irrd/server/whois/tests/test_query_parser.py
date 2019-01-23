@@ -509,6 +509,45 @@ class TestWhoisQueryParserIRRD:
 
         assert not mock_dq.mock_calls
 
+    def test_handle_irrd_routes_for_as_set(self, prepare_parser, monkeypatch):
+        mock_dq, mock_dh, parser = prepare_parser
+
+        monkeypatch.setattr(
+            'irrd.server.whois.query_parser.WhoisQueryParser._recursive_set_resolve',
+            lambda self, set_name: {'AS65547', 'AS65548'}
+        )
+
+        response = parser.handle_query('!aAS-FOO')
+        assert parser._current_set_root_object_class == 'as-set'
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert response.result == '192.0.2.0/25 192.0.2.128/25'
+        assert flatten_mock_calls(mock_dq) == [
+            ['object_classes', (['route', 'route6'],), {}],
+            ['asns_first', ({65547, 65548},), {}],
+        ]
+        mock_dq.reset_mock()
+
+        response = parser.handle_query('!a4AS-FOO')
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert response.result == '192.0.2.0/25 192.0.2.128/25'
+        assert flatten_mock_calls(mock_dq) == [
+            ['object_classes', (['route'],), {}],
+            ['asns_first', ({65547, 65548},), {}],
+        ]
+        mock_dq.reset_mock()
+
+        response = parser.handle_query('!a6AS-FOO')
+        assert response.response_type == WhoisQueryResponseType.KEY_NOT_FOUND
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert response.result == ''
+        assert flatten_mock_calls(mock_dq) == [
+            ['object_classes', (['route6'],), {}],
+            ['asns_first', ({65547, 65548},), {}],
+        ]
+        mock_dq.reset_mock()
+
     def test_as_route_set_members(self, prepare_parser):
         mock_dq, mock_dh, parser = prepare_parser
 
@@ -570,16 +609,17 @@ class TestWhoisQueryParserIRRD:
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == 'AS65544 AS65545 AS65547'
+        print(flatten_mock_calls(mock_dq))
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['as-set', 'route-set'],), {}],
             ['rpsl_pks', ({'AS-FIRSTLEVEL'},), {}],
-            ['object_classes', (['as-set', 'route-set'],), {}],
-            ['rpsl_pks', ({'AS-SECONDLEVEL', 'AS-2nd-UNKNOWN'},), {}],
+            ['object_classes', (['as-set'],), {}],
+            ['rpsl_pks', ({'AS-2nd-UNKNOWN', 'AS-SECONDLEVEL'},), {}],
             ['prioritise_source', ('TEST1',), {}],
-            ['object_classes', (['as-set', 'route-set'],), {}],
+            ['object_classes', (['as-set'],), {}],
             ['rpsl_pks', ({'AS-THIRDLEVEL'},), {}],
             ['prioritise_source', ('TEST1',), {}],
-            ['object_classes', (['as-set', 'route-set'],), {}],
+            ['object_classes', (['as-set'],), {}],
             ['rpsl_pks', ({'AS-4th-UNKNOWN'},), {}],
             ['prioritise_source', ('TEST1',), {}]
         ]
@@ -669,10 +709,10 @@ class TestWhoisQueryParserIRRD:
         ]
         mock_dh.execute_query = lambda query: mock_query_result
 
-        response = parser.handle_query('!iRS-TEST')
+        response = parser.handle_query('!iRS-TEST,1')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
-        assert response.result == '192.0.2.0/32 192.0.2.1/32 2001:db8::/32 RS-OTHER'
+        assert response.result == '192.0.2.0/32 192.0.2.1/32 2001:db8::/32'
 
         config_override({
             'compatibility': {'ipv4_only_route_set_members': True},

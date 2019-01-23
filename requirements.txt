@@ -15,6 +15,7 @@ PyYAML==3.13           # parsing YAML config files
 psycopg2-binary==2.7.6.1
 SQLAlchemy==1.2.16
 alembic==1.0.6
+ujson==1.35
 
 # Network handling
 twisted==18.9.0

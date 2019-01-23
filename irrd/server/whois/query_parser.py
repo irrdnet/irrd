@@ -39,6 +39,8 @@ class WhoisQueryParser:
     """
     lookup_field_names = lookup_field_names()
     database_handler: DatabaseHandler
+    _current_set_priority_source: Optional[str]
+    _current_set_root_object_class: Optional[str]
 
     def __init__(self, peer, peer_str: str) -> None:
         self.all_valid_sources = list(get_setting('sources').keys())
@@ -120,6 +122,10 @@ class WhoisQueryParser:
             result = self.handle_irrd_routes_for_origin_v6(parameter)
             if not result:
                 response_type = WhoisQueryResponseType.KEY_NOT_FOUND
+        elif command == 'A':
+            result = self.handle_irrd_routes_for_as_set(parameter)
+            if not result:
+                response_type = WhoisQueryResponseType.KEY_NOT_FOUND
         elif command == 'I':
             result = self.handle_irrd_set_members(parameter)
             if not result:
@@ -178,6 +184,38 @@ class WhoisQueryParser:
         prefixes = [r['parsed_data'][object_class] for r in query_result]
         return ' '.join(OrderedSet(prefixes))
 
+    def handle_irrd_routes_for_as_set(self, set_name: str) -> str:
+        """
+        !a query - find all originating prefixes for all members of an AS-set, e.g. !a4AS-FOO or !a6AS-FOO
+        """
+        if set_name.startswith('4'):
+            set_name = set_name[1:]
+            object_classes = ['route']
+        elif set_name.startswith('6'):
+            set_name = set_name[1:]
+            object_classes = ['route6']
+        else:
+            object_classes = ['route', 'route6']
+
+        self._current_set_priority_source = None
+        self._current_set_root_object_class = 'as-set'
+
+        members = self._recursive_set_resolve({set_name})
+        asns = {int(member[2:]) for member in members}
+
+        query = self._prepare_query(column_names=['parsed_data'], ordered_by_sources=False)
+        query = query.object_classes(object_classes).asns_first(asns)
+        query_result = self.database_handler.execute_query(query)
+
+        prefixes = OrderedSet()
+        for result in query_result:
+            for object_class in object_classes:
+                prefix = result['parsed_data'].get(object_class)
+                if prefix:
+                    prefixes.add(prefix)
+
+        return ' '.join(prefixes)
+
     def handle_irrd_set_members(self, parameter: str) -> str:
         """
         !i query - find all members of an as-set or route-set, possibly recursively.
@@ -189,6 +227,7 @@ class WhoisQueryParser:
             parameter = parameter[:-2]
 
         self._current_set_priority_source = None
+        self._current_set_root_object_class = None
         if not recursive:
             members, leaf_members = self._find_set_members({parameter})
             members.update(leaf_members)
@@ -232,18 +271,20 @@ class WhoisQueryParser:
         sub_members, leaf_members = self._find_set_members(members)
 
         for sub_member in sub_members:
-            try:
-                IP(sub_member)
-                set_members.add(sub_member)
-                continue
-            except ValueError:
-                pass
-            try:
-                parse_as_number(sub_member)
-                set_members.add(sub_member)
-                continue
-            except ValueError:
-                pass
+            if self._current_set_root_object_class is None or self._current_set_root_object_class == 'route-set':
+                try:
+                    IP(sub_member)
+                    set_members.add(sub_member)
+                    continue
+                except ValueError:
+                    pass
+            if self._current_set_root_object_class is None or self._current_set_root_object_class == 'as-set':
+                try:
+                    parse_as_number(sub_member)
+                    set_members.add(sub_member)
+                    continue
+                except ValueError:
+                    pass
 
         further_resolving_required = sub_members - set_members - sets_seen
         new_members = self._recursive_set_resolve(further_resolving_required, sets_seen)
@@ -269,7 +310,12 @@ class WhoisQueryParser:
 
         columns = ['parsed_data', 'rpsl_pk', 'source', 'object_class']
         query = self._prepare_query(column_names=columns)
-        query = query.object_classes(['as-set', 'route-set']).rpsl_pks(set_names)
+
+        object_classes = ['as-set', 'route-set']
+        if self._current_set_root_object_class:
+            object_classes = [self._current_set_root_object_class]
+
+        query = query.object_classes(object_classes).rpsl_pks(set_names)
         if self._current_set_priority_source:
             query.prioritise_source(self._current_set_priority_source)
         query_result = list(self.database_handler.execute_query(query))
@@ -278,9 +324,14 @@ class WhoisQueryParser:
             # No sub-members are found, and apparantly all inputs were leaf members.
             return set(), set_names
 
-        # Track the source of the root object set
+        # Track the source and object class of the root object set.
+        # In one case self._current_set_root_object_class may already be set
+        # on the first run: when the set resolving should be fixed to one
+        # type of set object.
         if not self._current_set_priority_source:
             self._current_set_priority_source = query_result[0]['source']
+        if not self._current_set_root_object_class:
+            self._current_set_root_object_class = query_result[0]['object_class']
 
         for result in query_result:
             rpsl_pk = result['rpsl_pk']

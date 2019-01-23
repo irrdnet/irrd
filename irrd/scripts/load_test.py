@@ -21,7 +21,7 @@ def main(host, port, count):
     queries.append(b'!q\n')
 
     s = socket.socket()
-    s.settimeout(30)
+    s.settimeout(3000)
     s.connect((host, port))
 
     queries_str = b''.join(queries)
