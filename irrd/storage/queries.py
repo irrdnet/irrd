@@ -255,6 +255,14 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         fltr = sa.and_(self.columns.asn_first == asn, self.columns.asn_last == asn)
         return self._filter(fltr)
 
+    def asns_first(self, asns: List[int]):
+        """
+        Filter for asn_first being in a list of ASNs.
+        This is useful when also restricting object class to 'route' for instance.
+        """
+        fltr = self.columns.asn_first.in_(asns)
+        return self._filter(fltr)
+
     def asn_less_specific(self, asn: int):
         """
         Filter for a specific ASN, or any less specific matches.

@@ -20,7 +20,7 @@ class WhoisQueryReceiver(TimeoutMixin, LineOnlyReceiver):
     off to a query pipeline thread.
     """
     delimiter = b'\n'
-    time_out = 30
+    time_out = 3000
 
     def connectionMade(self) -> None:  # noqa: N802
         """

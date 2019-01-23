@@ -34,6 +34,7 @@ setuptools.setup(
         'psycopg2-binary==2.7.6.1',
         'SQLAlchemy==1.2.16',
         'alembic==1.0.6',
+        'ujson==1.35',
         'twisted==18.9.0',
     ],
     entry_points={
