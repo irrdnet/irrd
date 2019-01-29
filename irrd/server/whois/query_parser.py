@@ -1,3 +1,6 @@
+import itertools
+from collections import defaultdict
+
 import logging
 import re
 from IPy import IP
@@ -15,6 +18,7 @@ from .query_response import WhoisQueryResponseType, WhoisQueryResponseMode, Whoi
 from ..access_check import is_client_permitted
 
 logger = logging.getLogger(__name__)
+route_cache = defaultdict(set)
 
 
 class WhoisQueryParserException(ValueError):
@@ -51,6 +55,18 @@ class WhoisQueryParser:
         self.key_fields_only = False
         self.peer = peer
         self.peer_str = peer_str
+        self.preload()
+
+    def preload(self):
+        global route_cache
+        if not route_cache:
+            dh = DatabaseHandler()
+            q = RPSLDatabaseQuery(column_names=['rpsl_pk'], skip_all_ordening=True).object_classes(['route', 'route6'])
+            for result in dh.execute_query(q):
+                prefix, asn = result['rpsl_pk'].split('AS')
+                key = 'AS' + asn
+                route_cache[key].add(prefix)
+
 
     def handle_query(self, query: str) -> WhoisQueryResponse:
         """
@@ -222,20 +238,22 @@ class WhoisQueryParser:
         self._current_set_root_object_class = 'as-set'
 
         members = self._recursive_set_resolve({set_name})
-        asns = {int(member[2:]) for member in members}
+        # asns = {int(member[2:]) for member in members}
+        global route_cache
+        prefix_sets = [route_cache[k] for k in members]
 
-        query = self._prepare_query(column_names=['parsed_data'], ordered_by_sources=False)
-        query = query.object_classes(object_classes).asns_first(asns)
-        query_result = self.database_handler.execute_query(query)
+        # query = self._prepare_query(column_names=['parsed_data'], ordered_by_sources=False)
+        # query = query.object_classes(object_classes).asns_first(asns)
+        # query_result = self.database_handler.execute_query(query)
+        #
+        # prefixes = OrderedSet()
+        # for result in query_result:
+        #     for object_class in object_classes:
+        #         prefix = result['parsed_data'].get(object_class)
+        #         if prefix:
+        #             prefixes.add(prefix)
 
-        prefixes = OrderedSet()
-        for result in query_result:
-            for object_class in object_classes:
-                prefix = result['parsed_data'].get(object_class)
-                if prefix:
-                    prefixes.add(prefix)
-
-        return ' '.join(prefixes)
+        return ' '.join(set(itertools.chain.from_iterable(prefix_sets)))
 
     def handle_irrd_set_members(self, parameter: str) -> str:
         """

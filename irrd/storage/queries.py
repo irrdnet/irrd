@@ -17,10 +17,11 @@ class BaseRPSLObjectDatabaseQuery:
     table: sa.Table
     columns: ColumnCollection
 
-    def __init__(self, ordered_by_sources=True):
+    def __init__(self, ordered_by_sources=True, skip_all_ordening=False):
         self._query_frozen = False
         self._sources_list = []
         self._ordered_by_sources = ordered_by_sources
+        self._skip_all_ordening = skip_all_ordening
 
     def pk(self, pk: str):
         """Filter on an exact object PK (UUID)."""
@@ -71,6 +72,9 @@ class BaseRPSLObjectDatabaseQuery:
         the query, which depends on sources_list() and prioritise_source().
         """
         self._query_frozen = True
+
+        if self._skip_all_ordening:
+            return self.statement
 
         order_by = []
         if 'ip_first' in self.columns:
