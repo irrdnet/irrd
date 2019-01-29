@@ -98,9 +98,10 @@ class QueryPipelineThread(threading.Thread):
         response = self.query_parser.handle_query(query)
         self.ready_to_send_result.wait()
         self.ready_to_send_result.clear()
-        self.response_callback(response.generate_response().encode('utf-8'))
+        response_bytes = response.generate_response().encode('utf-8')
+        self.response_callback(response_bytes)
         elapsed = time.perf_counter() - start_time
-        logger.info(f'{self.peer_str}: sent answer to query, elapsed {elapsed}s: {query}')
+        logger.info(f'{self.peer_str}: sent answer to query, elapsed {elapsed}s, {len(response_bytes)} bytes: {query}')
 
     def ready_for_next_result(self) -> None:
         """
