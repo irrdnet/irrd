@@ -1,9 +1,21 @@
 # flake8: noqa: W293
-
+import pytest
 import textwrap
 from unittest.mock import Mock
 
+from irrd.storage.database_handler import DatabaseHandler
 from irrd.updates.email import handle_email_submission
+
+
+@pytest.fixture()
+def mock_email_dh(monkeypatch):
+    mock_email = Mock()
+    monkeypatch.setattr('irrd.utils.email.send_email', mock_email)
+
+    mock_dh = Mock(spec=DatabaseHandler)
+    monkeypatch.setattr('irrd.updates.handler.DatabaseHandler', mock_dh)
+
+    yield mock_email, mock_dh
 
 
 class TestHandleEmailSubmission:
@@ -26,10 +38,8 @@ class TestHandleEmailSubmission:
         aut-num: AS12345
         """).strip()
 
-    def test_valid_plain(self, monkeypatch):
-        mock_email = Mock()
-        monkeypatch.setattr('irrd.utils.email.send_email', mock_email)
-
+    def test_valid_plain(self, mock_email_dh):
+        mock_email, mock_dh = mock_email_dh
         handler = handle_email_submission(self.default_email)
         assert handler.request_meta['Message-ID'] == '<1325754288.4989.6.camel@hostname>'
         assert len(handler.results) == 1
@@ -39,9 +49,8 @@ class TestHandleEmailSubmission:
         assert mock_email.mock_calls[0][1][1] == 'FAILED: my subject'
         assert 'DETAILED EXPLANATION' in mock_email.mock_calls[0][1][2]
 
-    def test_invalid_no_text_plain(self, monkeypatch):
-        mock_email = Mock()
-        monkeypatch.setattr('irrd.utils.email.send_email', mock_email)
+    def test_invalid_no_text_plain(self, mock_email_dh):
+        mock_email, mock_dh = mock_email_dh
 
         email = textwrap.dedent("""
         From sasha@localhost  Thu Jan  5 10:04:48 2018
@@ -105,9 +114,9 @@ class TestHandleEmailSubmission:
         assert 'traceback for test-error follows' in caplog.text
         assert 'test-error' in caplog.text
 
-    def test_handles_exception_smtp(self, monkeypatch, caplog):
-        mock_email = Mock(side_effect=Exception('test-error'))
-        monkeypatch.setattr('irrd.utils.email.send_email', mock_email)
+    def test_handles_exception_smtp(self, mock_email_dh, caplog):
+        mock_email, mock_dh = mock_email_dh
+        mock_email.side_effect = Exception('test-error')
 
         handle_email_submission(self.default_email)
 
@@ -120,9 +129,8 @@ class TestHandleEmailSubmission:
         assert 'traceback for test-error follows' in caplog.text
         assert 'test-error' in caplog.text
 
-    def test_invalid_no_from(self, monkeypatch, caplog):
-        mock_email = Mock()
-        monkeypatch.setattr('irrd.utils.email.send_email', mock_email)
+    def test_invalid_no_from(self, mock_email_dh, caplog):
+        mock_email, mock_dh = mock_email_dh
 
         assert handle_email_submission('') is None
         assert not len(mock_email.mock_calls)

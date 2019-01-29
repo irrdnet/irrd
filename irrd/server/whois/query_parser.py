@@ -9,6 +9,7 @@ from irrd.conf import get_setting
 from irrd.mirroring.nrtm_generator import NRTMGenerator, NRTMGeneratorException
 from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING, lookup_field_names
 from irrd.storage.database_handler import DatabaseHandler
+from irrd.storage.preload import get_preloader
 from irrd.storage.queries import RPSLDatabaseQuery, DatabaseStatusQuery
 from irrd.utils.validators import parse_as_number, ValidationError
 from .query_response import WhoisQueryResponseType, WhoisQueryResponseMode, WhoisQueryResponse
@@ -61,6 +62,7 @@ class WhoisQueryParser:
         self.database_handler = DatabaseHandler()
         self.key_fields_only = False
         self.object_classes = []
+        self.preloader = get_preloader()
 
         if query.startswith('!'):
             try:
@@ -180,61 +182,43 @@ class WhoisQueryParser:
 
     def handle_irrd_routes_for_origin_v4(self, origin: str) -> str:
         """!g query - find all originating IPv4 prefixes from an origin, e.g. !gAS65537"""
-        return self._routes_for_origin('route', origin)
+        return self._routes_for_origin(origin, 4)
 
     def handle_irrd_routes_for_origin_v6(self, origin: str) -> str:
         """!6 query - find all originating IPv6 prefixes from an origin, e.g. !6as65537"""
-        return self._routes_for_origin('route6', origin)
+        return self._routes_for_origin(origin, 6)
 
-    def _routes_for_origin(self, object_class: str, origin: str) -> str:
+    def _routes_for_origin(self, origin: str, ip_version: Optional[int]=None) -> str:
         """
-        Resolve all route(6)s for an origin, returning a space-separated list
+        Resolve all route(6)s prefixes for an origin, returning a space-separated list
         of all originating prefixes, not including duplicates.
         """
         try:
-            _, asn = parse_as_number(origin)
+            origin_formatted, _ = parse_as_number(origin)
         except ValidationError as ve:
             raise WhoisQueryParserException(str(ve))
 
-        query = self._prepare_query(column_names=['parsed_data'], ordered_by_sources=False)
-        query = query.object_classes([object_class]).asn(asn)
-        query_result = self.database_handler.execute_query(query)
-
-        prefixes = [r['parsed_data'][object_class] for r in query_result]
-        return ' '.join(OrderedSet(prefixes))
+        prefixes = self.preloader.routes_for_origins([origin_formatted], ip_version=ip_version)
+        return ' '.join(prefixes)
 
     def handle_irrd_routes_for_as_set(self, set_name: str) -> str:
         """
         !a query - find all originating prefixes for all members of an AS-set, e.g. !a4AS-FOO or !a6AS-FOO
         """
+        ip_version: Optional[int] = None
         if set_name.startswith('4'):
             set_name = set_name[1:]
-            object_classes = ['route']
+            ip_version = 4
         elif set_name.startswith('6'):
             set_name = set_name[1:]
-            object_classes = ['route6']
-        else:
-            object_classes = ['route', 'route6']
+            ip_version = 6
 
         if not set_name:
             raise WhoisQueryParserException(f'Missing required set name for A query')
 
         self._current_set_root_object_class = 'as-set'
-
         members = self._recursive_set_resolve({set_name})
-        asns = {int(member[2:]) for member in members}
-
-        query = self._prepare_query(column_names=['parsed_data'], ordered_by_sources=False)
-        query = query.object_classes(object_classes).asns_first(asns)
-        query_result = self.database_handler.execute_query(query)
-
-        prefixes = OrderedSet()
-        for result in query_result:
-            for object_class in object_classes:
-                prefix = result['parsed_data'].get(object_class)
-                if prefix:
-                    prefixes.add(prefix)
-
+        prefixes = self.preloader.routes_for_origins(members, ip_version=ip_version)
         return ' '.join(prefixes)
 
     def handle_irrd_set_members(self, parameter: str) -> str:

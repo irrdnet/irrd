@@ -325,11 +325,17 @@ deliver the email to the ``irrd_submit_email`` command.
 
 When using the virtualenv as set up above, the full path is::
 
-    /home/irrd/irrd-venv/bin/irrd_submit_email
+    /home/irrd/irrd-venv/bin/irrd_submit_email --irrd_pidfile /home/irrd/irrd.pid
 
 A ``--config`` parameter can be passed to set a different configuration
 file path. Results of the request are sent to the sender of the request,
 and :doc:`any relevant notifications are also sent </users/database-changes>`.
+
+The ``--irrd_pidfile`` parameter is required, and should be set to the
+pidfile of the running IRRd instance. This is needed to signal the IRRd
+instance to update preloaded data. If the file does not exist, or the instance
+is not running, e.g. during a quick restart, no signal is sent, as the
+preloaded data will be updated when IRRd starts.
 
 .. note::
     As a separate script, `irrd_submit_email` **always acts on the current

@@ -145,7 +145,9 @@ Queries
   particular value. Only available for some fields. For example,
   ``-i origin AS23456`` finds all objects with an `origin` attribute set to
   `AS23456`. In attributes that contain multiple values, one of their values
-  must match the value in the query.
+  must match the value in the query. Note: ``!g`` and ``!6`` are much faster
+  than ``-i origin``, as the former benefit from preloading. However, the
+  ``-i`` queries are more flexible.
 * ``-t <object-class>`` returns the template for a particular object class.
 * ``-g`` returns an NRTM response, used for mirroring. See the
   :doc:`mirroring documentation </users/mirroring>`.
@@ -205,3 +207,16 @@ in which it was found.
 
 The currently enabled sources and their priority can be seen with ``!s-lc``.
 
+Data preloading and warmup time
+-------------------------------
+After startup, IRRd needs some time before certain queries can be answered.
+The ``!g``, ``!6``, ``!a`` and in some cases ``!i`` queries use preloaded
+data, which needs to be loaded before these queries can be answered.
+If these queries are used before the preloading is complete, IRRd will
+answer them after preloading has completed. The time this takes depends
+on the load and speed of the server on which IRRd is deployed, and can
+range between several seconds and one minute.
+
+Once the initial preload is complete, updates to the database do not cause
+delays in queries. However, they may cause queries to return responses
+based on slightly outdated data, typically 5-15 seconds.

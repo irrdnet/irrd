@@ -6,8 +6,10 @@ import pytest
 from IPy import IP
 from pytest import raises
 
+from irrd.utils.test_utils import flatten_mock_calls
 from .. import get_engine
 from ..database_handler import DatabaseHandler
+from ..preload import Preloader
 from ..queries import (RPSLDatabaseQuery, RPSLDatabaseJournalQuery, DatabaseStatusQuery,
                        RPSLDatabaseObjectStatisticsQuery)
 from ..models import RPSLDatabaseObject, DatabaseOperation
@@ -39,6 +41,8 @@ def irrd_database(monkeypatch):
                         f'to overwrite existing database.')
     RPSLDatabaseObject.metadata.create_all(engine)
 
+    monkeypatch.setattr('irrd.storage.database_handler.get_preloader', lambda: Mock(spec=Preloader))
+
     yield None
 
     engine.dispose()
@@ -59,7 +63,9 @@ def database_handler_with_route():
         asn_first=65537,
         asn_last=65537,
     )
+
     dh = DatabaseHandler()
+
     dh.upsert_rpsl_object(rpsl_object_route_v4)
     yield dh
     dh.close()
@@ -88,6 +94,7 @@ class TestDatabaseHandlerLive:
         )
 
         self.dh = DatabaseHandler()
+        self.dh.preloader.reload = Mock(return_value=None)
         self.dh.upsert_rpsl_object(rpsl_object_route_v4, 42)
         assert len(self.dh._rpsl_upsert_cache) == 1
 
@@ -240,6 +247,11 @@ class TestDatabaseHandlerLive:
         assert len(list(self.dh.execute_query(RPSLDatabaseQuery().sources(['TEST2'])))) == 1
 
         self.dh.close()
+
+        assert flatten_mock_calls(self.dh.preloader.reload) == [
+            ['', ({'route'},), {}],
+            ['', ({'route'},), {}]
+        ]
 
     def test_updates_database_status_forced_serials(self, monkeypatch, irrd_database):
         # As settings are default, journal keeping is disabled for this DB

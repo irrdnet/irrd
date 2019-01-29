@@ -6,6 +6,7 @@ import pytest
 from IPy import IP
 
 from irrd.mirroring.nrtm_generator import NRTMGeneratorException
+from irrd.storage.preload import Preloader
 from irrd.utils.test_utils import flatten_mock_calls
 from ..query_parser import WhoisQueryParser
 from ..query_response import WhoisQueryResponseType, WhoisQueryResponseMode
@@ -59,6 +60,9 @@ def prepare_parser(monkeypatch, config_override):
     monkeypatch.setattr('irrd.server.whois.query_parser.DatabaseHandler', lambda: mock_database_handler)
     mock_database_query = Mock()
     monkeypatch.setattr('irrd.server.whois.query_parser.RPSLDatabaseQuery', lambda columns=None, ordered_by_sources=True: mock_database_query)
+    mock_preloader = Mock(spec=Preloader)
+    monkeypatch.setattr('irrd.server.whois.query_parser.get_preloader', lambda: mock_preloader)
+
     parser = WhoisQueryParser(IPv4Address('TCP', '127.0.0.1', 99999), '[127.0.0.1]:99999')
 
     mock_query_result = [
@@ -92,14 +96,14 @@ def prepare_parser(monkeypatch, config_override):
     ]
     mock_database_handler.execute_query = lambda query: mock_query_result
 
-    yield (mock_database_query, mock_database_handler, parser)
+    yield (mock_database_query, mock_database_handler, mock_preloader, parser)
 
 
 class TestWhoisQueryParserRIPE:
     """Test RIPE-style queries"""
 
     def test_invalid_flag(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
         mock_dh.reset_mock()
 
         response = parser.handle_query('-e foo')
@@ -109,7 +113,7 @@ class TestWhoisQueryParserRIPE:
         assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
 
     def test_keepalive(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
 
         response = parser.handle_query('-k')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
@@ -121,7 +125,7 @@ class TestWhoisQueryParserRIPE:
         # This also tests the recursion disabled flag, which should have no effect,
         # and the reset of the key fields only flag.
         # It also tests the handling of extra spaces.
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
 
         parser.key_fields_only = True
         response = parser.handle_query('-r  -x   192.0.2.0/25')
@@ -143,7 +147,7 @@ class TestWhoisQueryParserRIPE:
         assert not response.result
 
     def test_route_search_less_specific_one_level(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
 
         response = parser.handle_query('-l 192.0.2.0/25')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
@@ -155,7 +159,7 @@ class TestWhoisQueryParserRIPE:
         ]
 
     def test_route_search_less_specific(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
 
         response = parser.handle_query('-L 192.0.2.0/25')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
@@ -167,7 +171,7 @@ class TestWhoisQueryParserRIPE:
         ]
 
     def test_route_search_more_specific(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
 
         response = parser.handle_query('-M 192.0.2.0/25')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
@@ -179,7 +183,7 @@ class TestWhoisQueryParserRIPE:
         ]
 
     def test_route_search_invalid_parameter(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
 
         response = parser.handle_query('-x not-a-prefix')
         assert response.response_type == WhoisQueryResponseType.ERROR
@@ -188,7 +192,7 @@ class TestWhoisQueryParserRIPE:
         assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
 
     def test_inverse_attribute_search(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
 
         response = parser.handle_query('-i mnt-by MNT-TEST')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
@@ -211,7 +215,7 @@ class TestWhoisQueryParserRIPE:
         assert response.result.startswith('Inverse attribute search not supported for invalid-attr')
 
     def test_sources_list(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
         mock_dh.reset_mock()
 
         response = parser.handle_query('-s test1')
@@ -222,7 +226,7 @@ class TestWhoisQueryParserRIPE:
         assert parser.sources == ['TEST1']
 
     def test_sources_all(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
         mock_dh.reset_mock()
 
         response = parser.handle_query('-a')
@@ -233,7 +237,7 @@ class TestWhoisQueryParserRIPE:
         assert parser.sources == []
 
     def test_sources_default(self, prepare_parser, config_override):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
         mock_dh.reset_mock()
         config_override({
             'sources': {'TEST1': {}, 'TEST2': {}},
@@ -250,7 +254,7 @@ class TestWhoisQueryParserRIPE:
         ]
 
     def test_sources_invalid_unknown_source(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
         mock_dh.reset_mock()
 
         response = parser.handle_query('-s UNKNOWN')
@@ -259,7 +263,7 @@ class TestWhoisQueryParserRIPE:
         assert response.result == 'One or more selected sources are unavailable.'
 
     def test_restrict_object_class(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
         mock_dh.reset_mock()
 
         response = parser.handle_query('-T route -i mnt-by MNT-TEST')
@@ -282,7 +286,7 @@ class TestWhoisQueryParserRIPE:
         ]
 
     def test_object_template(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
         mock_dh.reset_mock()
 
         response = parser.handle_query('-t aut-num')
@@ -299,7 +303,7 @@ class TestWhoisQueryParserRIPE:
         assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
 
     def test_key_fields_only(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
 
         response = parser.handle_query('-K -x 192.0.2.0/25')
         assert parser.key_fields_only
@@ -320,7 +324,7 @@ class TestWhoisQueryParserRIPE:
         assert not response.result
 
     def test_user_agent(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
         mock_dh.reset_mock()
 
         response = parser.handle_query('-V user-agent')
@@ -330,7 +334,7 @@ class TestWhoisQueryParserRIPE:
         assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
 
     def test_nrtm_request(self, prepare_parser, monkeypatch, config_override):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
         mock_dh.reset_mock()
 
         mock_nrg = Mock()
@@ -390,7 +394,7 @@ class TestWhoisQueryParserRIPE:
         assert response.result == 'expected-test-error'
 
     def test_text_search(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
         mock_dh.reset_mock()
 
         response = parser.handle_query('query')
@@ -402,7 +406,7 @@ class TestWhoisQueryParserRIPE:
         ]
 
     def test_missing_argument(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
         mock_dh.reset_mock()
 
         missing_arg_queries = ['-i ', '-i mnt-by ', '-s', '-T', '-t', '-V', '-x   ']
@@ -415,7 +419,7 @@ class TestWhoisQueryParserRIPE:
             mock_dh.reset_mock()
 
     def test_exception_handling(self, prepare_parser, caplog):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
         mock_dh.reset_mock()
         mock_dh.execute_query = Mock(side_effect=Exception('test-error'))
 
@@ -433,7 +437,7 @@ class TestWhoisQueryParserIRRD:
     """Test IRRD-style queries"""
 
     def test_invalid_command(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
 
         response = parser.handle_query('!')
         assert response.response_type == WhoisQueryResponseType.ERROR
@@ -448,7 +452,7 @@ class TestWhoisQueryParserIRRD:
         assert not mock_dq.mock_calls
 
     def test_parameter_required(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
 
         queries_with_parameter = list('TG6IJMNORS')
         for query in queries_with_parameter:
@@ -460,7 +464,7 @@ class TestWhoisQueryParserIRRD:
         assert not mock_dq.mock_calls
 
     def test_multiple_command_mode(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
 
         response = parser.handle_query('!!')
         assert response.response_type == WhoisQueryResponseType.NO_RESPONSE
@@ -470,7 +474,7 @@ class TestWhoisQueryParserIRRD:
         assert parser.multiple_command_mode
 
     def test_update_timeout(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
 
         response = parser.handle_query('!t300')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
@@ -488,49 +492,49 @@ class TestWhoisQueryParserIRRD:
         assert not mock_dq.mock_calls
 
     def test_routes_for_origin_v4(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
 
-        response = parser.handle_query('!gAS65547')
+        mock_preloader.routes_for_origins = Mock(return_value=['192.0.2.0/25', '192.0.2.128/25'])
+
+        response = parser.handle_query('!gas065547')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == '192.0.2.0/25 192.0.2.128/25'
-        assert flatten_mock_calls(mock_dq) == [
-            ['object_classes', (['route'],), {}],
-            ['asn', (65547,), {}],
+        assert flatten_mock_calls(mock_preloader.routes_for_origins) == [
+            ['', (['AS65547'],), {'ip_version': 4}],
         ]
 
-        mock_dh.execute_query = lambda query: []
+        mock_preloader.routes_for_origins = Mock(return_value=[])
         response = parser.handle_query('!gAS65547')
         assert response.response_type == WhoisQueryResponseType.KEY_NOT_FOUND
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert not response.result
+
+        assert not mock_dq.mock_calls
 
     def test_routes_for_origin_v6(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
 
-        # For testing this query, it suffices to make sure there is a route6 attribute
-        mock_query_result = mock_dh.execute_query(None)
-        for mock_result_row in mock_query_result:
-            mock_result_row['parsed_data']['route6'] = mock_result_row['parsed_data']['route']
-        mock_dh.execute_query = lambda query: mock_query_result
+        mock_preloader.routes_for_origins = Mock(return_value=['2001:db8::1/128', '2001:db8::/32'])
 
         response = parser.handle_query('!6AS65547')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
-        assert response.result == '192.0.2.0/25 192.0.2.128/25'
-        assert flatten_mock_calls(mock_dq) == [
-            ['object_classes', (['route6'],), {}],
-            ['asn', (65547,), {}],
+        assert response.result == '2001:db8::1/128 2001:db8::/32'
+        assert flatten_mock_calls(mock_preloader.routes_for_origins) == [
+            ['', (['AS65547'],), {'ip_version': 6}],
         ]
 
-        mock_dh.execute_query = lambda query: []
+        mock_preloader.routes_for_origins = Mock(return_value=[])
         response = parser.handle_query('!6AS65547')
         assert response.response_type == WhoisQueryResponseType.KEY_NOT_FOUND
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert not response.result
 
+        assert not mock_dq.mock_calls
+
     def test_routes_for_origin_invalid(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
 
         response = parser.handle_query('!gASfoobar')
         assert response.response_type == WhoisQueryResponseType.ERROR
@@ -540,7 +544,7 @@ class TestWhoisQueryParserIRRD:
         assert not mock_dq.mock_calls
 
     def test_handle_irrd_routes_for_as_set(self, prepare_parser, monkeypatch):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
 
         for parameter in ['', '4', '6']:
             response = parser.handle_query(f'!a{parameter}')
@@ -548,46 +552,51 @@ class TestWhoisQueryParserIRRD:
             assert response.mode == WhoisQueryResponseMode.IRRD
             assert response.result == 'Missing required set name for A query'
 
-        assert not mock_dq.mock_calls
-
         monkeypatch.setattr(
             'irrd.server.whois.query_parser.WhoisQueryParser._recursive_set_resolve',
             lambda self, set_name: {'AS65547', 'AS65548'}
         )
+
+        mock_preloader.routes_for_origins = Mock(return_value=[])
+        response = parser.handle_query(f'!aas-nodata')
+        assert response.response_type == WhoisQueryResponseType.KEY_NOT_FOUND
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert not response.result
+
+        mock_preloader.routes_for_origins = Mock(return_value=['192.0.2.0/25', '192.0.2.128/25'])
 
         response = parser.handle_query('!aAS-FOO')
         assert parser._current_set_root_object_class == 'as-set'
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == '192.0.2.0/25 192.0.2.128/25'
-        assert flatten_mock_calls(mock_dq) == [
-            ['object_classes', (['route', 'route6'],), {}],
-            ['asns_first', ({65547, 65548},), {}],
+        assert flatten_mock_calls(mock_preloader.routes_for_origins) == [
+            ['', ({'AS65547', 'AS65548'},), {'ip_version': None}],
         ]
-        mock_dq.reset_mock()
+        mock_preloader.routes_for_origins.reset_mock()
 
         response = parser.handle_query('!a4AS-FOO')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == '192.0.2.0/25 192.0.2.128/25'
-        assert flatten_mock_calls(mock_dq) == [
-            ['object_classes', (['route'],), {}],
-            ['asns_first', ({65547, 65548},), {}],
+        assert flatten_mock_calls(mock_preloader.routes_for_origins) == [
+            ['', ({'AS65547', 'AS65548'},), {'ip_version': 4}],
         ]
-        mock_dq.reset_mock()
+        mock_preloader.routes_for_origins.reset_mock()
 
         response = parser.handle_query('!a6AS-FOO')
-        assert response.response_type == WhoisQueryResponseType.KEY_NOT_FOUND
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
-        assert response.result == ''
-        assert flatten_mock_calls(mock_dq) == [
-            ['object_classes', (['route6'],), {}],
-            ['asns_first', ({65547, 65548},), {}],
+        assert response.result == '192.0.2.0/25 192.0.2.128/25'
+        assert flatten_mock_calls(mock_preloader.routes_for_origins) == [
+            ['', ({'AS65547', 'AS65548'},), {'ip_version': 6}],
         ]
-        mock_dq.reset_mock()
+        mock_preloader.routes_for_origins.reset_mock()
+
+        assert not mock_dq.mock_calls
 
     def test_as_route_set_members(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
 
         mock_query_result1 = [
             {
@@ -671,7 +680,7 @@ class TestWhoisQueryParserIRRD:
         ]
 
     def test_as_route_set_mbrs_by_ref(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
 
         mock_query_result1 = [
             {
@@ -726,7 +735,7 @@ class TestWhoisQueryParserIRRD:
         ]
 
     def test_route_set_compatibility_ipv4_only_route_set_members(self, prepare_parser, config_override):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
 
         mock_query_result = [
             {
@@ -759,7 +768,7 @@ class TestWhoisQueryParserIRRD:
         assert response.result == '192.0.2.0/32 192.0.2.1/32 RS-OTHER'
 
     def test_database_serial_range(self, monkeypatch, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
         mock_dsq = Mock()
         monkeypatch.setattr('irrd.server.whois.query_parser.DatabaseStatusQuery', lambda: mock_dsq)
 
@@ -787,7 +796,7 @@ class TestWhoisQueryParserIRRD:
         ]
 
     def test_exact_key(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
 
         response = parser.handle_query('!mroute,192.0.2.0/25')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
@@ -811,7 +820,7 @@ class TestWhoisQueryParserIRRD:
         assert response.result == 'Invalid argument for object lookup: foo'
 
     def test_exact_key_limit_sources(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
 
         parser.handle_query('!stest1')
         response = parser.handle_query('!mroute,192.0.2.0/25')
@@ -837,7 +846,7 @@ class TestWhoisQueryParserIRRD:
         assert response.result == 'Invalid argument for object lookup: foo'
 
     def test_user_agent(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
         mock_dh.reset_mock()
 
         response = parser.handle_query('!nuser-agent')
@@ -847,7 +856,7 @@ class TestWhoisQueryParserIRRD:
         assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
 
     def test_objects_maintained_by(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
 
         response = parser.handle_query('!oMNT-TEST')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
@@ -864,7 +873,7 @@ class TestWhoisQueryParserIRRD:
         assert not response.result
 
     def test_route_search_exact(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
 
         response = parser.handle_query('!r192.0.2.0/25')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
@@ -892,7 +901,7 @@ class TestWhoisQueryParserIRRD:
         assert not response.result
 
     def test_route_search_less_specific_one_level(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
 
         response = parser.handle_query('!r192.0.2.0/25,l')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
@@ -904,7 +913,7 @@ class TestWhoisQueryParserIRRD:
         ]
 
     def test_route_search_less_specific(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
 
         response = parser.handle_query('!r192.0.2.0/25,L')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
@@ -916,7 +925,7 @@ class TestWhoisQueryParserIRRD:
         ]
 
     def test_route_search_more_specific(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
 
         response = parser.handle_query('!r192.0.2.0/25,M')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
@@ -928,7 +937,7 @@ class TestWhoisQueryParserIRRD:
         ]
 
     def test_route_search_invalid(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
 
         response = parser.handle_query('!rz')
         assert response.response_type == WhoisQueryResponseType.ERROR
@@ -952,7 +961,7 @@ class TestWhoisQueryParserIRRD:
         mock_dh.reset_mock()
 
     def test_sources_list(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
         mock_dh.reset_mock()
 
         response = parser.handle_query('!stest1')
@@ -973,7 +982,7 @@ class TestWhoisQueryParserIRRD:
         assert response.result == 'One or more selected sources are unavailable.'
 
     def test_irrd_version(self, prepare_parser):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
         mock_dh.reset_mock()
 
         response = parser.handle_query('!v')
@@ -983,11 +992,11 @@ class TestWhoisQueryParserIRRD:
         assert not mock_dq.mock_calls
 
     def test_exception_handling(self, prepare_parser, caplog):
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
         mock_dh.reset_mock()
         mock_dh.execute_query = Mock(side_effect=Exception('test-error'))
 
-        response = parser.handle_query('!gAS123')
+        response = parser.handle_query('!i123')
         assert response.response_type == WhoisQueryResponseType.ERROR
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == 'An internal error occurred while processing this query.'
@@ -998,7 +1007,7 @@ class TestWhoisQueryParserIRRD:
 
     def test_issue_131(self, prepare_parser):
         """Queries like `- 103.67.241.255` could lead to unfiltered SQL queries."""
-        mock_dq, mock_dh, parser = prepare_parser
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
         mock_dh.reset_mock()
 
         response = parser.handle_query('- 103.67.241.255')
