@@ -389,8 +389,8 @@ class WhoisQueryParser:
         for query_result in query_results:
             source = query_result['source'].upper()
             keep_journal = 'Y' if get_setting(f'sources.{source}.keep_journal') else 'N'
-            serial_oldest = query_result['serial_oldest_journal']
-            serial_newest = query_result['serial_newest_journal']
+            serial_oldest = query_result['serial_oldest_seen']
+            serial_newest = query_result['serial_newest_seen']
             fields = [
                 source,
                 keep_journal,

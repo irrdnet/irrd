@@ -729,8 +729,8 @@ class TestWhoisQueryParserIRRD:
         monkeypatch.setattr('irrd.server.whois.query_parser.DatabaseStatusQuery', lambda: mock_dsq)
 
         mock_query_result = [
-            {'source': 'TEST1', 'serial_oldest_journal': 10, 'serial_newest_journal': 20, 'serial_last_export': 10},
-            {'source': 'TEST2', 'serial_oldest_journal': None, 'serial_newest_journal': None, 'serial_last_export': None},
+            {'source': 'TEST1', 'serial_oldest_seen': 10, 'serial_newest_seen': 20, 'serial_last_export': 10},
+            {'source': 'TEST2', 'serial_oldest_seen': None, 'serial_newest_seen': None, 'serial_last_export': None},
         ]
         mock_dh.execute_query = lambda query: mock_query_result
 

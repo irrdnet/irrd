@@ -52,8 +52,10 @@ IRRd style queries
   ``!iRS-EXAMPLE,1`` returns all members of `RS-EXAMPLE`, recursively.
   If the ``compatibility.ipv4_only_route_set_members`` setting is enabled,
   IPv6 prefixes will not be returned.
-* ``!j`` returns the serial range for each source, available in the local
-  journal, along with the most recent export serial from this IRRd instance.
+* ``!j`` returns the serial range for each source, along with the most
+  recent export serial from this IRRd instance. The serial range concerns the
+  lowest and highest serial number seen for this database. It is unrelated
+  to the range available in the journal, if any (which is used for NRTM).
   For all sources, query ``!j-*``, for a specific source, query
   ``!jEXAMPLE-SOURCE``.
 * ``!m<object-class>,<primary-key>`` searches for objects exactly matching
