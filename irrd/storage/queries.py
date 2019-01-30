@@ -361,6 +361,7 @@ class DatabaseStatusQuery:
     columns = RPSLDatabaseStatus.__table__.c
 
     def __init__(self):
+        self._sources_list: List[str] = []
         self.statement = sa.select([
             self.columns.pk,
             self.columns.source,
@@ -374,7 +375,7 @@ class DatabaseStatusQuery:
             self.columns.last_error_timestamp,
             self.columns.created,
             self.columns.updated,
-        ]).order_by(self.columns.source.asc())
+        ])
 
     def source(self, source: str):
         """Filter on a source."""
@@ -382,11 +383,24 @@ class DatabaseStatusQuery:
 
     def sources(self, sources: List[str]):
         """Filter on one or more sources."""
-        sources = [s.upper() for s in sources]
-        fltr = self.columns.source.in_(sources)
-        return self._filter(fltr)
+        self._sources_list = [s.upper() for s in sources]
+        return self
 
     def finalise_statement(self):
+        order_by = [self.columns.source.asc()]
+
+        if self._sources_list:
+            fltr = self.columns.source.in_(self._sources_list)
+            self._filter(fltr)
+
+            case_elements = []
+            for idx, source in enumerate(self._sources_list):
+                case_elements.append((self.columns.source == source, idx + 1))
+
+            criterion = sa.case(case_elements, else_=100000)
+            order_by.insert(0, criterion)
+
+        self.statement = self.statement.order_by(*order_by)
         return self.statement
 
     def _filter(self, fltr):
