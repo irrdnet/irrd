@@ -62,7 +62,7 @@ class DatabaseHandler:
             self._start_transaction()
         except Exception as exc:  # pragma: no cover
             self._transaction.rollback()
-            logger.critical('Exception occurred while committing changes, rolling back', exc_info=exc)
+            logger.error('Exception occurred while committing changes, rolling back', exc_info=exc)
             raise
 
     def rollback(self) -> None:
@@ -204,7 +204,7 @@ class DatabaseHandler:
             self._connection.execute(update_stmt)
         except Exception as exc:  # pragma: no cover
             self._transaction.rollback()
-            logger.critical(f'Exception occurred while executing statement: {update_stmt}, rolling back', exc_info=exc)
+            logger.error(f'Exception occurred while executing statement: {update_stmt}, rolling back', exc_info=exc)
             raise
 
         for obj, forced_serial in self._rpsl_upsert_cache:

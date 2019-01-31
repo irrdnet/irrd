@@ -78,8 +78,8 @@ class MirrorFileImportParser(MirrorParser):
                 return
 
             if obj.source() != self.source:
-                msg = f'Invalid source {obj.source()} for object {obj.pk()}, expected {self.source}'
-                logger.critical(msg)
+                msg = f'Invalid source {obj.source()} for object {obj.pk()}, expected {self.source}. '
+                logger.critical(msg + 'This object is ignored, causing potential data inconsistencies.')
                 self.database_handler.record_mirror_error(self.source, msg)
                 self.obj_errors += 1
                 return

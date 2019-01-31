@@ -73,7 +73,7 @@ class WhoisQueryParser:
                     result=str(exc)
                 )
             except Exception as exc:
-                logger.critical(f'An exception occurred while processing whois query "{query}": {exc}', exc_info=exc)
+                logger.error(f'An exception occurred while processing whois query "{query}": {exc}', exc_info=exc)
                 return WhoisQueryResponse(
                     response_type=WhoisQueryResponseType.ERROR,
                     mode=WhoisQueryResponseMode.IRRD,
@@ -92,7 +92,7 @@ class WhoisQueryParser:
                 result=str(exc)
             )
         except Exception as exc:
-            logger.critical(f'An exception occurred while processing whois query "{query}": {exc}', exc_info=exc)
+            logger.error(f'An exception occurred while processing whois query "{query}": {exc}', exc_info=exc)
             return WhoisQueryResponse(
                 response_type=WhoisQueryResponseType.ERROR,
                 mode=WhoisQueryResponseMode.RIPE,

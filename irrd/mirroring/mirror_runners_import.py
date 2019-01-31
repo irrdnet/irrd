@@ -48,8 +48,8 @@ class MirrorImportUpdateRunner:
 
             self.database_handler.commit()
         except Exception as exc:
-            logger.critical(f'An exception occurred while attempting a mirror update or initial import '
-                            f'for {self.source}: {exc}', exc_info=exc)
+            logger.error(f'An exception occurred while attempting a mirror update or initial import '
+                         f'for {self.source}: {exc}', exc_info=exc)
         finally:
             self.database_handler.close()
 
