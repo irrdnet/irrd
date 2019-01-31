@@ -28,7 +28,14 @@ class TestMirrorImportUpdateRunner:
         assert len(mock_full_import_runner.mock_calls) == 1
         assert mock_full_import_runner.mock_calls[0][0] == 'run'
 
-    def test_force_reload(self, monkeypatch):
+    def test_force_reload(self, monkeypatch, config_override):
+        config_override({
+            'sources': {
+                'TEST': {
+                    'nrtm_host': '192.0.2.1',
+                }
+            }
+        })
         mock_dh = Mock()
         mock_dq = Mock()
         mock_full_import_runner = Mock()
@@ -47,7 +54,14 @@ class TestMirrorImportUpdateRunner:
         assert len(mock_full_import_runner.mock_calls) == 1
         assert mock_full_import_runner.mock_calls[0][0] == 'run'
 
-    def test_update_stream_call(self, monkeypatch):
+    def test_update_stream_call(self, monkeypatch, config_override):
+        config_override({
+            'sources': {
+                'TEST': {
+                    'nrtm_host': '192.0.2.1',
+                }
+            }
+        })
         mock_dh = Mock()
         mock_dq = Mock()
         mock_stream_runner = Mock()
@@ -70,12 +84,12 @@ class TestMirrorImportUpdateRunner:
     def test_exception_handling(self, monkeypatch, caplog):
         mock_dh = Mock()
         mock_dq = Mock()
-        mock_stream_runner = Mock()
+        mock_full_import_runner = Mock()
 
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseHandler', lambda: mock_dh)
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseStatusQuery', lambda: mock_dq)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.NRTMImportUpdateStreamRunner', lambda source: mock_stream_runner)
-        mock_stream_runner.run = Mock(side_effect=Exception('test-error'))
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.MirrorFullImportRunner', lambda source: mock_full_import_runner)
+        mock_full_import_runner.run = Mock(side_effect=Exception('test-error'))
 
         mock_dh.execute_query = lambda q: iter([{'serial_newest_seen': 424242, 'force_reload': False}])
         runner = MirrorImportUpdateRunner(source='TEST')
@@ -111,7 +125,7 @@ class TestMirrorFullImportRunner:
             'RETR /serial': b'424242',
         }
         mock_ftp.retrbinary = lambda path, callback: callback(responses[path])
-        MirrorFullImportRunner('TEST').run(mock_dh)
+        MirrorFullImportRunner('TEST').run(mock_dh, serial_newest_seen=424241)
 
         assert MockMirrorFileImportParser.rpsl_data_calls == ['source1', 'source2']
         assert flatten_mock_calls(mock_dh) == [
@@ -167,7 +181,7 @@ class TestMirrorFullImportRunner:
         MockMirrorFileImportParser.rpsl_data_calls = []
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.MirrorFileImportParser', MockMirrorFileImportParser)
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.FTP', lambda url: mock_ftp)
-        MockMirrorFileImportParser.expected_serial = 0
+        MockMirrorFileImportParser.expected_serial = None
 
         responses = {
             # gzipped data, contains 'source1'
@@ -175,7 +189,69 @@ class TestMirrorFullImportRunner:
             'RETR /source2': b'source2',
         }
         mock_ftp.retrbinary = lambda path, callback: callback(responses[path])
-        MirrorFullImportRunner('TEST').run(mock_dh)
+        MirrorFullImportRunner('TEST').run(mock_dh, serial_newest_seen=42)
+
+        assert MockMirrorFileImportParser.rpsl_data_calls == ['source1', 'source2']
+        assert flatten_mock_calls(mock_dh) == [
+            ['delete_all_rpsl_objects_with_journal', ('TEST',), {}],
+            ['disable_journaling', (), {}],
+        ]
+
+    def test_import_cancelled_serial_too_old(self, monkeypatch, config_override, caplog):
+        config_override({
+            'sources': {
+                'TEST': {
+                    'import_source': ['ftp://host/source1.gz', 'ftp://host/source2'],
+                    'import_serial_source': 'ftp://host/serial',
+                }
+            }
+        })
+
+        mock_dh = Mock()
+        mock_ftp = Mock()
+        MockMirrorFileImportParser.rpsl_data_calls = []
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.MirrorFileImportParser', MockMirrorFileImportParser)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.FTP', lambda url: mock_ftp)
+        MockMirrorFileImportParser.expected_serial = 424242
+
+        responses = {
+            # gzipped data, contains 'source1'
+            'RETR /source1.gz': b64decode('H4sIAE4CfFsAAyvOLy1KTjUEAE5Fj0oHAAAA'),
+            'RETR /source2': b'source2',
+            'RETR /serial': b'424242',
+        }
+        mock_ftp.retrbinary = lambda path, callback: callback(responses[path])
+        MirrorFullImportRunner('TEST').run(mock_dh, serial_newest_seen=424243)
+
+        assert not MockMirrorFileImportParser.rpsl_data_calls
+        assert not mock_dh.call_count
+        assert 'Current newest serial seen for TEST is 424243, import_serial is 424242, cancelling import.'
+
+    def test_import_force_reload_with_serial_too_old(self, monkeypatch, config_override):
+        config_override({
+            'sources': {
+                'TEST': {
+                    'import_source': ['ftp://host/source1.gz', 'ftp://host/source2'],
+                    'import_serial_source': 'ftp://host/serial',
+                }
+            }
+        })
+
+        mock_dh = Mock()
+        mock_ftp = Mock()
+        MockMirrorFileImportParser.rpsl_data_calls = []
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.MirrorFileImportParser', MockMirrorFileImportParser)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.FTP', lambda url: mock_ftp)
+        MockMirrorFileImportParser.expected_serial = 424242
+
+        responses = {
+            # gzipped data, contains 'source1'
+            'RETR /source1.gz': b64decode('H4sIAE4CfFsAAyvOLy1KTjUEAE5Fj0oHAAAA'),
+            'RETR /source2': b'source2',
+            'RETR /serial': b'424242',
+        }
+        mock_ftp.retrbinary = lambda path, callback: callback(responses[path])
+        MirrorFullImportRunner('TEST').run(mock_dh, serial_newest_seen=424243, force_reload=True)
 
         assert MockMirrorFileImportParser.rpsl_data_calls == ['source1', 'source2']
         assert flatten_mock_calls(mock_dh) == [

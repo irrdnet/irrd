@@ -132,6 +132,10 @@ For sources that do not offer NRTM, simply configuring a source of the data in
 Journals can not be generated, and NRTM queries by clients for this source will
 be rejected.
 
+When `import_serial_source`, is set, a full import will only be run if the
+serial in that file is greater than the highest imported serial so far.
+The serial is checked every `import_timer`.
+
 Downloads
 ~~~~~~~~~
 For downloads, FTP and local files are supported. The full copy to be

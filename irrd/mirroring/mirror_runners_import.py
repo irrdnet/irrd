@@ -37,9 +37,12 @@ class MirrorImportUpdateRunner:
 
         try:
             serial_newest_seen, force_reload = self._status()
-            logger.debug(f'Most recent serial seen for {self.source}: {serial_newest_seen}, force_reload: {force_reload}')
-            if not serial_newest_seen or force_reload:
-                self.full_import_runner.run(database_handler=self.database_handler)
+            nrtm_enabled = bool(get_setting(f'sources.{self.source}.nrtm_host'))
+            logger.debug(f'Most recent serial seen for {self.source}: {serial_newest_seen},'
+                         f'force_reload: {force_reload}, nrtm enabled: {nrtm_enabled}')
+            if force_reload or not serial_newest_seen or not nrtm_enabled:
+                self.full_import_runner.run(database_handler=self.database_handler,
+                                            serial_newest_seen=serial_newest_seen, force_reload=force_reload)
             else:
                 self.update_stream_runner.run(serial_newest_seen, database_handler=self.database_handler)
 
@@ -72,7 +75,7 @@ class MirrorFullImportRunner:
     def __init__(self, source: str) -> None:
         self.source = source
 
-    def run(self, database_handler: DatabaseHandler):
+    def run(self, database_handler: DatabaseHandler, serial_newest_seen: Optional[int]=None, force_reload=False):
         import_sources = get_setting(f'sources.{self.source}.import_source')
         if isinstance(import_sources, str):
             import_sources = [import_sources]
@@ -85,9 +88,14 @@ class MirrorFullImportRunner:
         database_handler.delete_all_rpsl_objects_with_journal(self.source)
         logger.info(f'Running full import of {self.source} from {import_sources}, serial from {import_serial_source}')
 
-        import_serial = 0
+        import_serial = None
         if import_serial_source:
             import_serial = int(self._retrieve_file(import_serial_source, return_contents=True)[0])
+
+            if not force_reload and serial_newest_seen is not None and import_serial <= serial_newest_seen:
+                logger.info(f'Current newest serial seen for {self.source} is '
+                            f'{serial_newest_seen}, import_serial is {import_serial}, cancelling import.')
+                return
 
         import_data = [self._retrieve_file(import_source, return_contents=False) for import_source in import_sources]
 
