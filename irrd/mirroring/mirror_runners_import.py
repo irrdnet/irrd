@@ -85,7 +85,6 @@ class MirrorFullImportRunner:
             logger.info(f'Skipping full import for {self.source}, import_source not set.')
             return
 
-        database_handler.delete_all_rpsl_objects_with_journal(self.source)
         logger.info(f'Running full import of {self.source} from {import_sources}, serial from {import_serial_source}')
 
         import_serial = None
@@ -97,6 +96,7 @@ class MirrorFullImportRunner:
                             f'{serial_newest_seen}, import_serial is {import_serial}, cancelling import.')
                 return
 
+        database_handler.delete_all_rpsl_objects_with_journal(self.source)
         import_data = [self._retrieve_file(import_source, return_contents=False) for import_source in import_sources]
 
         database_handler.disable_journaling()
