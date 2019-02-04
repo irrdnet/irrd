@@ -12,7 +12,7 @@ beautifultable==0.7.0  # generating nice-looking ascii tables
 PyYAML==3.13           # parsing YAML config files
 
 # Database connections and management
-psycopg2-binary==2.7.6.1
+psycopg2-binary==2.7.7
 SQLAlchemy==1.2.16
 alembic==1.0.6
 ujson==1.35
