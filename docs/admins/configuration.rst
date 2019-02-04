@@ -59,7 +59,7 @@ This sample shows most configuration options::
 
         log:
             logfile_path: /var/log/irrd/irrd.log
-            loglevel: DEBUG
+            level: DEBUG
 
         sources_default:
             - AUTHDATABASE
