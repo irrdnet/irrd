@@ -457,6 +457,35 @@ class TestWhoisQueryParserIRRD:
         assert not mock_dq.mock_calls
         assert parser.multiple_command_mode
 
+    def test_update_timeout(self, prepare_parser):
+        mock_dq, mock_dh, parser = prepare_parser
+
+        response = parser.handle_query('!t300')
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert not response.result
+        assert parser.timeout == 300
+
+        response = parser.handle_query('!tfoo')
+        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert response.result == 'Invalid value for timeout: foo'
+        assert parser.timeout == 300
+
+        response = parser.handle_query('!t-5')
+        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert response.result == 'Invalid value for timeout: -5'
+        assert parser.timeout == 300
+
+        response = parser.handle_query('!t1001')
+        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert response.result == 'Invalid value for timeout: 1001'
+        assert parser.timeout == 300
+
+        assert not mock_dq.mock_calls
+
     def test_routes_for_origin_v4(self, prepare_parser):
         mock_dq, mock_dh, parser = prepare_parser
 
