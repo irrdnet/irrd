@@ -255,6 +255,57 @@ ports, e.g.::
     # To run, start without --uid, as the non-privileged user
     /home/irrd/irrd-venv/bin/twistd --pidfile=/home/irrd/irrd.pid irrd
 
+Logrotate configuration
+~~~~~~~~~~~~~~~~~~~~~~~
+The following logrotate configuration can be used for IRRd::
+
+    /home/irrd/server.log {
+        missingok
+        daily
+        compress
+        delaycompress
+        dateext
+        rotate 35
+        olddir /home/irrd/logs
+        postrotate
+            systemctl reload irrd.service > /dev/null 2>&1 || true
+        endscript
+    }
+
+This assumes the ``log.logfile_path`` setting is set to
+``/home/irrd/server.log``. This file should be created in the path
+``/etc/logrotate.d/irrd`` with permissions ``0644``.
+
+Systemd configuration
+~~~~~~~~~~~~~~~~~~~~~
+
+The following configuration can be used to run IRRd under systemd,
+using setcap, to be created in ``/lib/systemd/system/irrd.service``::
+
+    [Unit]
+    Description=IRRD4 Service
+    Wants=basic.target
+    After=basic.target network.target
+
+    [Service]
+    Type=simple
+    WorkingDirectory=/home/irrd
+    User=irrd
+    Group=irrd
+    PIDFile=/home/irrd/irrd.pid
+    ExecStart=/home/irrd/irrd-venv/bin/twistd -n --pidfile=/home/irrd/irrd.pid irrd
+    Restart=on-failure
+    ExecReload=/bin/kill -HUP $MAINPID
+
+    [Install]
+    WantedBy=multi-user.target
+
+Then, IRRd can be started under systemd with::
+
+    systemctl daemon-reload
+    systemctl enable irrd
+    systemctl start irrd
+
 Errors
 ~~~~~~
 
