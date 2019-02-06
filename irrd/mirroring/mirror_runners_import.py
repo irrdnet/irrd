@@ -47,6 +47,10 @@ class MirrorImportUpdateRunner:
                 self.update_stream_runner.run(serial_newest_seen, database_handler=self.database_handler)
 
             self.database_handler.commit()
+        except OSError as ose:
+            # I/O errors can occur and should not log a full traceback (#177)
+            logger.error(f'An error occurred while attempting a mirror update or initial import '
+                         f'for {self.source}: {ose}')
         except Exception as exc:
             logger.error(f'An exception occurred while attempting a mirror update or initial import '
                          f'for {self.source}: {exc}', exc_info=exc)

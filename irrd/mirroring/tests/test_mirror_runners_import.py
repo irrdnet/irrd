@@ -81,7 +81,26 @@ class TestMirrorImportUpdateRunner:
         assert mock_stream_runner.mock_calls[0][0] == 'run'
         assert mock_stream_runner.mock_calls[0][1] == (424242,)
 
-    def test_exception_handling(self, monkeypatch, caplog):
+    def test_io_exception_handling(self, monkeypatch, caplog):
+        mock_dh = Mock()
+        mock_dq = Mock()
+        mock_full_import_runner = Mock()
+
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseHandler', lambda: mock_dh)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseStatusQuery', lambda: mock_dq)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.MirrorFullImportRunner', lambda source: mock_full_import_runner)
+        mock_full_import_runner.run = Mock(side_effect=ConnectionResetError('test-error'))
+
+        mock_dh.execute_query = lambda q: iter([{'serial_newest_seen': 424242, 'force_reload': False}])
+        runner = MirrorImportUpdateRunner(source='TEST')
+        runner.run()
+
+        assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
+        assert 'An error occurred while attempting a mirror update or initial import for TEST' in caplog.text
+        assert 'test-error' in caplog.text
+        assert 'Traceback' not in caplog.text
+
+    def test_unexpected_exception_handling(self, monkeypatch, caplog):
         mock_dh = Mock()
         mock_dq = Mock()
         mock_full_import_runner = Mock()
@@ -98,6 +117,7 @@ class TestMirrorImportUpdateRunner:
         assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
         assert 'An exception occurred while attempting a mirror update or initial import for TEST' in caplog.text
         assert 'test-error' in caplog.text
+        assert 'Traceback' in caplog.text
 
 
 class TestMirrorFullImportRunner:
