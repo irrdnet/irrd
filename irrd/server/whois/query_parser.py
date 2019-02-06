@@ -48,7 +48,7 @@ class WhoisQueryParser:
         self.object_classes: List[str] = []
         self.user_agent: Optional[str] = None
         self.multiple_command_mode = False
-        self.timeout = 600
+        self.timeout = 30
         self.key_fields_only = False
         self.peer = peer
         self.peer_str = peer_str

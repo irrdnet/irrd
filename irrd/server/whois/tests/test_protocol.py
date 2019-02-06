@@ -60,6 +60,7 @@ class TestWhoisProtocol:
         receiver.connectionMade()
         assert receiver.peer_str == '[127.0.0.1]:99999'
         assert receiver.query_pipeline_thread.started
+        assert receiver.timeOut == receiver.query_parser.timeout
         mock_transport.reset_mock()
 
         receiver.lineReceived(b' ')
