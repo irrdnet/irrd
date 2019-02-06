@@ -48,6 +48,7 @@ class WhoisQueryParser:
         self.object_classes: List[str] = []
         self.user_agent: Optional[str] = None
         self.multiple_command_mode = False
+        self.timeout = 30
         self.key_fields_only = False
         self.peer = peer
         self.peer_str = peer_str
@@ -114,6 +115,8 @@ class WhoisQueryParser:
             self.multiple_command_mode = True
             result = None
             response_type = WhoisQueryResponseType.NO_RESPONSE
+        elif command == 'T':
+            self.handle_irrd_timeout_update(parameter)
         elif command == 'G':
             result = self.handle_irrd_routes_for_origin_v4(parameter)
             if not result:
@@ -158,6 +161,18 @@ class WhoisQueryParser:
             mode=WhoisQueryResponseMode.IRRD,
             result=result,
         )
+
+    def handle_irrd_timeout_update(self, timeout: str) -> None:
+        """!timeout query - update timeout in connection"""
+        try:
+            timeout_value = int(timeout)
+        except ValueError:
+            raise WhoisQueryParserException(f'Invalid value for timeout: {timeout}')
+
+        if timeout_value > 0 and timeout_value <= 1000:
+            self.timeout = timeout_value
+        else:
+            raise WhoisQueryParserException(f'Invalid value for timeout: {timeout}')
 
     def handle_irrd_routes_for_origin_v4(self, origin: str) -> str:
         """!g query - find all originating IPv4 prefixes from an origin, e.g. !gAS65537"""

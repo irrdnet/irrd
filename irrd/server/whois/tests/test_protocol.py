@@ -60,6 +60,7 @@ class TestWhoisProtocol:
         receiver.connectionMade()
         assert receiver.peer_str == '[127.0.0.1]:99999'
         assert receiver.query_pipeline_thread.started
+        assert receiver.timeOut == receiver.query_parser.timeout
         mock_transport.reset_mock()
 
         receiver.lineReceived(b' ')
@@ -67,11 +68,13 @@ class TestWhoisProtocol:
         assert receiver.query_pipeline_thread.pipeline.get(block=False) == b' '
         assert receiver.query_pipeline_thread.pipeline.get(block=False) == b' !v '
 
+        receiver.query_parser.timeout = 5
         receiver.query_pipeline_thread.response_callback(b'response')
         assert mock_transport.mock_calls[0][0] == 'write'
         assert mock_transport.mock_calls[0][1][0] == b'response'
         assert mock_transport.mock_calls[1][0] == 'loseConnection'
         assert len(mock_transport.mock_calls) == 2
+        assert receiver.timeOut == receiver.query_parser.timeout
         mock_transport.reset_mock()
 
         receiver.query_pipeline_thread.lose_connection_callback()

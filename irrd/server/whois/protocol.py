@@ -20,7 +20,6 @@ class WhoisQueryReceiver(TimeoutMixin, LineOnlyReceiver):
     off to a query pipeline thread.
     """
     delimiter = b'\n'
-    time_out = 600
 
     def connectionMade(self) -> None:  # noqa: N802
         """
@@ -47,7 +46,7 @@ class WhoisQueryReceiver(TimeoutMixin, LineOnlyReceiver):
         )
         self.query_pipeline_thread.start()
 
-        self.setTimeout(self.time_out)
+        self.setTimeout(self.query_parser.timeout)
         logger.debug(f'{self.peer_str}: new connection opened')
 
     def lineReceived(self, line_bytes: bytes) -> None:  # noqa: N802
@@ -71,12 +70,13 @@ class WhoisQueryReceiver(TimeoutMixin, LineOnlyReceiver):
         connection if needed, and telling the query pipeline thread
         sending the response completed.
         """
-        self.resetTimeout()
         self.transport.write(response)
 
         if not self.query_parser.multiple_command_mode:
             self.transport.loseConnection()
             logger.debug(f'{self.peer_str}: auto-closed connection')
+
+        self.setTimeout(self.query_parser.timeout)
 
         self.query_pipeline_thread.ready_for_next_result()
 
