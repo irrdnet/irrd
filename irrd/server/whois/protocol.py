@@ -35,6 +35,9 @@ class WhoisQueryReceiver(TimeoutMixin, LineOnlyReceiver):
             self.transport.loseConnection()
             return
 
+        # disable nagle
+        self.transport.setTcpNoDelay(True)
+
         self.peer_str = f'[{peer.host}]:{peer.port}'
 
         self.query_parser = WhoisQueryParser(peer, self.peer_str)
