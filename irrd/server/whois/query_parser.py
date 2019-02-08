@@ -39,7 +39,6 @@ class WhoisQueryParser:
     """
     lookup_field_names = lookup_field_names()
     database_handler: DatabaseHandler
-    _current_set_priority_source: Optional[str]
     _current_set_root_object_class: Optional[str]
 
     def __init__(self, peer, peer_str: str) -> None:
@@ -212,7 +211,6 @@ class WhoisQueryParser:
         else:
             object_classes = ['route', 'route6']
 
-        self._current_set_priority_source = None
         self._current_set_root_object_class = 'as-set'
 
         members = self._recursive_set_resolve({set_name})
@@ -241,7 +239,6 @@ class WhoisQueryParser:
             recursive = True
             parameter = parameter[:-2]
 
-        self._current_set_priority_source = None
         self._current_set_root_object_class = None
         if not recursive:
             members, leaf_members = self._find_set_members({parameter})
@@ -331,20 +328,16 @@ class WhoisQueryParser:
             object_classes = [self._current_set_root_object_class]
 
         query = query.object_classes(object_classes).rpsl_pks(set_names)
-        if self._current_set_priority_source:
-            query.prioritise_source(self._current_set_priority_source)
         query_result = list(self.database_handler.execute_query(query))
 
         if not query_result:
             # No sub-members are found, and apparantly all inputs were leaf members.
             return set(), set_names
 
-        # Track the source and object class of the root object set.
+        # Track the object class of the root object set.
         # In one case self._current_set_root_object_class may already be set
         # on the first run: when the set resolving should be fixed to one
         # type of set object.
-        if not self._current_set_priority_source:
-            self._current_set_priority_source = query_result[0]['source']
         if not self._current_set_root_object_class:
             self._current_set_root_object_class = query_result[0]['object_class']
 
@@ -353,9 +346,8 @@ class WhoisQueryParser:
 
             # The same PK may occur in multiple sources, but we are
             # only interested in the first matching object, prioritised
-            # to look for the same source as the root object. This priority
-            # is part of the query ORDER BY, so basically we only process
-            # an RPSL pk once.
+            # according to the source order. This priority is part of the
+            # query ORDER BY, so basically we only process an RPSL pk once.
             if rpsl_pk in sets_already_resolved:
                 continue
             sets_already_resolved.add(rpsl_pk)

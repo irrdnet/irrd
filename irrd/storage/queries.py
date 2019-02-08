@@ -20,7 +20,6 @@ class BaseRPSLObjectDatabaseQuery:
     def __init__(self, ordered_by_sources=True):
         self._query_frozen = False
         self._sources_list = []
-        self._prioritised_source = None
         self._ordered_by_sources = ordered_by_sources
 
     def pk(self, pk: str):
@@ -47,17 +46,6 @@ class BaseRPSLObjectDatabaseQuery:
         self._sources_list = sources
         fltr = self.columns.source.in_(self._sources_list)
         return self._filter(fltr)
-
-    def prioritise_source(self, source: str):
-        """
-        Prioritise one particular source in sort order.
-
-        Results from this source will be sorted before all others.
-        When combined with first_only(), this allows a query for
-        'prefer a result from this source, otherwise look for others'.
-        """
-        self._prioritised_source = source.strip().upper()
-        return self
 
     def object_classes(self, object_classes: List[str]):
         """
@@ -90,12 +78,8 @@ class BaseRPSLObjectDatabaseQuery:
         if 'asn_first' in self.columns:
             order_by.append(self.columns.asn_first.asc())
 
-        if self._ordered_by_sources and (self._sources_list or self._prioritised_source):
+        if self._ordered_by_sources and self._sources_list:
             case_elements = []
-            if self._prioritised_source:
-                element = (self.columns.source == self._prioritised_source, -1)
-                case_elements.append(element)
-
             for idx, source in enumerate(self._sources_list):
                 case_elements.append((self.columns.source == source, idx + 1))
 

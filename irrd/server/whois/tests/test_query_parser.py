@@ -633,13 +633,10 @@ class TestWhoisQueryParserIRRD:
             ['rpsl_pks', ({'AS-FIRSTLEVEL'},), {}],
             ['object_classes', (['as-set'],), {}],
             ['rpsl_pks', ({'AS-2nd-UNKNOWN', 'AS-SECONDLEVEL'},), {}],
-            ['prioritise_source', ('TEST1',), {}],
             ['object_classes', (['as-set'],), {}],
             ['rpsl_pks', ({'AS-THIRDLEVEL'},), {}],
-            ['prioritise_source', ('TEST1',), {}],
             ['object_classes', (['as-set'],), {}],
             ['rpsl_pks', ({'AS-4th-UNKNOWN'},), {}],
-            ['prioritise_source', ('TEST1',), {}]
         ]
         mock_dq.reset_mock()
 

@@ -203,10 +203,5 @@ make a significant difference in some queries. For example, ``!m`` will find
 the first object with a given primary key, from the highest priority source
 in which it was found.
 
-Set expansion with ``!i`` will start from the object from the highest priority
-source, which matches the given primary key. For resolving references to other
-sets, priority is first given to the source where the first (root) set was found,
-and then the normal source search order is followed.
-
 The currently enabled sources and their priority can be seen with ``!s-lc``.
 

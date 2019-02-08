@@ -441,18 +441,6 @@ class TestRPSLDatabaseQueryLive:
         response_sources = [r['source'] for r in self.dh.execute_query(query)]
         assert response_sources == ['OTHER-SOURCE']
 
-        query = RPSLDatabaseQuery().prioritise_source('OTHER-SOURCE')
-        response_sources = [r['source'] for r in self.dh.execute_query(query)]
-        assert response_sources == ['OTHER-SOURCE', 'TEST', 'AAA-TST']
-
-        query = RPSLDatabaseQuery().prioritise_source('OTHER-SOURCE').sources(['AAA-TST', 'OTHER-SOURCE', 'TEST'])
-        response_sources = [r['source'] for r in self.dh.execute_query(query)]
-        assert response_sources == ['OTHER-SOURCE', 'AAA-TST', 'TEST']
-
-        query = RPSLDatabaseQuery().prioritise_source('OTHER-SOURCE').sources(['AAA-TST', 'TEST'])
-        response_sources = [r['source'] for r in self.dh.execute_query(query)]
-        assert response_sources == ['AAA-TST', 'TEST']
-
     def test_text_search_person_role(self, irrd_database):
         rpsl_object_person = Mock(
             pk=lambda: 'PERSON',
