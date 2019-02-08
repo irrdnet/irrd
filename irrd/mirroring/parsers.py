@@ -32,6 +32,10 @@ class MirrorFileImportParser(MirrorParser):
     This parser handles imports of files for mirror databases.
     Note that this parser can be called multiple times for a single
     full import, as some databases use split files.
+
+    If direct_error_return is set, run_import() immediately returns
+    upon an encountering an error message. It will return an error
+    string.
     """
     obj_parsed = 0  # Total objects found
     obj_errors = 0  # Objects with errors
@@ -39,25 +43,36 @@ class MirrorFileImportParser(MirrorParser):
     obj_unknown = 0  # Objects with unknown classes
     unknown_object_classes: Set[str] = set()  # Set of encountered unknown classes
 
-    def __init__(self, source: str, filename: str, serial: Optional[int], database_handler: DatabaseHandler) -> None:
+    def __init__(self, source: str, filename: str, serial: Optional[int], database_handler: DatabaseHandler,
+                 direct_error_return: bool=False) -> None:
         logger.debug(f'Starting file import of {source} from {filename}, setting serial {serial}')
         self.source = source
         self.filename = filename
         self.serial = serial
         self.database_handler = database_handler
+        self.direct_error_return = direct_error_return
         super().__init__()
 
-        self.run_import()
-
-    def run_import(self):
+    def run_import(self) -> Optional[str]:
+        """
+        Run the actual import. If direct_error_return is set, returns an error
+        string on encountering the first error. Otherwise, returns None.
+        """
         f = open(self.filename, encoding='utf-8', errors='backslashreplace')
         for paragraph in split_paragraphs_rpsl(f):
-            self.parse_object(paragraph)
+            error = self._parse_object(paragraph)
+            if error is not None:
+                return error
 
         self.log_report()
         f.close()
+        return None
 
-    def parse_object(self, rpsl_text: str) -> None:
+    def _parse_object(self, rpsl_text: str) -> Optional[str]:
+        """
+        Parse a single object. If direct_error_return is set, returns an error
+        string on encountering an error. Otherwise, returns None.
+        """
         try:
             self.obj_parsed += 1
             # If an object turns out to be a key-cert, and strict_import_keycert_objects
@@ -67,32 +82,39 @@ class MirrorFileImportParser(MirrorParser):
                 obj = rpsl_object_from_text(rpsl_text.strip(), strict_validation=True)
 
             if obj.messages.errors():
+                log_msg = f'Parsing errors: {obj.messages.errors()}, original object text follows:\n{rpsl_text}'
+                if self.direct_error_return:
+                    return log_msg
+                self.database_handler.record_mirror_error(self.source, log_msg)
                 logger.critical(f'Parsing errors occurred while importing from file for {self.source}. '
                                 f'This object is ignored, causing potential data inconsistencies. A new operation for '
                                 f'this update, without errors, will still be processed and cause the inconsistency to '
                                 f'be resolved. Parser error messages: {obj.messages.errors()}; '
                                 f'original object text follows:\n{rpsl_text}')
-                self.database_handler.record_mirror_error(self.source, f'Parsing errors: {obj.messages.errors()}, '
-                                                                       f'original object text follows:\n{rpsl_text}')
                 self.obj_errors += 1
-                return
+                return None
 
             if obj.source() != self.source:
-                msg = f'Invalid source {obj.source()} for object {obj.pk()}, expected {self.source}. '
-                logger.critical(msg + 'This object is ignored, causing potential data inconsistencies.')
+                msg = f'Invalid source {obj.source()} for object {obj.pk()}, expected {self.source}'
+                if self.direct_error_return:
+                    return msg
+                logger.critical(msg + '. This object is ignored, causing potential data inconsistencies.')
                 self.database_handler.record_mirror_error(self.source, msg)
                 self.obj_errors += 1
-                return
+                return None
 
             if self.object_class_filter and obj.rpsl_object_class.lower() not in self.object_class_filter:
                 self.obj_ignored_class += 1
-                return
+                return None
 
             self.database_handler.upsert_rpsl_object(obj, forced_serial=self.serial)
 
         except UnknownRPSLObjectClassException as e:
+            if self.direct_error_return:
+                return f'Unknown object class: {e.rpsl_object_class}'
             self.obj_unknown += 1
-            self.unknown_object_classes.add(str(e).split(':')[1].strip())
+            self.unknown_object_classes.add(e.rpsl_object_class)
+        return None
 
     def log_report(self) -> None:
         obj_successful = self.obj_parsed - self.obj_unknown - self.obj_errors - self.obj_ignored_class

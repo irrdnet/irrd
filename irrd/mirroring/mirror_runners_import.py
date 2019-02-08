@@ -105,8 +105,9 @@ class MirrorFullImportRunner:
 
         database_handler.disable_journaling()
         for import_filename, to_delete in import_data:
-            MirrorFileImportParser(source=self.source, filename=import_filename, serial=import_serial,
-                                   database_handler=database_handler)
+            p = MirrorFileImportParser(source=self.source, filename=import_filename, serial=import_serial,
+                                       database_handler=database_handler)
+            p.run_import()
             if to_delete:
                 os.unlink(import_filename)
 
