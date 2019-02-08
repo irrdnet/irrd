@@ -96,6 +96,14 @@ class WhoisQueryReceiver(TimeoutMixin, LineOnlyReceiver):
         self.factory.current_connections -= 1
         self.query_pipeline_thread.cancel()
 
+    def timeoutConnection(self) -> None:  # noqa: N802
+        """
+        If a connection timeout happens and we are not running queries and don't have queries in the pipeline, do
+        close the connection.
+        """
+        if not self.query_pipeline_thread.is_processing_queries():
+            self.transport.loseConnection()
+
     def is_client_permitted(self, peer) -> bool:
         """
         Check whether a client is permitted.

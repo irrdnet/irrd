@@ -38,6 +38,7 @@ class QueryPipelineThread(threading.Thread):
         self.ready_to_send_result = threading.Event()
         self.ready_to_send_result.set()
         self.cancelled = False
+        self.processing_query = False
 
         super().__init__(*args, **kwargs)
 
@@ -48,6 +49,12 @@ class QueryPipelineThread(threading.Thread):
         when a query is received.
         """
         self.pipeline.put(query, block=False)
+
+    def is_processing_queries(self) -> bool:
+        """
+        Check if we are processing queries or still have queries in the pipeline
+        """
+        return self.processing_query or not self.pipeline.empty()
 
     def cancel(self) -> None:
         """
@@ -81,10 +88,12 @@ class QueryPipelineThread(threading.Thread):
         except queue.Empty:
             return
 
+        self.processing_query = True
         start_time = time.perf_counter()
         query = query_bytes.decode('utf-8', errors='backslashreplace').strip()
 
         if not query:
+            self.processing_query = False
             return
 
         logger.info(f'{self.peer_str}: processing query: {query}')
@@ -93,15 +102,19 @@ class QueryPipelineThread(threading.Thread):
             self.lose_connection_callback()
             logger.debug(f'{self.peer_str}: closed connection per request')
             self.cancel()
+            self.processing_query = False
             return
 
         response = self.query_parser.handle_query(query)
+        response_bytes = response.generate_response().encode('utf-8')
+
         self.ready_to_send_result.wait()
         self.ready_to_send_result.clear()
-        response_bytes = response.generate_response().encode('utf-8')
         self.response_callback(response_bytes)
+
         elapsed = time.perf_counter() - start_time
         logger.info(f'{self.peer_str}: sent answer to query, elapsed {elapsed}s, {len(response_bytes)} bytes: {query}')
+        self.processing_query = False
 
     def ready_for_next_result(self) -> None:
         """

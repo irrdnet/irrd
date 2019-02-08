@@ -30,8 +30,12 @@ class TestQueryPipeLineThread:
 
         sample_query = 'query 🌈'.encode('utf-8')
         sample_output = b'A8\n' + sample_query + b'\nC\n'
+
+        assert not qpt.is_processing_queries()
         qpt.add_query(sample_query)
+        assert qpt.is_processing_queries()
         qpt._fetch_process_query()
+        assert not qpt.is_processing_queries()
         assert response == sample_output
 
         response = None
