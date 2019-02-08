@@ -52,7 +52,8 @@ class QueryPipelineThread(threading.Thread):
 
     def is_processing_queries(self) -> bool:
         """
-        Check if we are processing queries or still have queries in the pipeline
+        Check whether this thread is processing a query and/or still has
+        queries in the pipeline.
         """
         return self.processing_query or not self.pipeline.empty()
 
