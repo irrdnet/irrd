@@ -91,10 +91,19 @@ class WhoisQueryReceiver(TimeoutMixin, LineOnlyReceiver):
         """
         Handle a lost connection, either because transport.loseConnection()
         was called, or the remote side closed it.
-        Cancels the pipeline thread, causing it to terminate within two seconds.
+        Cancels the pipeline thread, causing it to terminate within two
+        seconds.
         """
         self.factory.current_connections -= 1
         self.query_pipeline_thread.cancel()
+
+    def timeoutConnection(self) -> None:  # noqa: N802
+        """
+        Triggered when the configured timeout occurs. Ignored if queries are
+        still running or queued, otherwise the connection is closed.
+        """
+        if not self.query_pipeline_thread.is_processing_queries():
+            self.transport.loseConnection()
 
     def is_client_permitted(self, peer) -> bool:
         """

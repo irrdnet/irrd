@@ -29,7 +29,7 @@ IRRd style queries
   after a query has been sent. Queries are answered in the order they were
   submitted. Takes no parameters. In deviation from all other queries,
   this query will return no response at all.
-* ``!t<timeout>`` sets the timeout of the connection. The connection is closed when no activity on the connection has occurred for this many seconds. Valid values range from 1 to 1000. The default is 30 seconds. For ``!a`` queries, which can take several minutes, a higher timeout value should be set.
+* ``!t<timeout>`` sets the timeout of the connection. The connection is closed when no activity on the connection has occurred for this many seconds and there are neither running queries nor queries in the pipeline. Valid values range from 1 to 1000. The default is 30 seconds.
 * ``!a<as-set-name>`` recursively resolves an `as-set`, then resolves all
   combined unique prefixes originating from any of the ASes in the set. Returns
   both IPv4 and IPv6 prefixes. Can be filtered to either IPv4 or IPv6 with
@@ -41,7 +41,7 @@ IRRd style queries
   *Note*: this type of query can take very long to run, due to the amount of
   information it retrieves. Queries may take several minutes to resolve, and
   return up to 10-20 MB of text. Ensure that your client will not time out
-  in this period, and that a long timeout has been set with ``!t``.
+  in this period.
 * ``!gAS<asn>`` finds all IPv4 routes for an origin AS. Only distinct
   prefixes of the routes are returned, seperated by spaces.
 * ``!6AS<asn>`` finds all IPv6 routes for an origin AS. Only distinct

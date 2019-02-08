@@ -18,6 +18,7 @@ class QueryPipelineMock:
         self.cancelled = False
         self.started = False
         self.ready_for_next_result_flag = False
+        self.is_processing_queries_result = False
 
     def start(self):
         self.started = True
@@ -30,6 +31,9 @@ class QueryPipelineMock:
 
     def ready_for_next_result(self):
         self.ready_for_next_result_flag = True
+
+    def is_processing_queries(self):
+        return self.is_processing_queries_result
 
 
 @pytest.fixture()
@@ -65,6 +69,7 @@ class TestWhoisProtocol:
 
         receiver.lineReceived(b' ')
         receiver.lineReceived(b' !v ')
+
         assert receiver.query_pipeline_thread.pipeline.get(block=False) == b' '
         assert receiver.query_pipeline_thread.pipeline.get(block=False) == b' !v '
 
@@ -86,9 +91,19 @@ class TestWhoisProtocol:
         receiver.query_pipeline_thread.response_callback(b'response')
         assert mock_transport.mock_calls[0][0] == 'write'
         assert len(mock_transport.mock_calls) == 1
+        mock_transport.reset_mock()
 
         receiver.connectionLost()
         assert mock_factory.current_connections == 9
+
+        receiver.timeoutConnection()
+        assert mock_transport.mock_calls[0][0] == 'loseConnection'
+        assert len(mock_transport.mock_calls) == 1
+        mock_transport.reset_mock()
+
+        receiver.query_pipeline_thread.is_processing_queries_result = True
+        receiver.timeoutConnection()
+        assert not len(mock_transport.mock_calls)
 
     def test_whois_protocol_access_list_permitted(self, config_override, mock_pipeline_reactor):
         config_override({
