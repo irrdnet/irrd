@@ -41,7 +41,7 @@ IRRd style queries
   *Note*: this type of query can take very long to run, due to the amount of
   information it retrieves. Queries may take several minutes to resolve, and
   return up to 10-20 MB of text. Ensure that your client will not time out
-  in this period, and that a long timeout has been set with ``!t``.
+  in this period.
 * ``!gAS<asn>`` finds all IPv4 routes for an origin AS. Only distinct
   prefixes of the routes are returned, seperated by spaces.
 * ``!6AS<asn>`` finds all IPv6 routes for an origin AS. Only distinct
