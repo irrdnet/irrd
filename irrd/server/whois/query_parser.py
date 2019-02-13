@@ -110,10 +110,17 @@ class WhoisQueryParser:
         response_type = WhoisQueryResponseType.SUCCESS
         result = None
 
+        # A is not tested here because it is already handled in handle_irrd_routes_for_as_set
+        queries_with_parameter = list('TG6IJMNORS')
+        if command in queries_with_parameter and not parameter:
+            raise WhoisQueryParserException(f'Missing parameter for {command} query')
+
         if command == '!':
             self.multiple_command_mode = True
             result = None
             response_type = WhoisQueryResponseType.NO_RESPONSE
+        elif command == 'V':
+            result = self.handle_irrd_version()
         elif command == 'T':
             self.handle_irrd_timeout_update(parameter)
         elif command == 'G':
@@ -150,8 +157,6 @@ class WhoisQueryParser:
                 response_type = WhoisQueryResponseType.KEY_NOT_FOUND
         elif command == 'S':
             result = self.handle_irrd_sources_list(parameter)
-        elif command == 'V':
-            result = self.handle_irrd_version()
         else:
             raise WhoisQueryParserException(f'Unrecognised command: {command}')
 
@@ -210,6 +215,9 @@ class WhoisQueryParser:
             object_classes = ['route6']
         else:
             object_classes = ['route', 'route6']
+
+        if not set_name:
+            raise WhoisQueryParserException(f'Missing required set name for A query')
 
         self._current_set_root_object_class = 'as-set'
 
