@@ -475,13 +475,13 @@ class WhoisQueryParser:
             default = get_setting('sources_default')
             sources_selected = default if default else self.all_valid_sources
             return ','.join(sources_selected)
-        if parameter:
-            sources = parameter.upper().split(',')
-            if not all([source in self.all_valid_sources for source in sources]):
-                raise WhoisQueryParserException('One or more selected sources are unavailable.')
-            self.sources = sources
-        else:
+
+
+        sources = parameter.upper().split(',')
+        if not all([source in self.all_valid_sources for source in sources]):
             raise WhoisQueryParserException('One or more selected sources are unavailable.')
+        self.sources = sources
+
         return None
 
     def handle_irrd_version(self):
