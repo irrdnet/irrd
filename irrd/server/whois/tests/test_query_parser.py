@@ -447,6 +447,18 @@ class TestWhoisQueryParserIRRD:
 
         assert not mock_dq.mock_calls
 
+    def test_parameter_required(self, prepare_parser):
+        mock_dq, mock_dh, parser = prepare_parser
+
+        queries_with_parameter = list('TG6IJMNORS')
+        for query in queries_with_parameter:
+            response = parser.handle_query(f'!{query}')
+            assert response.response_type == WhoisQueryResponseType.ERROR
+            assert response.mode == WhoisQueryResponseMode.IRRD
+            assert response.result == f'Missing parameter for {query} query'
+
+        assert not mock_dq.mock_calls
+
     def test_multiple_command_mode(self, prepare_parser):
         mock_dq, mock_dh, parser = prepare_parser
 
@@ -529,6 +541,14 @@ class TestWhoisQueryParserIRRD:
 
     def test_handle_irrd_routes_for_as_set(self, prepare_parser, monkeypatch):
         mock_dq, mock_dh, parser = prepare_parser
+
+        for parameter in ['', '4', '6']:
+            response = parser.handle_query(f'!a{parameter}')
+            assert response.response_type == WhoisQueryResponseType.ERROR
+            assert response.mode == WhoisQueryResponseMode.IRRD
+            assert response.result == 'Missing required set name for A query'
+
+        assert not mock_dq.mock_calls
 
         monkeypatch.setattr(
             'irrd.server.whois.query_parser.WhoisQueryParser._recursive_set_resolve',
@@ -946,11 +966,6 @@ class TestWhoisQueryParserIRRD:
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == 'TEST1,TEST2'
-
-        response = parser.handle_query('!s')
-        assert response.response_type == WhoisQueryResponseType.ERROR
-        assert response.mode == WhoisQueryResponseMode.IRRD
-        assert response.result == 'One or more selected sources are unavailable.'
 
         response = parser.handle_query('!sTEST3')
         assert response.response_type == WhoisQueryResponseType.ERROR
