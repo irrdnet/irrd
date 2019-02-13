@@ -40,6 +40,9 @@ class DatabaseHandler:
         self._connection = get_engine().connect()
         self._start_transaction()
 
+        from irrd.storage.preload import get_preloader
+        self.preloader = get_preloader()
+
     def _start_transaction(self) -> None:
         """Start a fresh transaction."""
         self._transaction = self._connection.begin()
@@ -64,6 +67,8 @@ class DatabaseHandler:
             self._transaction.rollback()
             logger.error('Exception occurred while committing changes, rolling back', exc_info=exc)
             raise
+
+        self.preloader.reload()
 
     def rollback(self) -> None:
         """Roll back the current transaction, discarding all submitted changes."""

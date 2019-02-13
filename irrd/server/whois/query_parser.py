@@ -12,13 +12,13 @@ from irrd.conf import get_setting
 from irrd.mirroring.nrtm_generator import NRTMGenerator, NRTMGeneratorException
 from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING, lookup_field_names
 from irrd.storage.database_handler import DatabaseHandler
+from irrd.storage.preload import get_preloader
 from irrd.storage.queries import RPSLDatabaseQuery, DatabaseStatusQuery
 from irrd.utils.validators import parse_as_number, ValidationError
 from .query_response import WhoisQueryResponseType, WhoisQueryResponseMode, WhoisQueryResponse
 from ..access_check import is_client_permitted
 
 logger = logging.getLogger(__name__)
-route_cache = defaultdict(set)
 
 
 class WhoisQueryParserException(ValueError):
@@ -55,18 +55,6 @@ class WhoisQueryParser:
         self.key_fields_only = False
         self.peer = peer
         self.peer_str = peer_str
-        self.preload()
-
-    def preload(self):
-        global route_cache
-        if not route_cache:
-            dh = DatabaseHandler()
-            q = RPSLDatabaseQuery(column_names=['rpsl_pk'], skip_all_ordening=True).object_classes(['route', 'route6'])
-            for result in dh.execute_query(q):
-                prefix, asn = result['rpsl_pk'].split('AS')
-                key = 'AS' + asn
-                route_cache[key].add(prefix)
-
 
     def handle_query(self, query: str) -> WhoisQueryResponse:
         """
@@ -239,8 +227,6 @@ class WhoisQueryParser:
 
         members = self._recursive_set_resolve({set_name})
         # asns = {int(member[2:]) for member in members}
-        global route_cache
-        prefix_sets = [route_cache[k] for k in members]
 
         # query = self._prepare_query(column_names=['parsed_data'], ordered_by_sources=False)
         # query = query.object_classes(object_classes).asns_first(asns)
@@ -252,8 +238,8 @@ class WhoisQueryParser:
         #         prefix = result['parsed_data'].get(object_class)
         #         if prefix:
         #             prefixes.add(prefix)
-
-        return ' '.join(set(itertools.chain.from_iterable(prefix_sets)))
+        preloader = get_preloader()
+        return ' '.join(preloader.routes_for_origins(members))
 
     def handle_irrd_set_members(self, parameter: str) -> str:
         """
