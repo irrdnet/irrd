@@ -476,7 +476,6 @@ class WhoisQueryParser:
             sources_selected = default if default else self.all_valid_sources
             return ','.join(sources_selected)
 
-
         sources = parameter.upper().split(',')
         if not all([source in self.all_valid_sources for source in sources]):
             raise WhoisQueryParserException('One or more selected sources are unavailable.')
