@@ -15,24 +15,44 @@ logger = logging.getLogger(__name__)
 
 
 class Preloader:
+    """
+    The preloader allows information to be preloaded into memory.
+
+    For queries that repeat often, or repeatedly retrieve nearly the same,
+    large data sets, this can improve performance.
+
+    The DatabaseHandler calls reload() when data has been changed, added or
+    deleted, which may then schedule a thread to update the store, or
+    conclude an update is already pending anyways.
+    """
     def __init__(self):
-        self.origin_route4_store = defaultdict(set)
-        self.origin_route6_store = defaultdict(set)
+        self._origin_route4_store = defaultdict(set)
+        self._origin_route6_store = defaultdict(set)
 
-        self.reload_lock = threading.BoundedSemaphore()
-        self.threads = []
+        self._reload_lock = threading.BoundedSemaphore()
+        self._threads = []
 
+        self._store_ready_event = threading.Event()
         self.reload()
 
     def routes_for_origins(self, origins: List[str], ip_version: Optional[int]=None) -> Set[str]:
+        """
+        Retrieve all prefixes (in str format) originating from the provided origins.
+
+        Prefixes are guaranteed to be unique. ip_version can be set to 4 or 6
+        to restrict responses to IPv4 or IPv6 prefixes. Blocks until the first
+        store has been built.
+        """
+        self._store_ready_event.wait()
+
         if ip_version and ip_version not in [4, 6]:
             raise ValueError(f'Invalid IP version: {ip_version}')
 
         prefix_sets = list()
         if not ip_version or ip_version == 4:
-            prefix_sets = prefix_sets + [self.origin_route4_store[k] for k in origins]
+            prefix_sets = prefix_sets + [self._origin_route4_store[k] for k in origins]
         if not ip_version or ip_version == 6:
-            prefix_sets = prefix_sets + [self.origin_route6_store[k] for k in origins]
+            prefix_sets = prefix_sets + [self._origin_route6_store[k] for k in origins]
 
         return set(itertools.chain.from_iterable(prefix_sets))
 
@@ -57,27 +77,32 @@ class Preloader:
         if object_classes_changed is not None and not object_classes_changed.intersection(relevant_object_classes):
             return
         self._remove_dead_threads()
-        if len(self.threads) > 1:
+        if len(self._threads) > 1:
             # Another thread is already scheduled to follow the current one
             return
-        thread = PreloadUpdater(self, self.reload_lock)
+        thread = PreloadUpdater(self, self._reload_lock, self._store_ready_event)
         thread.start()
-        self.threads.append(thread)
+        self._threads.append(thread)
 
     def _remove_dead_threads(self) -> None:
         """
         Remove dead threads from self.threads(),
         for an accurate count of how many are alive.
         """
-        for thread in self.threads:
+        for thread in self._threads:
             if not thread.is_alive():
-                self.threads.remove(thread)
+                self._threads.remove(thread)
 
 
 class PreloadUpdater(threading.Thread):
-    def __init__(self, preloader, reload_lock, *args, **kwargs):
+    """
+    PreloadUpdater is a thread that updates the preload store,
+    currently for prefixes per origin per address family.
+    """
+    def __init__(self, preloader, reload_lock, store_ready_event, *args, **kwargs):
         self.preloader = preloader
         self.reload_lock = reload_lock
+        self.store_ready_event = store_ready_event
         super().__init__(*args, **kwargs)
 
     def run(self) -> None:
@@ -104,13 +129,14 @@ class PreloadUpdater(threading.Thread):
 
         dh.close()
 
-        self.preloader.origin_route4_store = new_origin_route4_store
-        self.preloader.origin_route6_store = new_origin_route6_store
+        self.preloader._origin_route4_store = new_origin_route4_store
+        self.preloader._origin_route6_store = new_origin_route6_store
 
         logger.info(f'Completed updating preload store from thread {self}, '
                     f'loaded v4 routes for {len(new_origin_route4_store)} ASes, '
                     f'v6 routes for {len(new_origin_route6_store)} ASes')
         self.reload_lock.release()
+        self.store_ready_event.set()
 
 
 def get_preloader():
