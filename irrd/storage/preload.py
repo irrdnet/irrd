@@ -29,7 +29,7 @@ class Preloader:
         self._origin_route4_store = defaultdict(set)
         self._origin_route6_store = defaultdict(set)
 
-        self._reload_lock = threading.BoundedSemaphore()
+        self._reload_lock = threading.Lock()
         self._threads = []
 
         self._store_ready_event = threading.Event()
@@ -106,6 +106,7 @@ class PreloadUpdater(threading.Thread):
         super().__init__(*args, **kwargs)
 
     def run(self) -> None:
+        logger.debug(f'Preload store update from thread {self} waiting for lock')
         self.reload_lock.acquire()
         logger.debug(f'Starting preload store update from thread {self}')
 
