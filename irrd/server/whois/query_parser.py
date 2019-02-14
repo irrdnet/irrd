@@ -55,6 +55,7 @@ class WhoisQueryParser:
         self.key_fields_only = False
         self.peer = peer
         self.peer_str = peer_str
+        self.preloader = get_preloader()
 
     def handle_query(self, query: str) -> WhoisQueryResponse:
         """
@@ -226,20 +227,7 @@ class WhoisQueryParser:
         self._current_set_root_object_class = 'as-set'
 
         members = self._recursive_set_resolve({set_name})
-        # asns = {int(member[2:]) for member in members}
-
-        # query = self._prepare_query(column_names=['parsed_data'], ordered_by_sources=False)
-        # query = query.object_classes(object_classes).asns_first(asns)
-        # query_result = self.database_handler.execute_query(query)
-        #
-        # prefixes = OrderedSet()
-        # for result in query_result:
-        #     for object_class in object_classes:
-        #         prefix = result['parsed_data'].get(object_class)
-        #         if prefix:
-        #             prefixes.add(prefix)
-        preloader = get_preloader()
-        return ' '.join(preloader.routes_for_origins(members))
+        return ' '.join(self.preloader.routes_for_origins(members))
 
     def handle_irrd_set_members(self, parameter: str) -> str:
         """

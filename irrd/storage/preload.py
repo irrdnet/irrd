@@ -19,8 +19,7 @@ class Preloader:
         self.origin_route4_store = defaultdict(set)
         self.origin_route6_store = defaultdict(set)
 
-        self.reload_lock_event = threading.Event()
-        self.reload_lock_event.set()
+        self.reload_lock = threading.BoundedSemaphore()
         self.threads = []
 
         self.reload()
@@ -37,9 +36,10 @@ class Preloader:
 
         return set(itertools.chain.from_iterable(prefix_sets))
 
-    def reload(self) -> None:
+    def reload(self, object_classes_changed: Optional[Set[str]]=None) -> None:
         """
         Perform a (re)load.
+        Should be called after changes to the DB have been committed
 
         This will start a new thread to reload the store. If a thread is
         already running, the new thread will start after the current one
@@ -49,12 +49,18 @@ class Preloader:
         running as well, waiting for a lock, no action is taken. The
         change that prompted this reload call will already be processed
         by the thread that is currently waiting.
+
+        If object_classes_changed is provided, a reload is only performed
+        if those classes are relevant to the data in the preload store.
         """
+        relevant_object_classes = {'route', 'route6'}
+        if object_classes_changed is not None and not object_classes_changed.intersection(relevant_object_classes):
+            return
         self._remove_dead_threads()
         if len(self.threads) > 1:
             # Another thread is already scheduled to follow the current one
             return
-        thread = PreloadUpdater(self, self.reload_lock_event)
+        thread = PreloadUpdater(self, self.reload_lock)
         thread.start()
         self.threads.append(thread)
 
@@ -69,14 +75,13 @@ class Preloader:
 
 
 class PreloadUpdater(threading.Thread):
-    def __init__(self, preloader, reload_lock_event, *args, **kwargs):
+    def __init__(self, preloader, reload_lock, *args, **kwargs):
         self.preloader = preloader
-        self.reload_lock_event = reload_lock_event
+        self.reload_lock = reload_lock
         super().__init__(*args, **kwargs)
 
     def run(self) -> None:
-        self.reload_lock_event.wait()
-        self.reload_lock_event.clear()
+        self.reload_lock.acquire()
         logger.debug(f'Starting preload store update from thread {self}')
 
         new_origin_route4_store = defaultdict(set)
@@ -105,7 +110,7 @@ class PreloadUpdater(threading.Thread):
         logger.info(f'Completed updating preload store from thread {self}, '
                     f'loaded v4 routes for {len(new_origin_route4_store)} ASes, '
                     f'v6 routes for {len(new_origin_route6_store)} ASes')
-        self.reload_lock_event.set()
+        self.reload_lock.release()
 
 
 def get_preloader():

@@ -8,6 +8,7 @@ from sqlalchemy.dialects import postgresql as pg
 
 from irrd.conf import get_setting
 from irrd.rpsl.parser import RPSLObject
+from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING
 from irrd.storage.queries import (BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery,
                                   RPSLDatabaseObjectStatisticsQuery)
 from . import get_engine
@@ -48,6 +49,7 @@ class DatabaseHandler:
         self._transaction = self._connection.begin()
         self._rpsl_upsert_cache = []
         self._rpsl_pk_source_seen = set()
+        self._object_classes_modified = set()
         self.status_tracker = DatabaseStatusTracker(self, journaling_enabled=self.journaling_enabled)
 
     def disable_journaling(self):
@@ -62,13 +64,12 @@ class DatabaseHandler:
         self.status_tracker.finalise_transaction()
         try:
             self._transaction.commit()
+            self.preloader.reload(self._object_classes_modified)
             self._start_transaction()
         except Exception as exc:  # pragma: no cover
             self._transaction.rollback()
             logger.error('Exception occurred while committing changes, rolling back', exc_info=exc)
             raise
-
-        self.preloader.reload()
 
     def rollback(self) -> None:
         """Roll back the current transaction, discarding all submitted changes."""
@@ -117,14 +118,15 @@ class DatabaseHandler:
         # constrained values - so if a second object appears with a pk/source
         # seen before, the cache must be flushed right away, or the two updates
         # will conflict.
-        rpsl_pk_source = rpsl_object.pk() + '-' + rpsl_object.parsed_data['source']
+        source = rpsl_object.parsed_data['source']
+        rpsl_pk_source = rpsl_object.pk() + '-' + source
         if rpsl_pk_source in self._rpsl_pk_source_seen:
             self._flush_rpsl_object_upsert_cache()
 
         self._rpsl_upsert_cache.append((
             {
                 'rpsl_pk': rpsl_object.pk(),
-                'source': rpsl_object.parsed_data['source'],
+                'source': source,
                 'object_class': rpsl_object.rpsl_object_class,
                 'parsed_data': rpsl_object.parsed_data,
                 'object_text': rpsl_object.render_rpsl_text(),
@@ -139,6 +141,7 @@ class DatabaseHandler:
             forced_serial,
         ))
         self._rpsl_pk_source_seen.add(rpsl_pk_source)
+        self._object_classes_modified.add(rpsl_object.rpsl_object_class)
 
         if len(self._rpsl_upsert_cache) > MAX_RECORDS_CACHE_BEFORE_INSERT:
             self._flush_rpsl_object_upsert_cache()
@@ -180,6 +183,7 @@ class DatabaseHandler:
             object_text=result['object_text'],
             forced_serial=forced_serial,
         )
+        self._object_classes_modified.add(result['object_class'])
 
     def _flush_rpsl_object_upsert_cache(self) -> None:
         """
@@ -242,6 +246,8 @@ class DatabaseHandler:
         table = RPSLDatabaseStatus.__table__
         stmt = table.delete(table.c.source == source)
         self._connection.execute(stmt)
+        # All objects are presumed to have been changed.
+        self._object_classes_modified.update(OBJECT_CLASS_MAPPING.keys())
 
     def force_record_serial_seen(self, source: str, serial: int) -> None:
         """
