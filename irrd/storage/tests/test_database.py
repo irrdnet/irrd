@@ -41,6 +41,8 @@ def irrd_database(monkeypatch):
                         f'to overwrite existing database.')
     RPSLDatabaseObject.metadata.create_all(engine)
 
+    monkeypatch.setattr('irrd.storage.database_handler.get_preloader', lambda: Mock(spec=Preloader))
+
     yield None
 
     engine.dispose()
@@ -62,7 +64,7 @@ def database_handler_with_route():
         asn_last=65537,
     )
 
-    dh = DatabaseHandler(mock_preloader=Mock(spec=Preloader))
+    dh = DatabaseHandler()
 
     dh.upsert_rpsl_object(rpsl_object_route_v4)
     yield dh
@@ -91,7 +93,7 @@ class TestDatabaseHandlerLive:
             asn_last=65537,
         )
 
-        self.dh = DatabaseHandler(mock_preloader=Mock(spec=Preloader))
+        self.dh = DatabaseHandler()
         self.dh.preloader.reload = Mock(return_value=None)
         self.dh.upsert_rpsl_object(rpsl_object_route_v4, 42)
         assert len(self.dh._rpsl_upsert_cache) == 1
@@ -265,7 +267,7 @@ class TestDatabaseHandlerLive:
             asn_last=65537,
         )
 
-        self.dh = DatabaseHandler(mock_preloader=Mock(spec=Preloader))
+        self.dh = DatabaseHandler()
         # This upsert has a forced serial, so it should be recorded in the DB status.
         self.dh.upsert_rpsl_object(rpsl_object_route_v4, 42)
         self.dh.upsert_rpsl_object(rpsl_object_route_v4, 4242)
@@ -328,7 +330,7 @@ class TestDatabaseHandlerLive:
             asn_last=65537,
         )
 
-        self.dh = DatabaseHandler(mock_preloader=Mock(spec=Preloader))
+        self.dh = DatabaseHandler()
         self.dh.disable_journaling()
         self.dh.upsert_rpsl_object(rpsl_object_route_v4, 42)
         self.dh.commit()
@@ -474,7 +476,7 @@ class TestRPSLDatabaseQueryLive:
             asn_first=None,
             asn_last=None,
         )
-        self.dh = DatabaseHandler(mock_preloader=Mock(spec=Preloader))
+        self.dh = DatabaseHandler()
         self.dh.upsert_rpsl_object(rpsl_object_person)
         self.dh.upsert_rpsl_object(rpsl_object_role)
 

@@ -6,7 +6,7 @@ from ..load_database import load
 
 def test_load_database_success(capsys, monkeypatch):
     mock_dh = Mock()
-    monkeypatch.setattr('irrd.scripts.load_database.DatabaseHandler', lambda: mock_dh)
+    monkeypatch.setattr('irrd.scripts.load_database.DatabaseHandler', lambda enable_preload_update: mock_dh)
     mock_parser = Mock()
     monkeypatch.setattr('irrd.scripts.load_database.MirrorFileImportParser', lambda *args, **kwargs: mock_parser)
     mock_parser.run_import = lambda: None
@@ -26,7 +26,7 @@ def test_load_database_success(capsys, monkeypatch):
 
 def test_load_database_import_error(capsys, monkeypatch, caplog):
     mock_dh = Mock()
-    monkeypatch.setattr('irrd.scripts.load_database.DatabaseHandler', lambda: mock_dh)
+    monkeypatch.setattr('irrd.scripts.load_database.DatabaseHandler', lambda enable_preload_update: mock_dh)
     mock_parser = Mock()
     monkeypatch.setattr('irrd.scripts.load_database.MirrorFileImportParser', lambda *args, **kwargs: mock_parser)
     mock_parser.run_import = lambda: 'object-parsing-error'

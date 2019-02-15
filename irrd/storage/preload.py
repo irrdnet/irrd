@@ -26,6 +26,8 @@ class Preloader:
     conclude an update is already pending anyways.
     """
     def __init__(self):
+        logger.critical('PRELOAD INIT')
+        traceback.print_stack()
         self._origin_route4_store = defaultdict(set)
         self._origin_route6_store = defaultdict(set)
 

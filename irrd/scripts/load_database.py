@@ -19,7 +19,7 @@ from irrd.storage.database_handler import DatabaseHandler
 
 
 def load(source, filename, serial) -> int:
-    dh = DatabaseHandler()
+    dh = DatabaseHandler(enable_preload_update=False)
     dh.delete_all_rpsl_objects_with_journal(source)
     dh.disable_journaling()
     parser = MirrorFileImportParser(source, filename, serial=serial, database_handler=dh, direct_error_return=True)

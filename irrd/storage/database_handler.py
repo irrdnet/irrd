@@ -37,15 +37,13 @@ class DatabaseHandler:
     # with this serial.
     _rpsl_upsert_cache: List[Tuple[dict, Optional[int]]]
 
-    def __init__(self, journaling_enabled=True, mock_preloader=None):
+    def __init__(self, journaling_enabled=True, enable_preload_update=True):
         self.journaling_enabled = journaling_enabled
         self._connection = get_engine().connect()
         self._start_transaction()
-
-        if not mock_preloader:  # pragma: no cover
+        self.preloader = None
+        if enable_preload_update:
             self.preloader = get_preloader()
-        else:
-            self.preloader = mock_preloader
 
     def _start_transaction(self) -> None:
         """Start a fresh transaction."""
@@ -67,7 +65,8 @@ class DatabaseHandler:
         self.status_tracker.finalise_transaction()
         try:
             self._transaction.commit()
-            self.preloader.reload(self._object_classes_modified)
+            if self.preloader:
+                self.preloader.reload(self._object_classes_modified)
             self._start_transaction()
         except Exception as exc:  # pragma: no cover
             self._transaction.rollback()
