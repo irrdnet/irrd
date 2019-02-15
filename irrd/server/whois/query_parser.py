@@ -55,7 +55,6 @@ class WhoisQueryParser:
         self.key_fields_only = False
         self.peer = peer
         self.peer_str = peer_str
-        self.preloader = get_preloader()
 
     def handle_query(self, query: str) -> WhoisQueryResponse:
         """
@@ -66,6 +65,7 @@ class WhoisQueryParser:
         self.database_handler = DatabaseHandler()
         self.key_fields_only = False
         self.object_classes = []
+        self.preloader = get_preloader()
 
         if query.startswith('!'):
             try:
@@ -202,6 +202,8 @@ class WhoisQueryParser:
             raise WhoisQueryParserException(str(ve))
 
         prefixes = self.preloader.routes_for_origins([origin_formatted], ip_version=ip_version)
+        logger.info(f'Responding to query for {origin}/{ip_version} with {prefixes} -- '
+                    f'preload v4 {self.preloader._origin_route4_store} from {self.preloader}')
         return ' '.join(prefixes)
 
     def handle_irrd_routes_for_as_set(self, set_name: str) -> str:

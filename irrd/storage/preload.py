@@ -4,9 +4,9 @@ from collections import defaultdict
 
 import logging
 import threading
+import traceback
 from typing import Optional, List, Set
 
-from .database_handler import DatabaseHandler
 from .queries import RPSLDatabaseQuery
 
 _preloader = None
@@ -113,11 +113,13 @@ class PreloadUpdater(threading.Thread):
         new_origin_route4_store = defaultdict(set)
         new_origin_route6_store = defaultdict(set)
 
+        from .database_handler import DatabaseHandler
         dh = DatabaseHandler()
-        q = RPSLDatabaseQuery(column_names=['ip_version', 'ip_first', 'ip_size', 'asn_first'], skip_all_ordening=True)
+        q = RPSLDatabaseQuery(column_names=['ip_version', 'ip_first', 'ip_size', 'asn_first'], enable_ordering=True)
         q = q.object_classes(['route', 'route6'])
 
         for result in dh.execute_query(q):
+            logger.info(f'Found row {result}')
             prefix = result['ip_first']
             key = 'AS' + str(result['asn_first'])
 
@@ -129,7 +131,7 @@ class PreloadUpdater(threading.Thread):
                 new_origin_route6_store[key].add(f'{prefix}/{length}')
 
         dh.close()
-
+        logger.info(f'Reload complete, loaded v4 {new_origin_route4_store}, v6 {new_origin_route6_store}, storing in PR {self.preloader}')
         self.preloader._origin_route4_store = new_origin_route4_store
         self.preloader._origin_route6_store = new_origin_route6_store
 

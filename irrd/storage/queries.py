@@ -17,11 +17,11 @@ class BaseRPSLObjectDatabaseQuery:
     table: sa.Table
     columns: ColumnCollection
 
-    def __init__(self, ordered_by_sources=True, skip_all_ordening=False):
+    def __init__(self, ordered_by_sources=True, enable_ordering=True):
         self._query_frozen = False
         self._sources_list = []
         self._ordered_by_sources = ordered_by_sources
-        self._skip_all_ordening = skip_all_ordening
+        self._enable_ordering = enable_ordering
 
     def pk(self, pk: str):
         """Filter on an exact object PK (UUID)."""
@@ -73,24 +73,22 @@ class BaseRPSLObjectDatabaseQuery:
         """
         self._query_frozen = True
 
-        if self._skip_all_ordening:
-            return self.statement
+        if self._enable_ordering:
+            order_by = []
+            if 'ip_first' in self.columns:
+                order_by.append(self.columns.ip_first.asc())
+            if 'asn_first' in self.columns:
+                order_by.append(self.columns.asn_first.asc())
 
-        order_by = []
-        if 'ip_first' in self.columns:
-            order_by.append(self.columns.ip_first.asc())
-        if 'asn_first' in self.columns:
-            order_by.append(self.columns.asn_first.asc())
+            if self._ordered_by_sources and self._sources_list:
+                case_elements = []
+                for idx, source in enumerate(self._sources_list):
+                    case_elements.append((self.columns.source == source, idx + 1))
 
-        if self._ordered_by_sources and self._sources_list:
-            case_elements = []
-            for idx, source in enumerate(self._sources_list):
-                case_elements.append((self.columns.source == source, idx + 1))
+                criterion = sa.case(case_elements, else_=100000)
+                order_by.insert(0, criterion)
 
-            criterion = sa.case(case_elements, else_=100000)
-            order_by.insert(0, criterion)
-
-        self.statement = self.statement.order_by(*order_by)
+            self.statement = self.statement.order_by(*order_by)
         return self.statement
 
     def _filter(self, fltr):

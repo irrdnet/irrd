@@ -6,8 +6,10 @@ import pytest
 from IPy import IP
 from pytest import raises
 
+from irrd.utils.test_utils import flatten_mock_calls
 from .. import get_engine
 from ..database_handler import DatabaseHandler
+from ..preload import Preloader
 from ..queries import (RPSLDatabaseQuery, RPSLDatabaseJournalQuery, DatabaseStatusQuery,
                        RPSLDatabaseObjectStatisticsQuery)
 from ..models import RPSLDatabaseObject, DatabaseOperation
@@ -59,7 +61,9 @@ def database_handler_with_route():
         asn_first=65537,
         asn_last=65537,
     )
-    dh = DatabaseHandler()
+
+    dh = DatabaseHandler(mock_preloader=Mock(spec=Preloader))
+
     dh.upsert_rpsl_object(rpsl_object_route_v4)
     yield dh
     dh.close()
@@ -87,7 +91,8 @@ class TestDatabaseHandlerLive:
             asn_last=65537,
         )
 
-        self.dh = DatabaseHandler()
+        self.dh = DatabaseHandler(mock_preloader=Mock(spec=Preloader))
+        self.dh.preloader.reload = Mock(return_value=None)
         self.dh.upsert_rpsl_object(rpsl_object_route_v4, 42)
         assert len(self.dh._rpsl_upsert_cache) == 1
 
@@ -241,6 +246,11 @@ class TestDatabaseHandlerLive:
 
         self.dh.close()
 
+        assert flatten_mock_calls(self.dh.preloader.reload) == [
+            ['', ({'route'},), {}],
+            ['', ({'route'},), {}]
+        ]
+
     def test_updates_database_status_forced_serials(self, monkeypatch, irrd_database):
         # As settings are default, journal keeping is disabled for this DB
         rpsl_object_route_v4 = Mock(
@@ -255,7 +265,7 @@ class TestDatabaseHandlerLive:
             asn_last=65537,
         )
 
-        self.dh = DatabaseHandler()
+        self.dh = DatabaseHandler(mock_preloader=Mock(spec=Preloader))
         # This upsert has a forced serial, so it should be recorded in the DB status.
         self.dh.upsert_rpsl_object(rpsl_object_route_v4, 42)
         self.dh.upsert_rpsl_object(rpsl_object_route_v4, 4242)
@@ -318,7 +328,7 @@ class TestDatabaseHandlerLive:
             asn_last=65537,
         )
 
-        self.dh = DatabaseHandler()
+        self.dh = DatabaseHandler(mock_preloader=Mock(spec=Preloader))
         self.dh.disable_journaling()
         self.dh.upsert_rpsl_object(rpsl_object_route_v4, 42)
         self.dh.commit()
@@ -464,7 +474,7 @@ class TestRPSLDatabaseQueryLive:
             asn_first=None,
             asn_last=None,
         )
-        self.dh = DatabaseHandler()
+        self.dh = DatabaseHandler(mock_preloader=Mock(spec=Preloader))
         self.dh.upsert_rpsl_object(rpsl_object_person)
         self.dh.upsert_rpsl_object(rpsl_object_role)
 

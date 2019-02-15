@@ -9,8 +9,9 @@ from sqlalchemy.dialects import postgresql as pg
 from irrd.conf import get_setting
 from irrd.rpsl.parser import RPSLObject
 from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING
-from irrd.storage.queries import (BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery,
-                                  RPSLDatabaseObjectStatisticsQuery)
+from .preload import get_preloader
+from .queries import (BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery,
+                      RPSLDatabaseObjectStatisticsQuery)
 from . import get_engine
 from .models import RPSLDatabaseObject, RPSLDatabaseJournal, DatabaseOperation, RPSLDatabaseStatus
 
@@ -36,13 +37,15 @@ class DatabaseHandler:
     # with this serial.
     _rpsl_upsert_cache: List[Tuple[dict, Optional[int]]]
 
-    def __init__(self, journaling_enabled=True):
+    def __init__(self, journaling_enabled=True, mock_preloader=None):
         self.journaling_enabled = journaling_enabled
         self._connection = get_engine().connect()
         self._start_transaction()
 
-        from irrd.storage.preload import get_preloader
-        self.preloader = get_preloader()
+        if not mock_preloader:  # pragma: no cover
+            self.preloader = get_preloader()
+        else:
+            self.preloader = mock_preloader
 
     def _start_transaction(self) -> None:
         """Start a fresh transaction."""
