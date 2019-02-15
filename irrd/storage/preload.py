@@ -53,9 +53,9 @@ class Preloader:
 
         prefix_sets: List[Set[str]] = list()
         if not ip_version or ip_version == 4:
-            prefix_sets = prefix_sets + [self._origin_route4_store[k] for k in origins]
+            prefix_sets = prefix_sets + [self._origin_route4_store.get(k, {}) for k in origins]
         if not ip_version or ip_version == 6:
-            prefix_sets = prefix_sets + [self._origin_route6_store[k] for k in origins]
+            prefix_sets = prefix_sets + [self._origin_route6_store.get(k, {}) for k in origins]
 
         return set(itertools.chain.from_iterable(prefix_sets))
 
@@ -108,7 +108,7 @@ class PreloadUpdater(threading.Thread):
         self.store_ready_event = store_ready_event
         super().__init__(*args, **kwargs)
 
-    def run(self) -> None:
+    def run(self, mock_database_handler=None) -> None:
         logger.debug(f'Preload store update from thread {self} waiting for lock')
         self.reload_lock.acquire()
         logger.debug(f'Starting preload store update from thread {self}')
@@ -116,8 +116,12 @@ class PreloadUpdater(threading.Thread):
         new_origin_route4_store: Dict[str, Set] = defaultdict(set)
         new_origin_route6_store: Dict[str, Set] = defaultdict(set)
 
-        from .database_handler import DatabaseHandler
-        dh = DatabaseHandler()
+        if not mock_database_handler:  # pragma: no cover
+            from .database_handler import DatabaseHandler
+            dh = DatabaseHandler()
+        else:
+            dh = mock_database_handler
+
         q = RPSLDatabaseQuery(column_names=['ip_version', 'ip_first', 'ip_size', 'asn_first'], enable_ordering=True)
         q = q.object_classes(['route', 'route6'])
 
@@ -162,15 +166,15 @@ def reload_signal_handler(signum, frame):
 def send_reload_signal(irrd_pidfile):
     try:
         with open(irrd_pidfile) as fh:
-            irrd_pid = int(fh.read())
+            irrd_pid = fh.read()
             try:
-                os.kill(irrd_pid, RELOAD_SIGNAL)
-            except ProcessLookupError:
+                os.kill(int(irrd_pid), RELOAD_SIGNAL)
+            except (ProcessLookupError, ValueError):
                 logger.warning(f'Attempted to send reload signal to update preloader for IRRD on '
-                               f'PID {irrd_pid}, but process is not running.')
-    except OSError:
+                               f'PID {irrd_pid}, but process is not running or PID is invalid.')
+    except OSError as ose:
         logger.warning(f'Attempted to send reload signal to update preloader for IRRD with PID '
-                       f'from {irrd_pidfile}, but process is not running.')
+                       f'from {irrd_pidfile}, but file could not be opened: {ose}')
 
 
 signal.signal(RELOAD_SIGNAL, reload_signal_handler)
