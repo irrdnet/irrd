@@ -37,8 +37,16 @@ class DatabaseHandler:
     # with this serial.
     _rpsl_upsert_cache: List[Tuple[dict, Optional[int]]]
 
-    def __init__(self, journaling_enabled=True, enable_preload_update=True):
-        self.journaling_enabled = journaling_enabled
+    def __init__(self, enable_preload_update=True):
+        """
+        Create a new database handler.
+
+        If enable_preload is True (default), the Preloader will be notified
+        of changed objects after every committed transaction. This should
+        be disabled in tasks that do not run in the IRRd server process,
+        such as the submit_email script.
+        """
+        self.journaling_enabled = True
         self._connection = get_engine().connect()
         self._start_transaction()
         self.preloader = None

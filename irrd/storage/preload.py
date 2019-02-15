@@ -109,7 +109,20 @@ class PreloadUpdater(threading.Thread):
         super().__init__(*args, **kwargs)
 
     def run(self, mock_database_handler=None) -> None:
-        logger.debug(f'Preload store update from thread {self} waiting for lock')
+        """
+        Main thread runner function.
+
+        The reload_lock ensures only a single instance can run at the same
+        time, i.e. if two threads, one will wait for the other to finish.
+
+        After loading the data from the database, sets the two new stores
+        on the provided preloader object.
+        The lock is then released to allow another thread to start, and
+        the store_ready_event set to indicate that the store has been
+        loaded at least once, and answers can be provided based on it.
+
+        For tests, mock_database_handler can be used to provide a mock.
+        """
         self.reload_lock.acquire()
         logger.debug(f'Starting preload store update from thread {self}')
 
@@ -138,7 +151,7 @@ class PreloadUpdater(threading.Thread):
                 new_origin_route6_store[key].add(f'{prefix}/{length}')
 
         dh.close()
-        logger.info(f'Reload complete, loaded v4 {new_origin_route4_store}, v6 {new_origin_route6_store}, storing in PR {self.preloader}')
+
         self.preloader._origin_route4_store = new_origin_route4_store
         self.preloader._origin_route6_store = new_origin_route6_store
 
@@ -158,12 +171,20 @@ def get_preloader():
 
 def reload_signal_handler(signum, frame):
     """
-    Reload the preload store when a SIGUSR1 is received.
+    Reload the preload store when the signal is received.
     """
     get_preloader().reload()
 
 
 def send_reload_signal(irrd_pidfile):
+    """
+    Send a reload signal to an IRRd instance given its pidfile.
+
+    This is used from scripts like submit_email and load_database,
+    which make direct changes to the SQL database, but can't signal
+    the preloader directly from their DatabaseHandler - as they
+    are part of a different process.
+    """
     try:
         with open(irrd_pidfile) as fh:
             irrd_pid = fh.read()
