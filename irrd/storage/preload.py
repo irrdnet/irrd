@@ -160,13 +160,17 @@ def reload_signal_handler(signum, frame):
 
 
 def send_reload_signal(irrd_pidfile):
-    with open(irrd_pidfile) as fh:
-        irrd_pid = int(fh.read())
-        try:
-            os.kill(irrd_pid, RELOAD_SIGNAL)
-        except ProcessLookupError:
-            logger.warning(f'Attempted to send reload signal to update preloader for IRRD on '
-                           f'PID {irrd_pid}, but process is not running.')
+    try:
+        with open(irrd_pidfile) as fh:
+            irrd_pid = int(fh.read())
+            try:
+                os.kill(irrd_pid, RELOAD_SIGNAL)
+            except ProcessLookupError:
+                logger.warning(f'Attempted to send reload signal to update preloader for IRRD on '
+                               f'PID {irrd_pid}, but process is not running.')
+    except OSError:
+        logger.warning(f'Attempted to send reload signal to update preloader for IRRD with PID '
+                       f'from {irrd_pidfile}, but process is not running.')
 
 
 signal.signal(RELOAD_SIGNAL, reload_signal_handler)
