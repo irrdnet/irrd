@@ -339,17 +339,17 @@ class TestIntegration:
             query_result = whois_query_irrd('127.0.0.1', port, '!6AS65537')
             assert query_result == '2001:db8::/48'
             query_result = whois_query_irrd('127.0.0.1', port, '!iRS-TEST')
-            assert query_result == '192.0.2.0/24 2001:db8::/48'
+            assert set(query_result.split(' ')) == {'192.0.2.0/24', '2001:db8::/48'}
             query_result = whois_query_irrd('127.0.0.1', port, '!iAS-SETTEST')
-            assert query_result == 'AS65537 AS65538 AS65539'
+            assert set(query_result.split(' ')) == {'AS65537', 'AS65538', 'AS65539'}
             query_result = whois_query_irrd('127.0.0.1', port, '!iAS-TESTREF')
-            assert query_result == 'AS-SETTEST AS65540'
+            assert set(query_result.split(' ')) == {'AS-SETTEST', 'AS65540'}
             query_result = whois_query_irrd('127.0.0.1', port, '!iAS-TESTREF,1')
-            assert query_result == 'AS65537 AS65538 AS65539 AS65540'
+            assert set(query_result.split(' ')) == {'AS65537', 'AS65538', 'AS65539', 'AS65540'}
             query_result = whois_query_irrd('127.0.0.1', port, '!aAS-SETTEST')
-            assert query_result == '192.0.2.0/24 2001:db8::/48'
+            assert set(query_result.split(' ')) == {'192.0.2.0/24', '2001:db8::/48'}
             query_result = whois_query_irrd('127.0.0.1', port, '!aAS-TESTREF')
-            assert query_result == '192.0.2.0/24 2001:db8::/48'
+            assert set(query_result.split(' ')) == {'192.0.2.0/24', '2001:db8::/48'}
             query_result = whois_query_irrd('127.0.0.1', port, '!a4AS-TESTREF')
             assert query_result == '192.0.2.0/24'
             query_result = whois_query_irrd('127.0.0.1', port, '!a6AS-TESTREF')
@@ -576,7 +576,8 @@ class TestIntegration:
         email += base64.b64encode(request.encode('utf-8'))
 
         script = IRRD_ROOT_PATH + '/irrd/scripts/submit_email.py'
-        p = subprocess.Popen([script, f'--config={config_path}'], stdin=subprocess.PIPE)
+        p = subprocess.Popen([script, f'--config={config_path}', f'--irrd_pidfile={self.pidfile1}'],
+                             stdin=subprocess.PIPE)
         p.communicate(email)
         p.wait()
 

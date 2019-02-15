@@ -3,11 +3,14 @@ import math
 from collections import defaultdict
 
 import logging
+import os
+import signal
 import threading
-import traceback
-from typing import Optional, List, Set
+from typing import Optional, List, Set, Dict
 
 from .queries import RPSLDatabaseQuery
+
+RELOAD_SIGNAL = signal.SIGUSR1
 
 _preloader = None
 
@@ -26,8 +29,6 @@ class Preloader:
     conclude an update is already pending anyways.
     """
     def __init__(self):
-        logger.critical('PRELOAD INIT')
-        traceback.print_stack()
         self._origin_route4_store = defaultdict(set)
         self._origin_route6_store = defaultdict(set)
 
@@ -50,7 +51,7 @@ class Preloader:
         if ip_version and ip_version not in [4, 6]:
             raise ValueError(f'Invalid IP version: {ip_version}')
 
-        prefix_sets = list()
+        prefix_sets: List[Set[str]] = list()
         if not ip_version or ip_version == 4:
             prefix_sets = prefix_sets + [self._origin_route4_store[k] for k in origins]
         if not ip_version or ip_version == 6:
@@ -112,8 +113,8 @@ class PreloadUpdater(threading.Thread):
         self.reload_lock.acquire()
         logger.debug(f'Starting preload store update from thread {self}')
 
-        new_origin_route4_store = defaultdict(set)
-        new_origin_route6_store = defaultdict(set)
+        new_origin_route4_store: Dict[str, Set] = defaultdict(set)
+        new_origin_route6_store: Dict[str, Set] = defaultdict(set)
 
         from .database_handler import DatabaseHandler
         dh = DatabaseHandler()
@@ -149,3 +150,23 @@ def get_preloader():
     if not _preloader:
         _preloader = Preloader()
     return _preloader
+
+
+def reload_signal_handler(signum, frame):
+    """
+    Reload the preload store when a SIGUSR1 is received.
+    """
+    get_preloader().reload()
+
+
+def send_reload_signal(irrd_pidfile):
+    with open(irrd_pidfile) as fh:
+        irrd_pid = int(fh.read())
+        try:
+            os.kill(irrd_pid, RELOAD_SIGNAL)
+        except ProcessLookupError:
+            logger.warning(f'Attempted to send reload signal to update preloader for IRRD on '
+                           f'PID {irrd_pid}, but process is not running.')
+
+
+signal.signal(RELOAD_SIGNAL, reload_signal_handler)

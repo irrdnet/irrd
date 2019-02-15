@@ -49,8 +49,8 @@ class DatabaseHandler:
         """Start a fresh transaction."""
         self._transaction = self._connection.begin()
         self._rpsl_upsert_cache = []
-        self._rpsl_pk_source_seen = set()
-        self._object_classes_modified = set()
+        self._rpsl_pk_source_seen: Set[str] = set()
+        self._object_classes_modified: Set[str] = set()
         self.status_tracker = DatabaseStatusTracker(self, journaling_enabled=self.journaling_enabled)
 
     def disable_journaling(self):

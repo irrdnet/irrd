@@ -1,6 +1,3 @@
-import itertools
-from collections import defaultdict
-
 import logging
 import re
 from IPy import IP
@@ -202,22 +199,19 @@ class WhoisQueryParser:
             raise WhoisQueryParserException(str(ve))
 
         prefixes = self.preloader.routes_for_origins([origin_formatted], ip_version=ip_version)
-        logger.info(f'Responding to query for {origin}/{ip_version} with {prefixes} -- '
-                    f'preload v4 {self.preloader._origin_route4_store} from {self.preloader}')
         return ' '.join(prefixes)
 
     def handle_irrd_routes_for_as_set(self, set_name: str) -> str:
         """
         !a query - find all originating prefixes for all members of an AS-set, e.g. !a4AS-FOO or !a6AS-FOO
         """
+        ip_version: Optional[int] = None
         if set_name.startswith('4'):
             set_name = set_name[1:]
             ip_version = 4
         elif set_name.startswith('6'):
             set_name = set_name[1:]
             ip_version = 6
-        else:
-            ip_version = None
 
         if not set_name:
             raise WhoisQueryParserException(f'Missing required set name for A query')
