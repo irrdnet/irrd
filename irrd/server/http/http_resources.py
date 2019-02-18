@@ -11,7 +11,7 @@ class DatabaseStatusResource(resource.Resource):
     """
     A twisted HTTP server resource for the status of the database.
     """
-    isLeaf = True
+    isLeaf = True  # noqa: N815
 
     def render_GET(self, request: server.Request):  # noqa: N802
         """Render the database status in plain text."""
