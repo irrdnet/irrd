@@ -89,6 +89,10 @@ class Preloader:
         thread.start()
         self._threads.append(thread)
 
+    def update_route_store(self, new_origin_route4_store, new_origin_route6_store):
+        self._origin_route4_store = new_origin_route4_store
+        self._origin_route6_store = new_origin_route6_store
+
     def _remove_dead_threads(self) -> None:
         """
         Remove dead threads from self.threads(),
@@ -154,8 +158,7 @@ class PreloadUpdater(threading.Thread):
 
         dh.close()
 
-        self.preloader._origin_route4_store = new_origin_route4_store
-        self.preloader._origin_route6_store = new_origin_route6_store
+        self.preloader.update_route_store(new_origin_route4_store, new_origin_route6_store)
 
         logger.info(f'Completed updating preload store from thread {self}, '
                     f'loaded v4 routes for {len(new_origin_route4_store)} ASes, '

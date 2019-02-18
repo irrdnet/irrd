@@ -89,8 +89,10 @@ class TestPreloader:
         preloader = Preloader()
         preloader._store_ready_event.set()
 
-        preloader._origin_route4_store = {'AS65547': {'192.0.2.0/25'}, 'AS65546': {'192.0.2.128/25'}}
-        preloader._origin_route6_store = {'AS65547': {'2001:db8::/32'}}
+        preloader.update_route_store(
+            {'AS65547': {'192.0.2.0/25'}, 'AS65546': {'192.0.2.128/25'}},
+            {'AS65547': {'2001:db8::/32'}}
+        )
 
         assert preloader.routes_for_origins(['AS65545']) == set()
         assert preloader.routes_for_origins(['AS65546'], 4) == {'192.0.2.128/25'}
@@ -114,7 +116,7 @@ class TestPreloadUpdater:
                             lambda column_names, enable_ordering: mock_database_query)
         mock_reload_lock = Mock()
         mock_ready_event = Mock(spec=threading.Event)
-        store_target = Mock()
+        mock_preload_obj = Mock()
 
         mock_query_result = [
             {
@@ -137,11 +139,16 @@ class TestPreloadUpdater:
             },
         ]
         mock_database_handler.execute_query = lambda query: mock_query_result
-        PreloadUpdater(store_target, mock_reload_lock, mock_ready_event).run(mock_database_handler)
+        PreloadUpdater(mock_preload_obj, mock_reload_lock, mock_ready_event).run(mock_database_handler)
 
         assert flatten_mock_calls(mock_reload_lock) == [['acquire', (), {}], ['release', (), {}]]
         assert flatten_mock_calls(mock_ready_event) == [['set', (), {}]]
         assert flatten_mock_calls(mock_database_query) == [['object_classes', (['route', 'route6'],), {}]]
 
-        assert store_target._origin_route4_store == {'AS65546': {'192.0.2.0/25'}, 'AS65547': {'192.0.2.128/25'}}
-        assert store_target._origin_route6_store == {'AS65547': {'2001:db8::/32'}}
+        assert flatten_mock_calls(mock_preload_obj) == [
+            [
+                'update_route_store',
+                ({'AS65546': {'192.0.2.0/25'}, 'AS65547': {'192.0.2.128/25'}}, {'AS65547': {'2001:db8::/32'}}),
+                {}
+            ]
+        ]
