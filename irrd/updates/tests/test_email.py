@@ -6,10 +6,9 @@ from unittest.mock import Mock
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.updates.email import handle_email_submission
 
+
 @pytest.fixture()
 def mock_email_dh(monkeypatch):
-    # mock_preloader = Mock(spec=Preloader)
-    # monkeypatch.setattr('irrd.server.whois.query_parser.get_preloader', lambda: mock_preloader)
     mock_email = Mock()
     monkeypatch.setattr('irrd.utils.email.send_email', mock_email)
 

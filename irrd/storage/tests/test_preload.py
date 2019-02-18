@@ -41,8 +41,6 @@ class TestPreloader:
         assert mock_preload_updater.mock_calls[0][0] == '().is_alive'
         assert mock_preload_updater.mock_calls[1][0] == ''
         assert mock_preload_updater.mock_calls[1][1][0] == preloader
-        assert mock_preload_updater.mock_calls[1][1][1] == preloader._reload_lock
-        assert mock_preload_updater.mock_calls[1][1][2] == preloader._store_ready_event
         assert mock_preload_updater.mock_calls[2][0] == '().start'
         assert len(mock_preload_updater.mock_calls) == 3
         assert len(preloader._threads) == 2
@@ -69,16 +67,18 @@ class TestPreloader:
 
         assert mock_preload_updater.mock_calls[0][0] == ''
         assert mock_preload_updater.mock_calls[0][1][0] == preloader
-        assert mock_preload_updater.mock_calls[0][1][1] == preloader._reload_lock
-        assert mock_preload_updater.mock_calls[0][1][2] == preloader._store_ready_event
         assert mock_preload_updater.mock_calls[1][0] == '().start'
         assert len(mock_preload_updater.mock_calls) == 2
         assert len(preloader._threads) == 2
         mock_preload_updater.reset_mock()
 
-        # Call the reload signal with an incorrect PID and incorrect filename
+    def test_reload_signal_incorrect_pid(self, prepare_preload_updater_mock, tmpdir, caplog):
+        mock_preload_updater = prepare_preload_updater_mock
+        pidfile = str(tmpdir) + '/pidfile'
         with open(pidfile, 'w') as fh:
             fh.write('a')
+
+        # Call the reload signal with an incorrect PID and incorrect filename
         send_reload_signal(pidfile)
         assert 'Attempted to send reload signal to update preloader for IRRD on PID a, but process is' in caplog.text
         send_reload_signal(str(tmpdir) + '/invalid_pidfile')
@@ -93,8 +93,11 @@ class TestPreloader:
         preloader._origin_route6_store = {'AS65547': {'2001:db8::/32'}}
 
         assert preloader.routes_for_origins(['AS65545']) == set()
+        assert preloader.routes_for_origins(['AS65546'], 4) == {'192.0.2.128/25'}
         assert preloader.routes_for_origins(['AS65547'], 4) == {'192.0.2.0/25'}
+        assert preloader.routes_for_origins(['AS65546'], 6) == set()
         assert preloader.routes_for_origins(['AS65547'], 6) == {'2001:db8::/32'}
+        assert preloader.routes_for_origins(['AS65546']) == {'192.0.2.128/25'}
         assert preloader.routes_for_origins(['AS65547']) == {'192.0.2.0/25', '2001:db8::/32'}
         assert preloader.routes_for_origins(['AS65547', 'AS65546'], 4) == {'192.0.2.0/25', '192.0.2.128/25'}
 

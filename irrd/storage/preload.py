@@ -25,8 +25,8 @@ class Preloader:
     large data sets, this can improve performance.
 
     The DatabaseHandler calls reload() when data has been changed, added or
-    deleted, which may then schedule a thread to update the store, or
-    conclude an update is already pending anyways.
+    deleted, which may then cause a thread to be scheduled to update the
+    store, or conclude an update is already pending anyways.
     """
     def __init__(self):
         self._origin_route4_store = defaultdict(set)
@@ -45,6 +45,8 @@ class Preloader:
         Prefixes are guaranteed to be unique. ip_version can be set to 4 or 6
         to restrict responses to IPv4 or IPv6 prefixes. Blocks until the first
         store has been built.
+        Origins must be strings in a cleaned format, e.g. AS65537, but not
+        AS065537 or as65537.
         """
         self._store_ready_event.wait()
 
@@ -53,23 +55,23 @@ class Preloader:
 
         prefix_sets: List[Set[str]] = list()
         if not ip_version or ip_version == 4:
-            prefix_sets = prefix_sets + [self._origin_route4_store.get(k, {}) for k in origins]
+            prefix_sets = prefix_sets + [self._origin_route4_store.get(k, set()) for k in origins]
         if not ip_version or ip_version == 6:
-            prefix_sets = prefix_sets + [self._origin_route6_store.get(k, {}) for k in origins]
+            prefix_sets = prefix_sets + [self._origin_route6_store.get(k, set()) for k in origins]
 
         return set(itertools.chain.from_iterable(prefix_sets))
 
     def reload(self, object_classes_changed: Optional[Set[str]]=None) -> None:
         """
         Perform a (re)load.
-        Should be called after changes to the DB have been committed
+        Should be called after changes to the DB have been committed.
 
         This will start a new thread to reload the store. If a thread is
         already running, the new thread will start after the current one
         is done, due to locking.
 
         If a current thread is running, and a next thread is already
-        running as well, waiting for a lock, no action is taken. The
+        running as well (waiting for a lock) no action is taken. The
         change that prompted this reload call will already be processed
         by the thread that is currently waiting.
 
@@ -113,7 +115,8 @@ class PreloadUpdater(threading.Thread):
         Main thread runner function.
 
         The reload_lock ensures only a single instance can run at the same
-        time, i.e. if two threads, one will wait for the other to finish.
+        time, i.e. if two threads are started, one will wait for the other
+        to finish.
 
         After loading the data from the database, sets the two new stores
         on the provided preloader object.
@@ -139,7 +142,6 @@ class PreloadUpdater(threading.Thread):
         q = q.object_classes(['route', 'route6'])
 
         for result in dh.execute_query(q):
-            logger.info(f'Found row {result}')
             prefix = result['ip_first']
             key = 'AS' + str(result['asn_first'])
 

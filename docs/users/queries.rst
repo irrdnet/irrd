@@ -211,7 +211,7 @@ Data preloading and warmup time
 -------------------------------
 After startup, IRRd needs some time before certain queries can be answered.
 The ``!g``, ``!6``, ``!a`` and in some cases ``!i`` queries use preloaded
-data, which needs to be loaded before these queries can be answsered.
+data, which needs to be loaded before these queries can be answered.
 If these queries are used before the preloading is complete, IRRd will
 answer them after preloading has completed. The time this takes depends
 on the load and speed of the server on which IRRd is deployed, and can
