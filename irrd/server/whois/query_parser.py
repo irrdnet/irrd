@@ -272,6 +272,7 @@ class WhoisQueryParser:
         sets_seen.update(members)
 
         set_members = set()
+        resolved_as_members = set()
         sub_members, leaf_members = self._find_set_members(members)
 
         for sub_member in sub_members:
@@ -282,15 +283,21 @@ class WhoisQueryParser:
                     continue
                 except ValueError:
                     pass
-            if self._current_set_root_object_class is None or self._current_set_root_object_class == 'as-set':
-                try:
-                    parse_as_number(sub_member)
+            # AS numbers are permitted in route-sets and as-sets, per RFC 2622 5.3.
+            # When an AS number is encountered as part of route-set resolving,
+            # the prefixes originating from that AS should be added to the response.
+            try:
+                as_number_formatted, _ = parse_as_number(sub_member)
+                if self._current_set_root_object_class == 'route-set':
+                    set_members.update(self.preloader.routes_for_origins([as_number_formatted]))
+                    resolved_as_members.add(sub_member)
+                else:
                     set_members.add(sub_member)
-                    continue
-                except ValueError:
-                    pass
+                continue
+            except ValueError:
+                pass
 
-        further_resolving_required = sub_members - set_members - sets_seen
+        further_resolving_required = sub_members - set_members - sets_seen - resolved_as_members
         new_members = self._recursive_set_resolve(further_resolving_required, sets_seen)
         set_members.update(new_members)
 
@@ -316,7 +323,9 @@ class WhoisQueryParser:
         query = self._prepare_query(column_names=columns)
 
         object_classes = ['as-set', 'route-set']
-        if self._current_set_root_object_class:
+        # Per RFC 2622 5.3, route-sets can refer to as-sets,
+        # but as-sets can only refer to other as-sets.
+        if self._current_set_root_object_class == 'as-set':
             object_classes = [self._current_set_root_object_class]
 
         query = query.object_classes(object_classes).rpsl_pks(set_names)

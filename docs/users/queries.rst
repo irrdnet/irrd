@@ -51,6 +51,8 @@ IRRd style queries
   (and possibly names of other sets, if the search was not recursive),
   separated by spaces. For example:
   ``!iRS-EXAMPLE,1`` returns all members of `RS-EXAMPLE`, recursively.
+  If a `route-set` has `as-sets` or AS number as members, the response includes
+  the prefixes originating from that AS, or the ASes in that set.
   If the ``compatibility.ipv4_only_route_set_members`` setting is enabled,
   IPv6 prefixes will not be returned.
 * ``!j`` returns the serial range for each source, along with the most

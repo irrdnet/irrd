@@ -595,7 +595,7 @@ class TestWhoisQueryParserIRRD:
 
         assert not mock_dq.mock_calls
 
-    def test_as_route_set_members(self, prepare_parser):
+    def test_as_set_members(self, prepare_parser):
         mock_dq, mock_dh, mock_preloader, parser = prepare_parser
 
         mock_query_result1 = [
@@ -656,7 +656,6 @@ class TestWhoisQueryParserIRRD:
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == 'AS65544 AS65545 AS65547'
-        print(flatten_mock_calls(mock_dq))
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['as-set', 'route-set'],), {}],
             ['rpsl_pks', ({'AS-FIRSTLEVEL'},), {}],
@@ -677,6 +676,56 @@ class TestWhoisQueryParserIRRD:
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['as-set', 'route-set'],), {}],
             ['rpsl_pks', ({'AS-NOTEXIST'},), {}]
+        ]
+
+    def test_route_set_members(self, prepare_parser):
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
+
+        mock_query_result1 = [
+            {
+                'pk': uuid.uuid4(),
+                'rpsl_pk': 'RS-FIRSTLEVEL',
+                'parsed_data': {'as-set': 'RS-FIRSTLEVEL',
+                                'members': ['RS-SECONDLEVEL', 'RS-2nd-UNKNOWN']},
+                'object_text': 'text',
+                'object_class': 'route-set',
+                'source': 'TEST1',
+            },
+        ]
+        mock_query_result2 = [
+            {
+                'pk': uuid.uuid4(),
+                'rpsl_pk': 'RS-SECONDLEVEL',
+                'parsed_data': {'as-set': 'RS-SECONDLEVEL', 'members': ['AS-REFERRED', '192.0.2.0/25']},
+                'object_text': 'text',
+                'object_class': 'route-set',
+                'source': 'TEST1',
+            },
+        ]
+        mock_query_result3 = [
+            {
+                'pk': uuid.uuid4(),
+                'rpsl_pk': 'AS-REFERRED',
+                'parsed_data': {'as-set': 'AS-REFERRED',
+                                'members': ['AS65545']},
+                'object_text': 'text',
+                'object_class': 'as-set',
+                'source': 'TEST2',
+            },
+        ]
+        mock_query_iterator = iter([mock_query_result1, mock_query_result2, mock_query_result3, []])
+        mock_dh.execute_query = lambda query: iter(next(mock_query_iterator))
+        mock_preloader.routes_for_origins = Mock(return_value=['192.0.2.128/25'])
+
+        response = parser.handle_query('!iRS-FIRSTLEVEL,1')
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert response.result == '192.0.2.0/25 192.0.2.128/25'
+        assert flatten_mock_calls(mock_dq) == [
+            ['object_classes', (['as-set', 'route-set'],), {}], ['rpsl_pks', ({'RS-FIRSTLEVEL'},), {}],
+            ['object_classes', (['as-set', 'route-set'],), {}],
+            ['rpsl_pks', ({'RS-SECONDLEVEL', 'RS-2nd-UNKNOWN'},), {}],
+            ['object_classes', (['as-set', 'route-set'],), {}], ['rpsl_pks', ({'AS-REFERRED'},), {}],
         ]
 
     def test_as_route_set_mbrs_by_ref(self, prepare_parser):
