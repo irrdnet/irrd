@@ -36,5 +36,5 @@ pep8-naming==0.8.2
 
 # Creating python packages
 setuptools==40.8.0
-wheel==0.32.3
+wheel==0.33.1
 twine==1.12.1
