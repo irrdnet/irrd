@@ -21,7 +21,7 @@ ujson==1.35
 twisted==18.9.0
 
 # Testing and related packages
-pytest==4.2.0
+pytest==4.4.0
 pytest-cov==2.6.1
 coverage==4.5.2
 coveralls==1.5.1
