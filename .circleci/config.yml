@@ -4,7 +4,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/python:3.6.1
+      - image: circleci/python:3.6.1-stretch
         environment:
           IRRD_DATABASE_URL: 'postgresql://root@localhost/circle_test'
           IRRD_DATABASE_URL_INTEGRATION_1: 'postgresql://root@localhost/circle_test_integration_1'
@@ -44,11 +44,11 @@ jobs:
 
       - run:
           name: apt update
-          command: sudo apt-get update
+          command: sudo apt update
 
       - run:
           name: Installing psql client
-          command: sudo apt-get install postgresql-client
+          command: sudo apt install postgresql-client
 
       - run:
           name: Waiting for PostgreSQL to be ready
