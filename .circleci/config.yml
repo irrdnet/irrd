@@ -4,7 +4,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/python:3.6.1-stretch
+      - image: circleci/python:3.6.7-stretch
         environment:
           IRRD_DATABASE_URL: 'postgresql://root@localhost/circle_test'
           IRRD_DATABASE_URL_INTEGRATION_1: 'postgresql://root@localhost/circle_test_integration_1'
