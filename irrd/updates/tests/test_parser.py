@@ -345,7 +345,6 @@ class TestSingleChangeRequestHandling:
         assert result_inetnum._check_auth()
         assert not result_inetnum.error_messages
 
-
     def test_check_auth_valid_create_mntner_referencing_self(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
 
@@ -354,7 +353,7 @@ class TestSingleChangeRequestHandling:
         reference_validator = ReferenceValidator(mock_dh)
         auth_validator = AuthValidator(mock_dh)
 
-        result_mntner = parse_change_requests(SAMPLE_MNTNER + 'password: md5-password',
+        result_mntner = parse_change_requests(SAMPLE_MNTNER + 'override: override-password',
                                               mock_dh, auth_validator, reference_validator)[0]
         auth_validator.pre_approve([result_mntner])
 
@@ -365,9 +364,6 @@ class TestSingleChangeRequestHandling:
             ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
             ['rpsl_pk', ('TEST-MNT',), {}],
-            ['sources', (['TEST'],), {}],
-            ['object_classes', (['mntner'],), {}],
-            ['rpsl_pks', ({'OTHER1-MNT', 'OTHER2-MNT', 'TEST-MNT'},), {}],
         ]
 
     def test_check_auth_invalid_create_mntner_referencing_self_wrong_password(self, prepare_mocks):
@@ -378,40 +374,14 @@ class TestSingleChangeRequestHandling:
         reference_validator = ReferenceValidator(mock_dh)
         auth_validator = AuthValidator(mock_dh)
 
-        result_mntner = parse_change_requests(SAMPLE_MNTNER + 'password: invalid-password',
+        result_mntner = parse_change_requests(SAMPLE_MNTNER + 'override: invalid-password',
                                               mock_dh, auth_validator, reference_validator)[0]
         auth_validator.pre_approve([result_mntner])
 
         assert not result_mntner._check_auth()
-        assert result_mntner.error_messages == ['Authorisation failed for the auth methods on this mntner object.']
-
-        assert flatten_mock_calls(mock_dq) == [
-            ['sources', (['TEST'],), {}],
-            ['object_classes', (['mntner'],), {}],
-            ['rpsl_pk', ('TEST-MNT',), {}],
-            ['sources', (['TEST'],), {}],
-            ['object_classes', (['mntner'],), {}],
-            ['rpsl_pks', ({'OTHER1-MNT', 'OTHER2-MNT', 'TEST-MNT'},), {}],
+        assert result_mntner.error_messages == [
+            'New mntner objects must be added by an administrator.',
         ]
-
-    def test_check_auth_invalid_create_mntner_referencing_self_with_dummy_passwords(self, prepare_mocks):
-        mock_dq, mock_dh = prepare_mocks
-
-        mock_dh.execute_query = lambda query: []
-
-        reference_validator = ReferenceValidator(mock_dh)
-        auth_validator = AuthValidator(mock_dh)
-
-        # Submit the mntner with dummy password values as would be returned by queries.
-        # This should not be allowed in new objects.
-        data = SAMPLE_MNTNER.replace('LEuuhsBJNFV0Q', PASSWORD_HASH_DUMMY_VALUE)
-        data = data.replace('$1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.', PASSWORD_HASH_DUMMY_VALUE)
-        result_mntner = parse_change_requests(data + 'password: crypt-password',
-                                              mock_dh, auth_validator, reference_validator)[0]
-        auth_validator.pre_approve([result_mntner])
-
-        assert not result_mntner._check_auth()
-        assert result_mntner.error_messages == ['Authorisation failed for the auth methods on this mntner object.']
 
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}],
@@ -474,7 +444,6 @@ class TestSingleChangeRequestHandling:
         result_mntner = parse_change_requests(data + 'password: md5-password',
                                               mock_dh, auth_validator, reference_validator)[0]
         auth_validator.pre_approve([result_mntner])
-        result_mntner._check_auth()
         assert not result_mntner.is_valid()
         assert result_mntner.error_messages == [
             'Either all password auth hashes in a submitted mntner must be dummy objects, or none.',

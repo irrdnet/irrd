@@ -321,8 +321,8 @@ class TestRPSLMntner:
     @pytest.mark.usefixtures('tmp_gpg_dir')  # noqa: F811
     def test_verify(self, tmp_gpg_dir):
         rpsl_text = object_sample_mapping[RPSLMntner().rpsl_object_class]
-        # Unknown hashes should simply be ignored.
-        obj = rpsl_object_from_text(rpsl_text + 'auth: UNKNOWN_HASH foo')
+        # Unknown hashes and invalid hashes should simply be ignored.
+        obj = rpsl_object_from_text(rpsl_text + 'auth: UNKNOWN_HASH foo\nauth: MD5-PW 💩')
 
         assert obj.verify_auth(['crypt-password'])
         assert obj.verify_auth(['md5-password'])
