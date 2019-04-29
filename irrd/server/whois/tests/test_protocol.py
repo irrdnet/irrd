@@ -128,7 +128,8 @@ class TestWhoisProtocol:
         receiver.factory = mock_factory
 
         receiver.connectionMade()
-        assert len(mock_transport.mock_calls) == 0
+        # with setTcpNoDelay(True) this should be 1
+        assert len(mock_transport.mock_calls) == 1
 
     def test_whois_protocol_access_list_denied(self, config_override):
         config_override({
