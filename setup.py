@@ -25,17 +25,17 @@ setuptools.setup(
         # or packages.
         'python-gnupg==0.4.4',
         'passlib==1.7.1',
-        'IPy==0.83',
+        'IPy==1.0.0',
         'dataclasses==0.6',
         'orderedset==2.0.1',
         'dotted==0.1.8',
         'beautifultable==0.7.0',
-        'PyYAML==3.13',
-        'psycopg2-binary==2.7.7',
-        'SQLAlchemy==1.2.17',
-        'alembic==1.0.7',
+        'PyYAML==5.1',
+        'psycopg2-binary==2.8.2',
+        'SQLAlchemy==1.3.3',
+        'alembic==1.0.10',
         'ujson==1.35',
-        'twisted==18.9.0',
+        'twisted==19.2.0',
     ],
     entry_points={
         'console_scripts': [
