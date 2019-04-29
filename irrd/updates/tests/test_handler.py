@@ -11,7 +11,7 @@ from ..handler import ChangeSubmissionHandler
 
 
 @pytest.fixture()
-def prepare_mocks(monkeypatch):
+def prepare_mocks(monkeypatch, config_override):
     monkeypatch.setenv('IRRD_SOURCES_TEST_AUTHORITATIVE', '1')
     mock_dh = Mock()
     monkeypatch.setattr('irrd.updates.handler.DatabaseHandler', lambda enable_preload_update=True: mock_dh)
@@ -21,6 +21,7 @@ def prepare_mocks(monkeypatch):
     monkeypatch.setattr('irrd.updates.validators.RPSLDatabaseQuery', lambda: mock_dq)
     mock_email = Mock()
     monkeypatch.setattr('irrd.utils.email.send_email', mock_email)
+    config_override({'auth': {'override_password': '$1$J6KycItM$MbPaBU6iFSGFV299Rk7Di0'}})
     yield mock_dq, mock_dh, mock_email
 
 
@@ -28,7 +29,7 @@ class TestChangeSubmissionHandler:
     # NOTE: the scope of this test also includes ChangeRequest, ReferenceValidator and AuthValidator -
     # this is more of an update handler integration test.
 
-    def test_parse_valid_new_objects(self, prepare_mocks):
+    def test_parse_valid_new_objects_with_override(self, prepare_mocks):
         mock_dq, mock_dh, mock_email = prepare_mocks
         mock_dh.execute_query = lambda query: []
 
@@ -51,7 +52,7 @@ class TestChangeSubmissionHandler:
         changed:        2016-10-05T10:41:15Z
         source:         TEST
         
-        password: md5-password
+        override: override-password
 
         inetnum:        80.16.151.184 - 80.016.151.191
         netname:        NETECONOMY-MG41731
@@ -75,9 +76,6 @@ class TestChangeSubmissionHandler:
             ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pk', ('TEST-MNT',), {}],
             ['sources', (['TEST'],), {}], ['object_classes', (['inetnum'],), {}],
             ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}]
         ]
 
         assert mock_dh.mock_calls[0][0] == 'upsert_rpsl_object'
@@ -132,7 +130,7 @@ class TestChangeSubmissionHandler:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """)
 
-    def test_parse_valid_new_objects_pgp_key(self, prepare_mocks):
+    def test_parse_valid_new_person_existing_mntner_pgp_key(self, prepare_mocks):
         mock_dq, mock_dh, mock_email = prepare_mocks
 
         person_text = textwrap.dedent("""
@@ -433,7 +431,7 @@ class TestChangeSubmissionHandler:
         changed:        2016-10-05T10:41:15Z
         source:         TEST
 
-        password: md5-password
+        override: override-password
 
         inetnum:        80.16.151.184 - 80.016.151.191
         netname:        NETECONOMY-MG41731
@@ -466,15 +464,9 @@ class TestChangeSubmissionHandler:
             ['sources', (['TEST'],), {}], ['object_classes', (['inetnum'],), {}],
             ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}],
             ['sources', (['TEST'],), {}], ['object_classes', (['person'],), {}], ['rpsl_pk', ('PERSON-TEST',), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'OTHER-MNT'},), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['role', 'person'],), {}],
-            ['rpsl_pk', ('PERSON-TEST',), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['role', 'person'],), {}],
-            ['rpsl_pk', ('PERSON-TEST',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pk', ('OTHER-MNT',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['role', 'person'],), {}], ['rpsl_pk', ('PERSON-TEST',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['role', 'person'],), {}], ['rpsl_pk', ('PERSON-TEST',), {}],
             ['sources', (['TEST'],), {}], ['object_classes', (['role', 'person'],), {}], ['rpsl_pk', ('PERSON-TEST',), {}],
         ]
         assert flatten_mock_calls(mock_dh) == [
@@ -544,7 +536,7 @@ class TestChangeSubmissionHandler:
         changed:        2009-07-24T17:00:00Z
         source:         TEST
         
-        ERROR: Authorisation for person PERSON-TEST failed: must by authenticated by one of: OTHER-MNT
+        ERROR: Object OTHER-MNT referenced in field mnt-by not found in database TEST - must reference mntner.
         
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """)
@@ -652,7 +644,17 @@ class TestChangeSubmissionHandler:
 
     def test_parse_invalid_cascading_failure_invalid_password(self, prepare_mocks):
         mock_dq, mock_dh, mock_email = prepare_mocks
-        mock_dh.execute_query = lambda query: []
+
+        query_results = iter([
+            [],
+            [{'object_text': SAMPLE_MNTNER}],
+            [],
+            [{'object_text': SAMPLE_MNTNER}],
+            [{'object_text': SAMPLE_MNTNER}],
+            [{'object_text': SAMPLE_MNTNER}],
+            [{'object_text': SAMPLE_MNTNER}],
+        ])
+        mock_dh.execute_query = lambda query: next(query_results)
 
         rpsl_text = textwrap.dedent("""
         person:         Placeholder Person Object
@@ -698,10 +700,8 @@ class TestChangeSubmissionHandler:
             ['sources', (['TEST'],), {}], ['object_classes', (['inetnum'],), {}],
             ['rpsl_pk', ('80.16.151.184 - 80.16.151.191',), {}],
             ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}], ['rpsl_pks', ({'TEST-MNT'},), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', ({'OTHER1-MNT', 'OTHER2-MNT'},), {}],
         ]
         assert flatten_mock_calls(mock_dh) == [
             ['commit', (), {}],
@@ -717,8 +717,8 @@ class TestChangeSubmissionHandler:
             Modify:        0
             Delete:        0
         Number of objects processed with errors:    3
-            Create:        3
-            Modify:        0
+            Create:        2
+            Modify:        1
             Delete:        0
 
         DETAILED EXPLANATION:
@@ -739,7 +739,7 @@ class TestChangeSubmissionHandler:
         ERROR: Authorisation for person PERSON-TEST failed: must by authenticated by one of: TEST-MNT
         
         ---
-        Create FAILED: [mntner] TEST-MNT
+        Modify FAILED: [mntner] TEST-MNT
         
         mntner:         TEST-MNT
         admin-c:        PERSON-TEST
@@ -750,6 +750,8 @@ class TestChangeSubmissionHandler:
         changed:        2016-10-05T10:41:15Z
         source:         TEST
         
+        ERROR: Authorisation for mntner TEST-MNT failed: must by authenticated by one of: TEST-MNT
+        ERROR: Authorisation for mntner TEST-MNT failed: must by authenticated by one of: TEST-MNT, OTHER1-MNT, OTHER2-MNT
         ERROR: Authorisation failed for the auth methods on this mntner object.
         
         ---

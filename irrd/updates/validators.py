@@ -209,8 +209,11 @@ class AuthValidator:
             result.mntners_notify = mntner_objs_new
 
         if isinstance(rpsl_obj_new, RPSLMntner):
-            # Dummy auth values are only permitted in existing objects, which are never pre-approved.
-            if rpsl_obj_new.has_dummy_auth_value() and rpsl_obj_new.pk() not in self._pre_approved:
+            if not rpsl_obj_current:
+                result.error_messages.add('New mntner objects must be added by an administrator.')
+                return result
+            # Dummy auth values are only permitted in existing objects
+            if rpsl_obj_new.has_dummy_auth_value():
                 if len(self.passwords) == 1:
                     logger.debug(f'Object {rpsl_obj_new} submitted with dummy hash values and single password, '
                                  f'replacing all hashes with currently supplied password.')

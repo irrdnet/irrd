@@ -79,7 +79,11 @@ Notifications to maintainers or the address in the ``notify`` attribute are
 
 If an invalid override password is used, or if no override password was
 configured, the invalid use is logged, and authentication and notification
-proceeds as usual, as if no override password was provided.
+proceeds as usual, **as if no override password was provided.**
+
+.. note::
+    New `mntner` objects can only be created using the override password.
+
 
 Working with auth hash masking
 ------------------------------
@@ -107,6 +111,7 @@ Any other scenario, like submitting a mix of dummy and real hashes, or
 submitting dummy hashes along with multiple ``password`` attributes in
 the message, is considered an error.
 
+
 Referential integrity
 ---------------------
 IRRd enforces referential integrity between objects. This means it is not
@@ -123,6 +128,7 @@ fail, as A still exists.)
 In the same way, it's possible to create multiple objects that depend on each
 other in the same submission to IRRd.
 
+
 Authentication checks
 ---------------------
 When changing an object, authentication must pass for one of the
@@ -137,6 +143,7 @@ Changes can only be made to authoritative databases.
 When creating a new `mntner`, a submission must pass authorisation for
 one of the auth methods of the new mntner. Other objects can be submitted
 that depend on the new `mntner` in the same submission.
+
 
 Object templates
 ----------------
@@ -183,12 +190,14 @@ This template shows:
 * The `admin-c` and `tech-c` attributes reference a `role` or `person`.
   This means they may refer to either object class.
 
+
 Notifications
 -------------
 IRRd will always reply to a submission with a report on the requested
 changes. Depending on the request and its result, additional notifications
 may be sent. The overview below details all notifications that may be
 sent.
+
 
 Authentication and notification overview
 ----------------------------------------
