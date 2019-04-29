@@ -11,7 +11,7 @@ import sys
 
 import re
 from IPy import IP
-from orderedset import OrderedSet
+from ordered_set import OrderedSet
 from pathlib import Path
 from typing import Optional
 

@@ -27,7 +27,7 @@ setuptools.setup(
         'passlib==1.7.1',
         'IPy==1.0.0',
         'dataclasses==0.6',
-        'orderedset==2.0.1',
+        'ordered-set==3.1.1',
         'dotted==0.1.8',
         'beautifultable==0.7.0',
         'PyYAML==5.1',

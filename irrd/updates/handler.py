@@ -2,7 +2,7 @@ from collections import defaultdict
 
 import logging
 import textwrap
-from orderedset import OrderedSet
+from ordered_set import OrderedSet
 from typing import List, Optional, Dict
 
 from irrd.conf import get_setting

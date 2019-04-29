@@ -3,7 +3,7 @@ from passlib.hash import md5_crypt
 from typing import Set, Tuple, List, Optional, TYPE_CHECKING
 
 from dataclasses import dataclass, field
-from orderedset import OrderedSet
+from ordered_set import OrderedSet
 
 from irrd.conf import get_setting
 from irrd.storage.database_handler import DatabaseHandler

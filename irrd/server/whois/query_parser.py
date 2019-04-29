@@ -1,7 +1,7 @@
 import logging
 import re
 from IPy import IP
-from orderedset import OrderedSet
+from ordered_set import OrderedSet
 from typing import Optional, List, Set, Tuple
 
 from irrd import __version__
