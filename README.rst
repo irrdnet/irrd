@@ -37,6 +37,9 @@ older versions lead to the IRRd v4 project.
 This project was commissioned by NTT_ and designed and developed by
 DashCare_.
 
+Please see the documentation_ for more.
+
 .. _NTT: https://us.ntt.net
 .. _DashCare: https://www.dashcare.nl
 .. _Older versions: https://github.com/irrdnet/irrd
+.. _documentation: http://irrd4.readthedocs.io/en/latest/
