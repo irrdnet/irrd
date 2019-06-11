@@ -113,6 +113,8 @@ class ReferenceValidator:
         that is also about to be deleted, is acceptable.
         """
         result = ValidatorResult()
+        if not rpsl_obj.references_inbound():
+            return result
 
         query = RPSLDatabaseQuery().sources([rpsl_obj.source()])
         query = query.lookup_attrs_in(rpsl_obj.references_inbound(), [rpsl_obj.pk()])
