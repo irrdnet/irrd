@@ -10,7 +10,7 @@ from pytest import raises
 
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
 from irrd.utils.text import splitline_unicodesafe
-from irrd.utils.rpsl_samples import SAMPLE_INETNUM, SAMPLE_AS_SET, SAMPLE_PERSON, SAMPLE_MNTNER
+from irrd.utils.rpsl_samples import SAMPLE_INETNUM, SAMPLE_AS_SET, SAMPLE_PERSON, SAMPLE_MNTNER, SAMPLE_ROUTE
 from irrd.utils.test_utils import flatten_mock_calls
 from ..parser import parse_change_requests
 from ..parser_state import UpdateRequestType, UpdateRequestStatus
@@ -206,6 +206,33 @@ class TestSingleChangeRequestHandling:
             ['sources', (['TEST'],), {}],
             ['object_classes', (['inetnum'],), {}],
             ['rpsl_pk', ('192.0.2.0 - 192.0.2.255',), {}]
+        ]
+
+    def test_check_references_valid_deleting_object_with_no_inbound_refs(self, prepare_mocks):
+        # Delete an object which has no inbound references (fixes #228)
+        mock_dq, mock_dh = prepare_mocks
+
+        validator = ReferenceValidator(mock_dh)
+        query_results = iter([
+            [{'object_text': SAMPLE_PERSON}],
+            [{'object_text': SAMPLE_ROUTE, 'object_class': 'route',
+              'rpsl_pk': '192.0.2.0/24', 'source': 'TEST'}],
+        ])
+        mock_dh.execute_query = lambda query: next(query_results)
+
+        result = parse_change_requests(SAMPLE_ROUTE + 'delete: delete',
+                                       mock_dh, AuthValidator(mock_dh), validator)[0]
+        result._check_references()
+        assert result.is_valid()
+        assert not result.error_messages
+
+        # No lookup for references should be done as part of reference checks,
+        # as this particular route object has no inbound references
+        # (admin-c/tech-c is optional for route)
+        assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['route'],), {}],
+            ['rpsl_pk', ('192.0.2.0/24AS65537',), {}],
         ]
 
     def test_check_references_invalid_deleting_object_with_refs_in_db(self, prepare_mocks):
