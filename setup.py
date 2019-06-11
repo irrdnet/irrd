@@ -35,7 +35,7 @@ setuptools.setup(
         'SQLAlchemy==1.3.3',
         'alembic==1.0.10',
         'ujson==1.35',
-        'twisted==19.2.0',
+        'twisted==19.2.1',
     ],
     entry_points={
         'console_scripts': [
