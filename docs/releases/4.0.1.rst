@@ -1,0 +1,17 @@
+============================
+Release notes for IRRd 4.0.1
+============================
+
+IRRd 4.0.1 fixes a `bug in object deletion`_ and upgrades
+the twisted version to 19.2.1 to ensure CVE-2019-12387 is
+fixed.
+
+The bug in object deletion prevented the deletion of
+objects with no inbound references, such as certain route
+objects. CVE-2019-12387 likely did not affect IRRd, as it
+affected components of twisted that are not directly used
+in IRRd, but upgrading is recommended to be sure.
+
+IRRd 4.0.1 is entirely backwards compatible with 4.0.0.
+
+.. _bug in object deletion: https://github.com/irrdnet/irrd4/issues/228
