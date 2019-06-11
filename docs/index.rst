@@ -69,4 +69,5 @@ General
 .. toctree::
    :maxdepth: 1
 
+   releases/index
    license
