@@ -48,7 +48,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'IRRd'
-copyright = u'2018, NTT Communications'
+copyright = u'2018, NTT'
 author = u"IRRd developers"
 
 # The version info for the project you're documenting, acts as replacement
