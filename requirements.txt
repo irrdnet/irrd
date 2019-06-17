@@ -22,7 +22,7 @@ twisted==19.2.1
 
 # Testing and related packages
 pytest==4.6.3
-pytest-cov==2.6.1
+pytest-cov==2.7.1
 coverage==4.5.3
 coveralls==1.7.0
 
