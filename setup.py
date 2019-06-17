@@ -8,7 +8,7 @@ with open('README.rst', 'r') as fh:
 setuptools.setup(
     name='irrd',
     version=__version__,
-    author='DashCare for NTT',
+    author='DashCare for NTT Ltd.',
     author_email='irrd@dashcare.nl',
     description='Internet Routing Registry daemon (IRRd)',
     long_description=long_description,
