@@ -259,6 +259,16 @@ class DatabaseHandler:
         # All objects are presumed to have been changed.
         self._object_classes_modified.update(OBJECT_CLASS_MAPPING.keys())
 
+    def set_force_reload(self, source):
+        """
+        Set the force_reload flag for a source.
+        Upon the next mirror update, all data for the source will be
+        discarded and reloaded from the source.
+        """
+        table = RPSLDatabaseStatus.__table__
+        stmt = table.update().where(table.c.source == source).values(force_reload=True)
+        self._connection.execute(stmt)
+
     def force_record_serial_seen(self, source: str, serial: int) -> None:
         """
         Forcibly record that a serial was seen for a source.
