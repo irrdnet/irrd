@@ -30,7 +30,7 @@ coveralls==1.8.1
 Sphinx==2.1.2
 
 # Code style and type checks
-mypy==0.701
+mypy==0.710
 flake8==3.7.7
 pep8-naming==0.8.2
 
