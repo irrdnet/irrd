@@ -110,6 +110,11 @@ class MirrorFileImportParser(MirrorParser):
             self.database_handler.upsert_rpsl_object(obj, forced_serial=self.serial)
 
         except UnknownRPSLObjectClassException as e:
+            # Ignore legacy IRRd artifacts
+            # https://github.com/irrdnet/irrd4/issues/232
+            if e.rpsl_object_class.startswith('*xx'):
+                self.obj_parsed -= 1  # This object does not exist to us
+                return None
             if self.direct_error_return:
                 return f'Unknown object class: {e.rpsl_object_class}'
             self.obj_unknown += 1
