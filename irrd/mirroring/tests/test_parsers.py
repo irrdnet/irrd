@@ -5,7 +5,7 @@ import pytest
 
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.utils.rpsl_samples import SAMPLE_ROUTE, SAMPLE_UNKNOWN_CLASS, SAMPLE_UNKNOWN_ATTRIBUTE, SAMPLE_MALFORMED_PK, \
-    SAMPLE_ROUTE6, SAMPLE_KEY_CERT, KEY_CERT_SIGNED_MESSAGE_VALID
+    SAMPLE_ROUTE6, SAMPLE_KEY_CERT, KEY_CERT_SIGNED_MESSAGE_VALID, SAMPLE_LEGACY_IRRD_ARTIFACT
 from irrd.utils.test_utils import flatten_mock_calls
 from .nrtm_samples import (SAMPLE_NRTM_V3, SAMPLE_NRTM_V1, SAMPLE_NRTM_V1_TOO_MANY_ITEMS, SAMPLE_NRTM_INVALID_VERSION,
                            SAMPLE_NRTM_V3_SERIAL_GAP, SAMPLE_NRTM_V3_INVALID_MULTIPLE_START_LINES,
@@ -33,6 +33,7 @@ class TestMirrorFileImportParser:
             SAMPLE_ROUTE.replace('TEST', 'BADSOURCE'),
             SAMPLE_UNKNOWN_CLASS,
             SAMPLE_MALFORMED_PK,
+            SAMPLE_LEGACY_IRRD_ARTIFACT,
         ]
         test_input = '\n\n'.join(test_data)
 

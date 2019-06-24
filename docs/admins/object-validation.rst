@@ -35,6 +35,8 @@ The parser/validator has two modes:
 * Strict: validates presence, count, and correct syntax of all fields.
   Validation fails on attributes that are not known, or object classes
   that are not known. Values of all fields are validated.
+  Unknown object classes that start with ``*xx`` are silently ignored,
+  as these are harmless artifacts from certain legacy IRRd versions.
 
 In addition, the following validation changes to primary/lookup keys apply
 in non-strict mode:

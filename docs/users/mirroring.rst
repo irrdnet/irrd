@@ -182,6 +182,8 @@ Manual loading uses the ``irrd_load_database`` command:
   :doc:`non-strict object validation </admins/object-validation>`,
   an object with an unknown object class, or an object for which
   the `source` attribute is inconsistent with the `--source` argument.
+  Unknown object classes that start with ``*xx`` are silently ignored,
+  as these are harmless artifacts from certain legacy IRRd versions.
 * The object class filter configured, if any, is followed.
 
 On serials:
