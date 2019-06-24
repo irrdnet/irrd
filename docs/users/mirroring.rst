@@ -123,8 +123,23 @@ changes in the journal with the same serial as the original source provided.
 
 Updates will be retrieved every `import_timer`, and IRRd will automatically
 perform a full import the first time, and then use NRTM for updates.
-A new full import can be forced by setting `force_reload` in the SQL database,
-which will also discard the entire local journal.
+
+Even in sources that normally use NRTM, IRRd can run a full new import of the
+database. This may be needed if the NRTM stream has gotten so far behind that
+the updates IRRd needs are no longer available. To start a full reload,
+use the ``irrd_mirror_force_reload`` command. For example, to force a full
+reload for the ``MIRROR-EXAMPLE`` source::
+
+    irrd_mirror_force_reload --config /etc/irrd.yaml MIRROR-EXAMPLE
+
+The config parameter is optional. The reload will start the next time
+`import_timer` expires. After the reload, IRRd will resume mirroring from
+the NRTM stream.
+
+Note that any instances mirroring from your instance (i.e. your IRRd is
+mirroring a source, a third party mirrors this from your instance), will also
+have to do a full reload, as the journal for NRTM queries is purged when
+doing a full reload.
 
 Periodic full imports
 ~~~~~~~~~~~~~~~~~~~~~
@@ -162,6 +177,13 @@ Manually loading data
 A third option is to manually load data. This can be useful while testing,
 or when generating data files from scripts, as it provides direct feedback
 on whether loading data was successful.
+
+.. caution::
+    This process is intended for data sources such as produced by scripts.
+    The validation is quite strict, as in script output, an error in script
+    execution is a likely cause for any issues in the data.
+    To force a reload of a regular mirror that normally uses NRTM,
+    use the ``irrd_mirror_force_reload`` command instead.
 
 Manual loading uses the ``irrd_load_database`` command:
 

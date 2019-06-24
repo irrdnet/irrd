@@ -284,13 +284,16 @@ class TestDatabaseHandlerLive:
             asn_last=65537,
         )
         self.dh.upsert_rpsl_object(rpsl_object_route_v6)
+        self.dh.set_force_reload('TEST2')  # Should be ignored, as source is new
+        self.dh.commit()
+        self.dh.set_force_reload('TEST')
         self.dh.commit()
 
         status = self._clean_result(self.dh.execute_query(DatabaseStatusQuery().source('TEST')))
         assert status == [
             {'source': 'TEST', 'serial_oldest_seen': 42, 'serial_newest_seen': 4242,
              'serial_oldest_journal': None, 'serial_newest_journal': None,
-             'serial_last_export': None, 'force_reload': False, 'last_error': None},
+             'serial_last_export': None, 'force_reload': True, 'last_error': None},
         ]
 
         # The insert of rpsl_object_route_v6 had no forced serial and no
@@ -303,7 +306,7 @@ class TestDatabaseHandlerLive:
         ]
 
         self.dh.force_record_serial_seen('TEST', 424242)
-        self.dh.commit()
+        self.dh.commit()  # should also reset force_reload
 
         status = self._clean_result(self.dh.execute_query(DatabaseStatusQuery().source('TEST')))
         assert status == [
