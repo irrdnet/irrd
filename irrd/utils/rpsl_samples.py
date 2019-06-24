@@ -613,6 +613,14 @@ changed:        2009-10-15T09:32:17Z
 source:         TEST
 """
 
+# https://github.com/irrdnet/irrd4/issues/232
+SAMPLE_LEGACY_IRRD_ARTIFACT = """*xxte:          192.0.2.0/24
+origin:         AS65537
+mnt-by:         TEST-MNT
+changed:        2009-10-15T09:32:17Z
+source:         TEST
+"""
+
 SAMPLE_MALFORMED_ATTRIBUTE_NAME = """route:          192.0.2.0/24
 origin:         AS65537
 $$$-by:         TEST-MNT
