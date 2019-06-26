@@ -222,6 +222,7 @@ Access lists
 * ``access_lists.{list_name}``: a list of permitted IPv4 and/or IPv6 addresses
   and/or prefixes, which will be
   permitted access for any service that refers to access list ``{list_name}``.
+  IPv4 addresses and/or prefixes should not be IPv6-mapped in the access list.
   |br| **Default**: no lists defined.
   |br| **Change takes effect**: after SIGHUP, for all subsequent requests.
 
