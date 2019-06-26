@@ -19,6 +19,12 @@ def is_client_permitted(peer, access_list_setting, default_deny=True) -> bool:
                      f'{peer}: {e}')
         return False
 
+    if client_ip.version() == 6:
+        try:
+            client_ip = client_ip.v46map()
+        except ValueError:
+            pass
+
     access_list_name = get_setting(access_list_setting)
     access_list = get_setting(f'access_lists.{access_list_name}')
 
