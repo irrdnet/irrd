@@ -1,0 +1,22 @@
+============================
+Release notes for IRRd 4.0.2
+============================
+
+IRRd 4.0.2 includes one bugfix and two enhancements:
+
+* A `bug in IPv4 addresses in access lists`_. IPv6-mapped
+  IPv4 addresses would be rejected, even when they were
+  listed in the access list.
+* `Ignoring of *xx object classes`_, even in strict mode,
+  as these are harmless artifacts sometimes produced by
+  legacy IRRd versions.
+* `Adding an irrd_mirror_force_reload`_ command, to force
+  a reload of a particular mirror. The ``irrd_load_data``
+  command was not well suited for this, and the documentation
+  provides guidance on when to use which command.
+
+IRRd 4.0.2 is entirely backwards compatible with 4.0.0.
+
+.. _bug in IPv4 addresses in access lists: https://github.com/irrdnet/irrd4/issues/237
+.. _Ignoring of *xx object classes: https://github.com/irrdnet/irrd4/issues/232
+.. _Adding an irrd_mirror_force_reload: https://github.com/irrdnet/irrd4/issues/233
