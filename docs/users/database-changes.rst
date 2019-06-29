@@ -117,7 +117,9 @@ Referential integrity
 IRRd enforces referential integrity between objects. This means it is not
 permitted to delete an object that is still referenced by other
 objects. When an object is created or updated, all references to other
-objects, such as a `mntner`, must be valid.
+objects, such as a `mntner`, must be valid. This only applies to strong
+references, as indicated in the object template. For weak references,
+only the syntax is validated.
 
 When creating or deleting multiple objects, these are considered together,
 which means that an attempt to delete A and B in one submission, while B depends
@@ -159,19 +161,19 @@ retrieved with ``-t route``, looks like this::
     descr:          [optional]   [multiple]  []
     origin:         [mandatory]  [single]    [primary key]
     holes:          [optional]   [multiple]  []
-    member-of:      [optional]   [multiple]  [look-up key, references route-set]
+    member-of:      [optional]   [multiple]  [look-up key, weak references route-set]
     inject:         [optional]   [multiple]  []
     aggr-bndry:     [optional]   [single]    []
     aggr-mtd:       [optional]   [single]    []
     export-comps:   [optional]   [single]    []
     components:     [optional]   [single]    []
-    admin-c:        [optional]   [multiple]  [look-up key, references role/person]
-    tech-c:         [optional]   [multiple]  [look-up key, references role/person]
+    admin-c:        [optional]   [multiple]  [look-up key, strong references role/person]
+    tech-c:         [optional]   [multiple]  [look-up key, strong references role/person]
     geoidx:         [optional]   [multiple]  []
     roa-uri:        [optional]   [single]    []
     remarks:        [optional]   [multiple]  []
     notify:         [optional]   [multiple]  []
-    mnt-by:         [mandatory]  [multiple]  [look-up key, references mntner]
+    mnt-by:         [mandatory]  [multiple]  [look-up key, strong references mntner]
     changed:        [mandatory]  [multiple]  []
     source:         [mandatory]  [single]    []
 
@@ -183,12 +185,14 @@ This template shows:
   attempt to update the current object.
 * The `member-of` attribute is a look-up key, meaning it can be used with
   ``-i`` queries.
-* The `member-of` attribute references to the `route-set` class. Its value
-  must be a reference to a valid, existing `route-set`. This `route-set`
-  can be created as part of the same submission. The attribute is also
-  optional, so it can be left out entirely.
+* The `member-of` attribute references to the `route-set` class. It is a
+  weak references, meaning the referred `route-set` does not have to exist,
+  but is required to meet the syntax of a `route-set` name. The attribute
+  is also optional, so it can be left out entirely.
 * The `admin-c` and `tech-c` attributes reference a `role` or `person`.
-  This means they may refer to either object class.
+  This means they may refer to either object class, but must be a
+  reference to a valid, existing `person` or `role. This `person` or
+  `role` can be created as part of the same submission.
 
 
 Notifications
