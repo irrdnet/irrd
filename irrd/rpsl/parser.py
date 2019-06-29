@@ -31,7 +31,7 @@ class RPSLObjectMeta(type):
             cls.attrs_allowed = [field[0] for field in fields.items()]
             cls.attrs_required = [field[0] for field in fields.items() if not field[1].optional]
             cls.attrs_multiple = [field[0] for field in fields.items() if field[1].multiple]
-            cls.referring_fields = [(field[0], field[1].referring) for field in fields.items() if hasattr(field[1], 'referring')]
+            cls.referring_strong_fields = [(field[0], field[1].referring) for field in fields.items() if hasattr(field[1], 'referring') and getattr(field[1], 'strong')]
 
 
 class RPSLObject(metaclass=RPSLObjectMeta):
@@ -108,12 +108,14 @@ class RPSLObject(metaclass=RPSLObjectMeta):
             return self.ip_first.version()
         return None
 
-    def referred_objects(self) -> List[Tuple[str, List, List]]:
+    def referred_strong_objects(self) -> List[Tuple[str, List, List]]:
         """
         Get all objects that this object refers to (e.g. an admin-c attribute
         on this object, that refers to person/role) along with the data this
         object has for that reference. This information can be used to check
         whether all references from an object are valid.
+        Only references which have strong=True are returned, weak references
+        are not returned as they should not be included in reference validation.
 
         Returns a list of tuples, which each tuple having:
         - field name on this object (e.g. 'admin-c')
@@ -121,14 +123,14 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         - Values this object has for that field (e.g. ['A-RIPE', 'B-RIPE']
         """
         result = []
-        for field_name, referred_objects in self.referring_fields:  # type: ignore
+        for field_name, referred_objects in self.referring_strong_fields:  # type: ignore
             data = self.parsed_data.get(field_name)
             if not data:
                 continue
             result.append((field_name, referred_objects, data))
         return result
 
-    def references_inbound(self) -> Set[str]:
+    def references_strong_inbound(self) -> Set[str]:
         """
         Get a set of field names under which other objects refer to
         this object. E.g. for a person object, this would typically
@@ -138,7 +140,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING
         for rpsl_object in OBJECT_CLASS_MAPPING.values():
             for field_name, field in rpsl_object.fields.items():
-                if self.rpsl_object_class in getattr(field, 'referring', []):
+                if self.rpsl_object_class in getattr(field, 'referring', []) and getattr(field, 'strong'):
                     result.add(field_name)
         return result
 
@@ -173,7 +175,8 @@ class RPSLObject(metaclass=RPSLObjectMeta):
             elif field.lookup_key:
                 metadata.append('look-up key')
             if getattr(field, 'referring', []):
-                metadata.append('references ' + '/'.join(field.referring))
+                reference_type = 'strong' if getattr(field, 'strong') else 'weak'
+                metadata.append(f'{reference_type} references ' + '/'.join(field.referring))
             metadata_str = ', '.join(metadata)
             name_padding = (max_name_width - len(name)) * ' '
             template += f'{name}: {name_padding}  {mandatory}  {single}  [{metadata_str}]\n'

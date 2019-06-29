@@ -65,7 +65,7 @@ class ReferenceValidator:
         all references to other objects actually exist in the database.
         """
         result = ValidatorResult()
-        references = rpsl_obj.referred_objects()
+        references = rpsl_obj.referred_strong_objects()
         source = rpsl_obj.source()
 
         for field_name, objects_referred, object_pks in references:
@@ -113,11 +113,11 @@ class ReferenceValidator:
         that is also about to be deleted, is acceptable.
         """
         result = ValidatorResult()
-        if not rpsl_obj.references_inbound():
+        if not rpsl_obj.references_strong_inbound():
             return result
 
         query = RPSLDatabaseQuery().sources([rpsl_obj.source()])
-        query = query.lookup_attrs_in(rpsl_obj.references_inbound(), [rpsl_obj.pk()])
+        query = query.lookup_attrs_in(rpsl_obj.references_strong_inbound(), [rpsl_obj.pk()])
         query_results = self.database_handler.execute_query(query)
         for query_result in query_results:
             reference_to_be_deleted = (query_result['object_class'], query_result['rpsl_pk'],

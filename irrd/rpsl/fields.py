@@ -396,12 +396,17 @@ class RPSLReferenceField(RPSLTextField):
     The list of referred objects can contain multiple entries, which means that
     the value must refer to one of these objects (e.g. tech-c can refer to
     role or person).
+
+    If the references are strong, this reference is included in reference checks
+    on updates, i.e. adding an object with a strong reference to another object
+    that does not exist, is a validation failure.
     """
     keep_case = False
 
-    def __init__(self, referring: List[str], *args, **kwargs) -> None:
+    def __init__(self, referring: List[str], strong=True, *args, **kwargs) -> None:
         from .parser import RPSLObject
         self.referring = referring
+        self.strong = strong
         self.referring_object_classes: List[Type[RPSLObject]] = []
         self.referring_identifier_fields: List[RPSLTextField] = []
         super().__init__(*args, **kwargs)

@@ -122,12 +122,12 @@ class TestRPSLAsSet:
         assert obj.__class__ == RPSLAsSet
         assert not obj.messages.errors()
         assert obj.pk() == 'AS-SETTEST'
-        assert obj.referred_objects() == [
-            ('members', ['aut-num', 'as-set'], ['AS65538', 'AS65539', 'AS65537']),
+        assert obj.referred_strong_objects() == [
             ('admin-c', ['role', 'person'], ['PERSON-TEST']),
             ('tech-c', ['role', 'person'], ['PERSON-TEST']),
             ('mnt-by', ['mntner'], ['TEST-MNT'])
         ]
+        assert obj.references_strong_inbound() == set()
         assert obj.source() == 'TEST'
 
         assert obj.parsed_data['members'] == ['AS65538', 'AS65539', 'AS65537']
@@ -149,6 +149,7 @@ class TestRPSLAutNum:
         assert obj.asn_first == 65537
         assert obj.asn_last == 65537
         assert obj.ip_version() is None
+        assert obj.references_strong_inbound() == set()
         # Field parsing will cause our object to look slightly different than the original, hence the replace()
         assert obj.render_rpsl_text() == rpsl_text.replace('as065537', 'AS65537')
 
@@ -228,6 +229,7 @@ class TestRPSLInetnum:
         assert obj.ip_first == IP('192.0.2.0')
         assert obj.ip_last == IP('192.0.2.255')
         assert obj.ip_version() == 4
+        assert obj.references_strong_inbound() == set()
         # Field parsing will cause our object to look slightly different than the original, hence the replace()
         assert obj.render_rpsl_text() == rpsl_text.replace('192.0.02.255', '192.0.2.255')
 
@@ -308,6 +310,7 @@ class TestRPSLMntner:
         assert obj.pk() == 'TEST-MNT'
         assert obj.parsed_data['mnt-by'] == ['TEST-MNT', 'OTHER1-MNT', 'OTHER2-MNT']
         assert obj.render_rpsl_text() == rpsl_text
+        assert obj.references_strong_inbound() == {'mnt-by'}
 
     def test_parse_invalid_partial_dummy_hash(self):
         rpsl_text = object_sample_mapping[RPSLMntner().rpsl_object_class]
@@ -360,6 +363,7 @@ class TestRPSLPerson:
         assert obj.pk() == 'PERSON-TEST'
         assert obj.parsed_data['nic-hdl'] == 'PERSON-TEST'
         assert obj.render_rpsl_text() == rpsl_text
+        assert obj.references_strong_inbound() == {'admin-c', 'tech-c', 'zone-c'}
 
     def test_generate_template(self):
         template = RPSLPerson().generate_template()
@@ -378,6 +382,7 @@ class TestRPSLRole:
         assert not obj.messages.errors()
         assert obj.pk() == 'ROLE-TEST'
         assert obj.render_rpsl_text() == rpsl_text
+        assert obj.references_strong_inbound() == {'admin-c', 'tech-c', 'zone-c'}
 
 
 class TestRPSLRoute:
@@ -396,6 +401,7 @@ class TestRPSLRoute:
         assert obj.asn_first == 65537
         assert obj.asn_last == 65537
         assert obj.ip_version() == 4
+        assert obj.references_strong_inbound() == set()
         # Field parsing will cause our object to look slightly different than the original, hence the replace()
         assert obj.render_rpsl_text() == rpsl_text.replace('  192.0.02.0/24', '  192.0.2.0/24')
 
@@ -429,6 +435,7 @@ class TestRPSLRouteSet:
         assert obj.pk() == 'RS-TEST'
         assert obj.parsed_data['mp-members'] == ['2001:db8::/48']
         assert obj.render_rpsl_text() == rpsl_text.replace('2001:0dB8::/48', '2001:db8::/48')
+        assert obj.references_strong_inbound() == set()
 
 
 class TestRPSLRoute6:
@@ -449,6 +456,7 @@ class TestRPSLRoute6:
         assert obj.ip_version() == 6
         assert obj.parsed_data['mnt-by'] == ['TEST-MNT']
         assert obj.render_rpsl_text() == rpsl_text
+        assert obj.references_strong_inbound() == set()
 
 
 class TestRPSLRtrSet:
@@ -463,4 +471,10 @@ class TestRPSLRtrSet:
         assert not obj.messages.errors()
         assert obj.pk() == 'RTRS-SETTEST'
         assert obj.parsed_data['rtr-set'] == 'RTRS-SETTEST'
+        assert obj.referred_strong_objects() == [
+            ('admin-c', ['role', 'person'], ['PERSON-TEST']),
+            ('tech-c', ['role', 'person'], ['PERSON-TEST']),
+            ('mnt-by', ['mntner'], ['TEST-MNT'])
+        ]
+        assert obj.references_strong_inbound() == set()
         assert obj.render_rpsl_text() == rpsl_text
