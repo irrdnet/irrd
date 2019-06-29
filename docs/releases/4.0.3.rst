@@ -1,0 +1,26 @@
+============================
+Release notes for IRRd 4.0.3
+============================
+
+IRRd 4.0.3 was released on June 29th, 2019, and contains
+one change relating to referential integrity validation
+between RPSL objects.
+
+In earlier versions of IRRd, the `members` attribute of
+an `as-set`, along with several others,
+`were strongly validated`_. This meant it was not possible
+to add or update an `as-set`, if some of the members were
+not valid objects in the same source. The same applied
+to fields like `member-of` in a `route-set`.
+
+In IRRd 4.0.3, all references from `members`, `mp-member`,
+`mbrs-by-ref` and `member-of` are weak references. Their
+syntax is validated, e.g. for `as-set` members, values must
+be a valid `as-set` name or a valid AS number. However, there
+is no validation on whether the objects actually exist.
+It is also possible to delete e.g. a `route-set`, even when
+the object is still listed in the `member-of` in a `route`
+object, or to reference a maintainer that does not exist
+in a `mbrs-by-ref`.
+
+.. _were strongly validated: https://github.com/irrdnet/irrd4/pull/240
