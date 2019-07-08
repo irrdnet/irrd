@@ -4,7 +4,7 @@ from pytest import raises
 from ..fields import (RPSLIPv4PrefixField, RPSLIPv4PrefixesField, RPSLIPv6PrefixField,
                       RPSLIPv6PrefixesField, RPSLIPv4AddressRangeField, RPSLASNumberField, RPSLASBlockField,
                       RPSLSetNameField, RPSLEmailField, RPSLDNSNameField, RPSLGenericNameField, RPSLReferenceField,
-                      RPSLReferenceListField, RPSLTextField, RPSLAuthField, RPSLRouteSetMemberField)
+                      RPSLReferenceListField, RPSLTextField, RPSLAuthField, RPSLRouteSetMemberField, RPSLChangedField)
 from ..parser_state import RPSLParserMessages
 
 
@@ -283,6 +283,21 @@ def test_validate_email_field():
     assert_validation_err('Invalid e-mail', field.parse, 'foo.bar+baz@')
     assert_validation_err('Invalid e-mail', field.parse, 'a§§@example.com')
     assert_validation_err('Invalid e-mail', field.parse, 'a@[192.0.2.2.2]')
+
+
+def test_validate_changed_field():
+    field = RPSLChangedField()
+    messages = RPSLParserMessages()
+    assert field.parse('foo.bar@example.asia', messages).value == 'foo.bar@example.asia'
+    assert field.parse('foo.bar@[192.0.2.1] 20190701', messages).value == 'foo.bar@[192.0.2.1] 20190701'
+    assert field.parse('foo.bar@[2001:db8::1] 19980101', messages).value == 'foo.bar@[2001:db8::1] 19980101'
+    assert not messages.errors()
+
+    assert_validation_err('Invalid e-mail', field.parse, 'foo.bar+baz@')
+    assert_validation_err('Invalid changed date', field.parse, 'foo.bar@example.com 20191301')
+    assert_validation_err('Invalid e-mail', field.parse, '\nfoo.bar@example.com \n20190701')
+    assert_validation_err('Invalid changed date', field.parse, 'foo.bar@example.com \n20190701')
+    assert_validation_err('Invalid changed date', field.parse, 'foo.bar@example.com 20190701\n')
 
 
 def test_validate_dns_name_field():

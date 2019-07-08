@@ -1,3 +1,5 @@
+import datetime
+
 import pytest
 from IPy import IP
 from pytest import raises
@@ -478,3 +480,36 @@ class TestRPSLRtrSet:
         ]
         assert obj.references_strong_inbound() == set()
         assert obj.render_rpsl_text() == rpsl_text
+
+
+class TestOverwriteDateNewChangedAttributes:
+    expected_date = datetime.datetime.now().strftime('%Y%m%d')
+
+    # This applies to all objects identically - only one test needed
+    def test_changed_line_overwrite_with_date_and_comment(self):
+        new_rpsl_text = self._generate_old_new_object('changed: new1@example.com 19980101 # comment')
+        assert 'changed:        changed@example.com 20190701 # comment' in new_rpsl_text
+        assert f'changed:        new1@example.com {self.expected_date} # comment' in new_rpsl_text
+
+    def test_changed_line_overwrite_without_comment(self):
+        new_rpsl_text = self._generate_old_new_object('changed: new1@example.com 19980101')
+        assert 'changed:        changed@example.com 20190701 # comment' in new_rpsl_text
+        assert f'changed:        new1@example.com {self.expected_date}' in new_rpsl_text
+
+    def test_changed_line_overwrite_without_date_with_comment(self):
+        new_rpsl_text = self._generate_old_new_object('changed: new1@example.com#comment')
+        assert 'changed:        changed@example.com 20190701 # comment' in new_rpsl_text
+        assert f'changed:        new1@example.com {self.expected_date} # comment' in new_rpsl_text
+
+    def _generate_old_new_object(self, new_changed_line):
+        rpsl_text = object_sample_mapping[RPSLRouteSet().rpsl_object_class]
+        obj_current = rpsl_object_from_text(rpsl_text, strict_validation=True)
+
+        lines = rpsl_text.splitlines()
+        lines.insert(4, new_changed_line)
+        rpsl_text = '\n'.join(lines)
+        obj_new = rpsl_object_from_text(rpsl_text, strict_validation=True)
+
+        obj_new.overwrite_date_new_changed_attributes(obj_current)
+        assert f'Set date in changed line' in obj_new.messages.infos()[1]
+        return obj_new.render_rpsl_text()

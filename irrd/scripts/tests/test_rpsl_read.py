@@ -12,7 +12,7 @@ as-block:       AS65536 - as065538
 descr:          TEST ASN block
 remarks:        test remark
 mnt-by:         TEST-MNT
-changed:        2014-02-24T13:15:13Z
+changed:        changed@example.com 20190701 # comment
 tech-c:         PERSON-TEST
 admin-c:        PERSON-TEST
 source:         TEST
@@ -22,7 +22,7 @@ descr:          TEST ASN block
 remarks:        test remark
 mnt-by:         TEST-MNT
 unknown-obj:    unknown value should be caught in strict validation
-changed:        2014-02-24T13:15:13Z
+changed:        changed@example.com 20190701 # comment
 tech-c:         PERSON-TEST
 admin-c:        PERSON-TEST
 source:         TEST
@@ -31,7 +31,7 @@ foo-block:       AS65536 - as065538
 descr:          TEST ASN block
 remarks:        test remark
 mnt-by:         TEST-MNT
-changed:        2014-02-24T13:15:13Z
+changed:        changed@example.com 20190701
 tech-c:         PERSON-TEST
 admin-c:        PERSON-TEST
 source:         TEST
