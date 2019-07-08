@@ -487,7 +487,7 @@ class TestOverwriteDateNewChangedAttributes:
 
     # This applies to all objects identically - only one test needed
     def test_changed_line_overwrite_with_date_and_comment(self):
-        new_rpsl_text = self._generate_old_new_object('changed: new1@example.com 19980101#comment')
+        new_rpsl_text = self._generate_old_new_object('changed: new1@example.com 19980101 # comment')
         assert 'changed:        changed@example.com 20190701 # comment' in new_rpsl_text
         assert f'changed:        new1@example.com {self.expected_date} # comment' in new_rpsl_text
 

@@ -142,7 +142,10 @@ class ChangeRequest:
 
         report = f'{self.request_type_str().title()} {status}: [{self.object_class_str()}] {self.object_pk_str()}\n'
         if self.info_messages or self.error_messages:
-            report += '\n' + self.rpsl_text_submitted + '\n'
+            if not self.rpsl_obj_new or self.error_messages:
+                report += '\n' + self.rpsl_text_submitted + '\n'
+            else:
+                report += '\n' + self.rpsl_obj_new.render_rpsl_text() + '\n'
             report += ''.join([f'ERROR: {e}\n' for e in self.error_messages])
             report += ''.join([f'INFO: {e}\n' for e in self.info_messages])
         return report

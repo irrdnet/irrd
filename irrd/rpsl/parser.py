@@ -400,34 +400,32 @@ class RPSLObject(metaclass=RPSLObjectMeta):
 
     def overwrite_date_new_changed_attributes(self, existing_obj=None) -> None:
         """
-        Overwrite the date in any newly added changed attributes per #242.
-        Which changed attributes are new is determined by comparing to existing_obj,
-        which should be another RPSLObject, or None if all changed lines
+        Overwrite the date in any newly added changed: attributes per #242.
+        Which changed: lines are new is determined by comparing to existing_obj,
+        which should be another RPSLObject, or None if all changed: lines
         should be considered new.
         """
         parsed_values_to_overwrite = set(self.parsed_data['changed'])
         if existing_obj:
-            parsed_values_to_overwrite = parsed_values_to_overwrite - set(existing_obj.parsed_data['changed'])
+            parsed_values_to_overwrite -= set(existing_obj.parsed_data['changed'])
 
+        # As the value is already validated by RPSLChangedField,
+        # we can safely make assumptions on the format.
         new_object_data = []
-        overwritten_values_with_comment: List[Tuple[int, str]] = []
+        removed_values_with_comment: List[Tuple[int, str]] = []
         for idx, (attr_name, attr_value, continuation_chars) in enumerate(self._object_data):
             if attr_name == 'changed':
                 attr_value_clean = attr_value.split('#')[0].strip()
                 if attr_value_clean in parsed_values_to_overwrite:
-                    overwritten_values_with_comment.append((idx, attr_value))
+                    removed_values_with_comment.append((idx, attr_value))
                     continue
             new_object_data.append((attr_name, attr_value, continuation_chars))
         self._object_data = new_object_data
 
-        # As the value is already validated by RPSLChangedField,
-        # we can safely make assumptions on the format.
         current_date = datetime.datetime.now().strftime('%Y%m%d')
-        for idx, value in overwritten_values_with_comment:
+        for idx, value in removed_values_with_comment:
             try:
-                content, comment = value.split('#')
-                content = content.strip()
-                comment = comment.strip()
+                content, comment = map(str.strip, value.split('#'))
             except ValueError:
                 content = value.strip()
                 comment = ''

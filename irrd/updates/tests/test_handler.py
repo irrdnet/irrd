@@ -28,6 +28,7 @@ def prepare_mocks(monkeypatch, config_override):
 class TestChangeSubmissionHandler:
     # NOTE: the scope of this test also includes ChangeRequest, ReferenceValidator and AuthValidator -
     # this is more of an update handler integration test.
+    expected_changed_date = datetime.datetime.now().strftime('%Y%m%d')
 
     def test_parse_valid_new_objects_with_override(self, prepare_mocks):
         mock_dq, mock_dh, mock_email = prepare_mocks
@@ -101,7 +102,7 @@ class TestChangeSubmissionHandler:
             Delete:        0
         
         DETAILED EXPLANATION:
-        
+
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ---
         Create succeeded: [person] PERSON-TEST
@@ -112,7 +113,7 @@ class TestChangeSubmissionHandler:
         ---
         Create succeeded: [inetnum] 80.16.151.184 - 80.16.151.191
         
-        inetnum:        80.16.151.184 - 80.016.151.191
+        inetnum:        80.16.151.184 - 80.16.151.191
         netname:        NETECONOMY-MG41731
         descr:          TELECOM ITALIA LAB SPA
         country:        IT
@@ -183,7 +184,6 @@ class TestChangeSubmissionHandler:
         assert mock_dh.mock_calls[2][0] == 'commit'
         assert mock_dh.mock_calls[3][0] == 'close'
 
-        expected_changed_date = datetime.datetime.now().strftime('%Y%m%d')
         assert handler.submitter_report() == textwrap.dedent(f"""
         > Message-ID: test
         > From: example@example.com
@@ -213,14 +213,14 @@ class TestChangeSubmissionHandler:
         nic-hdl:        PERSON-TEST
         mnt-by:         TEST-MNT
         e-mail:         email@example.com
-        changed:        changed@example.com 20190701 # comment
+        changed:        changed@example.com {self.expected_changed_date} # comment
         source:         TEST
         
         INFO: Set date in changed line "changed@example.com 20190701 # comment" to today.
         
         ---
         Modify succeeded: [mntner] TEST-MNT
-        
+
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """)
 
@@ -253,7 +253,7 @@ class TestChangeSubmissionHandler:
             nic-hdl:        PERSON-TEST
             mnt-by:         TEST-MNT
             e-mail:         email@example.com
-            changed:        changed@example.com {expected_changed_date} # comment
+            changed:        changed@example.com {self.expected_changed_date} # comment
             source:         TEST
             
             ---
