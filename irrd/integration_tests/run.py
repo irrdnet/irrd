@@ -33,7 +33,7 @@ tech-c:         PERSON-TEST
 admin-c:        PERSON-TEST
 notify:         notify@example.com
 mnt-by:         TEST-MNT
-changed:        2017-05-19T12:22:08Z
+changed:        changed@example.com 20190701 # comment
 source:         TEST
 remarks:        remark
 """

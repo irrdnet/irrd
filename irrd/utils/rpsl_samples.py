@@ -5,7 +5,7 @@ SAMPLE_AS_BLOCK = """as-block:       AS65536 - as065538
 descr:          TEST ASN block
 remarks:        test remark
 mnt-by:         TEST-MNT
-changed:        2014-02-24T13:15:13Z
+changed:        changed@example.com  # only changed line without date
 tech-c:         PERSON-TEST
 admin-c:        PERSON-TEST
 source:         TEST
@@ -20,7 +20,7 @@ tech-c:         PERSON-TEST
 admin-c:        PERSON-TEST
 notify:         notify@example.com
 mnt-by:         TEST-MNT
-changed:        2017-05-19T12:22:08Z
+changed:        changed@example.com 20190701 # comment
 source:         TEST
 remarks:        remark
 """
@@ -64,7 +64,7 @@ import:         from AS50952 accept AS-DATAIX
 admin-c:        PERSON-TEST
 tech-c:         PERSON-TEST
 mnt-by:         TEST-MNT
-changed:        2018-03-13T19:16:16Z
+changed:        changed@example.com 20190701 # comment
 source:         TEST
 remarks:        remark
 """
@@ -74,7 +74,7 @@ admin-c:        PERSON-TEST
 tech-c:         PERSON-TEST
 zone-c:         PERSON-TEST
 mnt-by:         TEST-MNT
-changed:        2011-02-04T10:33:38Z
+changed:        changed@example.com 20190701 # comment
 source:         TEST
                 # foo
 remarks:        remark
@@ -173,7 +173,7 @@ filter:         {
 admin-c:        PERSON-TEST
 tech-c:         PERSON-TEST
 mnt-by:         TEST-MNT
-changed:        2002-12-04T11:34:27Z
+changed:        changed@example.com 20190701 # comment
 source:         TEST
 remarks:        remark
 """
@@ -185,7 +185,7 @@ peer:           BGP4 192.0.2.2 asno(as65530)
 admin-c:        PERSON-TEST
 tech-c:         PERSON-TEST
 mnt-by:         TEST-MNT
-changed:        2001-09-21T22:07:57Z
+changed:        changed@example.com 20190701 # comment
 source:         TEST
 remarks:        remark
 """
@@ -197,7 +197,7 @@ admin-c:        PERSON-TEST
 tech-c:         PERSON-TEST
 mnt-by:         TEST-MNT
 status:         ASSIGNED
-changed:        2011-10-14T15:05:09Z
+changed:        changed@example.com 20190701 # comment
 source:         TEST
 remarks:        remark
 """
@@ -211,7 +211,7 @@ admin-c:        PERSON-TEST
 tech-c:         PERSON-TEST
 status:         ASSIGNED PA
 mnt-by:         test-MNT
-changed:        2001-09-21T22:08:01Z
+changed:        changed@example.com 20190701 # comment
 source:         TEST
 remarks:        remark
 """
@@ -489,7 +489,7 @@ certif:         -----END PGP PUBLIC KEY BLOCK-----
 admin-c:        PERSON-TEST
 tech-c:         PERSON-TEST
 mnt-by:         TEST-MNT
-changed:        2018-04-10T13:39:39Z
+changed:        changed@example.com 20190701 # comment
 source:         TEST
 """
 
@@ -504,7 +504,7 @@ auth:           CRYPT-PW LEuuhsBJNFV0Q  # crypt-password
 auth:           MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.  # md5-password
 mnt-by:         TEST-MNT
 mnt-by:         OTHER1-MNT,OTHER2-MNT
-changed:        2016-10-05T10:41:15Z
+changed:        changed@example.com 20190701 # comment
 remarks:        unįcöde tæst 🌈🦄
 source:         TEST
 remarks:        remark
@@ -519,7 +519,7 @@ tech-c:         DUMY2-TEST
 admin-c:        PERSON-TEST
 notify:         hostmaster@dnt.ro
 mnt-by:         TEST-MNT
-changed:        2001-09-21T23:07:39Z
+changed:        changed@example.com 20190701 # comment
 source:         TEST
 remarks:        remark
 """
@@ -533,7 +533,7 @@ nic-hdl:        PERSON-TEST
 mnt-by:         TEST-MNT
 e-mail:         email@example.com
 notify:         notify@example.com
-changed:        2009-07-24T17:00:00Z
+changed:        changed@example.com 20190701 # comment
 source:         TEST
 """
 
@@ -547,7 +547,7 @@ tech-c:         PERSON-TEST
 nic-hdl:        ROLE-TEST
 notify:         notify@example.com
 mnt-by:         TEST-MNT
-changed:        2017-11-21T15:56:58Z
+changed:        changed@example.com 20190701 # comment
 source:         TEST
 remarks:        remark
 """
@@ -559,7 +559,7 @@ descr:          the route attribute should have the extra zero removed,
 origin:         AS65537
 member-of:      RS-TEST
 mnt-by:         TEST-MNT
-changed:        2009-10-15T09:32:17Z
+changed:        changed@example.com 20190701 # comment
 source:         TEST
 remarks:        remark
 """
@@ -571,7 +571,7 @@ tech-c:         PERSON-TEST
 admin-c:        PERSON-TEST
 mnt-by:         TEST-MNT
 mp-members:     2001:0dB8::/48
-changed:        2001-09-22T09:34:03Z
+changed:        changed@example.com 20190701 # comment
 source:         TEST
 remarks:        remark
 """
@@ -580,7 +580,7 @@ SAMPLE_ROUTE6 = """route6:         2001:db8::/48
 descr:          test route6
 origin:         AS65537
 mnt-by:         test-MNT
-changed:        2004-12-29T21:30:40Z
+changed:        changed@example.com 20190701 # comment
 source:         TEST
 remarks:        remark
 """
@@ -593,7 +593,7 @@ remarks:
 tech-c:         PERSON-TEST
 admin-c:        PERSON-TEST
 mnt-by:         TEST-MNT
-changed:        2001-09-22T09:34:04Z
+changed:        changed@example.com 20190701 # comment
 source:         TEST
 remarks:        remark
 """
@@ -601,7 +601,7 @@ remarks:        remark
 SAMPLE_UNKNOWN_CLASS = """foo-block:          192.0.2.0/24
 origin:         AS65537
 mnt-by:         TEST-MNT
-changed:        2009-10-15T09:32:17Z
+changed:        changed@example.com 20190701 # comment
 source:         TEST
 """
 
@@ -609,7 +609,7 @@ SAMPLE_MALFORMED_EMPTY_LINE = """route:          192.0.2.0/24
 origin:         AS65537
 mnt-by:         TEST-MNT
 
-changed:        2009-10-15T09:32:17Z
+changed:        changed@example.com 20190701 # comment
 source:         TEST
 """
 
@@ -617,14 +617,14 @@ source:         TEST
 SAMPLE_LEGACY_IRRD_ARTIFACT = """*xxte:          192.0.2.0/24
 origin:         AS65537
 mnt-by:         TEST-MNT
-changed:        2009-10-15T09:32:17Z
+changed:        changed@example.com 20190701 # comment
 source:         TEST
 """
 
 SAMPLE_MALFORMED_ATTRIBUTE_NAME = """route:          192.0.2.0/24
 origin:         AS65537
 $$$-by:         TEST-MNT
-changed:        2009-10-15T09:32:17Z
+changed:        changed@example.com 20190701 # comment
 source:         TEST
 """
 
@@ -638,14 +638,14 @@ SAMPLE_UNKNOWN_ATTRIBUTE = """route:          192.0.2.0/24
 origin:         AS65537
 mnt-by:         TEST-MNT
 foo: bar
-changed:        2009-10-15T09:32:17Z
+changed:        changed@example.com 20190701 # comment
 source:         TEST
 """
 
 SAMPLE_INVALID_MULTIPLE_ATTRIBUTE = """route:          192.0.2.0/24
 origin:         AS65537
 mnt-by:         TEST-MNT
-changed:        2009-10-15T09:32:17Z
+changed:        changed@example.com 20190701 # comment
 source:         TEST
 source:         NOT-TEST
 """
@@ -653,28 +653,28 @@ source:         NOT-TEST
 SAMPLE_MALFORMED_PK = """route:          not-a-prefix
 origin:         AS65537
 mnt-by:         TEST-MNT
-changed:        2009-10-15T09:32:17Z
+changed:        changed@example.com 20190701 # comment
 source:         TEST
 """
 
 SAMPLE_MALFORMED_SOURCE = """route:          192.0.2.0/24
 origin:         AS65537
 mnt-by:         TEST-MNT
-changed:        2009-10-15T09:32:17Z
+changed:        changed@example.com 20190701 # comment
 source:         +TEST$$$
 """
 
 SAMPLE_MISSING_SOURCE = """route:          192.0.2.0/24
 origin:         AS65537
 mnt-by:         TEST-MNT
-changed:        2009-10-15T09:32:17Z
+changed:        changed@example.com 20190701 # comment
 """
 
 SAMPLE_LINE_NEITHER_CONTINUATION_NOR_ATTR = """route:          192.0.2.0/24
 origin:         AS65537
 mnt-by:         TEST-MNT
 or
-changed:        2009-10-15T09:32:17Z
+changed:        changed@example.com 20190701 # comment
 source:         TEST
 """
 
@@ -766,23 +766,23 @@ phone: +31 20 000 0000
 nic-hdl: PERSON-TEST
 mnt-by: TEST-MNT
 e-mail: email@example.com
-changed: 2009-07-24T17:00:00Z
+changed: changed@example.com 20190701 # comment
 source: TEST
 -----BEGIN PGP SIGNATURE-----
 
-iQIzBAEBCAAdFiEEhiYdjb69pPVGktZNqDg7p4DyOMYFAlw92E0ACgkQqDg7p4Dy
-OMaGSw//cSk+Ds2A8hdAuZ7oShHaOMBqnqIikv32PjXq9PYs9ITS8/r6eLULTyYF
-/MXMSUG7/sn2qqb13radb8D+4NpfVwLu+ht5rLPhJZLn2GA6685vvK/kk1rRU7EM
-SpVhayggnvL1IB6hRbFGpyFOZ/GAnJ70dH8XNte3EWiqCl+ata/LTeOd335rxSOb
-nn1Vi+cQ38GXFW3wxcbgm3Sq81FNXbRJRczCc7gDph9j5eAsolS6ZvJa6tSijiW7
-XzRGhFpR/BHRXzqf/kg+9yjxZgNXpvVgHlMJH6UdYFo4liUA2Tyn/Qt0HMB44bDR
-FYuQqi1wKfBGm/nRZkye07M7Hry8gG52aRUK1NG3KC32GRuZ5NkA3pF+d+aGxkIV
-atGObcjc+rm6mqmIxnfm+D/+M1c4M419udqtDLLyO5wYlMHMmZZV+OxEA589eWhA
-/B3wxBO8k+JbrPII1onTf0+8euO+nTA7ZGkhBaZ6nnoMaLYmznkOM+Ezj+jOlX42
-DZdklZqvro07uvvUh+mXcDMVABt37HnPEOQH5ib6zGFIY6PHP16th+qRPgcB/3h7
-VbheBw40Gf7tS4hUg3jzFKqU0IVW5QaY6NATPvVkE99QXjEUA/DwDZJBqOfqSa5L
-fqXVFwOtGh6U7r5FbwAmxr50oVLjFR3+q4ykVoghzImnX1//1wY=
-=H27q
+iQIzBAEBCAAdFiEEhiYdjb69pPVGktZNqDg7p4DyOMYFAl0jNUQACgkQqDg7p4Dy
+OMabkBAAq5gCcytpw9UwXMOkLXS2Fd0QfgVRpnc6l0aBmi7uWU6xWe72GU+LaNcC
+1vi/OQqT38hXKtDmPMeItPhy5MHanagZZL+ZtVK3SGUaG3rV560Mna2sEnNTeJcb
+OvMEg8JXDUP3O4T3kNudTCnBj2d1JhQUNfm7CivWMFe9dxfw+rvirzUnWlhKUZY/
+93FGZ1/FpjlAOrLpcFTdvBXajBgpCCHTyTSWBs2KuR2gEWOzIzkyWXIHupwym671
+nTg++M/ziPyYJXDv7PqKiBU3DnvSAAOialhk1fse9YW1Dj2dcHz8s2Ex8gv2TcLi
+9e6gCF2rOBnusO3yVcqKNBEbpqB+wCbLPGG1C+8n177opTxUipm5kadDBRQy/sZA
+P6740cd5Jky1gzWDykch+8ttd8MNVFoNotk1MpauU2zP5/agPuDJuoF6RbCMqX62
+MsWp+9c1rlNNUTgQfqxTaEZ+oIj/mLK36iiMQzy0ey9GT/Viuow2WYDjDI5P+OB2
+mZp0grLzKK07KdTf/+1WYZb09GhSYzPlKyg12KP3Zoaklh83uYn06mqaeN6YEXYE
+zwBzW+p+qqN0rNRMFTNy3WnVVzZY5UWljU83jMBQkXiOSxo72/yIpG89xzi24Bqp
++pewy9PIcK1JBKvGyeO2Gh1K2tsrVYzs7aP5/RmkmUyrQeXa3l4=
+=FLEo
 -----END PGP SIGNATURE-----
 """
 
