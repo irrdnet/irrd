@@ -1,5 +1,5 @@
 # flake8: noqa: W293
-
+import datetime
 import textwrap
 from unittest.mock import Mock
 
@@ -183,7 +183,8 @@ class TestChangeSubmissionHandler:
         assert mock_dh.mock_calls[2][0] == 'commit'
         assert mock_dh.mock_calls[3][0] == 'close'
 
-        assert handler.submitter_report() == textwrap.dedent("""
+        expected_changed_date = datetime.datetime.now().strftime('%Y%m%d')
+        assert handler.submitter_report() == textwrap.dedent(f"""
         > Message-ID: test
         > From: example@example.com
         
@@ -201,18 +202,29 @@ class TestChangeSubmissionHandler:
             Delete:        0
 
         DETAILED EXPLANATION:
-
+        
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ---
         Create succeeded: [person] PERSON-TEST
-
+        
+        person:         Placeholder Person Object
+        address:        The Netherlands
+        phone:          +31 20 000 0000
+        nic-hdl:        PERSON-TEST
+        mnt-by:         TEST-MNT
+        e-mail:         email@example.com
+        changed:        changed@example.com 20190701 # comment
+        source:         TEST
+        
+        INFO: Set date in changed line "changed@example.com 20190701 # comment" to today.
+        
         ---
         Modify succeeded: [mntner] TEST-MNT
-
+        
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """)
 
-        expected_notification = textwrap.dedent("""
+        expected_notification = textwrap.dedent(f"""
             This is to notify you of changes in the TEST database
             or object authorisation failures.
             
@@ -241,7 +253,7 @@ class TestChangeSubmissionHandler:
             nic-hdl:        PERSON-TEST
             mnt-by:         TEST-MNT
             e-mail:         email@example.com
-            changed:        changed@example.com 20190701 # comment
+            changed:        changed@example.com {expected_changed_date} # comment
             source:         TEST
             
             ---
