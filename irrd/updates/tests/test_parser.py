@@ -714,7 +714,7 @@ class TestSingleChangeRequestHandling:
             tech-c:         PERSON-TEST
             status:         ASSIGNED PA
             mnt-by:         test-MNT
-            changed:        2001-09-21T22:08:01Z
+            changed:        changed@example.com 20190701 # comment
             source:         TEST
             remarks:        remark
         """).strip() + '\n'
@@ -730,7 +730,7 @@ class TestSingleChangeRequestHandling:
             admin-c:        PERSON-TEST
             notify:         notify@example.com
             mnt-by:         TEST-MNT
-            changed:        2017-05-19T12:22:08Z
+            changed:        changed@example.com 20190701 # comment
             source:         TEST
             remarks:        remark
         """).strip() + '\n'
@@ -750,7 +750,7 @@ class TestSingleChangeRequestHandling:
             +tech-c:         NEW-TEST
              status:         ASSIGNED PA
              mnt-by:         test-MNT
-             changed:        2001-09-21T22:08:01Z
+             changed:        changed@example.com 20190701 # comment
             
             New version of this object:
             
@@ -763,7 +763,7 @@ class TestSingleChangeRequestHandling:
             tech-c:         NEW-TEST
             status:         ASSIGNED PA
             mnt-by:         test-MNT
-            changed:        2001-09-21T22:08:01Z
+            changed:        changed@example.com 20190701 # comment
             source:         TEST
             remarks:        remark
         """).strip() + '\n'
@@ -783,7 +783,7 @@ class TestSingleChangeRequestHandling:
             +tech-c:         NEW-TEST
              status:         ASSIGNED PA
              mnt-by:         test-MNT
-             changed:        2001-09-21T22:08:01Z
+             changed:        changed@example.com 20190701 # comment
             
             *Rejected* new version of this object:
             
@@ -796,7 +796,7 @@ class TestSingleChangeRequestHandling:
             tech-c:         NEW-TEST
             status:         ASSIGNED PA
             mnt-by:         test-MNT
-            changed:        2001-09-21T22:08:01Z
+            changed:        changed@example.com 20190701 # comment
             source:         TEST
             remarks:        remark
         """).strip() + '\n'

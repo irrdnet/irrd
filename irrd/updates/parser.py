@@ -125,6 +125,10 @@ class ChangeRequest:
             logger.info(f'{id(self)}: Saving change for {self.rpsl_obj_new}: deleting current object')
             database_handler.delete_rpsl_object(self.rpsl_obj_current)
         else:
+            if not self.used_override:
+                self.rpsl_obj_new.overwrite_date_new_changed_attributes(self.rpsl_obj_current)
+                # This call may have emitted a new info message.
+                self._import_new_rpsl_obj_info_messages()
             logger.info(f'{id(self)}: Saving change for {self.rpsl_obj_new}: inserting/updating current object')
             database_handler.upsert_rpsl_object(self.rpsl_obj_new)
         self.status = UpdateRequestStatus.SAVED
@@ -138,7 +142,10 @@ class ChangeRequest:
 
         report = f'{self.request_type_str().title()} {status}: [{self.object_class_str()}] {self.object_pk_str()}\n'
         if self.info_messages or self.error_messages:
-            report += '\n' + self.rpsl_text_submitted + '\n'
+            if not self.rpsl_obj_new or self.error_messages:
+                report += '\n' + self.rpsl_text_submitted + '\n'
+            else:
+                report += '\n' + self.rpsl_obj_new.render_rpsl_text() + '\n'
             report += ''.join([f'ERROR: {e}\n' for e in self.error_messages])
             report += ''.join([f'INFO: {e}\n' for e in self.info_messages])
         return report
@@ -250,6 +257,17 @@ class ChangeRequest:
 
         logger.debug(f'{id(self)}: Reference check succeeded')
         return True
+
+    def _import_new_rpsl_obj_info_messages(self):
+        """
+        Import new info messages from self.rpsl_obj_new.
+        This is used after overwrite_date_new_changed_attributes()
+        is called, as it's called just before saving, but may
+        emit a new info message.
+        """
+        for info_message in self.rpsl_obj_new.messages.infos():
+            if info_message not in self.info_messages:
+                self.info_messages.append(info_message)
 
 
 def parse_change_requests(requests_text: str,

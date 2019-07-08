@@ -1,5 +1,5 @@
 # flake8: noqa: W293
-
+import datetime
 import textwrap
 from unittest.mock import Mock
 
@@ -28,6 +28,7 @@ def prepare_mocks(monkeypatch, config_override):
 class TestChangeSubmissionHandler:
     # NOTE: the scope of this test also includes ChangeRequest, ReferenceValidator and AuthValidator -
     # this is more of an update handler integration test.
+    expected_changed_date = datetime.datetime.now().strftime('%Y%m%d')
 
     def test_parse_valid_new_objects_with_override(self, prepare_mocks):
         mock_dq, mock_dh, mock_email = prepare_mocks
@@ -40,7 +41,7 @@ class TestChangeSubmissionHandler:
         nic-hdl:        PERSON-TEST
         mnt-by:         TEST-MNT
         e-mail:         email@example.com
-        changed:        2009-07-24T17:00:00Z
+        changed:        changed@example.com 20190701 # comment
         source:         TEST
 
         mntner:         TEST-MNT
@@ -49,7 +50,7 @@ class TestChangeSubmissionHandler:
         auth:           PGPKey-80F238C6
         auth:           MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.  # md5-password
         mnt-by:         TEST-MNT
-        changed:        2016-10-05T10:41:15Z
+        changed:        changed@example.com 20190701 # comment
         source:         TEST
         
         override: override-password
@@ -63,7 +64,7 @@ class TestChangeSubmissionHandler:
         status:         ASSIGNED PA
         notify:         neteconomy.rete@telecomitalia.it
         mnt-by:         TEST-MNT
-        changed:        2001-09-21T22:08:01Z
+        changed:        changed@example.com 20190701 # comment
         source:         TEST
         remarks:        remark
         """)
@@ -101,7 +102,7 @@ class TestChangeSubmissionHandler:
             Delete:        0
         
         DETAILED EXPLANATION:
-        
+
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ---
         Create succeeded: [person] PERSON-TEST
@@ -112,7 +113,7 @@ class TestChangeSubmissionHandler:
         ---
         Create succeeded: [inetnum] 80.16.151.184 - 80.16.151.191
         
-        inetnum:        80.16.151.184 - 80.016.151.191
+        inetnum:        80.16.151.184 - 80.16.151.191
         netname:        NETECONOMY-MG41731
         descr:          TELECOM ITALIA LAB SPA
         country:        IT
@@ -121,7 +122,7 @@ class TestChangeSubmissionHandler:
         status:         ASSIGNED PA
         notify:         neteconomy.rete@telecomitalia.it
         mnt-by:         TEST-MNT
-        changed:        2001-09-21T22:08:01Z
+        changed:        changed@example.com 20190701 # comment
         source:         TEST
         remarks:        remark
         
@@ -140,7 +141,7 @@ class TestChangeSubmissionHandler:
         nic-hdl:        PERSON-TEST
         mnt-by:         TEST-MNT
         e-mail:         email@example.com
-        changed:        2009-07-24T17:00:00Z
+        changed:        changed@example.com 20190701 # comment
         source:         TEST
         """)
 
@@ -151,7 +152,7 @@ class TestChangeSubmissionHandler:
         mnt-nfy:        mnt-nfy@example.com
         auth:           PGPKey-80F238C6
         mnt-by:         TEST-MNT
-        changed:        2016-10-05T10:41:15Z
+        changed:        changed@example.com 20190701 # comment
         source:         TEST
         """)
         rpsl_text = person_text + '\n\n' + mntner_text
@@ -183,7 +184,7 @@ class TestChangeSubmissionHandler:
         assert mock_dh.mock_calls[2][0] == 'commit'
         assert mock_dh.mock_calls[3][0] == 'close'
 
-        assert handler.submitter_report() == textwrap.dedent("""
+        assert handler.submitter_report() == textwrap.dedent(f"""
         > Message-ID: test
         > From: example@example.com
         
@@ -201,18 +202,29 @@ class TestChangeSubmissionHandler:
             Delete:        0
 
         DETAILED EXPLANATION:
-
+        
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ---
         Create succeeded: [person] PERSON-TEST
-
+        
+        person:         Placeholder Person Object
+        address:        The Netherlands
+        phone:          +31 20 000 0000
+        nic-hdl:        PERSON-TEST
+        mnt-by:         TEST-MNT
+        e-mail:         email@example.com
+        changed:        changed@example.com {self.expected_changed_date} # comment
+        source:         TEST
+        
+        INFO: Set date in changed line "changed@example.com 20190701 # comment" to today.
+        
         ---
         Modify succeeded: [mntner] TEST-MNT
 
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """)
 
-        expected_notification = textwrap.dedent("""
+        expected_notification = textwrap.dedent(f"""
             This is to notify you of changes in the TEST database
             or object authorisation failures.
             
@@ -241,7 +253,7 @@ class TestChangeSubmissionHandler:
             nic-hdl:        PERSON-TEST
             mnt-by:         TEST-MNT
             e-mail:         email@example.com
-            changed:        2009-07-24T17:00:00Z
+            changed:        changed@example.com {self.expected_changed_date} # comment
             source:         TEST
             
             ---
@@ -257,7 +269,7 @@ class TestChangeSubmissionHandler:
             mnt-nfy:        mnt-nfy@example.com
             auth:           PGPKey-80F238C6
             mnt-by:         TEST-MNT
-            changed:        2016-10-05T10:41:15Z
+            changed:        changed@example.com 20190701 # comment
             source:         TEST
             
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -278,7 +290,7 @@ class TestChangeSubmissionHandler:
         nic-hdl:        PERSON-TEST
         mnt-by:         TEST-MNT
         e-mail:         email@example.com
-        changed:        2009-07-24T17:00:00Z
+        changed:        changed@example.com 20190701 # comment
         source:         TEST
         """)
 
@@ -288,7 +300,7 @@ class TestChangeSubmissionHandler:
         upd-to:         unread@ripe.net
         auth:           PGPKey-80F238C6
         mnt-by:         TEST-MNT
-        changed:        2016-10-05T10:41:15Z
+        changed:        changed@example.com 20190701 # comment
         source:         TEST
         """)
         rpsl_text = person_text + '\n\n' + mntner_text
@@ -327,7 +339,7 @@ class TestChangeSubmissionHandler:
         mnt-by:         TEST-MNT
         e-mail:         email@example.com
         notify:         notify@example.com
-        changed:        2009-07-24T17:00:00Z
+        changed:        changed@example.com 20190701 # comment
         source:         TEST
         """)
 
@@ -401,7 +413,7 @@ class TestChangeSubmissionHandler:
             mnt-by:         TEST-MNT
             e-mail:         email@example.com
             notify:         notify@example.com
-            changed:        2009-07-24T17:00:00Z
+            changed:        changed@example.com 20190701 # comment
             source:         TEST
             
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -428,7 +440,7 @@ class TestChangeSubmissionHandler:
         auth:           PGPKey-80F238C6
         auth:           MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.  # md5-password
         mnt-by:         TEST-MNT
-        changed:        2016-10-05T10:41:15Z
+        changed:        changed@example.com 20190701 # comment
         source:         TEST
 
         override: override-password
@@ -442,7 +454,7 @@ class TestChangeSubmissionHandler:
         status:         ASSIGNED PA
         notify:         neteconomy.rete@telecomitalia.it
         mnt-by:         TEST-MNT
-        changed:        2001-09-21T22:08:01Z
+        changed:        changed@example.com 20190701 # comment
         source:         TEST
         remarks:        remark
         
@@ -452,7 +464,7 @@ class TestChangeSubmissionHandler:
         nic-hdl:        PERSON-TEST
         mnt-by:         OTHER-MNT
         e-mail:         email@example.com
-        changed:        2009-07-24T17:00:00Z
+        changed:        changed@example.com 20190701 # comment
         source:         TEST
         """)
 
@@ -499,7 +511,7 @@ class TestChangeSubmissionHandler:
         auth:           PGPKey-80F238C6
         auth:           MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.  # md5-password
         mnt-by:         TEST-MNT
-        changed:        2016-10-05T10:41:15Z
+        changed:        changed@example.com 20190701 # comment
         source:         TEST
         
         ERROR: Object PERSON-TEST referenced in field admin-c not found in database TEST - must reference one of role, person.
@@ -516,7 +528,7 @@ class TestChangeSubmissionHandler:
         status:         ASSIGNED PA
         notify:         neteconomy.rete@telecomitalia.it
         mnt-by:         TEST-MNT
-        changed:        2001-09-21T22:08:01Z
+        changed:        changed@example.com 20190701 # comment
         source:         TEST
         remarks:        remark
         
@@ -533,7 +545,7 @@ class TestChangeSubmissionHandler:
         nic-hdl:        PERSON-TEST
         mnt-by:         OTHER-MNT
         e-mail:         email@example.com
-        changed:        2009-07-24T17:00:00Z
+        changed:        changed@example.com 20190701 # comment
         source:         TEST
         
         ERROR: Object OTHER-MNT referenced in field mnt-by not found in database TEST - must reference mntner.
@@ -556,7 +568,7 @@ class TestChangeSubmissionHandler:
         nic-hdl:        PERSON-TEST
         mnt-by:         TEST-MNT
         e-mail:         email@example.com
-        changed:        2009-07-24T17:00:00Z
+        changed:        changed@example.com 20190701 # comment
         source:         TEST
         """)
 
@@ -597,7 +609,7 @@ class TestChangeSubmissionHandler:
             nic-hdl:        PERSON-TEST
             mnt-by:         TEST-MNT
             e-mail:         email@example.com
-            changed:        2009-07-24T17:00:00Z
+            changed:        changed@example.com 20190701 # comment
             source:         TEST
             
             ERROR: Authorisation for person PERSON-TEST failed: must by authenticated by one of: TEST-MNT
@@ -631,7 +643,7 @@ class TestChangeSubmissionHandler:
             nic-hdl:        PERSON-TEST
             mnt-by:         TEST-MNT
             e-mail:         email@example.com
-            changed:        2009-07-24T17:00:00Z
+            changed:        changed@example.com 20190701 # comment
             source:         TEST
             
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -663,7 +675,7 @@ class TestChangeSubmissionHandler:
         nic-hdl:        PERSON-TEST
         mnt-by:         TEST-MNT
         e-mail:         email@example.com
-        changed:        2009-07-24T17:00:00Z
+        changed:        changed@example.com 20190701 # comment
         source:         TEST
 
         mntner:         TEST-MNT
@@ -672,7 +684,7 @@ class TestChangeSubmissionHandler:
         auth:           PGPKey-80F238C6
         auth:           MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.  # md5-password
         mnt-by:         TEST-MNT
-        changed:        2016-10-05T10:41:15Z
+        changed:        changed@example.com 20190701 # comment
         source:         TEST
 
         password: wrong-password
@@ -686,7 +698,7 @@ class TestChangeSubmissionHandler:
         status:         ASSIGNED PA
         notify:         neteconomy.rete@telecomitalia.it
         mnt-by:         TEST-MNT
-        changed:        2001-09-21T22:08:01Z
+        changed:        changed@example.com 20190701 # comment
         source:         TEST
         remarks:        remark
         """)
@@ -733,7 +745,7 @@ class TestChangeSubmissionHandler:
         nic-hdl:        PERSON-TEST
         mnt-by:         TEST-MNT
         e-mail:         email@example.com
-        changed:        2009-07-24T17:00:00Z
+        changed:        changed@example.com 20190701 # comment
         source:         TEST
         
         ERROR: Authorisation for person PERSON-TEST failed: must by authenticated by one of: TEST-MNT
@@ -747,7 +759,7 @@ class TestChangeSubmissionHandler:
         auth:           PGPKey-80F238C6
         auth:           MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.  # md5-password
         mnt-by:         TEST-MNT
-        changed:        2016-10-05T10:41:15Z
+        changed:        changed@example.com 20190701 # comment
         source:         TEST
         
         ERROR: Authorisation for mntner TEST-MNT failed: must by authenticated by one of: TEST-MNT
@@ -766,7 +778,7 @@ class TestChangeSubmissionHandler:
         status:         ASSIGNED PA
         notify:         neteconomy.rete@telecomitalia.it
         mnt-by:         TEST-MNT
-        changed:        2001-09-21T22:08:01Z
+        changed:        changed@example.com 20190701 # comment
         source:         TEST
         remarks:        remark
         
@@ -783,7 +795,7 @@ class TestChangeSubmissionHandler:
         rpsl_text = textwrap.dedent("""
         person:         Placeholder Person Object
         nic-hdl:        PERSON-TEST
-        changed:        2009-07-24T17:00:00Z
+        changed:        changed@example.com 20190701 # comment
         source:         TEST
         """)
 
@@ -815,7 +827,7 @@ class TestChangeSubmissionHandler:
         
         person:         Placeholder Person Object
         nic-hdl:        PERSON-TEST
-        changed:        2009-07-24T17:00:00Z
+        changed:        changed@example.com 20190701 # comment
         source:         TEST
         
         ERROR: Mandatory attribute "address" on object person is missing

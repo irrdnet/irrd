@@ -1,3 +1,4 @@
+import datetime
 import re
 from typing import List, Type, Optional
 
@@ -325,6 +326,28 @@ class RPSLEmailField(RPSLTextField):
         if not re_email.match(value):
             messages.error(f'Invalid e-mail address: {value}')
             return None
+        return RPSLFieldParseResult(value)
+
+
+class RPSLChangedField(RPSLTextField):
+    """Field for an changed line. Only performs basic validation for email."""
+    def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
+        date: Optional[str]
+        try:
+            email, date = value.split(' ')
+        except ValueError:
+            email = value
+            date = None
+
+        if not re_email.match(email):
+            messages.error(f'Invalid e-mail address: {email}')
+            return None
+        if date:
+            try:
+                datetime.datetime.strptime(date, '%Y%m%d')
+            except ValueError as ve:
+                messages.error(f'Invalid changed date: {date}: {ve}')
+                return None
         return RPSLFieldParseResult(value)
 
 
