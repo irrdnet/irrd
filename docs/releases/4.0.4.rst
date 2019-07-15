@@ -1,0 +1,18 @@
+============================
+Release notes for IRRd 4.0.4
+============================
+
+IRRd 4.0.4 was released on July 8th, 2019, and contains
+one change relating to the behaviour of `changed:`
+attributes in RPSL objects.
+
+In earlier versions of IRRd, format of the `changed`
+attribute was entirely free. In IRRd 4.0.4, the format
+is expected to be ``<email> [YYYYMMDD]`` with an optional
+comment, as allowed with other RPSL attributes. The date
+is optional. Regardless of the date, if any, set in the
+attribute, it will be `overwritten by today's date`_,
+unless the override password was used. Pre-existing
+`changed` attributes are not affected.
+
+.. _overwritten by today's date:: https://github.com/irrdnet/irrd4/issues/242
