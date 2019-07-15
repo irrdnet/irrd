@@ -2,7 +2,7 @@
 Release notes for IRRd 4.0.4
 ============================
 
-IRRd 4.0.4 was released on July 8th, 2019, and contains
+IRRd 4.0.4 was released on July 15th, 2019, and contains
 one change relating to the behaviour of `changed:`
 attributes in RPSL objects.
 
