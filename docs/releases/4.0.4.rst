@@ -11,8 +11,8 @@ attribute was entirely free. In IRRd 4.0.4, the format
 is expected to be ``<email> [YYYYMMDD]`` with an optional
 comment, as allowed with other RPSL attributes. The date
 is optional. Regardless of the date, if any, set in the
-attribute, it will be `overwritten by today's date`_,
+attribute, it will be `overwritten`_ by today's date,
 unless the override password was used. Pre-existing
 `changed` attributes are not affected.
 
-.. _overwritten by today's date:: https://github.com/irrdnet/irrd4/issues/242
+.. _overwritten: https://github.com/irrdnet/irrd4/issues/242
