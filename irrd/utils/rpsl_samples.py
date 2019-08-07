@@ -44,7 +44,7 @@ export:         to AS3549 announce AS-SETTEST
 import:         from AS3549 accept ANY
 export:         to AS9002 announce AS-SETTEST
 import:         from AS9002 accept ANY
-mp-export:      afi ipv6.unicast to AS9002 anunce AS-SETTEST
+mp-export:      afi ipv6.unicast to AS9002 announce AS-SETTEST
 mp-import:      afi ipv6.unicast from AS9002 accept ANY
 remarks:        ---> Peers
 export:         to AS31117 announce AS-SETTEST AS-UAIX
