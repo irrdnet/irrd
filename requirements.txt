@@ -2,39 +2,39 @@
 # should be kept in sync. The list in setup.py is shorter, as it only
 # includes packages needed for deployment.
 
-python-gnupg==0.4.4    # Integration with gpg for key-cert objects
+python-gnupg==0.4.5    # Integration with gpg for key-cert objects
 passlib==1.7.1         # Password hashing for CRYPT-PW and MD5-PW
 IPy==1.00              # IP address parsing
 dataclasses==0.6       # PEP 557 dataclasses for python<3.7
 ordered-set==3.1.1     # Ordered sets for simple unique ordered storage
 dotted==0.1.8          # Dotted path dictionary resolving for settings
 beautifultable==0.7.0  # generating nice-looking ascii tables
-PyYAML==5.1.1           # parsing YAML config files
+PyYAML==5.1.2           # parsing YAML config files
 
 # Database connections and management
 psycopg2-binary==2.8.3
-SQLAlchemy==1.3.4
-alembic==1.0.10
+SQLAlchemy==1.3.7
+alembic==1.0.11
 ujson==1.35
 
 # Network handling
-twisted==19.2.1
+twisted==19.7.0
 
 # Testing and related packages
-pytest==4.6.3
+pytest==4.6.3  # pyup: <5
 pytest-cov==2.7.1
-coverage==4.5.3
-coveralls==1.8.1
+coverage==4.5.4
+coveralls==1.8.2
 
 # Documentation generation
-Sphinx==2.1.1
+Sphinx==2.2.0
 
 # Code style and type checks
-mypy==0.701
-flake8==3.7.7
+mypy==0.720
+flake8==3.7.8
 pep8-naming==0.8.2
 
 # Creating python packages
-setuptools==41.0.1
-wheel==0.33.4
+setuptools==41.1.0
+wheel==0.33.6
 twine==1.13.0
