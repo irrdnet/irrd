@@ -1,4 +1,5 @@
 import logging
+import os
 import re
 from tempfile import NamedTemporaryFile
 from typing import Optional, Tuple
@@ -10,6 +11,13 @@ from irrd.conf import get_setting
 logger = logging.getLogger(__name__)
 pgp_inline_re = re.compile(r'-----BEGIN PGP SIGNED MESSAGE-----(\n.+)?\n\n((?s:.+))\n-----BEGIN PGP SIGNATURE-----\n',
                            flags=re.MULTILINE)
+
+
+def get_gpg_instance() -> gnupg.GPG:
+    keyring = get_setting('auth.gnupg_keyring')
+    if not os.path.exists(keyring):
+        os.mkdir(keyring)
+    return gnupg.GPG(gnupghome=keyring)
 
 
 def validate_pgp_signature(message: str, detached_signature: Optional[str]=None) -> Tuple[Optional[str], Optional[str]]:
@@ -36,7 +44,7 @@ def validate_pgp_signature(message: str, detached_signature: Optional[str]=None)
     importing a key-cert, which will add the certificate to the keychain during
     validation, in RPSLKeyCert.clean().
     """
-    gpg = gnupg.GPG(gnupghome=get_setting('auth.gnupg_keyring'))
+    gpg = get_gpg_instance()
 
     new_message = None
     if detached_signature:
