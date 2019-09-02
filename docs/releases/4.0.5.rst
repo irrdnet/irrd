@@ -1,0 +1,14 @@
+============================
+Release notes for IRRd 4.0.5
+============================
+
+IRRd 4.0.5 was released on September 2nd, 2019, and fixes
+two bugs.
+
+In earlier versions of IRRd, queries that looked up
+the routes originating from a certain AS,
+`did not correctly filter for the selected sources`_.
+Also, the ``!s-lc`` query did not always correctly display
+which sources were currently selected.
+
+.. _did not correctly filter for the selected sources: https://github.com/irrdnet/irrd4/issues/251
