@@ -234,7 +234,7 @@ class TestWhoisQueryParserRIPE:
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert not response.result
         assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
-        assert parser.sources == []
+        assert parser.sources == parser.all_valid_sources
 
     def test_sources_default(self, prepare_parser, config_override):
         mock_dq, mock_dh, mock_preloader, parser = prepare_parser
@@ -501,7 +501,7 @@ class TestWhoisQueryParserIRRD:
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == '192.0.2.0/25 192.0.2.128/25'
         assert flatten_mock_calls(mock_preloader.routes_for_origins) == [
-            ['', (['AS65547'],), {'ip_version': 4}],
+            ['', (['AS65547'], ['TEST1', 'TEST2']), {'ip_version': 4}],
         ]
 
         mock_preloader.routes_for_origins = Mock(return_value=[])
@@ -517,12 +517,13 @@ class TestWhoisQueryParserIRRD:
 
         mock_preloader.routes_for_origins = Mock(return_value=['2001:db8::1/128', '2001:db8::/32'])
 
+        parser.sources = ['TEST1']
         response = parser.handle_query('!6AS65547')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == '2001:db8::1/128 2001:db8::/32'
         assert flatten_mock_calls(mock_preloader.routes_for_origins) == [
-            ['', (['AS65547'],), {'ip_version': 6}],
+            ['', (['AS65547'], ['TEST1']), {'ip_version': 6}],
         ]
 
         mock_preloader.routes_for_origins = Mock(return_value=[])
@@ -571,7 +572,7 @@ class TestWhoisQueryParserIRRD:
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == '192.0.2.0/25 192.0.2.128/25'
         assert flatten_mock_calls(mock_preloader.routes_for_origins) == [
-            ['', ({'AS65547', 'AS65548'},), {'ip_version': None}],
+            ['', ({'AS65547', 'AS65548'}, parser.all_valid_sources), {'ip_version': None}],
         ]
         mock_preloader.routes_for_origins.reset_mock()
 
@@ -580,7 +581,7 @@ class TestWhoisQueryParserIRRD:
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == '192.0.2.0/25 192.0.2.128/25'
         assert flatten_mock_calls(mock_preloader.routes_for_origins) == [
-            ['', ({'AS65547', 'AS65548'},), {'ip_version': 4}],
+            ['', ({'AS65547', 'AS65548'}, parser.sources), {'ip_version': 4}],
         ]
         mock_preloader.routes_for_origins.reset_mock()
 
@@ -589,7 +590,7 @@ class TestWhoisQueryParserIRRD:
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == '192.0.2.0/25 192.0.2.128/25'
         assert flatten_mock_calls(mock_preloader.routes_for_origins) == [
-            ['', ({'AS65547', 'AS65548'},), {'ip_version': 6}],
+            ['', ({'AS65547', 'AS65548'}, parser.sources), {'ip_version': 6}],
         ]
         mock_preloader.routes_for_origins.reset_mock()
 
@@ -1023,7 +1024,7 @@ class TestWhoisQueryParserIRRD:
         response = parser.handle_query('!s-lc')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
-        assert response.result == 'TEST1,TEST2'
+        assert response.result == 'TEST1'
 
         response = parser.handle_query('!sTEST3')
         assert response.response_type == WhoisQueryResponseType.ERROR
