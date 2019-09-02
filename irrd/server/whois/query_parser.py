@@ -44,7 +44,8 @@ class WhoisQueryParser:
 
     def __init__(self, peer, peer_str: str) -> None:
         self.all_valid_sources = list(get_setting('sources').keys())
-        self.sources: List[str] = []
+        self.sources_default = get_setting('sources_default')
+        self.sources: List[str] = self.sources_default if self.sources_default else self.all_valid_sources
         self.object_classes: List[str] = []
         self.user_agent: Optional[str] = None
         self.multiple_command_mode = False
@@ -198,7 +199,7 @@ class WhoisQueryParser:
         except ValidationError as ve:
             raise WhoisQueryParserException(str(ve))
 
-        prefixes = self.preloader.routes_for_origins([origin_formatted], ip_version=ip_version)
+        prefixes = self.preloader.routes_for_origins([origin_formatted], self.sources, ip_version=ip_version)
         return ' '.join(prefixes)
 
     def handle_irrd_routes_for_as_set(self, set_name: str) -> str:
@@ -218,7 +219,7 @@ class WhoisQueryParser:
 
         self._current_set_root_object_class = 'as-set'
         members = self._recursive_set_resolve({set_name})
-        prefixes = self.preloader.routes_for_origins(members, ip_version=ip_version)
+        prefixes = self.preloader.routes_for_origins(members, self.sources, ip_version=ip_version)
         return ' '.join(prefixes)
 
     def handle_irrd_set_members(self, parameter: str) -> str:
@@ -289,7 +290,8 @@ class WhoisQueryParser:
             try:
                 as_number_formatted, _ = parse_as_number(sub_member)
                 if self._current_set_root_object_class == 'route-set':
-                    set_members.update(self.preloader.routes_for_origins([as_number_formatted]))
+                    set_members.update(self.preloader.routes_for_origins(
+                        [as_number_formatted], self.sources))
                     resolved_as_members.add(sub_member)
                 else:
                     set_members.add(sub_member)
@@ -385,8 +387,7 @@ class WhoisQueryParser:
     def handle_irrd_database_serial_range(self, parameter: str) -> str:
         """!j query - database serial range"""
         if parameter == '-*':
-            default = get_setting('sources_default')
-            sources = default if default else self.all_valid_sources
+            sources = self.sources_default if self.sources_default else self.all_valid_sources
         else:
             sources = [s.upper() for s in parameter.split(',')]
         invalid_sources = [s for s in sources if s not in self.all_valid_sources]
@@ -465,9 +466,7 @@ class WhoisQueryParser:
            !sripe,nttcom limits sources to ripe and nttcom
         """
         if parameter == '-lc':
-            default = get_setting('sources_default')
-            sources_selected = default if default else self.all_valid_sources
-            return ','.join(sources_selected)
+            return ','.join(self.sources)
 
         sources = parameter.upper().split(',')
         if not all([source in self.all_valid_sources for source in sources]):
@@ -570,7 +569,7 @@ class WhoisQueryParser:
                 raise WhoisQueryParserException('One or more selected sources are unavailable.')
             self.sources = sources
         else:
-            self.sources = []
+            self.sources = self.sources_default if self.sources_default else self.all_valid_sources
 
     def handle_ripe_restrict_object_class(self, object_classes) -> None:
         """-T parameter - restrict object classes for this query, comma-seperated"""
@@ -644,7 +643,7 @@ class WhoisQueryParser:
     def _prepare_query(self, column_names=None, ordered_by_sources=True) -> RPSLDatabaseQuery:
         """Prepare an RPSLDatabaseQuery by applying relevant sources/class filters."""
         query = RPSLDatabaseQuery(column_names, ordered_by_sources)
-        if self.sources:
+        if self.sources and self.sources != self.all_valid_sources:
             query.sources(self.sources)
         else:
             default = get_setting('sources_default')

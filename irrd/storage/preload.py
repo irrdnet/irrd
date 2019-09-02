@@ -1,11 +1,9 @@
-import itertools
-import math
-from collections import defaultdict
-
 import logging
+import math
 import os
 import signal
 import threading
+from collections import defaultdict
 from typing import Optional, List, Set, Dict
 
 from .queries import RPSLDatabaseQuery
@@ -29,8 +27,8 @@ class Preloader:
     store, or conclude an update is already pending anyways.
     """
     def __init__(self):
-        self._origin_route4_store = defaultdict(set)
-        self._origin_route6_store = defaultdict(set)
+        self._origin_route4_store = defaultdict(lambda: defaultdict(set))
+        self._origin_route6_store = defaultdict(lambda: defaultdict(set))
 
         self._reload_lock = threading.Lock()
         self._threads = []
@@ -38,9 +36,10 @@ class Preloader:
         self._store_ready_event = threading.Event()
         self.reload()
 
-    def routes_for_origins(self, origins: List[str], ip_version: Optional[int]=None) -> Set[str]:
+    def routes_for_origins(self, origins: List[str], sources: List[str], ip_version: Optional[int]=None) -> Set[str]:
         """
-        Retrieve all prefixes (in str format) originating from the provided origins.
+        Retrieve all prefixes (in str format) originating from the provided origins,
+        from the given sources.
 
         Prefixes are guaranteed to be unique. ip_version can be set to 4 or 6
         to restrict responses to IPv4 or IPv6 prefixes. Blocks until the first
@@ -53,13 +52,15 @@ class Preloader:
         if ip_version and ip_version not in [4, 6]:
             raise ValueError(f'Invalid IP version: {ip_version}')
 
-        prefix_sets: List[Set[str]] = list()
-        if not ip_version or ip_version == 4:
-            prefix_sets = prefix_sets + [self._origin_route4_store.get(k, set()) for k in origins]
-        if not ip_version or ip_version == 6:
-            prefix_sets = prefix_sets + [self._origin_route6_store.get(k, set()) for k in origins]
+        prefix_sets: Set[str] = set()
+        for origin in origins:
+            for source in sources:
+                if not ip_version or ip_version == 4:
+                    prefix_sets = prefix_sets.union(self._origin_route4_store.get(origin, dict()).get(source, set()))
+                if not ip_version or ip_version == 6:
+                    prefix_sets = prefix_sets.union(self._origin_route6_store.get(origin, dict()).get(source, set()))
 
-        return set(itertools.chain.from_iterable(prefix_sets))
+        return prefix_sets
 
     def reload(self, object_classes_changed: Optional[Set[str]]=None) -> None:
         """
@@ -133,8 +134,8 @@ class PreloadUpdater(threading.Thread):
         self.reload_lock.acquire()
         logger.debug(f'Starting preload store update from thread {self}')
 
-        new_origin_route4_store: Dict[str, Set] = defaultdict(set)
-        new_origin_route6_store: Dict[str, Set] = defaultdict(set)
+        new_origin_route4_store: Dict[str, Dict[str, set]] = defaultdict(lambda: defaultdict(set))
+        new_origin_route6_store: Dict[str, Dict[str, set]] = defaultdict(lambda: defaultdict(set))
 
         if not mock_database_handler:  # pragma: no cover
             from .database_handler import DatabaseHandler
@@ -142,27 +143,26 @@ class PreloadUpdater(threading.Thread):
         else:
             dh = mock_database_handler
 
-        q = RPSLDatabaseQuery(column_names=['ip_version', 'ip_first', 'ip_size', 'asn_first'], enable_ordering=True)
+        q = RPSLDatabaseQuery(column_names=['ip_version', 'ip_first', 'ip_size', 'asn_first', 'source'], enable_ordering=True)
         q = q.object_classes(['route', 'route6'])
 
         for result in dh.execute_query(q):
             prefix = result['ip_first']
+            source = result['source']
             key = 'AS' + str(result['asn_first'])
 
             if result['ip_version'] == 4:
                 length = int(32 - math.log2(result['ip_size']))
-                new_origin_route4_store[key].add(f'{prefix}/{length}')
+                new_origin_route4_store[key][source].add(f'{prefix}/{length}')
             if result['ip_version'] == 6:
                 length = int(128 - math.log2(result['ip_size']))
-                new_origin_route6_store[key].add(f'{prefix}/{length}')
+                new_origin_route6_store[key][source].add(f'{prefix}/{length}')
 
         dh.close()
 
         self.preloader.update_route_store(new_origin_route4_store, new_origin_route6_store)
 
-        logger.info(f'Completed updating preload store from thread {self}, '
-                    f'loaded v4 routes for {len(new_origin_route4_store)} ASes, '
-                    f'v6 routes for {len(new_origin_route6_store)} ASes')
+        logger.info(f'Completed updating preload store from thread {self}')
         self.reload_lock.release()
         self.store_ready_event.set()
 

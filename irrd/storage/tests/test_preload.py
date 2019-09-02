@@ -34,7 +34,7 @@ class TestPreloader:
         assert len(preloader._threads) == 1
         mock_preload_updater.reset_mock()
 
-        # First call should be ignored.
+        # First call should be ignored, inetnums are not preloaded
         preloader.reload({'inetnum'})
         preloader.reload({'route'})
 
@@ -90,21 +90,30 @@ class TestPreloader:
         preloader._store_ready_event.set()
 
         preloader.update_route_store(
-            {'AS65547': {'192.0.2.0/25'}, 'AS65546': {'192.0.2.128/25'}},
-            {'AS65547': {'2001:db8::/32'}}
+            {
+                'AS65546': {'TEST2': {'192.0.2.0/25'}},
+                'AS65547': {'TEST1': {'192.0.2.128/25', '198.51.100.0/25'}}
+            },
+            {
+                'AS65547': {'TEST2': {'2001:db8::/32'}}
+            },
         )
 
-        assert preloader.routes_for_origins(['AS65545']) == set()
-        assert preloader.routes_for_origins(['AS65546'], 4) == {'192.0.2.128/25'}
-        assert preloader.routes_for_origins(['AS65547'], 4) == {'192.0.2.0/25'}
-        assert preloader.routes_for_origins(['AS65546'], 6) == set()
-        assert preloader.routes_for_origins(['AS65547'], 6) == {'2001:db8::/32'}
-        assert preloader.routes_for_origins(['AS65546']) == {'192.0.2.128/25'}
-        assert preloader.routes_for_origins(['AS65547']) == {'192.0.2.0/25', '2001:db8::/32'}
-        assert preloader.routes_for_origins(['AS65547', 'AS65546'], 4) == {'192.0.2.0/25', '192.0.2.128/25'}
+        sources = ['TEST1', 'TEST2']
+        assert preloader.routes_for_origins(['AS65545'], sources) == set()
+        assert preloader.routes_for_origins(['AS65546'], sources, 4) == {'192.0.2.0/25'}
+        assert preloader.routes_for_origins(['AS65547'], sources, 4) == {'192.0.2.128/25', '198.51.100.0/25'}
+        assert preloader.routes_for_origins(['AS65546'], sources, 6) == set()
+        assert preloader.routes_for_origins(['AS65547'], sources, 6) == {'2001:db8::/32'}
+        assert preloader.routes_for_origins(['AS65546'], sources) == {'192.0.2.0/25'}
+        assert preloader.routes_for_origins(['AS65547'], sources) == {'192.0.2.128/25', '198.51.100.0/25', '2001:db8::/32'}
+        assert preloader.routes_for_origins(['AS65547', 'AS65546'], sources, 4) == {'192.0.2.0/25', '192.0.2.128/25', '198.51.100.0/25'}
+
+        assert preloader.routes_for_origins(['AS65547', 'AS65546'], ['TEST1']) == {'192.0.2.128/25', '198.51.100.0/25'}
+        assert preloader.routes_for_origins(['AS65547', 'AS65546'], ['TEST2']) == {'192.0.2.0/25', '2001:db8::/32'}
 
         with pytest.raises(ValueError) as ve:
-            preloader.routes_for_origins(['AS65547'], 2)
+            preloader.routes_for_origins(['AS65547'], sources, 2)
         assert 'Invalid IP version: 2' in str(ve)
 
 
@@ -124,18 +133,28 @@ class TestPreloadUpdater:
                 'ip_first': '192.0.2.0',
                 'ip_size': 128,
                 'asn_first': 65546,
+                'source': 'TEST1',
             },
             {
                 'ip_version': 4,
                 'ip_first': '192.0.2.128',
                 'ip_size': 128,
                 'asn_first': 65547,
+                'source': 'TEST1',
+            },
+            {
+                'ip_version': 4,
+                'ip_first': '198.51.100.0',
+                'ip_size': 128,
+                'asn_first': 65547,
+                'source': 'TEST1',
             },
             {
                 'ip_version': 6,
                 'ip_first': '2001:db8::',
                 'ip_size': 79228162514264337593543950336,  # /32
                 'asn_first': 65547,
+                'source': 'TEST2',
             },
         ]
         mock_database_handler.execute_query = lambda query: mock_query_result
@@ -148,7 +167,15 @@ class TestPreloadUpdater:
         assert flatten_mock_calls(mock_preload_obj) == [
             [
                 'update_route_store',
-                ({'AS65546': {'192.0.2.0/25'}, 'AS65547': {'192.0.2.128/25'}}, {'AS65547': {'2001:db8::/32'}}),
+                (
+                    {
+                        'AS65546': {'TEST1': {'192.0.2.0/25'}},
+                        'AS65547': {'TEST1': {'192.0.2.128/25', '198.51.100.0/25'}}
+                    },
+                    {
+                        'AS65547': {'TEST2': {'2001:db8::/32'}}
+                    },
+                ),
                 {}
             ]
         ]
