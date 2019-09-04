@@ -56,9 +56,15 @@ class Preloader:
         for origin in origins:
             for source in sources:
                 if not ip_version or ip_version == 4:
-                    prefix_sets = prefix_sets.union(self._origin_route4_store.get(origin, dict()).get(source, set()))
+                    try:
+                        prefix_sets.update(self._origin_route4_store[origin][source])
+                    except KeyError:
+                        pass
                 if not ip_version or ip_version == 6:
-                    prefix_sets = prefix_sets.union(self._origin_route6_store.get(origin, dict()).get(source, set()))
+                    try:
+                        prefix_sets.update(self._origin_route6_store[origin][source])
+                    except KeyError:
+                        pass
 
         return prefix_sets
 
