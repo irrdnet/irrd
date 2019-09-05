@@ -1,0 +1,12 @@
+============================
+Release notes for IRRd 4.0.6
+============================
+
+IRRd 4.0.6 was released on September 5th, 2019.
+
+In 4.0.5, a performance issue was introduced while fixing
+an issue where some queries
+`did not correctly filter for the selected sources`_.
+The performance issue is resolved in 4.0.6.
+
+.. _did not correctly filter for the selected sources: https://github.com/irrdnet/irrd4/issues/251
