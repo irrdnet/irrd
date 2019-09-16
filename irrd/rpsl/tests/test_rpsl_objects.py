@@ -27,7 +27,7 @@ class TestRPSLParsingGeneric:
     def test_unknown_class(self):
         with raises(UnknownRPSLObjectClassException) as ve:
             rpsl_object_from_text(SAMPLE_UNKNOWN_CLASS)
-        assert 'unknown object class' in str(ve)
+        assert 'unknown object class' in str(ve.value)
 
     def test_malformed_empty_line(self):
         obj = rpsl_object_from_text(SAMPLE_MALFORMED_EMPTY_LINE, strict_validation=False)

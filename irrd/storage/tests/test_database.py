@@ -557,12 +557,12 @@ class TestRPSLDatabaseQueryLive:
     def test_modify_frozen_filter(self):
         with raises(ValueError) as ve:
             RPSLDatabaseQuery().ip_less_specific_one_level(IP('192.0.2.0/27')).sources(['TEST'])
-        assert 'frozen' in str(ve)
+        assert 'frozen' in str(ve.value)
 
     def test_invalid_lookup_attribute(self):
         with raises(ValueError) as ve:
             RPSLDatabaseQuery().lookup_attr('not-a-lookup-attr', 'value')
-        assert 'Invalid lookup attribute' in str(ve)
+        assert 'Invalid lookup attribute' in str(ve.value)
 
     def _assert_match(self, query):
         __tracebackhide__ = True

@@ -163,7 +163,7 @@ class TestWhoisQueryIRRD:
         mock_socket.recv = mock_socket_recv
         with pytest.raises(WhoisQueryError) as wqe:
             whois_query_irrd('192.0.2.1', 43, 'query')
-        assert 'unrecognized command' in str(wqe)
+        assert 'unrecognized command' in str(wqe.value)
 
         assert flatten_mock_calls(mock_socket) == [
             ['settimeout', (5,), {}],
@@ -187,7 +187,7 @@ class TestWhoisQueryIRRD:
         mock_socket.recv = mock_socket_recv
         with pytest.raises(ValueError) as ve:
             whois_query_irrd('192.0.2.1', 43, 'query')
-        assert 'without a valid IRRD-format response' in str(ve)
+        assert 'without a valid IRRD-format response' in str(ve.value)
 
         assert flatten_mock_calls(mock_socket) == [
             ['settimeout', (5,), {}],
@@ -213,7 +213,7 @@ class TestWhoisQueryIRRD:
         mock_socket.recv = mock_socket_recv
         with pytest.raises(ValueError) as ve:
             whois_query_irrd('192.0.2.1', 43, 'query')
-        assert 'Unable to receive ' in str(ve)
+        assert 'Unable to receive ' in str(ve.value)
 
         assert flatten_mock_calls(mock_socket) == [
             ['settimeout', (5,), {}],
@@ -239,7 +239,7 @@ class TestWhoisQueryIRRD:
         mock_socket.recv = mock_socket_recv
         with pytest.raises(ValueError) as ve:
             whois_query_irrd('192.0.2.1', 43, 'query')
-        assert 'Unable to receive ' in str(ve)
+        assert 'Unable to receive ' in str(ve.value)
 
         assert flatten_mock_calls(mock_socket) == [
             ['settimeout', (5,), {}],
@@ -293,7 +293,7 @@ class TestQuerySourceStatus:
 
         with pytest.raises(ValueError) as ve:
             whois_query_source_status('host', 43, 'TEST')
-        assert 'Received invalid source NOT-TEST' in str(ve)
+        assert 'Received invalid source NOT-TEST' in str(ve.value)
 
     def test_query_empty_response(self, monkeypatch):
         def mock_whois_query_irrd(host: str, port: int, query: str) -> Optional[str]:
@@ -306,4 +306,4 @@ class TestQuerySourceStatus:
 
         with pytest.raises(ValueError) as ve:
             whois_query_source_status('host', 43, 'TEST')
-        assert 'empty response' in str(ve)
+        assert 'empty response' in str(ve.value)
