@@ -61,6 +61,7 @@ class SourceExportRunner:
                 object_bytes = remove_auth_hashes(obj['object_text']).encode('utf-8')
                 fh.write(object_bytes + b'\n')
 
+        os.chmod(export_tmpfile.name, 0o644)
         if filename_export.exists():
             os.unlink(filename_export)
         if filename_serial.exists():
