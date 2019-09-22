@@ -48,19 +48,19 @@ class TestWhoisQueryResponse:
             # noinspection PyTypeChecker
             WhoisQueryResponse(mode='bar', response_type=WhoisQueryResponseType.ERROR,
                                result='foo').generate_response()  # type:ignore
-        assert 'foo' in str(ve)
+        assert 'foo' in str(ve.value)
 
         with raises(RuntimeError) as ve:
             # noinspection PyTypeChecker
             WhoisQueryResponse(mode=WhoisQueryResponseMode.IRRD,
                                response_type='foo', result='foo').generate_response()  # type:ignore
-        assert 'foo' in str(ve)
+        assert 'foo' in str(ve.value)
 
         with raises(RuntimeError) as ve:
             # noinspection PyTypeChecker
             WhoisQueryResponse(mode=WhoisQueryResponseMode.RIPE,
                                response_type='foo', result='foo').generate_response()  # type:ignore
-        assert 'foo' in str(ve)
+        assert 'foo' in str(ve.value)
 
     def test_auth_hash_removal(self):
         response = WhoisQueryResponse(mode=WhoisQueryResponseMode.RIPE,

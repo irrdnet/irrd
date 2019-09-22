@@ -803,7 +803,7 @@ class TestSingleChangeRequestHandling:
 
         with pytest.raises(ValueError) as ve:
             result_unknown.notification_target_report()
-        assert 'changes that are valid or have failed authorisation' in str(ve)
+        assert 'changes that are valid or have failed authorisation' in str(ve.value)
 
     def _request_text(self):
         unknown_class = 'unknown-object: foo\n'

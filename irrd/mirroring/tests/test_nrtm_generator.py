@@ -107,28 +107,28 @@ class TestNRTMGenerator:
 
         with pytest.raises(NRTMGeneratorException) as nge:
             generator.generate('TEST', '3', 200, 190, mock_dh)
-        assert 'Start of the serial range (200) must be lower or equal to end of the serial range (190)' in str(nge)
+        assert 'Start of the serial range (200) must be lower or equal to end of the serial range (190)' in str(nge.value)
 
     def test_serial_start_too_low(self, prepare_generator):
         generator, mock_dh = prepare_generator
 
         with pytest.raises(NRTMGeneratorException) as nge:
             generator.generate('TEST', '3', 10, 190, mock_dh)
-        assert 'Serials 10 - 100 do not exist' in str(nge)
+        assert 'Serials 10 - 100 do not exist' in str(nge.value)
 
     def test_serial_start_too_high(self, prepare_generator):
         generator, mock_dh = prepare_generator
 
         with pytest.raises(NRTMGeneratorException) as nge:
             generator.generate('TEST', '3', 202, None, mock_dh)
-        assert 'Serials 200 - 202 do not exist' in str(nge)
+        assert 'Serials 200 - 202 do not exist' in str(nge.value)
 
     def test_serial_end_too_high(self, prepare_generator):
         generator, mock_dh = prepare_generator
 
         with pytest.raises(NRTMGeneratorException) as nge:
             generator.generate('TEST', '3', 110, 300, mock_dh)
-        assert 'Serials 200 - 300 do not exist' in str(nge)
+        assert 'Serials 200 - 300 do not exist' in str(nge.value)
 
     def test_no_new_updates(self, prepare_generator):
         # This message is only triggered when starting from a serial
@@ -159,7 +159,7 @@ class TestNRTMGenerator:
 
         with pytest.raises(NRTMGeneratorException) as nge:
             generator.generate('TEST', '3', 110, 300, mock_dh)
-        assert 'No journal kept for this source, unable to serve NRTM queries' in str(nge)
+        assert 'No journal kept for this source, unable to serve NRTM queries' in str(nge.value)
 
     def test_no_source_status_entry(self, prepare_generator, config_override):
         generator, mock_dh = prepare_generator
@@ -167,4 +167,4 @@ class TestNRTMGenerator:
 
         with pytest.raises(NRTMGeneratorException) as nge:
             generator.generate('TEST', '3', 110, 300, mock_dh)
-        assert 'There are no journal entries for this source.' in str(nge)
+        assert 'There are no journal entries for this source.' in str(nge.value)

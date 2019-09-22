@@ -181,7 +181,7 @@ class TestNRTMStreamParser:
             NRTMStreamParser('TEST', SAMPLE_NRTM_V3_SERIAL_OUT_OF_ORDER, mock_dh)
 
         error_msg = 'expected at least'
-        assert error_msg in str(ve)
+        assert error_msg in str(ve.value)
         assert len(mock_dh.mock_calls) == 1
         assert mock_dh.mock_calls[0][0] == 'record_mirror_error'
         assert mock_dh.mock_calls[0][1][0] == 'TEST'
@@ -193,7 +193,7 @@ class TestNRTMStreamParser:
             NRTMStreamParser('BADSOURCE', SAMPLE_NRTM_V3, mock_dh)
 
         error_msg = 'Invalid NRTM source in START line: expected BADSOURCE but found TEST '
-        assert error_msg in str(ve)
+        assert error_msg in str(ve.value)
         assert len(mock_dh.mock_calls) == 1
         assert mock_dh.mock_calls[0][0] == 'record_mirror_error'
         assert mock_dh.mock_calls[0][1][0] == 'BADSOURCE'
@@ -204,7 +204,7 @@ class TestNRTMStreamParser:
         with pytest.raises(ValueError) as ve:
             NRTMStreamParser('TEST', SAMPLE_NRTM_V1_TOO_MANY_ITEMS, mock_dh)
         error_msg = 'expected operations up to and including'
-        assert error_msg in str(ve)
+        assert error_msg in str(ve.value)
 
         assert len(mock_dh.mock_calls) == 1
         assert mock_dh.mock_calls[0][0] == 'record_mirror_error'
@@ -217,7 +217,7 @@ class TestNRTMStreamParser:
             NRTMStreamParser('TEST', SAMPLE_NRTM_INVALID_VERSION, mock_dh)
 
         error_msg = 'Invalid NRTM version 99 in START line'
-        assert error_msg in str(ve)
+        assert error_msg in str(ve.value)
         assert len(mock_dh.mock_calls) == 1
         assert mock_dh.mock_calls[0][0] == 'record_mirror_error'
         assert mock_dh.mock_calls[0][1][0] == 'TEST'
@@ -229,7 +229,7 @@ class TestNRTMStreamParser:
             NRTMStreamParser('TEST', SAMPLE_NRTM_V3_INVALID_MULTIPLE_START_LINES, mock_dh)
 
         error_msg = 'Encountered second START line'
-        assert error_msg in str(ve)
+        assert error_msg in str(ve.value)
 
         assert len(mock_dh.mock_calls) == 1
         assert mock_dh.mock_calls[0][0] == 'record_mirror_error'
@@ -242,7 +242,7 @@ class TestNRTMStreamParser:
             NRTMStreamParser('TEST', SAMPLE_NRTM_INVALID_NO_START_LINE, mock_dh)
 
         error_msg = 'Encountered operation before valid NRTM START line'
-        assert error_msg in str(ve)
+        assert error_msg in str(ve.value)
         assert len(mock_dh.mock_calls) == 1
         assert mock_dh.mock_calls[0][0] == 'record_mirror_error'
         assert mock_dh.mock_calls[0][1][0] == 'TEST'

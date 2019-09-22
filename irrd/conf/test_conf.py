@@ -23,7 +23,7 @@ class TestConfiguration:
     def test_file_not_existing(self, monkeypatch, tmpdir):
         with pytest.raises(ConfigurationError) as ce:
             config_init(str(tmpdir + '/doesnotexist.yaml'))
-        assert 'Error opening config file' in str(ce)
+        assert 'Error opening config file' in str(ce.value)
 
     def test_load_invalid_yaml(self, monkeypatch, tmpdir):
         tmp_file = tmpdir + '/config.yaml'
@@ -33,17 +33,17 @@ class TestConfiguration:
 
         with pytest.raises(ConfigurationError) as ce:
             config_init(str(tmp_file))
-        assert 'Error parsing YAML file' in str(ce)
+        assert 'Error parsing YAML file' in str(ce.value)
 
     def test_load_string_file(self, save_yaml_config):
         with pytest.raises(ConfigurationError) as ce:
             save_yaml_config('foo')
-        assert 'Could not find root item "irrd" in config file' in str(ce)
+        assert 'Could not find root item "irrd" in config file' in str(ce.value)
 
     def test_load_empty_config(self, save_yaml_config):
         with pytest.raises(ConfigurationError) as ce:
             save_yaml_config({})
-        assert 'Could not find root item "irrd" in config file' in str(ce)
+        assert 'Could not find root item "irrd" in config file' in str(ce.value)
 
     def test_load_valid_reload_valid_config(self, monkeypatch, save_yaml_config, tmpdir, caplog):
         logfile = str(tmpdir + '/logfile.txt')
@@ -192,25 +192,25 @@ class TestConfiguration:
         with pytest.raises(ConfigurationError) as ce:
             save_yaml_config(config)
 
-        assert 'Setting database_url is required.' in str(ce)
-        assert 'Setting email.from is required and must be an email address.' in str(ce)
-        assert 'Setting email.smtp is required.' in str(ce)
-        assert 'Setting email.footer must be a string, if defined.' in str(ce)
-        assert 'Setting auth.gnupg_keyring is required.' in str(ce)
-        assert 'Access lists doesnotexist referenced in settings, but not defined.' in str(ce)
-        assert 'Setting server.http.access_list must be a string, if defined.' in str(ce)
-        assert 'Invalid item in access list bad-list: IPv4 Address with more than 4 bytes.' in str(ce)
-        assert 'Setting sources_default contains unknown sources: DOESNOTEXIST-DB' in str(ce)
-        assert 'Setting keep_journal for source TESTDB can not be enabled unless either ' in str(ce)
-        assert 'Setting nrtm_host for source TESTDB can not be enabled without setting import_serial_source.' in str(ce)
-        assert 'Setting authoritative for source TESTDB2 can not be enabled when either nrtm_host or import_source are set.' in str(ce)
-        assert 'Setting authoritative for source TESTDB3 can not be enabled when either nrtm_host or import_source are set.' in str(ce)
-        assert 'Setting nrtm_port for source TESTDB2 must be a number.' in str(ce)
-        assert 'Setting import_timer for source TESTDB must be a number.' in str(ce)
-        assert 'Setting export_timer for source TESTDB must be a number.' in str(ce)
-        assert 'Invalid source name: lowercase' in str(ce)
-        assert 'Invalid source name: invalid char' in str(ce)
-        assert 'Invalid log.level: INVALID' in str(ce)
+        assert 'Setting database_url is required.' in str(ce.value)
+        assert 'Setting email.from is required and must be an email address.' in str(ce.value)
+        assert 'Setting email.smtp is required.' in str(ce.value)
+        assert 'Setting email.footer must be a string, if defined.' in str(ce.value)
+        assert 'Setting auth.gnupg_keyring is required.' in str(ce.value)
+        assert 'Access lists doesnotexist referenced in settings, but not defined.' in str(ce.value)
+        assert 'Setting server.http.access_list must be a string, if defined.' in str(ce.value)
+        assert 'Invalid item in access list bad-list: IPv4 Address with more than 4 bytes.' in str(ce.value)
+        assert 'Setting sources_default contains unknown sources: DOESNOTEXIST-DB' in str(ce.value)
+        assert 'Setting keep_journal for source TESTDB can not be enabled unless either ' in str(ce.value)
+        assert 'Setting nrtm_host for source TESTDB can not be enabled without setting import_serial_source.' in str(ce.value)
+        assert 'Setting authoritative for source TESTDB2 can not be enabled when either nrtm_host or import_source are set.' in str(ce.value)
+        assert 'Setting authoritative for source TESTDB3 can not be enabled when either nrtm_host or import_source are set.' in str(ce.value)
+        assert 'Setting nrtm_port for source TESTDB2 must be a number.' in str(ce.value)
+        assert 'Setting import_timer for source TESTDB must be a number.' in str(ce.value)
+        assert 'Setting export_timer for source TESTDB must be a number.' in str(ce.value)
+        assert 'Invalid source name: lowercase' in str(ce.value)
+        assert 'Invalid source name: invalid char' in str(ce.value)
+        assert 'Invalid log.level: INVALID' in str(ce.value)
 
 
 class TestGetSetting:

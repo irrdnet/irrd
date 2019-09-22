@@ -305,7 +305,7 @@ class TestMirrorFullImportRunner:
         mock_dh = Mock()
         with pytest.raises(ValueError) as ve:
             MirrorFullImportRunner('TEST').run(mock_dh)
-        assert 'scheme gopher is not supported' in str(ve)
+        assert 'scheme gopher is not supported' in str(ve.value)
 
 
 class MockMirrorFileImportParser:

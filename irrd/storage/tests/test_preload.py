@@ -114,7 +114,7 @@ class TestPreloader:
 
         with pytest.raises(ValueError) as ve:
             preloader.routes_for_origins(['AS65547'], sources, 2)
-        assert 'Invalid IP version: 2' in str(ve)
+        assert 'Invalid IP version: 2' in str(ve.value)
 
 
 class TestPreloadUpdater:

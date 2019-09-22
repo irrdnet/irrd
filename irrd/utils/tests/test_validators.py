@@ -9,12 +9,12 @@ def test_validate_as_number():
 
     with raises(ValidationError) as ve:
         parse_as_number('12345')
-    assert 'must start with' in str(ve)
+    assert 'must start with' in str(ve.value)
 
     with raises(ValidationError) as ve:
         parse_as_number('ASFOO')
-    assert 'number part is not numeric' in str(ve)
+    assert 'number part is not numeric' in str(ve.value)
 
     with raises(ValidationError) as ve:
         parse_as_number('AS429496729999')
-    assert 'maximum value is' in str(ve)
+    assert 'maximum value is' in str(ve.value)
