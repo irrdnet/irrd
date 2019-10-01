@@ -1,9 +1,10 @@
+import os
 from itertools import cycle, repeat
 
 import gzip
 from unittest.mock import Mock
 
-from irrd.mirroring.mirror_runners_export import SourceExportRunner
+from irrd.mirroring.mirror_runners_export import SourceExportRunner, EXPORT_PERMISSIONS
 from irrd.utils.test_utils import flatten_mock_calls
 
 
@@ -39,10 +40,14 @@ class TestSourceExportRunner:
         runner.run()
         runner.run()
 
-        with open(tmpdir + '/TEST.CURRENTSERIAL') as fh:
+        serial_filename = tmpdir + '/TEST.CURRENTSERIAL'
+        assert oct(os.lstat(serial_filename).st_mode)[-3:] == oct(EXPORT_PERMISSIONS)[-3:]
+        with open(serial_filename) as fh:
             assert fh.read() == '424242'
 
-        with gzip.open(tmpdir + '/test.db.gz') as fh:
+        export_filename = tmpdir + '/test.db.gz'
+        assert oct(os.lstat(export_filename).st_mode)[-3:] == oct(EXPORT_PERMISSIONS)[-3:]
+        with gzip.open(export_filename) as fh:
             assert fh.read().decode('utf-8') == 'object 1 🦄\nauth: CRYPT-PW DummyValue  # Filtered for security\n\n' \
                                                 'object 2 🌈\n\n'
 

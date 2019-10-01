@@ -11,6 +11,8 @@ from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseQuery, DatabaseStatusQuery
 from irrd.utils.text import remove_auth_hashes
 
+EXPORT_PERMISSIONS = 0o644
+
 logger = logging.getLogger(__name__)
 
 
@@ -61,6 +63,7 @@ class SourceExportRunner:
                 object_bytes = remove_auth_hashes(obj['object_text']).encode('utf-8')
                 fh.write(object_bytes + b'\n')
 
+        os.chmod(export_tmpfile.name, EXPORT_PERMISSIONS)
         if filename_export.exists():
             os.unlink(filename_export)
         if filename_serial.exists():
@@ -70,6 +73,7 @@ class SourceExportRunner:
         if serial is not None:
             with open(filename_serial, 'w') as fh:
                 fh.write(str(serial))
+            os.chmod(filename_serial, EXPORT_PERMISSIONS)
 
         self.database_handler.record_serial_exported(self.source, serial)
         logger.info(f'Export for {self.source} complete, stored in {filename_export} / {filename_serial}')
