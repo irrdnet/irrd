@@ -293,7 +293,7 @@ Sources
   gzipped. If there is no serial information available (i.e. the journal is
   empty) no serial file is produced. If the database is entirely empty, an error
   is logged and no files are exported. This directory needs to exist already,
-  IRRd will not create it.
+  IRRd will not create it. File permissions are always set to ``644``.
   |br| **Default**: not defined, no exports made.
   |br| **Change takes effect**: after SIGHUP, at the next ``export_timer``.
 * ``sources.{name}.export_timer``: the time between two full exports of all
