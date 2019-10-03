@@ -106,12 +106,16 @@ If you're new to the RST format, you may find the `quick reference`_ helpful.
 
 .. _quick reference: http://docutils.sourceforge.net/docs/user/rst/quickref.html
 
-Packaging
----------
+Making a release
+----------------
 To create a new packaged version of IRRD:
 
+* Create the new release notes and commit them in the master branch.
 * If this is a new minor release (x.y), create a new branch for it first - otherwise
   switch to the branch of the current minor release.
+* Cherry-pick the changes from the master branch, at least including the release
+  notes commit. Version updates of dependencies are not generally applied to
+  the release branch, except in case of known important bugs or security issues.
 * Ensure the version is correct/updated in ``irrd/__init__.py``.
 * Commit the version change.
 * Tag the new release with git (`git tag -a <tagname>`),
