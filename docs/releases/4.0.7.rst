@@ -1,0 +1,11 @@
+============================
+Release notes for IRRd 4.0.7
+============================
+
+IRRd 4.0.7 was released on October 3rd, 2019.
+It fixes an issue where
+`export permissions were not set correctly`_.
+In 4.0.7, the files saved to ``sources.{name}.export_destination``
+always have their permissions set to 644.
+
+.. _export permissions were not set correctly: https://github.com/irrdnet/irrd4/issues/258
