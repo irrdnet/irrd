@@ -31,7 +31,7 @@ Sphinx==2.2.1
 
 # Code style and type checks
 mypy==0.740
-flake8==3.7.8
+flake8==3.7.9
 pep8-naming==0.8.2
 
 # Creating python packages
