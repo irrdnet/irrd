@@ -49,7 +49,7 @@ class TestSourceExportRunner:
         assert oct(os.lstat(export_filename).st_mode)[-3:] == oct(EXPORT_PERMISSIONS)[-3:]
         with gzip.open(export_filename) as fh:
             assert fh.read().decode('utf-8') == 'object 1 🦄\nauth: CRYPT-PW DummyValue  # Filtered for security\n\n' \
-                                                'object 2 🌈\n\n'
+                                                'object 2 🌈\n\n# EOF\n'
 
         assert flatten_mock_calls(mock_dh) == [
             ['record_serial_exported', ('TEST', '424242'), {}],

@@ -62,6 +62,7 @@ class SourceExportRunner:
             for obj in self.database_handler.execute_query(query):
                 object_bytes = remove_auth_hashes(obj['object_text']).encode('utf-8')
                 fh.write(object_bytes + b'\n')
+            fh.write(b'# EOF\n')
 
         os.chmod(export_tmpfile.name, EXPORT_PERMISSIONS)
         if filename_export.exists():
