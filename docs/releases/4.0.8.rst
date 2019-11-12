@@ -1,0 +1,11 @@
+============================
+Release notes for IRRd 4.0.8
+============================
+
+IRRd 4.0.8 was released on November 12th, 2019.
+It adds `two minnor features`_:
+
+* An ``# EOF`` marker is added to the end of all exports.
+* Ordering in exports is now consistent between exports.
+
+.. _two minnor features: https://github.com/irrdnet/irrd4/issues/268
