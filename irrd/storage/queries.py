@@ -79,6 +79,8 @@ class BaseRPSLObjectDatabaseQuery:
                 order_by.append(self.columns.ip_first.asc())
             if 'asn_first' in self.columns:
                 order_by.append(self.columns.asn_first.asc())
+            if 'rpsl_pk' in self.columns:
+                order_by.append(self.columns.rpsl_pk.asc())
 
             if self._ordered_by_sources and self._sources_list:
                 case_elements = []

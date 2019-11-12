@@ -549,7 +549,7 @@ class TestRPSLDatabaseQueryLive:
         q = RPSLDatabaseQuery().ip_less_specific(IP('192.0.2.0/25')).first_only()
         rpsl_pks = [r['rpsl_pk'] for r in self.dh.execute_query(q)]
         assert len(rpsl_pks) == 1, f'Failed query: {q}'
-        assert '192.0.2.0/25,AS65537' in rpsl_pks
+        assert '192.0.2.0/24,AS65537' in rpsl_pks
 
         q = RPSLDatabaseQuery().sources(['TEST']).ip_less_specific_one_level(IP('192.0.2.0/27'))
         self._assert_match(q)
