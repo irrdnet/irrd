@@ -26,7 +26,6 @@ setuptools.setup(
         'python-gnupg==0.4.5',
         'passlib==1.7.1',
         'IPy==1.00',
-        'dataclasses==0.7',
         'ordered-set==3.1.1',
         'dotted==0.1.8',
         'beautifultable==0.8.0',
@@ -37,6 +36,11 @@ setuptools.setup(
         'ujson==1.35',
         'twisted==19.7.0',
     ],
+    extras_require={
+        ':python_version < "3.7"': [
+            'dataclasses==0.7',
+        ],
+    },
     entry_points={
         'console_scripts': [
             'irrd_submit_email = irrd.scripts.submit_email:main',
@@ -45,10 +49,11 @@ setuptools.setup(
             'irrd_mirror_force_reload = irrd.scripts.mirror_force_reload:main',
         ],
     },
-    classifiers=(
+    classifiers=[
         'License :: OSI Approved :: BSD License',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Operating System :: OS Independent',
-    ),
+    ],
 )
