@@ -24,17 +24,17 @@ setuptools.setup(
         # but should not include packages used for testing, generating docs
         # or packages.
         'python-gnupg==0.4.5',
-        'passlib==1.7.1',
+        'passlib==1.7.2',
         'IPy==1.00',
         'ordered-set==3.1.1',
         'dotted==0.1.8',
         'beautifultable==0.8.0',
-        'PyYAML==5.1.2',
+        'PyYAML==5.2',
         'psycopg2-binary==2.8.4',
-        'SQLAlchemy==1.3.10',
-        'alembic==1.3.0',
+        'SQLAlchemy==1.3.12',
+        'alembic==1.3.2',
         'ujson==1.35',
-        'twisted==19.7.0',
+        'twisted==19.10.0',
     ],
     extras_require={
         ':python_version < "3.7"': [
