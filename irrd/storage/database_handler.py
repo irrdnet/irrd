@@ -156,7 +156,7 @@ class DatabaseHandler:
         if len(self._rpsl_upsert_cache) > MAX_RECORDS_CACHE_BEFORE_INSERT:
             self._flush_rpsl_object_upsert_cache()
 
-    def delete_rpsl_object(self, rpsl_object: RPSLObject, forced_serial: Optional[int]=None) -> None:
+    def delete_rpsl_object(self, rpsl_object: Optional[RPSLObject]=None, source: Optional[str]=None, rpsl_pk: Optional[str]=None, forced_serial: Optional[int]=None) -> None:
         """
         Delete an RPSL object from the database.
 
@@ -165,21 +165,24 @@ class DatabaseHandler:
         """
         self._flush_rpsl_object_upsert_cache()
         table = RPSLDatabaseObject.__table__
-        source = rpsl_object.parsed_data['source']
+        if not source and rpsl_object:
+            source = rpsl_object.parsed_data['source']
+        if not rpsl_pk and rpsl_object:
+            rpsl_pk = rpsl_object.pk()
         stmt = table.delete(
-            sa.and_(table.c.rpsl_pk == rpsl_object.pk(), table.c.source == source),
+            sa.and_(table.c.rpsl_pk == rpsl_pk, table.c.source == source),
         ).returning(table.c.pk, table.c.rpsl_pk, table.c.source, table.c.object_class, table.c.object_text)
         results = self._connection.execute(stmt)
 
         if results.rowcount == 0:
-            logger.error(f'Attempted to remove object {rpsl_object.pk()}/{source}, but no database row matched')
+            logger.error(f'Attempted to remove object {rpsl_pk}/{source}, but no database row matched')
             return None
         if results.rowcount > 1:  # pragma: no cover
             # This should not be possible, as rpsl_pk/source are a composite unique value in the database scheme.
             # Therefore, a query should not be able to affect more than one row - and we also can not test this
             # scenario. Due to the possible harm of a bug in this area, we still check for it anyways.
             affected_pks = ','.join([r[0] for r in results.fetchall()])
-            msg = f'Attempted to remove object {rpsl_object.pk()}/{source}, but multiple objects were affected, '
+            msg = f'Attempted to remove object {rpsl_pk}/{source}, but multiple objects were affected, '
             msg += f'internal pks affected: {affected_pks}'
             logger.critical(msg)
             raise ValueError(msg)
@@ -315,6 +318,7 @@ class DatabaseStatusTracker:
     _sources_seen: Set[str]
     _mirroring_error: Dict[str, str]
     _exported_serials: Dict[str, int]
+    _journal_locked: bool
 
     c_journal = RPSLDatabaseJournal.__table__.c
     c_status = RPSLDatabaseStatus.__table__.c
@@ -365,7 +369,9 @@ class DatabaseStatusTracker:
             journal_tablename = RPSLDatabaseJournal.__tablename__
 
             if forced_serial is None:
-                self.database_handler.execute_statement(f'LOCK TABLE {journal_tablename} IN EXCLUSIVE MODE')
+                if not self._journal_locked:
+                    self.database_handler.execute_statement(f'LOCK TABLE {journal_tablename} IN EXCLUSIVE MODE')
+                    self._journal_locked = True
                 serial_nrtm = sa.select([sa.text(f'COALESCE(MAX(serial_nrtm), 0) + 1')])
                 serial_nrtm = serial_nrtm.where(RPSLDatabaseJournal.__table__.c.source == source)
                 serial_nrtm = serial_nrtm.as_scalar()
@@ -448,6 +454,7 @@ class DatabaseStatusTracker:
 
     def _reset(self):
         self._new_serials_per_source = defaultdict(set)
+        self._journal_locked = False
         self._sources_seen = set()
         self._mirroring_error = dict()
         self._exported_serials = dict()

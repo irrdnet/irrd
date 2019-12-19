@@ -68,7 +68,7 @@ class NRTMOperation:
         if self.operation == DatabaseOperation.add_or_update:
             database_handler.upsert_rpsl_object(obj, self.serial)
         elif self.operation == DatabaseOperation.delete:
-            database_handler.delete_rpsl_object(obj, self.serial)
+            database_handler.delete_rpsl_object(rpsl_object=obj, forced_serial=self.serial)
 
         logger.info(f'Completed NRTM operation {str(self)}/{obj.pk()}')
         return True
