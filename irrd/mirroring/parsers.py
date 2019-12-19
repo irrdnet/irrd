@@ -3,15 +3,21 @@ import re
 from typing import List, Set, Optional
 
 from irrd.conf import get_setting
-from irrd.rpsl.parser import UnknownRPSLObjectClassException
+from irrd.rpsl.parser import UnknownRPSLObjectClassException, RPSLObject
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text, RPSLKeyCert
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.models import DatabaseOperation
+from irrd.storage.queries import RPSLDatabaseQuery
 from irrd.utils.text import split_paragraphs_rpsl
 from .nrtm_operation import NRTMOperation
 
 logger = logging.getLogger(__name__)
 nrtm_start_line_re = re.compile(r'^% *START *Version: *(?P<version>\d+) +(?P<source>[\w-]+) +(?P<first_serial>\d+)-(?P<last_serial>\d+)( FILTERED)?\n$', flags=re.MULTILINE)
+
+
+class RPSLImportError(Exception):
+    def __init__(self, message: str) -> None:
+        self.message = message
 
 
 class MirrorParser:
@@ -27,7 +33,78 @@ class MirrorParser:
         self.strict_validation_key_cert = get_setting(f'sources.{self.source}.strict_import_keycert_objects', False)
 
 
-class MirrorFileImportParser(MirrorParser):
+class MirrorFileImportParserBase(MirrorParser):
+
+    def __init__(self, source: str, filename: str, database_handler: DatabaseHandler,
+                 direct_error_return: bool=False) -> None:
+        self.source = source
+        self.filename = filename
+        self.database_handler = database_handler
+        self.direct_error_return = direct_error_return
+        self.obj_parsed = 0  # Total objects found
+        self.obj_errors = 0  # Objects with errors
+        self.obj_ignored_class = 0  # Objects ignored due to object_class_filter setting
+        self.obj_unknown = 0  # Objects with unknown classes
+        self.unknown_object_classes: Set[str] = set()  # Set of encountered unknown classes
+        super().__init__()
+
+    def _parse_object(self, rpsl_text: str) -> Optional[RPSLObject]:
+        """
+        Parse and validate a single object and return it.
+        If there is a parsing error, unknown object class, invalid source:
+        - if direct_error_return is set, raises an RPSLImportError
+        - otherwise, returns None
+        """
+        try:
+            self.obj_parsed += 1
+            # If an object turns out to be a key-cert, and strict_import_keycert_objects
+            # is set, parse it again with strict validation to load it in the GPG keychain.
+            rpsl_obj = rpsl_object_from_text(rpsl_text.strip(), strict_validation=False)
+            if self.strict_validation_key_cert and rpsl_obj.__class__ == RPSLKeyCert:
+                rpsl_obj = rpsl_object_from_text(rpsl_text.strip(), strict_validation=True)
+
+            if rpsl_obj.messages.errors():
+                log_msg = f'Parsing errors: {rpsl_obj.messages.errors()}, original object text follows:\n{rpsl_text}'
+                if self.direct_error_return:
+                    raise RPSLImportError(log_msg)
+                self.database_handler.record_mirror_error(self.source, log_msg)
+                logger.critical(f'Parsing errors occurred while importing from file for {self.source}. '
+                                f'This object is ignored, causing potential data inconsistencies. A new operation for '
+                                f'this update, without errors, will still be processed and cause the inconsistency to '
+                                f'be resolved. Parser error messages: {rpsl_obj.messages.errors()}; '
+                                f'original object text follows:\n{rpsl_text}')
+                self.obj_errors += 1
+                return None
+
+            if rpsl_obj.source() != self.source:
+                msg = f'Invalid source {rpsl_obj.source()} for object {rpsl_obj.pk()}, expected {self.source}'
+                if self.direct_error_return:
+                    raise RPSLImportError(msg)
+                logger.critical(msg + '. This object is ignored, causing potential data inconsistencies.')
+                self.database_handler.record_mirror_error(self.source, msg)
+                self.obj_errors += 1
+                return None
+
+            if self.object_class_filter and rpsl_obj.rpsl_object_class.lower() not in self.object_class_filter:
+                self.obj_ignored_class += 1
+                return None
+
+            return rpsl_obj
+
+        except UnknownRPSLObjectClassException as e:
+            # Ignore legacy IRRd artifacts
+            # https://github.com/irrdnet/irrd4/issues/232
+            if e.rpsl_object_class.startswith('*xx'):
+                self.obj_parsed -= 1  # This object does not exist to us
+                return None
+            if self.direct_error_return:
+                raise RPSLImportError(f'Unknown object class: {e.rpsl_object_class}')
+            self.obj_unknown += 1
+            self.unknown_object_classes.add(e.rpsl_object_class)
+        return None
+
+
+class MirrorFileImportParser(MirrorFileImportParserBase):
     """
     This parser handles imports of files for mirror databases.
     Note that this parser can be called multiple times for a single
@@ -37,21 +114,10 @@ class MirrorFileImportParser(MirrorParser):
     upon an encountering an error message. It will return an error
     string.
     """
-    obj_parsed = 0  # Total objects found
-    obj_errors = 0  # Objects with errors
-    obj_ignored_class = 0  # Objects ignored due to object_class_filter setting
-    obj_unknown = 0  # Objects with unknown classes
-    unknown_object_classes: Set[str] = set()  # Set of encountered unknown classes
-
-    def __init__(self, source: str, filename: str, serial: Optional[int], database_handler: DatabaseHandler,
-                 direct_error_return: bool=False) -> None:
-        logger.debug(f'Starting file import of {source} from {filename}, setting serial {serial}')
-        self.source = source
-        self.filename = filename
+    def __init__(self, serial: Optional[int], *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        logger.debug(f'Starting file import of {self.source} from {self.filename}, setting serial {serial}')
         self.serial = serial
-        self.database_handler = database_handler
-        self.direct_error_return = direct_error_return
-        super().__init__()
 
     def run_import(self) -> Optional[str]:
         """
@@ -60,65 +126,16 @@ class MirrorFileImportParser(MirrorParser):
         """
         f = open(self.filename, encoding='utf-8', errors='backslashreplace')
         for paragraph in split_paragraphs_rpsl(f):
-            error = self._parse_object(paragraph)
-            if error is not None:
-                return error
+            try:
+                rpsl_obj = self._parse_object(paragraph)
+            except RPSLImportError as e:
+                if self.direct_error_return:
+                    return e.message
+            if rpsl_obj:
+                self.database_handler.upsert_rpsl_object(rpsl_obj, forced_serial=self.serial)
 
         self.log_report()
         f.close()
-        return None
-
-    def _parse_object(self, rpsl_text: str) -> Optional[str]:
-        """
-        Parse a single object. If direct_error_return is set, returns an error
-        string on encountering an error. Otherwise, returns None.
-        """
-        try:
-            self.obj_parsed += 1
-            # If an object turns out to be a key-cert, and strict_import_keycert_objects
-            # is set, parse it again with strict validation to load it in the GPG keychain.
-            obj = rpsl_object_from_text(rpsl_text.strip(), strict_validation=False)
-            if self.strict_validation_key_cert and obj.__class__ == RPSLKeyCert:
-                obj = rpsl_object_from_text(rpsl_text.strip(), strict_validation=True)
-
-            if obj.messages.errors():
-                log_msg = f'Parsing errors: {obj.messages.errors()}, original object text follows:\n{rpsl_text}'
-                if self.direct_error_return:
-                    return log_msg
-                self.database_handler.record_mirror_error(self.source, log_msg)
-                logger.critical(f'Parsing errors occurred while importing from file for {self.source}. '
-                                f'This object is ignored, causing potential data inconsistencies. A new operation for '
-                                f'this update, without errors, will still be processed and cause the inconsistency to '
-                                f'be resolved. Parser error messages: {obj.messages.errors()}; '
-                                f'original object text follows:\n{rpsl_text}')
-                self.obj_errors += 1
-                return None
-
-            if obj.source() != self.source:
-                msg = f'Invalid source {obj.source()} for object {obj.pk()}, expected {self.source}'
-                if self.direct_error_return:
-                    return msg
-                logger.critical(msg + '. This object is ignored, causing potential data inconsistencies.')
-                self.database_handler.record_mirror_error(self.source, msg)
-                self.obj_errors += 1
-                return None
-
-            if self.object_class_filter and obj.rpsl_object_class.lower() not in self.object_class_filter:
-                self.obj_ignored_class += 1
-                return None
-
-            self.database_handler.upsert_rpsl_object(obj, forced_serial=self.serial)
-
-        except UnknownRPSLObjectClassException as e:
-            # Ignore legacy IRRd artifacts
-            # https://github.com/irrdnet/irrd4/issues/232
-            if e.rpsl_object_class.startswith('*xx'):
-                self.obj_parsed -= 1  # This object does not exist to us
-                return None
-            if self.direct_error_return:
-                return f'Unknown object class: {e.rpsl_object_class}'
-            self.obj_unknown += 1
-            self.unknown_object_classes.add(e.rpsl_object_class)
         return None
 
     def log_report(self) -> None:
@@ -128,6 +145,98 @@ class MirrorFileImportParser(MirrorParser):
                     f'ignored {self.obj_errors} due to errors, '
                     f'ignored {self.obj_ignored_class} due to object_class_filter, '
                     f'serial {self.serial}, source {self.filename}')
+        if self.obj_unknown:
+            unknown_formatted = ', '.join(self.unknown_object_classes)
+            logger.warning(f'Ignored {self.obj_unknown} objects found in file import for {self.source} due to unknown '
+                           f'object classes: {unknown_formatted}')
+
+
+class MirrorUpdateFileImportParser(MirrorFileImportParserBase):
+    """
+    This parser handles files for mirror databases, and processes them
+    as the new state of that mirror, including journal entries if needed.
+    Note that this parser *can not* be called multiple times for a single
+    full import, i.e. it is not compatible with split files - when given
+    a particular file, that is treated as the full current state of that
+    particular source.
+
+    If direct_error_return is set, run_import() immediately returns
+    upon an encountering an error message. It will return an error
+    string.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        logger.debug(f'Starting update import for {self.source} from {self.filename}')
+        self.obj_new = 0  # New objects
+        self.obj_modified = 0  # Modified objects
+        self.obj_retained = 0  # Retained and possibly modified objects
+        self.obj_deleted = 0  # Deleted objects
+
+    def run_import(self) -> Optional[str]:
+        """
+        Run the actual import. If direct_error_return is set, returns an error
+        string on encountering the first error. Otherwise, returns None.
+        """
+        objs_from_file = []
+        f = open(self.filename, encoding='utf-8', errors='backslashreplace')
+        for paragraph in split_paragraphs_rpsl(f):
+            try:
+                rpsl_obj = self._parse_object(paragraph)
+            except RPSLImportError as e:
+                if self.direct_error_return:
+                    return e.message
+            if rpsl_obj:
+                objs_from_file.append(rpsl_obj)
+        f.close()
+
+        query = RPSLDatabaseQuery(ordered_by_sources=False, enable_ordering=False,
+                                  column_names=['rpsl_pk']).sources([self.source])
+        current_pks = {row['rpsl_pk'] for row in self.database_handler.execute_query(query)}
+
+        file_objs_by_pk = {obj.pk(): obj for obj in objs_from_file}
+        file_pks = set(file_objs_by_pk.keys())
+        new_pks = file_pks - current_pks
+        deleted_pks = current_pks - file_pks
+        retained_pks = file_pks.intersection(current_pks)
+
+        self.obj_new = len(new_pks)
+        self.obj_deleted = len(deleted_pks)
+        self.obj_retained = len(retained_pks)
+
+        for rpsl_pk, file_obj in filter(lambda i: i[0] in new_pks, file_objs_by_pk.items()):
+            self.database_handler.upsert_rpsl_object(file_obj)
+
+        for rpsl_pk in deleted_pks:
+            self.database_handler.delete_rpsl_object(rpsl_pk=rpsl_pk, source=self.source)
+
+        # This query does not filter on retained_pks. The expectation is that most
+        # objects are retained, and therefore it is much faster to query the entire source.
+        query = RPSLDatabaseQuery(ordered_by_sources=False, enable_ordering=False,
+                                  column_names=['rpsl_pk', 'object_text'])
+        query = query.sources([self.source])
+        for row in self.database_handler.execute_query(query):
+            try:
+                file_obj = file_objs_by_pk[row['rpsl_pk']]
+            except KeyError:
+                continue
+            if file_obj.render_rpsl_text() != row['object_text']:
+                self.database_handler.upsert_rpsl_object(file_obj)
+                self.obj_modified += 1
+
+        self.log_report()
+        return None
+
+    def log_report(self) -> None:
+        obj_successful = self.obj_parsed - self.obj_unknown - self.obj_errors - self.obj_ignored_class
+        logger.info(f'File update for {self.source}: {self.obj_parsed} objects read, '
+                    f'{obj_successful} objects processed, '
+                    f'{self.obj_new} objects newly inserted, '
+                    f'{self.obj_deleted} objects newly deleted, '
+                    f'{self.obj_retained} objects retained, of which '
+                    f'{self.obj_modified} modified, '
+                    f'ignored {self.obj_errors} due to errors, '
+                    f'ignored {self.obj_ignored_class} due to object_class_filter, '
+                    f'source {self.filename}')
         if self.obj_unknown:
             unknown_formatted = ', '.join(self.unknown_object_classes)
             logger.warning(f'Ignored {self.obj_unknown} objects found in file import for {self.source} due to unknown '

@@ -141,8 +141,8 @@ mirroring a source, a third party mirrors this from your instance), will also
 have to do a full reload, as the journal for NRTM queries is purged when
 doing a full reload.
 
-Periodic full imports
-~~~~~~~~~~~~~~~~~~~~~
+Periodic scheduled full imports
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 For sources that do not offer NRTM, simply configuring a source of the data in
 `import_source` will make IRRd perform a new full import, every `import_timer`.
 Journals can not be generated, and NRTM queries by clients for this source will
@@ -159,6 +159,7 @@ imported can consist of one or multiple files.
 
 Validation and filtering
 ~~~~~~~~~~~~~~~~~~~~~~~~
+
 Regardless of mode, all objects received from mirrors are processed with
 :doc:`non-strict object validation </admins/object-validation>`. Any objects
 that are rejected, are logged at the `CRITICAL` level, as they cause a data
@@ -174,9 +175,23 @@ If this setting is undefined, all known classes are accepted.
 Manually loading data
 ---------------------
 
-A third option is to manually load data. This can be useful while testing,
-or when generating data files from scripts, as it provides direct feedback
-on whether loading data was successful.
+IRRd also supports manually loading data. The primary use for this is a
+scenario where an external system or scripts generated RPSL data, and
+IRRd should serve that data. It can also be useful for testing.
+
+It's somewhat different from typical mirroring, where the authority
+for the data lies with a third party. For this reason, manual data loading
+uses stricter validation as well.
+
+There are two ways to use manual data loading:
+
+* Calling the ``irrd_load_database`` command periodically. Each call will
+  overwrite all data for a specific source, and erase existing journal
+  entries.
+* Calling the ``irrd_load_database`` command once, and then using the
+  ``irrd_update_database`` command to update the state of the database.
+  This may be slower, but will generate journal entries to support offering
+  NRTM mirroring services.
 
 .. caution::
     This process is intended for data sources such as produced by scripts.
@@ -184,21 +199,24 @@ on whether loading data was successful.
     execution is a likely cause for any issues in the data.
     To force a reload of a regular mirror that normally uses NRTM,
     use the ``irrd_mirror_force_reload`` command instead.
+    Mixing manual data loading with the regular mirroring options documented
+    above is not recommended.
 
-Manual loading uses the ``irrd_load_database`` command:
+Command usage
+~~~~~~~~~~~~~
+The ``irrd_load_database`` and ``irrd_update_database`` command work as follows:
 
 * The command can be called, providing a name of a source and a path to
   the file to import. This file can not be gzipped.
 * The source must already be in the config file, with empty settings
   otherwise if no other settings are needed. The source does not have to
   be authoritative.
-* Optionally, a serial number can be set. See the notes about serials below.
 * Upon encountering the first error, the process is aborted, and an error
   is printed to stdout. No records are made/changed in the database or in
   the logs, the previously existing objects will remain in the database.
   The exit status is 1.
-* When no errors were encountered, all objects for this source are replaced
-  with those found in the import file. Log messages are written about the
+* When no errors were encountered, the provided file is considered the new
+  and current state for the source. Log messages are written about the
   result of the import. The exit status is 0. Nothing is written to stdout.
 * An error means encountering an object that raises errors in
   :doc:`non-strict object validation </admins/object-validation>`,
@@ -208,7 +226,9 @@ Manual loading uses the ``irrd_load_database`` command:
   as these are harmless artifacts from certain legacy IRRd versions.
 * The object class filter configured, if any, is followed.
 
-On serials:
+Serial handling
+~~~~~~~~~~~~~~~
+The ``irrd_load_database`` command can be passed a serial to set:
 
 * If no serial is provided, and none has in the past, no serial is
   recorded. This is similar to sources that have ``import_source``
@@ -226,11 +246,28 @@ On serials:
     When other databases mirror the source being loaded,
     it is advisable to use incrementing serials, as they may use the
     CURRENTSERIAL file to determine whether to run a new import.
-    Journals can not be kept of manually loaded sources.
 
+The ``irrd_update_database`` command automatically generates the correct
+serials, as required for NRTM support. If no journal entries currently
+exist, the serial of the first entry will be the highest seen serial
+plus one.
+
+Examples
+~~~~~~~~
 For example, to load data for source TEST with serial 10::
 
-    irrd_load_database --irrd_pidfile /home/irrd/irrd.pid --source TEST --serial 10 test.db
+    irrd_load_database --irrd_pidfile /home/irrd/irrd.pid --source TEST --serial 10 testv1.db
+
+This command will replace all objects for source `TEST` with the contents of
+``testv1.db``, and delete all journal entries.
+
+To update the database from a new file::
+
+    irrd_update_database --irrd_pidfile /home/irrd/irrd.pid --source TEST testv2.db
+
+This command will update the objects for source `TEST` to match the contents
+of `testv2.db`. Journal entries, available over NRTM, are generated for the
+changes between ``testv1.db`` and ``testv2.db``.
 
 The ``--config`` parameter can be used to read the configuration from a
 different config file. Note that this script always acts on the current
@@ -243,7 +280,13 @@ is not running, e.g. during a quick restart, no signal is sent, as the
 preloaded data will be updated when IRRd starts.
 
 .. caution::
-    Upon manually loading data, all existing journal entries for the
-    source are discarded, as they may no longer be complete.
+    Each time ``irrd_load_database`` is called, all existing journal
+    entries for the source are discarded, as they may no longer be complete.
+    This breaks any ongoing NRTM mirroring by third parties.
     This only applies if loading was successful.
 
+Performance
+~~~~~~~~~~~
+The ``irrd_update_database`` command is one of the slower processes in IRRd,
+due to the complexity of determining the changes between the datasets.
+It is not intended for larger datasets, e.g. those over 150.000 objects.
