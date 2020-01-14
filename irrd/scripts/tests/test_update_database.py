@@ -51,3 +51,15 @@ def test_update_database_import_error(capsys, monkeypatch, caplog):
     assert 'object-parsing-error' not in caplog.text
     stdout = capsys.readouterr().out
     assert 'Error occurred while processing object:\nobject-parsing-error' in stdout
+
+
+def test_reject_import_source_set(capsys, config_override):
+    config_override({
+        'sources': {
+            'TEST': {'import_source': 'import-url'}
+        },
+    })
+    assert update('TEST', 'test.db', 'pidfile') == 2
+    stdout = capsys.readouterr().out
+    assert 'Error: to use this command, import_source and import_serial_' \
+           'source for source TEST must not be set.' in stdout

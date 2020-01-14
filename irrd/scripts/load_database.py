@@ -15,12 +15,20 @@ Load an RPSL file into the database.
 logger = logging.getLogger(__name__)
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
-from irrd.conf import config_init, CONFIG_PATH_DEFAULT
+from irrd.conf import config_init, CONFIG_PATH_DEFAULT, get_setting
 from irrd.mirroring.parsers import MirrorFileImportParser
 from irrd.storage.database_handler import DatabaseHandler
 
 
 def load(source, filename, serial, irrd_pidfile) -> int:
+    if any([
+        get_setting(f'sources.{source}.import_source'),
+        get_setting(f'sources.{source}.import_serial_source')
+    ]):
+        print(f'Error: to use this command, import_source and import_serial_source '
+              f'for source {source} must not be set.')
+        return 2
+
     dh = DatabaseHandler(enable_preload_update=False)
     dh.delete_all_rpsl_objects_with_journal(source)
     dh.disable_journaling()

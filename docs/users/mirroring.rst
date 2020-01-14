@@ -225,6 +225,10 @@ The ``irrd_load_database`` and ``irrd_update_database`` command work as follows:
   Unknown object classes that start with ``*xx`` are silently ignored,
   as these are harmless artifacts from certain legacy IRRd versions.
 * The object class filter configured, if any, is followed.
+* Manual object loading and other mirroring settings can not be mixed
+  for the same source. Both commands will return an error and exit with
+  status 2 if ``import_source`` or ``import_source_serial`` are set for
+  the provided source.
 
 Serial handling
 ~~~~~~~~~~~~~~~
