@@ -318,6 +318,7 @@ class DatabaseStatusTracker:
     _sources_seen: Set[str]
     _mirroring_error: Dict[str, str]
     _exported_serials: Dict[str, int]
+    _starting_serials: Dict[str, int]
     _journal_locked: bool
 
     c_journal = RPSLDatabaseJournal.__table__.c
@@ -372,7 +373,8 @@ class DatabaseStatusTracker:
                 if not self._journal_locked:
                     self.database_handler.execute_statement(f'LOCK TABLE {journal_tablename} IN EXCLUSIVE MODE')
                     self._journal_locked = True
-                serial_nrtm = sa.select([sa.text(f'COALESCE(MAX(serial_nrtm), 0) + 1')])
+                starting_serial = self._starting_serial(source)
+                serial_nrtm = sa.select([sa.text(f'COALESCE(MAX(serial_nrtm), {starting_serial}) + 1')])
                 serial_nrtm = serial_nrtm.where(RPSLDatabaseJournal.__table__.c.source == source)
                 serial_nrtm = serial_nrtm.as_scalar()
             else:
@@ -452,9 +454,25 @@ class DatabaseStatusTracker:
 
         self._reset()
 
+    def _starting_serial(self, source: str) -> int:
+        if source in self._starting_serials:
+            return self._starting_serials[source]
+        statement = sa.select([
+            sa.func.greatest(self.c_status.serial_newest_seen,
+                             self.c_status.serial_newest_journal)
+        ])
+        statement = statement.where(self.c_status.source == source)
+        result = self.database_handler.execute_statement(statement).fetchone()
+        if result and result[0]:
+            self._starting_serials[source] = result[0]
+        else:
+            self._starting_serials[source] = 0
+        return self._starting_serials[source]
+
     def _reset(self):
         self._new_serials_per_source = defaultdict(set)
         self._journal_locked = False
         self._sources_seen = set()
         self._mirroring_error = dict()
         self._exported_serials = dict()
+        self._starting_serials = dict()
