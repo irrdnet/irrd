@@ -41,17 +41,23 @@ which records:
   in other cases the value is a string. This allows for queries like
   "all objects where `mnt-by` contains a certain value".
 * `object_text`: the full text of the object as a single text.
-* `ip_version`, `ip_first`, `ip_last`, `ip_size`, `asn_first`, `asn_last`:
-  a int / INET / int value describing which resources the objects refers
-  to. For example, in a route with primary key ``192.0.2.0/24AS23456``
-  these columns would record: ``4``, ``192.0.2.0``, ``192.0.2.255``,
-  ``256``, ``23456``, ``23456``.
+* `ip_version`, `ip_first`, `ip_last`, `ip_size`, `prefix_length`,
+  `asn_first`, `asn_last`: a int / INET / int value describing which
+  resources the objects refers to. For example, in a route with primary
+  key ``192.0.2.0/24AS23456`` these columns would record: ``4``,
+  ``192.0.2.0``, ``192.0.2.255``, ``256``, ``24``, ``23456``, ``23456``.
+  Note that `prefix_length` is only filled for `route(6)` objects.
+* `rpki_status`: the RPKI status of this object, which can be valid,
+  invalid or unknown. For objects other than `route(6)`, this is always
+  unknown. Note that the current RPKI processes do not always set the
+  valid status for performance reasons, i.e. the practical use of
+  this column is currently to distinguish invalid from not-invalid.
 
 The columns `rpsl_pk` and `source` must be unique together.
 The columns `pk`, `rpsl_pk`, `source`, `ip_version`, `ip_first`,
-`ip_last`, `asn_first`, and `asn_last` are indexed with several kinds
-of indexes. In addition, all lookup keys in `parsed_data` are indexed,
-so the following query uses an efficient index too::
+`ip_last`, `asn_first`, `asn_last` and `rpki_status`  are indexed with
+several kinds of indexes. In addition, all lookup keys in `parsed_data`
+are indexed, so the following query uses an efficient index too::
 
     SELECT * FROM rpsl_objects where parsed_data->'mnt-by' ? 'MY-MNTNER';
 
@@ -120,6 +126,23 @@ For each source, a record is kept of:
     in the configuration. If others mirror the reloaded source from this
     IRRd instance, they will also have to discard their local data and
     reimport, as the journal used for NRTM queries will be reset.
+
+
+ROAs
+~~~~
+When :doc:`RPKI-aware mode </admins/rpki>` mode is enabled, the `roa_object`
+table is loaded with ROAs. These are periodically reloaded, and the copy
+in the database is used when processing change requests from users, NRTM
+updates and full mirror imports.
+
+* `pk`: a random UUID, primary key of the table.
+* `prefix`: the prefix of the ROA
+* `asn`: the valid origin AS recorded in the ROA (can be zero)
+* `max_length`: the max prefix length the ROA allows
+* `trust_anchor`: the trust anchor for the ROA (free text)
+* `ip_version`: the IP version of `prefix`.
+
+The fields `prefix`, `asn` and `max_length` must be unique together.
 
 
 Updating the database
