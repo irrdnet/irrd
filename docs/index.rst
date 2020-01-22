@@ -70,7 +70,7 @@ Release notes
 .. toctree::
    :maxdepth: 1
 
-   releases/4.1.0
+   releases/index
 
 Other
 -----

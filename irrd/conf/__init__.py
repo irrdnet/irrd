@@ -1,17 +1,15 @@
 import sys
-
-import logging.config
 import time
 
+import logging.config
+import os
 import re
 import signal
 import yaml
 from IPy import IP
+from dotted.collection import DottedDict
 from pathlib import Path
 from typing import Any, List, Optional
-import os
-
-from dotted.collection import DottedDict
 
 CONFIG_PATH_DEFAULT = '/etc/irrd.yaml'
 
@@ -80,7 +78,7 @@ class Configuration:
     user_config_staging: DottedDict
     user_config_live: DottedDict
 
-    def __init__(self, user_config_path: Optional[str]=None):
+    def __init__(self, user_config_path: Optional[str]=None, commit=True):
         """
         Load the default config and load and check the user provided config.
         If a logfile was specified, direct logs there.
@@ -93,21 +91,23 @@ class Configuration:
         errors = self._staging_reload_check(log_success=False)
         if errors:
             raise ConfigurationError(f'Errors found in configuration, unable to start: {errors}')
-        self._commit_staging()
 
-        logfile_path = self.get_setting_live('log.logfile_path')
-        if logfile_path:
-            LOGGING['handlers']['file'] = {   # type:ignore
-                'class': 'logging.handlers.WatchedFileHandler',
-                'filename': logfile_path,
-                'formatter': 'verbose',
-            }
-            # noinspection PyTypeChecker
-            LOGGING['loggers']['']['handlers'] = ['file']   # type:ignore
-            logging.config.dictConfig(LOGGING)
+        if commit:
+            self._commit_staging()
 
-        # Re-commit to apply loglevel
-        self._commit_staging()
+            logfile_path = self.get_setting_live('log.logfile_path')
+            if logfile_path:
+                LOGGING['handlers']['file'] = {   # type:ignore
+                    'class': 'logging.handlers.WatchedFileHandler',
+                    'filename': logfile_path,
+                    'formatter': 'verbose',
+                }
+                # noinspection PyTypeChecker
+                LOGGING['loggers']['']['handlers'] = ['file']   # type:ignore
+                logging.config.dictConfig(LOGGING)
+
+            # Re-commit to apply loglevel
+            self._commit_staging()
 
     def get_setting_live(self, setting_name: str, default: Any=None) -> Any:
         """
@@ -147,7 +147,7 @@ class Configuration:
         self._commit_staging()
         return True
 
-    def _commit_staging(self):
+    def _commit_staging(self) -> None:
         """
         Activate the current staging config as the live config.
         """
@@ -183,7 +183,7 @@ class Configuration:
 
         errors = self._check_staging_config()
         if not errors and log_success:
-            logger.info(f'Configuration successfully (re)loaded from {self.user_config_path}')
+            logger.info(f'Configuration successfully (re)loaded from {self.user_config_path} in PID {os.getpid()}')
         return errors
 
     def _check_staging_config(self) -> List[str]:
@@ -196,6 +196,12 @@ class Configuration:
 
         if not self._check_is_str(config, 'database_url'):
             errors.append(f'Setting database_url is required.')
+
+        if not self._check_is_str(config, 'redis_url'):
+            errors.append(f'Setting redis_url is required.')
+
+        if not self._check_is_str(config, 'piddir') or not os.path.isdir(config['piddir']):
+            errors.append(f'Setting piddir is required and must point to an existing directory.')
 
         expected_access_lists = {
             config.get('server.whois.access_list'),
@@ -277,13 +283,18 @@ class Configuration:
 configuration = None
 
 
-def config_init(config_path):
+def get_configuration() -> Optional[Configuration]:
     global configuration
-    configuration = Configuration(config_path)
+    return configuration
 
 
-def is_config_initialised():
+def config_init(config_path, commit=True) -> None:
     global configuration
+    configuration = Configuration(config_path, commit)
+
+
+def is_config_initialised() -> bool:
+    configuration = get_configuration()
     return configuration is not None
 
 
@@ -293,19 +304,19 @@ def get_setting(setting_name: str, default: Any=None) -> Any:
     Creates a Configuration object if none exists, and
     retrieves the live setting from that object.
     """
-    global configuration
+    configuration = get_configuration()
     if not configuration:  # pragma: no cover
         raise Exception('get_setting() called before configuration was initialised')
     return configuration.get_setting_live(setting_name, default)
 
 
-def sighup_handler(signum, frame):
+def sighup_handler(signum, frame) -> None:
     """
     Reload the settings when a SIGHUP is received.
     Note that not all processes re-read their settings on every run,
     so not all settings can be changed while running.
     """
-    global configuration
+    configuration = get_configuration()
     if configuration:
         configuration.reload()
 

@@ -230,17 +230,11 @@ On serials:
 
 For example, to load data for source TEST with serial 10::
 
-    irrd_load_database --irrd_pidfile /home/irrd/irrd.pid --source TEST --serial 10 test.db
+    irrd_load_database --source TEST --serial 10 test.db
 
 The ``--config`` parameter can be used to read the configuration from a
 different config file. Note that this script always acts on the current
 configuration file - not on the configuration that IRRd started with.
-
-The ``--irrd_pidfile`` parameter is required, and should be set to the
-pidfile of the running IRRd instance. This is needed to signal the IRRd
-instance to update preloaded data. If the file does not exist, or the instance
-is not running, e.g. during a quick restart, no signal is sent, as the
-preloaded data will be updated when IRRd starts.
 
 .. caution::
     Upon manually loading data, all existing journal entries for the

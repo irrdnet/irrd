@@ -15,7 +15,7 @@ from irrd.utils.whois_client import whois_query_source_status
 logger = logging.getLogger(__name__)
 
 
-class DatabaseStatusRequest:
+class StatusGenerator:
 
     def generate_status(self) -> str:
         """

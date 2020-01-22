@@ -1,12 +1,15 @@
 import time
 
-from ..scheduler import MirrorScheduler
+import threading
+
+from ..scheduler import MirrorScheduler, ScheduledTaskProcess
 
 thread_run_count = 0
 
 
 class TestMirrorScheduler:
     def test_scheduler_runs_rpsl_import(self, monkeypatch, config_override):
+        monkeypatch.setattr('irrd.mirroring.scheduler.ScheduledTaskProcess', MockScheduledTaskProcess)
         global thread_run_count
         thread_run_count = 0
 
@@ -25,11 +28,14 @@ class TestMirrorScheduler:
         scheduler = MirrorScheduler()
         scheduler.run()
         # Second run will not start the thread, as the current one is still running
+        time.sleep(0.5)
         scheduler.run()
 
+        time.sleep(0.5)
         assert thread_run_count == 1
 
     def test_scheduler_runs_roa_import(self, monkeypatch, config_override):
+        monkeypatch.setattr('irrd.mirroring.scheduler.ScheduledTaskProcess', MockScheduledTaskProcess)
         global thread_run_count
         thread_run_count = 0
 
@@ -45,11 +51,13 @@ class TestMirrorScheduler:
         scheduler = MirrorScheduler()
         scheduler.run()
         # Second run will not start the thread, as the current one is still running
+        time.sleep(0.5)
         scheduler.run()
 
         assert thread_run_count == 1
 
     def test_scheduler_import_ignores_timer_not_expired(self, monkeypatch, config_override):
+        monkeypatch.setattr('irrd.mirroring.scheduler.ScheduledTaskProcess', MockScheduledTaskProcess)
         global thread_run_count
         thread_run_count = 0
 
@@ -67,6 +75,7 @@ class TestMirrorScheduler:
 
         scheduler = MirrorScheduler()
         scheduler.run()
+        time.sleep(0.5)
         assert thread_run_count == 1
 
         # Second run will not start due to timer not expired yet
@@ -75,6 +84,7 @@ class TestMirrorScheduler:
         assert thread_run_count == 1
 
     def test_scheduler_runs_export(self, monkeypatch, config_override):
+        monkeypatch.setattr('irrd.mirroring.scheduler.ScheduledTaskProcess', MockScheduledTaskProcess)
         global thread_run_count
         thread_run_count = 0
 
@@ -92,12 +102,14 @@ class TestMirrorScheduler:
 
         scheduler = MirrorScheduler()
         scheduler.run()
+        time.sleep(0.5)
         # Second run will not start the thread, as the current one is still running.psql
         scheduler.run()
 
         assert thread_run_count == 1
 
     def test_scheduler_export_ignores_timer_not_expired(self, monkeypatch, config_override):
+        monkeypatch.setattr('irrd.mirroring.scheduler.ScheduledTaskProcess', MockScheduledTaskProcess)
         global thread_run_count
         thread_run_count = 0
 
@@ -115,11 +127,21 @@ class TestMirrorScheduler:
 
         scheduler = MirrorScheduler()
         scheduler.run()
+        time.sleep(0.5)
         assert thread_run_count == 1
 
         # Second run will not start due to timer not expired yet
-        time.sleep(0.5)
         scheduler.run()
+        time.sleep(0.5)
+        assert thread_run_count == 1
+
+
+class TestScheduledTaskProcess:
+    def test_task(self):
+        global thread_run_count
+        thread_run_count = 0
+        MockRunner.run_sleep = True
+        ScheduledTaskProcess(runner=MockRunner('TEST'), name='test').run()
         assert thread_run_count == 1
 
 
@@ -133,4 +155,16 @@ class MockRunner:
         global thread_run_count
         thread_run_count += 1
         if self.run_sleep:
-            time.sleep(1)
+            time.sleep(1.5)
+
+
+class MockScheduledTaskProcess(threading.Thread):
+    def __init__(self, runner, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.runner = runner
+
+    def run(self):
+        self.runner.run()
+
+    def resilient_is_alive(self):
+        return self.is_alive()

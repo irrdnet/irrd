@@ -49,7 +49,9 @@ class TestConfiguration:
         logfile = str(tmpdir + '/logfile.txt')
         config = {
             'irrd': {
-                'database_url': 'invalid-url',
+                'database_url': 'db-url',
+                'redis_url': 'redis-url',
+                'piddir': str(tmpdir),
                 'email': {
                     'from': 'example@example.com',
                     'smtp': '192.0.2.1'
@@ -106,7 +108,9 @@ class TestConfiguration:
     def test_load_valid_reload_invalid_config(self, save_yaml_config, tmpdir, caplog):
         save_yaml_config({
             'irrd': {
-                'database_url': 'invalid-url',
+                'database_url': 'db-url',
+                'redis_url': 'redis-url',
+                'piddir': str(tmpdir),
                 'email': {
                     'from': 'example@example.com',
                     'smtp': '192.0.2.1'
@@ -152,6 +156,7 @@ class TestConfiguration:
     def test_load_invalid_config(self, save_yaml_config, tmpdir):
         config = {
             'irrd': {
+                'piddir': str(tmpdir + '/does-not-exist'),
                 'server': {
                     'whois': {
                         'access_list': 'doesnotexist',
@@ -204,6 +209,8 @@ class TestConfiguration:
             save_yaml_config(config)
 
         assert 'Setting database_url is required.' in str(ce.value)
+        assert 'Setting redis_url is required.' in str(ce)
+        assert 'Setting piddir is required and must point to an existing directory.' in str(ce)
         assert 'Setting email.from is required and must be an email address.' in str(ce.value)
         assert 'Setting email.smtp is required.' in str(ce.value)
         assert 'Setting email.footer must be a string, if defined.' in str(ce.value)

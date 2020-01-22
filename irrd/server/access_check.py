@@ -6,17 +6,19 @@ from irrd.conf import get_setting
 logger = logging.getLogger(__name__)
 
 
-def is_client_permitted(peer, access_list_setting, default_deny=True) -> bool:
+def is_client_permitted(ip: str, access_list_setting: str, default_deny=True) -> bool:
     """
     Determine whether a client is permitted to access an interface,
     based on the value of the setting of access_list_setting.
     If default_deny is True, an unset or empty access list will lead to denial.
+
+    IPv6-mapped IPv4 addresses are unmapped to regular IPv4 addresses before processing.
     """
     try:
-        client_ip = IP(peer.host)
+        client_ip = IP(ip)
     except (ValueError, AttributeError) as e:
         logger.error(f'Rejecting request as client IP could not be read from '
-                     f'{peer}: {e}')
+                     f'{ip}: {e}')
         return False
 
     if client_ip.version() == 6:

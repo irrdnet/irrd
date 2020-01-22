@@ -42,7 +42,7 @@ def irrd_database(monkeypatch):
                         f'to overwrite existing database.')
     RPSLDatabaseObject.metadata.create_all(engine)
 
-    monkeypatch.setattr('irrd.storage.database_handler.get_preloader', lambda: Mock(spec=Preloader))
+    monkeypatch.setattr('irrd.storage.database_handler.Preloader', lambda: Mock(spec=Preloader))
 
     yield None
 
@@ -99,7 +99,7 @@ class TestDatabaseHandlerLive:
         )
 
         self.dh = DatabaseHandler()
-        self.dh.preloader.reload = Mock(return_value=None)
+        self.dh.preloader.signal_reload = Mock(return_value=None)
         self.dh.upsert_rpsl_object(rpsl_object_route_v4, 42)
         assert len(self.dh._rpsl_upsert_buffer) == 1
 
@@ -258,7 +258,7 @@ class TestDatabaseHandlerLive:
 
         self.dh.close()
 
-        assert flatten_mock_calls(self.dh.preloader.reload) == [
+        assert flatten_mock_calls(self.dh.preloader.signal_reload) == [
             ['', ({'route'},), {}],
             ['', ({'route'},), {}]
         ]

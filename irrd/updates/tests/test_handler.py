@@ -14,7 +14,7 @@ from ..handler import ChangeSubmissionHandler
 def prepare_mocks(monkeypatch, config_override):
     monkeypatch.setenv('IRRD_SOURCES_TEST_AUTHORITATIVE', '1')
     mock_dh = Mock()
-    monkeypatch.setattr('irrd.updates.handler.DatabaseHandler', lambda enable_preload_update=True: mock_dh)
+    monkeypatch.setattr('irrd.updates.handler.DatabaseHandler', lambda: mock_dh)
     mock_dq = Mock()
     monkeypatch.setattr('irrd.updates.handler.RPSLDatabaseQuery', lambda: mock_dq)
     monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)

@@ -25,7 +25,7 @@ class ChangeSubmissionHandler:
     """
 
     def __init__(self, object_texts: str, pgp_fingerprint: str=None, request_meta: Dict[str, Optional[str]]=None) -> None:
-        self.database_handler = DatabaseHandler(enable_preload_update=False)
+        self.database_handler = DatabaseHandler()
         self.request_meta = request_meta if request_meta else {}
         self._pgp_key_id = self._resolve_pgp_key_id(pgp_fingerprint) if pgp_fingerprint else None
         self._handle_object_texts(object_texts)

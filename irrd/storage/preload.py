@@ -1,46 +1,44 @@
-import itertools
+import multiprocessing
+import time
 from collections import defaultdict
 
 import logging
 import math
-import os
-import signal
+import redis
 import threading
-from collections import defaultdict
-from typing import Optional, List, Set, Dict
+from setproctitle import setproctitle
+from typing import Optional, List, Set, Dict, Union
 
+from irrd.conf import get_setting
 from irrd.rpki.status import RPKIStatus
 from .queries import RPSLDatabaseQuery
 
-RELOAD_SIGNAL = signal.SIGUSR1
-
-_preloader = None
+REDIS_ORIGIN_ROUTE4_STORE_KEY = b'irrd-preload-origin-route4'
+REDIS_ORIGIN_ROUTE6_STORE_KEY = b'irrd-preload-origin-route6'
+REDIS_ORIGIN_LIST_SEPARATOR = ','
+REDIS_PRELOAD_RELOAD_CHANNEL = b'irrd-preload-reload-channel'
 
 logger = logging.getLogger(__name__)
+
+"""
+The preloader allows information to be preloaded into memory.
+
+For queries that repeat often, or repeatedly retrieve nearly the same,
+large data sets, this can improve performance.
+"""
 
 
 class Preloader:
     """
-    The preloader allows information to be preloaded into memory.
-
-    For queries that repeat often, or repeatedly retrieve nearly the same,
-    large data sets, this can improve performance.
-
-    The DatabaseHandler calls reload() when data has been changed, added or
-    deleted, which may then cause a thread to be scheduled to update the
-    store, or conclude an update is already pending anyways.
+    A preloader object provides access to the preload store.
+    It can be used to query the store, or signal that the store
+    needs to be updated. This interface can be used from any thread
+    or process.
     """
     def __init__(self):
-        self._origin_route4_store = defaultdict(lambda: defaultdict(set))
-        self._origin_route6_store = defaultdict(lambda: defaultdict(set))
+        self._redis_conn = redis.Redis.from_url(get_setting('redis_url'))
 
-        self._reload_lock = threading.Lock()
-        self._threads = []
-
-        self._store_ready_event = threading.Event()
-        self.reload()
-
-    def routes_for_origins(self, origins: List[str], sources: List[str], ip_version: Optional[int]=None) -> Set[str]:
+    def routes_for_origins(self, origins: Union[List[str], Set[str]], ip_version: Optional[int]=None) -> Set[str]:
         """
         Retrieve all prefixes (in str format) originating from the provided origins,
         from the given sources.
@@ -51,28 +49,100 @@ class Preloader:
         Origins must be strings in a cleaned format, e.g. AS65537, but not
         AS065537 or as65537.
         """
-        self._store_ready_event.wait()
-
         if ip_version and ip_version not in [4, 6]:
             raise ValueError(f'Invalid IP version: {ip_version}')
+        if not origins:
+            return set()
 
-        prefix_sets: Set[str] = set()
-        for origin in origins:
-            for source in sources:
-                if not ip_version or ip_version == 4:
-                    try:
-                        prefix_sets.update(self._origin_route4_store[origin][source])
-                    except KeyError:
-                        pass
-                if not ip_version or ip_version == 6:
-                    try:
-                        prefix_sets.update(self._origin_route6_store[origin][source])
-                    except KeyError:
-                        pass
+        while not self._redis_conn.exists(REDIS_ORIGIN_ROUTE4_STORE_KEY):
+            time.sleep(1)  # pragma: no cover
 
-        return prefix_sets
+        prefixes: Set[str] = set()
+        origins_bytes = [origin.encode('ascii') for origin in origins]
 
-    def reload(self, object_classes_changed: Optional[Set[str]]=None) -> None:
+        if not ip_version or ip_version == 4:
+            prefixes_for_origins = self._redis_conn.hmget(REDIS_ORIGIN_ROUTE4_STORE_KEY, origins_bytes)
+            for prefixes_for_origin in prefixes_for_origins:
+                if prefixes_for_origin:
+                    prefixes.update(prefixes_for_origin.decode('ascii').split(REDIS_ORIGIN_LIST_SEPARATOR))
+
+        if not ip_version or ip_version == 6:
+            prefixes_for_origins = self._redis_conn.hmget(REDIS_ORIGIN_ROUTE6_STORE_KEY, origins_bytes)
+            for prefixes_for_origin in prefixes_for_origins:
+                if prefixes_for_origin:
+                    prefixes.update(prefixes_for_origin.decode('ascii').split(REDIS_ORIGIN_LIST_SEPARATOR))
+
+        return prefixes
+
+    def signal_reload(self, object_classes_changed: Optional[Set[str]]=None) -> None:
+        """
+        Perform a (re)load.
+        Should be called after changes to the DB have been committed.
+
+        This will signal the process running PreloadStoraManager to reload
+        the store.
+
+        If object_classes_changed is provided, a reload is only performed
+        if those classes are relevant to the data in the preload store.
+        """
+        relevant_object_classes = {'route', 'route6'}
+        if object_classes_changed is not None and not object_classes_changed.intersection(relevant_object_classes):
+            return
+        self._redis_conn.publish(REDIS_PRELOAD_RELOAD_CHANNEL, 'reload')
+
+
+class PreloadStoreManager(multiprocessing.Process):
+    """
+    The preload store manager manages the preloaded data store, and ensures
+    it is created and updated.
+    There should only be one of these per IRRd instance.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._redis_conn = redis.Redis.from_url(get_setting('redis_url'))
+
+    def run(self):
+        """
+        Main function for the preload manager.
+
+        Monitors a Redis pubsub channel, and triggers a reload when
+        a message is received.
+        """
+        setproctitle('irrd-preload-store-manager')
+
+        self._clear_existing_data()
+        self._pubsub = self._redis_conn.pubsub()
+
+        self._reload_lock = threading.Lock()
+        self._threads = []
+        self.terminate = False  # Used to exit run() in tests
+
+        while not self.terminate:
+            self._perform_reload()
+            try:
+                self._pubsub.subscribe(REDIS_PRELOAD_RELOAD_CHANNEL)
+                for item in self._pubsub.listen():
+                    if item['type'] == 'message':
+                        logger.debug(f'Reload requested through redis channel')
+                        self._perform_reload()
+                        if self.terminate:
+                            return
+            except redis.ConnectionError as rce:  # pragma: no cover
+                logger.error(f'Failed redis pubsub connection, attempting reconnect and reload in 5s: {rce}')
+                time.sleep(5)
+
+    def _clear_existing_data(self) -> None:
+        """
+        Clear the existing data. This is done on startup, to ensure no
+        queries are being answered with outdated data.
+        """
+        try:
+            self._redis_conn.delete(REDIS_ORIGIN_ROUTE4_STORE_KEY, REDIS_ORIGIN_ROUTE6_STORE_KEY)
+        except redis.ConnectionError as rce:  # pragma: no cover
+            logger.error(f'Failed to empty preload store due to redis connection error, '
+                         f'queries may have outdated results until full reload is completed (max 30s): {rce}')
+
+    def _perform_reload(self) -> None:
         """
         Perform a (re)load.
         Should be called after changes to the DB have been committed.
@@ -89,20 +159,39 @@ class Preloader:
         If object_classes_changed is provided, a reload is only performed
         if those classes are relevant to the data in the preload store.
         """
-        relevant_object_classes = {'route', 'route6'}
-        if object_classes_changed is not None and not object_classes_changed.intersection(relevant_object_classes):
-            return
         self._remove_dead_threads()
         if len(self._threads) > 1:
             # Another thread is already scheduled to follow the current one
             return
-        thread = PreloadUpdater(self, self._reload_lock, self._store_ready_event)
+        thread = PreloadUpdater(self, self._reload_lock)
         thread.start()
         self._threads.append(thread)
 
-    def update_route_store(self, new_origin_route4_store, new_origin_route6_store):
-        self._origin_route4_store = new_origin_route4_store
-        self._origin_route6_store = new_origin_route6_store
+    def update_route_store(self, new_origin_route4_store, new_origin_route6_store) -> bool:
+        """
+        Store the new route information in redis. Returns True on success, False on failure.
+        """
+        try:
+            pipeline = self._redis_conn.pipeline(transaction=True)
+            pipeline.delete(REDIS_ORIGIN_ROUTE4_STORE_KEY, REDIS_ORIGIN_ROUTE6_STORE_KEY)
+            # The redis store can't store sets, only strings
+            origin_route4_str_dict = {k: REDIS_ORIGIN_LIST_SEPARATOR.join(v) for k, v in new_origin_route4_store.items()}
+            origin_route6_str_dict = {k: REDIS_ORIGIN_LIST_SEPARATOR.join(v) for k, v in new_origin_route6_store.items()}
+            # Redis can't handle empty dicts, but the dict needs to be present
+            # in order not to block queries.
+            origin_route4_str_dict['SENTINEL_HASH_CREATED'] = '1'
+            origin_route6_str_dict['SENTINEL_HASH_CREATED'] = '1'
+            pipeline.hmset(REDIS_ORIGIN_ROUTE4_STORE_KEY, origin_route4_str_dict)
+            pipeline.hmset(REDIS_ORIGIN_ROUTE6_STORE_KEY, origin_route6_str_dict)
+            pipeline.execute()
+            return True
+
+        except redis.ConnectionError as rce:  # pragma: no cover
+            logger.error(f'Failed to update preload store due to redis connection error, '
+                         f'attempting new reload in 5s: {rce}')
+            time.sleep(5)
+            self._perform_reload()
+            return False
 
     def _remove_dead_threads(self) -> None:
         """
@@ -118,11 +207,11 @@ class PreloadUpdater(threading.Thread):
     """
     PreloadUpdater is a thread that updates the preload store,
     currently for prefixes per origin per address family.
+    It is started by PreloadStoreManager.
     """
-    def __init__(self, preloader, reload_lock, store_ready_event, *args, **kwargs):
+    def __init__(self, preloader, reload_lock, *args, **kwargs):
         self.preloader = preloader
         self.reload_lock = reload_lock
-        self.store_ready_event = store_ready_event
         super().__init__(*args, **kwargs)
 
     def run(self, mock_database_handler=None) -> None:
@@ -169,47 +258,6 @@ class PreloadUpdater(threading.Thread):
 
         dh.close()
 
-        self.preloader.update_route_store(new_origin_route4_store, new_origin_route6_store)
-
-        logger.info(f'Completed updating preload store from thread {self}')
+        if self.preloader.update_route_store(new_origin_route4_store, new_origin_route6_store):
+            logger.info(f'Completed updating preload store from thread {self}')
         self.reload_lock.release()
-        self.store_ready_event.set()
-
-
-def get_preloader():
-    global _preloader
-    if not _preloader:
-        _preloader = Preloader()
-    return _preloader
-
-
-def reload_signal_handler(signum, frame):
-    """
-    Reload the preload store when the signal is received.
-    """
-    get_preloader().reload()
-
-
-def send_reload_signal(irrd_pidfile):
-    """
-    Send a reload signal to an IRRd instance given its pidfile.
-
-    This is used from scripts like submit_email and load_database,
-    which make direct changes to the SQL database, but can't signal
-    the preloader directly from their DatabaseHandler - as they
-    are part of a different process.
-    """
-    try:
-        with open(irrd_pidfile) as fh:
-            irrd_pid = fh.read()
-            try:
-                os.kill(int(irrd_pid), RELOAD_SIGNAL)
-            except (ProcessLookupError, ValueError):
-                logger.warning(f'Attempted to send reload signal to update preloader for IRRD on '
-                               f'PID {irrd_pid}, but process is not running or PID is invalid.')
-    except OSError as ose:
-        logger.warning(f'Attempted to send reload signal to update preloader for IRRD with PID '
-                       f'from {irrd_pidfile}, but file could not be opened: {ose}')
-
-
-signal.signal(RELOAD_SIGNAL, reload_signal_handler)
