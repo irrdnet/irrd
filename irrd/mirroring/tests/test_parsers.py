@@ -15,7 +15,7 @@ from ..parsers import NRTMStreamParser, MirrorFileImportParser
 
 
 class TestMirrorFileImportParser:
-    def test_parse(self, monkeypatch, caplog, tmp_gpg_dir, config_override):
+    def test_parse(self, caplog, tmp_gpg_dir, config_override):
         config_override({
             'sources': {
                 'TEST': {
@@ -64,7 +64,7 @@ class TestMirrorFileImportParser:
         key_cert_obj = rpsl_object_from_text(SAMPLE_KEY_CERT, strict_validation=False)
         assert key_cert_obj.verify(KEY_CERT_SIGNED_MESSAGE_VALID)
 
-    def test_direct_error_return_invalid_source(self, monkeypatch, caplog, tmp_gpg_dir, config_override):
+    def test_direct_error_return_invalid_source(self, caplog, tmp_gpg_dir, config_override):
         config_override({
             'sources': {
                 'TEST': {},
@@ -97,7 +97,7 @@ class TestMirrorFileImportParser:
         assert 'Invalid source BADSOURCE for object' not in caplog.text
         assert 'File import for TEST' not in caplog.text
 
-    def test_direct_error_return_malformed_pk(self, monkeypatch, caplog, tmp_gpg_dir, config_override):
+    def test_direct_error_return_malformed_pk(self, caplog, tmp_gpg_dir, config_override):
         config_override({
             'sources': {
                 'TEST': {},
@@ -122,7 +122,7 @@ class TestMirrorFileImportParser:
         assert 'Invalid address prefix: not-a-prefix' not in caplog.text
         assert 'File import for TEST' not in caplog.text
 
-    def test_direct_error_return_unknown_class(self, monkeypatch, caplog, tmp_gpg_dir, config_override):
+    def test_direct_error_return_unknown_class(self, caplog, tmp_gpg_dir, config_override):
         config_override({
             'sources': {
                 'TEST': {},

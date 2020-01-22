@@ -9,7 +9,7 @@ import threading
 from collections import defaultdict
 from typing import Optional, List, Set, Dict
 
-from irrd.storage.models import RPKIStatus
+from irrd.rpki.status import RPKIStatus
 from .queries import RPSLDatabaseQuery
 
 RELOAD_SIGNAL = signal.SIGUSR1

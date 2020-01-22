@@ -6,6 +6,7 @@ from IPy import IP
 from unittest.mock import Mock
 
 from irrd.conf import RPKI_IRR_PSEUDO_SOURCE
+from irrd.rpki.status import RPKIStatus
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseQuery, ROADatabaseObjectQuery
 from irrd.utils.test_utils import flatten_mock_calls
@@ -245,9 +246,9 @@ class TestSingleRouteRoaValidator:
         mock_dh.execute_query = lambda q: roa_response
 
         validator = SingleRouteRoaValidator(mock_dh)
-        assert validator.validate_route(IP('192.0.2.0/24'), 65548) is True
-        assert validator.validate_route(IP('192.0.2.0/24'), 65549) is False
-        assert validator.validate_route(IP('192.0.2.0/26'), 65548) is False
+        assert validator.validate_route(IP('192.0.2.0/24'), 65548) == RPKIStatus.valid
+        assert validator.validate_route(IP('192.0.2.0/24'), 65549) == RPKIStatus.invalid
+        assert validator.validate_route(IP('192.0.2.0/26'), 65548) == RPKIStatus.invalid
 
         assert flatten_mock_calls(mock_rq) == [
             ['ip_less_specific_or_exact', (IP('192.0.2.0/24'),), {}],
@@ -267,7 +268,7 @@ class TestSingleRouteRoaValidator:
         mock_dh.execute_query = lambda q: roa_response
 
         validator = SingleRouteRoaValidator(mock_dh)
-        assert validator.validate_route(IP('192.0.2.0/24'), 65548) is False
+        assert validator.validate_route(IP('192.0.2.0/24'), 65548) == RPKIStatus.invalid
 
     def test_validator_no_matching_roa(self, monkeypatch):
         mock_dh = Mock(spec=DatabaseHandler)
@@ -277,6 +278,6 @@ class TestSingleRouteRoaValidator:
         mock_dh.execute_query = lambda q: []
 
         validator = SingleRouteRoaValidator(mock_dh)
-        assert validator.validate_route(IP('192.0.2.0/24'), 65548) is None
-        assert validator.validate_route(IP('192.0.2.0/24'), 65549) is None
-        assert validator.validate_route(IP('192.0.2.0/26'), 65548) is None
+        assert validator.validate_route(IP('192.0.2.0/24'), 65548) == RPKIStatus.unknown
+        assert validator.validate_route(IP('192.0.2.0/24'), 65549) == RPKIStatus.unknown
+        assert validator.validate_route(IP('192.0.2.0/26'), 65548) == RPKIStatus.unknown

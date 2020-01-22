@@ -8,6 +8,7 @@ from IPy import IP
 from typing import List, Set, Optional, Tuple
 
 from irrd.conf import RPKI_IRR_PSEUDO_SOURCE
+from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.parser import RPSLObject, RPSL_ATTRIBUTE_TEXT_WIDTH
 from irrd.rpsl.rpsl_objects import RPSL_ROUTE_OBJECT_CLASS_FOR_IP_VERSION
 from irrd.storage.database_handler import DatabaseHandler
@@ -213,6 +214,7 @@ class BulkRouteRoaValidator:
             else:
                 self.roa_tree[key] = [(roa.prefix_str, roa.asn, roa.max_length)]
 
+    # TODO: update to use RPKIStatus return values
     def _validate_route(self, prefix_ip, prefix_length, prefix_asn) -> Optional[bool]:
         """
         Validate a single route.
@@ -247,17 +249,15 @@ class SingleRouteRoaValidator:
     def __init__(self, database_handler: DatabaseHandler):
         self.database_handler = database_handler
 
-    def validate_route(self, route: IP, asn: int) -> Optional[bool]:
+    def validate_route(self, route: IP, asn: int) -> RPKIStatus:
         """
         Validate a route.
-
-        Returns True for valid, False for invalid, None for unknown.
         """
         query = ROADatabaseObjectQuery().ip_less_specific_or_exact(route)
         roas_covering = list(self.database_handler.execute_query(query))
         if not roas_covering:
-            return None
+            return RPKIStatus.unknown
         for roa in roas_covering:
             if roa['asn'] != 0 and roa['asn'] == asn and route.prefixlen() <= roa['max_length']:
-                return True
-        return False
+                return RPKIStatus.valid
+        return RPKIStatus.invalid

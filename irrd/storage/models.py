@@ -4,18 +4,13 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql as pg
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 
+from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import lookup_field_names
 
 
 class DatabaseOperation(enum.Enum):
     add_or_update = 'ADD'
     delete = 'DEL'
-
-
-class RPKIStatus(enum.Enum):
-    valid = 'VALID'
-    invalid = 'INVALID'
-    unknown = 'UNKNOWN'
 
 
 Base = declarative_base()

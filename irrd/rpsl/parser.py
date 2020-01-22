@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Tuple, Any, Set
 from IPy import IP
 
 from irrd.rpsl.parser_state import RPSLParserMessages
+from irrd.rpki.status import RPKIStatus
 from irrd.utils.text import splitline_unicodesafe
 from .fields import RPSLTextField
 
@@ -55,9 +56,11 @@ class RPSLObject(metaclass=RPSLObjectMeta):
     attrs_multiple: List[str] = []
     ip_first: IP = None
     ip_last: IP = None
-    asn_first: IP = None
-    asn_last: IP = None
+    asn_first: Optional[int] = None
+    asn_last: Optional[int] = None
+    prefix: IP = None
     prefix_length: Optional[int] = None
+    rpki_status: RPKIStatus = RPKIStatus.unknown
     default_source: Optional[str] = None  # noqa: E704 (flake8 bug)
 
     _re_attr_name = re.compile(r'^[a-z0-9_-]+$')
@@ -346,7 +349,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                     # Some fields provide additional metadata about the resources to
                     # which this object pertains.
                     if field.primary_key or field.lookup_key:
-                        for attr in 'ip_first', 'ip_last', 'asn_first', 'asn_last', 'prefix_length':
+                        for attr in 'ip_first', 'ip_last', 'asn_first', 'asn_last', 'prefix', 'prefix_length':
                             attr_value = getattr(parsed_value, attr, None)
                             if attr_value:
                                 existing_attr_value = getattr(self, attr, None)

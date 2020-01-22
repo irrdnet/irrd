@@ -6,8 +6,8 @@ from IPy import IP
 from sqlalchemy.sql import Select, ColumnCollection
 
 from irrd.rpsl.rpsl_objects import lookup_field_names
-from irrd.storage.models import RPSLDatabaseObject, RPSLDatabaseJournal, RPSLDatabaseStatus, ROADatabaseObject, \
-    RPKIStatus
+from irrd.storage.models import RPSLDatabaseObject, RPSLDatabaseJournal, RPSLDatabaseStatus, ROADatabaseObject
+from irrd.rpki.status import RPKIStatus
 from irrd.utils.validators import parse_as_number, ValidationError
 
 logger = logging.getLogger(__name__)

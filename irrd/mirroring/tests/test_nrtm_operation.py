@@ -1,9 +1,10 @@
 from unittest.mock import Mock
 
+from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.storage.models import DatabaseOperation
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER, SAMPLE_UNKNOWN_CLASS, SAMPLE_MALFORMED_EMPTY_LINE, SAMPLE_KEY_CERT, \
-    KEY_CERT_SIGNED_MESSAGE_VALID
+    KEY_CERT_SIGNED_MESSAGE_VALID, SAMPLE_ROUTE
 from ..nrtm_operation import NRTMOperation
 
 
@@ -52,6 +53,28 @@ class TestNRTMOperation:
         # verification should succeed
         key_cert_obj = rpsl_object_from_text(SAMPLE_KEY_CERT, strict_validation=False)
         assert key_cert_obj.verify(KEY_CERT_SIGNED_MESSAGE_VALID)
+
+    def test_nrtm_add_valid_rpki_aware(self, tmp_gpg_dir, monkeypatch):
+        mock_dh = Mock()
+        mock_route_validator = Mock()
+        monkeypatch.setattr('irrd.mirroring.nrtm_operation.SingleRouteRoaValidator',
+                            lambda dh: mock_route_validator)
+
+        mock_route_validator.validate_route = lambda prefix, asn: RPKIStatus.invalid
+        operation = NRTMOperation(
+            source='TEST',
+            operation=DatabaseOperation.add_or_update,
+            serial=42424242,
+            object_text=SAMPLE_ROUTE,
+            strict_validation_key_cert=False,
+            rpki_aware=True,
+        )
+        assert operation.save(database_handler=mock_dh)
+
+        assert mock_dh.upsert_rpsl_object.call_count == 1
+        assert mock_dh.mock_calls[0][1][0].pk() == '192.0.2.0/24AS65537'
+        assert mock_dh.mock_calls[0][1][0].rpki_status == RPKIStatus.invalid
+        assert mock_dh.mock_calls[0][1][1] == 42424242
 
     def test_nrtm_add_valid_ignored_object_class(self):
         mock_dh = Mock()

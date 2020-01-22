@@ -5,7 +5,7 @@ from twisted.internet.address import IPv4Address
 from unittest.mock import Mock
 
 from irrd.mirroring.nrtm_generator import NRTMGeneratorException
-from irrd.storage.models import RPKIStatus
+from irrd.rpki.status import RPKIStatus
 from irrd.storage.preload import Preloader
 from irrd.utils.test_utils import flatten_mock_calls
 from ..query_parser import WhoisQueryParser
