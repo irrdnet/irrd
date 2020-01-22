@@ -61,10 +61,15 @@ This sample shows most configuration options::
             logfile_path: /var/log/irrd/irrd.log
             level: DEBUG
 
+        rpki:
+            roa_source: https://example.com/roa.json
+            roa_import_timer: 7200
+
         sources_default:
             - AUTHDATABASE
             - MIRROR-SECOND
             - MIRROR-FIRST
+            - RPKI
 
         sources:
             AUTHDATABASE:
@@ -226,19 +231,34 @@ Access lists
   |br| **Default**: no lists defined.
   |br| **Change takes effect**: after SIGHUP, for all subsequent requests.
 
+RPKI
+~~~~
+* ``roa_source``: an HTTP(s) URL to a JSON file with ROA exports, in the format
+  as produced by the RIPE NCC RPKI validator. When set, this enables the
+  :doc:`RPKI-aware mode </admins/rpki>`.
+  |br| **Default**: not defined, RPKI-aware mode disabled.
+  |br| **Change takes effect**: after SIGHUP. The first RPKI ROA import may
+  take sevral minutes, after which RPKI-aware mode is enabled.
+* ``roa_import_timer``: the time between two attempts to import the ROA
+  file from ``roa_source``
+  |br| **Default**: ``7200``.
+  |br| **Change takes effect**: after SIGHUP.
+
 Sources
 ~~~~~~~
 * ``sources_default``: a list of sources that are enabled by default, or when a
   user selects all sources with ``-a``. The order of this list defines the
   search priority as well. It is not required to include all known sources in
-  the default selection.
+  the default selection. If ``rpki.roa_source`` is defined, this may also
+  include ``RPKI``, which contains psuedo-IRR objects generated from ROAs.
   |br| **Default**: not defined. All sources are enabled, but results are not
   ordered by source.
   |br| **Change takes effect**: after SIGHUP, for all subsequent queries.
 * ``sources.{name}``: settings for a particular source. The name must be
   all-uppercase, start with a letter, and end with a letter or digit. Valid
   characters are letters, digits and dashes. The minimum length is two
-  characters.
+  characters. If ``rpki.roa_source`` is defined, ``RPKI`` is not a reserved
+  source name, as it contains psuedo-IRR objects generated from ROAs.
 * ``sources.{name}.authoritative``: a boolean for whether this source is
   authoritative, i.e. changes are allowed to be submitted to this IRRd instance
   through e.g. email updates.
@@ -260,16 +280,17 @@ Sources
   |br| **Change takes effect**: after SIGHUP, at the next NRTM update.
 * ``sources.{name}.import_source``: the URL or list of URLs where the full
   copies of this source can be retrieved. You can provide a list of URLs for
-  sources that offer split files. Supports FTP or local file URLs. Automatic
-  gzip decompression is supported if the filename ends in ``.gz``.
+  sources that offer split files. Supports HTTP(s) FTP or local file URLs.
+  Automatic gzip decompression is supported for HTTP(s) and FTP if the
+  filename ends in ``.gz``.
   |br| **Default**: not defined, no imports attempted.
   |br| **Change takes effect**: after SIGHUP, at the next full import. This
   will only occur if this source is forced to reload, i.e. changing this URL
   will not cause a new full import by itself in sources that use NRTM.
   For sources that do not use NRTM, every mirror update is a full import.
 * ``sources.{name}.import_serial_source``: the URL where the file with serial
-  belonging to the ``import_source`` can be retrieved. Supports FTP or local
-  file URLs, in ``file://<path>`` format.
+  belonging to the ``import_source`` can be retrieved. Supports HTTP(s), FTP or
+  local file URLs, in ``file://<path>`` format.
   |br| **Default**: not defined, no imports attempted.
   |br| **Change takes effect**: see ``import_source``.
 * ``sources.{name}.import_timer``: the time between two attempts to retrieve

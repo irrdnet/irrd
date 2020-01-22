@@ -1,6 +1,7 @@
 import gzip
 import logging
 import os
+import requests
 import shutil
 from ftplib import FTP
 from io import BytesIO
@@ -8,8 +9,9 @@ from tempfile import NamedTemporaryFile
 from typing import Optional, Tuple, Any, IO
 from urllib.parse import urlparse
 
-from irrd.conf import get_setting
+from irrd.conf import get_setting, RPKI_IRR_PSEUDO_SOURCE
 from irrd.conf.defaults import DEFAULT_SOURCE_NRTM_PORT
+from irrd.rpki.parser import ROADataImporter, BulkRouteRoaValidator
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import DatabaseStatusQuery
 from irrd.utils.whois_client import whois_query
@@ -18,18 +20,18 @@ from .parsers import MirrorFileImportParser, NRTMStreamParser
 logger = logging.getLogger(__name__)
 
 
-class MirrorImportUpdateRunner:
+class RPSLMirrorImportUpdateRunner:
     """
-    This MirrorImportUpdateRunner is the entry point for updating a single
+    This RPSLMirrorImportUpdateRunner is the entry point for updating a single
     database mirror, depending on current state.
 
-    If there is no current mirrored data, will call MirrorFullImportRunner
+    If there is no current mirrored data, will call RPSLMirrorFullImportRunner
     to run a new import from full export files. Otherwise, will call
     NRTMImportUpdateStreamRunner to retrieve new updates from NRTM.
     """
     def __init__(self, source: str) -> None:
         self.source = source
-        self.full_import_runner = MirrorFullImportRunner(source)
+        self.full_import_runner = RPSLMirrorFullImportRunner(source)
         self.update_stream_runner = NRTMImportUpdateStreamRunner(source)
 
     def run(self) -> None:
@@ -67,7 +69,103 @@ class MirrorImportUpdateRunner:
             return None, None
 
 
-class MirrorFullImportRunner:
+class FileImportRunnerBase:
+    def _retrieve_file(self, url: str, return_contents=True) -> Tuple[str, bool]:
+        """
+        Retrieve a file from either HTTP(s), FTP or local disk.
+
+        If return_contents is True, the file is read, stripped and then the
+        contents are returned. If return_contents is False, the path to a
+        local file is returned where the data can be read.
+
+        Return value is a tuple of the contents of the file, or the path to
+        the local file, and a boolean to indicate whether the caller should
+        unlink the path later.
+
+        If the URL ends in .gz, the file is gunzipped before being processed,
+        but only for HTTP(s) and FTP downloads.
+        """
+        url_parsed = urlparse(url)
+
+        if url_parsed.scheme in ['ftp', 'http', 'https']:
+            return self._retrieve_file_download(url, url_parsed, return_contents)
+        if url_parsed.scheme == 'file':
+            return self._retrieve_file_local(url_parsed.path, return_contents)
+
+        raise ValueError(f'Invalid URL: {url} - scheme {url_parsed.scheme} is not supported')
+
+    def _retrieve_file_download(self, url, url_parsed, return_contents=False) -> Tuple[str, bool]:
+        """
+        Retrieve a file from HTTP(s) or FTP
+
+        If return_contents is False, the file is read, stripped and then the
+        contents are returned. If return_contents is True, the data is written
+        to a temporary file, and the path of this file is returned.
+        It is the responsibility of the caller to unlink this path later.
+
+        If the URL ends in .gz, the file is gunzipped before being processed,
+        but only if return_contents is False.
+        """
+        destination: IO[Any]
+        if return_contents:
+            destination = BytesIO()
+        else:
+            destination = NamedTemporaryFile(delete=False)
+        self._download_file(destination, url, url_parsed)
+        if return_contents:
+            value = destination.getvalue().decode('ascii').strip()  # type: ignore
+            logger.info(f'Downloaded {url}, contained {value}')
+            return value, False
+        else:
+            if url.endswith('.gz'):
+                zipped_file = destination
+                zipped_file.close()
+                destination = NamedTemporaryFile(delete=False)
+                logger.debug(f'Downloaded file is expected to be gzipped, gunzipping from {zipped_file.name}')
+                with gzip.open(zipped_file.name, 'rb') as f_in:
+                    shutil.copyfileobj(f_in, destination)
+                os.unlink(zipped_file.name)
+
+            destination.close()
+
+            logger.info(f'Downloaded (and gunzipped if applicable) {url} to {destination.name}')
+            return destination.name, True
+
+    def _download_file(self, destination: IO[Any], url: str, url_parsed):
+        """
+        Download a file from HTTP(s) or FTP.
+        The file contents are written to the destination parameter,
+        which can be a BytesIO() or a regular file.
+        """
+        if url_parsed.scheme == 'ftp':
+            ftp = FTP(url_parsed.netloc)
+            ftp.login()
+            ftp.retrbinary(f'RETR {url_parsed.path}', destination.write)
+            ftp.quit()
+        elif url_parsed.scheme in ['http', 'https']:
+            r = requests.get(url, stream=True)
+            if r.status_code == 200:
+                for chunk in r.iter_content(10240):
+                    destination.write(chunk)
+            else:
+                raise IOError(f'Failed to download {url}: {r.status_code}: {r.content}')
+
+    def _retrieve_file_local(self, path, return_contents=False) -> Tuple[str, bool]:
+        if not return_contents:
+            if path.endswith('.gz'):
+                destination = NamedTemporaryFile(delete=False)
+                logger.debug(f'Local file is expected to be gzipped, gunzipping from {path}')
+                with gzip.open(path, 'rb') as f_in:
+                    shutil.copyfileobj(f_in, destination)
+                return destination.name, True
+            else:
+                return path, False
+        with open(path) as fh:
+            value = fh.read().strip()
+        return value, False
+
+
+class RPSLMirrorFullImportRunner(FileImportRunnerBase):
     """
     This runner performs a full import from database exports for a single
     mirrored source. URLs for full export file(s), and the URL for the serial
@@ -86,10 +184,10 @@ class MirrorFullImportRunner:
         import_serial_source = get_setting(f'sources.{self.source}.import_serial_source')
 
         if not import_sources:
-            logger.info(f'Skipping full import for {self.source}, import_source not set.')
+            logger.info(f'Skipping full RPSL import for {self.source}, import_source not set.')
             return
 
-        logger.info(f'Running full import of {self.source} from {import_sources}, serial from {import_serial_source}')
+        logger.info(f'Running full RPSL import of {self.source} from {import_sources}, serial from {import_serial_source}')
 
         import_serial = None
         if import_serial_source:
@@ -111,83 +209,54 @@ class MirrorFullImportRunner:
             if to_delete:
                 os.unlink(import_filename)
 
-    def _retrieve_file(self, url: str, return_contents=True) -> Tuple[str, bool]:
-        """
-        Retrieve a file from either FTP or local disk.
 
-        If return_contents is True, the file is read, stripped and then the
-        contents are returned. If return_contents is False, the path to a
-        local file is returned where the data can be read.
+class ROAImportRunner(FileImportRunnerBase):
+    """
+    This runner performs a full import of ROA objects.
+    The URL file for the ROA export in JSON format is provided
+    in the configuration.
+    """
+    # API consistency with other importers, source is actually ignored
+    def __init__(self, source=None):
+        pass
 
-        Return value is a tuple of the contents of the file, or the path to
-        the local file, and a boolean to indicate whether the caller should
-        unlink the path later.
+    def run(self):
+        self.database_handler = DatabaseHandler()
 
-        If the URL ends in .gz, the file is gunzipped before being processed,
-        but only for FTP downloads.
-        """
-        url_parsed = urlparse(url)
+        try:
+            roa_objs = self._import_roas()
+            self.database_handler.commit()
+            logger.info('ROA commit complete')
+            validator = BulkRouteRoaValidator(roa_objs)
+            pks_valid, pks_invalid = validator.validate_all_routes(self.database_handler)
+            logger.info('ROA routes validated, updating DB status')
+            self.database_handler.update_rpki_status(rpsl_pks_invalid=pks_invalid)
+            self.database_handler.commit()
+            logger.info('ROA commit 2 complete')
 
-        if url_parsed.scheme == 'ftp':
-            return self._retrieve_file_ftp(url, url_parsed, return_contents)
-        if url_parsed.scheme == 'file':
-            return self._retrieve_file_local(url_parsed.path, return_contents)
+        except OSError as ose:
+            # I/O errors can occur and should not log a full traceback (#177)
+            logger.error(f'An error occurred while attempting a ROA import: {ose}')
+        except Exception as exc:
+            logger.error(f'An exception occurred while attempting a ROA import: {exc}', exc_info=exc)
+        finally:
+            self.database_handler.close()
 
-        raise ValueError(f'Invalid URL: {url} - scheme {url_parsed.scheme} is not supported')
+    def _import_roas(self):
+        roa_source = get_setting('rpki.roa_source')
+        logger.info(f'Running full ROA import from: {roa_source}')
 
-    def _retrieve_file_ftp(self, url, url_parsed, return_contents=False) -> Tuple[str, bool]:
-        """
-        Retrieve a file from FTP
+        self.database_handler.disable_journaling()
+        self.database_handler.delete_all_roa_objects()
+        self.database_handler.delete_all_rpsl_objects_with_journal(RPKI_IRR_PSEUDO_SOURCE)
 
-        If return_contents is False, the file is read, stripped and then the
-        contents are returned. If return_contents is True, the data is written
-        to a temporary file, and the path of this file is returned.
-        It is the responsibility of the caller to unlink this path later.
-
-        If the URL ends in .gz, the file is gunzipped before being processed,
-        but only if return_contents is False.
-        """
-        destination: IO[Any]
-        if return_contents:
-            destination = BytesIO()
-        else:
-            destination = NamedTemporaryFile(delete=False)
-        ftp = FTP(url_parsed.netloc)
-        ftp.login()
-        ftp.retrbinary(f'RETR {url_parsed.path}', destination.write)
-        ftp.quit()
-        if return_contents:
-            value = destination.getvalue().decode('ascii').strip()  # type: ignore
-            logger.info(f'Downloaded {url}, contained {value}')
-            return value, False
-        else:
-            if url.endswith('.gz'):
-                zipped_file = destination
-                zipped_file.close()
-                destination = NamedTemporaryFile(delete=False)
-                logger.debug(f'Downloaded file is expected to be gzipped, gunzipping from {zipped_file.name}')
-                with gzip.open(zipped_file.name, 'rb') as f_in:
-                    shutil.copyfileobj(f_in, destination)
-                os.unlink(zipped_file.name)
-
-            destination.close()
-
-            logger.info(f'Downloaded (and gunzipped if applicable) {url} to {destination.name}')
-            return destination.name, True
-
-    def _retrieve_file_local(self, path, return_contents=False) -> Tuple[str, bool]:
-        if not return_contents:
-            if path.endswith('.gz'):
-                destination = NamedTemporaryFile(delete=False)
-                logger.debug(f'Local file is expected to be gzipped, gunzipping from {path}')
-                with gzip.open(path, 'rb') as f_in:
-                    shutil.copyfileobj(f_in, destination)
-                return destination.name, True
-            else:
-                return path, False
-        with open(path) as fh:
-            value = fh.read().strip()
-        return value, False
+        import_filename, to_delete = self._retrieve_file(roa_source, return_contents=False)
+        with open(import_filename) as fh:
+            roa_importer = ROADataImporter(fh.read(), self.database_handler)
+        if to_delete:
+            os.unlink(import_filename)
+        logger.info(f'ROA import completed from {roa_source}, imported {len(roa_importer.roa_objs)} ROAs, running validator')
+        return roa_importer.roa_objs
 
 
 class NRTMImportUpdateStreamRunner:

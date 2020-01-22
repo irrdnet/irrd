@@ -30,6 +30,7 @@ setuptools.setup(
         'dotted==0.1.8',
         'beautifultable==0.8.0',
         'PyYAML==5.3.1',
+        'datrie==0.7.1',
         'psycopg2-binary==2.8.5',
         'SQLAlchemy==1.3.16',
         'alembic==1.4.2',

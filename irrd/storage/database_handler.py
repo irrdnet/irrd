@@ -1,5 +1,8 @@
+from io import StringIO
+
 import logging
 from collections import defaultdict
+
 from datetime import datetime, timezone
 from typing import List, Set, Dict, Any, Tuple, Optional, Iterator, Union
 
@@ -9,14 +12,16 @@ from sqlalchemy.dialects import postgresql as pg
 from irrd.conf import get_setting
 from irrd.rpsl.parser import RPSLObject
 from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING
+from irrd.vendor import postgres_copy
 from .preload import get_preloader
 from .queries import (BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery,
                       RPSLDatabaseObjectStatisticsQuery)
 from . import get_engine
-from .models import RPSLDatabaseObject, RPSLDatabaseJournal, DatabaseOperation, RPSLDatabaseStatus
+from .models import RPSLDatabaseObject, RPSLDatabaseJournal, DatabaseOperation, RPSLDatabaseStatus, ROADatabaseObject, \
+    RPKIStatus
 
 logger = logging.getLogger(__name__)
-MAX_RECORDS_CACHE_BEFORE_INSERT = 5000
+MAX_RECORDS_BUFFER_BEFORE_INSERT = 15000
 
 
 class DatabaseHandler:
@@ -30,12 +35,14 @@ class DatabaseHandler:
     journaling_enabled: bool
     _transaction: sa.engine.base.Transaction
     _rpsl_pk_source_seen: Set[str]
-    # The RPSL upsert cache is a list of tuples. Each tuple first has a dict
+    # The RPSL upsert buffer is a list of tuples. Each tuple first has a dict
     # with all database column names and their values, and then an optional int
     # with a forced serial. The forced serial is used for mirrored sources,
     # where this basically means: this call was triggered by an NRTM operation
     # with this serial.
-    _rpsl_upsert_cache: List[Tuple[dict, Optional[int]]]
+    _rpsl_upsert_buffer: List[Tuple[dict, Optional[int]]]
+    # The ROA insert buffer is a list of dicts with columm names and their values.
+    _roa_insert_buffer: List[Dict[str, Union[str, int]]]
 
     def __init__(self, enable_preload_update=True):
         """
@@ -56,9 +63,11 @@ class DatabaseHandler:
     def _start_transaction(self) -> None:
         """Start a fresh transaction."""
         self._transaction = self._connection.begin()
-        self._rpsl_upsert_cache = []
         self._rpsl_pk_source_seen: Set[str] = set()
+        self._rpsl_upsert_buffer = []
+        self._roa_insert_buffer = []
         self._object_classes_modified: Set[str] = set()
+        self._rpsl_safe_insert_only = True
         self.status_tracker = DatabaseStatusTracker(self, journaling_enabled=self.journaling_enabled)
 
     def disable_journaling(self):
@@ -69,7 +78,8 @@ class DatabaseHandler:
         """
         Commit any pending changes to the database and start a fresh transaction.
         """
-        self._flush_rpsl_object_upsert_cache()
+        self._flush_rpsl_object_writing_buffer()
+        self._flush_roa_writing_buffer()
         self.status_tracker.finalise_transaction()
         try:
             self._transaction.commit()
@@ -83,15 +93,15 @@ class DatabaseHandler:
 
     def rollback(self) -> None:
         """Roll back the current transaction, discarding all submitted changes."""
-        self._rpsl_upsert_cache = []
+        self._rpsl_upsert_buffer = []
         self._rpsl_pk_source_seen = set()
         self._transaction.rollback()
         self._start_transaction()
 
     def execute_query(self, query: Union[BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery, RPSLDatabaseObjectStatisticsQuery]) -> Iterator[Dict[str, Any]]:
         """Execute an RPSLDatabaseQuery within the current transaction."""
-        # To be able to query objects that were just created, flush the cache.
-        self._flush_rpsl_object_upsert_cache()
+        # To be able to query objects that were just created, flush the buffer.
+        self._flush_rpsl_object_writing_buffer()
         statement = query.finalise_statement()
         result = self._connection.execute(statement)
         for row in result.fetchall():
@@ -99,10 +109,11 @@ class DatabaseHandler:
         result.close()
 
     def execute_statement(self, statement):
-        """Execute a raw SQLAlchemy statement, without flushing the upsert cache."""
+        """Execute a raw SQLAlchemy statement, without flushing the upsert buffer."""
         return self._connection.execute(statement)
 
-    def upsert_rpsl_object(self, rpsl_object: RPSLObject, forced_serial: Optional[int]=None) -> None:
+    def upsert_rpsl_object(self, rpsl_object: RPSLObject, forced_serial: Optional[int]=None,
+                           rpsl_safe_insert_only=False) -> None:
         """
         Schedule an RPSLObject for insertion/updating.
 
@@ -115,7 +126,13 @@ class DatabaseHandler:
 
         The forced serial is needed for mirrored sources, where this basically means:
         this call was triggered by an NRTM operation with this serial.
+
+        If rpsl_safe_insert_only is set to True, the caller guarantees that this
+        PK is unique in the database. This essentially only applies to inserting
+        RPKI psuedo-IRR objects.
         """
+        if not rpsl_safe_insert_only:
+            self._rpsl_safe_insert_only = False
         ip_first = str(rpsl_object.ip_first) if rpsl_object.ip_first else None
         ip_last = str(rpsl_object.ip_last) if rpsl_object.ip_last else None
 
@@ -126,14 +143,14 @@ class DatabaseHandler:
         # In some cases, multiple updates may be submitted for the same object.
         # PostgreSQL will not allow rows proposed for insertion to have duplicate
         # constrained values - so if a second object appears with a pk/source
-        # seen before, the cache must be flushed right away, or the two updates
+        # seen before, the buffer must be flushed right away, or the two updates
         # will conflict.
         source = rpsl_object.parsed_data['source']
         rpsl_pk_source = rpsl_object.pk() + '-' + source
         if rpsl_pk_source in self._rpsl_pk_source_seen:
-            self._flush_rpsl_object_upsert_cache()
+            self._flush_rpsl_object_writing_buffer()
 
-        self._rpsl_upsert_cache.append((
+        self._rpsl_upsert_buffer.append((
             {
                 'rpsl_pk': rpsl_object.pk(),
                 'source': source,
@@ -144,6 +161,7 @@ class DatabaseHandler:
                 'ip_first': ip_first,
                 'ip_last': ip_last,
                 'ip_size': ip_size,
+                'prefix_length': rpsl_object.prefix_length,
                 'asn_first': rpsl_object.asn_first,
                 'asn_last': rpsl_object.asn_last,
                 'updated': datetime.now(timezone.utc),
@@ -153,8 +171,31 @@ class DatabaseHandler:
         self._rpsl_pk_source_seen.add(rpsl_pk_source)
         self._object_classes_modified.add(rpsl_object.rpsl_object_class)
 
-        if len(self._rpsl_upsert_cache) > MAX_RECORDS_CACHE_BEFORE_INSERT:
-            self._flush_rpsl_object_upsert_cache()
+        if len(self._rpsl_upsert_buffer) > MAX_RECORDS_BUFFER_BEFORE_INSERT:
+            self._flush_rpsl_object_writing_buffer()
+
+    def insert_roa_object(self, ip_version: int, prefix_str: str, asn: int, max_length: int, trust_anchor: str) -> None:
+        """
+        Schedule a ROA for insertion.
+
+        Writes for ROAs are only issued when commit() is called,
+        as they use a single COPY command. This is possible because
+        ROA objects are never updated, only inserted.
+        """
+        self._roa_insert_buffer.append({
+            'ip_version': ip_version,
+            'prefix': prefix_str,
+            'asn': asn,
+            'max_length': max_length,
+            'trust_anchor': trust_anchor,
+        })
+
+    def update_rpki_status(self, rpsl_pks_invalid: Set[str]):
+        table = RPSLDatabaseObject.__table__
+        stmt = table.update().where(table.c.rpki_status.in_([RPKIStatus.valid, RPKIStatus.invalid])).values(rpki_status=RPKIStatus.unknown)
+        self.execute_statement(stmt)
+        stmt = table.update().where(table.c.rpsl_pk.in_(rpsl_pks_invalid)).values(rpki_status=RPKIStatus.invalid)
+        self.execute_statement(stmt)
 
     def delete_rpsl_object(self, rpsl_object: RPSLObject, forced_serial: Optional[int]=None) -> None:
         """
@@ -163,7 +204,7 @@ class DatabaseHandler:
         The forced serial is needed for mirrored sources, where this basically means:
         this call was triggered by an NRTM operation with this serial.
         """
-        self._flush_rpsl_object_upsert_cache()
+        self._flush_rpsl_object_writing_buffer()
         table = RPSLDatabaseObject.__table__
         source = rpsl_object.parsed_data['source']
         stmt = table.delete(
@@ -195,38 +236,40 @@ class DatabaseHandler:
         )
         self._object_classes_modified.add(result['object_class'])
 
-    def _flush_rpsl_object_upsert_cache(self) -> None:
+    def _flush_rpsl_object_writing_buffer(self) -> None:
         """
-        Flush the current upsert cache to the database.
+        Flush the current object writing buffer to the database.
 
         This happens in one large INSERT .. ON CONFLICT DO UPDATE ..
-        statement, which is more performant than individual queries
-        in case of large datasets.
+        statement, for RPSL which is more performant than individual
+        queries in case of large datasets.
         """
-        if not self._rpsl_upsert_cache:
+        if not self._rpsl_upsert_buffer:
             return
 
         rpsl_composite_key = ['rpsl_pk', 'source']
-        stmt = pg.insert(RPSLDatabaseObject).values([x[0] for x in self._rpsl_upsert_cache])
-        columns_to_update = {
-            c.name: c
-            for c in stmt.excluded
-            if c.name not in rpsl_composite_key and c.name != 'pk'
-        }
+        stmt = pg.insert(RPSLDatabaseObject).values([x[0] for x in self._rpsl_upsert_buffer])
 
-        update_stmt = stmt.on_conflict_do_update(
-            index_elements=rpsl_composite_key,
-            set_=columns_to_update,
-        )
+        if not self._rpsl_safe_insert_only:
+            columns_to_update = {
+                c.name: c
+                for c in stmt.excluded
+                if c.name not in rpsl_composite_key and c.name != 'pk'
+            }
+
+            stmt = stmt.on_conflict_do_update(
+                index_elements=rpsl_composite_key,
+                set_=columns_to_update,
+            )
 
         try:
-            self._connection.execute(update_stmt)
+            self._connection.execute(stmt)
         except Exception as exc:  # pragma: no cover
             self._transaction.rollback()
-            logger.error(f'Exception occurred while executing statement: {update_stmt}, rolling back', exc_info=exc)
+            logger.error(f'Exception occurred while executing statement: {stmt}, rolling back', exc_info=exc)
             raise
 
-        for obj, forced_serial in self._rpsl_upsert_cache:
+        for obj, forced_serial in self._rpsl_upsert_buffer:
             self.status_tracker.record_operation(
                 operation=DatabaseOperation.add_or_update,
                 rpsl_pk=obj['rpsl_pk'],
@@ -236,8 +279,28 @@ class DatabaseHandler:
                 forced_serial=forced_serial,
             )
 
-        self._rpsl_upsert_cache = []
         self._rpsl_pk_source_seen = set()
+        self._rpsl_upsert_buffer = []
+
+    def _flush_roa_writing_buffer(self):
+        """
+        Flush the current ROA buffer to the database.
+        As ROAs are only ever inserted, never updated,
+        this is done with a single COPY command.
+        """
+        if not self._roa_insert_buffer:
+            return
+
+        columns = list(self._roa_insert_buffer[0].keys())
+        roa_rows = []
+        for roa in self._roa_insert_buffer:
+            roa_data = ','.join([str(roa[k]) for k in columns])
+            roa_rows.append(roa_data)
+
+        roa_csv = StringIO('\n'.join(roa_rows))
+        roa_csv.seek(0)
+        postgres_copy.copy_from(roa_csv, ROADatabaseObject, self._connection, columns=columns, format='csv')
+        self._roa_insert_buffer = []
 
     def delete_all_rpsl_objects_with_journal(self, source):
         """
@@ -246,7 +309,7 @@ class DatabaseHandler:
         This is intended for cases where a full re-import is done.
         Note that no journal records are kept of this change itself.
         """
-        self._flush_rpsl_object_upsert_cache()
+        self._flush_rpsl_object_writing_buffer()
         table = RPSLDatabaseObject.__table__
         stmt = table.delete(table.c.source == source)
         self._connection.execute(stmt)
@@ -258,6 +321,16 @@ class DatabaseHandler:
         self._connection.execute(stmt)
         # All objects are presumed to have been changed.
         self._object_classes_modified.update(OBJECT_CLASS_MAPPING.keys())
+
+    def delete_all_roa_objects(self):
+        """
+        Delete all ROA objects from the database.
+        ROAs are always imported in bulk.
+        """
+        self._roa_insert_buffer = []
+        table = ROADatabaseObject.__table__
+        stmt = table.delete()
+        self._connection.execute(stmt)
 
     def set_force_reload(self, source):
         """

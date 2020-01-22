@@ -5,10 +5,10 @@ import logging
 import threading
 from typing import Dict
 
-from irrd.conf import get_setting
-from irrd.conf.defaults import DEFAULT_SOURCE_IMPORT_TIMER, DEFAULT_SOURCE_EXPORT_TIMER
+from irrd.conf import get_setting, RPKI_IRR_PSEUDO_SOURCE
+from irrd.conf.defaults import DEFAULT_SOURCE_IMPORT_TIMER, DEFAULT_SOURCE_EXPORT_TIMER, DEFAULT_RPKI_IMPORT_TIMER
 from .mirror_runners_export import SourceExportRunner
-from .mirror_runners_import import MirrorImportUpdateRunner
+from .mirror_runners_import import RPSLMirrorImportUpdateRunner, ROAImportRunner
 
 logger = logging.getLogger(__name__)
 
@@ -29,18 +29,22 @@ class MirrorScheduler:
         self.last_started_time = defaultdict(lambda: 0)
 
     def run(self) -> None:
-        for source in get_setting('sources').keys():
+        for source in get_setting('sources', {}).keys():
             is_mirror = get_setting(f'sources.{source}.import_source') or get_setting(f'sources.{source}.nrtm_host')
             import_timer = int(get_setting(f'sources.{source}.import_timer', DEFAULT_SOURCE_IMPORT_TIMER))
 
             if is_mirror:
-                self.run_if_relevant(source, MirrorImportUpdateRunner, import_timer)
+                self.run_if_relevant(source, RPSLMirrorImportUpdateRunner, import_timer)
 
             runs_export = get_setting(f'sources.{source}.export_destination')
             export_timer = int(get_setting(f'sources.{source}.export_timer', DEFAULT_SOURCE_EXPORT_TIMER))
 
             if runs_export:
                 self.run_if_relevant(source, SourceExportRunner, export_timer)
+
+        if get_setting('rpki.roa_source'):
+            import_timer = int(get_setting(f'rpki.roa_import_timer', DEFAULT_RPKI_IMPORT_TIMER))
+            self.run_if_relevant(RPKI_IRR_PSEUDO_SOURCE, ROAImportRunner, import_timer)
 
     def run_if_relevant(self, source: str, runner_class, timer: int):
         thread_name = f'Thread-{runner_class.__name__}-{source}'

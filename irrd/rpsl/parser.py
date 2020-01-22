@@ -57,6 +57,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
     ip_last: IP = None
     asn_first: IP = None
     asn_last: IP = None
+    prefix_length: Optional[int] = None
     default_source: Optional[str] = None  # noqa: E704 (flake8 bug)
 
     _re_attr_name = re.compile(r'^[a-z0-9_-]+$')
@@ -345,7 +346,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                     # Some fields provide additional metadata about the resources to
                     # which this object pertains.
                     if field.primary_key or field.lookup_key:
-                        for attr in 'ip_first', 'ip_last', 'asn_first', 'asn_last':
+                        for attr in 'ip_first', 'ip_last', 'asn_first', 'asn_last', 'prefix_length':
                             attr_value = getattr(parsed_value, attr, None)
                             if attr_value:
                                 existing_attr_value = getattr(self, attr, None)

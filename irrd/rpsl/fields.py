@@ -108,7 +108,8 @@ class RPSLIPv4PrefixField(RPSLTextField):
             parsed_ip_str += '/32'
         if parsed_ip_str != value:
             messages.info(f'Address prefix {value} was reformatted as {parsed_ip_str}')
-        return RPSLFieldParseResult(parsed_ip_str, ip_first=ip.net(), ip_last=ip.broadcast())
+        return RPSLFieldParseResult(parsed_ip_str, ip_first=ip.net(),
+                                    ip_last=ip.broadcast(), prefix_length=ip.prefixlen())
 
 
 class RPSLIPv4PrefixesField(RPSLFieldListMixin, RPSLIPv4PrefixField):
@@ -135,7 +136,8 @@ class RPSLIPv6PrefixField(RPSLTextField):
             parsed_ip_str += '/128'
         if parsed_ip_str != value:
             messages.info(f'Address prefix {value} was reformatted as {parsed_ip_str}')
-        return RPSLFieldParseResult(parsed_ip_str, ip_first=ip.net(), ip_last=ip.broadcast())
+        return RPSLFieldParseResult(parsed_ip_str, ip_first=ip.net(),
+                                    ip_last=ip.broadcast(), prefix_length=ip.prefixlen())
 
 
 class RPSLIPv6PrefixesField(RPSLFieldListMixin, RPSLIPv6PrefixField):

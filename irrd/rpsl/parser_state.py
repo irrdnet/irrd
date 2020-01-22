@@ -39,10 +39,11 @@ class RPSLParserMessages:
 
 class RPSLFieldParseResult:
     def __init__(self, value: str, values_list: List[str]=None, ip_first: IP=None, ip_last: IP=None,
-                 asn_first: int=None, asn_last: int=None) -> None:
+                 prefix_length: int=None, asn_first: int=None, asn_last: int=None) -> None:
         self.value = value
         self.values_list = values_list
         self.ip_first = ip_first
         self.ip_last = ip_last
+        self.prefix_length = prefix_length
         self.asn_first = asn_first
         self.asn_last = asn_last

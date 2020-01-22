@@ -12,6 +12,12 @@ class DatabaseOperation(enum.Enum):
     delete = 'DEL'
 
 
+class RPKIStatus(enum.Enum):
+    valid = 'VALID'
+    invalid = 'INVALID'
+    unknown = 'UNKNOWN'
+
+
 Base = declarative_base()
 
 
@@ -38,11 +44,16 @@ class RPSLDatabaseObject(Base):  # type: ignore
     ip_first = sa.Column(pg.INET, index=True)
     ip_last = sa.Column(pg.INET, index=True)
     ip_size = sa.Column(sa.DECIMAL(scale=0))
+    # Only filled for route/route6
+    prefix_length = sa.Column(sa.Integer, nullable=True)
+
     asn_first = sa.Column(sa.BigInteger, index=True)
     asn_last = sa.Column(sa.BigInteger, index=True)
 
+    rpki_status = sa.Column(sa.Enum(RPKIStatus), nullable=False, index=True, server_default=RPKIStatus.unknown.name)
+
     created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
-    updated = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now(), nullable=False)
+    updated = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
 
     @declared_attr
     def __table_args__(cls):  # noqa
@@ -121,6 +132,33 @@ class RPSLDatabaseStatus(Base):  # type: ignore
 
     def __repr__(self):
         return self.source
+
+
+class ROADatabaseObject(Base):  # type: ignore
+    """
+    SQLAlchemy ORM object for ROA objects.
+    """
+    __tablename__ = 'roa_object'
+
+    pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text('gen_random_uuid()'), primary_key=True)
+
+    prefix = sa.Column(pg.CIDR, nullable=False, index=True)
+    asn = sa.Column(sa.BigInteger, nullable=False, index=True)
+    max_length = sa.Column(sa.Integer, nullable=False, index=True)
+    trust_anchor = sa.Column(sa.String)
+    ip_version = sa.Column(sa.Integer, nullable=False, index=True)
+
+    created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
+
+    @declared_attr
+    def __table_args__(cls):  # noqa
+        args = [
+            sa.UniqueConstraint('prefix', 'asn', 'max_length', name='roa_object_prefix_asn_maxlength_unique'),
+        ]
+        return tuple(args)
+
+    def __repr__(self):
+        return f'<{self.prefix}/{self.asn}>'
 
 
 # Before you update this, please check the storage documentation for changing lookup fields.

@@ -1,0 +1,41 @@
+============================
+Release notes for IRRd 4.1.0
+============================
+
+IRRd 4.1.0 adds :doc:`RPKI-aware mode </admins/rpki>`,
+along with several other improvements.
+
+This page contains details on the changes compared to
+IRRd 4.0, and how to upgrade.
+
+.. contents:: :backlinks: none
+
+Notable changes
+---------------
+* :doc:`RPKI-aware mode </admins/rpki>` is now available, where IRRd
+  imports RPKI ROAs and can filter or reject RPSL objects that are
+  in conflict with ROAs. Pseudo-IRR objects are generated for all ROAs.
+* When RPKI-aware mode is enabled, ``RPKI`` becomes an invalid as a regular
+  IRR source name, as it is reserved for pseudo-IRR objects from ROAs.
+* The preloader for ``!g``, ``!6``, ``!a`` and in some cases ``!i`` queries
+  has slightly improved performance.
+* HTTP(s) downloads are now supported for the ``sources.{name}.import_source``
+  and ``sources.{name}.import_serial_source`` settings.
+
+Upgrade notes
+-------------
+By default, RPKI-aware mode is disabled. Objects that are invalid when compared
+to ROAs are not detected, and query responses are unchanged until
+:doc:`RPKI-aware mode is enabled </admins/rpki>`.
+
+IRRd 4.1.0 includes several database migrations to support RPKI-aware mode,
+whether enabled or disabled, and facilitate performance improvements needed
+for RPKI-aware mode. Running these migrations is required to run IRRd 4.1.0,
+even if RPKI-aware mode is never enabled.
+
+Running the migrations is done using the same command as
+:ref:`creating the tables initially in deployment <deployment-database-upgrade>`.
+
+.. caution::
+    Some of the migrations change large amounts of data, and may take up to an
+    hour to run in total.

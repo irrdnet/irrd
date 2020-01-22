@@ -4,11 +4,14 @@ from unittest.mock import Mock
 
 import pytest
 
+from irrd.rpki.parser import BulkRouteRoaValidator
+from irrd.storage.database_handler import DatabaseHandler
 from irrd.utils.test_utils import flatten_mock_calls
-from ..mirror_runners_import import MirrorImportUpdateRunner, MirrorFullImportRunner, NRTMImportUpdateStreamRunner
+from ..mirror_runners_import import RPSLMirrorImportUpdateRunner, RPSLMirrorFullImportRunner, \
+    NRTMImportUpdateStreamRunner, ROAImportRunner
 
 
-class TestMirrorImportUpdateRunner:
+class TestRPSLMirrorImportUpdateRunner:
     def test_full_import_call(self, monkeypatch):
         mock_dh = Mock()
         mock_dq = Mock()
@@ -16,10 +19,10 @@ class TestMirrorImportUpdateRunner:
 
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseHandler', lambda: mock_dh)
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseStatusQuery', lambda: mock_dq)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.MirrorFullImportRunner', lambda source: mock_full_import_runner)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.RPSLMirrorFullImportRunner', lambda source: mock_full_import_runner)
 
         mock_dh.execute_query = lambda q: iter([])
-        runner = MirrorImportUpdateRunner(source='TEST')
+        runner = RPSLMirrorImportUpdateRunner(source='TEST')
         runner.run()
 
         assert flatten_mock_calls(mock_dq) == [['source', ('TEST',), {}]]
@@ -42,10 +45,10 @@ class TestMirrorImportUpdateRunner:
 
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseHandler', lambda: mock_dh)
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseStatusQuery', lambda: mock_dq)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.MirrorFullImportRunner', lambda source: mock_full_import_runner)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.RPSLMirrorFullImportRunner', lambda source: mock_full_import_runner)
 
         mock_dh.execute_query = lambda q: iter([{'serial_newest_seen': 424242, 'force_reload': True}])
-        runner = MirrorImportUpdateRunner(source='TEST')
+        runner = RPSLMirrorImportUpdateRunner(source='TEST')
         runner.run()
 
         assert flatten_mock_calls(mock_dq) == [['source', ('TEST',), {}]]
@@ -71,7 +74,7 @@ class TestMirrorImportUpdateRunner:
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.NRTMImportUpdateStreamRunner', lambda source: mock_stream_runner)
 
         mock_dh.execute_query = lambda q: iter([{'serial_newest_seen': 424242, 'force_reload': False}])
-        runner = MirrorImportUpdateRunner(source='TEST')
+        runner = RPSLMirrorImportUpdateRunner(source='TEST')
         runner.run()
 
         assert flatten_mock_calls(mock_dq) == [['source', ('TEST',), {}]]
@@ -88,11 +91,11 @@ class TestMirrorImportUpdateRunner:
 
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseHandler', lambda: mock_dh)
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseStatusQuery', lambda: mock_dq)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.MirrorFullImportRunner', lambda source: mock_full_import_runner)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.RPSLMirrorFullImportRunner', lambda source: mock_full_import_runner)
         mock_full_import_runner.run = Mock(side_effect=ConnectionResetError('test-error'))
 
         mock_dh.execute_query = lambda q: iter([{'serial_newest_seen': 424242, 'force_reload': False}])
-        runner = MirrorImportUpdateRunner(source='TEST')
+        runner = RPSLMirrorImportUpdateRunner(source='TEST')
         runner.run()
 
         assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
@@ -107,11 +110,11 @@ class TestMirrorImportUpdateRunner:
 
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseHandler', lambda: mock_dh)
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseStatusQuery', lambda: mock_dq)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.MirrorFullImportRunner', lambda source: mock_full_import_runner)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.RPSLMirrorFullImportRunner', lambda source: mock_full_import_runner)
         mock_full_import_runner.run = Mock(side_effect=Exception('test-error'))
 
         mock_dh.execute_query = lambda q: iter([{'serial_newest_seen': 424242, 'force_reload': False}])
-        runner = MirrorImportUpdateRunner(source='TEST')
+        runner = RPSLMirrorImportUpdateRunner(source='TEST')
         runner.run()
 
         assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
@@ -120,7 +123,7 @@ class TestMirrorImportUpdateRunner:
         assert 'Traceback' in caplog.text
 
 
-class TestMirrorFullImportRunner:
+class TestRPSLMirrorFullImportRunner:
     def test_run_import_ftp(self, monkeypatch, config_override):
         config_override({
             'sources': {
@@ -145,7 +148,7 @@ class TestMirrorFullImportRunner:
             'RETR /serial': b'424242',
         }
         mock_ftp.retrbinary = lambda path, callback: callback(responses[path])
-        MirrorFullImportRunner('TEST').run(mock_dh, serial_newest_seen=424241)
+        RPSLMirrorFullImportRunner('TEST').run(mock_dh, serial_newest_seen=424241)
 
         assert MockMirrorFileImportParser.rpsl_data_calls == ['source1', 'source2']
         assert flatten_mock_calls(mock_dh) == [
@@ -179,7 +182,7 @@ class TestMirrorFullImportRunner:
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.MirrorFileImportParser', MockMirrorFileImportParser)
         MockMirrorFileImportParser.expected_serial = 424242
 
-        MirrorFullImportRunner('TEST').run(mock_dh)
+        RPSLMirrorFullImportRunner('TEST').run(mock_dh)
 
         assert MockMirrorFileImportParser.rpsl_data_calls == ['source1', 'source2']
         assert flatten_mock_calls(mock_dh) == [
@@ -209,7 +212,7 @@ class TestMirrorFullImportRunner:
             'RETR /source2': b'source2',
         }
         mock_ftp.retrbinary = lambda path, callback: callback(responses[path])
-        MirrorFullImportRunner('TEST').run(mock_dh, serial_newest_seen=42)
+        RPSLMirrorFullImportRunner('TEST').run(mock_dh, serial_newest_seen=42)
 
         assert MockMirrorFileImportParser.rpsl_data_calls == ['source1', 'source2']
         assert flatten_mock_calls(mock_dh) == [
@@ -241,7 +244,7 @@ class TestMirrorFullImportRunner:
             'RETR /serial': b'424242',
         }
         mock_ftp.retrbinary = lambda path, callback: callback(responses[path])
-        MirrorFullImportRunner('TEST').run(mock_dh, serial_newest_seen=424243)
+        RPSLMirrorFullImportRunner('TEST').run(mock_dh, serial_newest_seen=424243)
 
         assert not MockMirrorFileImportParser.rpsl_data_calls
         assert flatten_mock_calls(mock_dh) == []
@@ -271,7 +274,7 @@ class TestMirrorFullImportRunner:
             'RETR /serial': b'424242',
         }
         mock_ftp.retrbinary = lambda path, callback: callback(responses[path])
-        MirrorFullImportRunner('TEST').run(mock_dh, serial_newest_seen=424243, force_reload=True)
+        RPSLMirrorFullImportRunner('TEST').run(mock_dh, serial_newest_seen=424243, force_reload=True)
 
         assert MockMirrorFileImportParser.rpsl_data_calls == ['source1', 'source2']
         assert flatten_mock_calls(mock_dh) == [
@@ -289,7 +292,7 @@ class TestMirrorFullImportRunner:
         })
 
         mock_dh = Mock()
-        MirrorFullImportRunner('TEST').run(mock_dh)
+        RPSLMirrorFullImportRunner('TEST').run(mock_dh)
         assert not flatten_mock_calls(mock_dh)
 
     def test_unsupported_protocol(self, config_override):
@@ -304,7 +307,7 @@ class TestMirrorFullImportRunner:
 
         mock_dh = Mock()
         with pytest.raises(ValueError) as ve:
-            MirrorFullImportRunner('TEST').run(mock_dh)
+            RPSLMirrorFullImportRunner('TEST').run(mock_dh)
         assert 'scheme gopher is not supported' in str(ve.value)
 
 
@@ -320,6 +323,123 @@ class MockMirrorFileImportParser:
     def run_import(self):
         with open(self.filename, 'r') as f:
             self.rpsl_data_calls.append(f.read())
+
+
+class TestROAImportRunner:
+    # As the code for retrieving files from HTTP, FTP or local file
+    # is shared between ROAImportRunner and RPSLMirrorFullImportRunner,
+    # not all protocols are tested here.
+    def test_run_import_http_file_success(self, monkeypatch, config_override, tmpdir):
+        config_override({
+            'rpki': {
+                'roa_source': 'https://host/roa.json',
+            }
+        })
+
+        class MockRequestsSuccess:
+            status_code = 200
+
+            def __init__(self, url, stream):
+                assert url == 'https://host/roa.json'
+                assert stream
+
+            def iter_content(self, size):
+                return iter([b'roa_', b'data'])
+
+        mock_dh = Mock(spec=DatabaseHandler)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseHandler', lambda: mock_dh)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.ROADataImporter', MockROADataImporter)
+        mock_bulk_validator = Mock(spec=BulkRouteRoaValidator)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.BulkRouteRoaValidator', lambda roas: mock_bulk_validator)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.requests.get', MockRequestsSuccess)
+
+        mock_bulk_validator.validate_all_routes = lambda dh: ({'pk_valid1', 'pk_valid2'}, {'pk_invalid1', 'pk_invalid2'})
+        ROAImportRunner().run()
+
+        assert flatten_mock_calls(mock_dh) == [
+            ['disable_journaling', (), {}],
+            ['delete_all_roa_objects', (), {}],
+            ['delete_all_rpsl_objects_with_journal', ('RPKI',), {}],
+            ['commit', (), {}],
+            ['update_rpki_status', (), {'rpsl_pks_invalid': {'pk_invalid1', 'pk_invalid2'}}],
+            ['commit', (), {}],
+            ['close', (), {}]
+        ]
+
+    def test_run_import_http_file_failed_download(self, monkeypatch, config_override, tmpdir, caplog):
+        config_override({
+            'rpki': {
+                'roa_source': 'https://host/roa.json',
+            }
+        })
+
+        class MockRequestsSuccess:
+            status_code = 500
+            content = 'expected-test-error'
+
+            def __init__(self, url, stream):
+                assert url == 'https://host/roa.json'
+                assert stream
+
+        mock_dh = Mock(spec=DatabaseHandler)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseHandler', lambda: mock_dh)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.requests.get', MockRequestsSuccess)
+
+        ROAImportRunner().run()
+        assert 'Failed to download https://host/roa.json: 500: expected-test-error' in caplog.text
+
+    def test_exception_handling(self, monkeypatch, config_override, tmpdir, caplog):
+        tmp_roa_source = tmpdir + '/roa.json'
+        with open(tmp_roa_source, 'wb') as fh:
+            fh.write(b'roa_data')
+        config_override({
+            'rpki': {
+                'roa_source': 'file://' + str(tmp_roa_source),
+            }
+        })
+
+        mock_dh = Mock(spec=DatabaseHandler)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseHandler', lambda: mock_dh)
+        mock_importer = Mock(side_effect=ValueError('expected-test-error'))
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.ROADataImporter', mock_importer)
+
+        ROAImportRunner().run()
+
+        assert flatten_mock_calls(mock_dh) == [
+            ['disable_journaling', (), {}],
+            ['delete_all_roa_objects', (), {}],
+            ['delete_all_rpsl_objects_with_journal', ('RPKI',), {}],
+            ['close', (), {}]
+        ]
+
+        assert 'expected-test-error' in caplog.text
+
+    def test_file_error_handling(self, monkeypatch, config_override, tmpdir, caplog):
+        tmp_roa_source = tmpdir + '/roa.json'
+        config_override({
+            'rpki': {
+                'roa_source': 'file://' + str(tmp_roa_source),
+            }
+        })
+
+        mock_dh = Mock(spec=DatabaseHandler)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseHandler', lambda: mock_dh)
+        ROAImportRunner().run()
+
+        assert flatten_mock_calls(mock_dh) == [
+            ['disable_journaling', (), {}],
+            ['delete_all_roa_objects', (), {}],
+            ['delete_all_rpsl_objects_with_journal', ('RPKI',), {}],
+            ['close', (), {}]
+        ]
+
+        assert 'No such file or directory' in caplog.text
+
+
+class MockROADataImporter:
+    def __init__(self, text: str, database_handler: DatabaseHandler):
+        assert text == 'roa_data'
+        self.roa_objs = ['roa1', 'roa2']
 
 
 class TestNRTMImportUpdateStreamRunner:

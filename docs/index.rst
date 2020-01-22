@@ -36,6 +36,7 @@ This documentation is mainly for administrators of IRRd deployments.
    admins/migrating-legacy-irrd
    admins/object-validation
    admins/status_page
+   admins/rpki
 
 For end users
 -------------
@@ -64,8 +65,15 @@ itself, or want to know how it works.
    development/development-setup
    development/storage
 
-General
--------
+Release notes
+-------------
+.. toctree::
+   :maxdepth: 1
+
+   releases/4.1.0
+
+Other
+-----
 .. toctree::
    :maxdepth: 1
 

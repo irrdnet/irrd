@@ -6,7 +6,8 @@ from IPy import IP
 from sqlalchemy.sql import Select, ColumnCollection
 
 from irrd.rpsl.rpsl_objects import lookup_field_names
-from irrd.storage.models import RPSLDatabaseObject, RPSLDatabaseJournal, RPSLDatabaseStatus
+from irrd.storage.models import RPSLDatabaseObject, RPSLDatabaseJournal, RPSLDatabaseStatus, ROADatabaseObject, \
+    RPKIStatus
 from irrd.utils.validators import parse_as_number, ValidationError
 
 logger = logging.getLogger(__name__)
@@ -261,6 +262,13 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         fltr = sa.and_(self.columns.asn_first <= asn, self.columns.asn_last >= asn)
         return self._filter(fltr)
 
+    def rpki_status(self, status: List[RPKIStatus]):
+        """
+        Filter for RPSL objects with a specific RPKI validation status.
+        """
+        fltr = self.columns.rpki_status.in_(status)
+        return self._filter(fltr)
+
     def text_search(self, value: str):
         """
         Search the database for a specific free text.
@@ -400,6 +408,10 @@ class DatabaseStatusQuery:
 
 
 class RPSLDatabaseObjectStatisticsQuery:
+    """
+    Special statistics query, calculating the number of
+    objects per object class per source.
+    """
     table = RPSLDatabaseObject.__table__
     columns = RPSLDatabaseObject.__table__.c
 
@@ -415,3 +427,36 @@ class RPSLDatabaseObjectStatisticsQuery:
 
     def __repr__(self):
         return f'RPSLDatabaseObjectStatisticsQuery: {self.statement}\nPARAMS: {self.statement.compile().params}'
+
+
+class ROADatabaseObjectQuery:
+    """
+    Query builder for ROA objects.
+    """
+    table = ROADatabaseObject.__table__
+    columns = ROADatabaseObject.__table__.c
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.statement = sa.select([
+            self.columns.pk,
+            self.columns.prefix,
+            self.columns.asn,
+            self.columns.max_length,
+            self.columns.trust_anchor,
+            self.columns.ip_version,
+        ])
+
+    def ip_less_specific(self, ip: IP):
+        """Filter any less specifics or exact matches of a prefix."""
+        fltr = sa.and_(
+            self.columns.prefix.op('>>=')(str(ip))
+        )
+        self.statement = self.statement.where(fltr)
+        return self
+
+    def finalise_statement(self):
+        return self.statement
+
+    def __repr__(self):
+        return f'ROADatabaseObjectQuery: {self.statement}\nPARAMS: {self.statement.compile().params}'

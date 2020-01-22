@@ -18,6 +18,7 @@ CONFIG_PATH_DEFAULT = '/etc/irrd.yaml'
 logger = logging.getLogger(__name__)
 PASSWORD_HASH_DUMMY_VALUE = 'DummyValue'
 SOURCE_NAME_RE = re.compile('^[A-Z][A-Z0-9-]*[A-Z0-9]$')
+RPKI_IRR_PSEUDO_SOURCE = 'RPKI'
 
 
 LOGGING = {
@@ -227,11 +228,18 @@ class Configuration:
                     errors.append(f'Invalid item in access list {name}: {ve}.')
 
         known_sources = set(config.get('sources', {}).keys())
+        if config.get('rpki.roa_source'):
+            known_sources.add(RPKI_IRR_PSEUDO_SOURCE)
         unknown_default_sources = set(config.get('sources_default', [])).difference(known_sources)
         if unknown_default_sources:
             errors.append(f'Setting sources_default contains unknown sources: {", ".join(unknown_default_sources)}')
 
+        if not str(config.get('rpki.roa_import_timer', '0')).isnumeric():
+            errors.append(f'Setting rpki.roa_import_timer must be a number.')
+
         for name, details in config.get('sources', {}).items():
+            if config.get('rpki.roa_source') and name == RPKI_IRR_PSEUDO_SOURCE:
+                errors.append(f'Setting sources contains reserved source name: {RPKI_IRR_PSEUDO_SOURCE}')
             if not SOURCE_NAME_RE.match(name):
                 errors.append(f'Invalid source name: {name}')
 

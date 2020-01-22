@@ -1,3 +1,6 @@
+import itertools
+from collections import defaultdict
+
 import logging
 import math
 import os
@@ -6,6 +9,7 @@ import threading
 from collections import defaultdict
 from typing import Optional, List, Set, Dict
 
+from irrd.storage.models import RPKIStatus
 from .queries import RPSLDatabaseQuery
 
 RELOAD_SIGNAL = signal.SIGUSR1
@@ -149,19 +153,18 @@ class PreloadUpdater(threading.Thread):
         else:
             dh = mock_database_handler
 
-        q = RPSLDatabaseQuery(column_names=['ip_version', 'ip_first', 'ip_size', 'asn_first', 'source'], enable_ordering=True)
-        q = q.object_classes(['route', 'route6'])
+        q = RPSLDatabaseQuery(column_names=['ip_version', 'ip_first', 'prefix_length', 'asn_first', 'source'], enable_ordering=False)
+        q = q.object_classes(['route', 'route6']).rpki_status([RPKIStatus.unknown, RPKIStatus.valid])
 
         for result in dh.execute_query(q):
             prefix = result['ip_first']
             source = result['source']
             key = 'AS' + str(result['asn_first'])
+            length = result['prefix_length']
 
             if result['ip_version'] == 4:
-                length = int(32 - math.log2(result['ip_size']))
                 new_origin_route4_store[key][source].add(f'{prefix}/{length}')
             if result['ip_version'] == 6:
-                length = int(128 - math.log2(result['ip_size']))
                 new_origin_route6_store[key][source].add(f'{prefix}/{length}')
 
         dh.close()

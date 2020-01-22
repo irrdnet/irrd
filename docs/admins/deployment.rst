@@ -190,6 +190,7 @@ have too much lag to use NRTM.
     memory use may reach 3-4GB. During this import, query performance may
     be reduced. This may take around 30-45 minutes.
 
+.. _deployment-database-upgrade:
 
 Creating tables
 ---------------

@@ -3,12 +3,11 @@ Testing configuration, used by py.test.
 Fixtures defined here are available to all tests.
 """
 import os
-
 import pytest
 from dotted.collection import DottedDict
 from typing import Dict, Any
 
-from irrd.conf import config_init
+from irrd import conf
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.utils.rpsl_samples import SAMPLE_KEY_CERT
 
@@ -58,7 +57,17 @@ def pytest_configure(config):
     checker to not require a full working config for most tests.
     Can be checked with:
         hasattr(sys, '_called_from_test')
+    Note that this function is only called once, not for every test.
     """
     import sys
     sys._called_from_test = True
-    config_init(None)
+
+
+@pytest.fixture(autouse=True)
+def reset_config():
+    """
+    This fixture is called for every test in the project,
+    and resets the configuration to default.
+    """
+    conf.config_init(None)
+    conf.testing_overrides = None

@@ -47,6 +47,7 @@ def test_ipv4_prefix_field():
     assert parse_result.value == '192.0.2.0/24'
     assert parse_result.ip_first == IP('192.0.2.0')
     assert parse_result.ip_last == IP('192.0.2.255')
+    assert parse_result.prefix_length == 24
     assert field.parse('192.00.02.0/25', messages).value == '192.0.2.0/25'
     assert field.parse('192.0.2.0/32', messages).value == '192.0.2.0/32'
     assert not messages.errors()
@@ -84,6 +85,7 @@ def test_ipv6_prefix_field():
     assert parse_result.value == '12ab:0:0:cd30::/60'
     assert parse_result.ip_first == IP('12ab:0:0:cd30::')
     assert parse_result.ip_last == IP('12ab::cd3f:ffff:ffff:ffff:ffff')
+    assert parse_result.prefix_length == 60
 
     assert field.parse('12ab::cd30:0:0:0:0/60', messages).value == '12ab:0:0:cd30::/60'
     assert field.parse('12AB:0:0:CD30::/60', messages).value == '12ab:0:0:cd30::/60'

@@ -4,6 +4,7 @@ import pytest
 import threading
 from unittest.mock import Mock
 
+from irrd.storage.models import RPKIStatus
 from ..database_handler import DatabaseHandler
 from ..queries import RPSLDatabaseQuery
 from irrd.utils.test_utils import flatten_mock_calls
@@ -25,6 +26,7 @@ class TestPreloader:
         preload2 = get_preloader()
         assert preloader == preload2
 
+        print(flatten_mock_calls(mock_preload_updater))
         assert mock_preload_updater.mock_calls[0][0] == ''
         assert mock_preload_updater.mock_calls[0][1][0] == preloader
         assert mock_preload_updater.mock_calls[0][1][1] == preloader._reload_lock
@@ -131,14 +133,14 @@ class TestPreloadUpdater:
             {
                 'ip_version': 4,
                 'ip_first': '192.0.2.0',
-                'ip_size': 128,
+                'prefix_length': 25,
                 'asn_first': 65546,
                 'source': 'TEST1',
             },
             {
                 'ip_version': 4,
                 'ip_first': '192.0.2.128',
-                'ip_size': 128,
+                'prefix_length': 25,
                 'asn_first': 65547,
                 'source': 'TEST1',
             },
@@ -152,7 +154,7 @@ class TestPreloadUpdater:
             {
                 'ip_version': 6,
                 'ip_first': '2001:db8::',
-                'ip_size': 79228162514264337593543950336,  # /32
+                'prefix_length': 32,
                 'asn_first': 65547,
                 'source': 'TEST2',
             },
@@ -162,7 +164,10 @@ class TestPreloadUpdater:
 
         assert flatten_mock_calls(mock_reload_lock) == [['acquire', (), {}], ['release', (), {}]]
         assert flatten_mock_calls(mock_ready_event) == [['set', (), {}]]
-        assert flatten_mock_calls(mock_database_query) == [['object_classes', (['route', 'route6'],), {}]]
+        assert flatten_mock_calls(mock_database_query) == [
+            ['object_classes', (['route', 'route6'],), {}],
+            ['rpki_status', ([RPKIStatus.unknown, RPKIStatus.valid],), {}],
+        ]
 
         assert flatten_mock_calls(mock_preload_obj) == [
             [

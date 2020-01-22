@@ -77,6 +77,8 @@ class TestConfiguration:
                         'import_serial_source': 'ftp://example.com/serial',
                         'keep_journal': True,
                     },
+                    # RPKI source permitted, rpki.roa_source not set
+                    'RPKI': {},
                 },
                 'log': {
                     'level': 'DEBUG',
@@ -120,7 +122,10 @@ class TestConfiguration:
                 'auth': {
                     'gnupg_keyring': str(tmpdir)
                 },
-                'sources_default': ['TESTDB2', 'TESTDB'],
+                'rpki': {
+                    'roa_source': 'https://example.com/roa.json',
+                },
+                'sources_default': ['TESTDB2', 'TESTDB', 'RPKI'],
                 'sources': {
                     'TESTDB': {
                         'authoritative': True,
@@ -140,7 +145,7 @@ class TestConfiguration:
 
         save_yaml_config({}, run_init=False)
         os.kill(os.getpid(), signal.SIGHUP)
-        assert list(get_setting('sources_default')) == ['TESTDB2', 'TESTDB']
+        assert list(get_setting('sources_default')) == ['TESTDB2', 'TESTDB', 'RPKI']
         assert 'Errors found in configuration, continuing with current settings' in caplog.text
         assert 'Could not find root item "irrd"' in caplog.text
 
@@ -163,6 +168,10 @@ class TestConfiguration:
                         '192.0.2.2.1'
                     },
                 },
+                'rpki': {
+                    'roa_source': 'https://example.com/roa.json',
+                    'roa_import_timer': 'foo',
+                },
                 'sources_default': ['DOESNOTEXIST-DB'],
                 'sources': {
                     'TESTDB': {
@@ -180,6 +189,8 @@ class TestConfiguration:
                         'authoritative': True,
                         'import_source': '192.0.2.1',
                     },
+                    # Not permitted, rpki.roa_source is set
+                    'RPKI': {},
                     'lowercase': {},
                     'invalid char': {},
                 },
@@ -201,11 +212,13 @@ class TestConfiguration:
         assert 'Setting server.http.access_list must be a string, if defined.' in str(ce.value)
         assert 'Invalid item in access list bad-list: IPv4 Address with more than 4 bytes.' in str(ce.value)
         assert 'Setting sources_default contains unknown sources: DOESNOTEXIST-DB' in str(ce.value)
+        assert 'Setting sources contains reserved source name: RPKI' in str(ce)
         assert 'Setting keep_journal for source TESTDB can not be enabled unless either ' in str(ce.value)
         assert 'Setting nrtm_host for source TESTDB can not be enabled without setting import_serial_source.' in str(ce.value)
         assert 'Setting authoritative for source TESTDB2 can not be enabled when either nrtm_host or import_source are set.' in str(ce.value)
         assert 'Setting authoritative for source TESTDB3 can not be enabled when either nrtm_host or import_source are set.' in str(ce.value)
-        assert 'Setting nrtm_port for source TESTDB2 must be a number.' in str(ce.value)
+        assert 'Setting nrtm_port for source TESTDB2 must be a number.' in str(ce)
+        assert 'Setting rpki.roa_import_timer must be a number.' in str(ce.value)
         assert 'Setting import_timer for source TESTDB must be a number.' in str(ce.value)
         assert 'Setting export_timer for source TESTDB must be a number.' in str(ce.value)
         assert 'Invalid source name: lowercase' in str(ce.value)
