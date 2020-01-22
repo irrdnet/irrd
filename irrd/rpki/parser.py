@@ -229,7 +229,7 @@ class BulkRouteRoaValidator:
         """
         ip_bin_str = self._ip_to_binary_str(prefix_ip)
 
-        roas_covering = self.roa_tree.prefix_items(ip_bin_str)
+        roas_covering = self.roa_tree.prefix_items(ip_bin_str[:prefix_length])
         # print(f'Route {prefix_ip}/{prefix_length} {prefix_asn} covered by ROAs: {roas_covering}')
         if not roas_covering:
             # print('====UNKNOWN====')
