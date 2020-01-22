@@ -4,7 +4,7 @@ import pytest
 import threading
 from unittest.mock import Mock
 
-from irrd.storage.models import RPKIStatus
+from irrd.rpki.status import RPKIStatus
 from ..database_handler import DatabaseHandler
 from ..queries import RPSLDatabaseQuery
 from irrd.utils.test_utils import flatten_mock_calls

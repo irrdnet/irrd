@@ -8,7 +8,8 @@ from unittest.mock import Mock
 from irrd.utils.test_utils import flatten_mock_calls
 from .. import get_engine
 from ..database_handler import DatabaseHandler
-from ..models import RPSLDatabaseObject, DatabaseOperation, RPKIStatus
+from ..models import RPSLDatabaseObject, DatabaseOperation
+from irrd.rpki.status import RPKIStatus
 from ..preload import Preloader
 from ..queries import (RPSLDatabaseQuery, RPSLDatabaseJournalQuery, DatabaseStatusQuery,
                        RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery)
@@ -63,6 +64,7 @@ def database_handler_with_route():
         prefix_length=24,
         asn_first=65537,
         asn_last=65537,
+        rpki_status=RPKIStatus.invalid,
     )
 
     dh = DatabaseHandler()
@@ -93,6 +95,7 @@ class TestDatabaseHandlerLive:
             prefix_length=24,
             asn_first=65537,
             asn_last=65537,
+            rpki_status=RPKIStatus.unknown,
         )
 
         self.dh = DatabaseHandler()
@@ -115,6 +118,7 @@ class TestDatabaseHandlerLive:
             prefix_length=32,
             asn_first=65537,
             asn_last=65537,
+            rpki_status=RPKIStatus.unknown,
         )
         self.dh.upsert_rpsl_object(rpsl_object_route_v6)
         assert len(self.dh._rpsl_upsert_buffer) == 0  # should have been flushed to the DB
@@ -147,6 +151,7 @@ class TestDatabaseHandlerLive:
             prefix_length=None,
             asn_first=65537,
             asn_last=65537,
+            rpki_status=RPKIStatus.unknown,
         )
         self.dh.upsert_rpsl_object(rpsl_obj_ignored)
         assert len(self.dh._rpsl_upsert_buffer) == 1
@@ -271,6 +276,7 @@ class TestDatabaseHandlerLive:
             prefix_length=24,
             asn_first=65537,
             asn_last=65537,
+            rpki_status=RPKIStatus.unknown,
         )
 
         self.dh = DatabaseHandler()
@@ -289,6 +295,7 @@ class TestDatabaseHandlerLive:
             prefix_length=32,
             asn_first=65537,
             asn_last=65537,
+            rpki_status=RPKIStatus.unknown,
         )
         self.dh.upsert_rpsl_object(rpsl_object_route_v6)
         self.dh.set_force_reload('TEST2')  # Should be ignored, as source is new
@@ -339,6 +346,7 @@ class TestDatabaseHandlerLive:
             prefix_length=24,
             asn_first=65537,
             asn_last=65537,
+            rpki_status=RPKIStatus.unknown,
         )
 
         self.dh = DatabaseHandler()
@@ -397,6 +405,8 @@ class TestDatabaseHandlerLive:
         dh = database_handler_with_route
         route_rpsl_pk = '192.0.2.0/24,AS65537'
 
+        assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.invalid])))) == 1
+        dh.update_rpki_status(rpsl_pks_invalid=set())
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.unknown])))) == 1
         dh.update_rpki_status(rpsl_pks_invalid=set())
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.unknown])))) == 1
@@ -434,13 +444,14 @@ class TestRPSLDatabaseQueryLive:
         self._assert_match(RPSLDatabaseQuery().text_search('192.0.2.0/25'))
         self._assert_match(RPSLDatabaseQuery().text_search('192.0.2.1'))
         self._assert_match(RPSLDatabaseQuery().text_search('192.0.2.0/24,As65537'))
+        self._assert_match(RPSLDatabaseQuery().rpki_status([RPKIStatus.invalid]))
 
     def test_chained_filters(self, irrd_database, database_handler_with_route):
         self.dh = database_handler_with_route
 
         q = RPSLDatabaseQuery().rpsl_pk('192.0.2.0/24,AS65537').sources(['TEST', 'X']).object_classes(['route'])
         q = q.lookup_attr('mnt-by', 'MNT-TEST').ip_exact(IP('192.0.2.0/24')).asn_less_specific(65537)
-        q = q.ip_less_specific_or_exact(IP('192.0.2.0/25')).ip_less_specific_or_exact(IP('192.0.2.0/24'))
+        q = q.ip_less_specific(IP('192.0.2.0/25')).ip_less_specific(IP('192.0.2.0/24'))
         q = q.ip_more_specific(IP('192.0.0.0/21'))
 
         result = [i for i in self.dh.execute_query(q)]
@@ -466,6 +477,7 @@ class TestRPSLDatabaseQueryLive:
         self._assert_no_match(RPSLDatabaseQuery().text_search('192.0.2.0/23'))
         self._assert_no_match(RPSLDatabaseQuery().text_search('AS2914'))
         self._assert_no_match(RPSLDatabaseQuery().text_search('65537'))
+        self._assert_no_match(RPSLDatabaseQuery().rpki_status([RPKIStatus.valid]))
 
     def test_ordering_sources(self, irrd_database, database_handler_with_route):
         self.dh = database_handler_with_route
@@ -480,6 +492,7 @@ class TestRPSLDatabaseQueryLive:
             prefix_length=32,
             asn_first=65537,
             asn_last=65537,
+            rpki_status=RPKIStatus.unknown,
         )
         rpsl_object_3 = Mock(
             pk=lambda: '192.0.2.2/32,AS65537',
@@ -492,6 +505,7 @@ class TestRPSLDatabaseQueryLive:
             prefix_length=32,
             asn_first=65537,
             asn_last=65537,
+            rpki_status=RPKIStatus.unknown,
         )
         self.dh.upsert_rpsl_object(rpsl_object_2)
         self.dh.upsert_rpsl_object(rpsl_object_3)
@@ -528,6 +542,7 @@ class TestRPSLDatabaseQueryLive:
             prefix_length=None,
             asn_first=None,
             asn_last=None,
+            rpki_status=RPKIStatus.unknown,
         )
         rpsl_object_role = Mock(
             pk=lambda: 'ROLE',
@@ -540,6 +555,7 @@ class TestRPSLDatabaseQueryLive:
             prefix_length=None,
             asn_first=None,
             asn_last=None,
+            rpki_status=RPKIStatus.unknown,
         )
         self.dh = DatabaseHandler()
         self.dh.upsert_rpsl_object(rpsl_object_person)
@@ -563,6 +579,7 @@ class TestRPSLDatabaseQueryLive:
             prefix_length=25,
             asn_first=65537,
             asn_last=65537,
+            rpki_status=RPKIStatus.unknown,
         )
         rpsl_route_more_specific_25_2 = Mock(
             pk=lambda: '192.0.2.128/25,AS65537',
@@ -575,6 +592,7 @@ class TestRPSLDatabaseQueryLive:
             prefix_length=25,
             asn_first=65537,
             asn_last=65537,
+            rpki_status=RPKIStatus.unknown,
         )
         rpsl_route_more_specific_26 = Mock(
             pk=lambda: '192.0.2.0/26,AS65537',
@@ -587,6 +605,7 @@ class TestRPSLDatabaseQueryLive:
             prefix_length=26,
             asn_first=65537,
             asn_last=65537,
+            rpki_status=RPKIStatus.unknown,
         )
         self.dh.upsert_rpsl_object(rpsl_route_more_specific_25_1)
         self.dh.upsert_rpsl_object(rpsl_route_more_specific_25_2)

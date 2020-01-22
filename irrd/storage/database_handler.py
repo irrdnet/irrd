@@ -17,8 +17,8 @@ from .preload import get_preloader
 from .queries import (BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery,
                       RPSLDatabaseObjectStatisticsQuery)
 from . import get_engine
-from .models import RPSLDatabaseObject, RPSLDatabaseJournal, DatabaseOperation, RPSLDatabaseStatus, ROADatabaseObject, \
-    RPKIStatus
+from .models import RPSLDatabaseObject, RPSLDatabaseJournal, DatabaseOperation, RPSLDatabaseStatus, ROADatabaseObject
+from irrd.rpki.status import RPKIStatus
 
 logger = logging.getLogger(__name__)
 MAX_RECORDS_BUFFER_BEFORE_INSERT = 15000
@@ -150,24 +150,25 @@ class DatabaseHandler:
         if rpsl_pk_source in self._rpsl_pk_source_seen:
             self._flush_rpsl_object_writing_buffer()
 
-        self._rpsl_upsert_buffer.append((
-            {
-                'rpsl_pk': rpsl_object.pk(),
-                'source': source,
-                'object_class': rpsl_object.rpsl_object_class,
-                'parsed_data': rpsl_object.parsed_data,
-                'object_text': rpsl_object.render_rpsl_text(),
-                'ip_version': rpsl_object.ip_version(),
-                'ip_first': ip_first,
-                'ip_last': ip_last,
-                'ip_size': ip_size,
-                'prefix_length': rpsl_object.prefix_length,
-                'asn_first': rpsl_object.asn_first,
-                'asn_last': rpsl_object.asn_last,
-                'updated': datetime.now(timezone.utc),
-            },
-            forced_serial,
-        ))
+        object_dict = {
+            'rpsl_pk': rpsl_object.pk(),
+            'source': source,
+            'object_class': rpsl_object.rpsl_object_class,
+            'parsed_data': rpsl_object.parsed_data,
+            'object_text': rpsl_object.render_rpsl_text(),
+            'ip_version': rpsl_object.ip_version(),
+            'ip_first': ip_first,
+            'ip_last': ip_last,
+            'ip_size': ip_size,
+            'prefix_length': rpsl_object.prefix_length,
+            'asn_first': rpsl_object.asn_first,
+            'asn_last': rpsl_object.asn_last,
+            'rpki_status': rpsl_object.rpki_status,
+            'updated': datetime.now(timezone.utc),
+        }
+
+        self._rpsl_upsert_buffer.append((object_dict, forced_serial,))
+
         self._rpsl_pk_source_seen.add(rpsl_pk_source)
         self._object_classes_modified.add(rpsl_object.rpsl_object_class)
 

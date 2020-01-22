@@ -9,7 +9,7 @@ from irrd.conf import get_setting, RPKI_IRR_PSEUDO_SOURCE
 from irrd.mirroring.nrtm_generator import NRTMGenerator, NRTMGeneratorException
 from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING, lookup_field_names
 from irrd.storage.database_handler import DatabaseHandler
-from irrd.storage.models import RPKIStatus
+from irrd.rpki.status import RPKIStatus
 from irrd.storage.preload import get_preloader
 from irrd.storage.queries import RPSLDatabaseQuery, DatabaseStatusQuery
 from irrd.utils.validators import parse_as_number, ValidationError
@@ -455,7 +455,7 @@ class WhoisQueryParser:
         elif option == 'l':
             query = query.ip_less_specific_one_level(address)
         elif option == 'L':
-            query = query.ip_less_specific_or_exact(address)
+            query = query.ip_less_specific(address)
         elif option == 'M':
             query = query.ip_more_specific(address)
         else:
@@ -563,7 +563,7 @@ class WhoisQueryParser:
         elif command == 'l':
             query = query.ip_less_specific_one_level(address)
         elif command == 'L':
-            query = query.ip_less_specific_or_exact(address)
+            query = query.ip_less_specific(address)
         elif command == 'M':
             query = query.ip_more_specific(address)
 

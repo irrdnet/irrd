@@ -1,8 +1,9 @@
 import logging
 from typing import Optional, List
 
+from irrd.rpki.parser import SingleRouteRoaValidator
 from irrd.rpsl.parser import UnknownRPSLObjectClassException
-from irrd.rpsl.rpsl_objects import rpsl_object_from_text, RPSLKeyCert
+from irrd.rpsl.rpsl_objects import rpsl_object_from_text, RPSLKeyCert, RPSLRoute, RPSLRoute6
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.models import DatabaseOperation
 
@@ -19,12 +20,14 @@ class NRTMOperation:
     For deletion operations, this is permitted.
     """
     def __init__(self, source: str, operation: DatabaseOperation, serial: int, object_text: str,
-                 strict_validation_key_cert: bool, object_class_filter: Optional[List[str]] = None) -> None:
+                 strict_validation_key_cert: bool, rpki_aware: bool = False,
+                 object_class_filter: Optional[List[str]] = None) -> None:
         self.source = source
         self.operation = operation
         self.serial = serial
         self.object_text = object_text
         self.strict_validation_key_cert = strict_validation_key_cert
+        self.rpki_aware = rpki_aware
         self.object_class_filter = object_class_filter
 
     def save(self, database_handler: DatabaseHandler) -> bool:
@@ -66,11 +69,15 @@ class NRTMOperation:
             return False
 
         if self.operation == DatabaseOperation.add_or_update:
+            if self.rpki_aware and obj.__class__ in [RPSLRoute, RPSLRoute6]:
+                roa_validator = SingleRouteRoaValidator(database_handler)
+                obj.rpki_status = roa_validator.validate_route(obj.prefix, obj.asn_first)
             database_handler.upsert_rpsl_object(obj, self.serial)
         elif self.operation == DatabaseOperation.delete:
             database_handler.delete_rpsl_object(obj, self.serial)
 
-        logger.info(f'Completed NRTM operation {str(self)}/{obj.pk()}')
+        logger.info(f'Completed NRTM operation {str(self)}/{obj.rpsl_object_class}/{obj.pk()}, '
+                    f'RPKI status {obj.rpki_status.value}')
         return True
 
     def __repr__(self):

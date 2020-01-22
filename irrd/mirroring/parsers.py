@@ -156,6 +156,7 @@ class NRTMStreamParser(MirrorParser):
     def __init__(self, source: str, nrtm_data: str, database_handler: DatabaseHandler) -> None:
         self.source = source
         self.database_handler = database_handler
+        self.rpki_aware = bool(get_setting('rpki.roa_source'))
         super().__init__()
         self.operations: List[NRTMOperation] = []
         self._split_stream(nrtm_data)
@@ -248,5 +249,6 @@ class NRTMStreamParser(MirrorParser):
         operation = DatabaseOperation(operation_str)
         object_text = next(paragraphs)
         nrtm_operation = NRTMOperation(self.source, operation, self._current_op_serial,
-                                       object_text, self.strict_validation_key_cert, self.object_class_filter)
+                                       object_text, self.strict_validation_key_cert, self.rpki_aware,
+                                       self.object_class_filter)
         self.operations.append(nrtm_operation)
