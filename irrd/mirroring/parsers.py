@@ -3,7 +3,7 @@ import re
 from typing import List, Set, Optional
 
 from irrd.conf import get_setting
-from irrd.rpki.parser import BulkRouteRoaValidator
+from irrd.rpki.validators import BulkRouteROAValidator
 from irrd.rpsl.parser import UnknownRPSLObjectClassException
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text, RPSLKeyCert
 from irrd.storage.database_handler import DatabaseHandler
@@ -45,7 +45,7 @@ class MirrorFileImportParser(MirrorParser):
     unknown_object_classes: Set[str] = set()  # Set of encountered unknown classes
 
     def __init__(self, source: str, filename: str, serial: Optional[int], database_handler: DatabaseHandler,
-                 direct_error_return: bool = False, roa_validator: Optional[BulkRouteRoaValidator] = None) -> None:
+                 direct_error_return: bool = False, roa_validator: Optional[BulkRouteROAValidator] = None) -> None:
         logger.debug(f'Starting file import of {source} from {filename}, setting serial {serial}')
         self.source = source
         self.filename = filename

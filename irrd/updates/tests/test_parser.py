@@ -669,7 +669,7 @@ class TestSingleChangeRequestHandling:
 
     def test_rpki_validation(self, prepare_mocks, monkeypatch, config_override):
         mock_roa_validator = Mock()
-        monkeypatch.setattr('irrd.updates.parser.SingleRouteRoaValidator', lambda dh: mock_roa_validator)
+        monkeypatch.setattr('irrd.updates.parser.SingleRouteROAValidator', lambda dh: mock_roa_validator)
         mock_dq, mock_dh = prepare_mocks
 
         reference_validator = ReferenceValidator(mock_dh)

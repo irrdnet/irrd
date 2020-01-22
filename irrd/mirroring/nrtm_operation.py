@@ -1,7 +1,7 @@
 import logging
 from typing import Optional, List
 
-from irrd.rpki.parser import SingleRouteRoaValidator
+from irrd.rpki.validators import SingleRouteROAValidator
 from irrd.rpsl.parser import UnknownRPSLObjectClassException
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text, RPSLKeyCert
 from irrd.storage.database_handler import DatabaseHandler
@@ -70,7 +70,7 @@ class NRTMOperation:
 
         if self.operation == DatabaseOperation.add_or_update:
             if self.rpki_aware and obj.rpki_relevant and obj.prefix and obj.asn_first:
-                roa_validator = SingleRouteRoaValidator(database_handler)
+                roa_validator = SingleRouteROAValidator(database_handler)
                 obj.rpki_status = roa_validator.validate_route(obj.prefix, obj.asn_first)
             database_handler.upsert_rpsl_object(obj, self.serial)
         elif self.operation == DatabaseOperation.delete:

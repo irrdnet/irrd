@@ -40,18 +40,22 @@ for a connection with the ``!f`` command. The filter is disabled only for
 
 Where validation takes place
 ----------------------------
-* IRRd periodically reimports the ROA file, and then updates the validation
-  status of all `route(6)` objects in the IRR database. This ensures that
-  the status is correct when ROAs are added or removed.
+* Every ``rpki.roa_import_timer``, IRRd reimports the ROA file, and then
+  updates the validation status of all `route(6)` objects in the IRR database.
+  This ensures that the status is correct when ROAs are added or removed.
 * For each NRTM update, the validation status is set using the current
   known ROAs, both on creations or changes.
-* Creation of objects in authoritative databases are checked
+* Creation of objects in authoritative databases is checked
   against the ROAs, and rejected when they are invalid.
 * Changes or deletions of RPKI-invalid object are permitted,
   but a warning will be issued to the user.
+* Objects from sources listed in ``rpki.validation_excluded_sources`` are
+  always set to status unknown.
+* Database exports and NRTM streams always include all objects in the
+  database, including RPKI invalid objects.
 
 .. note::
-    When RPKI-aware mode is enabled at the same time a new source is added,
+    When RPKI-aware mode is enabled and **at the same time** a new source is added,
     the objects for the new source may not have the correct RPKI status
     initially. This happens because in the new source import process, no ROAs
     are visible, and to the periodic ROA update, the objects in the new source
