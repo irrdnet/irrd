@@ -62,6 +62,9 @@ class RPSLObject(metaclass=RPSLObjectMeta):
     prefix_length: Optional[int] = None
     rpki_status: RPKIStatus = RPKIStatus.unknown
     default_source: Optional[str] = None  # noqa: E704 (flake8 bug)
+    # Whether this object has a relation to RPKI ROA data, and therefore RPKI
+    # checks should be performed in certain scenarios. Enabled for route/route6.
+    rpki_relevant = False
 
     _re_attr_name = re.compile(r'^[a-z0-9_-]+$')
 
