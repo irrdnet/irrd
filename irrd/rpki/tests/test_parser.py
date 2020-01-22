@@ -2,13 +2,14 @@ import pytest
 import ujson
 
 import textwrap
+from IPy import IP
 from unittest.mock import Mock
 
 from irrd.conf import RPKI_IRR_PSEUDO_SOURCE
 from irrd.storage.database_handler import DatabaseHandler
-from irrd.storage.queries import RPSLDatabaseQuery
+from irrd.storage.queries import RPSLDatabaseQuery, ROADatabaseObjectQuery
 from irrd.utils.test_utils import flatten_mock_calls
-from ..parser import ROADataImporter, ROAParserException, BulkRouteRoaValidator, ROA
+from ..parser import ROADataImporter, ROAParserException, BulkRouteRoaValidator, ROA, SingleRouteRoaValidator
 
 
 class TestROAImportProcess:
@@ -229,3 +230,53 @@ class TestBulkRouteRoaValidator:
             ['object_classes', (['route', 'route6'],), {}],
             ['sources', (['TEST1'],), {}]
         ]
+
+
+class TestSingleRouteRoaValidator:
+    def test_validator_normal_roa(self, monkeypatch):
+        mock_dh = Mock(spec=DatabaseHandler)
+        mock_rq = Mock(spec=ROADatabaseObjectQuery)
+        monkeypatch.setattr('irrd.rpki.parser.ROADatabaseObjectQuery', lambda: mock_rq)
+
+        roa_response = [{
+            'asn': 65548,
+            'max_length': 25,
+        }]
+        mock_dh.execute_query = lambda q: roa_response
+
+        validator = SingleRouteRoaValidator(mock_dh)
+        assert validator.validate_route(IP('192.0.2.0/24'), 65548) is True
+        assert validator.validate_route(IP('192.0.2.0/24'), 65549) is False
+        assert validator.validate_route(IP('192.0.2.0/26'), 65548) is False
+
+        assert flatten_mock_calls(mock_rq) == [
+            ['ip_less_specific_or_exact', (IP('192.0.2.0/24'),), {}],
+            ['ip_less_specific_or_exact', (IP('192.0.2.0/24'),), {}],
+            ['ip_less_specific_or_exact', (IP('192.0.2.0/26'),), {}],
+        ]
+
+    def test_validator_as0_roa(self, monkeypatch):
+        mock_dh = Mock(spec=DatabaseHandler)
+        mock_rq = Mock(spec=ROADatabaseObjectQuery)
+        monkeypatch.setattr('irrd.rpki.parser.ROADatabaseObjectQuery', lambda: mock_rq)
+
+        roa_response = [{
+            'asn': 0,
+            'max_length': 25,
+        }]
+        mock_dh.execute_query = lambda q: roa_response
+
+        validator = SingleRouteRoaValidator(mock_dh)
+        assert validator.validate_route(IP('192.0.2.0/24'), 65548) is False
+
+    def test_validator_no_matching_roa(self, monkeypatch):
+        mock_dh = Mock(spec=DatabaseHandler)
+        mock_rq = Mock(spec=ROADatabaseObjectQuery)
+        monkeypatch.setattr('irrd.rpki.parser.ROADatabaseObjectQuery', lambda: mock_rq)
+
+        mock_dh.execute_query = lambda q: []
+
+        validator = SingleRouteRoaValidator(mock_dh)
+        assert validator.validate_route(IP('192.0.2.0/24'), 65548) is None
+        assert validator.validate_route(IP('192.0.2.0/24'), 65549) is None
+        assert validator.validate_route(IP('192.0.2.0/26'), 65548) is None

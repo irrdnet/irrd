@@ -382,9 +382,9 @@ class TestDatabaseHandlerLive:
             {'prefix': '2001:db8::/32', 'asn': 64497, 'max_length': 64,
              'trust_anchor': 'TEST TA', 'ip_version': 6}]
 
-        assert len(list(self.dh.execute_query(ROADatabaseObjectQuery().ip_less_specific(IP('192.0.2.0/23'))))) == 0
-        assert len(list(self.dh.execute_query(ROADatabaseObjectQuery().ip_less_specific(IP('192.0.2.0/24'))))) == 1
-        assert len(list(self.dh.execute_query(ROADatabaseObjectQuery().ip_less_specific(IP('192.0.2.0/25'))))) == 1
+        assert len(list(self.dh.execute_query(ROADatabaseObjectQuery().ip_less_specific_or_exact(IP('192.0.2.0/23'))))) == 0
+        assert len(list(self.dh.execute_query(ROADatabaseObjectQuery().ip_less_specific_or_exact(IP('192.0.2.0/24'))))) == 1
+        assert len(list(self.dh.execute_query(ROADatabaseObjectQuery().ip_less_specific_or_exact(IP('192.0.2.0/25'))))) == 1
 
         self.dh.delete_all_roa_objects()
         self.dh.commit()
@@ -440,7 +440,7 @@ class TestRPSLDatabaseQueryLive:
 
         q = RPSLDatabaseQuery().rpsl_pk('192.0.2.0/24,AS65537').sources(['TEST', 'X']).object_classes(['route'])
         q = q.lookup_attr('mnt-by', 'MNT-TEST').ip_exact(IP('192.0.2.0/24')).asn_less_specific(65537)
-        q = q.ip_less_specific(IP('192.0.2.0/25')).ip_less_specific(IP('192.0.2.0/24'))
+        q = q.ip_less_specific_or_exact(IP('192.0.2.0/25')).ip_less_specific_or_exact(IP('192.0.2.0/24'))
         q = q.ip_more_specific(IP('192.0.0.0/21'))
 
         result = [i for i in self.dh.execute_query(q)]

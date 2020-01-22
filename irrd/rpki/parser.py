@@ -11,11 +11,13 @@ from irrd.conf import RPKI_IRR_PSEUDO_SOURCE
 from irrd.rpsl.parser import RPSLObject, RPSL_ATTRIBUTE_TEXT_WIDTH
 from irrd.rpsl.rpsl_objects import RPSL_ROUTE_OBJECT_CLASS_FOR_IP_VERSION
 from irrd.storage.database_handler import DatabaseHandler
-from irrd.storage.queries import RPSLDatabaseQuery
+from irrd.storage.queries import RPSLDatabaseQuery, ROADatabaseObjectQuery
 from irrd.utils.validators import parse_as_number
 
 decode_hex = codecs.getdecoder("hex_codec")
 logger = logging.getLogger(__name__)
+
+# TODO: refactor this file structure
 
 
 class ROAParserException(Exception):
@@ -238,4 +240,24 @@ class BulkRouteRoaValidator:
                     # print('====VALID====')
                     return True
         # print('====INVALID====')
+        return False
+
+
+class SingleRouteRoaValidator:
+    def __init__(self, database_handler: DatabaseHandler):
+        self.database_handler = database_handler
+
+    def validate_route(self, route: IP, asn: int) -> Optional[bool]:
+        """
+        Validate a route.
+
+        Returns True for valid, False for invalid, None for unknown.
+        """
+        query = ROADatabaseObjectQuery().ip_less_specific_or_exact(route)
+        roas_covering = list(self.database_handler.execute_query(query))
+        if not roas_covering:
+            return None
+        for roa in roas_covering:
+            if roa['asn'] != 0 and roa['asn'] == asn and route.prefixlen() <= roa['max_length']:
+                return True
         return False
