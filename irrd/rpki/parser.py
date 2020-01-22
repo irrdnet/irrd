@@ -204,13 +204,39 @@ class BulkRouteRoaValidator:
                 continue
 
             rpsl_pk = result['rpsl_pk']
-            status = self._validate_route(result['ip_first'], result['prefix_length'], result['asn_first'])
-            if status is True:
+            status = self.validate_route(result['ip_first'], result['prefix_length'], result['asn_first'])
+            if status == RPKIStatus.valid:
                 pks_valid.add(rpsl_pk)
-            elif status is False:
+            elif status == RPKIStatus.invalid:
                 pks_invalid.add(rpsl_pk)
 
         return pks_valid, pks_invalid
+
+    def validate_route(self, prefix_ip, prefix_length, prefix_asn) -> RPKIStatus:
+        """
+        Validate a single route.
+
+        A route is valid when at least one ROA is found that covers the prefix,
+        with the same origin AS and a match on the max length in the ROA.
+        A route is invalid when at least one ROA is found that covers the prefix,
+        but none of the covering ROAs matched on both origin AS and max length.
+        A route is unknown if no ROAs were found covering the prefix.
+        """
+        ip_bin_str = self._ip_to_binary_str(prefix_ip)
+
+        roas_covering = self.roa_tree.prefix_items(ip_bin_str)
+        # print(f'Route {prefix_ip}/{prefix_length} {prefix_asn} covered by ROAs: {roas_covering}')
+        if not roas_covering:
+            # print('====UNKNOWN====')
+            return RPKIStatus.unknown
+        for key, value in roas_covering:
+            for roa_prefix, roa_asn, roa_max_length in value:
+                # print(f'Matching ROA {roa_prefix} {value} to prefix {prefix_asn} length {prefix_length}')
+                if roa_asn != 0 and roa_asn == prefix_asn and prefix_length <= roa_max_length:
+                    # print('====VALID====')
+                    return RPKIStatus.valid
+        # print('====INVALID====')
+        return RPKIStatus.invalid
 
     def _build_roa_tree_from_roa_objs(self, roas: List[ROA]):
         """
@@ -236,34 +262,6 @@ class BulkRouteRoaValidator:
                 self.roa_tree[key].append((roa['prefix'], roa['asn'], roa['max_length']))
             else:
                 self.roa_tree[key] = [(roa['prefix'], roa['asn'], roa['max_length'])]
-
-    # TODO: update to use RPKIStatus return values
-    def _validate_route(self, prefix_ip, prefix_length, prefix_asn) -> Optional[bool]:
-        """
-        Validate a single route.
-
-        Returns True for valid, False for invalid, None for unknown.
-        A route is valid when at least one ROA is found that covers the prefix,
-        with the same origin AS and a match on the max length in the ROA.
-        A route is invalid when at least one ROA is found that covers the prefix,
-        but none of the covering ROAs matched on both origin AS and max length.
-        A route is unknown if no ROAs were found covering the prefix.
-        """
-        ip_bin_str = self._ip_to_binary_str(prefix_ip)
-
-        roas_covering = self.roa_tree.prefix_items(ip_bin_str)
-        # print(f'Route {prefix_ip}/{prefix_length} {prefix_asn} covered by ROAs: {roas_covering}')
-        if not roas_covering:
-            # print('====UNKNOWN====')
-            return None
-        for key, value in roas_covering:
-            for roa_prefix, roa_asn, roa_max_length in value:
-                # print(f'Matching ROA {roa_prefix} {value} to prefix {prefix_asn} length {prefix_length}')
-                if roa_asn != 0 and roa_asn == prefix_asn and prefix_length <= roa_max_length:
-                    # print('====VALID====')
-                    return True
-        # print('====INVALID====')
-        return False
 
     def _ip_to_binary_str(self, ip: str) -> str:
         """
