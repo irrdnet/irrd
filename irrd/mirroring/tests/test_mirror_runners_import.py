@@ -350,10 +350,10 @@ class TestROAImportRunner:
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseHandler', lambda: mock_dh)
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.ROADataImporter', MockROADataImporter)
         mock_bulk_validator = Mock(spec=BulkRouteRoaValidator)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.BulkRouteRoaValidator', lambda roas: mock_bulk_validator)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.BulkRouteRoaValidator', lambda dh, roas: mock_bulk_validator)
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.requests.get', MockRequestsSuccess)
 
-        mock_bulk_validator.validate_all_routes = lambda dh: ({'pk_valid1', 'pk_valid2'}, {'pk_invalid1', 'pk_invalid2'})
+        mock_bulk_validator.validate_all_routes = lambda: ({'pk_valid1', 'pk_valid2'}, {'pk_invalid1', 'pk_invalid2'})
         ROAImportRunner().run()
 
         assert flatten_mock_calls(mock_dh) == [

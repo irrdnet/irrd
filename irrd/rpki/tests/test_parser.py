@@ -127,7 +127,7 @@ class TestROAImportProcess:
 
 
 class TestBulkRouteRoaValidator:
-    def test_validate_routes(self, monkeypatch, config_override):
+    def test_validate_routes_from_roa_objs(self, monkeypatch, config_override):
         config_override({
             'sources': {'TEST1': {}, 'TEST2': {}, RPKI_IRR_PSEUDO_SOURCE: {}}
         })
@@ -223,7 +223,7 @@ class TestBulkRouteRoaValidator:
             # AS0 can not match
             ROA('203.0.113.1/32', 'AS0', '32', 'TEST TA'),
         ]
-        valid_pks, invalid_pks = BulkRouteRoaValidator(roas).validate_all_routes(mock_dh, sources=['TEST1'])
+        valid_pks, invalid_pks = BulkRouteRoaValidator(mock_dh, roas).validate_all_routes(sources=['TEST1'])
         assert valid_pks == {'pk_route_v6', 'pk_route_v4_d0_l25', 'pk_route_v4_d0_l24'}
         assert invalid_pks == {'pk_route_v4_d64_l32', 'pk_route_v4_d128_l25', 'pk_route_v4_roa_as0'}
 
@@ -231,6 +231,53 @@ class TestBulkRouteRoaValidator:
             ['object_classes', (['route', 'route6'],), {}],
             ['sources', (['TEST1'],), {}]
         ]
+
+    def test_validate_routes_from_database(self, monkeypatch, config_override):
+        config_override({
+            'sources': {'TEST1': {}, 'TEST2': {}, RPKI_IRR_PSEUDO_SOURCE: {}}
+        })
+        mock_dh = Mock(spec=DatabaseHandler)
+        mock_dq = Mock(spec=RPSLDatabaseQuery)
+        monkeypatch.setattr('irrd.rpki.parser.RPSLDatabaseQuery',
+                            lambda column_names, enable_ordering: mock_dq)
+        mock_rq = Mock(spec=ROADatabaseObjectQuery)
+        monkeypatch.setattr('irrd.rpki.parser.ROADatabaseObjectQuery',
+                            lambda: mock_rq)
+
+        mock_query_result = iter([
+            [
+                {
+                    'prefix': '192.0.2.0/24',
+                    'asn': 65546,
+                    'max_length': 25,
+                },
+                {
+                    'prefix': '192.0.2.0/24',
+                    'asn': 65547,
+                    'max_length': 24,
+                },
+            ], [
+                {
+                    'rpsl_pk': 'pk_route_v4_d0_l25',
+                    'ip_version': 4,
+                    'ip_first': '192.0.2.0',
+                    'prefix_length': 25,
+                    'asn_first': 65546,
+                    'source': 'TEST1',
+                },
+            ]
+        ])
+        mock_dh.execute_query = lambda query: next(mock_query_result)
+
+        valid_pks, invalid_pks = BulkRouteRoaValidator(mock_dh).validate_all_routes(sources=['TEST1'])
+        assert valid_pks == {'pk_route_v4_d0_l25'}
+        assert invalid_pks == set()
+
+        assert flatten_mock_calls(mock_dq) == [
+            ['object_classes', (['route', 'route6'],), {}],
+            ['sources', (['TEST1'],), {}]
+        ]
+        assert flatten_mock_calls(mock_rq) == []  # No filters applied
 
 
 class TestSingleRouteRoaValidator:
