@@ -232,9 +232,13 @@ class ROAImportRunner(FileImportRunnerBase):
             self.database_handler.commit()
             logger.info('ROA commit complete')
             validator = BulkRouteRoaValidator(self.database_handler, roa_objs)
-            pks_valid, pks_invalid = validator.validate_all_routes()
+            pks_now_valid, pks_now_invalid, pks_now_unknown = validator.validate_all_routes()
             logger.info('ROA routes validated, updating DB status')
-            self.database_handler.update_rpki_status(rpsl_pks_invalid=pks_invalid)
+            self.database_handler.update_rpki_status(
+                rpsl_pks_now_valid=pks_now_valid,
+                rpsl_pks_now_invalid=pks_now_invalid,
+                rpsl_pks_now_unknown=pks_now_unknown
+            )
             self.database_handler.commit()
             logger.info('ROA commit 2 complete')
 
