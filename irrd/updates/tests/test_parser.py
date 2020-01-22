@@ -9,6 +9,7 @@ from passlib.handlers.md5_crypt import md5_crypt
 from pytest import raises
 
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
+from irrd.rpki.status import RPKIStatus
 from irrd.utils.text import splitline_unicodesafe
 from irrd.utils.rpsl_samples import SAMPLE_INETNUM, SAMPLE_AS_SET, SAMPLE_PERSON, SAMPLE_MNTNER, SAMPLE_ROUTE
 from irrd.utils.test_utils import flatten_mock_calls
@@ -665,6 +666,60 @@ class TestSingleChangeRequestHandling:
         ]
         assert result_inetnum.notification_targets() == {'notify@example.com', 'upd-to@example.net'}
         assert 'Ignoring override password, auth.override_password not set.' in caplog.text
+
+    def test_rpki_validation(self, prepare_mocks, monkeypatch, config_override):
+        mock_roa_validator = Mock()
+        monkeypatch.setattr('irrd.updates.parser.SingleRouteRoaValidator', lambda dh: mock_roa_validator)
+        mock_dq, mock_dh = prepare_mocks
+
+        reference_validator = ReferenceValidator(mock_dh)
+        auth_validator = AuthValidator(mock_dh)
+
+        # New object, RPKI invalid, RPKI-aware mode disabled
+        mock_dh.execute_query = lambda query: []
+        mock_roa_validator.validate_route = lambda prefix, asn: RPKIStatus.invalid
+        result_route = parse_change_requests(SAMPLE_ROUTE, mock_dh, auth_validator, reference_validator)[0]
+        assert result_route._check_conflicting_roa()
+        assert not result_route.error_messages
+
+        config_override({'rpki': {'roa_source': 'https://example.com/roa.json'}})
+
+        # New object, RPKI-aware mode enabled but object not RPKI relevant
+        mock_dh.execute_query = lambda query: []
+        mock_roa_validator.validate_route = lambda prefix, asn: RPKIStatus.invalid
+        result_inetnum = parse_change_requests(SAMPLE_INETNUM, mock_dh, auth_validator, reference_validator)[0]
+        assert result_inetnum._check_conflicting_roa()
+        assert not result_inetnum.error_messages
+
+        # New object, RPKI valid
+        mock_dh.execute_query = lambda query: []
+        mock_roa_validator.validate_route = lambda prefix, asn: RPKIStatus.unknown
+        result_route = parse_change_requests(SAMPLE_ROUTE, mock_dh, auth_validator, reference_validator)[0]
+        assert result_route._check_conflicting_roa()
+        assert not result_route.error_messages
+
+        # New object, RPKI invalid
+        mock_dh.execute_query = lambda query: []
+        mock_roa_validator.validate_route = lambda prefix, asn: RPKIStatus.invalid
+        result_route = parse_change_requests(SAMPLE_ROUTE, mock_dh, auth_validator, reference_validator)[0]
+        assert not result_route._check_conflicting_roa()
+        assert result_route.error_messages == ['RPKI ROAs were found that conflict with this object.']
+
+        # Update object, RPKI invalid
+        mock_dh.execute_query = lambda query: [{'object_text': SAMPLE_ROUTE}]
+        mock_roa_validator.validate_route = lambda prefix, asn: RPKIStatus.invalid
+        result_route = parse_change_requests(SAMPLE_ROUTE, mock_dh, auth_validator, reference_validator)[0]
+        assert result_route._check_conflicting_roa()
+        assert result_route.warning_messages == ['RPKI ROAs were found that conflict with this object.']
+
+        # Delete object, RPKI invalid
+        mock_dh.execute_query = lambda query: [{'object_text': SAMPLE_ROUTE}]
+        mock_roa_validator.validate_route = lambda prefix, asn: RPKIStatus.invalid
+        obj_text = SAMPLE_ROUTE + 'delete: delete'
+        result_route = parse_change_requests(obj_text, mock_dh, auth_validator, reference_validator)[0]
+        assert result_route._check_conflicting_roa()
+        assert result_route._check_conflicting_roa()  # Should use cache
+        assert result_route.warning_messages == ['RPKI ROAs were found that conflict with this object.']
 
     def test_user_report(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks

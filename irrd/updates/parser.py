@@ -3,6 +3,8 @@ import logging
 from typing import List, Optional, Set
 
 from irrd.conf import get_setting
+from irrd.rpki.parser import SingleRouteRoaValidator
+from irrd.rpki.status import RPKIStatus
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseQuery
 from irrd.rpsl.parser import UnknownRPSLObjectClassException, RPSLObject
@@ -28,6 +30,7 @@ class ChangeRequest:
     mntners_notify: List[RPSLMntner]
 
     error_messages: List[str]
+    warning_messages: List[str]
     info_messages: List[str]
 
     def __init__(self, rpsl_text_submitted: str, database_handler: DatabaseHandler, auth_validator: AuthValidator,
@@ -56,6 +59,9 @@ class ChangeRequest:
         self.rpsl_text_submitted = rpsl_text_submitted
         self.mntners_notify = []
         self.used_override = False
+        self._cached_roa_validity: Optional[bool] = None
+        self.roa_validator = SingleRouteRoaValidator(database_handler)
+        self.warning_messages = []
 
         try:
             self.rpsl_obj_new = rpsl_object_from_text(rpsl_text_submitted, strict_validation=True)
@@ -147,6 +153,7 @@ class ChangeRequest:
             else:
                 report += '\n' + self.rpsl_obj_new.render_rpsl_text() + '\n'
             report += ''.join([f'ERROR: {e}\n' for e in self.error_messages])
+            report += ''.join([f'WARNING: {e}\n' for e in self.warning_messages])
             report += ''.join([f'INFO: {e}\n' for e in self.info_messages])
         return report
 
@@ -191,6 +198,11 @@ class ChangeRequest:
         return self.rpsl_obj_new.rpsl_object_class if self.rpsl_obj_new else '(unreadable object class)'
 
     def notification_targets(self) -> Set[str]:
+        """
+        Produce a set of e-mail addresses that should be notified
+        about the change to this object.
+        May include mntner upd-to or mnt-nfy, and notify of existing object.
+        """
         targets: Set[str] = set()
         status_qualifies_notification = self.is_valid() or self.status == UpdateRequestStatus.ERROR_AUTH
         if self.used_override or not status_qualifies_notification:
@@ -213,7 +225,8 @@ class ChangeRequest:
             return False
         references_valid = self._check_references()
         self.notification_targets()
-        return references_valid
+        rpki_valid = self._check_conflicting_roa()
+        return references_valid and rpki_valid
 
     def _check_auth(self) -> bool:
         assert self.rpsl_obj_new
@@ -241,6 +254,7 @@ class ChangeRequest:
         of references from the new object to others matter.
         """
         if self.request_type == UpdateRequestType.DELETE and self.rpsl_obj_current is not None:
+            # TODO: shouldn't this check on rpsl_obj_current?
             assert self.rpsl_obj_new
             references_result = self.reference_validator.check_references_from_others(self.rpsl_obj_new)
         else:
@@ -250,12 +264,44 @@ class ChangeRequest:
 
         if not references_result.is_valid():
             self.error_messages += references_result.error_messages
+            logger.debug(f'{id(self)}: Reference check failed: {references_result.error_messages}')
             if self.is_valid():  # Only change the status if this object was valid prior, so this is the first failure
                 self.status = UpdateRequestStatus.ERROR_REFERENCE
-                logger.debug(f'{id(self)}: Reference check failed: {references_result.error_messages}')
-                return False
+            return False
 
         logger.debug(f'{id(self)}: Reference check succeeded')
+        return True
+
+    def _check_conflicting_roa(self) -> bool:
+        """
+        Check whether there are any conflicting ROAs with the new object.
+        Result is cached, as validate() may be called multiple times,
+        but the result of this check will not change. Always returns
+        True when not in RPKI-aware mode.
+        """
+        assert self.rpsl_obj_new
+        if not get_setting('rpki.roa_source') or not self.rpsl_obj_new.rpki_relevant:
+            return True
+        if self._cached_roa_validity is not None:
+            return self._cached_roa_validity
+
+        assert self.rpsl_obj_new.asn_first
+        validation_result = self.roa_validator.validate_route(self.rpsl_obj_new.prefix, self.rpsl_obj_new.asn_first)
+        if validation_result == RPKIStatus.invalid:
+            user_message = 'RPKI ROAs were found that conflict with this object.'
+            logger.debug(f'{id(self)}: Conflicting ROAs found')
+            # For update and delete, only issue a warning.
+            if self.rpsl_obj_current:
+                self.warning_messages.append(user_message)
+            else:
+                if self.is_valid():  # Only change the status if this object was valid prior, so this is first failure
+                    self.status = UpdateRequestStatus.ERROR_ROA
+                self.error_messages.append(user_message)
+                self._cached_roa_validity = False
+                return False
+        else:
+            logger.debug(f'{id(self)}: No conflicting ROAs found')
+        self._cached_roa_validity = True
         return True
 
     def _import_new_rpsl_obj_info_messages(self):
