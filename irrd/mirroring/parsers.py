@@ -5,7 +5,7 @@ from typing import List, Set, Optional
 from irrd.conf import get_setting
 from irrd.rpki.parser import BulkRouteRoaValidator
 from irrd.rpsl.parser import UnknownRPSLObjectClassException
-from irrd.rpsl.rpsl_objects import rpsl_object_from_text, RPSLKeyCert, RPSLRoute, RPSLRoute6
+from irrd.rpsl.rpsl_objects import rpsl_object_from_text, RPSLKeyCert
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.models import DatabaseOperation
 from irrd.utils.text import split_paragraphs_rpsl
@@ -109,7 +109,7 @@ class MirrorFileImportParser(MirrorParser):
                 self.obj_ignored_class += 1
                 return None
 
-            if self.roa_validator and obj.__class__ in [RPSLRoute, RPSLRoute6] and obj.prefix_length and obj.asn_first:
+            if self.roa_validator and obj.rpki_relevant and obj.prefix_length and obj.asn_first:
                 obj.rpki_status = self.roa_validator.validate_route(str(obj.ip_first), obj.prefix_length, obj.asn_first)
 
             self.database_handler.upsert_rpsl_object(obj, forced_serial=self.serial)

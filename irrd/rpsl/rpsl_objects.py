@@ -390,6 +390,7 @@ class RPSLRole(RPSLObject):
 
 
 class RPSLRoute(RPSLObject):
+    rpki_relevant = True
     fields = OrderedDict([
         ('route', RPSLIPv4PrefixField(primary_key=True, lookup_key=True)),
         ('descr', RPSLTextField(multiple=True, optional=True)),
@@ -431,6 +432,7 @@ class RPSLRouteSet(RPSLObject):
 
 
 class RPSLRoute6(RPSLObject):
+    rpki_relevant = True
     fields = OrderedDict([
         ('route6', RPSLIPv6PrefixField(primary_key=True, lookup_key=True)),
         ('descr', RPSLTextField(multiple=True, optional=True)),
