@@ -1,17 +1,16 @@
-"""Add rpki status to rpsl_object
+"""Add prefix_length and rpki_status to rpsl_objects
 
-Revision ID: e29d092b6599
-Revises: a8609af97aa3
-Create Date: 2019-03-08 14:59:25.938638
+Revision ID: 64a3d6faf6d4
+Revises: e07863eac52f
+Create Date: 2019-03-04 14:39:14.711874
 
 """
-from alembic import op
-import sqlalchemy as sa
-
-
 # revision identifiers, used by Alembic.
-revision = 'e29d092b6599'
-down_revision = 'a8609af97aa3'
+import sqlalchemy as sa
+from alembic import op
+
+revision = '64a3d6faf6d4'
+down_revision = 'e07863eac52f'
 branch_labels = None
 depends_on = None
 
@@ -23,8 +22,11 @@ def upgrade():
     op.add_column('rpsl_objects', sa.Column('rpki_status', sa.Enum('valid', 'invalid', 'unknown', name='rpkistatus'), nullable=False, server_default='unknown'))
     op.create_index(op.f('ix_rpsl_objects_rpki_status'), 'rpsl_objects', ['rpki_status'], unique=False)
 
+    op.add_column('rpsl_objects', sa.Column('prefix_length', sa.Integer(), nullable=True))
+
 
 def downgrade():
+    op.drop_column('rpsl_objects', 'prefix_length')
     op.drop_index(op.f('ix_rpsl_objects_rpki_status'), table_name='rpsl_objects')
     op.drop_column('rpsl_objects', 'rpki_status')
 

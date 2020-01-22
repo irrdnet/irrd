@@ -11,7 +11,8 @@ from urllib.parse import urlparse
 
 from irrd.conf import get_setting, RPKI_IRR_PSEUDO_SOURCE
 from irrd.conf.defaults import DEFAULT_SOURCE_NRTM_PORT
-from irrd.rpki.parser import ROADataImporter, BulkRouteRoaValidator
+from irrd.rpki.importer import ROADataImporter, ROAParserException
+from irrd.rpki.validators import BulkRouteROAValidator
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import DatabaseStatusQuery
 from irrd.utils.whois_client import whois_query
@@ -203,7 +204,7 @@ class RPSLMirrorFullImportRunner(FileImportRunnerBase):
 
         roa_validator = None
         if get_setting('rpki.roa_source'):
-            roa_validator = BulkRouteRoaValidator(database_handler)
+            roa_validator = BulkRouteROAValidator(database_handler)
 
         database_handler.disable_journaling()
         for import_filename, to_delete in import_data:
@@ -229,22 +230,25 @@ class ROAImportRunner(FileImportRunnerBase):
 
         try:
             roa_objs = self._import_roas()
+            # Do an early commit to make the new ROAs available to other processes.
             self.database_handler.commit()
-            logger.info('ROA commit complete')
-            validator = BulkRouteRoaValidator(self.database_handler, roa_objs)
+
+            validator = BulkRouteROAValidator(self.database_handler, roa_objs)
             pks_now_valid, pks_now_invalid, pks_now_unknown = validator.validate_all_routes()
-            logger.info('ROA routes validated, updating DB status')
             self.database_handler.update_rpki_status(
                 rpsl_pks_now_valid=pks_now_valid,
                 rpsl_pks_now_invalid=pks_now_invalid,
                 rpsl_pks_now_unknown=pks_now_unknown
             )
             self.database_handler.commit()
-            logger.info('ROA commit 2 complete')
+            logger.info(f'RPKI status updated for all routes, {pks_now_valid} newly valid, '
+                        f'{pks_now_invalid} newly invalid, {pks_now_unknown} newly unknown routes')
 
         except OSError as ose:
             # I/O errors can occur and should not log a full traceback (#177)
             logger.error(f'An error occurred while attempting a ROA import: {ose}')
+        except ROAParserException as rpe:
+            logger.error(f'An exception occurred while attempting a ROA import: {rpe}')
         except Exception as exc:
             logger.error(f'An exception occurred while attempting a ROA import: {exc}', exc_info=exc)
         finally:
@@ -263,7 +267,7 @@ class ROAImportRunner(FileImportRunnerBase):
             roa_importer = ROADataImporter(fh.read(), self.database_handler)
         if to_delete:
             os.unlink(import_filename)
-        logger.info(f'ROA import completed from {roa_source}, imported {len(roa_importer.roa_objs)} ROAs, running validator')
+        logger.info(f'ROA import from {roa_source} imported {len(roa_importer.roa_objs)} ROAs, running validator')
         return roa_importer.roa_objs
 
 

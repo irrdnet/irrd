@@ -57,7 +57,7 @@ class TestNRTMOperation:
     def test_nrtm_add_valid_rpki_aware(self, tmp_gpg_dir, monkeypatch):
         mock_dh = Mock()
         mock_route_validator = Mock()
-        monkeypatch.setattr('irrd.mirroring.nrtm_operation.SingleRouteRoaValidator',
+        monkeypatch.setattr('irrd.mirroring.nrtm_operation.SingleRouteROAValidator',
                             lambda dh: mock_route_validator)
 
         mock_route_validator.validate_route = lambda prefix, asn: RPKIStatus.invalid

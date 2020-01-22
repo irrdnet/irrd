@@ -238,7 +238,7 @@ RPKI
   :doc:`RPKI-aware mode </admins/rpki>`.
   |br| **Default**: not defined, RPKI-aware mode disabled.
   |br| **Change takes effect**: after SIGHUP. The first RPKI ROA import may
-  take sevral minutes, after which RPKI-aware mode is enabled.
+  take several minutes, after which RPKI-aware mode is enabled.
 * ``roa_import_timer``: the time between two attempts to import the ROA
   file from ``roa_source``
   |br| **Default**: ``7200``.
@@ -280,7 +280,7 @@ Sources
   |br| **Change takes effect**: after SIGHUP, at the next NRTM update.
 * ``sources.{name}.import_source``: the URL or list of URLs where the full
   copies of this source can be retrieved. You can provide a list of URLs for
-  sources that offer split files. Supports HTTP(s) FTP or local file URLs.
+  sources that offer split files. Supports HTTP(s), FTP or local file URLs.
   Automatic gzip decompression is supported for HTTP(s) and FTP if the
   filename ends in ``.gz``.
   |br| **Default**: not defined, no imports attempted.

@@ -3,7 +3,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from irrd.rpki.parser import BulkRouteRoaValidator
+from irrd.rpki.validators import BulkRouteROAValidator
 from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.utils.rpsl_samples import SAMPLE_ROUTE, SAMPLE_UNKNOWN_CLASS, SAMPLE_UNKNOWN_ATTRIBUTE, SAMPLE_MALFORMED_PK, \
@@ -27,7 +27,7 @@ class TestMirrorFileImportParser:
             }
         })
         mock_dh = Mock()
-        mock_roa_validator = Mock(spec=BulkRouteRoaValidator)
+        mock_roa_validator = Mock(spec=BulkRouteROAValidator)
         mock_roa_validator.validate_route = lambda ip, length, asn: RPKIStatus.invalid
 
         test_data = [

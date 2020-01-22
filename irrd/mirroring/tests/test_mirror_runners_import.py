@@ -4,7 +4,8 @@ from unittest.mock import Mock
 
 import pytest
 
-from irrd.rpki.parser import BulkRouteRoaValidator
+from irrd.rpki.importer import ROAParserException
+from irrd.rpki.validators import BulkRouteROAValidator
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.utils.test_utils import flatten_mock_calls
 from ..mirror_runners_import import RPSLMirrorImportUpdateRunner, RPSLMirrorFullImportRunner, \
@@ -143,7 +144,7 @@ class TestRPSLMirrorFullImportRunner:
         MockMirrorFileImportParser.expected_serial = 424242
 
         mock_bulk_validator_init = Mock()
-        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.BulkRouteRoaValidator', mock_bulk_validator_init)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.BulkRouteROAValidator', mock_bulk_validator_init)
 
         responses = {
             # gzipped data, contains 'source1'
@@ -354,8 +355,8 @@ class TestROAImportRunner:
         mock_dh = Mock(spec=DatabaseHandler)
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseHandler', lambda: mock_dh)
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.ROADataImporter', MockROADataImporter)
-        mock_bulk_validator = Mock(spec=BulkRouteRoaValidator)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.BulkRouteRoaValidator', lambda dh, roas: mock_bulk_validator)
+        mock_bulk_validator = Mock(spec=BulkRouteROAValidator)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.BulkRouteROAValidator', lambda dh, roas: mock_bulk_validator)
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.requests.get', MockRequestsSuccess)
 
         mock_bulk_validator.validate_all_routes = lambda: (
@@ -413,19 +414,24 @@ class TestROAImportRunner:
 
         mock_dh = Mock(spec=DatabaseHandler)
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseHandler', lambda: mock_dh)
-        mock_importer = Mock(side_effect=ValueError('expected-test-error'))
-        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.ROADataImporter', mock_importer)
 
+        mock_importer = Mock(side_effect=ValueError('expected-test-error-1'))
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.ROADataImporter', mock_importer)
         ROAImportRunner().run()
 
-        assert flatten_mock_calls(mock_dh) == [
+        mock_importer = Mock(side_effect=ROAParserException('expected-test-error-2'))
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.ROADataImporter', mock_importer)
+        ROAImportRunner().run()
+
+        assert flatten_mock_calls(mock_dh) == 2 * [
             ['disable_journaling', (), {}],
             ['delete_all_roa_objects', (), {}],
             ['delete_all_rpsl_objects_with_journal', ('RPKI',), {}],
             ['close', (), {}]
         ]
 
-        assert 'expected-test-error' in caplog.text
+        assert 'expected-test-error-1' in caplog.text
+        assert 'expected-test-error-2' in caplog.text
 
     def test_file_error_handling(self, monkeypatch, config_override, tmpdir, caplog):
         tmp_roa_source = tmpdir + '/roa.json'

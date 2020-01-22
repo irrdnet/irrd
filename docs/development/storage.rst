@@ -52,6 +52,8 @@ which records:
   unknown. Note that the current RPKI processes do not always set the
   valid status for performance reasons, i.e. the practical use of
   this column is currently to distinguish invalid from not-invalid.
+  When :doc:`RPKI-aware mode </admins/rpki>` is disabled, this is
+  set to unknown for all objects.
 
 The columns `rpsl_pk` and `source` must be unique together.
 The columns `pk`, `rpsl_pk`, `source`, `ip_version`, `ip_first`,

@@ -38,4 +38,5 @@ Running the migrations is done using the same command as
 
 .. caution::
     Some of the migrations change large amounts of data, and may take up to an
-    hour to run in total.
+    hour to run in total. While the migrations are running, IRRd should be
+    shut down and any cron / e-mail triggered tasks should be disabled.

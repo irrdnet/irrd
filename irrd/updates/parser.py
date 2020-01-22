@@ -3,7 +3,7 @@ import logging
 from typing import List, Optional, Set
 
 from irrd.conf import get_setting
-from irrd.rpki.parser import SingleRouteRoaValidator
+from irrd.rpki.validators import SingleRouteROAValidator
 from irrd.rpki.status import RPKIStatus
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseQuery
@@ -60,7 +60,7 @@ class ChangeRequest:
         self.mntners_notify = []
         self.used_override = False
         self._cached_roa_validity: Optional[bool] = None
-        self.roa_validator = SingleRouteRoaValidator(database_handler)
+        self.roa_validator = SingleRouteROAValidator(database_handler)
         self.warning_messages = []
 
         try:

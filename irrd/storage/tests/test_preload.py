@@ -26,7 +26,6 @@ class TestPreloader:
         preload2 = get_preloader()
         assert preloader == preload2
 
-        print(flatten_mock_calls(mock_preload_updater))
         assert mock_preload_updater.mock_calls[0][0] == ''
         assert mock_preload_updater.mock_calls[0][1][0] == preloader
         assert mock_preload_updater.mock_calls[0][1][1] == preloader._reload_lock

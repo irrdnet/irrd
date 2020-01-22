@@ -252,7 +252,7 @@ class DatabaseHandler:
         Flush the current object writing buffer to the database.
 
         This happens in one large INSERT .. ON CONFLICT DO UPDATE ..
-        statement, for RPSL which is more performant than individual
+        statement, which is more performant than individual
         queries in case of large datasets.
         """
         if not self._rpsl_upsert_buffer:
@@ -305,6 +305,7 @@ class DatabaseHandler:
         columns = list(self._roa_insert_buffer[0].keys())
         roa_rows = []
         for roa in self._roa_insert_buffer:
+            # ROA data is very simple, so we can use a naive CSV generator.
             roa_data = ','.join([str(roa[k]) for k in columns])
             roa_rows.append(roa_data)
 
@@ -339,8 +340,7 @@ class DatabaseHandler:
         ROAs are always imported in bulk.
         """
         self._roa_insert_buffer = []
-        table = ROADatabaseObject.__table__
-        stmt = table.delete()
+        stmt = ROADatabaseObject.__table__.delete()
         self._connection.execute(stmt)
 
     def set_force_reload(self, source):
