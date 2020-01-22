@@ -69,7 +69,7 @@ class NRTMOperation:
             return False
 
         if self.operation == DatabaseOperation.add_or_update:
-            if self.rpki_aware and obj.__class__ in [RPSLRoute, RPSLRoute6]:
+            if self.rpki_aware and obj.__class__ in [RPSLRoute, RPSLRoute6] and obj.prefix and obj.asn_first:
                 roa_validator = SingleRouteRoaValidator(database_handler)
                 obj.rpki_status = roa_validator.validate_route(obj.prefix, obj.asn_first)
             database_handler.upsert_rpsl_object(obj, self.serial)
