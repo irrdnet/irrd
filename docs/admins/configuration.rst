@@ -20,7 +20,9 @@ Example configuration file
 This sample shows most configuration options::
 
     irrd:
-        database_url: 'postgresql://localhost:5432/irrd'
+        database_url: 'postgresql:///irrd'
+        redis_url: 'unix:///usr/local/var/run/redis.sock'
+        piddir: /var/run/
 
         access_lists:
             http_database_status:
@@ -146,14 +148,29 @@ configuration. A successful reload after a `SIGHUP` is also logged.
 Configuration options
 ---------------------
 
-Database
-~~~~~~~~
+Storage
+~~~~~~~
 * ``database_url``: a RFC1738 PostgreSQL database URL for the database used by
   IRRd, e.g. ``postgresql://username:password@localhost:5432/irrd`` to connect
   to `localhost` on port 5432, database `irrd`, username `username`,
-  password `password`.
+  password `password`. Use ``postgresql://username:password@/irrd`` to connect
+  to the default unix socket.
+  **Connecting through a unix socket is strongly recommended**,
+  for improved performance
   |br| **Default**: not defined, but required.
   |br| **Change takes effect**: after full IRRd restart.
+* ``redis_url``: a URL to a Redis instance, e.g.
+  ``unix:///var/run/redis.sock`` to connect through a unix socket, or
+  ``redis://localhost`` to connect through TCP.
+  **Connecting through a unix socket is strongly recommended**,
+  for improved performance
+  |br| **Default**: not defined, but required.
+  |br| **Change takes effect**: after full IRRd restart.
+* ``piddir``: an existing writable directory where the IRRd PID file will
+  be written (as ``irrd.pid``).
+  |br| **Default**: not defined, but required.
+  |br| **Change takes effect**: after full IRRd restart.
+
 
 Servers
 ~~~~~~~
@@ -176,6 +193,7 @@ Servers
   |br| **Default**: ``50``.
   |br| **Change takes effect**: after SIGHUP. Existing connections will not
   be terminated.
+
 
 Email
 ~~~~~
@@ -233,6 +251,7 @@ Access lists
   |br| **Default**: no lists defined.
   |br| **Change takes effect**: after SIGHUP, for all subsequent requests.
 
+
 RPKI
 ~~~~
 * ``roa_source``: an HTTP(s) URL to a JSON file with ROA exports, in the format
@@ -250,6 +269,7 @@ RPKI
   marked as unknown, and will be included in query responses.
   |br| **Default**: not defined, all sources included in validation.
   |br| **Change takes effect**: after SIGHUP, upon next full ROA import.
+
 
 Sources
 ~~~~~~~

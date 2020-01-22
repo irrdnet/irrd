@@ -1,117 +1,104 @@
-import os
+import time
 
 import pytest
 import threading
 from unittest.mock import Mock
 
 from irrd.rpki.status import RPKIStatus
-from ..database_handler import DatabaseHandler
-from ..queries import RPSLDatabaseQuery
 from irrd.utils.test_utils import flatten_mock_calls
-from ..preload import Preloader, PreloadUpdater, get_preloader, send_reload_signal
+from ..database_handler import DatabaseHandler
+from ..preload import Preloader, PreloadStoreManager, PreloadUpdater
+from ..queries import RPSLDatabaseQuery
+
+# Use different
+TEST_REDIS_ORIGIN_ROUTE4_STORE_KEY = 'TEST-irrd-preload-origin-route4'
+TEST_REDIS_ORIGIN_ROUTE6_STORE_KEY = 'TEST-irrd-preload-origin-route6'
+TEST_REDIS_PRELOAD_RELOAD_CHANNEL = 'TEST-irrd-preload-reload-channel'
 
 
 @pytest.fixture()
-def prepare_preload_updater_mock(monkeypatch):
+def mock_preload_updater(monkeypatch, config_override):
     mock_preload_updater = Mock(spec=PreloadUpdater)
     monkeypatch.setattr('irrd.storage.preload.PreloadUpdater', mock_preload_updater)
+    yield mock_preload_updater
 
-    return mock_preload_updater
+
+@pytest.fixture()
+def mock_redis_keys(monkeypatch, config_override):
+    monkeypatch.setattr('irrd.storage.preload.REDIS_ORIGIN_ROUTE4_STORE_KEY', TEST_REDIS_ORIGIN_ROUTE4_STORE_KEY)
+    monkeypatch.setattr('irrd.storage.preload.REDIS_ORIGIN_ROUTE6_STORE_KEY', TEST_REDIS_ORIGIN_ROUTE6_STORE_KEY)
+    monkeypatch.setattr('irrd.storage.preload.REDIS_PRELOAD_RELOAD_CHANNEL', TEST_REDIS_PRELOAD_RELOAD_CHANNEL)
 
 
-class TestPreloader:
-    def test_load_reload(self, prepare_preload_updater_mock, tmpdir, caplog):
-        mock_preload_updater = prepare_preload_updater_mock
-        preloader = get_preloader()
-        preload2 = get_preloader()
-        assert preloader == preload2
+class TestPreloading:
+    def test_load_reload_thread_management(self, mock_preload_updater, mock_redis_keys):
+        preload_manager = PreloadStoreManager()
 
+        preload_manager_thread = threading.Thread(target=preload_manager.run)
+        preload_manager_thread.start()
+
+        time.sleep(1)
         assert mock_preload_updater.mock_calls[0][0] == ''
-        assert mock_preload_updater.mock_calls[0][1][0] == preloader
-        assert mock_preload_updater.mock_calls[0][1][1] == preloader._reload_lock
-        assert mock_preload_updater.mock_calls[0][1][2] == preloader._store_ready_event
+        assert mock_preload_updater.mock_calls[0][1][0] == preload_manager
+        assert mock_preload_updater.mock_calls[0][1][1] == preload_manager._reload_lock
         assert mock_preload_updater.mock_calls[1][0] == '().start'
         assert len(mock_preload_updater.mock_calls) == 2
-        assert len(preloader._threads) == 1
+        assert len(preload_manager._threads) == 1
         mock_preload_updater.reset_mock()
 
-        # First call should be ignored, inetnums are not preloaded
-        preloader.reload({'inetnum'})
-        preloader.reload({'route'})
+        preload_manager._perform_reload()
 
         assert mock_preload_updater.mock_calls[0][0] == '().is_alive'
         assert mock_preload_updater.mock_calls[1][0] == ''
-        assert mock_preload_updater.mock_calls[1][1][0] == preloader
+        assert mock_preload_updater.mock_calls[1][1][0] == preload_manager
         assert mock_preload_updater.mock_calls[2][0] == '().start'
         assert len(mock_preload_updater.mock_calls) == 3
-        assert len(preloader._threads) == 2
+        assert len(preload_manager._threads) == 2
         mock_preload_updater.reset_mock()
 
         # Two threads already running, do nothing
-        preloader.reload()
+        preload_manager._perform_reload()
 
         assert mock_preload_updater.mock_calls[0][0] == '().is_alive'
         assert mock_preload_updater.mock_calls[1][0] == '().is_alive'
         assert len(mock_preload_updater.mock_calls) == 2
-        assert len(preloader._threads) == 2
+        assert len(preload_manager._threads) == 2
         mock_preload_updater.reset_mock()
 
         # Assume all threads are dead
-        for thread in preloader._threads:
+        for thread in preload_manager._threads:
             thread.is_alive = lambda: False
 
-        # Call the reload indirectly through a signal
-        pidfile = str(tmpdir) + '/pidfile'
-        with open(pidfile, 'w') as fh:
-            fh.write(str(os.getpid()))
-        send_reload_signal(pidfile)
+        # Reload through the redis channel. First call is ignored.
+        Preloader().signal_reload({'inetnum'})
+        Preloader().signal_reload()
+        Preloader().signal_reload()
 
+        # As all threads are considered dead, a new thread should be started
         assert mock_preload_updater.mock_calls[0][0] == ''
-        assert mock_preload_updater.mock_calls[0][1][0] == preloader
         assert mock_preload_updater.mock_calls[1][0] == '().start'
-        assert len(mock_preload_updater.mock_calls) == 2
-        assert len(preloader._threads) == 2
-        mock_preload_updater.reset_mock()
 
-    def test_reload_signal_incorrect_pid(self, prepare_preload_updater_mock, tmpdir, caplog):
-        mock_preload_updater = prepare_preload_updater_mock
-        pidfile = str(tmpdir) + '/pidfile'
-        with open(pidfile, 'w') as fh:
-            fh.write('a')
+        # Listen() on redis is blocking, unblock it after setting terminate
+        preload_manager.terminate = True
+        Preloader().signal_reload()
 
-        # Call the reload signal with an incorrect PID and incorrect filename
-        send_reload_signal(pidfile)
-        assert 'Attempted to send reload signal to update preloader for IRRD on PID a, but process is' in caplog.text
-        send_reload_signal(str(tmpdir) + '/invalid_pidfile')
-        assert 'but file could not be opened: [Errno 2] No such file or directory' in caplog.text
-        assert not len(mock_preload_updater.mock_calls)
-
-    def test_routes_for_origins(self, prepare_preload_updater_mock):
+    def test_routes_for_origins(self, mock_redis_keys):
         preloader = Preloader()
-        preloader._store_ready_event.set()
+        preload_manager = PreloadStoreManager()
 
         preloader.update_route_store(
-            {
-                'AS65546': {'TEST2': {'192.0.2.0/25'}},
-                'AS65547': {'TEST1': {'192.0.2.128/25', '198.51.100.0/25'}}
-            },
-            {
-                'AS65547': {'TEST2': {'2001:db8::/32'}}
-            },
+            {'AS65547': {'192.0.2.0/25'}, 'AS65546': {'192.0.2.128/25'}},
+            {'AS65547': {'2001:db8::/32'}}
         )
 
-        sources = ['TEST1', 'TEST2']
-        assert preloader.routes_for_origins(['AS65545'], sources) == set()
-        assert preloader.routes_for_origins(['AS65546'], sources, 4) == {'192.0.2.0/25'}
-        assert preloader.routes_for_origins(['AS65547'], sources, 4) == {'192.0.2.128/25', '198.51.100.0/25'}
-        assert preloader.routes_for_origins(['AS65546'], sources, 6) == set()
-        assert preloader.routes_for_origins(['AS65547'], sources, 6) == {'2001:db8::/32'}
-        assert preloader.routes_for_origins(['AS65546'], sources) == {'192.0.2.0/25'}
-        assert preloader.routes_for_origins(['AS65547'], sources) == {'192.0.2.128/25', '198.51.100.0/25', '2001:db8::/32'}
-        assert preloader.routes_for_origins(['AS65547', 'AS65546'], sources, 4) == {'192.0.2.0/25', '192.0.2.128/25', '198.51.100.0/25'}
-
-        assert preloader.routes_for_origins(['AS65547', 'AS65546'], ['TEST1']) == {'192.0.2.128/25', '198.51.100.0/25'}
-        assert preloader.routes_for_origins(['AS65547', 'AS65546'], ['TEST2']) == {'192.0.2.0/25', '2001:db8::/32'}
+        assert preloader.routes_for_origins(['AS65545']) == set()
+        assert preloader.routes_for_origins(['AS65546'], 4) == {'192.0.2.128/25'}
+        assert preloader.routes_for_origins(['AS65547'], 4) == {'192.0.2.0/25'}
+        assert preloader.routes_for_origins(['AS65546'], 6) == set()
+        assert preloader.routes_for_origins(['AS65547'], 6) == {'2001:db8::/32'}
+        assert preloader.routes_for_origins(['AS65546']) == {'192.0.2.128/25'}
+        assert preloader.routes_for_origins(['AS65547']) == {'192.0.2.0/25', '2001:db8::/32'}
+        assert preloader.routes_for_origins(['AS65547', 'AS65546'], 4) == {'192.0.2.0/25', '192.0.2.128/25'}
 
         with pytest.raises(ValueError) as ve:
             preloader.routes_for_origins(['AS65547'], sources, 2)
@@ -125,7 +112,6 @@ class TestPreloadUpdater:
         monkeypatch.setattr('irrd.storage.preload.RPSLDatabaseQuery',
                             lambda column_names, enable_ordering: mock_database_query)
         mock_reload_lock = Mock()
-        mock_ready_event = Mock(spec=threading.Event)
         mock_preload_obj = Mock()
 
         mock_query_result = [
@@ -159,10 +145,9 @@ class TestPreloadUpdater:
             },
         ]
         mock_database_handler.execute_query = lambda query: mock_query_result
-        PreloadUpdater(mock_preload_obj, mock_reload_lock, mock_ready_event).run(mock_database_handler)
+        PreloadUpdater(mock_preload_obj, mock_reload_lock).run(mock_database_handler)
 
         assert flatten_mock_calls(mock_reload_lock) == [['acquire', (), {}], ['release', (), {}]]
-        assert flatten_mock_calls(mock_ready_event) == [['set', (), {}]]
         assert flatten_mock_calls(mock_database_query) == [
             ['object_classes', (['route', 'route6'],), {}],
             ['rpki_status', ([RPKIStatus.unknown, RPKIStatus.valid],), {}],

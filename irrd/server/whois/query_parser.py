@@ -10,7 +10,7 @@ from irrd.mirroring.nrtm_generator import NRTMGenerator, NRTMGeneratorException
 from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING, lookup_field_names
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.rpki.status import RPKIStatus
-from irrd.storage.preload import get_preloader
+from irrd.storage.preload import Preloader
 from irrd.storage.queries import RPSLDatabaseQuery, DatabaseStatusQuery
 from irrd.utils.validators import parse_as_number, ValidationError
 from .query_response import WhoisQueryResponseType, WhoisQueryResponseMode, WhoisQueryResponse
@@ -43,8 +43,8 @@ class WhoisQueryParser:
     database_handler: DatabaseHandler
     _current_set_root_object_class: Optional[str]
 
-    def __init__(self, peer, peer_str: str) -> None:
-        self.all_valid_sources = list(get_setting('sources').keys())
+    def __init__(self, client_ip: str, client_str: str) -> None:
+        self.all_valid_sources = list(get_setting('sources', {}).keys())
         self.sources_default = get_setting('sources_default')
         self.sources: List[str] = self.sources_default if self.sources_default else self.all_valid_sources
         if get_setting('rpki.roa_source'):
@@ -55,8 +55,8 @@ class WhoisQueryParser:
         self.rpki_invalid_filter_enabled = bool(get_setting('rpki.roa_source'))
         self.timeout = 30
         self.key_fields_only = False
-        self.peer = peer
-        self.peer_str = peer_str
+        self.client_ip = client_ip
+        self.client_str = client_str
 
     def handle_query(self, query: str) -> WhoisQueryResponse:
         """
@@ -67,13 +67,13 @@ class WhoisQueryParser:
         self.database_handler = DatabaseHandler()
         self.key_fields_only = False
         self.object_classes = []
-        self.preloader = get_preloader()
+        self.preloader = Preloader()
 
         if query.startswith('!'):
             try:
                 return self.handle_irrd_command(query[1:])
             except WhoisQueryParserException as exc:
-                logger.info(f'{self.peer_str}: encountered parsing error while parsing query "{query}": {exc}')
+                logger.info(f'{self.client_str}: encountered parsing error while parsing query "{query}": {exc}')
                 return WhoisQueryResponse(
                     response_type=WhoisQueryResponseType.ERROR,
                     mode=WhoisQueryResponseMode.IRRD,
@@ -92,7 +92,7 @@ class WhoisQueryParser:
         try:
             return self.handle_ripe_command(query)
         except WhoisQueryParserException as exc:
-            logger.info(f'{self.peer_str}: encountered parsing error while parsing query "{query}": {exc}')
+            logger.info(f'{self.client_str}: encountered parsing error while parsing query "{query}": {exc}')
             return WhoisQueryResponse(
                 response_type=WhoisQueryResponseType.ERROR,
                 mode=WhoisQueryResponseMode.RIPE,
@@ -601,7 +601,7 @@ class WhoisQueryParser:
     def handle_user_agent(self, user_agent: str):
         """-V/!n parameter/query - set a user agent for the client"""
         self.user_agent = user_agent
-        logger.info(f'{self.peer_str}: user agent set to: {user_agent}')
+        logger.info(f'{self.client_str}: user agent set to: {user_agent}')
 
     def handle_nrtm_request(self, param):
         try:
@@ -626,7 +626,7 @@ class WhoisQueryParser:
         if source not in self.all_valid_sources:
             raise WhoisQueryParserException(f'Unknown source: {source}')
 
-        if not is_client_permitted(self.peer, f'sources.{source}.nrtm_access_list'):
+        if not is_client_permitted(self.client_ip, f'sources.{source}.nrtm_access_list'):
             raise WhoisQueryParserException(f'Access denied')
 
         try:

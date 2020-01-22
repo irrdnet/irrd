@@ -7,18 +7,18 @@ from unittest.mock import Mock
 
 from irrd import __version__
 from irrd.conf import get_setting
-from ..request_handlers import DatabaseStatusRequest
+from ..status_generator import StatusGenerator
 
 
-class TestDatabaseStatusRequest:
+class TestStatusGenerator:
 
     def test_request(self, monkeypatch, config_override):
         mock_database_handler = Mock()
-        monkeypatch.setattr('irrd.server.http.request_handlers.DatabaseHandler', lambda: mock_database_handler)
+        monkeypatch.setattr('irrd.server.http.status_generator.DatabaseHandler', lambda: mock_database_handler)
         mock_status_query = Mock()
-        monkeypatch.setattr('irrd.server.http.request_handlers.DatabaseStatusQuery', lambda: mock_status_query)
+        monkeypatch.setattr('irrd.server.http.status_generator.DatabaseStatusQuery', lambda: mock_status_query)
         mock_statistics_query = Mock()
-        monkeypatch.setattr('irrd.server.http.request_handlers.RPSLDatabaseObjectStatisticsQuery',
+        monkeypatch.setattr('irrd.server.http.status_generator.RPSLDatabaseObjectStatisticsQuery',
                             lambda: mock_statistics_query)
 
         def mock_whois_query(nrtm_host, nrtm_port, source):
@@ -32,7 +32,7 @@ class TestDatabaseStatusRequest:
             elif source == 'TEST3':
                 raise socket.timeout()
 
-        monkeypatch.setattr('irrd.server.http.request_handlers.whois_query_source_status', mock_whois_query)
+        monkeypatch.setattr('irrd.server.http.status_generator.whois_query_source_status', mock_whois_query)
 
         config_override({
             'sources': {
@@ -114,7 +114,7 @@ class TestDatabaseStatusRequest:
         ])
         mock_database_handler.execute_query = lambda query: next(mock_query_result)
 
-        status_report = DatabaseStatusRequest().generate_status()
+        status_report = StatusGenerator().generate_status()
         expected_report = textwrap.dedent(f"""
             IRRD version {__version__}
             Listening on ::0 port {get_setting('server.whois.port')}

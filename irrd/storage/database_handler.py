@@ -13,7 +13,7 @@ from irrd.conf import get_setting
 from irrd.rpsl.parser import RPSLObject
 from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING
 from irrd.vendor import postgres_copy
-from .preload import get_preloader
+from .preload import Preloader
 from .queries import (BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery,
                       RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery)
 from . import get_engine
@@ -44,21 +44,15 @@ class DatabaseHandler:
     # The ROA insert buffer is a list of dicts with columm names and their values.
     _roa_insert_buffer: List[Dict[str, Union[str, int]]]
 
-    def __init__(self, enable_preload_update=True):
+    def __init__(self):
         """
         Create a new database handler.
 
-        If enable_preload is True (default), the Preloader will be notified
-        of changed objects after every committed transaction. This should
-        be disabled in tasks that do not run in the IRRd server process,
-        such as the submit_email script.
         """
         self.journaling_enabled = True
         self._connection = get_engine().connect()
         self._start_transaction()
-        self.preloader = None
-        if enable_preload_update:
-            self.preloader = get_preloader()
+        self.preloader = Preloader()
 
     def _start_transaction(self) -> None:
         """Start a fresh transaction."""
@@ -83,8 +77,7 @@ class DatabaseHandler:
         self.status_tracker.finalise_transaction()
         try:
             self._transaction.commit()
-            if self.preloader:
-                self.preloader.reload(self._object_classes_modified)
+            self.preloader.signal_reload(self._object_classes_modified)
             self._start_transaction()
         except Exception as exc:  # pragma: no cover
             self._transaction.rollback()

@@ -11,6 +11,12 @@ dotted==0.1.8          # Dotted path dictionary resolving for settings
 beautifultable==0.8.0  # generating nice-looking ascii tables
 PyYAML==5.3.1          # parsing YAML config files
 datrie==0.7.1          # efficient route searching, used for RPKI
+setproctitle==1.1.10   # updating the process title for useful ps output
+python-daemon==2.2.3   # daemonising the main process
+pid==2.2.3             # managing PID files
+redis==3.2.1           # preloaded data storage & sync through redis
+hiredis==1.0.0         # improved redis response parsing performance
+psutil==5.6.1          # process management
 
 # Database connections and management
 psycopg2-binary==2.8.5
@@ -19,13 +25,14 @@ alembic==1.4.2
 ujson==2.0.3
 
 # Network handling
-twisted==20.3.0
+twisted==19.10.0
 
 # Testing and related packages
 pytest==5.4.1
 pytest-cov==2.8.1
 coverage==5.1
 coveralls==2.0.0
+twisted==20.3.0    # Used for a mock email server in integration tests
 
 # Documentation generation
 Sphinx==3.0.1

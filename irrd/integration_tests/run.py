@@ -6,6 +6,7 @@ import ujson
 import base64
 import email
 import os
+import requests
 import signal
 import socket
 import sqlalchemy as sa
@@ -80,10 +81,12 @@ class TestIntegration:
     port_whois2 = 6044
 
     def test_irrd_integration(self, tmpdir):
-        # IRRD_DATABASE_URL overrides the yaml config, so should be removed
+        # IRRD_DATABASE_URL and IRRD_REDIS_URL override the yaml config, so should be removed
         if 'IRRD_DATABASE_URL' in os.environ:
             del os.environ['IRRD_DATABASE_URL']
-        # PYTHONPATH needs to contain the twisted plugin path.
+        if 'IRRD_REDIS_URL' in os.environ:
+            del os.environ['IRRD_REDIS_URL']
+        # PYTHONPATH needs to contain the twisted plugin path to support the mailserver.
         os.environ['PYTHONPATH'] = IRRD_ROOT_PATH
         os.environ['IRRD_SCHEDULER_TIMER_OVERRIDE'] = '1'
         self.tmpdir = tmpdir
@@ -430,6 +433,19 @@ class TestIntegration:
         query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!j-*')
         assert query_result == 'TEST:Y:2-29:29\nRPKI:N:-'
 
+        status1 = requests.get(f'http://127.0.0.1:{self.port_http1}/v1/status/')
+        status2 = requests.get(f'http://127.0.0.1:{self.port_http2}/v1/status/')
+        assert status1.status_code == 200
+        assert status2.status_code == 200
+        assert 'IRRD version' in status1.text
+        assert 'IRRD version' in status2.text
+        assert 'TEST' in status1.text
+        assert 'TEST' in status2.text
+        assert 'RPKI' in status1.text
+        assert 'RPKI' in status2.text
+        assert 'Authoritative: Yes' in status1.text
+        assert 'Authoritative: Yes' not in status2.text
+
     def _start_mailserver(self):
         """
         Start the mailserver through twisted. This special SMTP server is
@@ -452,19 +468,25 @@ class TestIntegration:
         """
         self.database_url1 = os.environ['IRRD_DATABASE_URL_INTEGRATION_1']
         self.database_url2 = os.environ['IRRD_DATABASE_URL_INTEGRATION_2']
+        self.redis_url1 = os.environ['IRRD_REDIS_URL_INTEGRATION_1']
+        self.redis_url2 = os.environ['IRRD_REDIS_URL_INTEGRATION_2']
 
         self.config_path1 = str(self.tmpdir) + '/irrd1_config.yaml'
         self.config_path2 = str(self.tmpdir) + '/irrd2_config.yaml'
         self.logfile1 = str(self.tmpdir) + '/irrd1.log'
         self.logfile2 = str(self.tmpdir) + '/irrd2.log'
-        self.pidfile1 = str(self.tmpdir) + '/irrd1.pid'
-        self.pidfile2 = str(self.tmpdir) + '/irrd2.pid'
         self.roa_source1 = str(self.tmpdir) + '/roa1.json'
         self.roa_source2 = str(self.tmpdir) + '/roa2.json'
         self.export_dir1 = str(self.tmpdir) + '/export1/'
         self.export_dir2 = str(self.tmpdir) + '/export2/'
+        self.piddir1 = str(self.tmpdir) + '/piddir1/'
+        self.piddir2 = str(self.tmpdir) + '/piddir2/'
+        self.pidfile1 = self.piddir1 + 'irrd.pid'
+        self.pidfile2 = self.piddir2 + 'irrd.pid'
         os.mkdir(self.export_dir1)
         os.mkdir(self.export_dir2)
+        os.mkdir(self.piddir1)
+        os.mkdir(self.piddir2)
 
         print(textwrap.dedent(f"""
             Preparing to start IRRd for integration test.
@@ -501,7 +523,7 @@ class TestIntegration:
                     },
                     'whois': {
                         'interface': '::0',
-                        'max_connections': 50,
+                        'max_connections': 10,
                         'port': 8043
                     },
                 },
@@ -527,7 +549,9 @@ class TestIntegration:
         }
 
         config1 = base_config.copy()
+        config1['irrd']['piddir'] = self.piddir1
         config1['irrd']['database_url'] = self.database_url1
+        config1['irrd']['redis_url'] = self.redis_url1
         config1['irrd']['server']['http']['port'] = self.port_http1
         config1['irrd']['server']['whois']['port'] = self.port_whois1
         config1['irrd']['auth']['gnupg_keyring'] = str(self.tmpdir) + '/gnupg1'
@@ -544,7 +568,9 @@ class TestIntegration:
             yaml.safe_dump(config1, yaml_file)
 
         config2 = base_config.copy()
+        config2['irrd']['piddir'] = self.piddir2
         config2['irrd']['database_url'] = self.database_url2
+        config2['irrd']['redis_url'] = self.redis_url2
         config2['irrd']['server']['http']['port'] = self.port_http2
         config2['irrd']['server']['whois']['port'] = self.port_whois2
         config2['irrd']['auth']['gnupg_keyring'] = str(self.tmpdir) + '/gnupg2'
@@ -566,8 +592,8 @@ class TestIntegration:
 
         self._prepare_database()
 
-        assert not subprocess.call(['twistd', f'--pidfile={self.pidfile1}', 'irrd', f'--config={self.config_path1}'])
-        assert not subprocess.call(['twistd', f'--pidfile={self.pidfile2}', 'irrd', f'--config={self.config_path2}'])
+        assert not subprocess.call(['irrd/daemon/main.py', f'--config={self.config_path1}'])
+        assert not subprocess.call(['irrd/daemon/main.py', f'--config={self.config_path2}'])
 
     def _prepare_database(self):
         """
@@ -620,7 +646,7 @@ class TestIntegration:
         email += base64.b64encode(request.encode('utf-8'))
 
         script = IRRD_ROOT_PATH + '/irrd/scripts/submit_email.py'
-        p = subprocess.Popen([script, f'--config={config_path}', f'--irrd_pidfile={self.pidfile1}'],
+        p = subprocess.Popen([script, f'--config={config_path}'],
                              stdin=subprocess.PIPE)
         p.communicate(email)
         p.wait()
@@ -689,10 +715,14 @@ class TestIntegration:
         or not they succeed. It is used to kill any leftover IRRd or SMTP
         server processes.
         """
+        print('\n')
         for pidfile in self.pidfile1, self.pidfile2, self.pidfile_mailserver:
             try:
                 with open(pidfile) as fh:
-                    os.kill(int(fh.read()), signal.SIGTERM)
-            except (FileNotFoundError, ProcessLookupError, ValueError):
+                    pid = int(fh.read())
+                    print(f'Terminating PID {pid} from {pidfile}')
+                    os.kill(pid, signal.SIGTERM)
+            except (FileNotFoundError, ProcessLookupError, ValueError) as exc:
+                print(f'Failed to kill: {pidfile}: {exc}')
                 pass
 

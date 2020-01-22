@@ -16,7 +16,7 @@ setuptools.setup(
     url='https://github.com/irrdnet/irrd',
     packages=setuptools.find_packages(
         exclude=['*.tests', '*.tests.*', 'tests.*', 'tests', 'irrd.integration_tests']
-    ) + ['twisted.plugins'],
+    ),
     python_requires='>=3.6',
     package_data={'': ['*.txt', '*.yaml', '*.mako']},
     install_requires=[
@@ -31,11 +31,16 @@ setuptools.setup(
         'beautifultable==0.8.0',
         'PyYAML==5.3.1',
         'datrie==0.7.1',
+        'setproctitle==1.1.10',
+        'python-daemon==2.2.3',
+        'pid==2.2.3',
+        'redis==3.2.1',
+        'hiredis==1.0.0',
+        'psutil==5.6.1',
         'psycopg2-binary==2.8.5',
         'SQLAlchemy==1.3.16',
         'alembic==1.4.2',
         'ujson==2.0.3',
-        'twisted==20.3.0',
     ],
     extras_require={
         ':python_version < "3.7"': [
@@ -44,6 +49,7 @@ setuptools.setup(
     },
     entry_points={
         'console_scripts': [
+            'irrd = irrd.daemon.main:main',
             'irrd_submit_email = irrd.scripts.submit_email:main',
             'irrd_database_upgrade = irrd.scripts.database_upgrade:main',
             'irrd_load_database = irrd.scripts.load_database:main',

@@ -56,13 +56,13 @@ A few PostgreSQL settings need to be changed from their default:
   sorting and merging.
 * ``shared_buffers`` should be set to around 1/8th - 1/4th of the system
   memory to benefit from caching, with a max of a few GB.
-* ``max_connections`` may need to be increased from 100. IRRd also has
-  an internal maximum number of connections, which is set to
-  ``server.whois.max_connections`` plus the number of configured
-  sources, times 3. Generally, each open whois connection will result
-  in one PostgreSQL connection, as will each running process for a change
-  submitted by a user, each running mirror import, and each running
-  mirror export.
+* ``max_connections`` may need to be increased from 100. Generally, there
+  will be one open connection for:
+  * Each open whois connection
+  * Each running mirror import and export process
+  * Each RPKI update process
+  * Each run of ``irrd_load_database``
+  * Each run of ``irrd_submit_email``
 * ``log_min_duration_statement`` can be useful to set to ``0`` initially,
   to log all SQL queries to aid in debugging any issues.
   Note that initial imports of data produce significant logs if all queres
@@ -78,6 +78,23 @@ the RPSL text imported.
     It is also possible to restore data from recent exports,
     but changes made since the most recent export will be lost.
 
+.. _deployment-redis-configuration:
+
+Redis configuration
+-------------------
+Redis is required for communication and persistence between IRRd's processes.
+Beyond a default Redis installation, it is recommended to:
+
+* Disable snapshotting, by removing all ``save`` lines from the
+  Redis configuration. IRRd always reloads the existing data upon startup
+  of restart of either IRRd or Redis, and therefore Redis persistence
+  is not needed.
+* Enable unix socket support with the ``unixsocket`` configuration
+  option in Redis, and using a unix socket URL in the ``redis_url``
+  configuration in IRRd. This improves performance.
+
+IRRd will recover from a Redis restart, but certain queries mail fail
+while Redis is unavailable.
 
 Installing IRRd
 ---------------
@@ -165,7 +182,6 @@ This is the most efficient way to import existing authoritative data.
     gpg keychain. This loading is required to be able to use them for
     authentication once the new IRRd instance is authoritative.
 
-
 Once these mirrors are running, and you're not seeing any issues,
 the general plan for switching over to a new IRRd v4 instance would be:
 
@@ -220,27 +236,29 @@ The user also needs write access to access to:
 * ``sources.{name}.export_destination``
 * ``log.logfile_path``. As IRRd creates ``log.logfile_path`` itself,
   it needs write access to the directory this file is in
+* ``piddir``
 
+
+.. _deployment-starting-irrd:
 
 Starting IRRd
 -------------
-IRRd runs as a Twisted process, and can be started with::
+IRRd runs as a daemon, and can be started with::
 
-    /home/irrd/irrd-venv/bin/twistd --uid=irrd --pidfile=/var/irrd.pid irrd
+    /home/irrd/irrd-venv/bin/irrd
 
-Useful options (to be placed before ``irrd``):
+Useful options:
 
-* ``--uid=<user>`` makes the process run as a non-privileged user, after binding
-  to TCP ports.
-* ``-n`` makes the process run in the foreground. If ``log.logfile_path``
-  is not set, this also shows all log output in the terminal.
-* ``--pidfile=<path>`` has Twisted store the pidfile in a specific path.
-  By default, the path is ``twistd.pid`` in the current directory.
+* ``--config=<path>`` loads the configuration from a different path than the
+  default ``/etc/irrd.yaml``. This must always be the full path.
+* ``--foreground`` makes the process run in the foreground. If
+  ``log.logfile_path`` is not set, this also shows all log output
+  in the terminal.
+* ``--uid=<user>`` makes the process run as a non-privileged user. However,
+  this happens after binding to TCP ports, so setcap as listed below is
+  the recommended method to drop privilege.
 
-To load a different configuration file than the default ``/etc/irrd.yaml``,
-add a ``--config`` parameter after ``irrd``, like so::
-
-    /home/irrd/irrd-venv/bin/twistd --uid=irrd irrd --config=other_config.yaml
+IRRd can be stopped by sending a SIGTERM signal.
 
 .. note::
     Although ``log.logfile_path`` is not required, if it is unset and
@@ -249,14 +267,14 @@ add a ``--config`` parameter after ``irrd``, like so::
 Using setcap
 ~~~~~~~~~~~~
 IRRd can drop privileges with the ``--uid`` parameter, as used in the last
-section. Another option is to run the IRRd command as the non-privileged
+section. A better option is to run the IRRd command as the non-privileged
 user, and use ``setcap`` to assign that user permissions to open privileged
 ports, e.g.::
 
     # Once, as root:
     setcap 'cap_net_bind_service=+ep' /home/irrd/irrd-venv/bin/python3
     # To run, start without --uid, as the non-privileged user
-    /home/irrd/irrd-venv/bin/twistd --pidfile=/home/irrd/irrd.pid irrd
+    /home/irrd/irrd-venv/bin/irrd
 
 Logrotate configuration
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -295,8 +313,8 @@ using setcap, to be created in ``/lib/systemd/system/irrd.service``::
     WorkingDirectory=/home/irrd
     User=irrd
     Group=irrd
-    PIDFile=/home/irrd/irrd.pid
-    ExecStart=/home/irrd/irrd-venv/bin/twistd -n --pidfile=/home/irrd/irrd.pid irrd
+    PIDFile=/home/irrd/irrd.pid  # must match piddir config in the settings
+    ExecStart=/home/irrd/irrd-venv/bin/irrd --foreground
     Restart=on-failure
     ExecReload=/bin/kill -HUP $MAINPID
 
@@ -312,14 +330,8 @@ Then, IRRd can be started under systemd with::
 Errors
 ~~~~~~
 
-Errors will generally be written to the IRRd log.
-However, if `twistd` outputs only usage info, ending with something like::
-
-    /home/irrd/irrd-venv/bin/twistd: Unknown command: irrd
-
-You will find a clearer error on why irrd could not be started, above
-the (rather lengthy) general twisted usage info.
-
+Errors will generally be written to the IRRd log, or in the console, if
+the config file could not be loaded.
 
 Processing email changes
 ------------------------
@@ -328,17 +340,11 @@ deliver the email to the ``irrd_submit_email`` command.
 
 When using the virtualenv as set up above, the full path is::
 
-    /home/irrd/irrd-venv/bin/irrd_submit_email --irrd_pidfile /home/irrd/irrd.pid
+    /home/irrd/irrd-venv/bin/irrd_submit_email
 
 A ``--config`` parameter can be passed to set a different configuration
 file path. Results of the request are sent to the sender of the request,
 and :doc:`any relevant notifications are also sent </users/database-changes>`.
-
-The ``--irrd_pidfile`` parameter is required, and should be set to the
-pidfile of the running IRRd instance. This is needed to signal the IRRd
-instance to update preloaded data. If the file does not exist, or the instance
-is not running, e.g. during a quick restart, no signal is sent, as the
-preloaded data will be updated when IRRd starts.
 
 .. note::
     As a separate script, `irrd_submit_email` **always acts on the current

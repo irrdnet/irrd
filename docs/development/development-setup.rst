@@ -16,6 +16,11 @@ no authentication, database ``irrd_test``::
 
     export IRRD_DATABASE_URL=postgresql:///irrd_test
 
+Some tests also require a running Redis instance, which needs to be set
+in ``IRRD_REDIS_URL``, e.g.::
+
+    export IRRD_REDIS_URL=redis://localhost/3
+
 The tests will refuse to work on a database that already has tables.
 Note that setting this environment variable will also override the database
 for running IRRd itself.
@@ -45,10 +50,16 @@ To run the integration test, two databases need to be configured, e.g.::
     export IRRD_DATABASE_URL_INTEGRATION_1=postgresql:///irrd_test1
     export IRRD_DATABASE_URL_INTEGRATION_2=postgresql:///irrd_test2
 
+You'll also need two different Redis databases. You can use the same
+instance number with different database numbers, e.g.::
+
+    export IRRD_REDIS_URL_INTEGRATION_1=redis://localhost/4
+    export IRRD_REDIS_URL_INTEGRATION_2=redis://localhost/5
+
 .. danger::
     The integration test will wipe all contents of IRRd tables in the databases
-    ``IRRD_DATABASE_URL_INTEGRATION_1`` and ``IRRD_DATABASE_URL_INTEGRATION_2``
-    without further checks or confirmation.
+    ``IRRD_DATABASE_URL_INTEGRATION_1`` and ``IRRD_DATABASE_URL_INTEGRATION_2``,
+    along with both redis databases, without further checks or confirmation.
 
 The test can then be started with::
 

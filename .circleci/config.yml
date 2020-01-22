@@ -9,6 +9,9 @@ jobs:
           IRRD_DATABASE_URL: 'postgresql://root@localhost/circle_test'
           IRRD_DATABASE_URL_INTEGRATION_1: 'postgresql://root@localhost/circle_test_integration_1'
           IRRD_DATABASE_URL_INTEGRATION_2: 'postgresql://root@localhost/circle_test_integration_2'
+          IRRD_REDIS_URL: 'redis://localhost'
+          IRRD_REDIS_URL_INTEGRATION_1: 'redis://localhost/4'
+          IRRD_REDIS_URL_INTEGRATION_2: 'redis://localhost/5'
 
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
@@ -18,6 +21,9 @@ jobs:
           POSTGRES_USER: root
           POSTGRES_DB: circle_test
           POSTGRES_HOST_AUTH_METHOD: trust
+
+      - image: circleci/redis:5.0.4
+
 
     working_directory: ~/repo
 
@@ -45,7 +51,10 @@ jobs:
 
       - run:
           name: apt update
-          command: sudo apt update
+          command: |
+            set +e
+            sudo apt update
+            echo
 
       - run:
           name: Installing psql client
@@ -74,7 +83,7 @@ jobs:
           name: run regular tests
           command: |
             . venv/bin/activate
-            py.test --cov=irrd irrd --junitxml=test-reports/junit.xml --cov-fail-under=100
+            py.test --cov=irrd irrd --junitxml=test-reports/junit.xml --cov-fail-under=100 --cov-report term-missing:skip-covered
 
       - run:
           name: run integration tests

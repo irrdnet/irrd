@@ -1,7 +1,6 @@
 import pytest
 import uuid
 from IPy import IP
-from twisted.internet.address import IPv4Address
 from unittest.mock import Mock
 
 from irrd.mirroring.nrtm_generator import NRTMGeneratorException
@@ -61,9 +60,9 @@ def prepare_parser(monkeypatch, config_override):
     mock_database_query = Mock()
     monkeypatch.setattr('irrd.server.whois.query_parser.RPSLDatabaseQuery', lambda columns=None, ordered_by_sources=True: mock_database_query)
     mock_preloader = Mock(spec=Preloader)
-    monkeypatch.setattr('irrd.server.whois.query_parser.get_preloader', lambda: mock_preloader)
+    monkeypatch.setattr('irrd.server.whois.query_parser.Preloader', lambda: mock_preloader)
 
-    parser = WhoisQueryParser(IPv4Address('TCP', '127.0.0.1', 99999), '[127.0.0.1]:99999')
+    parser = WhoisQueryParser('127.0.0.1', '127.0.0.1:99999')
 
     mock_query_result = [
         {
@@ -957,7 +956,7 @@ class TestWhoisQueryParserIRRD:
             'sources_default': [],
             'rpki': {'roa_source': 'https://example.com/roa.json'},
         })
-        parser = WhoisQueryParser(IPv4Address('TCP', '127.0.0.1', 99999), '[127.0.0.1]:99999')
+        parser = WhoisQueryParser('127.0.0.1', '127.0.0.1:99999')
 
         response = parser.handle_query('!r192.0.2.0/25')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
@@ -1070,7 +1069,7 @@ class TestWhoisQueryParserIRRD:
             'sources_default': [],
             'rpki': {'roa_source': 'https://example.com/roa.json'}
         })
-        parser = WhoisQueryParser(IPv4Address('TCP', '127.0.0.1', 99999), '[127.0.0.1]:99999')
+        parser = WhoisQueryParser('127.0.0.1', '127.0.0.1:99999')
         response = parser.handle_query('!s-lc')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
