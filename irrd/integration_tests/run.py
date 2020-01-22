@@ -1,6 +1,7 @@
 # flake8: noqa: W293
 import sys
 import time
+import ujson
 
 import base64
 import email
@@ -298,6 +299,8 @@ class TestIntegration:
         assert 'PERSON-TEST' not in person_text
 
         # Load the mntner and person again, using the override password
+        # Note that the route/route6 objects are RPKI valid on IRRd #1,
+        # and RPKI-invalid on IRRd #2
         self._submit_update(self.config_path1,
                             SAMPLE_MNTNER_CLEAN + '\n\n' + SAMPLE_PERSON + '\n\noverride: override-password')
         messages = self._retrieve_mails()
@@ -342,28 +345,70 @@ class TestIntegration:
         assert 'unįcöde tæst 🌈🦄' in mntner_text
         assert 'PERSON-TEST' in mntner_text
 
-        # Test every major query type on both instances.
+        # These queries have different responses on #1 than #2,
+        # as all IPv4 routes are RPKI invalid on #2.
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!gAS65537')
+        assert query_result == '192.0.2.0/24'
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!gAS65547')
+        assert query_result == '192.0.2.0/32'  # Pseudo-IRR object from RPKI
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!6AS65537')
+        assert query_result == '2001:db8::/48'
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!iRS-TEST')
+        assert set(query_result.split(' ')) == {'192.0.2.0/24', '2001:db8::/48'}
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!aAS-SETTEST')
+        assert set(query_result.split(' ')) == {'192.0.2.0/24', '2001:db8::/48'}
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!aAS-TESTREF')
+        assert set(query_result.split(' ')) == {'192.0.2.0/24', '2001:db8::/48'}
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!a4AS-TESTREF')
+        assert query_result == '192.0.2.0/24'
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!a6AS-TESTREF')
+        assert query_result == '2001:db8::/48'
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!r192.0.2.0/24')
+        assert 'example route' in query_result
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!r192.0.2.0/25,l')
+        assert 'example route' in query_result
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!r192.0.2.0/24,L')
+        assert 'example route' in query_result
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!r192.0.2.0/23,M')
+        assert 'example route' in query_result
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!r192.0.2.0/24,M')
+        assert 'RPKI' in query_result  # Does not match the /24, does match the RPKI pseudo-IRR /32
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!r192.0.2.0/24,o')
+        assert query_result == 'AS65537'
+        query_result = whois_query('127.0.0.1', self.port_whois1, '-x 192.0.02.0/24')
+        assert 'example route' in query_result
+        query_result = whois_query('127.0.0.1', self.port_whois1, '-l 192.0.02.0/25')
+        assert 'example route' in query_result
+        query_result = whois_query('127.0.0.1', self.port_whois1, '-L 192.0.02.0/24')
+        assert 'example route' in query_result
+        query_result = whois_query('127.0.0.1', self.port_whois1, '-M 192.0.02.0/23')
+        assert 'example route' in query_result
+        query_result = whois_query('127.0.0.1', self.port_whois1, '-i member-of RS-test')
+        assert 'example route' in query_result
+
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!gAS65537')
+        assert not query_result
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!6AS65537')
+        assert query_result == '2001:db8::/48'
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!iRS-TEST')
+        assert query_result == '2001:db8::/48'
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!aAS-SETTEST')
+        assert query_result == '2001:db8::/48'
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!aAS-TESTREF')
+        assert query_result == '2001:db8::/48'
+        query_result = whois_query('127.0.0.1', self.port_whois2, '-x 192.0.02.0/24')
+        assert 'example route' not in query_result
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!r192.0.2.0/24,L')
+        assert 'RPKI' in query_result  # Pseudo-IRR object 0/0 from RPKI
+
+        # These queries should produce identical answers on both instances.
         for port in self.port_whois1, self.port_whois2:
-            query_result = whois_query_irrd('127.0.0.1', port, '!gAS65537')
-            assert query_result == '192.0.2.0/24'
-            query_result = whois_query_irrd('127.0.0.1', port, '!6AS65537')
-            assert query_result == '2001:db8::/48'
-            query_result = whois_query_irrd('127.0.0.1', port, '!iRS-TEST')
-            assert set(query_result.split(' ')) == {'192.0.2.0/24', '2001:db8::/48'}
             query_result = whois_query_irrd('127.0.0.1', port, '!iAS-SETTEST')
             assert set(query_result.split(' ')) == {'AS65537', 'AS65538', 'AS65539'}
             query_result = whois_query_irrd('127.0.0.1', port, '!iAS-TESTREF')
             assert set(query_result.split(' ')) == {'AS-SETTEST', 'AS65540'}
             query_result = whois_query_irrd('127.0.0.1', port, '!iAS-TESTREF,1')
             assert set(query_result.split(' ')) == {'AS65537', 'AS65538', 'AS65539', 'AS65540'}
-            query_result = whois_query_irrd('127.0.0.1', port, '!aAS-SETTEST')
-            assert set(query_result.split(' ')) == {'192.0.2.0/24', '2001:db8::/48'}
-            query_result = whois_query_irrd('127.0.0.1', port, '!aAS-TESTREF')
-            assert set(query_result.split(' ')) == {'192.0.2.0/24', '2001:db8::/48'}
-            query_result = whois_query_irrd('127.0.0.1', port, '!a4AS-TESTREF')
-            assert query_result == '192.0.2.0/24'
-            query_result = whois_query_irrd('127.0.0.1', port, '!a6AS-TESTREF')
-            assert query_result == '2001:db8::/48'
             query_result = whois_query_irrd('127.0.0.1', port, '!maut-num,as65537')
             assert 'AS65537' in query_result
             assert 'TEST-AS' in query_result
@@ -372,38 +417,18 @@ class TestIntegration:
             assert 'TEST-AS' in query_result
             assert 'AS65536 - AS65538' in query_result
             assert 'rtrs-settest' in query_result
-            query_result = whois_query_irrd('127.0.0.1', port, '!r192.0.2.0/24')
-            assert 'example route' in query_result
-            query_result = whois_query_irrd('127.0.0.1', port, '!r192.0.2.0/25,l')
-            assert 'example route' in query_result
-            query_result = whois_query_irrd('127.0.0.1', port, '!r192.0.2.0/24,L')
-            assert 'example route' in query_result
-            query_result = whois_query_irrd('127.0.0.1', port, '!r192.0.2.0/23,M')
-            assert 'example route' in query_result
-            query_result = whois_query_irrd('127.0.0.1', port, '!r192.0.2.0/24,o')
-            assert query_result == 'AS65537'
-            query_result = whois_query('127.0.0.1', port, '-x 192.0.02.0/24')
-            assert 'example route' in query_result
-            query_result = whois_query('127.0.0.1', port, '-l 192.0.02.0/25')
-            assert 'example route' in query_result
-            query_result = whois_query('127.0.0.1', port, '-L 192.0.02.0/24')
-            assert 'example route' in query_result
-            query_result = whois_query('127.0.0.1', port, '-M 192.0.02.0/23')
-            assert 'example route' in query_result
-            query_result = whois_query('127.0.0.1', port, '-i member-of RS-test')
-            assert 'example route' in query_result
             query_result = whois_query('127.0.0.1', port, '-T route6 -i member-of RS-TEST')
             assert 'No entries found for the selected source(s)' in query_result
             query_result = whois_query('127.0.0.1', port, 'dashcare')
             assert 'ROLE-TEST' in query_result
 
         query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!j-*')
-        assert query_result == 'TEST:Y:1-29:29'
+        assert query_result == 'TEST:Y:1-29:29\nRPKI:N:-'
         # irrd #2 missed the first update from NRTM, as they were done at
         # the same time and loaded from the full export, so its serial should
         # start at 2 rather than 1.
         query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!j-*')
-        assert query_result == 'TEST:Y:2-29:29'
+        assert query_result == 'TEST:Y:2-29:29\nRPKI:N:-'
 
     def _start_mailserver(self):
         """
@@ -434,6 +459,8 @@ class TestIntegration:
         self.logfile2 = str(self.tmpdir) + '/irrd2.log'
         self.pidfile1 = str(self.tmpdir) + '/irrd1.pid'
         self.pidfile2 = str(self.tmpdir) + '/irrd2.pid'
+        self.roa_source1 = str(self.tmpdir) + '/roa1.json'
+        self.roa_source2 = str(self.tmpdir) + '/roa2.json'
         self.export_dir1 = str(self.tmpdir) + '/export1/'
         self.export_dir2 = str(self.tmpdir) + '/export2/'
         os.mkdir(self.export_dir1)
@@ -454,6 +481,11 @@ class TestIntegration:
             PID file: {self.pidfile2}
             Logfile: {self.logfile2}
         """))
+
+        with open(self.roa_source1, 'w') as roa_file:
+            ujson.dump({'roas': [{'prefix': '192.0.2.0/32', 'asn': 'AS65547', 'maxLength': '32', 'ta': 'TA'}]}, roa_file)
+        with open(self.roa_source2, 'w') as roa_file:
+            ujson.dump({'roas': [{'prefix': '0/0', 'asn': 'AS0', 'maxLength': '0', 'ta': 'TA'}]}, roa_file)
 
         base_config = {
             'irrd': {
@@ -500,6 +532,7 @@ class TestIntegration:
         config1['irrd']['server']['whois']['port'] = self.port_whois1
         config1['irrd']['auth']['gnupg_keyring'] = str(self.tmpdir) + '/gnupg1'
         config1['irrd']['log']['logfile_path'] = self.logfile1
+        config1['irrd']['rpki'] = {'roa_source': 'file://' + self.roa_source1}
         config1['irrd']['sources']['TEST'] = {
             'authoritative': True,
             'keep_journal': True,
@@ -516,6 +549,7 @@ class TestIntegration:
         config2['irrd']['server']['whois']['port'] = self.port_whois2
         config2['irrd']['auth']['gnupg_keyring'] = str(self.tmpdir) + '/gnupg2'
         config2['irrd']['log']['logfile_path'] = self.logfile2
+        config2['irrd']['rpki'] = {'roa_source': 'file://' + self.roa_source2}
         config2['irrd']['sources']['TEST'] = {
             'keep_journal': True,
             'import_serial_source': f'file://{self.export_dir1}/TEST.CURRENTSERIAL',
