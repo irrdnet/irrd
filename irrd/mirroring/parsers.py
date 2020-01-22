@@ -3,8 +3,9 @@ import re
 from typing import List, Set, Optional
 
 from irrd.conf import get_setting
+from irrd.rpki.parser import BulkRouteRoaValidator
 from irrd.rpsl.parser import UnknownRPSLObjectClassException
-from irrd.rpsl.rpsl_objects import rpsl_object_from_text, RPSLKeyCert
+from irrd.rpsl.rpsl_objects import rpsl_object_from_text, RPSLKeyCert, RPSLRoute, RPSLRoute6
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.models import DatabaseOperation
 from irrd.utils.text import split_paragraphs_rpsl
@@ -44,13 +45,14 @@ class MirrorFileImportParser(MirrorParser):
     unknown_object_classes: Set[str] = set()  # Set of encountered unknown classes
 
     def __init__(self, source: str, filename: str, serial: Optional[int], database_handler: DatabaseHandler,
-                 direct_error_return: bool=False) -> None:
+                 direct_error_return: bool = False, roa_validator: Optional[BulkRouteRoaValidator] = None) -> None:
         logger.debug(f'Starting file import of {source} from {filename}, setting serial {serial}')
         self.source = source
         self.filename = filename
         self.serial = serial
         self.database_handler = database_handler
         self.direct_error_return = direct_error_return
+        self.roa_validator = roa_validator
         super().__init__()
 
     def run_import(self) -> Optional[str]:
@@ -106,6 +108,9 @@ class MirrorFileImportParser(MirrorParser):
             if self.object_class_filter and obj.rpsl_object_class.lower() not in self.object_class_filter:
                 self.obj_ignored_class += 1
                 return None
+
+            if self.roa_validator and obj.__class__ in [RPSLRoute, RPSLRoute6] and obj.prefix_length and obj.asn_first:
+                obj.rpki_status = self.roa_validator.validate_route(str(obj.ip_first), obj.prefix_length, obj.asn_first)
 
             self.database_handler.upsert_rpsl_object(obj, forced_serial=self.serial)
 

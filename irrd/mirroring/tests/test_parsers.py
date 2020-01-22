@@ -3,6 +3,8 @@ from unittest.mock import Mock
 
 import pytest
 
+from irrd.rpki.parser import BulkRouteRoaValidator
+from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.utils.rpsl_samples import SAMPLE_ROUTE, SAMPLE_UNKNOWN_CLASS, SAMPLE_UNKNOWN_ATTRIBUTE, SAMPLE_MALFORMED_PK, \
     SAMPLE_ROUTE6, SAMPLE_KEY_CERT, KEY_CERT_SIGNED_MESSAGE_VALID, SAMPLE_LEGACY_IRRD_ARTIFACT
@@ -25,6 +27,8 @@ class TestMirrorFileImportParser:
             }
         })
         mock_dh = Mock()
+        mock_roa_validator = Mock(spec=BulkRouteRoaValidator)
+        mock_roa_validator.validate_route = lambda ip, length, asn: RPKIStatus.invalid
 
         test_data = [
             SAMPLE_UNKNOWN_ATTRIBUTE,  # valid, because mirror imports are non-strict
@@ -40,16 +44,13 @@ class TestMirrorFileImportParser:
         with tempfile.NamedTemporaryFile() as fp:
             fp.write(test_input.encode('utf-8'))
             fp.seek(0)
-            parser = MirrorFileImportParser(
-                source='TEST',
-                filename=fp.name,
-                serial=424242,
-                database_handler=mock_dh,
-            )
+            parser = MirrorFileImportParser(source='TEST', filename=fp.name, serial=424242,
+                                            database_handler=mock_dh, roa_validator=mock_roa_validator)
             parser.run_import()
         assert len(mock_dh.mock_calls) == 4
         assert mock_dh.mock_calls[0][0] == 'upsert_rpsl_object'
         assert mock_dh.mock_calls[0][1][0].pk() == '192.0.2.0/24AS65537'
+        assert mock_dh.mock_calls[0][1][0].rpki_status == RPKIStatus.invalid
         assert mock_dh.mock_calls[1][0] == 'upsert_rpsl_object'
         assert mock_dh.mock_calls[1][1][0].pk() == 'PGPKEY-80F238C6'
         assert mock_dh.mock_calls[2][0] == 'record_mirror_error'
@@ -81,18 +82,14 @@ class TestMirrorFileImportParser:
         with tempfile.NamedTemporaryFile() as fp:
             fp.write(test_input.encode('utf-8'))
             fp.seek(0)
-            parser = MirrorFileImportParser(
-                source='TEST',
-                filename=fp.name,
-                serial=424242,
-                database_handler=mock_dh,
-                direct_error_return=True,
-            )
+            parser = MirrorFileImportParser(source='TEST', filename=fp.name, serial=424242, database_handler=mock_dh,
+                                            direct_error_return=True)
             error = parser.run_import()
             assert error == 'Invalid source BADSOURCE for object 192.0.2.0/24AS65537, expected TEST'
         assert len(mock_dh.mock_calls) == 1
         assert mock_dh.mock_calls[0][0] == 'upsert_rpsl_object'
         assert mock_dh.mock_calls[0][1][0].pk() == '192.0.2.0/24AS65537'
+        assert mock_dh.mock_calls[0][1][0].rpki_status == RPKIStatus.unknown
 
         assert 'Invalid source BADSOURCE for object' not in caplog.text
         assert 'File import for TEST' not in caplog.text
@@ -108,13 +105,8 @@ class TestMirrorFileImportParser:
         with tempfile.NamedTemporaryFile() as fp:
             fp.write(SAMPLE_MALFORMED_PK.encode('utf-8'))
             fp.seek(0)
-            parser = MirrorFileImportParser(
-                source='TEST',
-                filename=fp.name,
-                serial=424242,
-                database_handler=mock_dh,
-                direct_error_return=True,
-            )
+            parser = MirrorFileImportParser(source='TEST', filename=fp.name, serial=424242, database_handler=mock_dh,
+                                            direct_error_return=True)
             error = parser.run_import()
             assert 'Invalid address prefix: not-a-prefix' in error
         assert not len(mock_dh.mock_calls)
@@ -133,13 +125,8 @@ class TestMirrorFileImportParser:
         with tempfile.NamedTemporaryFile() as fp:
             fp.write(SAMPLE_UNKNOWN_CLASS.encode('utf-8'))
             fp.seek(0)
-            parser = MirrorFileImportParser(
-                source='TEST',
-                filename=fp.name,
-                serial=424242,
-                database_handler=mock_dh,
-                direct_error_return=True,
-            )
+            parser = MirrorFileImportParser(source='TEST', filename=fp.name, serial=424242, database_handler=mock_dh,
+                                            direct_error_return=True)
             error = parser.run_import()
             assert error == 'Unknown object class: foo-block'
         assert not len(mock_dh.mock_calls)

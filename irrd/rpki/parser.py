@@ -212,7 +212,7 @@ class BulkRouteRoaValidator:
 
         return pks_valid, pks_invalid
 
-    def validate_route(self, prefix_ip, prefix_length, prefix_asn) -> RPKIStatus:
+    def validate_route(self, prefix_ip: str, prefix_length: int, prefix_asn: int) -> RPKIStatus:
         """
         Validate a single route.
 
