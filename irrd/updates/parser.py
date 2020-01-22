@@ -286,7 +286,9 @@ class ChangeRequest:
             return self._cached_roa_validity
 
         assert self.rpsl_obj_new.asn_first
-        validation_result = self.roa_validator.validate_route(self.rpsl_obj_new.prefix, self.rpsl_obj_new.asn_first)
+        validation_result = self.roa_validator.validate_route(
+            self.rpsl_obj_new.prefix, self.rpsl_obj_new.asn_first, self.rpsl_obj_new.source()
+        )
         if validation_result == RPKIStatus.invalid:
             user_message = 'RPKI ROAs were found that conflict with this object.'
             logger.debug(f'{id(self)}: Conflicting ROAs found')

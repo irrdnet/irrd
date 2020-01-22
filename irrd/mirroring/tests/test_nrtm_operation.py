@@ -60,7 +60,7 @@ class TestNRTMOperation:
         monkeypatch.setattr('irrd.mirroring.nrtm_operation.SingleRouteROAValidator',
                             lambda dh: mock_route_validator)
 
-        mock_route_validator.validate_route = lambda prefix, asn: RPKIStatus.invalid
+        mock_route_validator.validate_route = lambda prefix, asn, source: RPKIStatus.invalid
         operation = NRTMOperation(
             source='TEST',
             operation=DatabaseOperation.add_or_update,

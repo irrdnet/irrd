@@ -677,7 +677,7 @@ class TestSingleChangeRequestHandling:
 
         # New object, RPKI invalid, RPKI-aware mode disabled
         mock_dh.execute_query = lambda query: []
-        mock_roa_validator.validate_route = lambda prefix, asn: RPKIStatus.invalid
+        mock_roa_validator.validate_route = lambda prefix, asn, source: RPKIStatus.invalid
         result_route = parse_change_requests(SAMPLE_ROUTE, mock_dh, auth_validator, reference_validator)[0]
         assert result_route._check_conflicting_roa()
         assert not result_route.error_messages
@@ -686,35 +686,35 @@ class TestSingleChangeRequestHandling:
 
         # New object, RPKI-aware mode enabled but object not RPKI relevant
         mock_dh.execute_query = lambda query: []
-        mock_roa_validator.validate_route = lambda prefix, asn: RPKIStatus.invalid
+        mock_roa_validator.validate_route = lambda prefix, asn, source: RPKIStatus.invalid
         result_inetnum = parse_change_requests(SAMPLE_INETNUM, mock_dh, auth_validator, reference_validator)[0]
         assert result_inetnum._check_conflicting_roa()
         assert not result_inetnum.error_messages
 
         # New object, RPKI valid
         mock_dh.execute_query = lambda query: []
-        mock_roa_validator.validate_route = lambda prefix, asn: RPKIStatus.unknown
+        mock_roa_validator.validate_route = lambda prefix, asn, source: RPKIStatus.unknown
         result_route = parse_change_requests(SAMPLE_ROUTE, mock_dh, auth_validator, reference_validator)[0]
         assert result_route._check_conflicting_roa()
         assert not result_route.error_messages
 
         # New object, RPKI invalid
         mock_dh.execute_query = lambda query: []
-        mock_roa_validator.validate_route = lambda prefix, asn: RPKIStatus.invalid
+        mock_roa_validator.validate_route = lambda prefix, asn, source: RPKIStatus.invalid
         result_route = parse_change_requests(SAMPLE_ROUTE, mock_dh, auth_validator, reference_validator)[0]
         assert not result_route._check_conflicting_roa()
         assert result_route.error_messages == ['RPKI ROAs were found that conflict with this object.']
 
         # Update object, RPKI invalid
         mock_dh.execute_query = lambda query: [{'object_text': SAMPLE_ROUTE}]
-        mock_roa_validator.validate_route = lambda prefix, asn: RPKIStatus.invalid
+        mock_roa_validator.validate_route = lambda prefix, asn, source: RPKIStatus.invalid
         result_route = parse_change_requests(SAMPLE_ROUTE, mock_dh, auth_validator, reference_validator)[0]
         assert result_route._check_conflicting_roa()
         assert result_route.warning_messages == ['RPKI ROAs were found that conflict with this object.']
 
         # Delete object, RPKI invalid
         mock_dh.execute_query = lambda query: [{'object_text': SAMPLE_ROUTE}]
-        mock_roa_validator.validate_route = lambda prefix, asn: RPKIStatus.invalid
+        mock_roa_validator.validate_route = lambda prefix, asn, source: RPKIStatus.invalid
         obj_text = SAMPLE_ROUTE + 'delete: delete'
         result_route = parse_change_requests(obj_text, mock_dh, auth_validator, reference_validator)[0]
         assert result_route._check_conflicting_roa()

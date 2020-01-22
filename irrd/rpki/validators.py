@@ -6,7 +6,7 @@ import socket
 from IPy import IP
 from typing import Optional, List, Tuple, Set, Dict
 
-from irrd.conf import RPKI_IRR_PSEUDO_SOURCE
+from irrd.conf import RPKI_IRR_PSEUDO_SOURCE, get_setting
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseQuery, ROADatabaseObjectQuery
 from .importer import ROA
@@ -55,6 +55,10 @@ class BulkRouteROAValidator:
         # Pregenerated conversion from binary to binary strings for performance
         self._byte_bin = [bin(byte)[2:].zfill(8) for byte in range(256)]
 
+        self.excluded_sources = get_setting('rpki.validation_excluded_sources', [])
+        if isinstance(self.excluded_sources, str):
+            self.excluded_sources = [self.excluded_sources]
+
         self.roa_tree = datrie.Trie('01')
         if roas is None:
             self._build_roa_tree_from_db()
@@ -90,13 +94,14 @@ class BulkRouteROAValidator:
 
             rpsl_pk = result['rpsl_pk']
             current_status = result['rpki_status']
-            new_status = self.validate_route(result['ip_first'], result['prefix_length'], result['asn_first'])
+            new_status = self.validate_route(result['ip_first'], result['prefix_length'],
+                                             result['asn_first'], result['source'])
             if new_status != current_status:
                 pks_changed[new_status].add(rpsl_pk)
 
         return pks_changed[RPKIStatus.valid], pks_changed[RPKIStatus.invalid], pks_changed[RPKIStatus.unknown]
 
-    def validate_route(self, prefix_ip: str, prefix_length: int, prefix_asn: int) -> RPKIStatus:
+    def validate_route(self, prefix_ip: str, prefix_length: int, prefix_asn: int, source: str) -> RPKIStatus:
         """
         Validate a single route.
 
@@ -106,6 +111,9 @@ class BulkRouteROAValidator:
         but none of the covering ROAs matched on both origin AS and max length.
         A route is unknown if no ROAs were found covering the prefix.
         """
+        if source in self.excluded_sources:
+            return RPKIStatus.unknown
+
         ip_bin_str = self._ip_to_binary_str(prefix_ip)
 
         roas_covering = self.roa_tree.prefix_items(ip_bin_str[:prefix_length])
@@ -162,10 +170,17 @@ class SingleRouteROAValidator:
     def __init__(self, database_handler: DatabaseHandler):
         self.database_handler = database_handler
 
-    def validate_route(self, route: IP, asn: int) -> RPKIStatus:
+        self.excluded_sources = get_setting('rpki.validation_excluded_sources', [])
+        if isinstance(self.excluded_sources, str):
+            self.excluded_sources = [self.excluded_sources]
+
+    def validate_route(self, route: IP, asn: int, source: str) -> RPKIStatus:
         """
-        Validate a route.
+        Validate a route from a particular source.
         """
+        if source in self.excluded_sources:
+            return RPKIStatus.unknown
+
         query = ROADatabaseObjectQuery().ip_less_specific_or_exact(route)
         roas_covering = list(self.database_handler.execute_query(query))
         if not roas_covering:
