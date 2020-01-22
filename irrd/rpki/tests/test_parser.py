@@ -204,11 +204,13 @@ class TestBulkRouteRoaValidator:
                 'source': 'TEST1',
             },
             {
+                # Should not match any ROA - ROAs for a subset
+                # exist, but those should not be included
                 'rpsl_pk': 'pk_route_v4_no_roa',
                 'ip_version': 4,
-                'ip_first': '198.51.100.0',
-                'prefix_length': 24,
-                'asn_first': 65547,
+                'ip_first': '192.0.2.0',
+                'prefix_length': 23,
+                'asn_first': 65549,
                 'rpki_status': RPKIStatus.valid,
                 'source': 'TEST1',
             },
@@ -217,7 +219,7 @@ class TestBulkRouteRoaValidator:
                 'ip_version': 4,
                 'ip_first': '203.0.113.1',
                 'prefix_length': 32,
-                'asn_first': 0,
+                'asn_first': 65547,
                 'rpki_status': RPKIStatus.unknown,
                 'source': 'TEST1',
             },
