@@ -137,9 +137,9 @@ class ROADatabaseObject(Base):  # type: ignore
 
     pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text('gen_random_uuid()'), primary_key=True)
 
-    prefix = sa.Column(pg.CIDR, nullable=False, index=True)
-    asn = sa.Column(sa.BigInteger, nullable=False, index=True)
-    max_length = sa.Column(sa.Integer, nullable=False, index=True)
+    prefix = sa.Column(pg.CIDR, nullable=False)
+    asn = sa.Column(sa.BigInteger, nullable=False)
+    max_length = sa.Column(sa.Integer, nullable=False)
     trust_anchor = sa.Column(sa.String)
     ip_version = sa.Column(sa.Integer, nullable=False, index=True)
 
@@ -149,6 +149,7 @@ class ROADatabaseObject(Base):  # type: ignore
     def __table_args__(cls):  # noqa
         args = [
             sa.UniqueConstraint('prefix', 'asn', 'max_length', name='roa_object_prefix_asn_maxlength_unique'),
+            sa.Index('ix_roa_objects_prefix_gist', sa.text('prefix inet_ops'), postgresql_using='gist')
         ]
         return tuple(args)
 
