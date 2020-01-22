@@ -64,6 +64,8 @@ This sample shows most configuration options::
         rpki:
             roa_source: https://example.com/roa.json
             roa_import_timer: 7200
+            validation_excluded_sources:
+                - MIRROR-SECOND
 
         sources_default:
             - AUTHDATABASE
@@ -243,6 +245,11 @@ RPKI
   file from ``roa_source``
   |br| **Default**: ``7200``.
   |br| **Change takes effect**: after SIGHUP.
+* ``validation_excluded_sources``: a list of sources for which no validation
+  is performed, i.e. even if the objects conflict with a ROA, they are
+  marked as unknown, and will be included in query responses.
+  |br| **Default**: not defined, all sources included in validation.
+  |br| **Change takes effect**: after SIGHUP, upon next full ROA import.
 
 Sources
 ~~~~~~~

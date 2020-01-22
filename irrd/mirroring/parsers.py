@@ -110,7 +110,9 @@ class MirrorFileImportParser(MirrorParser):
                 return None
 
             if self.roa_validator and obj.rpki_relevant and obj.prefix_length and obj.asn_first:
-                obj.rpki_status = self.roa_validator.validate_route(str(obj.ip_first), obj.prefix_length, obj.asn_first)
+                obj.rpki_status = self.roa_validator.validate_route(
+                    str(obj.ip_first), obj.prefix_length, obj.asn_first, obj.source()
+                )
 
             self.database_handler.upsert_rpsl_object(obj, forced_serial=self.serial)
 

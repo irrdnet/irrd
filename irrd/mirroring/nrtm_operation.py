@@ -71,7 +71,7 @@ class NRTMOperation:
         if self.operation == DatabaseOperation.add_or_update:
             if self.rpki_aware and obj.rpki_relevant and obj.prefix and obj.asn_first:
                 roa_validator = SingleRouteROAValidator(database_handler)
-                obj.rpki_status = roa_validator.validate_route(obj.prefix, obj.asn_first)
+                obj.rpki_status = roa_validator.validate_route(obj.prefix, obj.asn_first, obj.source())
             database_handler.upsert_rpsl_object(obj, self.serial)
         elif self.operation == DatabaseOperation.delete:
             database_handler.delete_rpsl_object(obj, self.serial)

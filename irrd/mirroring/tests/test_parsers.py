@@ -28,7 +28,7 @@ class TestMirrorFileImportParser:
         })
         mock_dh = Mock()
         mock_roa_validator = Mock(spec=BulkRouteROAValidator)
-        mock_roa_validator.validate_route = lambda ip, length, asn: RPKIStatus.invalid
+        mock_roa_validator.validate_route = lambda ip, length, asn, source: RPKIStatus.invalid
 
         test_data = [
             SAMPLE_UNKNOWN_ATTRIBUTE,  # valid, because mirror imports are non-strict

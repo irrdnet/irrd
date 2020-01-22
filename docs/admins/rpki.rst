@@ -55,6 +55,14 @@ Where validation takes place
   database, including RPKI invalid objects.
 
 .. note::
+    When RPKI-aware mode is first enabled, the import and validation process
+    will take considerably longer than on subsequent runs. On the first run,
+    a large number of objects in the database need to be updated, whereas this
+    number is much smaller on subsequent runs.
+    The first full import after changing ``rpki.validation_excluded_sources``
+    may also be slower, for the same reason.
+
+.. warning::
     When RPKI-aware mode is enabled and **at the same time** a new source is added,
     the objects for the new source may not have the correct RPKI status
     initially. This happens because in the new source import process, no ROAs
