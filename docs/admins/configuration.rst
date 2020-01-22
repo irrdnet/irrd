@@ -257,7 +257,7 @@ Sources
 * ``sources.{name}``: settings for a particular source. The name must be
   all-uppercase, start with a letter, and end with a letter or digit. Valid
   characters are letters, digits and dashes. The minimum length is two
-  characters. If ``rpki.roa_source`` is defined, ``RPKI`` is not a reserved
+  characters. If ``rpki.roa_source`` is defined, ``RPKI`` is a reserved
   source name, as it contains psuedo-IRR objects generated from ROAs.
 * ``sources.{name}.authoritative``: a boolean for whether this source is
   authoritative, i.e. changes are allowed to be submitted to this IRRd instance

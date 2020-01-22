@@ -455,7 +455,7 @@ class WhoisQueryParser:
         elif option == 'l':
             query = query.ip_less_specific_one_level(address)
         elif option == 'L':
-            query = query.ip_less_specific(address)
+            query = query.ip_less_specific_or_exact(address)
         elif option == 'M':
             query = query.ip_more_specific(address)
         else:
@@ -563,7 +563,7 @@ class WhoisQueryParser:
         elif command == 'l':
             query = query.ip_less_specific_one_level(address)
         elif command == 'L':
-            query = query.ip_less_specific(address)
+            query = query.ip_less_specific_or_exact(address)
         elif command == 'M':
             query = query.ip_more_specific(address)
 

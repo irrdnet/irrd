@@ -447,7 +447,7 @@ class ROADatabaseObjectQuery:
             self.columns.ip_version,
         ])
 
-    def ip_less_specific(self, ip: IP):
+    def ip_less_specific_or_exact(self, ip: IP):
         """Filter any less specifics or exact matches of a prefix."""
         fltr = sa.and_(
             self.columns.prefix.op('>>=')(str(ip))
