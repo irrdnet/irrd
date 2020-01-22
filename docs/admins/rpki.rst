@@ -45,6 +45,21 @@ Where validation takes place
   the status is correct when ROAs are added or removed.
 * For each NRTM update, the validation status is set using the current
   known ROAs, both on creations or changes.
-* Creation or changes to objects in authoritative databases are checked
+* Creation of objects in authoritative databases are checked
   against the ROAs, and rejected when they are invalid.
-* Deletions of RPKI-invalid object are permitted.
+* Changes or deletions of RPKI-invalid object are permitted,
+  but a warning will be issued to the user.
+
+.. note::
+    When RPKI-aware mode is enabled at the same time a new source is added,
+    the objects for the new source may not have the correct RPKI status
+    initially. This happens because in the new source import process, no ROAs
+    are visible, and to the periodic ROA update, the objects in the new source
+    are not visible yet. This situation automatically resolves itself upon
+    the next periodic ROA update, but may cause objects that should be marked
+    RPKI-invalid to be included in responses in the mean time.
+
+    This issue only occurs when RPKI-aware mode is enabled for the first time,
+    and at the same time a new source is added. At other times, the RPKI
+    status of new sources will be correct.
+
