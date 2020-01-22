@@ -126,6 +126,7 @@ class TestRPSLMirrorImportUpdateRunner:
 class TestRPSLMirrorFullImportRunner:
     def test_run_import_ftp(self, monkeypatch, config_override):
         config_override({
+            'rpki': {'roa_source': 'https://example.com/roa.json'},
             'sources': {
                 'TEST': {
                     'import_source': ['ftp://host/source1.gz', 'ftp://host/source2'],
@@ -141,6 +142,9 @@ class TestRPSLMirrorFullImportRunner:
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.FTP', lambda url: mock_ftp)
         MockMirrorFileImportParser.expected_serial = 424242
 
+        mock_bulk_validator_init = Mock()
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.BulkRouteRoaValidator', mock_bulk_validator_init)
+
         responses = {
             # gzipped data, contains 'source1'
             'RETR /source1.gz': b64decode('H4sIAE4CfFsAAyvOLy1KTjUEAE5Fj0oHAAAA'),
@@ -155,6 +159,7 @@ class TestRPSLMirrorFullImportRunner:
             ['delete_all_rpsl_objects_with_journal', ('TEST',), {}],
             ['disable_journaling', (), {}],
         ]
+        assert mock_bulk_validator_init.mock_calls[0][1][0] == mock_dh
 
     def test_run_import_local_file(self, monkeypatch, config_override, tmpdir):
         tmp_import_source1 = tmpdir + '/source1.rpsl.gz'
@@ -315,7 +320,7 @@ class MockMirrorFileImportParser:
     rpsl_data_calls: List[str] = []
     expected_serial = 424242
 
-    def __init__(self, source, filename, serial, database_handler, direct_error_return=False):
+    def __init__(self, source, filename, serial, database_handler, direct_error_return=False, roa_validator=None):
         self.filename = filename
         assert source == 'TEST'
         assert serial == self.expected_serial

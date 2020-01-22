@@ -201,10 +201,14 @@ class RPSLMirrorFullImportRunner(FileImportRunnerBase):
         database_handler.delete_all_rpsl_objects_with_journal(self.source)
         import_data = [self._retrieve_file(import_source, return_contents=False) for import_source in import_sources]
 
+        roa_validator = None
+        if get_setting('rpki.roa_source'):
+            roa_validator = BulkRouteRoaValidator(database_handler)
+
         database_handler.disable_journaling()
         for import_filename, to_delete in import_data:
             p = MirrorFileImportParser(source=self.source, filename=import_filename, serial=import_serial,
-                                       database_handler=database_handler)
+                                       database_handler=database_handler, roa_validator=roa_validator)
             p.run_import()
             if to_delete:
                 os.unlink(import_filename)
