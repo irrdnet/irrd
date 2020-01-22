@@ -358,7 +358,11 @@ class TestROAImportRunner:
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.BulkRouteRoaValidator', lambda dh, roas: mock_bulk_validator)
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.requests.get', MockRequestsSuccess)
 
-        mock_bulk_validator.validate_all_routes = lambda: ({'pk_valid1', 'pk_valid2'}, {'pk_invalid1', 'pk_invalid2'})
+        mock_bulk_validator.validate_all_routes = lambda: (
+            {'pk_now_valid1', 'pk_now_valid2'},
+            {'pk_now_invalid1', 'pk_now_invalid2'},
+            {'pk_now_unknown1', 'pk_now_unknown2'},
+        )
         ROAImportRunner().run()
 
         assert flatten_mock_calls(mock_dh) == [
@@ -366,7 +370,11 @@ class TestROAImportRunner:
             ['delete_all_roa_objects', (), {}],
             ['delete_all_rpsl_objects_with_journal', ('RPKI',), {}],
             ['commit', (), {}],
-            ['update_rpki_status', (), {'rpsl_pks_invalid': {'pk_invalid1', 'pk_invalid2'}}],
+            ['update_rpki_status', (), {
+                'rpsl_pks_now_valid': {'pk_now_valid1', 'pk_now_valid2'},
+                'rpsl_pks_now_invalid': {'pk_now_invalid1', 'pk_now_invalid2'},
+                'rpsl_pks_now_unknown': {'pk_now_unknown1', 'pk_now_unknown2'},
+            }],
             ['commit', (), {}],
             ['close', (), {}]
         ]

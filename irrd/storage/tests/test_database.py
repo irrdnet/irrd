@@ -406,16 +406,18 @@ class TestDatabaseHandlerLive:
         route_rpsl_pk = '192.0.2.0/24,AS65537'
 
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.invalid])))) == 1
-        dh.update_rpki_status(rpsl_pks_invalid=set())
+        dh.update_rpki_status(rpsl_pks_now_unknown={route_rpsl_pk})
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.unknown])))) == 1
-        dh.update_rpki_status(rpsl_pks_invalid=set())
+        dh.update_rpki_status()
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.unknown])))) == 1
-        dh.update_rpki_status(rpsl_pks_invalid={route_rpsl_pk})
+        dh.update_rpki_status(rpsl_pks_now_invalid={route_rpsl_pk})
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.invalid])))) == 1
-        dh.update_rpki_status(rpsl_pks_invalid={route_rpsl_pk})
+        dh.update_rpki_status(rpsl_pks_now_invalid={route_rpsl_pk})
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.invalid])))) == 1
-        dh.update_rpki_status(rpsl_pks_invalid=set())
+        dh.update_rpki_status(rpsl_pks_now_unknown={route_rpsl_pk})
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.unknown])))) == 1
+        dh.update_rpki_status(rpsl_pks_now_valid={route_rpsl_pk})
+        assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.valid])))) == 1
 
     def _clean_result(self, results):
         variable_fields = ['pk', 'timestamp', 'created', 'updated', 'last_error_timestamp']

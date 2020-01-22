@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 import codecs
 import datrie
 import logging
@@ -5,7 +7,7 @@ import socket
 import textwrap
 import ujson
 from IPy import IP
-from typing import List, Set, Optional, Tuple
+from typing import List, Set, Optional, Tuple, Dict
 
 from irrd.conf import RPKI_IRR_PSEUDO_SOURCE
 from irrd.rpki.status import RPKIStatus
@@ -179,23 +181,27 @@ class BulkRouteRoaValidator:
         else:
             self._build_roa_tree_from_roa_objs(roas)
 
-    def validate_all_routes(self, sources: List[str]=None) -> Tuple[Set[str], Set[str]]:
+    def validate_all_routes(self, sources: List[str]=None) -> Tuple[Set[str], Set[str], Set[str]]:
         """
         Validate all RPSL route/route6 objects.
 
         Retrieves all routes from the DB, and aggregates the validation results.
-        Returns a tuple of two sets: one with RPSL pks of all valid routes,
-        one with RPSL pks of all invalid routes. Routes not included in either
-        have no known RPKI status.
+        Returns a tuple of three sets of RPSL route PKs:
+        - one with routes that should be set to status VALID, but are not now
+        - one with routes that should be set to status INVALID, but are not now
+        - one with routes that should be set to status UNKNOWN, but are not now
+
+        Routes where their current validation status in the DB matches the new
+        validation result, are not included in the return value.
         """
-        q = RPSLDatabaseQuery(column_names=['rpsl_pk', 'ip_first', 'prefix_length', 'asn_first', 'source'], enable_ordering=False)
+        columns = ['rpsl_pk', 'ip_first', 'prefix_length', 'asn_first', 'source', 'rpki_status']
+        q = RPSLDatabaseQuery(column_names=columns, enable_ordering=False)
         q = q.object_classes(['route', 'route6'])
         if sources:
             q = q.sources(sources)
         routes = self.database_handler.execute_query(q)
 
-        pks_valid = set()
-        pks_invalid = set()
+        pks_changed: Dict[RPKIStatus, Set[str]] = defaultdict(set)
 
         for result in routes:
             # RPKI_IRR_PSEUDO_SOURCE objects are ROAs,
@@ -204,13 +210,12 @@ class BulkRouteRoaValidator:
                 continue
 
             rpsl_pk = result['rpsl_pk']
+            current_status = result['rpki_status']
             status = self.validate_route(result['ip_first'], result['prefix_length'], result['asn_first'])
-            if status == RPKIStatus.valid:
-                pks_valid.add(rpsl_pk)
-            elif status == RPKIStatus.invalid:
-                pks_invalid.add(rpsl_pk)
+            if status != current_status:
+                pks_changed[status].add(rpsl_pk)
 
-        return pks_valid, pks_invalid
+        return pks_changed[RPKIStatus.valid], pks_changed[RPKIStatus.invalid], pks_changed[RPKIStatus.unknown]
 
     def validate_route(self, prefix_ip: str, prefix_length: int, prefix_asn: int) -> RPKIStatus:
         """

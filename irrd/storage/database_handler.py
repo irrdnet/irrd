@@ -191,12 +191,22 @@ class DatabaseHandler:
             'trust_anchor': trust_anchor,
         })
 
-    def update_rpki_status(self, rpsl_pks_invalid: Set[str]):
+    def update_rpki_status(self, rpsl_pks_now_valid: Set[str]=None, rpsl_pks_now_invalid: Set[str]=None,
+                           rpsl_pks_now_unknown: Set[str]=None) -> None:
+        """
+        Update the RPKI status for the given RPSL PKs.
+        Only PKs whose status have changed should be included.
+        """
         table = RPSLDatabaseObject.__table__
-        stmt = table.update().where(table.c.rpki_status.in_([RPKIStatus.valid, RPKIStatus.invalid])).values(rpki_status=RPKIStatus.unknown)
-        self.execute_statement(stmt)
-        stmt = table.update().where(table.c.rpsl_pk.in_(rpsl_pks_invalid)).values(rpki_status=RPKIStatus.invalid)
-        self.execute_statement(stmt)
+        if rpsl_pks_now_valid:
+            stmt = table.update().where(table.c.rpsl_pk.in_(rpsl_pks_now_valid)).values(rpki_status=RPKIStatus.valid)
+            self.execute_statement(stmt)
+        if rpsl_pks_now_invalid:
+            stmt = table.update().where(table.c.rpsl_pk.in_(rpsl_pks_now_invalid)).values(rpki_status=RPKIStatus.invalid)
+            self.execute_statement(stmt)
+        if rpsl_pks_now_unknown:
+            stmt = table.update().where(table.c.rpsl_pk.in_(rpsl_pks_now_unknown)).values(rpki_status=RPKIStatus.unknown)
+            self.execute_statement(stmt)
 
     def delete_rpsl_object(self, rpsl_object: RPSLObject, forced_serial: Optional[int]=None) -> None:
         """
