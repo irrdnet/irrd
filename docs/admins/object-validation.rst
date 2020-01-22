@@ -6,6 +6,10 @@ In general, IRRd follows RFC 2622, 2650, 2726, 2725, 4012 and 2769.
 However, most current IRR databases violate these RFCs in some
 ways, meaning some flexibility is needed.
 
+In addition to the validations as described below, IRRd supports
+an :doc:`RPKI-aware mode </admins/rpki>` where objects are also
+validated against ROAs.
+
 The ``irrd.rpsl`` module deals with parsing and validation in general.
 The general requirements for validation are:
 

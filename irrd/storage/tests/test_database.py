@@ -1,18 +1,17 @@
-import uuid
-from sqlalchemy.exc import ProgrammingError
-from unittest.mock import Mock
-
 import pytest
+import uuid
 from IPy import IP
 from pytest import raises
+from sqlalchemy.exc import ProgrammingError
+from unittest.mock import Mock
 
 from irrd.utils.test_utils import flatten_mock_calls
 from .. import get_engine
 from ..database_handler import DatabaseHandler
+from ..models import RPSLDatabaseObject, DatabaseOperation, RPKIStatus
 from ..preload import Preloader
 from ..queries import (RPSLDatabaseQuery, RPSLDatabaseJournalQuery, DatabaseStatusQuery,
-                       RPSLDatabaseObjectStatisticsQuery)
-from ..models import RPSLDatabaseObject, DatabaseOperation
+                       RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery)
 
 """
 These tests for the database use a live PostgreSQL database,
@@ -30,6 +29,7 @@ closely interact with the database.
 @pytest.fixture()
 def irrd_database(monkeypatch):
     engine = get_engine()
+    # RPSLDatabaseObject.metadata.drop_all(engine)
     try:
         engine.execute('CREATE EXTENSION IF NOT EXISTS pgcrypto')
     except ProgrammingError as pe:  # pragma: no cover
@@ -60,6 +60,7 @@ def database_handler_with_route():
         ip_version=lambda: 4,
         ip_first=IP('192.0.2.0'),
         ip_last=IP('192.0.2.255'),
+        prefix_length=24,
         asn_first=65537,
         asn_last=65537,
     )
@@ -79,7 +80,7 @@ class TestDatabaseHandlerLive:
     def test_object_writing_and_status_checking(self, monkeypatch, irrd_database):
         monkeypatch.setenv('IRRD_SOURCES_TEST_KEEP_JOURNAL', '1')
         monkeypatch.setenv('IRRD_SOURCES_TEST2_KEEP_JOURNAL', '1')
-        monkeypatch.setattr('irrd.storage.database_handler.MAX_RECORDS_CACHE_BEFORE_INSERT', 1)
+        monkeypatch.setattr('irrd.storage.database_handler.MAX_RECORDS_BUFFER_BEFORE_INSERT', 1)
 
         rpsl_object_route_v4 = Mock(
             pk=lambda: '192.0.2.0/24,AS65537',
@@ -89,6 +90,7 @@ class TestDatabaseHandlerLive:
             ip_version=lambda: 4,
             ip_first=IP('192.0.2.0'),
             ip_last=IP('192.0.2.255'),
+            prefix_length=24,
             asn_first=65537,
             asn_last=65537,
         )
@@ -96,11 +98,11 @@ class TestDatabaseHandlerLive:
         self.dh = DatabaseHandler()
         self.dh.preloader.reload = Mock(return_value=None)
         self.dh.upsert_rpsl_object(rpsl_object_route_v4, 42)
-        assert len(self.dh._rpsl_upsert_cache) == 1
+        assert len(self.dh._rpsl_upsert_buffer) == 1
 
         rpsl_object_route_v4.parsed_data = {'mnt-by': 'MNT-CORRECT', 'source': 'TEST'}
         self.dh.upsert_rpsl_object(rpsl_object_route_v4)  # should trigger an immediate flush due to duplicate RPSL pk
-        assert len(self.dh._rpsl_upsert_cache) == 1
+        assert len(self.dh._rpsl_upsert_buffer) == 1
 
         rpsl_object_route_v6 = Mock(
             pk=lambda: '2001:db8::/64,AS65537',
@@ -110,11 +112,12 @@ class TestDatabaseHandlerLive:
             ip_version=lambda: 6,
             ip_first=IP('2001:db8::'),
             ip_last=IP('2001:db8::ffff:ffff:ffff:ffff'),
+            prefix_length=32,
             asn_first=65537,
             asn_last=65537,
         )
         self.dh.upsert_rpsl_object(rpsl_object_route_v6)
-        assert len(self.dh._rpsl_upsert_cache) == 0  # should have been flushed to the DB
+        assert len(self.dh._rpsl_upsert_buffer) == 0  # should have been flushed to the DB
         self.dh.upsert_rpsl_object(rpsl_object_route_v6)
 
         self.dh.commit()
@@ -141,16 +144,18 @@ class TestDatabaseHandlerLive:
             ip_version=lambda: None,
             ip_first=None,
             ip_last=None,
+            prefix_length=None,
             asn_first=65537,
             asn_last=65537,
         )
         self.dh.upsert_rpsl_object(rpsl_obj_ignored)
-        assert len(self.dh._rpsl_upsert_cache) == 1
+        assert len(self.dh._rpsl_upsert_buffer) == 1
         self.dh.upsert_rpsl_object(rpsl_obj_ignored)
-        assert len(self.dh._rpsl_upsert_cache) == 1
+        assert len(self.dh._rpsl_upsert_buffer) == 1
         self.dh.rollback()
 
         statistics = list(self.dh.execute_query(RPSLDatabaseObjectStatisticsQuery()))
+        print(statistics)
         assert statistics == [
             {'source': 'TEST', 'object_class': 'route', 'count': 1},
             {'source': 'TEST2', 'object_class': 'route', 'count': 1}
@@ -263,6 +268,7 @@ class TestDatabaseHandlerLive:
             ip_version=lambda: 4,
             ip_first=IP('192.0.2.0'),
             ip_last=IP('192.0.2.255'),
+            prefix_length=24,
             asn_first=65537,
             asn_last=65537,
         )
@@ -280,6 +286,7 @@ class TestDatabaseHandlerLive:
             ip_version=lambda: 6,
             ip_first=IP('2001:db8::'),
             ip_last=IP('2001:db8::ffff:ffff:ffff:ffff'),
+            prefix_length=32,
             asn_first=65537,
             asn_last=65537,
         )
@@ -329,6 +336,7 @@ class TestDatabaseHandlerLive:
             ip_version=lambda: 4,
             ip_first=IP('192.0.2.0'),
             ip_last=IP('192.0.2.255'),
+            prefix_length=24,
             asn_first=65537,
             asn_last=65537,
         )
@@ -348,6 +356,56 @@ class TestDatabaseHandlerLive:
              'serial_last_export': None, 'last_error': None, 'force_reload': False},
         ]
         self.dh.close()
+
+    def test_roa_handling_and_query(self, irrd_database):
+        self.dh = DatabaseHandler()
+        self.dh.insert_roa_object(
+            ip_version=4,
+            prefix_str='192.0.2.0/24',
+            asn=64496,
+            max_length=28,
+            trust_anchor='TEST TA'
+        )
+        self.dh.insert_roa_object(
+            ip_version=6,
+            prefix_str='2001:db8::/32',
+            asn=64497,
+            max_length=64,
+            trust_anchor='TEST TA'
+        )
+        self.dh.commit()
+
+        roas = self._clean_result(self.dh.execute_query(ROADatabaseObjectQuery()))
+        assert roas == [
+            {'prefix': '192.0.2.0/24', 'asn': 64496, 'max_length': 28,
+             'trust_anchor': 'TEST TA', 'ip_version': 4},
+            {'prefix': '2001:db8::/32', 'asn': 64497, 'max_length': 64,
+             'trust_anchor': 'TEST TA', 'ip_version': 6}]
+
+        assert len(list(self.dh.execute_query(ROADatabaseObjectQuery().ip_less_specific(IP('192.0.2.0/23'))))) == 0
+        assert len(list(self.dh.execute_query(ROADatabaseObjectQuery().ip_less_specific(IP('192.0.2.0/24'))))) == 1
+        assert len(list(self.dh.execute_query(ROADatabaseObjectQuery().ip_less_specific(IP('192.0.2.0/25'))))) == 1
+
+        self.dh.delete_all_roa_objects()
+        self.dh.commit()
+        roas = self._clean_result(self.dh.execute_query(ROADatabaseObjectQuery()))
+        assert roas == []
+
+        self.dh.close()
+
+    def test_rpki_status_storage(self, irrd_database, database_handler_with_route):
+        dh = database_handler_with_route
+        route_rpsl_pk = '192.0.2.0/24,AS65537'
+
+        assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.unknown])))) == 1
+        dh.update_rpki_status(rpsl_pks_invalid=set())
+        assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.unknown])))) == 1
+        dh.update_rpki_status(rpsl_pks_invalid={route_rpsl_pk})
+        assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.invalid])))) == 1
+        dh.update_rpki_status(rpsl_pks_invalid={route_rpsl_pk})
+        assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.invalid])))) == 1
+        dh.update_rpki_status(rpsl_pks_invalid=set())
+        assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.unknown])))) == 1
 
     def _clean_result(self, results):
         variable_fields = ['pk', 'timestamp', 'created', 'updated', 'last_error_timestamp']
@@ -419,6 +477,7 @@ class TestRPSLDatabaseQueryLive:
             ip_version=lambda: 4,
             ip_first=IP('192.0.2.1'),
             ip_last=IP('192.0.2.1'),
+            prefix_length=32,
             asn_first=65537,
             asn_last=65537,
         )
@@ -430,6 +489,7 @@ class TestRPSLDatabaseQueryLive:
             ip_version=lambda: 4,
             ip_first=IP('192.0.2.2'),
             ip_last=IP('192.0.2.2'),
+            prefix_length=32,
             asn_first=65537,
             asn_last=65537,
         )
@@ -465,6 +525,7 @@ class TestRPSLDatabaseQueryLive:
             ip_version=lambda: None,
             ip_first=None,
             ip_last=None,
+            prefix_length=None,
             asn_first=None,
             asn_last=None,
         )
@@ -476,6 +537,7 @@ class TestRPSLDatabaseQueryLive:
             ip_version=lambda: None,
             ip_first=None,
             ip_last=None,
+            prefix_length=None,
             asn_first=None,
             asn_last=None,
         )
@@ -498,6 +560,7 @@ class TestRPSLDatabaseQueryLive:
             ip_version=lambda: 4,
             ip_first=IP('192.0.2.0'),
             ip_last=IP('192.0.2.127'),
+            prefix_length=25,
             asn_first=65537,
             asn_last=65537,
         )
@@ -509,6 +572,7 @@ class TestRPSLDatabaseQueryLive:
             ip_version=lambda: 4,
             ip_first=IP('192.0.2.128'),
             ip_last=IP('192.0.2.255'),
+            prefix_length=25,
             asn_first=65537,
             asn_last=65537,
         )
@@ -520,6 +584,7 @@ class TestRPSLDatabaseQueryLive:
             ip_version=lambda: 4,
             ip_first=IP('192.0.2.0'),
             ip_last=IP('192.0.2.63'),
+            prefix_length=26,
             asn_first=65537,
             asn_last=65537,
         )

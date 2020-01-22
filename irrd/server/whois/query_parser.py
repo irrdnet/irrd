@@ -5,10 +5,11 @@ from ordered_set import OrderedSet
 from typing import Optional, List, Set, Tuple
 
 from irrd import __version__
-from irrd.conf import get_setting
+from irrd.conf import get_setting, RPKI_IRR_PSEUDO_SOURCE
 from irrd.mirroring.nrtm_generator import NRTMGenerator, NRTMGeneratorException
 from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING, lookup_field_names
 from irrd.storage.database_handler import DatabaseHandler
+from irrd.storage.models import RPKIStatus
 from irrd.storage.preload import get_preloader
 from irrd.storage.queries import RPSLDatabaseQuery, DatabaseStatusQuery
 from irrd.utils.validators import parse_as_number, ValidationError
@@ -46,9 +47,12 @@ class WhoisQueryParser:
         self.all_valid_sources = list(get_setting('sources').keys())
         self.sources_default = get_setting('sources_default')
         self.sources: List[str] = self.sources_default if self.sources_default else self.all_valid_sources
+        if get_setting('rpki.roa_source'):
+            self.all_valid_sources.append(RPKI_IRR_PSEUDO_SOURCE)
         self.object_classes: List[str] = []
         self.user_agent: Optional[str] = None
         self.multiple_command_mode = False
+        self.rpki_invalid_filter_enabled = bool(get_setting('rpki.roa_source'))
         self.timeout = 30
         self.key_fields_only = False
         self.peer = peer
@@ -122,6 +126,10 @@ class WhoisQueryParser:
             self.multiple_command_mode = True
             result = None
             response_type = WhoisQueryResponseType.NO_RESPONSE
+        elif command == 'F':
+            self.rpki_invalid_filter_enabled = False
+            result = 'Filtering out RPKI invalids is disabled for !r and RIPE style ' \
+                     'queries for the rest of this session.'
         elif command == 'V':
             result = self.handle_irrd_version()
         elif command == 'T':
@@ -646,11 +654,13 @@ class WhoisQueryParser:
         if self.sources and self.sources != self.all_valid_sources:
             query.sources(self.sources)
         else:
-            default = get_setting('sources_default')
+            default = list(get_setting('sources_default', []))
             if default:
                 query.sources(list(default))
         if self.object_classes:
             query.object_classes(self.object_classes)
+        if self.rpki_invalid_filter_enabled:
+            query.rpki_status([RPKIStatus.unknown, RPKIStatus.valid])
         return query
 
     def _execute_query_flatten_output(self, query: RPSLDatabaseQuery) -> str:

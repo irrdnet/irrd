@@ -1,6 +1,9 @@
 from collections import OrderedDict
+
+import gnupg
 from typing import Set, List, Optional, Union
 
+from irrd.conf import get_setting, PASSWORD_HASH_DUMMY_VALUE
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
 from irrd.utils.pgp import get_gpg_instance
 from .config import PASSWORD_HASHERS
@@ -9,6 +12,11 @@ from .fields import (RPSLTextField, RPSLIPv4PrefixField, RPSLIPv4PrefixesField, 
                      RPSLSetNameField, RPSLEmailField, RPSLDNSNameField, RPSLGenericNameField, RPSLReferenceField,
                      RPSLReferenceListField, RPSLAuthField, RPSLRouteSetMembersField, RPSLChangedField)
 from .parser import RPSLObject, UnknownRPSLObjectClassException
+
+RPSL_ROUTE_OBJECT_CLASS_FOR_IP_VERSION = {
+    4: 'route',
+    6: 'route6',
+}
 
 
 def rpsl_object_from_text(text, strict_validation=True, default_source: Optional[str]=None) -> RPSLObject:

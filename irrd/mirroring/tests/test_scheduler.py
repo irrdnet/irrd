@@ -6,7 +6,7 @@ thread_run_count = 0
 
 
 class TestMirrorScheduler:
-    def test_scheduler_runs_import(self, monkeypatch, config_override):
+    def test_scheduler_runs_rpsl_import(self, monkeypatch, config_override):
         global thread_run_count
         thread_run_count = 0
 
@@ -19,12 +19,32 @@ class TestMirrorScheduler:
             }
         })
 
-        monkeypatch.setattr('irrd.mirroring.scheduler.MirrorImportUpdateRunner', MockRunner)
+        monkeypatch.setattr('irrd.mirroring.scheduler.RPSLMirrorImportUpdateRunner', MockRunner)
         MockRunner.run_sleep = True
 
         scheduler = MirrorScheduler()
         scheduler.run()
-        # Second run will not start the thread, as the current one is still running.psql
+        # Second run will not start the thread, as the current one is still running
+        scheduler.run()
+
+        assert thread_run_count == 1
+
+    def test_scheduler_runs_roa_import(self, monkeypatch, config_override):
+        global thread_run_count
+        thread_run_count = 0
+
+        config_override({
+            'rpki': {
+                'roa_source': 'https://example.com/roa.json'
+            }
+        })
+
+        monkeypatch.setattr('irrd.mirroring.scheduler.ROAImportRunner', MockRunner)
+        MockRunner.run_sleep = True
+
+        scheduler = MirrorScheduler()
+        scheduler.run()
+        # Second run will not start the thread, as the current one is still running
         scheduler.run()
 
         assert thread_run_count == 1
@@ -42,7 +62,7 @@ class TestMirrorScheduler:
             }
         })
 
-        monkeypatch.setattr('irrd.mirroring.scheduler.MirrorImportUpdateRunner', MockRunner)
+        monkeypatch.setattr('irrd.mirroring.scheduler.RPSLMirrorImportUpdateRunner', MockRunner)
         MockRunner.run_sleep = False
 
         scheduler = MirrorScheduler()
@@ -107,8 +127,7 @@ class MockRunner:
     run_sleep = True
 
     def __init__(self, source):
-        assert source == 'TEST'
-        global thread_run_count
+        assert source in ['TEST', 'RPKI']
 
     def run(self):
         global thread_run_count

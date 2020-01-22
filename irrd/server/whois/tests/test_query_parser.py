@@ -1,11 +1,11 @@
+import pytest
 import uuid
+from IPy import IP
 from twisted.internet.address import IPv4Address
 from unittest.mock import Mock
 
-import pytest
-from IPy import IP
-
 from irrd.mirroring.nrtm_generator import NRTMGeneratorException
+from irrd.storage.models import RPKIStatus
 from irrd.storage.preload import Preloader
 from irrd.utils.test_utils import flatten_mock_calls
 from ..query_parser import WhoisQueryParser
@@ -950,6 +950,40 @@ class TestWhoisQueryParserIRRD:
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert not response.result
 
+    def test_route_search_exact_rpki_aware(self, prepare_parser, config_override):
+        mock_dq, mock_dh, mock_preloader, _ = prepare_parser
+        config_override({
+            'sources': {'TEST1': {}, 'TEST2': {}},
+            'sources_default': [],
+            'rpki': {'roa_source': 'https://example.com/roa.json'},
+        })
+        parser = WhoisQueryParser(IPv4Address('TCP', '127.0.0.1', 99999), '[127.0.0.1]:99999')
+
+        response = parser.handle_query('!r192.0.2.0/25')
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert response.result == MOCK_ROUTE_COMBINED
+        assert flatten_mock_calls(mock_dq) == [
+            ['rpki_status', ([RPKIStatus.unknown, RPKIStatus.valid],), {}],
+            ['object_classes', (['route', 'route6'],), {}],
+            ['ip_exact', (IP('192.0.2.0/25'),), {}],
+        ]
+        mock_dq.reset_mock()
+
+        response = parser.handle_query('!f')
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert 'Filtering out RPKI invalids is disabled' in response.result
+
+        response = parser.handle_query('!r192.0.2.0/25')
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert response.result == MOCK_ROUTE_COMBINED
+        assert flatten_mock_calls(mock_dq) == [
+            ['object_classes', (['route', 'route6'],), {}],
+            ['ip_exact', (IP('192.0.2.0/25'),), {}],
+        ]
+
     def test_route_search_less_specific_one_level(self, prepare_parser):
         mock_dq, mock_dh, mock_preloader, parser = prepare_parser
 
@@ -1010,7 +1044,7 @@ class TestWhoisQueryParserIRRD:
         assert flatten_mock_calls(mock_dh) == [['close', (), {}]]
         mock_dh.reset_mock()
 
-    def test_sources_list(self, prepare_parser):
+    def test_sources_list(self, prepare_parser, config_override):
         mock_dq, mock_dh, mock_preloader, parser = prepare_parser
         mock_dh.reset_mock()
 
@@ -1030,6 +1064,17 @@ class TestWhoisQueryParserIRRD:
         assert response.response_type == WhoisQueryResponseType.ERROR
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == 'One or more selected sources are unavailable.'
+
+        config_override({
+            'sources': {'TEST1': {}, 'TEST2': {}},
+            'sources_default': [],
+            'rpki': {'roa_source': 'https://example.com/roa.json'}
+        })
+        parser = WhoisQueryParser(IPv4Address('TCP', '127.0.0.1', 99999), '[127.0.0.1]:99999')
+        response = parser.handle_query('!s-lc')
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert response.result == 'TEST1,TEST2,RPKI'
 
     def test_irrd_version(self, prepare_parser):
         mock_dq, mock_dh, mock_preloader, parser = prepare_parser

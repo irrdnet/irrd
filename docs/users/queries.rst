@@ -86,6 +86,12 @@ IRRd style queries
   comma-separated, e.g. ``!sRIPE,NTTCOM``. In addition, ``!s-lc`` returns the
   sources currently selected. This persists across queries.
 * ``!v`` returns the current version of IRRd
+* ``!f`` disables filtering RPKI invalid routes. If
+  :doc:`RPKI-aware mode is enabled </admins/rpki>`, `route(6)` objects that
+  conflict with RPKI ROAs are not included in the output of any query by default.
+  After using ``!f``, this filter is disabled for the remainder of
+  the connection. This only applies to ``!r`` queries and all RIPE
+  style queries.
 
 Responses
 ^^^^^^^^^
