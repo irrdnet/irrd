@@ -15,7 +15,7 @@ from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING
 from irrd.vendor import postgres_copy
 from .preload import get_preloader
 from .queries import (BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery,
-                      RPSLDatabaseObjectStatisticsQuery)
+                      RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery)
 from . import get_engine
 from .models import RPSLDatabaseObject, RPSLDatabaseJournal, DatabaseOperation, RPSLDatabaseStatus, ROADatabaseObject
 from irrd.rpki.status import RPKIStatus
@@ -98,7 +98,7 @@ class DatabaseHandler:
         self._transaction.rollback()
         self._start_transaction()
 
-    def execute_query(self, query: Union[BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery, RPSLDatabaseObjectStatisticsQuery]) -> Iterator[Dict[str, Any]]:
+    def execute_query(self, query: Union[BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery, RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery]) -> Iterator[Dict[str, Any]]:
         """Execute an RPSLDatabaseQuery within the current transaction."""
         # To be able to query objects that were just created, flush the buffer.
         self._flush_rpsl_object_writing_buffer()

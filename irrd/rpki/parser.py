@@ -160,16 +160,26 @@ class BulkRouteRoaValidator:
     any items that are a prefix of 11000000000000000000001010001011,
     which includes 110000000000000000000010, the key for 192.0.2(.0).
     """
-    def __init__(self, roas: List[ROA]):
+    def __init__(self, dh: DatabaseHandler, roas: Optional[List[ROA]] = None):
         """
-        Create a validator object. Requires a list of ROA objects,
-        against which route/route6 objects will be validated.
+        Create a validator object. Can use either a list of ROA bojects,
+        or if not give, generates this from the database.
+        Due to the overhead in preloading all ROAs, this is only effective
+        when many routes have to be validated, otherwise it's more
+        efficient to use SingleRouteRoaValidator. The break even
+        point is in the order of magnitude of checking 10.000 routes.
         """
-        self.roas = roas
+        self.database_handler = dh
+        # Pregenerated conversion from binary to binary strings for performance
         self._byte_bin = [bin(byte)[2:].zfill(8) for byte in range(256)]
-        self._build_roa_tree()
 
-    def validate_all_routes(self, dh: DatabaseHandler, sources: List[str]=None) -> Tuple[Set[str], Set[str]]:
+        self.roa_tree = datrie.Trie('01')
+        if roas is None:
+            self._build_roa_tree_from_db()
+        else:
+            self._build_roa_tree_from_roa_objs(roas)
+
+    def validate_all_routes(self, sources: List[str]=None) -> Tuple[Set[str], Set[str]]:
         """
         Validate all RPSL route/route6 objects.
 
@@ -182,7 +192,7 @@ class BulkRouteRoaValidator:
         q = q.object_classes(['route', 'route6'])
         if sources:
             q = q.sources(sources)
-        routes = dh.execute_query(q)
+        routes = self.database_handler.execute_query(q)
 
         pks_valid = set()
         pks_invalid = set()
@@ -202,17 +212,30 @@ class BulkRouteRoaValidator:
 
         return pks_valid, pks_invalid
 
-    def _build_roa_tree(self):
+    def _build_roa_tree_from_roa_objs(self, roas: List[ROA]):
         """
-        Build the tree of all ROAs, to allow efficient searching.
+        Build the tree of all ROAs from ROA objects.
         """
-        self.roa_tree = datrie.Trie('01')
-        for roa in self.roas:
+        for roa in roas:
             key = roa.prefix.strBin()[:roa.prefix.prefixlen()]
             if key in self.roa_tree:
                 self.roa_tree[key].append((roa.prefix_str, roa.asn, roa.max_length))
             else:
                 self.roa_tree[key] = [(roa.prefix_str, roa.asn, roa.max_length)]
+
+    def _build_roa_tree_from_db(self):
+        """
+        Build the tree of all ROAs from the DB.
+        """
+        roas = self.database_handler.execute_query(ROADatabaseObjectQuery())
+        for roa in roas:
+            first_ip, length = roa['prefix'].split('/')
+            ip_bin_str = self._ip_to_binary_str(first_ip)
+            key = ip_bin_str[:int(length)]
+            if key in self.roa_tree:
+                self.roa_tree[key].append((roa['prefix'], roa['asn'], roa['max_length']))
+            else:
+                self.roa_tree[key] = [(roa['prefix'], roa['asn'], roa['max_length'])]
 
     # TODO: update to use RPKIStatus return values
     def _validate_route(self, prefix_ip, prefix_length, prefix_asn) -> Optional[bool]:
@@ -226,9 +249,7 @@ class BulkRouteRoaValidator:
         but none of the covering ROAs matched on both origin AS and max length.
         A route is unknown if no ROAs were found covering the prefix.
         """
-        address_family = socket.AF_INET6 if ':' in prefix_ip else socket.AF_INET
-        ip_bin = socket.inet_pton(address_family, prefix_ip)
-        ip_bin_str = ''.join([self._byte_bin[x] for x in ip_bin]) + '0'
+        ip_bin_str = self._ip_to_binary_str(prefix_ip)
 
         roas_covering = self.roa_tree.prefix_items(ip_bin_str)
         # print(f'Route {prefix_ip}/{prefix_length} {prefix_asn} covered by ROAs: {roas_covering}')
@@ -243,6 +264,16 @@ class BulkRouteRoaValidator:
                     return True
         # print('====INVALID====')
         return False
+
+    def _ip_to_binary_str(self, ip: str) -> str:
+        """
+        Convert an IP string to a binary string, e.g.
+        192.0.2.139 to 11000000000000000000001010001011.
+        """
+        address_family = socket.AF_INET6 if ':' in ip else socket.AF_INET
+        ip_bin = socket.inet_pton(address_family, ip)
+        ip_bin_str = ''.join([self._byte_bin[x] for x in ip_bin]) + '0'
+        return ip_bin_str
 
 
 class SingleRouteRoaValidator:
