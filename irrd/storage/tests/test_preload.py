@@ -86,22 +86,23 @@ class TestPreloading:
         preloader = Preloader()
         preload_manager = PreloadStoreManager()
 
-        preloader.update_route_store(
+        preload_manager.update_route_store(
             {'AS65547': {'192.0.2.0/25'}, 'AS65546': {'192.0.2.128/25'}},
             {'AS65547': {'2001:db8::/32'}}
         )
 
+        assert preloader.routes_for_origins([]) == set()
         assert preloader.routes_for_origins(['AS65545']) == set()
-        assert preloader.routes_for_origins(['AS65546'], 4) == {'192.0.2.128/25'}
-        assert preloader.routes_for_origins(['AS65547'], 4) == {'192.0.2.0/25'}
-        assert preloader.routes_for_origins(['AS65546'], 6) == set()
-        assert preloader.routes_for_origins(['AS65547'], 6) == {'2001:db8::/32'}
+        assert preloader.routes_for_origins(['AS65546'], [], 4) == {'192.0.2.128/25'}
+        assert preloader.routes_for_origins(['AS65547'], [], 4) == {'192.0.2.0/25'}
+        assert preloader.routes_for_origins(['AS65546'], [], 6) == set()
+        assert preloader.routes_for_origins(['AS65547'], [], 6) == {'2001:db8::/32'}
         assert preloader.routes_for_origins(['AS65546']) == {'192.0.2.128/25'}
         assert preloader.routes_for_origins(['AS65547']) == {'192.0.2.0/25', '2001:db8::/32'}
-        assert preloader.routes_for_origins(['AS65547', 'AS65546'], 4) == {'192.0.2.0/25', '192.0.2.128/25'}
+        assert preloader.routes_for_origins(['AS65547', 'AS65546'], [], 4) == {'192.0.2.0/25', '192.0.2.128/25'}
 
         with pytest.raises(ValueError) as ve:
-            preloader.routes_for_origins(['AS65547'], sources, 2)
+            preloader.routes_for_origins(['AS65547'], [], 2)
         assert 'Invalid IP version: 2' in str(ve.value)
 
 
@@ -132,7 +133,7 @@ class TestPreloadUpdater:
             {
                 'ip_version': 4,
                 'ip_first': '198.51.100.0',
-                'ip_size': 128,
+                'prefix_length': 25,
                 'asn_first': 65547,
                 'source': 'TEST1',
             },

@@ -62,12 +62,12 @@ class TestROAImportProcess:
         with pytest.raises(ROAParserException) as rpe:
             ROADataImporter('invalid', mock_dh)
 
-        assert 'Unable to parse ROA input: invalid JSON: Expected object or value' in str(rpe)
+        assert 'Unable to parse ROA input: invalid JSON: Expected object or value' in str(rpe.value)
 
         data = ujson.dumps({'invalid root': 42})
         with pytest.raises(ROAParserException) as rpe:
             ROADataImporter(data, mock_dh)
-        assert 'Unable to parse ROA input: root key "roas" not found' in str(rpe)
+        assert 'Unable to parse ROA input: root key "roas" not found' in str(rpe.value)
 
         assert flatten_mock_calls(mock_dh) == []
 
@@ -84,7 +84,7 @@ class TestROAImportProcess:
         })
         with pytest.raises(ROAParserException) as rpe:
             ROADataImporter(data, mock_dh)
-        assert "Invalid value in ROA: '192.0.2.999': single byte must be 0 <= byte < 256" in str(rpe)
+        assert "Invalid value in ROA: '192.0.2.999': single byte must be 0 <= byte < 256" in str(rpe.value)
 
         data = ujson.dumps({
             "roas": [{
@@ -96,7 +96,7 @@ class TestROAImportProcess:
         })
         with pytest.raises(ROAParserException) as rpe:
             ROADataImporter(data, mock_dh)
-        assert 'Invalid AS number ASX: number part is not numeric' in str(rpe)
+        assert 'Invalid AS number ASX: number part is not numeric' in str(rpe.value)
 
         data = ujson.dumps({
             "roas": [{
@@ -107,7 +107,7 @@ class TestROAImportProcess:
         })
         with pytest.raises(ROAParserException) as rpe:
             ROADataImporter(data, mock_dh)
-        assert "Unable to parse ROA record: missing key 'asn'" in str(rpe)
+        assert "Unable to parse ROA record: missing key 'asn'" in str(rpe.value)
 
         data = ujson.dumps({
             "roas": [{
@@ -119,6 +119,6 @@ class TestROAImportProcess:
         })
         with pytest.raises(ROAParserException) as rpe:
             ROADataImporter(data, mock_dh)
-        assert 'Invalid ROA: prefix size 24 is smaller than max length 22' in str(rpe)
+        assert 'Invalid ROA: prefix size 24 is smaller than max length 22' in str(rpe.value)
 
         assert flatten_mock_calls(mock_dh) == []

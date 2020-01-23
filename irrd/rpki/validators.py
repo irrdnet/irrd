@@ -53,6 +53,7 @@ class BulkRouteROAValidator:
         """
         self.database_handler = dh
         # Pregenerated conversion from binary to binary strings for performance
+        # TODO: this should be global
         self._byte_bin = [bin(byte)[2:].zfill(8) for byte in range(256)]
 
         self.excluded_sources = get_setting('rpki.validation_excluded_sources', [])

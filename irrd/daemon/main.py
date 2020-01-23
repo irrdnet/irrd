@@ -78,7 +78,7 @@ def run_irrd(mirror_frequency: int):
 
     def sighup_handler(signum, frame):
         # On SIGHUP, check if the configuration is valid and reload in
-        # this process, and if it is valid, signal our two long-running
+        # this process, and if it is valid, signal our three long-running
         # child processes. All other processes are short-lived and forked
         # from those or this process, so any new ones will pick up
         # the new config automatically.

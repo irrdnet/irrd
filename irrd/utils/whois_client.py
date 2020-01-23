@@ -96,7 +96,7 @@ def whois_query_irrd(host: str, port: int, query: str) -> Optional[str]:
         return None
     if not expected_data_length or not data_offset:
         raise ValueError(f'Data receiving ended without a valid IRRD-format response, query {query},'
-                         f'received: {buffer}')
+                         f'received: {buffer.decode("ascii", "ignore")}')
     if len(buffer) < (expected_data_length + data_offset):
         raise ValueError(f'Unable to receive all expected {expected_data_length} bytes')
 

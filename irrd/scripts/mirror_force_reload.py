@@ -6,8 +6,6 @@ import sys
 
 from pathlib import Path
 
-from irrd.storage.preload import send_reload_signal
-
 """
 Load an RPSL file into the database.
 """
@@ -20,7 +18,7 @@ from irrd.storage.database_handler import DatabaseHandler
 
 
 def set_force_reload(source) -> None:
-    dh = DatabaseHandler(enable_preload_update=False)
+    dh = DatabaseHandler()
     dh.set_force_reload(source)
     dh.commit()
     dh.close()
