@@ -229,8 +229,8 @@ class PreloadUpdater(threading.Thread):
         self.reload_lock.acquire()
         logger.debug(f'Starting preload store update from thread {self}')
 
-        new_origin_route4_store: Dict[str, Dict[str, set]] = defaultdict(lambda: defaultdict(set))
-        new_origin_route6_store: Dict[str, Dict[str, set]] = defaultdict(lambda: defaultdict(set))
+        new_origin_route4_store: Dict[str, set] = defaultdict(set)
+        new_origin_route6_store: Dict[str, set] = defaultdict(set)
 
         if not mock_database_handler:  # pragma: no cover
             from .database_handler import DatabaseHandler
@@ -243,14 +243,13 @@ class PreloadUpdater(threading.Thread):
 
         for result in dh.execute_query(q):
             prefix = result['ip_first']
-            source = result['source']
             key = 'AS' + str(result['asn_first'])
             length = result['prefix_length']
 
             if result['ip_version'] == 4:
-                new_origin_route4_store[key][source].add(f'{prefix}/{length}')
+                new_origin_route4_store[key].add(f'{prefix}/{length}')
             if result['ip_version'] == 6:
-                new_origin_route6_store[key][source].add(f'{prefix}/{length}')
+                new_origin_route6_store[key].add(f'{prefix}/{length}')
 
         dh.close()
 
