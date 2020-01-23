@@ -12,11 +12,11 @@ beautifultable==0.8.0  # generating nice-looking ascii tables
 PyYAML==5.3.1          # parsing YAML config files
 datrie==0.8            # efficient route searching, used for RPKI
 setproctitle==1.1.10   # updating the process title for useful ps output
-python-daemon==2.2.3   # daemonising the main process
-pid==2.2.3             # managing PID files
-redis==3.2.1           # preloaded data storage & sync through redis
-hiredis==1.0.0         # improved redis response parsing performance
-psutil==5.6.1          # process management
+python-daemon==2.2.4   # daemonising the main process
+pid==2.2.5             # managing PID files
+redis==3.3.11          # preloaded data storage & sync through redis
+hiredis==1.0.1         # improved redis response parsing performance
+psutil==5.6.7          # process management
 
 # Database connections and management
 psycopg2-binary==2.8.5
