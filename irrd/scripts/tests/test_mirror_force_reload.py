@@ -6,8 +6,7 @@ from ..mirror_force_reload import set_force_reload
 
 def test_set_force_reload(capsys, monkeypatch):
     mock_dh = Mock()
-    monkeypatch.setattr('irrd.scripts.mirror_force_reload.DatabaseHandler',
-                        lambda enable_preload_update: mock_dh)
+    monkeypatch.setattr('irrd.scripts.mirror_force_reload.DatabaseHandler', lambda: mock_dh)
 
     set_force_reload('TEST')
     assert flatten_mock_calls(mock_dh) == [

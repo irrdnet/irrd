@@ -3,7 +3,6 @@ import time
 from collections import defaultdict
 
 import logging
-import math
 import redis
 import threading
 from setproctitle import setproctitle
@@ -38,7 +37,7 @@ class Preloader:
     def __init__(self):
         self._redis_conn = redis.Redis.from_url(get_setting('redis_url'))
 
-    def routes_for_origins(self, origins: Union[List[str], Set[str]], ip_version: Optional[int]=None) -> Set[str]:
+    def routes_for_origins(self, origins: Union[List[str], Set[str]], sources: Optional[List[str]]=None, ip_version: Optional[int]=None) -> Set[str]:
         """
         Retrieve all prefixes (in str format) originating from the provided origins,
         from the given sources.
@@ -155,9 +154,6 @@ class PreloadStoreManager(multiprocessing.Process):
         running as well (waiting for a lock) no action is taken. The
         change that prompted this reload call will already be processed
         by the thread that is currently waiting.
-
-        If object_classes_changed is provided, a reload is only performed
-        if those classes are relevant to the data in the preload store.
         """
         self._remove_dead_threads()
         if len(self._threads) > 1:

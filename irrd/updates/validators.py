@@ -15,14 +15,17 @@ from .parser_state import UpdateRequestType
 if TYPE_CHECKING:  # pragma: no cover
     # http://mypy.readthedocs.io/en/latest/common_issues.html#import-cycles
     import parser  # noqa: F401
+    StrOrderedSet = OrderedSet[str]
+else:
+    StrOrderedSet = OrderedSet
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class ValidatorResult:
-    error_messages: Set[str] = field(default_factory=OrderedSet)
-    info_messages: Set[str] = field(default_factory=OrderedSet)
+    error_messages: Set[str] = field(default_factory=OrderedSet)  # type: ignore
+    info_messages: Set[str] = field(default_factory=OrderedSet)  # type: ignore
     # mntners that may need to be notified
     mntners_notify: List[RPSLMntner] = field(default_factory=list)
     # whether the authentication succeeded due to use of an override password

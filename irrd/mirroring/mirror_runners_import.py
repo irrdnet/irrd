@@ -149,7 +149,7 @@ class FileImportRunnerBase:
                 for chunk in r.iter_content(10240):
                     destination.write(chunk)
             else:
-                raise IOError(f'Failed to download {url}: {r.status_code}: {r.content}')
+                raise IOError(f'Failed to download {url}: {r.status_code}: {str(r.content)}')
 
     def _retrieve_file_local(self, path, return_contents=False) -> Tuple[str, bool]:
         if not return_contents:

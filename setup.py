@@ -30,7 +30,7 @@ setuptools.setup(
         'dotted==0.1.8',
         'beautifultable==0.8.0',
         'PyYAML==5.3.1',
-        'datrie==0.7.1',
+        'datrie==0.8',
         'setproctitle==1.1.10',
         'python-daemon==2.2.3',
         'pid==2.2.3',

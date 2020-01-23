@@ -1,9 +1,7 @@
 from collections import OrderedDict
 
-import gnupg
 from typing import Set, List, Optional, Union
 
-from irrd.conf import get_setting, PASSWORD_HASH_DUMMY_VALUE
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
 from irrd.utils.pgp import get_gpg_instance
 from .config import PASSWORD_HASHERS

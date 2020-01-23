@@ -678,7 +678,7 @@ class WhoisQueryParser:
         return result.strip('\n\r')
 
     def _filter_key_fields(self, query_response) -> str:
-        results = OrderedSet()
+        results: OrderedSet[str] = OrderedSet()
         for obj in query_response:
             result = ''
             rpsl_object_class = OBJECT_CLASS_MAPPING[obj['object_class']]

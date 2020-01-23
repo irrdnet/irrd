@@ -1,5 +1,3 @@
-from twisted.internet.address import IPv4Address, UNIXAddress
-
 from .access_check import is_client_permitted
 
 
