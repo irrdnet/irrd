@@ -35,6 +35,6 @@ flake8==3.7.9
 pep8-naming==0.9.1
 
 # Creating python packages
-setuptools==42.0.2
+setuptools==45.1.0
 wheel==0.33.6
 twine==3.1.1
