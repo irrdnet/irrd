@@ -19,7 +19,9 @@ IRRd requires:
   At this point, 3.7 has had limited testing.
 * A recent version of PostgreSQL. Versions 9.6 and 10.5 have been
   extensively tested.
-* At least 8GB RAM (mostly for initial large imports).
+* At least 32GB RAM
+* At least 4 CPU cores
+* At least 100GB of disk space (SSD recommended)
 
 A number of other Python packages are required. However, those are
 automatically installed in the installation process.
