@@ -39,7 +39,7 @@ DashCare_.
 
 Please see the documentation_ for more.
 
-.. _NTT: https://us.ntt.net
+.. _NTT: https://www.gin.ntt.net
 .. _DashCare: https://www.dashcare.nl
-.. _Older versions: https://github.com/irrdnet/irrd
+.. _Older versions: https://github.com/irrdnet/irrd-legacy
 .. _documentation: http://irrd.readthedocs.io/en/latest/
