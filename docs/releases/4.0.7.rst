@@ -8,4 +8,4 @@ It fixes an issue where
 In 4.0.7, the files saved to ``sources.{name}.export_destination``
 always have their permissions set to 644.
 
-.. _export permissions were not set correctly: https://github.com/irrdnet/irrd4/issues/258
+.. _export permissions were not set correctly: https://github.com/irrdnet/irrd/issues/258

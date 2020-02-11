@@ -13,7 +13,7 @@ setuptools.setup(
     description='Internet Routing Registry daemon (IRRd)',
     long_description=long_description,
     long_description_content_type='text/x-rst',
-    url='https://github.com/irrdnet/irrd4',
+    url='https://github.com/irrdnet/irrd',
     packages=setuptools.find_packages(
         exclude=['*.tests', '*.tests.*', 'tests.*', 'tests', 'irrd.integration_tests']
     ) + ['twisted.plugins'],

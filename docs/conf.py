@@ -93,7 +93,7 @@ html_theme = 'alabaster'
 html_theme_options = {
     'logo': 'logo.png',
     'github_user': 'irrdnet',
-    'github_repo': 'irrd4',
+    'github_repo': 'irrd',
     'github_banner': True,
     'show_powered_by': False,
 }
@@ -168,7 +168,7 @@ texinfo_documents = [
 html_context = {
     "display_github": True,
     "github_user": "irrdnet",
-    "github_repo": "irrd4",
+    "github_repo": "irrd",
     "github_version": "master",
     "conf_py_path": "/docs/",
 }

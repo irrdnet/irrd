@@ -111,7 +111,7 @@ class MirrorFileImportParser(MirrorParser):
 
         except UnknownRPSLObjectClassException as e:
             # Ignore legacy IRRd artifacts
-            # https://github.com/irrdnet/irrd4/issues/232
+            # https://github.com/irrdnet/irrd/issues/232
             if e.rpsl_object_class.startswith('*xx'):
                 self.obj_parsed -= 1  # This object does not exist to us
                 return None

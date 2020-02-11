@@ -11,4 +11,4 @@ the routes originating from a certain AS,
 Also, the ``!s-lc`` query did not always correctly display
 which sources were currently selected.
 
-.. _did not correctly filter for the selected sources: https://github.com/irrdnet/irrd4/issues/251
+.. _did not correctly filter for the selected sources: https://github.com/irrdnet/irrd/issues/251

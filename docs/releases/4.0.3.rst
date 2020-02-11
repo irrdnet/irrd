@@ -23,4 +23,4 @@ the object is still listed in the `member-of` in a `route`
 object, or to reference a maintainer that does not exist
 in a `mbrs-by-ref`.
 
-.. _were strongly validated: https://github.com/irrdnet/irrd4/pull/240
+.. _were strongly validated: https://github.com/irrdnet/irrd/pull/240

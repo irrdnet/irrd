@@ -7,7 +7,7 @@ Development environment & unit tests
 
 The basic method to set up a local environment is::
 
-    mkvirtualenv -p `which python3` irrd4
+    mkvirtualenv -p `which python3` irrd
     pip install -r requirements.txt
 
 Some of the test use a live database for thoroughness. The database

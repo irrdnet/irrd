@@ -1,21 +1,21 @@
 Internet Routing Registry Daemon (IRRd) Version 4
 =================================================
 
-.. image:: https://circleci.com/gh/irrdnet/irrd4.svg?style=svg
-     :target: https://circleci.com/gh/irrdnet/irrd4
+.. image:: https://circleci.com/gh/irrdnet/irrd.svg?style=svg
+     :target: https://circleci.com/gh/irrdnet/irrd
 
-.. image:: https://coveralls.io/repos/github/irrdnet/irrd4/badge.svg?branch=master
-     :target: https://coveralls.io/github/irrdnet/irrd4?branch=master
+.. image:: https://coveralls.io/repos/github/irrdnet/irrd/badge.svg?branch=master
+     :target: https://coveralls.io/github/irrdnet/irrd?branch=master
 
-.. image:: https://readthedocs.org/projects/irrd4/badge/?version=latest
-     :target: http://irrd4.readthedocs.io/en/latest/?badge=latest
+.. image:: https://readthedocs.org/projects/irrd/badge/?version=latest
+     :target: http://irrd.readthedocs.io/en/latest/?badge=latest
 
-.. image:: https://pyup.io/repos/github/irrdnet/irrd4/shield.svg
-     :target: https://pyup.io/repos/github/irrdnet/irrd4/
+.. image:: https://pyup.io/repos/github/irrdnet/irrd/shield.svg
+     :target: https://pyup.io/repos/github/irrdnet/irrd/
 
 ------------
 
-.. image:: https://irrd4.readthedocs.io/en/latest/_static/logo.png
+.. image:: https://irrd.readthedocs.io/en/latest/_static/logo.png
      :alt: IRRd logo. Copyright (c) 2019, Natasha Allegri
 
 Internet Routing Registry daemon version 4 is an IRR database server,
@@ -42,4 +42,4 @@ Please see the documentation_ for more.
 .. _NTT: https://us.ntt.net
 .. _DashCare: https://www.dashcare.nl
 .. _Older versions: https://github.com/irrdnet/irrd
-.. _documentation: http://irrd4.readthedocs.io/en/latest/
+.. _documentation: http://irrd.readthedocs.io/en/latest/

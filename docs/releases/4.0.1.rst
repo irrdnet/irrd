@@ -14,4 +14,4 @@ in IRRd, but upgrading is recommended to be sure.
 
 IRRd 4.0.1 is entirely backwards compatible with 4.0.0.
 
-.. _bug in object deletion: https://github.com/irrdnet/irrd4/issues/228
+.. _bug in object deletion: https://github.com/irrdnet/irrd/issues/228

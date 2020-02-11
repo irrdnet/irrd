@@ -17,6 +17,6 @@ IRRd 4.0.2 includes one bugfix and two enhancements:
 
 IRRd 4.0.2 is entirely backwards compatible with 4.0.0.
 
-.. _bug in IPv4 addresses in access lists: https://github.com/irrdnet/irrd4/issues/237
-.. _Ignoring of *xx object classes: https://github.com/irrdnet/irrd4/issues/232
-.. _Adding an irrd_mirror_force_reload: https://github.com/irrdnet/irrd4/issues/233
+.. _bug in IPv4 addresses in access lists: https://github.com/irrdnet/irrd/issues/237
+.. _Ignoring of *xx object classes: https://github.com/irrdnet/irrd/issues/232
+.. _Adding an irrd_mirror_force_reload: https://github.com/irrdnet/irrd/issues/233

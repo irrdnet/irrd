@@ -53,7 +53,7 @@ source: TEST
 SAMPLE_NRTM_INVALID_VERSION = """%START Version: 99 TEST 11012700-11012700"""
 
 SAMPLE_NRTM_V3_SERIAL_GAP = """
-# NRTM v3 serials are allowed to have gaps per https://github.com/irrdnet/irrd4/issues/85
+# NRTM v3 serials are allowed to have gaps per https://github.com/irrdnet/irrd/issues/85
 
 %START Version: 3 TEST 11012699-11012703
 

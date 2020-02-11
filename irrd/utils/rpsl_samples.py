@@ -613,7 +613,7 @@ changed:        changed@example.com 20190701 # comment
 source:         TEST
 """
 
-# https://github.com/irrdnet/irrd4/issues/232
+# https://github.com/irrdnet/irrd/issues/232
 SAMPLE_LEGACY_IRRD_ARTIFACT = """*xxte:          192.0.2.0/24
 origin:         AS65537
 mnt-by:         TEST-MNT

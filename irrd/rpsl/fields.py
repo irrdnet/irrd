@@ -374,7 +374,7 @@ class RPSLGenericNameField(RPSLTextField):
 
     If non_strict_allow_any is set, the parser will allow any value if strict_validation
     is disabled. This is needed on nic-hdl for legacy reasons -
-    see https://github.com/irrdnet/irrd4/issues/60
+    see https://github.com/irrdnet/irrd/issues/60
     """
     keep_case = False
 

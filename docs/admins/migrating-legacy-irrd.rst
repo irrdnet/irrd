@@ -40,11 +40,11 @@ are primarily due to bugs in legacy IRRd, which do not occur in version 4.
   encoded in ASDOT format, which is not supported.
 * A handful of `route` objects from the RIPE database may be missing
   due to invalid unicode characters, which legacy IRRd accepted
-  (`GH #52 <https://github.com/irrdnet/irrd4/issues/52>`_)
+  (`GH #52 <https://github.com/irrdnet/irrd/issues/52>`_)
 * Objects of various types have host bits enabled in prefixes, which
   is rejected by IRRd version 4. This may cause them to be missing from
   query responses.
-  (`GH #62 <https://github.com/irrdnet/irrd4/issues/62>`_)
+  (`GH #62 <https://github.com/irrdnet/irrd/issues/62>`_)
 * Various invalid query formats, like ``!i,AS-EXAMPLE`` or
   ``-i origin 65536`` were accepted by legacy IRRd, but are considered
   invalid in version 4.

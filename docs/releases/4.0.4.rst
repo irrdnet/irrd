@@ -15,4 +15,4 @@ attribute, it will be `overwritten`_ by today's date,
 unless the override password was used. Pre-existing
 `changed` attributes are not affected.
 
-.. _overwritten: https://github.com/irrdnet/irrd4/issues/242
+.. _overwritten: https://github.com/irrdnet/irrd/issues/242
