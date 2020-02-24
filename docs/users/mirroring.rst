@@ -212,7 +212,7 @@ On serials:
 
 * If no serial is provided, and none has in the past, no serial is
   recorded. This is similar to sources that have ``import_source``
-  set, but not ``import_source_serial``.
+  set, but not ``import_serial_source``.
 * If no serial is provided, but a serial has been provided in a past
   command, or through another mirroring process, the existing serial
   is kept.
