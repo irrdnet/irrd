@@ -37,7 +37,7 @@ class Preloader:
     def __init__(self):
         self._redis_conn = redis.Redis.from_url(get_setting('redis_url'))
 
-    def routes_for_origins(self, origins: Union[List[str], Set[str]], sources: Optional[List[str]]=None, ip_version: Optional[int]=None) -> Set[str]:
+    def routes_for_origins(self, origins: Union[List[str], Set[str]], sources: Optional[List[str]], ip_version: Optional[int]=None) -> Set[str]:
         """
         Retrieve all prefixes (in str format) originating from the provided origins,
         from the given sources.
@@ -50,23 +50,26 @@ class Preloader:
         """
         if ip_version and ip_version not in [4, 6]:
             raise ValueError(f'Invalid IP version: {ip_version}')
-        if not origins:
+        if not origins or not sources:
             return set()
 
         while not self._redis_conn.exists(REDIS_ORIGIN_ROUTE4_STORE_KEY):
             time.sleep(1)  # pragma: no cover
 
         prefixes: Set[str] = set()
-        origins_bytes = [origin.encode('ascii') for origin in origins]
+        redis_keys = []
+        for source in sources:
+            for origin in origins:
+                redis_keys.append(f'{source}-{origin}'.encode('ascii'))
 
         if not ip_version or ip_version == 4:
-            prefixes_for_origins = self._redis_conn.hmget(REDIS_ORIGIN_ROUTE4_STORE_KEY, origins_bytes)
+            prefixes_for_origins = self._redis_conn.hmget(REDIS_ORIGIN_ROUTE4_STORE_KEY, redis_keys)
             for prefixes_for_origin in prefixes_for_origins:
                 if prefixes_for_origin:
                     prefixes.update(prefixes_for_origin.decode('ascii').split(REDIS_ORIGIN_LIST_SEPARATOR))
 
         if not ip_version or ip_version == 6:
-            prefixes_for_origins = self._redis_conn.hmget(REDIS_ORIGIN_ROUTE6_STORE_KEY, origins_bytes)
+            prefixes_for_origins = self._redis_conn.hmget(REDIS_ORIGIN_ROUTE6_STORE_KEY, redis_keys)
             for prefixes_for_origin in prefixes_for_origins:
                 if prefixes_for_origin:
                     prefixes.update(prefixes_for_origin.decode('ascii').split(REDIS_ORIGIN_LIST_SEPARATOR))
@@ -78,7 +81,7 @@ class Preloader:
         Perform a (re)load.
         Should be called after changes to the DB have been committed.
 
-        This will signal the process running PreloadStoraManager to reload
+        This will signal the process running PreloadStoreManager to reload
         the store.
 
         If object_classes_changed is provided, a reload is only performed
@@ -243,7 +246,7 @@ class PreloadUpdater(threading.Thread):
 
         for result in dh.execute_query(q):
             prefix = result['ip_first']
-            key = 'AS' + str(result['asn_first'])
+            key = result['source'] + '-AS' + str(result['asn_first'])
             length = result['prefix_length']
 
             if result['ip_version'] == 4:
