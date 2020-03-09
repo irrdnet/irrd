@@ -27,7 +27,7 @@ coverage==5.0.3
 coveralls==1.11.1
 
 # Documentation generation
-Sphinx==2.4.3
+Sphinx==2.4.4
 
 # Code style and type checks
 mypy==0.761
