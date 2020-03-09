@@ -963,13 +963,13 @@ class TestWhoisQueryParserIRRD:
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == MOCK_ROUTE_COMBINED
         assert flatten_mock_calls(mock_dq) == [
-            ['rpki_status', ([RPKIStatus.unknown, RPKIStatus.valid],), {}],
+            ['rpki_status', ([RPKIStatus.not_found, RPKIStatus.valid],), {}],
             ['object_classes', (['route', 'route6'],), {}],
             ['ip_exact', (IP('192.0.2.0/25'),), {}],
         ]
         mock_dq.reset_mock()
 
-        response = parser.handle_query('!f')
+        response = parser.handle_query('!fno-rpki-filter')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert 'Filtering out RPKI invalids is disabled' in response.result

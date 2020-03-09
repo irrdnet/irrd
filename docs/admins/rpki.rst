@@ -35,8 +35,8 @@ in any query response. This is determined using
 applies to all query types.
 
 To include invalid objects in the response, this filter can be disabled
-for a connection with the ``!f`` command. The filter is disabled only for
-``!r`` queries and all RIPE style queries.
+for a connection with the ``!fno-rpki-filter`` command. The filter is
+disabled only for ``!r`` queries and all RIPE style queries.
 
 Where validation takes place
 ----------------------------

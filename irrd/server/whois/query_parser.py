@@ -126,10 +126,10 @@ class WhoisQueryParser:
             self.multiple_command_mode = True
             result = None
             response_type = WhoisQueryResponseType.NO_RESPONSE
-        elif command == 'F':
+        elif full_command.upper() == 'FNO-RPKI-FILTER':
             self.rpki_invalid_filter_enabled = False
             result = 'Filtering out RPKI invalids is disabled for !r and RIPE style ' \
-                     'queries for the rest of this session.'
+                     'queries for the rest of this connection.'
         elif command == 'V':
             result = self.handle_irrd_version()
         elif command == 'T':
