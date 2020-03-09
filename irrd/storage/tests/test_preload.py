@@ -87,19 +87,28 @@ class TestPreloading:
         preload_manager = PreloadStoreManager()
 
         preload_manager.update_route_store(
-            {'AS65547': {'192.0.2.0/25'}, 'AS65546': {'192.0.2.128/25'}},
-            {'AS65547': {'2001:db8::/32'}}
+            {
+                'TEST2-AS65546': {'192.0.2.0/25'},
+                'TEST1-AS65547': {'192.0.2.128/25', '198.51.100.0/25'},
+            },
+            {
+                'TEST2-AS65547': {'2001:db8::/32'},
+            },
         )
+        sources = ['TEST1', 'TEST2']
+        assert preloader.routes_for_origins([], sources) == set()
+        assert preloader.routes_for_origins(['AS65545'], sources) == set()
+        assert preloader.routes_for_origins(['AS65546'], []) == set()
+        assert preloader.routes_for_origins(['AS65546'], sources, 4) == {'192.0.2.0/25'}
+        assert preloader.routes_for_origins(['AS65547'], sources, 4) == {'192.0.2.128/25', '198.51.100.0/25'}
+        assert preloader.routes_for_origins(['AS65546'], sources, 6) == set()
+        assert preloader.routes_for_origins(['AS65547'], sources, 6) == {'2001:db8::/32'}
+        assert preloader.routes_for_origins(['AS65546'], sources) == {'192.0.2.0/25'}
+        assert preloader.routes_for_origins(['AS65547'], sources) == {'192.0.2.128/25', '198.51.100.0/25', '2001:db8::/32'}
+        assert preloader.routes_for_origins(['AS65547', 'AS65546'], sources, 4) == {'192.0.2.0/25', '192.0.2.128/25', '198.51.100.0/25'}
 
-        assert preloader.routes_for_origins([]) == set()
-        assert preloader.routes_for_origins(['AS65545']) == set()
-        assert preloader.routes_for_origins(['AS65546'], [], 4) == {'192.0.2.128/25'}
-        assert preloader.routes_for_origins(['AS65547'], [], 4) == {'192.0.2.0/25'}
-        assert preloader.routes_for_origins(['AS65546'], [], 6) == set()
-        assert preloader.routes_for_origins(['AS65547'], [], 6) == {'2001:db8::/32'}
-        assert preloader.routes_for_origins(['AS65546']) == {'192.0.2.128/25'}
-        assert preloader.routes_for_origins(['AS65547']) == {'192.0.2.0/25', '2001:db8::/32'}
-        assert preloader.routes_for_origins(['AS65547', 'AS65546'], [], 4) == {'192.0.2.0/25', '192.0.2.128/25'}
+        assert preloader.routes_for_origins(['AS65547', 'AS65546'], ['TEST1']) == {'192.0.2.128/25', '198.51.100.0/25'}
+        assert preloader.routes_for_origins(['AS65547', 'AS65546'], ['TEST2']) == {'192.0.2.0/25', '2001:db8::/32'}
 
         with pytest.raises(ValueError) as ve:
             preloader.routes_for_origins(['AS65547'], [], 2)
@@ -159,11 +168,11 @@ class TestPreloadUpdater:
                 'update_route_store',
                 (
                     {
-                        'AS65546': {'192.0.2.0/25'},
-                        'AS65547': {'192.0.2.128/25', '198.51.100.0/25'},
+                        'TEST1-AS65546': {'192.0.2.0/25'},
+                        'TEST1-AS65547': {'192.0.2.128/25', '198.51.100.0/25'},
                     },
                     {
-                        'AS65547': {'2001:db8::/32'}
+                        'TEST2-AS65547': {'2001:db8::/32'}
                     },
                 ),
                 {}
