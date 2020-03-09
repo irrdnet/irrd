@@ -703,14 +703,14 @@ class TestSingleChangeRequestHandling:
         mock_roa_validator.validate_route = lambda prefix, asn, source: RPKIStatus.invalid
         result_route = parse_change_requests(SAMPLE_ROUTE, mock_dh, auth_validator, reference_validator)[0]
         assert not result_route._check_conflicting_roa()
-        assert result_route.error_messages == ['RPKI ROAs were found that conflict with this object.']
+        assert result_route.error_messages[0].startswith('RPKI ROAs were found that conflict with this object.')
 
         # Update object, RPKI invalid
         mock_dh.execute_query = lambda query: [{'object_text': SAMPLE_ROUTE}]
         mock_roa_validator.validate_route = lambda prefix, asn, source: RPKIStatus.invalid
         result_route = parse_change_requests(SAMPLE_ROUTE, mock_dh, auth_validator, reference_validator)[0]
         assert result_route._check_conflicting_roa()
-        assert result_route.warning_messages == ['RPKI ROAs were found that conflict with this object.']
+        assert result_route.warning_messages[0].startswith('RPKI ROAs were found that conflict with this object.')
 
         # Delete object, RPKI invalid
         mock_dh.execute_query = lambda query: [{'object_text': SAMPLE_ROUTE}]
@@ -719,7 +719,7 @@ class TestSingleChangeRequestHandling:
         result_route = parse_change_requests(obj_text, mock_dh, auth_validator, reference_validator)[0]
         assert result_route._check_conflicting_roa()
         assert result_route._check_conflicting_roa()  # Should use cache
-        assert result_route.warning_messages == ['RPKI ROAs were found that conflict with this object.']
+        assert result_route.warning_messages[0].startswith('RPKI ROAs were found that conflict with this object.')
 
     def test_user_report(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks

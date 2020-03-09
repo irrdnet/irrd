@@ -3,6 +3,7 @@ import logging
 from typing import List, Optional, Set
 
 from irrd.conf import get_setting
+from irrd.conf.defaults import DEFAULT_RPKI_IMPORT_TIMER
 from irrd.rpki.validators import SingleRouteROAValidator
 from irrd.rpki.status import RPKIStatus
 from irrd.storage.database_handler import DatabaseHandler
@@ -290,7 +291,9 @@ class ChangeRequest:
             self.rpsl_obj_new.prefix, self.rpsl_obj_new.asn_first, self.rpsl_obj_new.source()
         )
         if validation_result == RPKIStatus.invalid:
-            user_message = 'RPKI ROAs were found that conflict with this object.'
+            import_timer = get_setting(f'rpki.roa_import_timer', DEFAULT_RPKI_IMPORT_TIMER)
+            user_message = 'RPKI ROAs were found that conflict with this object. '
+            user_message += f'(This IRRd refreshes ROAs every {import_timer} seconds.)'
             logger.debug(f'{id(self)}: Conflicting ROAs found')
             # For update and delete, only issue a warning.
             if self.rpsl_obj_current:
