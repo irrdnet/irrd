@@ -660,7 +660,7 @@ class WhoisQueryParser:
         if self.object_classes:
             query.object_classes(self.object_classes)
         if self.rpki_invalid_filter_enabled:
-            query.rpki_status([RPKIStatus.unknown, RPKIStatus.valid])
+            query.rpki_status([RPKIStatus.not_found, RPKIStatus.valid])
         return query
 
     def _execute_query_flatten_output(self, query: RPSLDatabaseQuery) -> str:

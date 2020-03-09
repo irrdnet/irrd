@@ -234,15 +234,15 @@ class ROAImportRunner(FileImportRunnerBase):
             self.database_handler.commit()
 
             validator = BulkRouteROAValidator(self.database_handler, roa_objs)
-            pks_now_valid, pks_now_invalid, pks_now_unknown = validator.validate_all_routes()
+            pks_now_valid, pks_now_invalid, pks_now_not_found = validator.validate_all_routes()
             self.database_handler.update_rpki_status(
                 rpsl_pks_now_valid=pks_now_valid,
                 rpsl_pks_now_invalid=pks_now_invalid,
-                rpsl_pks_now_unknown=pks_now_unknown
+                rpsl_pks_now_not_found=pks_now_not_found
             )
             self.database_handler.commit()
             logger.info(f'RPKI status updated for all routes, {pks_now_valid} newly valid, '
-                        f'{pks_now_invalid} newly invalid, {pks_now_unknown} newly unknown routes')
+                        f'{pks_now_invalid} newly invalid, {pks_now_not_found} newly not_found routes')
 
         except OSError as ose:
             # I/O errors can occur and should not log a full traceback (#177)

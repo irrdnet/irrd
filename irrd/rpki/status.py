@@ -4,4 +4,4 @@ import enum
 class RPKIStatus(enum.Enum):
     valid = 'VALID'
     invalid = 'INVALID'
-    unknown = 'UNKNOWN'
+    not_found = 'NOT_FOUND'

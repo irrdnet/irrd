@@ -50,7 +50,7 @@ Where validation takes place
 * Changes or deletions of RPKI-invalid object are permitted,
   but a warning will be issued to the user.
 * Objects from sources listed in ``rpki.validation_excluded_sources`` are
-  always set to status unknown.
+  always set to status not_found.
 * Database exports and NRTM streams always include all objects in the
   database, including RPKI invalid objects.
 

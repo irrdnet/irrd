@@ -239,7 +239,7 @@ class PreloadUpdater(threading.Thread):
             dh = mock_database_handler
 
         q = RPSLDatabaseQuery(column_names=['ip_version', 'ip_first', 'prefix_length', 'asn_first', 'source'], enable_ordering=False)
-        q = q.object_classes(['route', 'route6']).rpki_status([RPKIStatus.unknown, RPKIStatus.valid])
+        q = q.object_classes(['route', 'route6']).rpki_status([RPKIStatus.not_found, RPKIStatus.valid])
 
         for result in dh.execute_query(q):
             prefix = result['ip_first']

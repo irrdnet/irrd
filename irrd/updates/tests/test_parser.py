@@ -691,9 +691,9 @@ class TestSingleChangeRequestHandling:
         assert result_inetnum._check_conflicting_roa()
         assert not result_inetnum.error_messages
 
-        # New object, RPKI unknown
+        # New object, RPKI not_found
         mock_dh.execute_query = lambda query: []
-        mock_roa_validator.validate_route = lambda prefix, asn, source: RPKIStatus.unknown
+        mock_roa_validator.validate_route = lambda prefix, asn, source: RPKIStatus.not_found
         result_route = parse_change_requests(SAMPLE_ROUTE, mock_dh, auth_validator, reference_validator)[0]
         assert result_route._check_conflicting_roa()
         assert not result_route.error_messages
