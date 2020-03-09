@@ -89,7 +89,7 @@ class TestMirrorFileImportParser:
         assert len(mock_dh.mock_calls) == 1
         assert mock_dh.mock_calls[0][0] == 'upsert_rpsl_object'
         assert mock_dh.mock_calls[0][1][0].pk() == '192.0.2.0/24AS65537'
-        assert mock_dh.mock_calls[0][1][0].rpki_status == RPKIStatus.unknown
+        assert mock_dh.mock_calls[0][1][0].rpki_status == RPKIStatus.not_found
 
         assert 'Invalid source BADSOURCE for object' not in caplog.text
         assert 'File import for TEST' not in caplog.text

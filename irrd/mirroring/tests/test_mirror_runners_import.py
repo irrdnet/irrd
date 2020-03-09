@@ -374,7 +374,7 @@ class TestROAImportRunner:
             ['update_rpki_status', (), {
                 'rpsl_pks_now_valid': {'pk_now_valid1', 'pk_now_valid2'},
                 'rpsl_pks_now_invalid': {'pk_now_invalid1', 'pk_now_invalid2'},
-                'rpsl_pks_now_unknown': {'pk_now_unknown1', 'pk_now_unknown2'},
+                'rpsl_pks_now_not_found': {'pk_now_unknown1', 'pk_now_unknown2'},
             }],
             ['commit', (), {}],
             ['close', (), {}]

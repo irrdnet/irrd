@@ -100,7 +100,7 @@ class BulkRouteROAValidator:
             if new_status != current_status:
                 pks_changed[new_status].add(rpsl_pk)
 
-        return pks_changed[RPKIStatus.valid], pks_changed[RPKIStatus.invalid], pks_changed[RPKIStatus.unknown]
+        return pks_changed[RPKIStatus.valid], pks_changed[RPKIStatus.invalid], pks_changed[RPKIStatus.not_found]
 
     def validate_route(self, prefix_ip: str, prefix_length: int, prefix_asn: int, source: str) -> RPKIStatus:
         """
@@ -110,10 +110,10 @@ class BulkRouteROAValidator:
         with the same origin AS and a match on the max length in the ROA.
         A route is invalid when at least one ROA is found that covers the prefix,
         but none of the covering ROAs matched on both origin AS and max length.
-        A route is unknown if no ROAs were found covering the prefix.
+        A route is not_found if no ROAs were found covering the prefix.
         """
         if source in self.excluded_sources:
-            return RPKIStatus.unknown
+            return RPKIStatus.not_found
 
         ip_bin_str = self._ip_to_binary_str(prefix_ip)
 
@@ -121,7 +121,7 @@ class BulkRouteROAValidator:
         # print(f'Route {prefix_ip}/{prefix_length} {prefix_asn} covered by ROAs: {roas_covering}')
         if not roas_covering:
             # print('====UNKNOWN====')
-            return RPKIStatus.unknown
+            return RPKIStatus.not_found
         for key, value in roas_covering:
             for roa_prefix, roa_asn, roa_max_length in value:
                 # print(f'Matching ROA {roa_prefix} {value} to prefix {prefix_asn} length {prefix_length}')
@@ -180,12 +180,12 @@ class SingleRouteROAValidator:
         Validate a route from a particular source.
         """
         if source in self.excluded_sources:
-            return RPKIStatus.unknown
+            return RPKIStatus.not_found
 
         query = ROADatabaseObjectQuery().ip_less_specific_or_exact(route)
         roas_covering = list(self.database_handler.execute_query(query))
         if not roas_covering:
-            return RPKIStatus.unknown
+            return RPKIStatus.not_found
         for roa in roas_covering:
             if roa['asn'] != 0 and roa['asn'] == asn and route.prefixlen() <= roa['max_length']:
                 return RPKIStatus.valid

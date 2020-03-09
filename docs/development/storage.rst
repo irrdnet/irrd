@@ -48,12 +48,10 @@ which records:
   ``192.0.2.0``, ``192.0.2.255``, ``256``, ``24``, ``23456``, ``23456``.
   Note that `prefix_length` is only filled for `route(6)` objects.
 * `rpki_status`: the RPKI status of this object, which can be valid,
-  invalid or unknown. For objects other than `route(6)`, this is always
-  unknown. Note that the current RPKI processes do not always set the
-  valid status for performance reasons, i.e. the practical use of
-  this column is currently to distinguish invalid from not-invalid.
+  invalid or not_found. For objects other than `route(6)`, this is always
+  not_found.
   When :doc:`RPKI-aware mode </admins/rpki>` is disabled, this is
-  set to unknown for all objects.
+  set to not_valid for all objects.
 
 The columns `rpsl_pk` and `source` must be unique together.
 The columns `pk`, `rpsl_pk`, `source`, `ip_version`, `ip_first`,

@@ -151,7 +151,7 @@ class TestPreloadUpdater:
         assert flatten_mock_calls(mock_reload_lock) == [['acquire', (), {}], ['release', (), {}]]
         assert flatten_mock_calls(mock_database_query) == [
             ['object_classes', (['route', 'route6'],), {}],
-            ['rpki_status', ([RPKIStatus.unknown, RPKIStatus.valid],), {}],
+            ['rpki_status', ([RPKIStatus.not_found, RPKIStatus.valid],), {}],
         ]
 
         assert flatten_mock_calls(mock_preload_obj) == [

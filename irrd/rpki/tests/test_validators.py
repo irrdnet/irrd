@@ -28,7 +28,7 @@ class TestBulkRouteROAValidator:
                 'ip_first': '192.0.2.0',
                 'prefix_length': 24,
                 'asn_first': 65546,
-                'rpki_status': RPKIStatus.unknown,
+                'rpki_status': RPKIStatus.not_found,
                 'source': 'TEST1',
             },
             {
@@ -37,7 +37,7 @@ class TestBulkRouteROAValidator:
                 'ip_first': '192.0.2.0',
                 'prefix_length': 25,
                 'asn_first': 65546,
-                'rpki_status': RPKIStatus.unknown,
+                'rpki_status': RPKIStatus.not_found,
                 'source': 'TEST1',
             },
             {
@@ -80,7 +80,7 @@ class TestBulkRouteROAValidator:
                 'source': RPKI_IRR_PSEUDO_SOURCE,
             },
             {
-                # RPKI invalid, but should be unknown because of source.
+                # RPKI invalid, but should be not_found because of source.
                 'rpsl_pk': 'pk_route_v4_d128_l26_excluded',
                 'ip_version': 4,
                 'ip_first': '192.0.2.128',
@@ -115,7 +115,7 @@ class TestBulkRouteROAValidator:
                 'ip_first': '203.0.113.1',
                 'prefix_length': 32,
                 'asn_first': 65547,
-                'rpki_status': RPKIStatus.unknown,
+                'rpki_status': RPKIStatus.not_found,
                 'source': 'TEST1',
             },
         ]
@@ -181,7 +181,7 @@ class TestBulkRouteROAValidator:
                     'ip_first': '192.0.2.0',
                     'prefix_length': 25,
                     'asn_first': 65546,
-                    'rpki_status': RPKIStatus.unknown,
+                    'rpki_status': RPKIStatus.not_found,
                     'source': 'TEST1',
                 },
             ]
@@ -216,9 +216,9 @@ class TestSingleRouteROAValidator:
 
         validator = SingleRouteROAValidator(mock_dh)
         assert validator.validate_route(IP('192.0.2.0/24'), 65548, 'TEST1') == RPKIStatus.valid
-        assert validator.validate_route(IP('192.0.2.0/24'), 65548, 'SOURCE-EXCLUDED') == RPKIStatus.unknown
+        assert validator.validate_route(IP('192.0.2.0/24'), 65548, 'SOURCE-EXCLUDED') == RPKIStatus.not_found
         assert validator.validate_route(IP('192.0.2.0/24'), 65549, 'TEST1') == RPKIStatus.invalid
-        assert validator.validate_route(IP('192.0.2.0/24'), 65549, 'SOURCE-EXCLUDED') == RPKIStatus.unknown
+        assert validator.validate_route(IP('192.0.2.0/24'), 65549, 'SOURCE-EXCLUDED') == RPKIStatus.not_found
         assert validator.validate_route(IP('192.0.2.0/26'), 65548, 'TEST1') == RPKIStatus.invalid
 
         assert flatten_mock_calls(mock_rq) == [
@@ -249,6 +249,6 @@ class TestSingleRouteROAValidator:
         mock_dh.execute_query = lambda q: []
 
         validator = SingleRouteROAValidator(mock_dh)
-        assert validator.validate_route(IP('192.0.2.0/24'), 65548, 'TEST1') == RPKIStatus.unknown
-        assert validator.validate_route(IP('192.0.2.0/24'), 65549, 'TEST1') == RPKIStatus.unknown
-        assert validator.validate_route(IP('192.0.2.0/26'), 65548, 'TEST1') == RPKIStatus.unknown
+        assert validator.validate_route(IP('192.0.2.0/24'), 65548, 'TEST1') == RPKIStatus.not_found
+        assert validator.validate_route(IP('192.0.2.0/24'), 65549, 'TEST1') == RPKIStatus.not_found
+        assert validator.validate_route(IP('192.0.2.0/26'), 65548, 'TEST1') == RPKIStatus.not_found

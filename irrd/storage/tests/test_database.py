@@ -95,7 +95,7 @@ class TestDatabaseHandlerLive:
             prefix_length=24,
             asn_first=65537,
             asn_last=65537,
-            rpki_status=RPKIStatus.unknown,
+            rpki_status=RPKIStatus.not_found,
         )
 
         self.dh = DatabaseHandler()
@@ -118,7 +118,7 @@ class TestDatabaseHandlerLive:
             prefix_length=32,
             asn_first=65537,
             asn_last=65537,
-            rpki_status=RPKIStatus.unknown,
+            rpki_status=RPKIStatus.not_found,
         )
         self.dh.upsert_rpsl_object(rpsl_object_route_v6)
         assert len(self.dh._rpsl_upsert_buffer) == 0  # should have been flushed to the DB
@@ -151,7 +151,7 @@ class TestDatabaseHandlerLive:
             prefix_length=None,
             asn_first=65537,
             asn_last=65537,
-            rpki_status=RPKIStatus.unknown,
+            rpki_status=RPKIStatus.not_found,
         )
         self.dh.upsert_rpsl_object(rpsl_obj_ignored)
         assert len(self.dh._rpsl_upsert_buffer) == 1
@@ -276,7 +276,7 @@ class TestDatabaseHandlerLive:
             prefix_length=24,
             asn_first=65537,
             asn_last=65537,
-            rpki_status=RPKIStatus.unknown,
+            rpki_status=RPKIStatus.not_found,
         )
 
         self.dh = DatabaseHandler()
@@ -295,7 +295,7 @@ class TestDatabaseHandlerLive:
             prefix_length=32,
             asn_first=65537,
             asn_last=65537,
-            rpki_status=RPKIStatus.unknown,
+            rpki_status=RPKIStatus.not_found,
         )
         self.dh.upsert_rpsl_object(rpsl_object_route_v6)
         self.dh.set_force_reload('TEST2')  # Should be ignored, as source is new
@@ -346,7 +346,7 @@ class TestDatabaseHandlerLive:
             prefix_length=24,
             asn_first=65537,
             asn_last=65537,
-            rpki_status=RPKIStatus.unknown,
+            rpki_status=RPKIStatus.not_found,
         )
 
         self.dh = DatabaseHandler()
@@ -406,16 +406,16 @@ class TestDatabaseHandlerLive:
         route_rpsl_pk = '192.0.2.0/24,AS65537'
 
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.invalid])))) == 1
-        dh.update_rpki_status(rpsl_pks_now_unknown={route_rpsl_pk})
-        assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.unknown])))) == 1
+        dh.update_rpki_status(rpsl_pks_now_not_found={route_rpsl_pk})
+        assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.not_found])))) == 1
         dh.update_rpki_status()
-        assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.unknown])))) == 1
+        assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.not_found])))) == 1
         dh.update_rpki_status(rpsl_pks_now_invalid={route_rpsl_pk})
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.invalid])))) == 1
         dh.update_rpki_status(rpsl_pks_now_invalid={route_rpsl_pk})
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.invalid])))) == 1
-        dh.update_rpki_status(rpsl_pks_now_unknown={route_rpsl_pk})
-        assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.unknown])))) == 1
+        dh.update_rpki_status(rpsl_pks_now_not_found={route_rpsl_pk})
+        assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.not_found])))) == 1
         dh.update_rpki_status(rpsl_pks_now_valid={route_rpsl_pk})
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.valid])))) == 1
 
@@ -494,7 +494,7 @@ class TestRPSLDatabaseQueryLive:
             prefix_length=32,
             asn_first=65537,
             asn_last=65537,
-            rpki_status=RPKIStatus.unknown,
+            rpki_status=RPKIStatus.not_found,
         )
         rpsl_object_3 = Mock(
             pk=lambda: '192.0.2.2/32,AS65537',
@@ -507,7 +507,7 @@ class TestRPSLDatabaseQueryLive:
             prefix_length=32,
             asn_first=65537,
             asn_last=65537,
-            rpki_status=RPKIStatus.unknown,
+            rpki_status=RPKIStatus.not_found,
         )
         self.dh.upsert_rpsl_object(rpsl_object_2)
         self.dh.upsert_rpsl_object(rpsl_object_3)
@@ -544,7 +544,7 @@ class TestRPSLDatabaseQueryLive:
             prefix_length=None,
             asn_first=None,
             asn_last=None,
-            rpki_status=RPKIStatus.unknown,
+            rpki_status=RPKIStatus.not_found,
         )
         rpsl_object_role = Mock(
             pk=lambda: 'ROLE',
@@ -557,7 +557,7 @@ class TestRPSLDatabaseQueryLive:
             prefix_length=None,
             asn_first=None,
             asn_last=None,
-            rpki_status=RPKIStatus.unknown,
+            rpki_status=RPKIStatus.not_found,
         )
         self.dh = DatabaseHandler()
         self.dh.upsert_rpsl_object(rpsl_object_person)
@@ -581,7 +581,7 @@ class TestRPSLDatabaseQueryLive:
             prefix_length=25,
             asn_first=65537,
             asn_last=65537,
-            rpki_status=RPKIStatus.unknown,
+            rpki_status=RPKIStatus.not_found,
         )
         rpsl_route_more_specific_25_2 = Mock(
             pk=lambda: '192.0.2.128/25,AS65537',
@@ -594,7 +594,7 @@ class TestRPSLDatabaseQueryLive:
             prefix_length=25,
             asn_first=65537,
             asn_last=65537,
-            rpki_status=RPKIStatus.unknown,
+            rpki_status=RPKIStatus.not_found,
         )
         rpsl_route_more_specific_26 = Mock(
             pk=lambda: '192.0.2.0/26,AS65537',
@@ -607,7 +607,7 @@ class TestRPSLDatabaseQueryLive:
             prefix_length=26,
             asn_first=65537,
             asn_last=65537,
-            rpki_status=RPKIStatus.unknown,
+            rpki_status=RPKIStatus.not_found,
         )
         self.dh.upsert_rpsl_object(rpsl_route_more_specific_25_1)
         self.dh.upsert_rpsl_object(rpsl_route_more_specific_25_2)
