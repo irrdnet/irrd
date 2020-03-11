@@ -33,7 +33,7 @@ setuptools.setup(
         'psycopg2-binary==2.8.4',
         'SQLAlchemy==1.3.13',
         'alembic==1.4.1',
-        'ujson==1.35',
+        'ujson==2.0.1',
         'twisted==19.10.0',
     ],
     extras_require={
