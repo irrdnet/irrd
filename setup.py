@@ -37,6 +37,7 @@ setuptools.setup(
         'redis==3.3.11',
         'hiredis==1.0.1',
         'psutil==5.6.7',
+        'requests==2.23.0',
         'psycopg2-binary==2.8.5',
         'SQLAlchemy==1.3.16',
         'alembic==1.4.2',
