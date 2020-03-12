@@ -57,6 +57,7 @@ class WhoisQueryParser:
         self.key_fields_only = False
         self.client_ip = client_ip
         self.client_str = client_str
+        self.preloader = Preloader()
 
     def handle_query(self, query: str) -> WhoisQueryResponse:
         """
@@ -67,7 +68,6 @@ class WhoisQueryParser:
         self.database_handler = DatabaseHandler()
         self.key_fields_only = False
         self.object_classes = []
-        self.preloader = Preloader()
 
         if query.startswith('!'):
             try:
@@ -123,6 +123,7 @@ class WhoisQueryParser:
             raise WhoisQueryParserException(f'Missing parameter for {command} query')
 
         if command == '!':
+            self.preloader.load_routes_into_memory()
             self.multiple_command_mode = True
             result = None
             response_type = WhoisQueryResponseType.NO_RESPONSE

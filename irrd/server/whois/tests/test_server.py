@@ -4,6 +4,7 @@ import pytest
 from io import BytesIO
 from unittest.mock import Mock
 
+from irrd.storage.preload import Preloader
 from ..server import WhoisRequestHandler
 
 
@@ -13,6 +14,12 @@ class MockServer:
 
     def shutdown_request(self, request):
         self.shutdown_called = True
+
+
+@pytest.fixture()
+def mock_preloader(monkeypatch):
+    mock_preloader = Mock(spec=Preloader)
+    monkeypatch.setattr('irrd.server.whois.query_parser.Preloader', lambda: mock_preloader)
 
 
 @pytest.fixture()
@@ -42,7 +49,7 @@ class TestWhoisRequestHandler:
         assert b'IRRd -- version' in handler.wfile.read()
         assert not handler.server.shutdown_called
 
-    def test_whois_request_handler_timeout(self, create_handler):
+    def test_whois_request_handler_timeout(self, create_handler, mock_preloader):
         handler = create_handler
 
         handler.rfile = Mock()
@@ -72,7 +79,7 @@ class TestWhoisRequestHandler:
         handler.wfile.seek(0)
         assert handler.server.shutdown_called
 
-    def test_whois_request_handler_write_error(self, create_handler, caplog):
+    def test_whois_request_handler_write_error(self, create_handler, caplog, mock_preloader):
         handler = create_handler
         handler.rfile.write(b'!!\n!v\n')
         handler.rfile.seek(0)
