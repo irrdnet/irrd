@@ -6,6 +6,10 @@ IRRd accepts whois queries on port 43 (by default).
 The encoding used is always UTF-8, though many objects fit 7-bit ASCII.
 Line seperators are a single newline (``\n``) character.
 
+.. note::
+   Due to caching in IRRd, it can take up to 60 seconds for some types
+   of changes to be visible in the result of some queries.
+
 .. contents:: :backlinks: none
 
 IRRd vs RIPE style

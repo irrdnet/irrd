@@ -12,10 +12,14 @@ from irrd.conf import get_setting
 from irrd.rpki.status import RPKIStatus
 from .queries import RPSLDatabaseQuery
 
+
+SENTINEL_HASH_CREATED = b'SENTINEL_HASH_CREATED'
 REDIS_ORIGIN_ROUTE4_STORE_KEY = b'irrd-preload-origin-route4'
 REDIS_ORIGIN_ROUTE6_STORE_KEY = b'irrd-preload-origin-route6'
-REDIS_ORIGIN_LIST_SEPARATOR = ','
 REDIS_PRELOAD_RELOAD_CHANNEL = b'irrd-preload-reload-channel'
+REDIS_ORIGIN_LIST_SEPARATOR = ','
+REDIS_KEY_ORIGIN_SOURCE_SEPARATOR = '_'
+MAX_MEMORY_LIFETIME = 60
 
 logger = logging.getLogger(__name__)
 
@@ -34,47 +38,10 @@ class Preloader:
     needs to be updated. This interface can be used from any thread
     or process.
     """
+    _loaded_in_memory_time = False
+
     def __init__(self):
         self._redis_conn = redis.Redis.from_url(get_setting('redis_url'))
-
-    def routes_for_origins(self, origins: Union[List[str], Set[str]], sources: Optional[List[str]], ip_version: Optional[int]=None) -> Set[str]:
-        """
-        Retrieve all prefixes (in str format) originating from the provided origins,
-        from the given sources.
-
-        Prefixes are guaranteed to be unique. ip_version can be set to 4 or 6
-        to restrict responses to IPv4 or IPv6 prefixes. Blocks until the first
-        store has been built.
-        Origins must be strings in a cleaned format, e.g. AS65537, but not
-        AS065537 or as65537.
-        """
-        if ip_version and ip_version not in [4, 6]:
-            raise ValueError(f'Invalid IP version: {ip_version}')
-        if not origins or not sources:
-            return set()
-
-        while not self._redis_conn.exists(REDIS_ORIGIN_ROUTE4_STORE_KEY):
-            time.sleep(1)  # pragma: no cover
-
-        prefixes: Set[str] = set()
-        redis_keys = []
-        for source in sources:
-            for origin in origins:
-                redis_keys.append(f'{source}-{origin}'.encode('ascii'))
-
-        if not ip_version or ip_version == 4:
-            prefixes_for_origins = self._redis_conn.hmget(REDIS_ORIGIN_ROUTE4_STORE_KEY, redis_keys)
-            for prefixes_for_origin in prefixes_for_origins:
-                if prefixes_for_origin:
-                    prefixes.update(prefixes_for_origin.decode('ascii').split(REDIS_ORIGIN_LIST_SEPARATOR))
-
-        if not ip_version or ip_version == 6:
-            prefixes_for_origins = self._redis_conn.hmget(REDIS_ORIGIN_ROUTE6_STORE_KEY, redis_keys)
-            for prefixes_for_origin in prefixes_for_origins:
-                if prefixes_for_origin:
-                    prefixes.update(prefixes_for_origin.decode('ascii').split(REDIS_ORIGIN_LIST_SEPARATOR))
-
-        return prefixes
 
     def signal_reload(self, object_classes_changed: Optional[Set[str]]=None) -> None:
         """
@@ -91,6 +58,102 @@ class Preloader:
         if object_classes_changed is not None and not object_classes_changed.intersection(relevant_object_classes):
             return
         self._redis_conn.publish(REDIS_PRELOAD_RELOAD_CHANNEL, 'reload')
+
+    def routes_for_origins(self, origins: Union[List[str], Set[str]], sources: List[str],
+                           ip_version: Optional[int] = None) -> Set[str]:
+        """
+        Retrieve all prefixes (in str format) originating from the provided origins,
+        from the given sources.
+
+        Prefixes are guaranteed to be unique. ip_version can be set to 4 or 6
+        to restrict responses to IPv4 or IPv6 prefixes. Blocks until the first
+        store has been built.
+        Origins must be strings in a cleaned format, e.g. AS65537, but not
+        AS065537 or as65537.
+        """
+        if ip_version and ip_version not in [4, 6]:
+            raise ValueError(f'Invalid IP version: {ip_version}')
+        if not origins or not sources:
+            return set()
+
+        if self._loaded_in_memory_time:
+            return self._routes_for_origins_memory(origins, sources, ip_version)
+        else:
+            return self._routes_for_origins_redis(origins, sources, ip_version)
+
+    def _routes_for_origins_memory(self, origins: Union[List[str], Set[str]],
+                                   sources: List[str], ip_version: Optional[int]=None) -> Set[str]:
+        """
+        Implementation of routes_for_origins() when retrieving from memory.
+        Updates the in-memory store if it's older than MAX_MEMORY_LIFETIME.
+        """
+        # The in-memory store is a snapshot, and therefore has a limited lifetime,
+        # so that long-running connections don't end up serving very outdated data.
+        if time.time() - self._loaded_in_memory_time > MAX_MEMORY_LIFETIME:
+            self.load_routes_into_memory()
+
+        prefix_sets: Set[str] = set()
+        for origin in origins:
+            for source in sources:
+                if not ip_version or ip_version == 4:
+                    prefix_sets.update(self._origin_route4_store[origin][source])
+                if not ip_version or ip_version == 6:
+                    prefix_sets.update(self._origin_route6_store[origin][source])
+
+        return prefix_sets
+
+    def _routes_for_origins_redis(self, origins: Union[List[str], Set[str]],
+                                  sources: List[str], ip_version: Optional[int]=None) -> Set[str]:
+        """
+        Implementation of routes_for_origins() when retrieving directly from redis.
+        """
+        while not self._redis_conn.exists(REDIS_ORIGIN_ROUTE4_STORE_KEY):
+            time.sleep(1)  # pragma: no cover
+
+        prefixes: Set[str] = set()
+        redis_keys = []
+        for source in sources:
+            for origin in origins:
+                redis_keys.append(f'{source}{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}{origin}'.encode('ascii'))
+
+        def _load(hmap_key):
+            prefixes_for_origins = self._redis_conn.hmget(hmap_key, redis_keys)
+            for prefixes_for_origin in prefixes_for_origins:
+                if prefixes_for_origin:
+                    prefixes.update(prefixes_for_origin.decode('ascii').split(REDIS_ORIGIN_LIST_SEPARATOR))
+
+        if not ip_version or ip_version == 4:
+            _load(REDIS_ORIGIN_ROUTE4_STORE_KEY)
+
+        if not ip_version or ip_version == 6:
+            _load(REDIS_ORIGIN_ROUTE6_STORE_KEY)
+
+        return prefixes
+
+    def load_routes_into_memory(self):
+        """
+        Pre-preload all routes into memory. This increases performance for
+        routes_for_origins() by up to 100x, but takes about 0.2-0.5s.
+        It also means origins are no longer updated as long as this object exists.
+        """
+        while not self._redis_conn.exists(REDIS_ORIGIN_ROUTE4_STORE_KEY):
+            time.sleep(1)  # pragma: no cover
+        logger.debug(f'Preloader pre-pre(re)loading routes into memory')
+
+        self._origin_route4_store = defaultdict(lambda: defaultdict(set))
+        self._origin_route6_store = defaultdict(lambda: defaultdict(set))
+
+        def _load(redis_key, target):
+            for key, routes in self._redis_conn.hgetall(redis_key).items():
+                if key == SENTINEL_HASH_CREATED:
+                    continue
+                source, origin = key.decode('ascii').split(REDIS_KEY_ORIGIN_SOURCE_SEPARATOR)
+                target[origin][source].update(routes.decode('ascii').split(REDIS_ORIGIN_LIST_SEPARATOR))
+
+        _load(REDIS_ORIGIN_ROUTE4_STORE_KEY, self._origin_route4_store)
+        _load(REDIS_ORIGIN_ROUTE6_STORE_KEY, self._origin_route6_store)
+
+        self._loaded_in_memory_time = time.time()
 
 
 class PreloadStoreManager(multiprocessing.Process):
@@ -178,8 +241,8 @@ class PreloadStoreManager(multiprocessing.Process):
             origin_route6_str_dict = {k: REDIS_ORIGIN_LIST_SEPARATOR.join(v) for k, v in new_origin_route6_store.items()}
             # Redis can't handle empty dicts, but the dict needs to be present
             # in order not to block queries.
-            origin_route4_str_dict['SENTINEL_HASH_CREATED'] = '1'
-            origin_route6_str_dict['SENTINEL_HASH_CREATED'] = '1'
+            origin_route4_str_dict[SENTINEL_HASH_CREATED] = '1'
+            origin_route6_str_dict[SENTINEL_HASH_CREATED] = '1'
             pipeline.hmset(REDIS_ORIGIN_ROUTE4_STORE_KEY, origin_route4_str_dict)
             pipeline.hmset(REDIS_ORIGIN_ROUTE6_STORE_KEY, origin_route6_str_dict)
             pipeline.execute()
@@ -246,7 +309,7 @@ class PreloadUpdater(threading.Thread):
 
         for result in dh.execute_query(q):
             prefix = result['ip_first']
-            key = result['source'] + '-AS' + str(result['asn_first'])
+            key = result['source'] + REDIS_KEY_ORIGIN_SOURCE_SEPARATOR + 'AS' + str(result['asn_first'])
             length = result['prefix_length']
 
             if result['ip_version'] == 4:

@@ -7,7 +7,7 @@ from unittest.mock import Mock
 from irrd.rpki.status import RPKIStatus
 from irrd.utils.test_utils import flatten_mock_calls
 from ..database_handler import DatabaseHandler
-from ..preload import Preloader, PreloadStoreManager, PreloadUpdater
+from ..preload import Preloader, PreloadStoreManager, PreloadUpdater, REDIS_KEY_ORIGIN_SOURCE_SEPARATOR
 from ..queries import RPSLDatabaseQuery
 
 # Use different
@@ -88,11 +88,11 @@ class TestPreloading:
 
         preload_manager.update_route_store(
             {
-                'TEST2-AS65546': {'192.0.2.0/25'},
-                'TEST1-AS65547': {'192.0.2.128/25', '198.51.100.0/25'},
+                f'TEST2{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65546': {'192.0.2.0/25'},
+                f'TEST1{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65547': {'192.0.2.128/25', '198.51.100.0/25'},
             },
             {
-                'TEST2-AS65547': {'2001:db8::/32'},
+                f'TEST2{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65547': {'2001:db8::/32'},
             },
         )
         sources = ['TEST1', 'TEST2']
@@ -113,6 +113,46 @@ class TestPreloading:
         with pytest.raises(ValueError) as ve:
             preloader.routes_for_origins(['AS65547'], [], 2)
         assert 'Invalid IP version: 2' in str(ve.value)
+
+    def test_routes_for_origins_memory(self, mock_redis_keys, monkeypatch):
+        preloader = Preloader()
+        preload_manager = PreloadStoreManager()
+
+        preload_manager.update_route_store(
+            {
+                f'TEST2{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65546': {'192.0.2.0/25'},
+                f'TEST1{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65547': {'192.0.2.128/25', '198.51.100.0/25'},
+            },
+            {
+                f'TEST2{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65547': {'2001:db8::/32'},
+            },
+        )
+        preloader._redis_conn.hmget = None  # Enforce that loading from redis per item can't work
+        preloader.load_routes_into_memory()
+
+        sources = ['TEST1', 'TEST2']
+        assert preloader.routes_for_origins([], sources) == set()
+        assert preloader.routes_for_origins(['AS65545'], sources) == set()
+        assert preloader.routes_for_origins(['AS65546'], []) == set()
+        assert preloader.routes_for_origins(['AS65546'], sources, 4) == {'192.0.2.0/25'}
+        assert preloader.routes_for_origins(['AS65547'], sources, 4) == {'192.0.2.128/25', '198.51.100.0/25'}
+        assert preloader.routes_for_origins(['AS65546'], sources, 6) == set()
+        assert preloader.routes_for_origins(['AS65547'], sources, 6) == {'2001:db8::/32'}
+        assert preloader.routes_for_origins(['AS65546'], sources) == {'192.0.2.0/25'}
+        assert preloader.routes_for_origins(['AS65547'], sources) == {'192.0.2.128/25', '198.51.100.0/25', '2001:db8::/32'}
+        assert preloader.routes_for_origins(['AS65547', 'AS65546'], sources, 4) == {'192.0.2.0/25', '192.0.2.128/25', '198.51.100.0/25'}
+
+        assert preloader.routes_for_origins(['AS65547', 'AS65546'], ['TEST1']) == {'192.0.2.128/25', '198.51.100.0/25'}
+        assert preloader.routes_for_origins(['AS65547', 'AS65546'], ['TEST2']) == {'192.0.2.0/25', '2001:db8::/32'}
+
+        # Load an empty route store. This should not affect the in-memory store,
+        # because that is only periodically updated, i.e. same response for now.
+        preload_manager.update_route_store({}, {})
+        assert preloader.routes_for_origins(['AS65546'], sources, 4) == {'192.0.2.0/25'}
+
+        # Make the preloader think the in-memory store is expired, forcing a refresh
+        preloader._loaded_in_memory_time = time.time() - 3600
+        assert preloader.routes_for_origins(['AS65546'], sources, 4) == set()
 
 
 class TestPreloadUpdater:
@@ -168,11 +208,11 @@ class TestPreloadUpdater:
                 'update_route_store',
                 (
                     {
-                        'TEST1-AS65546': {'192.0.2.0/25'},
-                        'TEST1-AS65547': {'192.0.2.128/25', '198.51.100.0/25'},
+                        f'TEST1{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65546': {'192.0.2.0/25'},
+                        f'TEST1{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65547': {'192.0.2.128/25', '198.51.100.0/25'},
                     },
                     {
-                        'TEST2-AS65547': {'2001:db8::/32'}
+                        f'TEST2{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65547': {'2001:db8::/32'}
                     },
                 ),
                 {}
