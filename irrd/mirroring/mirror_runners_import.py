@@ -241,8 +241,9 @@ class ROAImportRunner(FileImportRunnerBase):
                 rpsl_pks_now_not_found=pks_now_not_found
             )
             self.database_handler.commit()
-            logger.info(f'RPKI status updated for all routes, {pks_now_valid} newly valid, '
-                        f'{pks_now_invalid} newly invalid, {pks_now_not_found} newly not_found routes')
+            logger.info(f'RPKI status updated for all routes, {len(pks_now_valid)} newly valid, '
+                        f'{len(pks_now_invalid)} newly invalid, '
+                        f'{len(pks_now_not_found)} newly not_found routes')
 
         except OSError as ose:
             # I/O errors can occur and should not log a full traceback (#177)
