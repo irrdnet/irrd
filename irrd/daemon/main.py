@@ -109,6 +109,10 @@ def run_irrd(mirror_frequency: int):
         time.sleep(1)
         sleeps += 1
 
+    whois_process.join()
+    http_process.join()
+    preload_manager.join()
+
 
 if __name__ == '__main__':  # pragma: no cover
     main()
