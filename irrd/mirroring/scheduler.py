@@ -89,6 +89,7 @@ class MirrorScheduler:
         for process in self.processes.values():
             try:
                 process.terminate()
+                process.join()
             except Exception:
                 pass
 
