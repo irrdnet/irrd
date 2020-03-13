@@ -34,7 +34,7 @@ class TestPreloading:
     def test_load_reload_thread_management(self, mock_preload_updater, mock_redis_keys):
         preload_manager = PreloadStoreManager()
 
-        preload_manager_thread = threading.Thread(target=preload_manager.run)
+        preload_manager_thread = threading.Thread(target=preload_manager.main)
         preload_manager_thread.start()
 
         time.sleep(1)
