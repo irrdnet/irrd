@@ -2,7 +2,6 @@
 # flake8: noqa: E402
 import sys
 import time
-from multiprocessing import Process
 from pwd import getpwnam
 
 import argparse
@@ -23,6 +22,7 @@ from irrd.mirroring.scheduler import MirrorScheduler
 from irrd.server.http.server import start_http_server
 from irrd.server.whois.server import start_whois_server
 from irrd.storage.preload import PreloadStoreManager
+from irrd.utils.process_support import ExceptionLoggingProcess
 
 
 # This file does not have a unit test, but is instead tested through
@@ -34,9 +34,9 @@ def main():
     parser.add_argument('--config', dest='config_file_path', type=str,
                         help=f'use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})')
     parser.add_argument('--foreground', dest='foreground', action='store_true',
-                        help=f"run IRRd in the foreground, don't detach")
+                        help=f"main IRRd in the foreground, don't detach")
     parser.add_argument('--uid', dest='uid', type=str,
-                        help=f"run the process under this UID")
+                        help=f"main the process under this UID")
     args = parser.parse_args()
 
     mirror_frequency = int(os.environ.get('IRRD_SCHEDULER_TIMER_OVERRIDE', 15))
@@ -69,9 +69,9 @@ def run_irrd(mirror_frequency: int):
     terminated = False
 
     mirror_scheduler = MirrorScheduler()
-    whois_process = Process(target=start_whois_server, name='irrd-whois-server-listener', daemon=True)
+    whois_process = ExceptionLoggingProcess(target=start_whois_server, name='irrd-whois-server-listener', daemon=True)
     whois_process.start()
-    http_process = Process(target=start_http_server, name='irrd-http-server-listener', daemon=True)
+    http_process = ExceptionLoggingProcess(target=start_http_server, name='irrd-http-server-listener', daemon=True)
     http_process.start()
     preload_manager = PreloadStoreManager(name='irrd-preload-store-manager')
     preload_manager.start()

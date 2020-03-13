@@ -1,4 +1,3 @@
-import multiprocessing
 import time
 from collections import defaultdict
 
@@ -10,8 +9,8 @@ from typing import Optional, List, Set, Dict, Union
 
 from irrd.conf import get_setting
 from irrd.rpki.status import RPKIStatus
+from irrd.utils.process_support import ExceptionLoggingProcess
 from .queries import RPSLDatabaseQuery
-
 
 SENTINEL_HASH_CREATED = b'SENTINEL_HASH_CREATED'
 REDIS_ORIGIN_ROUTE4_STORE_KEY = b'irrd-preload-origin-route4'
@@ -156,7 +155,7 @@ class Preloader:
         self._loaded_in_memory_time = time.time()
 
 
-class PreloadStoreManager(multiprocessing.Process):
+class PreloadStoreManager(ExceptionLoggingProcess):
     """
     The preload store manager manages the preloaded data store, and ensures
     it is created and updated.
@@ -164,9 +163,10 @@ class PreloadStoreManager(multiprocessing.Process):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._target = self.main
         self._redis_conn = redis.Redis.from_url(get_setting('redis_url'))
 
-    def run(self):
+    def main(self):
         """
         Main function for the preload manager.
 
@@ -174,13 +174,14 @@ class PreloadStoreManager(multiprocessing.Process):
         a message is received.
         """
         setproctitle('irrd-preload-store-manager')
+        logging.info('Starting preload store manager')
 
         self._clear_existing_data()
         self._pubsub = self._redis_conn.pubsub()
 
         self._reload_lock = threading.Lock()
         self._threads = []
-        self.terminate = False  # Used to exit run() in tests
+        self.terminate = False  # Used to exit main() in tests
 
         while not self.terminate:
             self._perform_reload()
@@ -280,7 +281,7 @@ class PreloadUpdater(threading.Thread):
         """
         Main thread runner function.
 
-        The reload_lock ensures only a single instance can run at the same
+        The reload_lock ensures only a single instance can main at the same
         time, i.e. if two threads are started, one will wait for the other
         to finish.
 
