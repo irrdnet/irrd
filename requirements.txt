@@ -18,7 +18,7 @@ alembic==1.4.2
 ujson==2.0.3
 
 # Network handling
-twisted==19.10.0
+twisted==20.3.0
 
 # Testing and related packages
 pytest==5.3.5
