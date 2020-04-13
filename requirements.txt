@@ -32,7 +32,7 @@ Sphinx==3.0.1
 # Code style and type checks
 mypy==0.770
 flake8==3.7.9
-pep8-naming==0.9.1
+pep8-naming==0.10.0
 
 # Creating python packages
 setuptools==46.0.0
