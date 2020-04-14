@@ -50,7 +50,7 @@ class WhoisConnectionLimitedForkingTCPServer(socketserver.ForkingMixIn, socketse
     Includes a connection limit and a cleaner shutdown process than included by default.
     """
     address_family = socket.AF_INET6
-    allow_reuse_address = True
+    allow_reuse_address = False
     request_queue_size = 50
 
     def verify_request(self, request, client_address):

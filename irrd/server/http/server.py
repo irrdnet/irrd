@@ -38,7 +38,8 @@ def start_http_server():  # pragma: no cover
 class HTTPServerForkingIPv6(socketserver.ForkingMixIn, HTTPServer):
     # Default HTTP server only supports IPv4
     address_family = socket.AF_INET6
-    allow_reuse_address = True
+    allow_reuse_address = False
+    timeout = 30
 
     def handle_error(self, request, client_address):  # pragma: no cover
         logger.error(f'Error while handling request from {client_address}', exc_info=True)
@@ -78,7 +79,7 @@ class IRRdHTTPRequestProcessor:
     def __init__(self, client_ip: str, client_port: int):
         self.client_ip = client_ip
         self.client_str = client_ip + ':' + str(client_port)
-        setproctitle(f'irrd-whois-server-{self.client_str}')
+        setproctitle(f'irrd-http-server-{self.client_str}')
 
     def handle_get(self, path) -> Tuple[HTTPStatus, str]:
         if not is_client_permitted(self.client_ip, 'server.http.access_list'):
