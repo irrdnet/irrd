@@ -262,7 +262,7 @@ RPKI
   take several minutes, after which RPKI-aware mode is enabled.
 * ``roa_import_timer``: the time between two attempts to import the ROA
   file from ``roa_source``
-  |br| **Default**: ``7200``.
+  |br| **Default**: ``3600``.
   |br| **Change takes effect**: after SIGHUP.
 * ``validation_excluded_sources``: a list of sources for which no validation
   is performed, i.e. even if the objects conflict with a ROA, they are

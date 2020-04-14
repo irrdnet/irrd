@@ -54,26 +54,42 @@ Where validation takes place
 * Database exports and NRTM streams always include all objects in the
   database, including RPKI invalid objects.
 
-.. note::
-    When RPKI-aware mode is first enabled, the import and validation process
-    will take considerably longer than on subsequent runs. On the first run,
-    a large number of objects in the database need to be updated, whereas this
-    number is much smaller on subsequent runs.
-    The first full import after changing ``rpki.validation_excluded_sources``
-    may also be slower, for the same reason.
+First import with RPKI-aware mode
+---------------------------------
+When you first enable RPKI-aware mode, the import and validation process
+will take considerably longer than on subsequent runs. On the first run,
+a large number of objects in the database need to be updated, whereas this
+number is much smaller on subsequent runs.
+The first full import after changing ``rpki.validation_excluded_sources``
+may also be slower, for the same reason.
 
-.. warning::
-    When RPKI-aware mode is enabled and **at the same time** a new source is added,
-    the objects for the new source may not have the correct RPKI status
-    initially. This happens because in the new source import process, no ROAs
-    are visible, and to the periodic ROA update, the objects in the new source
-    are not visible yet. This situation automatically resolves itself upon
-    the next periodic ROA update, but may cause objects that should be marked
-    RPKI-invalid to be included in responses in the mean time.
+Temporary inconsistencies
+-------------------------
+There are three situations that can cause temporary RPKI inconsistencies.
 
-    This issue only occurs when RPKI-aware mode is enabled for the first time,
-    and at the same time a new source is added. At other times, the RPKI
-    status of new sources will be correct.
+First, when you enable RPKI-aware modeand **at the same time** add a new source,
+the objects for the new source may not have the correct RPKI status
+initially. This happens because in the new source import process, no ROAs
+are visible, and to the periodic ROA update, the objects in the new source
+are not visible yet. This situation automatically resolves itself upon
+the next periodic ROA update, but may cause objects that should be marked
+RPKI-invalid to be included in responses in the mean time.
+This issue only occurs when RPKI-aware mode is enabled for the first time,
+and at the same time a new source is added. At other times, the RPKI
+status of new sources will be correct.
+
+Second, when someone adds a ROA and a `route` object in a mirrored source,
+the ROA may not be imported by the time the `route` object is received
+over NRTM. The object may initially be marked as RPKI not found, or, depending
+on the ROA change, as invalid. This will be resolved at the next ROA import.
+
+Third, when someone attempts to create a `route` object and has just created
+or modified a ROA, the ROA may not have been imported yet. This can cause
+the object to be initially marked as RPKI not found, or if the `route` is
+RPKI invalid without the ROA change, rejected for being invalid. This will
+be resolved at the next ROA import, allowing the user to create the `route`.
+When a user attempts to create any `route` that is RPKI invalid, the error
+messages includes a note of the configured ROA import time.
 
 .. note::
     In IRRd logs, you may see things like ``RPKI status NOT_FOUND`` for objects
