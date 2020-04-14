@@ -29,12 +29,12 @@ setuptools.setup(
         'ordered-set==3.1.1',
         'dotted==0.1.8',
         'beautifultable==0.8.0',
-        'PyYAML==5.3',
-        'psycopg2-binary==2.8.4',
-        'SQLAlchemy==1.3.13',
-        'alembic==1.4.1',
-        'ujson==2.0.1',
-        'twisted==19.10.0',
+        'PyYAML==5.3.1',
+        'psycopg2-binary==2.8.5',
+        'SQLAlchemy==1.3.16',
+        'alembic==1.4.2',
+        'ujson==2.0.3',
+        'twisted==20.3.0',
     ],
     extras_require={
         ':python_version < "3.7"': [
