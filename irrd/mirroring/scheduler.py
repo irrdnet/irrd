@@ -33,7 +33,7 @@ class ScheduledTaskProcess(multiprocessing.Process):
     def resilient_is_alive(self):  # pragma: no cover
         # The built-in is_alive() does not handle cases
         # where SIGCHLD is set to SIG_IGN to prevent zombies.
-        return psutil.pid_exists(self.pid)
+        return self.is_alive() and psutil.pid_exists(self.pid)
 
 
 class MirrorScheduler:
@@ -53,6 +53,8 @@ class MirrorScheduler:
         self.last_started_time = defaultdict(lambda: 0)
 
     def run(self) -> None:
+        logger.info('MirrorScheduler starting run')
+        multiprocessing.active_children()
         for source in get_setting('sources', {}).keys():
             is_mirror = get_setting(f'sources.{source}.import_source') or get_setting(f'sources.{source}.nrtm_host')
             import_timer = int(get_setting(f'sources.{source}.import_timer', DEFAULT_SOURCE_IMPORT_TIMER))
@@ -71,7 +73,7 @@ class MirrorScheduler:
             self.run_if_relevant(RPKI_IRR_PSEUDO_SOURCE, ROAImportRunner, import_timer)
 
     def run_if_relevant(self, source: str, runner_class, timer: int):
-        process_name = f'Process-{runner_class.__name__}-{source}'
+        process_name = f'{runner_class.__name__}-{source}'
 
         current_time = time.time()
         has_expired = (self.last_started_time[process_name] + timer) < current_time
@@ -86,6 +88,7 @@ class MirrorScheduler:
         self.last_started_time[process_name] = int(current_time)
 
     def terminate_children(self) -> None:  # pragma: no cover
+        logger.info('MirrorScheduler terminating children')
         for process in self.processes.values():
             try:
                 process.terminate()
@@ -96,4 +99,11 @@ class MirrorScheduler:
     def _is_process_running(self, process_name: str) -> bool:
         if process_name not in self.processes:
             return False
-        return self.processes[process_name].resilient_is_alive()
+        if self.processes[process_name].resilient_is_alive():
+            return True
+        try:
+            self.processes[process_name].close()
+        except Exception as e:
+            logging.info(f'Failed to close {process_name}: {e}')
+        del self.processes[process_name]
+        return False

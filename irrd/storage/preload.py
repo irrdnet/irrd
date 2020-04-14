@@ -1,3 +1,4 @@
+import signal
 import time
 from collections import defaultdict
 
@@ -174,6 +175,7 @@ class PreloadStoreManager(ExceptionLoggingProcess):
         a message is received.
         """
         setproctitle('irrd-preload-store-manager')
+        signal.signal(signal.SIGTERM, signal.SIG_DFL)
         logging.info('Starting preload store manager')
 
         self._clear_existing_data()

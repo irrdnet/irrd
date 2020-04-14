@@ -63,15 +63,19 @@ def main():
                 run_irrd(mirror_frequency)
         except PidFileError as pfe:
             logger.error(f'Failed to start IRRd, unable to lock PID file irrd.pid in {piddir}: {pfe}')
+        except Exception as e:
+            logger.error(f'Error occurred in main process, terminating. Error follows:')
+            logger.exception(e)
+            os.kill(os.getpid(), signal.SIGTERM)
 
 
 def run_irrd(mirror_frequency: int):
     terminated = False
 
     mirror_scheduler = MirrorScheduler()
-    whois_process = ExceptionLoggingProcess(target=start_whois_server, name='irrd-whois-server-listener', daemon=True)
+    whois_process = ExceptionLoggingProcess(target=start_whois_server, name='irrd-whois-server-listener')
     whois_process.start()
-    http_process = ExceptionLoggingProcess(target=start_http_server, name='irrd-http-server-listener', daemon=True)
+    http_process = ExceptionLoggingProcess(target=start_http_server, name='irrd-http-server-listener')
     http_process.start()
     preload_manager = PreloadStoreManager(name='irrd-preload-store-manager')
     preload_manager.start()
@@ -83,12 +87,16 @@ def run_irrd(mirror_frequency: int):
         # from those or this process, so any new ones will pick up
         # the new config automatically.
         if get_configuration().reload():
-            os.kill(whois_process.pid, signal.SIGHUP)
-            os.kill(http_process.pid, signal.SIGHUP)
-            os.kill(preload_manager.pid, signal.SIGHUP)
+            pids = [whois_process.pid, http_process.pid, preload_manager.pid]
+            logging.info(f'Main process received SIGHUP with valid config, sending SIGHIP to '
+                         'child processes {pids}')
+            for pid in pids:
+                os.kill(pid, signal.SIGHUP)
     signal.signal(signal.SIGHUP, sighup_handler)
 
     def sigterm_handler(signum, frame):
+        logging.info(f'Main process received SIGTERM, sending SIGTERM to all child processes')
+        os.kill(os.getpid(), signal.SIGUSR1)
         whois_process.terminate()
         http_process.terminate()
         preload_manager.terminate()
@@ -98,20 +106,25 @@ def run_irrd(mirror_frequency: int):
     signal.signal(signal.SIGTERM, sigterm_handler)
 
     # Prevent child processes from becoming zombies
-    signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+    # signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+    signal.signal(signal.SIGUSR1, signal.SIG_IGN)
+    signal.signal(signal.SIGUSR2, signal.SIG_IGN)
 
     sleeps = mirror_frequency
     while not terminated:
         # This loops every second to prevent long blocking on SIGTERM.
+        os.kill(os.getpid(), signal.SIGUSR2)
         if sleeps >= mirror_frequency:
             mirror_scheduler.run()
             sleeps = 0
         time.sleep(1)
         sleeps += 1
 
+    logging.info(f'Main process ended run loop, joining child processes')
     whois_process.join()
     http_process.join()
     preload_manager.join()
+    logging.info(f'Main process ended run_irrd()')
 
 
 if __name__ == '__main__':  # pragma: no cover

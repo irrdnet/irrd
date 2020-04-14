@@ -1,4 +1,6 @@
 import logging
+import signal
+
 from setproctitle import setproctitle
 import socket
 
@@ -26,6 +28,7 @@ def start_http_server():  # pragma: no cover
     Start the HTTP server, listening forever. This function does not return.
     """
     setproctitle('irrd-http-server-listener')
+    signal.signal(signal.SIGTERM, signal.SIG_DFL)
     address = (get_setting('server.http.interface'), get_setting('server.http.port'))
     logger.info(f'Starting http server on TCP {address}')
     httpd = HTTPServerForkingIPv6(address, IRRdHTTPRequestHandler)
