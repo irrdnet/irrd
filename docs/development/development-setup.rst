@@ -31,13 +31,13 @@ To run the tests with py.test, you can simply run::
 
 If you'd also like to measure coverage and see missing lines, run it as::
 
-    pytest --cov-report term-missing --cov=irrd irrd
+    pytest --cov-report term-missing:skip-covered --cov=irrd irrd
 
 If you're running the tests on Mac OS X, there is an issue where default
 temporary directories have names too long for GnuPG, causing a 5-second delay.
 To avoid this, use ``--basetemp`` to set an alternate temporary directory, e.g.::
 
-    pytest --cov-report term-missing --cov=irrd --basetemp=.tmpdirs/ irrd
+    pytest --cov-report term-missing:skip-covered --cov=irrd --basetemp=.tmpdirs/ irrd
 
 You may also want to add ``-v`` for more verbose output.
 
