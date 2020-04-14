@@ -10,7 +10,7 @@ objects that represent ROA data.
 
 Enabling RPKI-aware mode
 ------------------------
-RPKI-aware mode is enabled by setting the ``rpki.roa_source`` setting
+You can enable RPKI-aware mode by setting the ``rpki.roa_source`` setting
 to a URL of a ROA export in JSON format.
 
 As soon as this is enabled and IRRd is (re)started or a SIGHUP is sent,
@@ -19,7 +19,7 @@ such in the database.
 
 Pseudo-IRR objects
 ------------------
-A pseudo-IRR object is created for each ROA. These can be queried like
+IRRd creates a pseudo-IRR object for each ROA. These can be queried like
 any other IRR object, and are included in the output of queries like
 ``!g``. Their source is set to ``RPKI``, and therefore it is invalid
 to add a regular IRR source with that name, when RPKI-aware mode
@@ -43,14 +43,14 @@ Where validation takes place
 * Every ``rpki.roa_import_timer``, IRRd reimports the ROA file, and then
   updates the validation status of all `route(6)` objects in the IRR database.
   This ensures that the status is correct when ROAs are added or removed.
-* For each NRTM update, the validation status is set using the current
+* For each NRTM update, IRRd sets the validation status using the current
   known ROAs, both on creations or changes.
-* Creation of objects in authoritative databases is checked
-  against the ROAs, and rejected when they are invalid.
+* IRRd checks creation of objects in authoritative databases
+  against the ROAs, and rejects the objects when they are RPKI-invalid.
 * Changes or deletions of RPKI-invalid object are permitted,
-  but a warning will be issued to the user.
-* Objects from sources listed in ``rpki.validation_excluded_sources`` are
-  always set to status not_found.
+  but IRRd will issue a warning to the user.
+* IRRd will always set objects from sources listed in
+  ``rpki.validation_excluded_sources`` are to status not_found.
 * Database exports and NRTM streams always include all objects in the
   database, including RPKI invalid objects.
 
@@ -75,3 +75,8 @@ Where validation takes place
     and at the same time a new source is added. At other times, the RPKI
     status of new sources will be correct.
 
+.. note::
+    In IRRd logs, you may see things like ``RPKI status NOT_FOUND`` for objects
+    for which RPKI validation does not apply, like `person` objects. This is
+    intentional and not a bug, as IRRd uses this status for any object for
+    which there is no RPKI information.
