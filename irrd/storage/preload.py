@@ -175,7 +175,12 @@ class PreloadStoreManager(ExceptionLoggingProcess):
         a message is received.
         """
         setproctitle('irrd-preload-store-manager')
-        signal.signal(signal.SIGTERM, signal.SIG_DFL)
+        try:
+            signal.signal(signal.SIGTERM, signal.SIG_DFL)
+        except ValueError:
+            # During tests, this is run from a thread,
+            # which does not allow setting signal handlers.
+            pass
         logging.info('Starting preload store manager')
 
         self._clear_existing_data()

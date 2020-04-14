@@ -51,7 +51,7 @@ To run the integration test, two databases need to be configured, e.g.::
     export IRRD_DATABASE_URL_INTEGRATION_2=postgresql:///irrd_test2
 
 You'll also need two different Redis databases. You can use the same
-instance number with different database numbers, e.g.::
+instance with different database numbers, e.g.::
 
     export IRRD_REDIS_URL_INTEGRATION_1=redis://localhost/4
     export IRRD_REDIS_URL_INTEGRATION_2=redis://localhost/5

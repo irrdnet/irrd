@@ -34,6 +34,14 @@ class TestMirrorScheduler:
         time.sleep(0.5)
         assert thread_run_count == 1
 
+        # update_process_state() should clean up the status,
+        # but only once the thread has completed
+        scheduler.update_process_state()
+        time.sleep(0.5)
+        assert len(scheduler.processes.items()) == 1
+        scheduler.update_process_state()
+        assert len(scheduler.processes.items()) == 0
+
     def test_scheduler_runs_roa_import(self, monkeypatch, config_override):
         monkeypatch.setattr('irrd.mirroring.scheduler.ScheduledTaskProcess', MockScheduledTaskProcess)
         global thread_run_count
@@ -166,5 +174,5 @@ class MockScheduledTaskProcess(threading.Thread):
     def run(self):
         self.runner.run()
 
-    def resilient_is_alive(self):
-        return self.is_alive()
+    def close(self):
+        pass  # process have close(), threads do not
