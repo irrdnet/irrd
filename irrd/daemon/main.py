@@ -96,7 +96,6 @@ def run_irrd(mirror_frequency: int):
 
     def sigterm_handler(signum, frame):
         logging.info(f'Main process received SIGTERM, sending SIGTERM to all child processes')
-        os.kill(os.getpid(), signal.SIGUSR1)
         whois_process.terminate()
         http_process.terminate()
         preload_manager.terminate()
@@ -105,26 +104,21 @@ def run_irrd(mirror_frequency: int):
         terminated = True
     signal.signal(signal.SIGTERM, sigterm_handler)
 
-    # Prevent child processes from becoming zombies
-    # signal.signal(signal.SIGCHLD, signal.SIG_IGN)
-    signal.signal(signal.SIGUSR1, signal.SIG_IGN)
-    signal.signal(signal.SIGUSR2, signal.SIG_IGN)
-
     sleeps = mirror_frequency
     while not terminated:
         # This loops every second to prevent long blocking on SIGTERM.
-        os.kill(os.getpid(), signal.SIGUSR2)
+        mirror_scheduler.update_process_state()
         if sleeps >= mirror_frequency:
             mirror_scheduler.run()
             sleeps = 0
         time.sleep(1)
         sleeps += 1
 
-    logging.info(f'Main process ended run loop, joining child processes')
+    logging.debug(f'Main process waiting for child processes to terminate')
     whois_process.join()
     http_process.join()
     preload_manager.join()
-    logging.info(f'Main process ended run_irrd()')
+    logging.info(f'Main process exiting')
 
 
 if __name__ == '__main__':  # pragma: no cover

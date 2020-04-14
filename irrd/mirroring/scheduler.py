@@ -4,7 +4,6 @@ from collections import defaultdict
 import logging
 import multiprocessing
 
-import psutil
 import signal
 from setproctitle import setproctitle
 from typing import Dict
@@ -30,11 +29,6 @@ class ScheduledTaskProcess(multiprocessing.Process):
         setproctitle(f'irrd-{self.name}')
         self.runner.run()
 
-    def resilient_is_alive(self):  # pragma: no cover
-        # The built-in is_alive() does not handle cases
-        # where SIGCHLD is set to SIG_IGN to prevent zombies.
-        return self.is_alive() and psutil.pid_exists(self.pid)
-
 
 class MirrorScheduler:
     """
@@ -53,7 +47,6 @@ class MirrorScheduler:
         self.last_started_time = defaultdict(lambda: 0)
 
     def run(self) -> None:
-        logger.info('MirrorScheduler starting run')
         multiprocessing.active_children()
         for source in get_setting('sources', {}).keys():
             is_mirror = get_setting(f'sources.{source}.import_source') or get_setting(f'sources.{source}.nrtm_host')
@@ -77,7 +70,7 @@ class MirrorScheduler:
 
         current_time = time.time()
         has_expired = (self.last_started_time[process_name] + timer) < current_time
-        if not has_expired or self._is_process_running(process_name):
+        if not has_expired or process_name in self.processes:
             return
 
         logger.debug(f'Started new process {process_name} for mirror import/export for {source}')
@@ -96,14 +89,14 @@ class MirrorScheduler:
             except Exception:
                 pass
 
-    def _is_process_running(self, process_name: str) -> bool:
-        if process_name not in self.processes:
-            return False
-        if self.processes[process_name].resilient_is_alive():
-            return True
-        try:
-            self.processes[process_name].close()
-        except Exception as e:
-            logging.info(f'Failed to close {process_name}: {e}')
-        del self.processes[process_name]
-        return False
+    def update_process_state(self):
+        multiprocessing.active_children()  # to reap zombies
+        for process_name, process in list(self.processes.items()):
+            if process.is_alive():
+                continue
+            try:
+                process.close()
+            except Exception as e:  # pragma: no cover
+                logging.info(f'Failed to close {process_name} (pid {process.pid}), '
+                             f'possible resource leak: {e}')
+            del self.processes[process_name]
