@@ -34,9 +34,9 @@ def main():
     parser.add_argument('--config', dest='config_file_path', type=str,
                         help=f'use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})')
     parser.add_argument('--foreground', dest='foreground', action='store_true',
-                        help=f"main IRRd in the foreground, don't detach")
+                        help=f"run IRRd in the foreground, don't detach")
     parser.add_argument('--uid', dest='uid', type=str,
-                        help=f"main the process under this UID")
+                        help=f"run the process under this UID")
     args = parser.parse_args()
 
     mirror_frequency = int(os.environ.get('IRRD_SCHEDULER_TIMER_OVERRIDE', 15))
@@ -88,7 +88,7 @@ def run_irrd(mirror_frequency: int):
         # the new config automatically.
         if get_configuration().reload():
             pids = [whois_process.pid, http_process.pid, preload_manager.pid]
-            logging.info(f'Main process received SIGHUP with valid config, sending SIGHIP to '
+            logging.info(f'Main process received SIGHUP with valid config, sending SIGHUP to '
                          'child processes {pids}')
             for pid in pids:
                 os.kill(pid, signal.SIGHUP)
