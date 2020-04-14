@@ -254,9 +254,6 @@ Useful options:
 * ``--foreground`` makes the process run in the foreground. If
   ``log.logfile_path`` is not set, this also shows all log output
   in the terminal.
-* ``--uid=<user>`` makes the process run as a non-privileged user. However,
-  this happens after binding to TCP ports, so setcap as listed below is
-  the recommended method to drop privilege.
 
 IRRd can be stopped by sending a SIGTERM signal.
 
@@ -264,17 +261,15 @@ IRRd can be stopped by sending a SIGTERM signal.
     Although ``log.logfile_path`` is not required, if it is unset and
     IRRd is started in the background, log output is lost.
 
-Using setcap
-~~~~~~~~~~~~
-IRRd can drop privileges with the ``--uid`` parameter, as used in the last
-section. A better option is to run the IRRd command as the non-privileged
-user, and use ``setcap`` to assign that user permissions to open privileged
-ports, e.g.::
+IRRd should be run as a non-privileged user. When binding to privileged
+ports, like 80 and 43, you can use ``setcap`` assign that user permissions
+to open privileged ports, e.g.::
 
     # Once, as root:
-    setcap 'cap_net_bind_service=+ep' /home/irrd/irrd-venv/bin/python3
-    # To run, start without --uid, as the non-privileged user
-    /home/irrd/irrd-venv/bin/irrd
+    setcap 'cap_net_bind_service=+eip' /home/irrd/irrd-venv/bin/python3
+
+Alternatively, you can run IRRd on non-privileged ports and use IPtables
+or something similar to redirect connections from the privileged ports.
 
 Logrotate configuration
 ~~~~~~~~~~~~~~~~~~~~~~~

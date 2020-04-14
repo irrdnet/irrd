@@ -35,8 +35,6 @@ def main():
                         help=f'use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})')
     parser.add_argument('--foreground', dest='foreground', action='store_true',
                         help=f"run IRRd in the foreground, don't detach")
-    parser.add_argument('--uid', dest='uid', type=str,
-                        help=f"run the process under this UID")
     args = parser.parse_args()
 
     mirror_frequency = int(os.environ.get('IRRD_SCHEDULER_TIMER_OVERRIDE', 15))
@@ -44,8 +42,6 @@ def main():
     daemon_kwargs = {
         'umask': 0o022,
     }
-    if args.uid:
-        daemon_kwargs['uid'] = getpwnam(args.uid).pw_uid
     if args.foreground:
         daemon_kwargs['detach_process'] = False
         daemon_kwargs['stdout'] = sys.stdout
