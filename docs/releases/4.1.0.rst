@@ -41,6 +41,7 @@ to one CPU core.
 
 To communicate between processes, IRRd now requires a running Redis instance.
 The commands to start IRRd and several IRRd scripts have also changed.
+The ``--uid`` parameter is no longer supported.
 
 Other changes
 ~~~~~~~~~~~~~
@@ -49,7 +50,7 @@ Other changes
 * The ``redis_url`` and ``piddir`` configuration options were added.
   See the steps below or the
   :doc:`configuration documentation </admins/configuration>` for more
-  information on these options
+  information on these options.
 
 
 Steps required to upgrade
@@ -66,11 +67,12 @@ Steps required to upgrade
   **Important note**: some of the migrations change large amounts of data,
   and may take up to an hour to run in total. While the migrations are
   running, IRRd should be shut down and any cron / e-mail triggered tasks
-  should be disabled. There should be no calls to ``irrd_submit_email`` or
+  must be disabled. There must be no calls to ``irrd_submit_email`` or
   ``irrd_load_database``.
 * Update any startup scripts or systemd for IRRd to call the new daemon process,
-  with the new command line arguments:
-  :ref:`updated deployment guide <deployment-redis-configuration>`.
+  with the new command line arguments, and use ``setcap`` to allow IRRd to bind
+  to privileged ports: see the
+  :ref:`updated deployment guide <deployment-starting-irrd>`.
 * Remove the ``--irrd_pidfile`` parameter from calls to ``irrd_submit_email`` and
   ``irrd_load_database``.
 * Start IRRd and re-enable the cron / e-mail triggered tasks.
