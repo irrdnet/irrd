@@ -7,7 +7,7 @@ from irrd.rpki.validators import BulkRouteROAValidator
 from irrd.rpsl.parser import UnknownRPSLObjectClassException
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text, RPSLKeyCert
 from irrd.storage.database_handler import DatabaseHandler
-from irrd.storage.models import DatabaseOperation
+from irrd.storage.models import DatabaseOperation, JournalEntryOrigin
 from irrd.utils.text import split_paragraphs_rpsl
 from .nrtm_operation import NRTMOperation
 
@@ -114,7 +114,7 @@ class MirrorFileImportParser(MirrorParser):
                     str(obj.ip_first), obj.prefix_length, obj.asn_first, obj.source()
                 )
 
-            self.database_handler.upsert_rpsl_object(obj, forced_serial=self.serial)
+            self.database_handler.upsert_rpsl_object(obj, JournalEntryOrigin.mirror, forced_serial=self.serial)
 
         except UnknownRPSLObjectClassException as e:
             # Ignore legacy IRRd artifacts

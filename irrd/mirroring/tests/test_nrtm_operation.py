@@ -2,7 +2,7 @@ from unittest.mock import Mock
 
 from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
-from irrd.storage.models import DatabaseOperation
+from irrd.storage.models import DatabaseOperation, JournalEntryOrigin
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER, SAMPLE_UNKNOWN_CLASS, SAMPLE_MALFORMED_EMPTY_LINE, SAMPLE_KEY_CERT, \
     KEY_CERT_SIGNED_MESSAGE_VALID, SAMPLE_ROUTE
 from ..nrtm_operation import NRTMOperation
@@ -25,7 +25,8 @@ class TestNRTMOperation:
 
         assert mock_dh.upsert_rpsl_object.call_count == 1
         assert mock_dh.mock_calls[0][1][0].pk() == 'PGPKEY-80F238C6'
-        assert mock_dh.mock_calls[0][1][1] == 42424242
+        assert mock_dh.mock_calls[0][1][1] == JournalEntryOrigin.mirror
+        assert mock_dh.mock_calls[0][1][2] == 42424242
 
         # key-cert should not be imported in the keychain, therefore
         # verification should fail
@@ -47,7 +48,8 @@ class TestNRTMOperation:
 
         assert mock_dh.upsert_rpsl_object.call_count == 1
         assert mock_dh.mock_calls[0][1][0].pk() == 'PGPKEY-80F238C6'
-        assert mock_dh.mock_calls[0][1][1] == 42424242
+        assert mock_dh.mock_calls[0][1][1] == JournalEntryOrigin.mirror
+        assert mock_dh.mock_calls[0][1][2] == 42424242
 
         # key-cert should be imported in the keychain, therefore
         # verification should succeed
@@ -74,7 +76,8 @@ class TestNRTMOperation:
         assert mock_dh.upsert_rpsl_object.call_count == 1
         assert mock_dh.mock_calls[0][1][0].pk() == '192.0.2.0/24AS65537'
         assert mock_dh.mock_calls[0][1][0].rpki_status == RPKIStatus.invalid
-        assert mock_dh.mock_calls[0][1][1] == 42424242
+        assert mock_dh.mock_calls[0][1][1] == JournalEntryOrigin.mirror
+        assert mock_dh.mock_calls[0][1][2] == 42424242
 
     def test_nrtm_add_valid_ignored_object_class(self):
         mock_dh = Mock()
@@ -104,7 +107,8 @@ class TestNRTMOperation:
 
         assert mock_dh.delete_rpsl_object.call_count == 1
         assert mock_dh.mock_calls[0][1][0].pk() == 'TEST-MNT'
-        assert mock_dh.mock_calls[0][1][1] == 42424242
+        assert mock_dh.mock_calls[0][1][1] == JournalEntryOrigin.mirror
+        assert mock_dh.mock_calls[0][1][2] == 42424242
 
     def test_nrtm_add_invalid_unknown_object_class(self):
         mock_dh = Mock()
@@ -165,7 +169,8 @@ class TestNRTMOperation:
         assert mock_dh.delete_rpsl_object.call_count == 1
         assert mock_dh.mock_calls[0][1][0].pk() == '192.0.2.0/24AS65537'
         assert mock_dh.mock_calls[0][1][0].source() == 'TEST'
-        assert mock_dh.mock_calls[0][1][1] == 42424242
+        assert mock_dh.mock_calls[0][1][1] == JournalEntryOrigin.mirror
+        assert mock_dh.mock_calls[0][1][2] == 42424242
 
     def test_nrtm_add_invalid_incomplete_object(self):
         # Source-less objects are not accepted for add/update

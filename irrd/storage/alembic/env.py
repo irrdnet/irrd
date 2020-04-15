@@ -27,7 +27,7 @@ def run_migrations_offline():
 
     """
     if not is_config_initialised():
-        config_init(os.environ['IRRD_CONFIG_PATH'])
+        config_init(os.environ['IRRD_CONFIG_FILE'])
     url = get_setting('database_url')
     context.configure(
         url=url, target_metadata=target_metadata, literal_binds=True)
@@ -44,7 +44,7 @@ def run_migrations_online():
 
     """
     if not is_config_initialised():
-        config_init(os.environ['IRRD_CONFIG_PATH'])
+        config_init(os.environ['IRRD_CONFIG_FILE'])
     engine = create_engine(get_setting('database_url'))
 
     with engine.connect() as connection:

@@ -16,6 +16,7 @@ from irrd.utils.test_utils import flatten_mock_calls
 from ..parser import parse_change_requests
 from ..parser_state import UpdateRequestType, UpdateRequestStatus
 from ..validators import ReferenceValidator, AuthValidator
+from ...storage.models import JournalEntryOrigin
 
 
 @pytest.fixture()
@@ -91,8 +92,8 @@ class TestSingleChangeRequestHandling:
         with raises(ValueError):
             result_invalid.save(mock_dh)
         assert flatten_mock_calls(mock_dh) == [
-            ['delete_rpsl_object', (result_inetnum.rpsl_obj_current,), {}],
-            ['upsert_rpsl_object', (result_as_set.rpsl_obj_new,), {}],
+            ['delete_rpsl_object', (result_inetnum.rpsl_obj_current, JournalEntryOrigin.auth_change), {}],
+            ['upsert_rpsl_object', (result_as_set.rpsl_obj_new, JournalEntryOrigin.auth_change), {}],
         ]
 
     def test_non_authorative_source(self, prepare_mocks):

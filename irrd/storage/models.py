@@ -13,6 +13,23 @@ class DatabaseOperation(enum.Enum):
     delete = 'DEL'
 
 
+class JournalEntryOrigin(enum.Enum):
+    # Legacy journal entries for which the origin is unknown, can be auth_change or mirror
+    unknown = 'UNKNOWN'
+    # Journal entry received from a mirror
+    mirror = 'nrtm_mirror'
+    # Journal entry generated from synthesized NRTM
+    synthetic_nrtm = 'SYNTHETIC_NRTM'
+    # Journal entry generated from pseudo IRR (i.e. RPSL objects created from ROA's)
+    pseudo_irr = 'pseudo_irr'
+    # Journal entry caused by a user-submitted change in an authoritative database
+    auth_change = 'AUTH_CHANGE'
+    # Journal entry caused by a change in in the RPKI status of an object in an authoritative db
+    rpki_status = 'RPKI_STATUS'
+    # Journal entry caused by a change in in the bogon status of an object in an authoritative db
+    bogon_status = 'BOGON_STATUS'
+
+
 Base = declarative_base()
 
 
@@ -79,6 +96,7 @@ class RPSLDatabaseJournal(Base):  # type: ignore
     pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text('gen_random_uuid()'), primary_key=True)
     rpsl_pk = sa.Column(sa.String, index=True, nullable=False)
     source = sa.Column(sa.String, index=True, nullable=False)
+    origin = sa.Column(sa.Enum(JournalEntryOrigin), nullable=False, index=True, server_default=JournalEntryOrigin.unknown.name)
 
     serial_nrtm = sa.Column(sa.Integer, index=True, nullable=False)
     operation = sa.Column(sa.Enum(DatabaseOperation), nullable=False)

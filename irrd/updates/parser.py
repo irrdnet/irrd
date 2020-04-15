@@ -13,6 +13,7 @@ from irrd.rpsl.rpsl_objects import rpsl_object_from_text, RPSLMntner
 from irrd.utils.text import splitline_unicodesafe
 from .parser_state import UpdateRequestType, UpdateRequestStatus
 from .validators import ReferenceValidator, AuthValidator
+from ..storage.models import JournalEntryOrigin
 
 logger = logging.getLogger(__name__)
 
@@ -130,14 +131,14 @@ class ChangeRequest:
             raise ValueError('ChangeRequest can only be saved in status PROCESSING')
         if self.request_type == UpdateRequestType.DELETE and self.rpsl_obj_current is not None:
             logger.info(f'{id(self)}: Saving change for {self.rpsl_obj_new}: deleting current object')
-            database_handler.delete_rpsl_object(self.rpsl_obj_current)
+            database_handler.delete_rpsl_object(self.rpsl_obj_current, JournalEntryOrigin.auth_change)
         else:
             if not self.used_override:
                 self.rpsl_obj_new.overwrite_date_new_changed_attributes(self.rpsl_obj_current)
                 # This call may have emitted a new info message.
                 self._import_new_rpsl_obj_info_messages()
             logger.info(f'{id(self)}: Saving change for {self.rpsl_obj_new}: inserting/updating current object')
-            database_handler.upsert_rpsl_object(self.rpsl_obj_new)
+            database_handler.upsert_rpsl_object(self.rpsl_obj_new, JournalEntryOrigin.auth_change)
         self.status = UpdateRequestStatus.SAVED
 
     def is_valid(self):

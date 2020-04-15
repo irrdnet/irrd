@@ -5,7 +5,7 @@ from irrd.rpki.validators import SingleRouteROAValidator
 from irrd.rpsl.parser import UnknownRPSLObjectClassException
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text, RPSLKeyCert
 from irrd.storage.database_handler import DatabaseHandler
-from irrd.storage.models import DatabaseOperation
+from irrd.storage.models import DatabaseOperation, JournalEntryOrigin
 
 logger = logging.getLogger(__name__)
 
@@ -72,9 +72,9 @@ class NRTMOperation:
             if self.rpki_aware and obj.rpki_relevant and obj.prefix and obj.asn_first:
                 roa_validator = SingleRouteROAValidator(database_handler)
                 obj.rpki_status = roa_validator.validate_route(obj.prefix, obj.asn_first, obj.source())
-            database_handler.upsert_rpsl_object(obj, self.serial)
+            database_handler.upsert_rpsl_object(obj, JournalEntryOrigin.mirror, self.serial)
         elif self.operation == DatabaseOperation.delete:
-            database_handler.delete_rpsl_object(obj, self.serial)
+            database_handler.delete_rpsl_object(obj, JournalEntryOrigin.mirror, self.serial)
 
         logger.info(f'Completed NRTM operation {str(self)}/{obj.rpsl_object_class}/{obj.pk()}, '
                     f'RPKI status {obj.rpki_status.value}')
