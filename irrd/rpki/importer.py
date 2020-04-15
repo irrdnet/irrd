@@ -9,6 +9,7 @@ from irrd.conf import RPKI_IRR_PSEUDO_SOURCE
 from irrd.rpsl.parser import RPSLObject, RPSL_ATTRIBUTE_TEXT_WIDTH
 from irrd.rpsl.rpsl_objects import RPSL_ROUTE_OBJECT_CLASS_FOR_IP_VERSION
 from irrd.storage.database_handler import DatabaseHandler
+from irrd.storage.models import JournalEntryOrigin
 from irrd.utils.validators import parse_as_number
 
 logger = logging.getLogger(__name__)
@@ -101,7 +102,8 @@ class ROA:
             max_length=self.max_length,
             trust_anchor=self.trust_anchor,
         )
-        database_handler.upsert_rpsl_object(self._rpsl_object, rpsl_safe_insert_only=True)
+        database_handler.upsert_rpsl_object(self._rpsl_object, JournalEntryOrigin.pseudo_irr,
+                                            rpsl_safe_insert_only=True)
 
 
 class RPSLObjectFromROA(RPSLObject):

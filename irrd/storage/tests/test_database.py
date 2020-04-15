@@ -8,7 +8,7 @@ from unittest.mock import Mock
 from irrd.utils.test_utils import flatten_mock_calls
 from .. import get_engine
 from ..database_handler import DatabaseHandler
-from ..models import RPSLDatabaseObject, DatabaseOperation
+from ..models import RPSLDatabaseObject, DatabaseOperation, JournalEntryOrigin
 from irrd.rpki.status import RPKIStatus
 from ..preload import Preloader
 from ..queries import (RPSLDatabaseQuery, RPSLDatabaseJournalQuery, DatabaseStatusQuery,
@@ -69,7 +69,7 @@ def database_handler_with_route():
 
     dh = DatabaseHandler()
 
-    dh.upsert_rpsl_object(rpsl_object_route_v4)
+    dh.upsert_rpsl_object(rpsl_object_route_v4, JournalEntryOrigin.auth_change)
     yield dh
     dh.close()
 
@@ -100,11 +100,11 @@ class TestDatabaseHandlerLive:
 
         self.dh = DatabaseHandler()
         self.dh.preloader.signal_reload = Mock(return_value=None)
-        self.dh.upsert_rpsl_object(rpsl_object_route_v4, 42)
+        self.dh.upsert_rpsl_object(rpsl_object_route_v4, JournalEntryOrigin.auth_change, 42)
         assert len(self.dh._rpsl_upsert_buffer) == 1
 
         rpsl_object_route_v4.parsed_data = {'mnt-by': 'MNT-CORRECT', 'source': 'TEST'}
-        self.dh.upsert_rpsl_object(rpsl_object_route_v4)  # should trigger an immediate flush due to duplicate RPSL pk
+        self.dh.upsert_rpsl_object(rpsl_object_route_v4, JournalEntryOrigin.auth_change)  # should trigger an immediate flush due to duplicate RPSL pk
         assert len(self.dh._rpsl_upsert_buffer) == 1
 
         rpsl_object_route_v6 = Mock(
@@ -120,9 +120,9 @@ class TestDatabaseHandlerLive:
             asn_last=65537,
             rpki_status=RPKIStatus.not_found,
         )
-        self.dh.upsert_rpsl_object(rpsl_object_route_v6)
+        self.dh.upsert_rpsl_object(rpsl_object_route_v6, JournalEntryOrigin.auth_change)
         assert len(self.dh._rpsl_upsert_buffer) == 0  # should have been flushed to the DB
-        self.dh.upsert_rpsl_object(rpsl_object_route_v6)
+        self.dh.upsert_rpsl_object(rpsl_object_route_v6, JournalEntryOrigin.auth_change)
 
         self.dh.commit()
 
@@ -153,9 +153,9 @@ class TestDatabaseHandlerLive:
             asn_last=65537,
             rpki_status=RPKIStatus.not_found,
         )
-        self.dh.upsert_rpsl_object(rpsl_obj_ignored)
+        self.dh.upsert_rpsl_object(rpsl_obj_ignored, JournalEntryOrigin.auth_change)
         assert len(self.dh._rpsl_upsert_buffer) == 1
-        self.dh.upsert_rpsl_object(rpsl_obj_ignored)
+        self.dh.upsert_rpsl_object(rpsl_obj_ignored, JournalEntryOrigin.auth_change)
         assert len(self.dh._rpsl_upsert_buffer) == 1
         self.dh.rollback()
 
@@ -170,8 +170,8 @@ class TestDatabaseHandlerLive:
         result = list(self.dh.execute_query(query))
         assert len(result) == 2
 
-        self.dh.delete_rpsl_object(rpsl_object_route_v6)
-        self.dh.delete_rpsl_object(rpsl_object_route_v6)
+        self.dh.delete_rpsl_object(rpsl_object_route_v6, JournalEntryOrigin.auth_change)
+        self.dh.delete_rpsl_object(rpsl_object_route_v6, JournalEntryOrigin.auth_change)
         query = RPSLDatabaseQuery()
         result = list(self.dh.execute_query(query))
         assert len(result) == 1
@@ -247,7 +247,7 @@ class TestDatabaseHandlerLive:
         assert status_test2[0]['updated']
         assert status_test2[0]['last_error_timestamp']
 
-        self.dh.upsert_rpsl_object(rpsl_object_route_v6)
+        self.dh.upsert_rpsl_object(rpsl_object_route_v6, JournalEntryOrigin.auth_change)
         assert len(list(self.dh.execute_query(RPSLDatabaseQuery().sources(['TEST'])))) == 1
         assert len(list(self.dh.execute_query(DatabaseStatusQuery().sources(['TEST']))))
         assert len(list(self.dh.execute_query(RPSLDatabaseQuery().sources(['TEST2'])))) == 1
@@ -281,8 +281,8 @@ class TestDatabaseHandlerLive:
 
         self.dh = DatabaseHandler()
         # This upsert has a forced serial, so it should be recorded in the DB status.
-        self.dh.upsert_rpsl_object(rpsl_object_route_v4, 42)
-        self.dh.upsert_rpsl_object(rpsl_object_route_v4, 4242)
+        self.dh.upsert_rpsl_object(rpsl_object_route_v4, JournalEntryOrigin.auth_change, 42)
+        self.dh.upsert_rpsl_object(rpsl_object_route_v4, JournalEntryOrigin.auth_change, 4242)
 
         rpsl_object_route_v6 = Mock(
             pk=lambda: '2001:db8::/64,AS65537',
@@ -297,7 +297,7 @@ class TestDatabaseHandlerLive:
             asn_last=65537,
             rpki_status=RPKIStatus.not_found,
         )
-        self.dh.upsert_rpsl_object(rpsl_object_route_v6)
+        self.dh.upsert_rpsl_object(rpsl_object_route_v6, JournalEntryOrigin.auth_change)
         self.dh.set_force_reload('TEST2')  # Should be ignored, as source is new
         self.dh.commit()
         self.dh.set_force_reload('TEST')
@@ -351,7 +351,7 @@ class TestDatabaseHandlerLive:
 
         self.dh = DatabaseHandler()
         self.dh.disable_journaling()
-        self.dh.upsert_rpsl_object(rpsl_object_route_v4, 42)
+        self.dh.upsert_rpsl_object(rpsl_object_route_v4, JournalEntryOrigin.auth_change, 42)
         self.dh.commit()
 
         journal = self._clean_result(self.dh.execute_query(RPSLDatabaseJournalQuery()))
@@ -509,8 +509,8 @@ class TestRPSLDatabaseQueryLive:
             asn_last=65537,
             rpki_status=RPKIStatus.not_found,
         )
-        self.dh.upsert_rpsl_object(rpsl_object_2)
-        self.dh.upsert_rpsl_object(rpsl_object_3)
+        self.dh.upsert_rpsl_object(rpsl_object_2, JournalEntryOrigin.auth_change)
+        self.dh.upsert_rpsl_object(rpsl_object_3, JournalEntryOrigin.auth_change)
 
         query = RPSLDatabaseQuery()
         response_sources = [r['source'] for r in self.dh.execute_query(query)]
@@ -560,8 +560,8 @@ class TestRPSLDatabaseQueryLive:
             rpki_status=RPKIStatus.not_found,
         )
         self.dh = DatabaseHandler()
-        self.dh.upsert_rpsl_object(rpsl_object_person)
-        self.dh.upsert_rpsl_object(rpsl_object_role)
+        self.dh.upsert_rpsl_object(rpsl_object_person, JournalEntryOrigin.auth_change)
+        self.dh.upsert_rpsl_object(rpsl_object_role, JournalEntryOrigin.auth_change)
 
         self._assert_match(RPSLDatabaseQuery().text_search('person-name'))
         self._assert_match(RPSLDatabaseQuery().text_search('role-name'))
@@ -609,9 +609,9 @@ class TestRPSLDatabaseQueryLive:
             asn_last=65537,
             rpki_status=RPKIStatus.not_found,
         )
-        self.dh.upsert_rpsl_object(rpsl_route_more_specific_25_1)
-        self.dh.upsert_rpsl_object(rpsl_route_more_specific_25_2)
-        self.dh.upsert_rpsl_object(rpsl_route_more_specific_26)
+        self.dh.upsert_rpsl_object(rpsl_route_more_specific_25_1, JournalEntryOrigin.auth_change)
+        self.dh.upsert_rpsl_object(rpsl_route_more_specific_25_2, JournalEntryOrigin.auth_change)
+        self.dh.upsert_rpsl_object(rpsl_route_more_specific_26, JournalEntryOrigin.auth_change)
         self.dh.commit()
 
         q = RPSLDatabaseQuery().ip_more_specific(IP('192.0.2.0/24'))

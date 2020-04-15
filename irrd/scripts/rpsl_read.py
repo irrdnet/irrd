@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 from typing import Set
 
+from irrd.storage.models import JournalEntryOrigin
 
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
@@ -30,7 +31,8 @@ class RPSLParse:
     def main(self, filename, strict_validation, database, show_info=True):
         self.show_info = show_info
         if database:
-            self.database_handler = DatabaseHandler(journaling_enabled=False)
+            self.database_handler = DatabaseHandler()
+            self.database_handler.disable_journaling()
 
         if filename == '-':  # pragma: no cover
             f = sys.stdin
@@ -63,7 +65,7 @@ class RPSLParse:
                 print('\n=======================================\n')
 
             if self.database_handler and obj and not obj.messages.errors():
-                self.database_handler.upsert_rpsl_object(obj)
+                self.database_handler.upsert_rpsl_object(obj, JournalEntryOrigin.mirror)
 
         except UnknownRPSLObjectClassException as e:
             self.obj_unknown += 1

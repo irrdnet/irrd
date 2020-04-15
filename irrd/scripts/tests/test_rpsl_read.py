@@ -42,7 +42,7 @@ remarks:        remark
 
 def test_rpsl_read(capsys, tmpdir, monkeypatch):
     mock_database_handler = Mock()
-    monkeypatch.setattr('irrd.scripts.rpsl_read.DatabaseHandler', lambda journaling_enabled: mock_database_handler)
+    monkeypatch.setattr('irrd.scripts.rpsl_read.DatabaseHandler', lambda: mock_database_handler)
 
     tmp_file = tmpdir + '/rpsl_parse_test.rpsl'
     fh = open(tmp_file, 'w')
@@ -56,9 +56,10 @@ def test_rpsl_read(capsys, tmpdir, monkeypatch):
     assert 'Processed 3 objects, 1 with errors' in captured
     assert 'Ignored 1 objects due to unknown object classes: foo-block' in captured
 
-    assert mock_database_handler.mock_calls[0][0] == 'upsert_rpsl_object'
-    assert mock_database_handler.mock_calls[0][1][0].pk() == 'AS65536 - AS65538'
-    assert mock_database_handler.mock_calls[1][0] == 'commit'
+    assert mock_database_handler.mock_calls[0][0] == 'disable_journaling'
+    assert mock_database_handler.mock_calls[1][0] == 'upsert_rpsl_object'
+    assert mock_database_handler.mock_calls[1][1][0].pk() == 'AS65536 - AS65538'
+    assert mock_database_handler.mock_calls[2][0] == 'commit'
     mock_database_handler.reset_mock()
 
     RPSLParse().main(filename=tmp_file, strict_validation=False, database=True)
@@ -68,11 +69,12 @@ def test_rpsl_read(capsys, tmpdir, monkeypatch):
     assert 'Processed 3 objects, 0 with errors' in captured
     assert 'Ignored 1 objects due to unknown object classes: foo-block' in captured
 
-    assert mock_database_handler.mock_calls[0][0] == 'upsert_rpsl_object'
-    assert mock_database_handler.mock_calls[0][1][0].pk() == 'AS65536 - AS65538'
+    assert mock_database_handler.mock_calls[0][0] == 'disable_journaling'
     assert mock_database_handler.mock_calls[1][0] == 'upsert_rpsl_object'
     assert mock_database_handler.mock_calls[1][1][0].pk() == 'AS65536 - AS65538'
-    assert mock_database_handler.mock_calls[2][0] == 'commit'
+    assert mock_database_handler.mock_calls[2][0] == 'upsert_rpsl_object'
+    assert mock_database_handler.mock_calls[2][1][0].pk() == 'AS65536 - AS65538'
+    assert mock_database_handler.mock_calls[3][0] == 'commit'
     mock_database_handler.reset_mock()
 
     RPSLParse().main(filename=tmp_file, strict_validation=False, database=False)

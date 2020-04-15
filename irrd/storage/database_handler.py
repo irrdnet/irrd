@@ -17,7 +17,8 @@ from .preload import Preloader
 from .queries import (BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery,
                       RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery)
 from . import get_engine
-from .models import RPSLDatabaseObject, RPSLDatabaseJournal, DatabaseOperation, RPSLDatabaseStatus, ROADatabaseObject
+from .models import RPSLDatabaseObject, RPSLDatabaseJournal, DatabaseOperation, RPSLDatabaseStatus, \
+    ROADatabaseObject, JournalEntryOrigin
 from irrd.rpki.status import RPKIStatus
 
 logger = logging.getLogger(__name__)
@@ -40,7 +41,7 @@ class DatabaseHandler:
     # with a forced serial. The forced serial is used for mirrored sources,
     # where this basically means: this call was triggered by an NRTM operation
     # with this serial.
-    _rpsl_upsert_buffer: List[Tuple[dict, Optional[int]]]
+    _rpsl_upsert_buffer: List[Tuple[dict, JournalEntryOrigin, Optional[int]]]
     # The ROA insert buffer is a list of dicts with columm names and their values.
     _roa_insert_buffer: List[Dict[str, Union[str, int]]]
 
@@ -105,8 +106,8 @@ class DatabaseHandler:
         """Execute a raw SQLAlchemy statement, without flushing the upsert buffer."""
         return self._connection.execute(statement)
 
-    def upsert_rpsl_object(self, rpsl_object: RPSLObject, forced_serial: Optional[int]=None,
-                           rpsl_safe_insert_only=False) -> None:
+    def upsert_rpsl_object(self, rpsl_object: RPSLObject, origin: JournalEntryOrigin,
+                           forced_serial: Optional[int]=None, rpsl_safe_insert_only=False) -> None:
         """
         Schedule an RPSLObject for insertion/updating.
 
@@ -117,6 +118,8 @@ class DatabaseHandler:
         Writes may not be issued to the database immediately for performance
         reasons, but commit() will ensure all writes are flushed to the DB first.
 
+        The origin indicates the origin of this change, see JournalEntryOrigin
+        for the various options.
         The forced serial is needed for mirrored sources, where this basically means:
         this call was triggered by an NRTM operation with this serial.
 
@@ -160,7 +163,7 @@ class DatabaseHandler:
             'updated': datetime.now(timezone.utc),
         }
 
-        self._rpsl_upsert_buffer.append((object_dict, forced_serial,))
+        self._rpsl_upsert_buffer.append((object_dict, origin, forced_serial,))
 
         self._rpsl_pk_source_seen.add(rpsl_pk_source)
         self._object_classes_modified.add(rpsl_object.rpsl_object_class)
@@ -201,10 +204,13 @@ class DatabaseHandler:
             stmt = table.update().where(table.c.rpsl_pk.in_(rpsl_pks_now_not_found)).values(rpki_status=RPKIStatus.not_found)
             self.execute_statement(stmt)
 
-    def delete_rpsl_object(self, rpsl_object: RPSLObject, forced_serial: Optional[int]=None) -> None:
+    def delete_rpsl_object(self, rpsl_object: RPSLObject, origin: JournalEntryOrigin,
+                           forced_serial: Optional[int]=None) -> None:
         """
         Delete an RPSL object from the database.
 
+        The origin indicates the origin of this change, see JournalEntryOrigin
+        for the various options.
         The forced serial is needed for mirrored sources, where this basically means:
         this call was triggered by an NRTM operation with this serial.
         """
@@ -236,6 +242,7 @@ class DatabaseHandler:
             source=result['source'],
             object_class=result['object_class'],
             object_text=result['object_text'],
+            origin=origin,
             forced_serial=forced_serial,
         )
         self._object_classes_modified.add(result['object_class'])
@@ -273,13 +280,14 @@ class DatabaseHandler:
             logger.error(f'Exception occurred while executing statement: {stmt}, rolling back', exc_info=exc)
             raise
 
-        for obj, forced_serial in self._rpsl_upsert_buffer:
+        for obj, origin, forced_serial in self._rpsl_upsert_buffer:
             self.status_tracker.record_operation(
                 operation=DatabaseOperation.add_or_update,
                 rpsl_pk=obj['rpsl_pk'],
                 source=obj['source'],
                 object_class=obj['object_class'],
                 object_text=obj['object_text'],
+                origin=origin,
                 forced_serial=forced_serial,
             )
 
@@ -426,7 +434,8 @@ class DatabaseStatusTracker:
         self._exported_serials[source] = serial
 
     def record_operation(self, operation: DatabaseOperation, rpsl_pk: str, source: str, object_class: str,
-                         object_text: str, forced_serial: Optional[int]) -> None:
+                         object_text: str, origin: JournalEntryOrigin,
+                         forced_serial: Optional[int]) -> None:
         """
         Make a record in the journal of a change to an object.
 
@@ -455,6 +464,7 @@ class DatabaseStatusTracker:
                 object_class=object_class,
                 object_text=object_text,
                 serial_nrtm=serial_nrtm,
+                origin=origin,
             ).returning(self.c_journal.serial_nrtm)
 
             insert_result = self.database_handler.execute_statement(stmt)
