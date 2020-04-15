@@ -60,7 +60,7 @@ class TestSourceExportRunner:
             ['close', (), {}]
         ]
         assert 'Starting a source export for TEST' in caplog.text
-        assert 'Export for TEST complete, ' in caplog.text
+        assert 'Export for TEST complete' in caplog.text
 
     def test_failure(self, tmpdir, config_override, monkeypatch, caplog):
         config_override({

@@ -118,17 +118,12 @@ class BulkRouteROAValidator:
         ip_bin_str = self._ip_to_binary_str(prefix_ip)
 
         roas_covering = self.roa_tree.prefix_items(ip_bin_str[:prefix_length])
-        # print(f'Route {prefix_ip}/{prefix_length} {prefix_asn} covered by ROAs: {roas_covering}')
         if not roas_covering:
-            # print('====UNKNOWN====')
             return RPKIStatus.not_found
         for key, value in roas_covering:
             for roa_prefix, roa_asn, roa_max_length in value:
-                # print(f'Matching ROA {roa_prefix} {value} to prefix {prefix_asn} length {prefix_length}')
                 if roa_asn != 0 and roa_asn == prefix_asn and prefix_length <= roa_max_length:
-                    # print('====VALID====')
                     return RPKIStatus.valid
-        # print('====INVALID====')
         return RPKIStatus.invalid
 
     def _build_roa_tree_from_roa_objs(self, roas: List[ROA]):

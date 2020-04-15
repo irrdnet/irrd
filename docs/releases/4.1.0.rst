@@ -31,6 +31,12 @@ whether enabled or disabled, and facilitate performance improvements needed
 for RPKI-aware mode. Running these migrations is required to run IRRd 4.1.0,
 even if RPKI-aware mode is never enabled.
 
+.. warning::
+    The impact of enabling RPKI-aware mode can be significant, and it is
+    strongly recommended to read the
+    :doc:`RPKI integration </admins/rpki>` documentation carefully before
+    enabling it, to understand all consequences.
+
 New daemon architecture
 ~~~~~~~~~~~~~~~~~~~~~~~
 IRRd has a new daemon architecture, where all whois queries, HTTP requests,
@@ -55,6 +61,9 @@ Other changes
 
 Steps required to upgrade
 -------------------------
+The following steps are required to upgrade to IRRd 4.1.0, regardless of
+whether RPKI-aware mode is enabled or not.
+
 * Install a Redis instance as documented in the
   :ref:`deployment guide <deployment-redis-configuration>` and configure
   the ``redis_url`` setting.

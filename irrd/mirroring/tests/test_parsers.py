@@ -47,7 +47,7 @@ class TestMirrorFileImportParser:
             parser = MirrorFileImportParser(source='TEST', filename=fp.name, serial=424242,
                                             database_handler=mock_dh, roa_validator=mock_roa_validator)
             parser.run_import()
-        assert len(mock_dh.mock_calls) == 4
+        assert len(mock_dh.mock_calls) == 5
         assert mock_dh.mock_calls[0][0] == 'upsert_rpsl_object'
         assert mock_dh.mock_calls[0][1][0].pk() == '192.0.2.0/24AS65537'
         assert mock_dh.mock_calls[0][1][0].rpki_status == RPKIStatus.invalid
@@ -55,6 +55,9 @@ class TestMirrorFileImportParser:
         assert mock_dh.mock_calls[1][1][0].pk() == 'PGPKEY-80F238C6'
         assert mock_dh.mock_calls[2][0] == 'record_mirror_error'
         assert mock_dh.mock_calls[3][0] == 'record_mirror_error'
+        assert mock_dh.mock_calls[4][0] == 'record_serial_seen'
+        assert mock_dh.mock_calls[4][1][0] == 'TEST'
+        assert mock_dh.mock_calls[4][1][1] == 424242
 
         assert 'Invalid source BADSOURCE for object' in caplog.text
         assert 'Invalid address prefix' in caplog.text
@@ -140,7 +143,7 @@ class TestNRTMStreamParser:
         mock_dh = Mock()
         parser = NRTMStreamParser('TEST', SAMPLE_NRTM_V3, mock_dh)
         self._assert_valid(parser)
-        assert flatten_mock_calls(mock_dh) == [['force_record_serial_seen', ('TEST', 11012701), {}]]
+        assert flatten_mock_calls(mock_dh) == [['record_serial_newest_mirror', ('TEST', 11012701), {}]]
 
     def test_test_parse_nrtm_v1_valid(self, config_override):
         config_override({
@@ -154,13 +157,13 @@ class TestNRTMStreamParser:
         mock_dh = Mock()
         parser = NRTMStreamParser('TEST', SAMPLE_NRTM_V1, mock_dh)
         self._assert_valid(parser)
-        assert flatten_mock_calls(mock_dh) == [['force_record_serial_seen', ('TEST', 11012701), {}]]
+        assert flatten_mock_calls(mock_dh) == [['record_serial_newest_mirror', ('TEST', 11012701), {}]]
 
     def test_test_parse_nrtm_v3_valid_serial_gap(self):
         mock_dh = Mock()
         parser = NRTMStreamParser('TEST', SAMPLE_NRTM_V3_SERIAL_GAP, mock_dh)
         self._assert_valid(parser)
-        assert flatten_mock_calls(mock_dh) == [['force_record_serial_seen', ('TEST', 11012703), {}]]
+        assert flatten_mock_calls(mock_dh) == [['record_serial_newest_mirror', ('TEST', 11012703), {}]]
 
     def test_test_parse_nrtm_v3_invalid_serial_out_of_order(self):
         mock_dh = Mock()

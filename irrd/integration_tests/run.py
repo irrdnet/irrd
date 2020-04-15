@@ -429,9 +429,9 @@ class TestIntegration:
         assert query_result == 'TEST:Y:1-29:29\nRPKI:N:-'
         # irrd #2 missed the first update from NRTM, as they were done at
         # the same time and loaded from the full export, so its serial should
-        # start at 2 rather than 1.
+        # is lower by two
         query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!j-*')
-        assert query_result == 'TEST:Y:2-29:29\nRPKI:N:-'
+        assert query_result == 'TEST:Y:1-27:27\nRPKI:N:-'
 
         status1 = requests.get(f'http://127.0.0.1:{self.port_http1}/v1/status/')
         status2 = requests.get(f'http://127.0.0.1:{self.port_http2}/v1/status/')
@@ -507,7 +507,7 @@ class TestIntegration:
         with open(self.roa_source1, 'w') as roa_file:
             ujson.dump({'roas': [{'prefix': '192.0.2.0/32', 'asn': 'AS65547', 'maxLength': '32', 'ta': 'TA'}]}, roa_file)
         with open(self.roa_source2, 'w') as roa_file:
-            ujson.dump({'roas': [{'prefix': '0/0', 'asn': 'AS0', 'maxLength': '0', 'ta': 'TA'}]}, roa_file)
+            ujson.dump({'roas': [{'prefix': '128/1', 'asn': 'AS0', 'maxLength': '1', 'ta': 'TA'}]}, roa_file)
 
         base_config = {
             'irrd': {

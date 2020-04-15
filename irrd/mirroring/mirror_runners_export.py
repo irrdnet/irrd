@@ -77,4 +77,4 @@ class SourceExportRunner:
             os.chmod(filename_serial, EXPORT_PERMISSIONS)
 
         self.database_handler.record_serial_exported(self.source, serial)
-        logger.info(f'Export for {self.source} complete, stored in {filename_export} / {filename_serial}')
+        logger.info(f'Export for {self.source} complete at serial {serial}, stored in {filename_export} / {filename_serial}')

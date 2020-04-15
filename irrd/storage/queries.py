@@ -366,6 +366,7 @@ class DatabaseStatusQuery:
             self.columns.serial_oldest_journal,
             self.columns.serial_newest_journal,
             self.columns.serial_last_export,
+            self.columns.serial_newest_mirror,
             self.columns.force_reload,
             self.columns.last_error,
             self.columns.last_error_timestamp,

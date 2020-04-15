@@ -66,6 +66,7 @@ class MirrorFileImportParser(MirrorParser):
             if error is not None:
                 return error
 
+        self.database_handler.record_serial_seen(self.source, self.serial if self.serial else 1)
         self.log_report()
         f.close()
         return None
@@ -114,7 +115,7 @@ class MirrorFileImportParser(MirrorParser):
                     str(obj.ip_first), obj.prefix_length, obj.asn_first, obj.source()
                 )
 
-            self.database_handler.upsert_rpsl_object(obj, JournalEntryOrigin.mirror, forced_serial=self.serial)
+            self.database_handler.upsert_rpsl_object(obj, JournalEntryOrigin.mirror)
 
         except UnknownRPSLObjectClassException as e:
             # Ignore legacy IRRd artifacts
@@ -188,7 +189,7 @@ class NRTMStreamParser(MirrorParser):
             raise ValueError(msg)
 
         if self.last_serial > 0:
-            self.database_handler.force_record_serial_seen(self.source, self.last_serial)
+            self.database_handler.record_serial_newest_mirror(self.source, self.last_serial)
 
     def _handle_possible_start_line(self, line: str) -> bool:
         """Check whether a line is an NRTM START line, and if so, handle it."""

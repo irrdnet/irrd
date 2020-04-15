@@ -17,11 +17,11 @@ class JournalEntryOrigin(enum.Enum):
     # Legacy journal entries for which the origin is unknown, can be auth_change or mirror
     unknown = 'UNKNOWN'
     # Journal entry received from a mirror
-    mirror = 'nrtm_mirror'
+    mirror = 'NRTM_MIRROR'
     # Journal entry generated from synthesized NRTM
     synthetic_nrtm = 'SYNTHETIC_NRTM'
     # Journal entry generated from pseudo IRR (i.e. RPSL objects created from ROA's)
-    pseudo_irr = 'pseudo_irr'
+    pseudo_irr = 'PSEUDO_IRR'
     # Journal entry caused by a user-submitted change in an authoritative database
     auth_change = 'AUTH_CHANGE'
     # Journal entry caused by a change in in the RPKI status of an object in an authoritative db
@@ -129,11 +129,16 @@ class RPSLDatabaseStatus(Base):  # type: ignore
     pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text('gen_random_uuid()'), primary_key=True)
     source = sa.Column(sa.String, index=True, nullable=False, unique=True)
 
+    # The oldest and newest serials seen, for any reason at any time
     serial_oldest_seen = sa.Column(sa.Integer)
     serial_newest_seen = sa.Column(sa.Integer)
+    # The oldest and newest serials in the current local journal
     serial_oldest_journal = sa.Column(sa.Integer)
     serial_newest_journal = sa.Column(sa.Integer)
+    # The serial at which this IRRd last exported
     serial_last_export = sa.Column(sa.Integer)
+    # The last serial seen from an NRTM mirror, i.e. resume NRTM query from this serial
+    serial_newest_mirror = sa.Column(sa.Integer)
 
     force_reload = sa.Column(sa.Boolean(), default=False, nullable=False)
 
