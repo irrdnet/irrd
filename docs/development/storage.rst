@@ -82,7 +82,16 @@ Specifically, it records:
 * `rpsl_pk`: the primary key for the object, e.g. ``AS1 - AS200``.
   for an as-block, or ``192.0.2.0/24AS23456`` for a route object.
 * `source`: the object's source attribute, e.g. ``NTTCOM``.
-* `serial_nrtm`: the NRTM serial of this change.
+* `origin`: the origin of the operation, i.e. what caused this change.
+  Options are:
+  * `UNKNOWN`: entry was created before origin field was added
+  * `NRTM_MIRROR`: change received from a mirror
+  * `SYNTHETIC_NRTM`: change derived from synthesized NRTM
+  * `PSEUDO_IRR`: change derived from changes to pseudo-IRR objects
+  * `AUTH_CHANGE`: change made by a user of an authoritative database
+  * `RPKI_STATUS`: change triggered by a change in RPKI status
+  * `BOGON_STATUS`: change triggered by a change in bogon status
+* `serial_nrtm`: the local NRTM serial of this change.
 * `operation`: the type of NRTM operation, either ADD (object was added or
   updated), or DEL (object was deleted).
 * `object_class`: the RPSL object class, e.g. ``route6``.
@@ -105,14 +114,21 @@ For each source, a record is kept of:
 * `serial_oldest_seen`, `serial_newest_seen`: the oldest/newest serial seen
   by IRRd, since the last full import of the database.
 * `serial_oldest_journal`, `serial_newest_journal`: the oldest/newest serial
-  recorded in the RPSL journal.
+  recorded in the local RPSL journal.
 * `serial_last_export`: the serial at which the database was last exported.
+* `serial_newest_mirror`: the last serial seen from an NRTM mirror, i.e.
+  NRTM queries to the mirror are resumed from the serial.
 * `force_reload`: flag that can be set by an admin to force an full re-import
   of a mirrored source. This will be performed at the next update for this mirror.
   The flag will automatically be set back to false.
 * `last_error`, `last_error_timestamp`: the last error that occurred on
   NRTM or file imports for this source, and when it occurred. All errors are
   also logged in the IRRd logfile.
+
+The difference between `serial_newest_mirror` and `serial_newest_journal` is
+that the former refers to the serial numbers in the mirror's journal, and
+the latter refers to the local journal. These may be different, e.g. due to
+changes in RPKI status.
 
 .. note::
     There is no guarantee that all NRTM operations between

@@ -100,7 +100,7 @@ class TestDatabaseHandlerLive:
 
         self.dh = DatabaseHandler()
         self.dh.preloader.signal_reload = Mock(return_value=None)
-        self.dh.upsert_rpsl_object(rpsl_object_route_v4, JournalEntryOrigin.auth_change, 42)
+        self.dh.upsert_rpsl_object(rpsl_object_route_v4, JournalEntryOrigin.auth_change)
         assert len(self.dh._rpsl_upsert_buffer) == 1
 
         rpsl_object_route_v4.parsed_data = {'mnt-by': 'MNT-CORRECT', 'source': 'TEST'}
@@ -160,7 +160,7 @@ class TestDatabaseHandlerLive:
         self.dh.rollback()
 
         statistics = list(self.dh.execute_query(RPSLDatabaseObjectStatisticsQuery()))
-        print(statistics)
+
         assert statistics == [
             {'source': 'TEST', 'object_class': 'route', 'count': 1},
             {'source': 'TEST2', 'object_class': 'route', 'count': 1}
@@ -183,12 +183,11 @@ class TestDatabaseHandlerLive:
         journal = self._clean_result(self.dh.execute_query(RPSLDatabaseJournalQuery()))
 
         # The IPv6 object was created in a different source, so it should
-        # have a separate sequence of NRTM serials. Serial for TEST was forced
-        # to 42 at the first upsert query.
+        # have a separate sequence of NRTM serials.
         assert journal == [
-            {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 42,
+            {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 1,
              'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
-            {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 43,
+            {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 2,
              'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
             {'rpsl_pk': '2001:db8::/64,AS65537', 'source': 'TEST2', 'serial_nrtm': 1,
              'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
@@ -198,26 +197,25 @@ class TestDatabaseHandlerLive:
              'operation': DatabaseOperation.delete, 'object_class': 'route', 'object_text': 'object-text'},
         ]
 
-        partial_journal = self._clean_result(self.dh.execute_query(RPSLDatabaseJournalQuery().serial_range(42, 42)))
+        partial_journal = self._clean_result(self.dh.execute_query(RPSLDatabaseJournalQuery().sources(['TEST']).serial_range(1, 1)))
         assert partial_journal == [
-            {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 42,
+            {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 1,
              'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
         ]
-        partial_journal = self._clean_result(self.dh.execute_query(RPSLDatabaseJournalQuery().serial_range(42)))
+        partial_journal = self._clean_result(self.dh.execute_query(RPSLDatabaseJournalQuery().sources(['TEST']).serial_range(1)))
         assert partial_journal == [
-            {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 42,
+            {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 1,
              'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
-            {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 43,
+            {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 2,
              'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
         ]
 
         # The IPv6 object was created in a different source, so it should
-        # have a separate sequence of NRTM serials. Serial for TEST was forced
-        # to 42 at the first upsert query.
+        # have a separate sequence of NRTM serials.
         assert journal == [
-            {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 42,
+            {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 1,
              'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
-            {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 43,
+            {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 2,
              'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
             {'rpsl_pk': '2001:db8::/64,AS65537', 'source': 'TEST2', 'serial_nrtm': 1,
              'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
@@ -227,21 +225,30 @@ class TestDatabaseHandlerLive:
              'operation': DatabaseOperation.delete, 'object_class': 'route', 'object_text': 'object-text'},
         ]
 
+        self.dh.set_force_reload('TEST')
+        self.dh.commit()
         status_test = list(self.dh.execute_query(DatabaseStatusQuery().source('TEST')))
         assert self._clean_result(status_test) == [
-            {'source': 'TEST', 'serial_oldest_journal': 42, 'serial_newest_journal': 43,
-             'serial_oldest_seen': 42, 'serial_newest_seen': 43,
-             'serial_last_export': None, 'last_error': None, 'force_reload': False},
+            {'source': 'TEST', 'serial_oldest_journal': 1, 'serial_newest_journal': 2,
+             'serial_oldest_seen': 1, 'serial_newest_seen': 2,
+             'serial_last_export': None, 'serial_newest_mirror': None,
+             'last_error': None, 'force_reload': True},
         ]
         assert status_test[0]['created']
         assert status_test[0]['updated']
         assert not status_test[0]['last_error_timestamp']
 
+        self.dh.record_serial_newest_mirror('TEST2', 99999999)
+        self.dh.record_serial_seen('TEST2', 42)
+        self.dh.set_force_reload('TEST2')  # should be ignored, source is new
+        self.dh.commit()
+
         status_test2 = list(self.dh.execute_query(DatabaseStatusQuery().source('TEST2')))
         assert self._clean_result(status_test2) == [
             {'source': 'TEST2', 'serial_oldest_journal': 1, 'serial_newest_journal': 3,
-             'serial_oldest_seen': 1, 'serial_newest_seen': 3,
-             'serial_last_export': 424242, 'last_error': 'error', 'force_reload': False},
+             'serial_oldest_seen': 1, 'serial_newest_seen': 42,
+             'serial_last_export': 424242, 'serial_newest_mirror': 99999999,
+             'last_error': 'error', 'force_reload': False},
         ]
         assert status_test2[0]['created']
         assert status_test2[0]['updated']
@@ -260,76 +267,8 @@ class TestDatabaseHandlerLive:
 
         assert flatten_mock_calls(self.dh.preloader.signal_reload) == [
             ['', ({'route'},), {}],
-            ['', ({'route'},), {}]
+            ['', ({'route'},), {}],
         ]
-
-    def test_updates_database_status_forced_serials(self, monkeypatch, irrd_database):
-        # As settings are default, journal keeping is disabled for this DB
-        rpsl_object_route_v4 = Mock(
-            pk=lambda: '192.0.2.0/24,AS65537',
-            rpsl_object_class='route',
-            parsed_data={'mnt-by': 'MNT-WRONG', 'source': 'TEST'},
-            render_rpsl_text=lambda: 'object-text',
-            ip_version=lambda: 4,
-            ip_first=IP('192.0.2.0'),
-            ip_last=IP('192.0.2.255'),
-            prefix_length=24,
-            asn_first=65537,
-            asn_last=65537,
-            rpki_status=RPKIStatus.not_found,
-        )
-
-        self.dh = DatabaseHandler()
-        # This upsert has a forced serial, so it should be recorded in the DB status.
-        self.dh.upsert_rpsl_object(rpsl_object_route_v4, JournalEntryOrigin.auth_change, 42)
-        self.dh.upsert_rpsl_object(rpsl_object_route_v4, JournalEntryOrigin.auth_change, 4242)
-
-        rpsl_object_route_v6 = Mock(
-            pk=lambda: '2001:db8::/64,AS65537',
-            rpsl_object_class='route',
-            parsed_data={'mnt-by': 'MNT-CORRECT', 'source': 'TEST2'},
-            render_rpsl_text=lambda: 'object-text',
-            ip_version=lambda: 6,
-            ip_first=IP('2001:db8::'),
-            ip_last=IP('2001:db8::ffff:ffff:ffff:ffff'),
-            prefix_length=32,
-            asn_first=65537,
-            asn_last=65537,
-            rpki_status=RPKIStatus.not_found,
-        )
-        self.dh.upsert_rpsl_object(rpsl_object_route_v6, JournalEntryOrigin.auth_change)
-        self.dh.set_force_reload('TEST2')  # Should be ignored, as source is new
-        self.dh.commit()
-        self.dh.set_force_reload('TEST')
-        self.dh.commit()
-
-        status = self._clean_result(self.dh.execute_query(DatabaseStatusQuery().source('TEST')))
-        assert status == [
-            {'source': 'TEST', 'serial_oldest_seen': 42, 'serial_newest_seen': 4242,
-             'serial_oldest_journal': None, 'serial_newest_journal': None,
-             'serial_last_export': None, 'force_reload': True, 'last_error': None},
-        ]
-
-        # The insert of rpsl_object_route_v6 had no forced serial and no
-        # journal keeping enabled, so there should be an empty status record.
-        status = self._clean_result(self.dh.execute_query(DatabaseStatusQuery().source('TEST2')))
-        assert status == [
-            {'source': 'TEST2', 'serial_oldest_seen': None, 'serial_newest_seen': None,
-             'serial_oldest_journal': None, 'serial_newest_journal': None,
-             'serial_last_export': None, 'force_reload': False, 'last_error': None},
-        ]
-
-        self.dh.force_record_serial_seen('TEST', 424242)
-        self.dh.commit()  # should also reset force_reload
-
-        status = self._clean_result(self.dh.execute_query(DatabaseStatusQuery().source('TEST')))
-        assert status == [
-            {'source': 'TEST', 'serial_oldest_seen': 42, 'serial_newest_seen': 424242,
-             'serial_oldest_journal': None, 'serial_newest_journal': None,
-             'serial_last_export': None, 'force_reload': False, 'last_error': None},
-        ]
-
-        self.dh.close()
 
     def test_disable_journaling(self, monkeypatch, irrd_database):
         monkeypatch.setenv('IRRD_SOURCES_TEST_AUTHORITATIVE', '1')
@@ -351,7 +290,7 @@ class TestDatabaseHandlerLive:
 
         self.dh = DatabaseHandler()
         self.dh.disable_journaling()
-        self.dh.upsert_rpsl_object(rpsl_object_route_v4, JournalEntryOrigin.auth_change, 42)
+        self.dh.upsert_rpsl_object(rpsl_object_route_v4, JournalEntryOrigin.auth_change)
         self.dh.commit()
 
         journal = self._clean_result(self.dh.execute_query(RPSLDatabaseJournalQuery()))
@@ -360,8 +299,9 @@ class TestDatabaseHandlerLive:
         status_test = self._clean_result(self.dh.execute_query(DatabaseStatusQuery()))
         assert status_test == [
             {'source': 'TEST', 'serial_oldest_journal': None, 'serial_newest_journal': None,
-             'serial_oldest_seen': 42, 'serial_newest_seen': 42,
-             'serial_last_export': None, 'last_error': None, 'force_reload': False},
+             'serial_oldest_seen': None, 'serial_newest_seen': None,
+             'serial_last_export': None, 'serial_newest_mirror': None,
+             'last_error': None, 'force_reload': False},
         ]
         self.dh.close()
 

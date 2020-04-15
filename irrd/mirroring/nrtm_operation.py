@@ -72,9 +72,9 @@ class NRTMOperation:
             if self.rpki_aware and obj.rpki_relevant and obj.prefix and obj.asn_first:
                 roa_validator = SingleRouteROAValidator(database_handler)
                 obj.rpki_status = roa_validator.validate_route(obj.prefix, obj.asn_first, obj.source())
-            database_handler.upsert_rpsl_object(obj, JournalEntryOrigin.mirror, self.serial)
+            database_handler.upsert_rpsl_object(obj, JournalEntryOrigin.mirror)
         elif self.operation == DatabaseOperation.delete:
-            database_handler.delete_rpsl_object(obj, JournalEntryOrigin.mirror, self.serial)
+            database_handler.delete_rpsl_object(obj, JournalEntryOrigin.mirror)
 
         logger.info(f'Completed NRTM operation {str(self)}/{obj.rpsl_object_class}/{obj.pk()}, '
                     f'RPKI status {obj.rpki_status.value}')

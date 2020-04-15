@@ -4,7 +4,7 @@ import logging
 from collections import defaultdict
 
 from datetime import datetime, timezone
-from typing import List, Set, Dict, Any, Tuple, Optional, Iterator, Union
+from typing import List, Set, Dict, Any, Tuple, Iterator, Union
 
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql as pg
@@ -37,11 +37,8 @@ class DatabaseHandler:
     _transaction: sa.engine.base.Transaction
     _rpsl_pk_source_seen: Set[str]
     # The RPSL upsert buffer is a list of tuples. Each tuple first has a dict
-    # with all database column names and their values, and then an optional int
-    # with a forced serial. The forced serial is used for mirrored sources,
-    # where this basically means: this call was triggered by an NRTM operation
-    # with this serial.
-    _rpsl_upsert_buffer: List[Tuple[dict, JournalEntryOrigin, Optional[int]]]
+    # with all database column names and their values, and then the origin of the change.
+    _rpsl_upsert_buffer: List[Tuple[dict, JournalEntryOrigin]]
     # The ROA insert buffer is a list of dicts with columm names and their values.
     _roa_insert_buffer: List[Dict[str, Union[str, int]]]
 
@@ -78,7 +75,8 @@ class DatabaseHandler:
         self.status_tracker.finalise_transaction()
         try:
             self._transaction.commit()
-            self.preloader.signal_reload(self._object_classes_modified)
+            if self._object_classes_modified:
+                self.preloader.signal_reload(self._object_classes_modified)
             self._start_transaction()
         except Exception as exc:  # pragma: no cover
             self._transaction.rollback()
@@ -107,7 +105,7 @@ class DatabaseHandler:
         return self._connection.execute(statement)
 
     def upsert_rpsl_object(self, rpsl_object: RPSLObject, origin: JournalEntryOrigin,
-                           forced_serial: Optional[int]=None, rpsl_safe_insert_only=False) -> None:
+                           rpsl_safe_insert_only=False) -> None:
         """
         Schedule an RPSLObject for insertion/updating.
 
@@ -120,8 +118,6 @@ class DatabaseHandler:
 
         The origin indicates the origin of this change, see JournalEntryOrigin
         for the various options.
-        The forced serial is needed for mirrored sources, where this basically means:
-        this call was triggered by an NRTM operation with this serial.
 
         If rpsl_safe_insert_only is set to True, the caller guarantees that this
         PK is unique in the database. This essentially only applies to inserting
@@ -163,7 +159,7 @@ class DatabaseHandler:
             'updated': datetime.now(timezone.utc),
         }
 
-        self._rpsl_upsert_buffer.append((object_dict, origin, forced_serial,))
+        self._rpsl_upsert_buffer.append((object_dict, origin))
 
         self._rpsl_pk_source_seen.add(rpsl_pk_source)
         self._object_classes_modified.add(rpsl_object.rpsl_object_class)
@@ -204,15 +200,12 @@ class DatabaseHandler:
             stmt = table.update().where(table.c.rpsl_pk.in_(rpsl_pks_now_not_found)).values(rpki_status=RPKIStatus.not_found)
             self.execute_statement(stmt)
 
-    def delete_rpsl_object(self, rpsl_object: RPSLObject, origin: JournalEntryOrigin,
-                           forced_serial: Optional[int]=None) -> None:
+    def delete_rpsl_object(self, rpsl_object: RPSLObject, origin: JournalEntryOrigin) -> None:
         """
         Delete an RPSL object from the database.
 
         The origin indicates the origin of this change, see JournalEntryOrigin
         for the various options.
-        The forced serial is needed for mirrored sources, where this basically means:
-        this call was triggered by an NRTM operation with this serial.
         """
         self._flush_rpsl_object_writing_buffer()
         table = RPSLDatabaseObject.__table__
@@ -243,7 +236,6 @@ class DatabaseHandler:
             object_class=result['object_class'],
             object_text=result['object_text'],
             origin=origin,
-            forced_serial=forced_serial,
         )
         self._object_classes_modified.add(result['object_class'])
 
@@ -280,7 +272,7 @@ class DatabaseHandler:
             logger.error(f'Exception occurred while executing statement: {stmt}, rolling back', exc_info=exc)
             raise
 
-        for obj, origin, forced_serial in self._rpsl_upsert_buffer:
+        for obj, origin in self._rpsl_upsert_buffer:
             self.status_tracker.record_operation(
                 operation=DatabaseOperation.add_or_update,
                 rpsl_pk=obj['rpsl_pk'],
@@ -288,7 +280,6 @@ class DatabaseHandler:
                 object_class=obj['object_class'],
                 object_text=obj['object_text'],
                 origin=origin,
-                forced_serial=forced_serial,
             )
 
         self._rpsl_pk_source_seen = set()
@@ -354,16 +345,17 @@ class DatabaseHandler:
         stmt = table.update().where(table.c.source == source).values(force_reload=True)
         self._connection.execute(stmt)
 
-    def force_record_serial_seen(self, source: str, serial: int) -> None:
+    def record_serial_newest_mirror(self, source: str, serial: int) -> None:
         """
-        Forcibly record that a serial was seen for a source.
+        Record that a mirror was updated to a certain serial.
+        """
+        self.status_tracker.record_serial_newest_mirror(source, serial)
 
-        This is used when receiving NRTM streams in which some objects are
-        ignored or have errors. Because their operations are never saved, the
-        serial needs to be manually advanced, to prevent re-querying the
-        same objects all the time.
+    def record_serial_seen(self, source: str, serial: int):
         """
-        self.status_tracker.force_record_serial_seen(source, serial)
+        Record that a serial was seen for a source
+        """
+        self.status_tracker.record_serial_seen(source, serial)
 
     def record_mirror_error(self, source: str, error: str) -> None:
         """
@@ -389,7 +381,7 @@ class DatabaseStatusTracker:
     and finalise_transaction() before committing.
 
     If journaling is enabled, a new entry in the journal will be made.
-    If a journal entry was made, or forced_serial was set, a record is kept in
+    If a journal entry was made, a record is kept in
     memory with all serials encountered/created for this source.
 
     When finalising, the RPSLDatabaseStatus table is updated to correctly
@@ -398,6 +390,7 @@ class DatabaseStatusTracker:
     journaling_enabled: bool
     _new_serials_per_source: Dict[str, Set[int]]
     _sources_seen: Set[str]
+    _newest_mirror_serials: Dict[str, int]
     _mirroring_error: Dict[str, str]
     _exported_serials: Dict[str, int]
 
@@ -409,10 +402,16 @@ class DatabaseStatusTracker:
         self.journaling_enabled = journaling_enabled
         self._reset()
 
-    def force_record_serial_seen(self, source: str, serial: int):
+    def record_serial_newest_mirror(self, source: str, serial: int):
         """
-        Forcibly record that a serial was seen for a source.
-        See DatabaseHandler.force_record_serial_seen for more info.
+        Record that a mirror was updated to a certain serial.
+        """
+        self._sources_seen.add(source)
+        self._newest_mirror_serials[source] = serial
+
+    def record_serial_seen(self, source: str, serial: int):
+        """
+        Record that a serial was seen for a source
         """
         self._sources_seen.add(source)
         self._new_serials_per_source[source].add(serial)
@@ -434,8 +433,7 @@ class DatabaseStatusTracker:
         self._exported_serials[source] = serial
 
     def record_operation(self, operation: DatabaseOperation, rpsl_pk: str, source: str, object_class: str,
-                         object_text: str, origin: JournalEntryOrigin,
-                         forced_serial: Optional[int]) -> None:
+                         object_text: str, origin: JournalEntryOrigin) -> None:
         """
         Make a record in the journal of a change to an object.
 
@@ -450,13 +448,10 @@ class DatabaseStatusTracker:
         if self.journaling_enabled and get_setting(f'sources.{source}.keep_journal'):
             journal_tablename = RPSLDatabaseJournal.__tablename__
 
-            if forced_serial is None:
-                self.database_handler.execute_statement(f'LOCK TABLE {journal_tablename} IN EXCLUSIVE MODE')
-                serial_nrtm = sa.select([sa.text(f'COALESCE(MAX(serial_nrtm), 0) + 1')])
-                serial_nrtm = serial_nrtm.where(RPSLDatabaseJournal.__table__.c.source == source)
-                serial_nrtm = serial_nrtm.as_scalar()
-            else:
-                serial_nrtm = forced_serial
+            self.database_handler.execute_statement(f'LOCK TABLE {journal_tablename} IN EXCLUSIVE MODE')
+            serial_nrtm = sa.select([sa.text(f'COALESCE(MAX(serial_nrtm), 0) + 1')])
+            serial_nrtm = serial_nrtm.where(RPSLDatabaseJournal.__table__.c.source == source)
+            serial_nrtm = serial_nrtm.as_scalar()
             stmt = RPSLDatabaseJournal.__table__.insert().values(
                 rpsl_pk=rpsl_pk,
                 source=source,
@@ -470,8 +465,6 @@ class DatabaseStatusTracker:
             insert_result = self.database_handler.execute_statement(stmt)
             inserted_serial = insert_result.fetchone()['serial_nrtm']
             self._new_serials_per_source[source].add(inserted_serial)
-        elif forced_serial is not None:
-            self._new_serials_per_source[source].add(forced_serial)
 
     def finalise_transaction(self):
         """
@@ -525,6 +518,13 @@ class DatabaseStatusTracker:
             )
             self.database_handler.execute_statement(stmt)
 
+        for source, serial in self._newest_mirror_serials.items():
+            stmt = RPSLDatabaseStatus.__table__.update().where(self.c_status.source == source).values(
+                serial_newest_mirror=serial,
+                updated=datetime.now(timezone.utc),
+            )
+            self.database_handler.execute_statement(stmt)
+
         for source, serial in self._exported_serials.items():
             stmt = RPSLDatabaseStatus.__table__.update().where(self.c_status.source == source).values(
                 serial_last_export=serial,
@@ -536,5 +536,6 @@ class DatabaseStatusTracker:
     def _reset(self):
         self._new_serials_per_source = defaultdict(set)
         self._sources_seen = set()
+        self._newest_mirror_serials = dict()
         self._mirroring_error = dict()
         self._exported_serials = dict()

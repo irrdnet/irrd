@@ -113,9 +113,10 @@ class StatusGenerator:
                 Object class filter: {object_class_filter}
                 Oldest serial seen: {status_result['serial_oldest_seen']}
                 Newest serial seen: {status_result['serial_newest_seen']}
-                Oldest journal serial number: {status_result['serial_oldest_journal']}
-                Newest journal serial number: {status_result['serial_newest_journal']}
+                Oldest local journal serial number: {status_result['serial_oldest_journal']}
+                Newest local journal serial number: {status_result['serial_newest_journal']}
                 Last export at serial number: {status_result['serial_last_export']}
+                Newest serial number mirrored: {status_result['serial_newest_mirror']}
                 Last update: {status_result['updated']}
                 Local journal kept: {keep_journal}
                 Last import error occurred at: {status_result['last_error_timestamp']}

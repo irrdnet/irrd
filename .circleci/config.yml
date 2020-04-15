@@ -120,4 +120,4 @@ jobs:
           path: test-reports
 
       - store_artifacts:
-          path: test-reports
+          path: /tmp/pytest-of-circleci/

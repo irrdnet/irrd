@@ -48,7 +48,7 @@ class TestRPSLMirrorImportUpdateRunner:
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseStatusQuery', lambda: mock_dq)
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.RPSLMirrorFullImportRunner', lambda source: mock_full_import_runner)
 
-        mock_dh.execute_query = lambda q: iter([{'serial_newest_seen': 424242, 'force_reload': True}])
+        mock_dh.execute_query = lambda q: iter([{'serial_newest_mirror': 424242, 'force_reload': True}])
         runner = RPSLMirrorImportUpdateRunner(source='TEST')
         runner.run()
 
@@ -74,7 +74,7 @@ class TestRPSLMirrorImportUpdateRunner:
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseStatusQuery', lambda: mock_dq)
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.NRTMImportUpdateStreamRunner', lambda source: mock_stream_runner)
 
-        mock_dh.execute_query = lambda q: iter([{'serial_newest_seen': 424242, 'force_reload': False}])
+        mock_dh.execute_query = lambda q: iter([{'serial_newest_mirror': 424242, 'force_reload': False}])
         runner = RPSLMirrorImportUpdateRunner(source='TEST')
         runner.run()
 
@@ -95,7 +95,7 @@ class TestRPSLMirrorImportUpdateRunner:
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.RPSLMirrorFullImportRunner', lambda source: mock_full_import_runner)
         mock_full_import_runner.run = Mock(side_effect=ConnectionResetError('test-error'))
 
-        mock_dh.execute_query = lambda q: iter([{'serial_newest_seen': 424242, 'force_reload': False}])
+        mock_dh.execute_query = lambda q: iter([{'serial_newest_mirror': 424242, 'force_reload': False}])
         runner = RPSLMirrorImportUpdateRunner(source='TEST')
         runner.run()
 
@@ -114,7 +114,7 @@ class TestRPSLMirrorImportUpdateRunner:
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.RPSLMirrorFullImportRunner', lambda source: mock_full_import_runner)
         mock_full_import_runner.run = Mock(side_effect=Exception('test-error'))
 
-        mock_dh.execute_query = lambda q: iter([{'serial_newest_seen': 424242, 'force_reload': False}])
+        mock_dh.execute_query = lambda q: iter([{'serial_newest_mirror': 424242, 'force_reload': False}])
         runner = RPSLMirrorImportUpdateRunner(source='TEST')
         runner.run()
 
@@ -153,12 +153,13 @@ class TestRPSLMirrorFullImportRunner:
             'RETR /serial': b'424242',
         }
         mock_ftp.retrbinary = lambda path, callback: callback(responses[path])
-        RPSLMirrorFullImportRunner('TEST').run(mock_dh, serial_newest_seen=424241)
+        RPSLMirrorFullImportRunner('TEST').run(mock_dh, serial_newest_mirror=424241)
 
         assert MockMirrorFileImportParser.rpsl_data_calls == ['source1', 'source2']
         assert flatten_mock_calls(mock_dh) == [
             ['delete_all_rpsl_objects_with_journal', ('TEST',), {}],
             ['disable_journaling', (), {}],
+            ['record_serial_newest_mirror', ('TEST', 424242), {}],
         ]
         assert mock_bulk_validator_init.mock_calls[0][1][0] == mock_dh
 
@@ -194,6 +195,7 @@ class TestRPSLMirrorFullImportRunner:
         assert flatten_mock_calls(mock_dh) == [
             ['delete_all_rpsl_objects_with_journal', ('TEST',), {}],
             ['disable_journaling', (), {}],
+            ['record_serial_newest_mirror', ('TEST', 424242), {}],
         ]
 
     def test_no_serial_ftp(self, monkeypatch, config_override):
@@ -218,7 +220,7 @@ class TestRPSLMirrorFullImportRunner:
             'RETR /source2': b'source2',
         }
         mock_ftp.retrbinary = lambda path, callback: callback(responses[path])
-        RPSLMirrorFullImportRunner('TEST').run(mock_dh, serial_newest_seen=42)
+        RPSLMirrorFullImportRunner('TEST').run(mock_dh, serial_newest_mirror=42)
 
         assert MockMirrorFileImportParser.rpsl_data_calls == ['source1', 'source2']
         assert flatten_mock_calls(mock_dh) == [
@@ -250,7 +252,7 @@ class TestRPSLMirrorFullImportRunner:
             'RETR /serial': b'424242',
         }
         mock_ftp.retrbinary = lambda path, callback: callback(responses[path])
-        RPSLMirrorFullImportRunner('TEST').run(mock_dh, serial_newest_seen=424243)
+        RPSLMirrorFullImportRunner('TEST').run(mock_dh, serial_newest_mirror=424243)
 
         assert not MockMirrorFileImportParser.rpsl_data_calls
         assert flatten_mock_calls(mock_dh) == []
@@ -280,12 +282,13 @@ class TestRPSLMirrorFullImportRunner:
             'RETR /serial': b'424242',
         }
         mock_ftp.retrbinary = lambda path, callback: callback(responses[path])
-        RPSLMirrorFullImportRunner('TEST').run(mock_dh, serial_newest_seen=424243, force_reload=True)
+        RPSLMirrorFullImportRunner('TEST').run(mock_dh, serial_newest_mirror=424243, force_reload=True)
 
         assert MockMirrorFileImportParser.rpsl_data_calls == ['source1', 'source2']
         assert flatten_mock_calls(mock_dh) == [
             ['delete_all_rpsl_objects_with_journal', ('TEST',), {}],
             ['disable_journaling', (), {}],
+            ['record_serial_newest_mirror', ('TEST', 424242), {}],
         ]
 
     def test_missing_source_settings_ftp(self, config_override):

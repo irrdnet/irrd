@@ -77,6 +77,7 @@ class TestStatusGenerator:
                     'serial_oldest_journal': 15,
                     'serial_newest_journal': 20,
                     'serial_last_export': 16,
+                    'serial_newest_mirror': 25,
                     'last_error_timestamp': datetime(2018, 1, 1, tzinfo=timezone.utc),
                     'updated': datetime(2018, 6, 1, tzinfo=timezone.utc),
                 },
@@ -87,6 +88,7 @@ class TestStatusGenerator:
                     'serial_oldest_journal': None,
                     'serial_newest_journal': None,
                     'serial_last_export': None,
+                    'serial_newest_mirror': None,
                     'last_error_timestamp': datetime(2019, 1, 1, tzinfo=timezone.utc),
                     'updated': datetime(2019, 6, 1, tzinfo=timezone.utc),
                 },
@@ -97,6 +99,7 @@ class TestStatusGenerator:
                     'serial_oldest_journal': None,
                     'serial_newest_journal': None,
                     'serial_last_export': None,
+                    'serial_newest_mirror': None,
                     'last_error_timestamp': None,
                     'updated': None,
                 },
@@ -107,6 +110,7 @@ class TestStatusGenerator:
                     'serial_oldest_journal': None,
                     'serial_newest_journal': None,
                     'serial_last_export': None,
+                    'serial_newest_mirror': None,
                     'last_error_timestamp': None,
                     'updated': None,
                 },
@@ -137,9 +141,10 @@ class TestStatusGenerator:
                 Object class filter: object-class-filter
                 Oldest serial seen: 10
                 Newest serial seen: 21
-                Oldest journal serial number: 15
-                Newest journal serial number: 20
+                Oldest local journal serial number: 15
+                Newest local journal serial number: 20
                 Last export at serial number: 16
+                Newest serial number mirrored: 25
                 Last update: 2018-06-01 00:00:00+00:00
                 Local journal kept: Yes
                 Last import error occurred at: 2018-01-01 00:00:00+00:00
@@ -159,9 +164,10 @@ class TestStatusGenerator:
                 Object class filter: None
                 Oldest serial seen: 210
                 Newest serial seen: 221
-                Oldest journal serial number: None
-                Newest journal serial number: None
+                Oldest local journal serial number: None
+                Newest local journal serial number: None
                 Last export at serial number: None
+                Newest serial number mirrored: None
                 Last update: 2019-06-01 00:00:00+00:00
                 Local journal kept: No
                 Last import error occurred at: 2019-01-01 00:00:00+00:00
@@ -178,9 +184,10 @@ class TestStatusGenerator:
                 Object class filter: None
                 Oldest serial seen: None
                 Newest serial seen: None
-                Oldest journal serial number: None
-                Newest journal serial number: None
+                Oldest local journal serial number: None
+                Newest local journal serial number: None
                 Last export at serial number: None
+                Newest serial number mirrored: None
                 Last update: None
                 Local journal kept: No
                 Last import error occurred at: None
@@ -197,9 +204,10 @@ class TestStatusGenerator:
                 Object class filter: None
                 Oldest serial seen: None
                 Newest serial seen: None
-                Oldest journal serial number: None
-                Newest journal serial number: None
+                Oldest local journal serial number: None
+                Newest local journal serial number: None
                 Last export at serial number: None
+                Newest serial number mirrored: None
                 Last update: None
                 Local journal kept: No
                 Last import error occurred at: None
