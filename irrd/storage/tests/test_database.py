@@ -293,8 +293,7 @@ class TestDatabaseHandlerLive:
         self.dh.upsert_rpsl_object(rpsl_object_route_v4, JournalEntryOrigin.auth_change)
         self.dh.commit()
 
-        journal = self._clean_result(self.dh.execute_query(RPSLDatabaseJournalQuery()))
-        assert journal == []
+        assert not self._clean_result(self.dh.execute_query(RPSLDatabaseJournalQuery()))
 
         status_test = self._clean_result(self.dh.execute_query(DatabaseStatusQuery()))
         assert status_test == [
@@ -303,6 +302,12 @@ class TestDatabaseHandlerLive:
              'serial_last_export': None, 'serial_newest_mirror': None,
              'last_error': None, 'force_reload': False},
         ]
+
+        self.dh.enable_journaling()
+        self.dh.upsert_rpsl_object(rpsl_object_route_v4, JournalEntryOrigin.auth_change)
+        self.dh.commit()
+        assert self._clean_result(self.dh.execute_query(RPSLDatabaseJournalQuery()))
+
         self.dh.close()
 
     def test_roa_handling_and_query(self, irrd_database):
