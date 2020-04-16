@@ -236,16 +236,16 @@ class ROAImportRunner(FileImportRunnerBase):
             self.database_handler.commit()
 
             validator = BulkRouteROAValidator(self.database_handler, roa_objs)
-            pks_now_valid, pks_now_invalid, pks_now_not_found = validator.validate_all_routes()
+            objs_now_valid, objs_now_invalid, objs_now_not_found = validator.validate_all_routes()
             self.database_handler.update_rpki_status(
-                rpsl_pks_now_valid=pks_now_valid,
-                rpsl_pks_now_invalid=pks_now_invalid,
-                rpsl_pks_now_not_found=pks_now_not_found
+                rpsl_pks_now_valid={o['rpsl_pk'] for o in objs_now_valid},
+                rpsl_pks_now_invalid={o['rpsl_pk'] for o in objs_now_invalid},
+                rpsl_pks_now_not_found={o['rpsl_pk'] for o in objs_now_not_found},
             )
             self.database_handler.commit()
-            logger.info(f'RPKI status updated for all routes, {len(pks_now_valid)} newly valid, '
-                        f'{len(pks_now_invalid)} newly invalid, '
-                        f'{len(pks_now_not_found)} newly not_found routes')
+            logger.info(f'RPKI status updated for all routes, {len(objs_now_valid)} newly valid, '
+                        f'{len(objs_now_invalid)} newly invalid, '
+                        f'{len(objs_now_not_found)} newly not_found routes')
 
         except OSError as ose:
             # I/O errors can occur and should not log a full traceback (#177)
