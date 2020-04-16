@@ -255,8 +255,9 @@ RPKI
 ~~~~
 * ``roa_source``: an HTTP(s) URL to a JSON file with ROA exports, in the format
   as produced by the RIPE NCC RPKI validator. When set, this enables the
-  :doc:`RPKI-aware mode </admins/rpki>`.
-  |br| **Default**: not defined, RPKI-aware mode disabled.
+  :doc:`RPKI-aware mode </admins/rpki>`. To disable RPKI-aware mode,
+  set this to ``null``.
+  |br| **Default**: ``https://rpki.gin.ntt.net/api/export.json``
   |br| **Change takes effect**: after SIGHUP. The first RPKI ROA import may
   take several minutes, after which RPKI-aware mode is enabled.
 * ``roa_import_timer``: the time between two attempts to import the ROA

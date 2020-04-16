@@ -22,9 +22,7 @@ in conflict with ROAs. Pseudo-IRR objects are generated for all ROAs.
 When RPKI-aware mode is enabled, ``RPKI`` becomes an invalid as a regular
 IRR source name, as it is reserved for pseudo-IRR objects from ROAs.
 
-By default, RPKI-aware mode is disabled. Objects that are invalid when compared
-to ROAs are not detected, and query responses are unchanged until
-:doc:`RPKI-aware mode is enabled </admins/rpki>`.
+By default, RPKI-aware mode is **enabled**.
 
 IRRd 4.1.0 includes several database migrations to support RPKI-aware mode,
 whether enabled or disabled, and facilitate performance improvements needed
@@ -32,10 +30,12 @@ for RPKI-aware mode. Running these migrations is required to run IRRd 4.1.0,
 even if RPKI-aware mode is never enabled.
 
 .. warning::
-    The impact of enabling RPKI-aware mode can be significant, and it is
+    The impact of running IRRd in RPKI-aware mode can be significant, and it is
     strongly recommended to read the
     :doc:`RPKI integration </admins/rpki>` documentation carefully before
     enabling it, to understand all consequences.
+    RPKI-aware mode can be disabled entirely, or certain sources can be
+    excluded from RPKI validation.
 
 New daemon architecture
 ~~~~~~~~~~~~~~~~~~~~~~~
