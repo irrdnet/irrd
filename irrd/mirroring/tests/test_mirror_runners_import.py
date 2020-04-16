@@ -363,9 +363,9 @@ class TestROAImportRunner:
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.requests.get', MockRequestsSuccess)
 
         mock_bulk_validator.validate_all_routes = lambda: (
-            {'pk_now_valid1', 'pk_now_valid2'},
-            {'pk_now_invalid1', 'pk_now_invalid2'},
-            {'pk_now_unknown1', 'pk_now_unknown2'},
+            [{'rpsl_pk': 'pk_now_valid1'}, {'rpsl_pk': 'pk_now_valid2'}],
+            [{'rpsl_pk': 'pk_now_invalid1'}, {'rpsl_pk': 'pk_now_invalid2'}],
+            [{'rpsl_pk': 'pk_now_unknown1'}, {'rpsl_pk': 'pk_now_unknown2'}],
         )
         ROAImportRunner().run()
 

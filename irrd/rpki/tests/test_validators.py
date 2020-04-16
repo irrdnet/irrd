@@ -140,10 +140,10 @@ class TestBulkRouteROAValidator:
             ROA('203.0.113.1/32', 'AS0', '32', 'TEST TA'),
         ]
         result = BulkRouteROAValidator(mock_dh, roas).validate_all_routes(sources=['TEST1'])
-        new_valid_pks, new_invalid_pks, new_unknown_pks = result
-        assert new_valid_pks == {'pk_route_v6', 'pk_route_v4_d0_l25', 'pk_route_v4_d0_l24'}
-        assert new_invalid_pks == {'pk_route_v4_d64_l32', 'pk_route_v4_d128_l25', 'pk_route_v4_roa_as0'}
-        assert new_unknown_pks == {'pk_route_v4_no_roa', 'pk_route_v4_d128_l26_excluded'}
+        new_valid_objs, new_invalid_objs, new_unknown_objs = result
+        assert {o['rpsl_pk'] for o in new_valid_objs} == {'pk_route_v6', 'pk_route_v4_d0_l25', 'pk_route_v4_d0_l24'}
+        assert {o['rpsl_pk'] for o in new_invalid_objs} == {'pk_route_v4_d64_l32', 'pk_route_v4_d128_l25', 'pk_route_v4_roa_as0'}
+        assert {o['rpsl_pk'] for o in new_unknown_objs} == {'pk_route_v4_no_roa', 'pk_route_v4_d128_l26_excluded'}
 
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['route', 'route6'],), {}],
@@ -190,9 +190,9 @@ class TestBulkRouteROAValidator:
 
         result = BulkRouteROAValidator(mock_dh).validate_all_routes(sources=['TEST1'])
         new_valid_pks, new_invalid_pks, new_unknown_pks = result
-        assert new_valid_pks == {'pk_route_v4_d0_l25'}
-        assert new_invalid_pks == set()
-        assert new_unknown_pks == set()
+        assert {o['rpsl_pk'] for o in new_valid_pks} == {'pk_route_v4_d0_l25'}
+        assert new_invalid_pks == list()
+        assert new_unknown_pks == list()
 
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['route', 'route6'],), {}],
