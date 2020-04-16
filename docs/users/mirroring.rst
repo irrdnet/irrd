@@ -9,6 +9,11 @@ This page explains the processes and caveats involved in mirroring.
 For details on all configuration options, see
 the :doc:`configuration documentation </admins/configuration>`.
 
+.. note::
+    If :doc:`RPKI-aware mode </admins/rpki>` is enabled, mirroring
+    is also affected by RPKI validation. This is documented in
+    the RPKI integration documentation.
+
 .. contents:: :backlinks: none
 
 Scheduling
