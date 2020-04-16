@@ -158,7 +158,8 @@ updates and full mirror imports.
 * `trust_anchor`: the trust anchor for the ROA (free text)
 * `ip_version`: the IP version of `prefix`.
 
-The fields `prefix`, `asn` and `max_length` must be unique together.
+The fields `prefix`, `asn`, `max_length` and `trust_anchor`
+must be unique together.
 
 
 Updating the database

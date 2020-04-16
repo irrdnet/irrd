@@ -171,7 +171,7 @@ class ROADatabaseObject(Base):  # type: ignore
     @declared_attr
     def __table_args__(cls):  # noqa
         args = [
-            sa.UniqueConstraint('prefix', 'asn', 'max_length', name='roa_object_prefix_asn_maxlength_unique'),
+            sa.UniqueConstraint('prefix', 'asn', 'max_length', 'trust_anchor', name='roa_object_prefix_asn_maxlength_unique'),
             sa.Index('ix_roa_objects_prefix_gist', sa.text('prefix inet_ops'), postgresql_using='gist')
         ]
         return tuple(args)
