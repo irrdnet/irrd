@@ -43,16 +43,36 @@ Where validation takes place
 * Every ``rpki.roa_import_timer``, IRRd reimports the ROA file, and then
   updates the validation status of all `route(6)` objects in the IRR database.
   This ensures that the status is correct when ROAs are added or removed.
-* For each NRTM update, IRRd sets the validation status using the current
-  known ROAs, both on creations or changes.
-* IRRd checks creation of objects in authoritative databases
-  against the ROAs, and rejects the objects when they are RPKI-invalid.
-* Changes or deletions of RPKI-invalid object are permitted,
-  but IRRd will issue a warning to the user.
+* For each received NRTM update, IRRd sets the validation status using the
+  current known ROAs, both on creations or changes.
+* IRRd checks creation or modification of objects in authoritative databases
+  against the ROAs, and rejects the objects when they are RPKI invalid.
+* Deletions of RPKI invalid object are permitted, both for authoritative
+  database and when receiving deletions over NRTM.
 * IRRd will always set objects from sources listed in
-  ``rpki.validation_excluded_sources`` are to status not_found.
-* Database exports and NRTM streams always include all objects in the
-  database, including RPKI invalid objects.
+  ``rpki.validation_excluded_sources`` to status not_found,
+  i.e. they are never regarded as RPKI invalid objects at any time.
+* Database exports and NRTM streams will not include RPKI invalid objects.
+* If the validation state changes, e.g. due to a new ROA, an NRTM ADD
+  or DEL is created in the journal.
+
+An example of validation in the context of mirroring: your IRRd
+mirrors source DEMO the authoritative source, you keep a local journal, and
+a third party mirrors DEMO from you. When the authoritative source for
+DEMO sends an NRTM ADD for an RPKI invalid route, that update is not
+recorded in your IRRd's local journal. The third party that mirrors from
+you will not see this ADD over NRTM.
+
+If a ROA is added the next day that results in the route being RPKI valid
+or not_found, an ADD is recorded in the local journal, and the third party
+can pick up the change from an NRTM query to your IRRd. If that ROA is
+deleted again, causing the route to return to RPKI invalid, a DEL is
+recorded in the journal.
+
+Therefore, both the local state of your IRRd, and anyone mirroring from
+your IRRd, will be up to date with the RPKI status.
+This does not apply to excluded sources, whose objects are never seen
+as RPKI invalid.
 
 First import with RPKI-aware mode
 ---------------------------------
