@@ -4,6 +4,10 @@ irrd:
     database_url: null
     rpki:
         roa_source: https://rpki.gin.ntt.net/api/export.json
+        pseudo_irr_remarks: |
+            This AS$AS$ route object represents routing data retrieved
+            from the RPKI. This route object is the result of an automated
+            RPKI-to-IRR conversion process performed by IRRd.
     server:
         http:
             interface: '::0'
