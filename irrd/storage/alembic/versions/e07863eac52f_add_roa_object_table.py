@@ -27,7 +27,7 @@ def upgrade():
                     sa.Column('ip_version', sa.Integer(), nullable=False),
                     sa.Column('created', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
                     sa.PrimaryKeyConstraint('pk'),
-                    sa.UniqueConstraint('prefix', 'asn', 'max_length', name='roa_object_prefix_asn_maxlength_unique')
+                    sa.UniqueConstraint('prefix', 'asn', 'max_length', 'trust_anchor', name='roa_object_prefix_asn_maxlength_unique')
                     )
     op.create_index(op.f('ix_roa_object_ip_version'), 'roa_object', ['ip_version'], unique=False)
     op.create_index('ix_roa_objects_prefix_gist', 'roa_object', [sa.text('prefix inet_ops')], unique=False,
