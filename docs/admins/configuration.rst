@@ -66,6 +66,10 @@ This sample shows most configuration options::
         rpki:
             roa_source: https://example.com/roa.json
             roa_import_timer: 7200
+            pseudo_irr_remarks: |
+                This AS$AS$ route object represents routing data retrieved
+                from the RPKI. This route object is the result of an automated
+                RPKI-to-IRR conversion process performed by IRRd.
 
         sources_default:
             - AUTHDATABASE
@@ -264,6 +268,14 @@ RPKI
   file from ``roa_source``
   |br| **Default**: ``3600``.
   |br| **Change takes effect**: after SIGHUP.
+* ``pseudo_irr_remarks``: the contents of the remarks field for pseudo-IRR
+  objects created for each ROA. This can have multiple lines. ``$AS$`` and
+  ``$PREFIX$`` are replaced with the ROA's AS number and prefix, respectively.
+  |br| **Default**::
+  |br| `This AS$AS$ route object represents routing data retrieved`
+  |br| `from the RPKI. This route object is the result of an automated`
+  |br| `RPKI-to-IRR conversion process performed by IRRd.`
+  |br| **Change takes effect**: after the next ROA import.
 
 
 Sources

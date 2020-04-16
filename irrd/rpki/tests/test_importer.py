@@ -46,12 +46,10 @@ class TestROAImportProcess:
         assert roa_importer.roa_objs[0]._rpsl_object.render_rpsl_text() == textwrap.dedent("""
             route:          192.0.2.0/24
             descr:          RPKI ROA for 192.0.2.0/24 / AS64496
-            remarks:        This route object represents routing data retrieved
-            remarks:        from the RPKI. The original data can be found here:
-            remarks:        https://rpki.gin.ntt.net/r/AS64496/192.0.2.0/24
-            remarks:        This route object is the result of an automated
-            remarks:        RPKI-to-IRR conversion process performed by IRRd.
-            remarks:        maxLength 26
+            remarks:        This AS64496 route object represents routing data retrieved
+                            from the RPKI. This route object is the result of an automated
+                            RPKI-to-IRR conversion process performed by IRRd.
+            max-length:     26
             origin:         AS64496
             source:         RPKI  # Trust Anchor: APNIC RPKI Root
             """).strip() + '\n'

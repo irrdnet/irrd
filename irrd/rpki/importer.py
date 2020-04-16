@@ -1,11 +1,10 @@
 import ujson
 
 import logging
-import textwrap
 from IPy import IP
 from typing import List
 
-from irrd.conf import RPKI_IRR_PSEUDO_SOURCE
+from irrd.conf import RPKI_IRR_PSEUDO_SOURCE, get_setting
 from irrd.rpsl.parser import RPSLObject, RPSL_ATTRIBUTE_TEXT_WIDTH
 from irrd.rpsl.rpsl_objects import RPSL_ROUTE_OBJECT_CLASS_FOR_IP_VERSION
 from irrd.storage.database_handler import DatabaseHandler
@@ -139,18 +138,16 @@ class RPSLObjectFromROA(RPSLObject):
         return f'{self.prefix_str}AS{self.asn}/ML{self.max_length}'
 
     def render_rpsl_text(self):
-        # TODO: we could just have a max-length attribute?
         object_class_display = f'{self.rpsl_object_class}:'.ljust(RPSL_ATTRIBUTE_TEXT_WIDTH)
-        rpsl_object_text = textwrap.dedent(f"""
-            {object_class_display}{self.prefix_str}
-            descr:          RPKI ROA for {self.prefix_str} / AS{self.asn}
-            remarks:        This route object represents routing data retrieved
-            remarks:        from the RPKI. The original data can be found here:
-            remarks:        https://rpki.gin.ntt.net/r/AS{self.asn}/{self.prefix_str}
-            remarks:        This route object is the result of an automated
-            remarks:        RPKI-to-IRR conversion process performed by IRRd.
-            remarks:        maxLength {self.max_length}
-            origin:         AS{self.asn}
-            source:         {RPKI_IRR_PSEUDO_SOURCE}  # Trust Anchor: {self.trust_anchor}
-            """).strip() + '\n'
+        remarks_fill = RPSL_ATTRIBUTE_TEXT_WIDTH * ' '
+        remarks = get_setting('rpki.pseudo_irr_remarks').replace('\n', '\n' + remarks_fill).strip()
+        remarks = remarks.replace('$AS$', str(self.asn)).replace('$PREFIX$', self.prefix_str)
+        rpsl_object_text = f"""
+{object_class_display}{self.prefix_str}
+descr:          RPKI ROA for {self.prefix_str} / AS{self.asn}
+remarks:        {remarks}
+max-length:     {self.max_length}
+origin:         AS{self.asn}
+source:         {RPKI_IRR_PSEUDO_SOURCE}  # Trust Anchor: {self.trust_anchor}
+""".strip() + '\n'
         return rpsl_object_text
