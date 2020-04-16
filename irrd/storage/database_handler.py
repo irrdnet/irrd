@@ -227,6 +227,8 @@ class DatabaseHandler:
                 object_text=rpsl_obj['object_text'],
                 origin=JournalEntryOrigin.rpki_status,
             )
+        if rpsl_objs_now_valid or rpsl_objs_now_invalid or rpsl_objs_now_not_found:
+            self._object_classes_modified.add('route')
 
     def delete_rpsl_object(self, rpsl_object: RPSLObject, origin: JournalEntryOrigin) -> None:
         """
