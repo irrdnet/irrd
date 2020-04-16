@@ -13,8 +13,8 @@ from ..validators import BulkRouteROAValidator, SingleRouteROAValidator
 class TestBulkRouteROAValidator:
     def test_validate_routes_from_roa_objs(self, monkeypatch, config_override):
         config_override({
-            'rpki': {'validation_excluded_sources': 'SOURCE-EXCLUDED'},
-            'sources': {'TEST1': {}, 'TEST2': {}, RPKI_IRR_PSEUDO_SOURCE: {}}
+            'sources': {'TEST1': {}, 'TEST2': {}, RPKI_IRR_PSEUDO_SOURCE: {},
+                        'SOURCE-EXCLUDED': {'rpki_excluded': True}}
         })
         mock_dh = Mock(spec=DatabaseHandler)
         mock_dq = Mock(spec=RPSLDatabaseQuery)
@@ -203,7 +203,9 @@ class TestBulkRouteROAValidator:
 
 class TestSingleRouteROAValidator:
     def test_validator_normal_roa(self, monkeypatch, config_override):
-        config_override({'rpki': {'validation_excluded_sources': 'SOURCE-EXCLUDED'}})
+        config_override({
+            'sources': {'SOURCE-EXCLUDED': {'rpki_excluded': True}}
+        })
         mock_dh = Mock(spec=DatabaseHandler)
         mock_rq = Mock(spec=ROADatabaseObjectQuery)
         monkeypatch.setattr('irrd.rpki.validators.ROADatabaseObjectQuery', lambda: mock_rq)

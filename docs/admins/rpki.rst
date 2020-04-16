@@ -49,8 +49,8 @@ Where validation takes place
   against the ROAs, and rejects the objects when they are RPKI invalid.
 * Deletions of RPKI invalid object are permitted, both for authoritative
   database and when receiving deletions over NRTM.
-* IRRd will always set objects from sources listed in
-  ``rpki.validation_excluded_sources`` to status not_found,
+* IRRd will always set objects from sources with
+  ``sources.{name}.rpki_excluded`` set to status not_found,
   i.e. they are never regarded as RPKI invalid objects at any time.
 * Database exports and NRTM streams will not include RPKI invalid objects.
 * If the validation state changes, e.g. due to a new ROA, an NRTM ADD
@@ -80,7 +80,7 @@ When you first enable RPKI-aware mode, the import and validation process
 will take considerably longer than on subsequent runs. On the first run,
 a large number of objects in the database need to be updated, whereas this
 number is much smaller on subsequent runs.
-The first full import after changing ``rpki.validation_excluded_sources``
+The first full import after changing ``sources.{name}.rpki_excluded``
 may also be slower, for the same reason.
 
 Temporary inconsistencies

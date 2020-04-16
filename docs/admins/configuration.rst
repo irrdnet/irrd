@@ -66,8 +66,6 @@ This sample shows most configuration options::
         rpki:
             roa_source: https://example.com/roa.json
             roa_import_timer: 7200
-            validation_excluded_sources:
-                - MIRROR-SECOND
 
         sources_default:
             - AUTHDATABASE
@@ -91,6 +89,7 @@ This sample shows most configuration options::
                 import_source: 'ftp://ftp.example.net/mirror-first.db.gz'
                 nrtm_host: rr.ntt.net
                 nrtm_port: 43
+                rpki_excluded: true
                 object_class_filter:
                     - as-set
                     - aut-num
@@ -264,11 +263,6 @@ RPKI
   file from ``roa_source``
   |br| **Default**: ``3600``.
   |br| **Change takes effect**: after SIGHUP.
-* ``validation_excluded_sources``: a list of sources for which no validation
-  is performed, i.e. even if the objects conflict with a ROA, they are
-  marked as unknown, and will be included in query responses.
-  |br| **Default**: not defined, all sources included in validation.
-  |br| **Change takes effect**: after SIGHUP, upon next full ROA import.
 
 
 Sources
@@ -359,6 +353,11 @@ Sources
   See the :doc:`deployment guide </admins/deployment>` for more information.
   |br| **Default**: false
   |br| **Change takes effect**: after SIGHUP, upon next request.
+* ``sources.{name}.rpki_excluded``: disable RPKI validation for this source.
+  If set to ``true``, all objects will be considered not_found for their
+  RPKI status.
+  |br| **Default**: false, RPKI validation enabled.
+  |br| **Change takes effect**: after SIGHUP, upon next full ROA import.
 
 
 For more detail on mirroring other sources, and providing mirroring services

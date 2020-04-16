@@ -56,9 +56,10 @@ class BulkRouteROAValidator:
         # TODO: this should be global
         self._byte_bin = [bin(byte)[2:].zfill(8) for byte in range(256)]
 
-        self.excluded_sources = get_setting('rpki.validation_excluded_sources', [])
-        if isinstance(self.excluded_sources, str):
-            self.excluded_sources = [self.excluded_sources]
+        self.excluded_sources = []
+        for source, settings in get_setting('sources', {}).items():
+            if settings.get('rpki_excluded'):
+                self.excluded_sources.append(source)
 
         self.roa_tree = datrie.Trie('01')
         if roas is None:
@@ -170,15 +171,11 @@ class SingleRouteROAValidator:
     def __init__(self, database_handler: DatabaseHandler):
         self.database_handler = database_handler
 
-        self.excluded_sources = get_setting('rpki.validation_excluded_sources', [])
-        if isinstance(self.excluded_sources, str):
-            self.excluded_sources = [self.excluded_sources]
-
     def validate_route(self, route: IP, asn: int, source: str) -> RPKIStatus:
         """
         Validate a route from a particular source.
         """
-        if source in self.excluded_sources:
+        if get_setting(f'sources.{source}.rpki_excluded'):
             return RPKIStatus.not_found
 
         query = ROADatabaseObjectQuery().ip_less_specific_or_exact(route)
