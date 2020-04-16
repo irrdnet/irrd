@@ -176,6 +176,7 @@ class TestRPSLMirrorFullImportRunner:
             fh.write('424242')
 
         config_override({
+            'rpki': {'roa_source': None},
             'sources': {
                 'TEST': {
                     'import_source': ['file://' + str(tmp_import_source1), 'file://' + str(tmp_import_source2)],
@@ -200,6 +201,7 @@ class TestRPSLMirrorFullImportRunner:
 
     def test_no_serial_ftp(self, monkeypatch, config_override):
         config_override({
+            'rpki': {'roa_source': None},
             'sources': {
                 'TEST': {
                     'import_source': ['ftp://host/source1.gz', 'ftp://host/source2'],
@@ -260,6 +262,7 @@ class TestRPSLMirrorFullImportRunner:
 
     def test_import_force_reload_with_serial_too_old(self, monkeypatch, config_override):
         config_override({
+            'rpki': {'roa_source': None},
             'sources': {
                 'TEST': {
                     'import_source': ['ftp://host/source1.gz', 'ftp://host/source2'],

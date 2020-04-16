@@ -51,6 +51,7 @@ origin: AS65545"""
 @pytest.fixture()
 def prepare_parser(monkeypatch, config_override):
     config_override({
+        'rpki': {'roa_source': None},
         'sources': {'TEST1': {}, 'TEST2': {}},
         'sources_default': [],
     })

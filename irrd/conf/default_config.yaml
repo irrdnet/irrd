@@ -2,6 +2,8 @@
 # in conf/defaults.py.
 irrd:
     database_url: null
+    rpki:
+        roa_source: https://rpki.gin.ntt.net/api/export.json
     server:
         http:
             interface: '::0'
