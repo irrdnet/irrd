@@ -341,23 +341,52 @@ class TestDatabaseHandlerLive:
 
         self.dh.close()
 
-    def test_rpki_status_storage(self, irrd_database, database_handler_with_route):
+    def test_rpki_status_storage(self, monkeypatch, irrd_database, database_handler_with_route):
+        monkeypatch.setenv('IRRD_SOURCES_TEST_KEEP_JOURNAL', '1')
         dh = database_handler_with_route
-        route_rpsl_pk = '192.0.2.0/24,AS65537'
+        route_rpsl_objs = [{
+            'rpsl_pk': '192.0.2.0/24,AS65537',
+            'source': 'TEST',
+            'object_class': 'route',
+            'object_text': 'object-text',
+            'old_status': RPKIStatus.invalid,  # This always triggers a journal entry
+        }]
 
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.invalid])))) == 1
-        dh.update_rpki_status(rpsl_pks_now_not_found={route_rpsl_pk})
+
+        dh.update_rpki_status(rpsl_objs_now_not_found=route_rpsl_objs)
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.not_found])))) == 1
+        journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_range(1, 1)))
+        assert journal_entry[0]['operation'] == DatabaseOperation.add_or_update
+
         dh.update_rpki_status()
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.not_found])))) == 1
-        dh.update_rpki_status(rpsl_pks_now_invalid={route_rpsl_pk})
+        assert len(list(dh.execute_query(RPSLDatabaseJournalQuery()))) == 1  # no new entry
+
+        dh.update_rpki_status(rpsl_objs_now_invalid=route_rpsl_objs)
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.invalid])))) == 1
-        dh.update_rpki_status(rpsl_pks_now_invalid={route_rpsl_pk})
+        journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_range(2, 2)))
+        assert journal_entry[0]['operation'] == DatabaseOperation.delete
+
+        dh.update_rpki_status(rpsl_objs_now_invalid=route_rpsl_objs)
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.invalid])))) == 1
-        dh.update_rpki_status(rpsl_pks_now_not_found={route_rpsl_pk})
+        journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_range(3, 3)))
+        assert journal_entry[0]['operation'] == DatabaseOperation.delete
+
+        dh.update_rpki_status(rpsl_objs_now_not_found=route_rpsl_objs)
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.not_found])))) == 1
-        dh.update_rpki_status(rpsl_pks_now_valid={route_rpsl_pk})
+        journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_range(4, 4)))
+        assert journal_entry[0]['operation'] == DatabaseOperation.add_or_update
+
+        dh.update_rpki_status(rpsl_objs_now_valid=route_rpsl_objs)
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.valid])))) == 1
+        journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_range(5, 5)))
+        assert journal_entry[0]['operation'] == DatabaseOperation.add_or_update
+
+        # A state change from valid to not_found should not trigger a journal entry
+        route_rpsl_objs[0]['old_status'] = RPKIStatus.valid
+        dh.update_rpki_status(rpsl_objs_now_valid=route_rpsl_objs)
+        assert not list(dh.execute_query(RPSLDatabaseJournalQuery().serial_range(6, 6)))
 
     def _clean_result(self, results):
         variable_fields = ['pk', 'timestamp', 'created', 'updated', 'last_error_timestamp']

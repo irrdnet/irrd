@@ -375,9 +375,9 @@ class TestROAImportRunner:
             ['delete_all_rpsl_objects_with_journal', ('RPKI',), {}],
             ['commit', (), {}],
             ['update_rpki_status', (), {
-                'rpsl_pks_now_valid': {'pk_now_valid1', 'pk_now_valid2'},
-                'rpsl_pks_now_invalid': {'pk_now_invalid1', 'pk_now_invalid2'},
-                'rpsl_pks_now_not_found': {'pk_now_unknown1', 'pk_now_unknown2'},
+                'rpsl_objs_now_valid': [{'rpsl_pk': 'pk_now_valid1'}, {'rpsl_pk': 'pk_now_valid2'}],
+                'rpsl_objs_now_invalid': [{'rpsl_pk': 'pk_now_invalid1'}, {'rpsl_pk': 'pk_now_invalid2'}],
+                'rpsl_objs_now_not_found': [{'rpsl_pk': 'pk_now_unknown1'}, {'rpsl_pk': 'pk_now_unknown2'}],
             }],
             ['commit', (), {}],
             ['close', (), {}]

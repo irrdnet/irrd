@@ -183,22 +183,46 @@ class DatabaseHandler:
             'trust_anchor': trust_anchor,
         })
 
-    def update_rpki_status(self, rpsl_pks_now_valid: Set[str]=None, rpsl_pks_now_invalid: Set[str]=None,
-                           rpsl_pks_now_not_found: Set[str]=None) -> None:
+    def update_rpki_status(self, rpsl_objs_now_valid: List[Dict[str, str]]=[],
+                           rpsl_objs_now_invalid: List[Dict[str, str]]=[],
+                           rpsl_objs_now_not_found: List[Dict[str, str]]=[]) -> None:
         """
         Update the RPKI status for the given RPSL PKs.
         Only PKs whose status have changed should be included.
         """
         table = RPSLDatabaseObject.__table__
-        if rpsl_pks_now_valid:
-            stmt = table.update().where(table.c.rpsl_pk.in_(rpsl_pks_now_valid)).values(rpki_status=RPKIStatus.valid)
+        if rpsl_objs_now_valid:
+            pks = {o['rpsl_pk'] for o in rpsl_objs_now_valid}
+            stmt = table.update().where(table.c.rpsl_pk.in_(pks)).values(rpki_status=RPKIStatus.valid)
             self.execute_statement(stmt)
-        if rpsl_pks_now_invalid:
-            stmt = table.update().where(table.c.rpsl_pk.in_(rpsl_pks_now_invalid)).values(rpki_status=RPKIStatus.invalid)
+        if rpsl_objs_now_invalid:
+            pks = {o['rpsl_pk'] for o in rpsl_objs_now_invalid}
+            stmt = table.update().where(table.c.rpsl_pk.in_(pks)).values(rpki_status=RPKIStatus.invalid)
             self.execute_statement(stmt)
-        if rpsl_pks_now_not_found:
-            stmt = table.update().where(table.c.rpsl_pk.in_(rpsl_pks_now_not_found)).values(rpki_status=RPKIStatus.not_found)
+        if rpsl_objs_now_not_found:
+            pks = {o['rpsl_pk'] for o in rpsl_objs_now_not_found}
+            stmt = table.update().where(table.c.rpsl_pk.in_(pks)).values(rpki_status=RPKIStatus.not_found)
             self.execute_statement(stmt)
+
+        for rpsl_obj in rpsl_objs_now_valid + rpsl_objs_now_not_found:
+            if rpsl_obj['old_status'] == RPKIStatus.invalid:
+                self.status_tracker.record_operation(
+                    operation=DatabaseOperation.add_or_update,
+                    rpsl_pk=rpsl_obj['rpsl_pk'],
+                    source=rpsl_obj['source'],
+                    object_class=rpsl_obj['object_class'],
+                    object_text=rpsl_obj['object_text'],
+                    origin=JournalEntryOrigin.rpki_status,
+                )
+        for rpsl_obj in rpsl_objs_now_invalid:
+            self.status_tracker.record_operation(
+                operation=DatabaseOperation.delete,
+                rpsl_pk=rpsl_obj['rpsl_pk'],
+                source=rpsl_obj['source'],
+                object_class=rpsl_obj['object_class'],
+                object_text=rpsl_obj['object_text'],
+                origin=JournalEntryOrigin.rpki_status,
+            )
 
     def delete_rpsl_object(self, rpsl_object: RPSLObject, origin: JournalEntryOrigin) -> None:
         """

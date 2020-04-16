@@ -98,6 +98,7 @@ class BulkRouteROAValidator:
                 continue
 
             current_status = result['rpki_status']
+            result['old_status'] = current_status
             new_status = self.validate_route(result['ip_first'], result['prefix_length'],
                                              result['asn_first'], result['source'])
             if new_status != current_status:
