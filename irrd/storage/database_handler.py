@@ -66,6 +66,10 @@ class DatabaseHandler:
         self.journaling_enabled = False
         self.status_tracker.journaling_enabled = False
 
+    def enable_journaling(self):
+        self.journaling_enabled = True
+        self.status_tracker.journaling_enabled = True
+
     def commit(self) -> None:
         """
         Commit any pending changes to the database and start a fresh transaction.

@@ -231,10 +231,11 @@ class ROAImportRunner(FileImportRunnerBase):
         self.database_handler = DatabaseHandler()
 
         try:
-            # TODO: journaling needs to be re-enabled for updating status
+            self.database_handler.disable_journaling()
             roa_objs = self._import_roas()
             # Do an early commit to make the new ROAs available to other processes.
             self.database_handler.commit()
+            self.database_handler.enable_journaling()
 
             validator = BulkRouteROAValidator(self.database_handler, roa_objs)
             objs_now_valid, objs_now_invalid, objs_now_not_found = validator.validate_all_routes()
@@ -262,7 +263,6 @@ class ROAImportRunner(FileImportRunnerBase):
         roa_source = get_setting('rpki.roa_source')
         logger.info(f'Running full ROA import from: {roa_source}')
 
-        self.database_handler.disable_journaling()
         self.database_handler.delete_all_roa_objects()
         self.database_handler.delete_all_rpsl_objects_with_journal(RPKI_IRR_PSEUDO_SOURCE)
 
