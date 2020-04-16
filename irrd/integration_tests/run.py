@@ -403,6 +403,9 @@ class TestIntegration:
         assert 'example route' not in query_result
         query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!r192.0.2.0/24,L')
         assert 'RPKI' in query_result  # Pseudo-IRR object 0/0 from RPKI
+        query_result = whois_query('127.0.0.1', self.port_whois2, '-g TEST:3:1-LAST')
+        # RPKI invalid object should not be in journal
+        assert 'route:192.0.2.0/24' not in query_result.replace(' ', '')
 
         # These queries should produce identical answers on both instances.
         for port in self.port_whois1, self.port_whois2:
@@ -428,10 +431,11 @@ class TestIntegration:
         query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!j-*')
         assert query_result == 'TEST:Y:1-29:29\nRPKI:N:-'
         # irrd #2 missed the first update from NRTM, as they were done at
-        # the same time and loaded from the full export, so its serial should
-        # is lower by two
+        # the same time and loaded from the full export, and one RPKI-invalid object
+        # was not recorded in the journal, so its serial should
+        # is lower by three
         query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!j-*')
-        assert query_result == 'TEST:Y:1-27:27\nRPKI:N:-'
+        assert query_result == 'TEST:Y:1-26:26\nRPKI:N:-'
 
         status1 = requests.get(f'http://127.0.0.1:{self.port_http1}/v1/status/')
         status2 = requests.get(f'http://127.0.0.1:{self.port_http2}/v1/status/')

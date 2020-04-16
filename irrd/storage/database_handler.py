@@ -273,14 +273,15 @@ class DatabaseHandler:
             raise
 
         for obj, origin in self._rpsl_upsert_buffer:
-            self.status_tracker.record_operation(
-                operation=DatabaseOperation.add_or_update,
-                rpsl_pk=obj['rpsl_pk'],
-                source=obj['source'],
-                object_class=obj['object_class'],
-                object_text=obj['object_text'],
-                origin=origin,
-            )
+            if obj['rpki_status'] != RPKIStatus.invalid:
+                self.status_tracker.record_operation(
+                    operation=DatabaseOperation.add_or_update,
+                    rpsl_pk=obj['rpsl_pk'],
+                    source=obj['source'],
+                    object_class=obj['object_class'],
+                    object_text=obj['object_text'],
+                    origin=origin,
+                )
 
         self._rpsl_pk_source_seen = set()
         self._rpsl_upsert_buffer = []
