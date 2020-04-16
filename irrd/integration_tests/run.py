@@ -403,8 +403,8 @@ class TestIntegration:
         assert 'example route' not in query_result
         query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!r192.0.2.0/24,L')
         assert 'RPKI' in query_result  # Pseudo-IRR object 0/0 from RPKI
-        query_result = whois_query('127.0.0.1', self.port_whois2, '-g TEST:3:1-LAST')
         # RPKI invalid object should not be in journal
+        query_result = whois_query('127.0.0.1', self.port_whois2, '-g TEST:3:1-LAST')
         assert 'route:192.0.2.0/24' not in query_result.replace(' ', '')
 
         # These queries should produce identical answers on both instances.
@@ -436,6 +436,34 @@ class TestIntegration:
         # is lower by three
         query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!j-*')
         assert query_result == 'TEST:Y:1-26:26\nRPKI:N:-'
+
+        # Make the v4 route in irrd2 valid
+        with open(self.roa_source2, 'w') as roa_file:
+            ujson.dump({'roas': [{'prefix': '198.51.100.0/24', 'asn': 'AS0', 'maxLength': '32', 'ta': 'TA'}]}, roa_file)
+
+        time.sleep(2)
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!gAS65537')
+        assert query_result == '192.0.2.0/24'
+        # RPKI invalid object should now be added in the journal
+        query_result = whois_query('127.0.0.1', self.port_whois2, '-g TEST:3:27-27')
+        assert 'ADD 27' in query_result
+        assert '192.0.2.0/24' in query_result
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!j-*')
+        assert query_result == 'TEST:Y:1-27:27\nRPKI:N:-'
+
+        # Make the v4 route in irrd2 invalid again
+        with open(self.roa_source2, 'w') as roa_file:
+            ujson.dump({'roas': [{'prefix': '128/1', 'asn': 'AS0', 'maxLength': '32', 'ta': 'TA'}]}, roa_file)
+
+        time.sleep(2)
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!gAS65537')
+        assert not query_result
+        # RPKI invalid object should now be deleted in the journal
+        query_result = whois_query('127.0.0.1', self.port_whois2, '-g TEST:3:28-28')
+        assert 'DEL 28' in query_result
+        assert '192.0.2.0/24' in query_result
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!j-*')
+        assert query_result == 'TEST:Y:1-28:28\nRPKI:N:-'
 
         status1 = requests.get(f'http://127.0.0.1:{self.port_http1}/v1/status/')
         status2 = requests.get(f'http://127.0.0.1:{self.port_http2}/v1/status/')
@@ -579,7 +607,7 @@ class TestIntegration:
         config2['irrd']['server']['whois']['port'] = self.port_whois2
         config2['irrd']['auth']['gnupg_keyring'] = str(self.tmpdir) + '/gnupg2'
         config2['irrd']['log']['logfile_path'] = self.logfile2
-        config2['irrd']['rpki'] = {'roa_source': 'file://' + self.roa_source2}
+        config2['irrd']['rpki'] = {'roa_source': 'file://' + self.roa_source2, 'roa_import_timer': 1}
         config2['irrd']['sources']['TEST'] = {
             'keep_journal': True,
             'import_serial_source': f'file://{self.export_dir1}/TEST.CURRENTSERIAL',
