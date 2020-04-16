@@ -286,6 +286,9 @@ class ChangeRequest:
             return True
         if self._cached_roa_validity is not None:
             return self._cached_roa_validity
+        # Deletes are permitted for RPKI-invalids, other operations are not
+        if self.request_type == UpdateRequestType.DELETE:
+            return True
 
         assert self.rpsl_obj_new.asn_first
         validation_result = self.roa_validator.validate_route(
@@ -296,15 +299,11 @@ class ChangeRequest:
             user_message = 'RPKI ROAs were found that conflict with this object. '
             user_message += f'(This IRRd refreshes ROAs every {import_timer} seconds.)'
             logger.debug(f'{id(self)}: Conflicting ROAs found')
-            # For update and delete, only issue a warning.
-            if self.rpsl_obj_current:
-                self.warning_messages.append(user_message)
-            else:
-                if self.is_valid():  # Only change the status if this object was valid prior, so this is first failure
-                    self.status = UpdateRequestStatus.ERROR_ROA
-                self.error_messages.append(user_message)
-                self._cached_roa_validity = False
-                return False
+            if self.is_valid():  # Only change the status if this object was valid prior, so this is first failure
+                self.status = UpdateRequestStatus.ERROR_ROA
+            self.error_messages.append(user_message)
+            self._cached_roa_validity = False
+            return False
         else:
             logger.debug(f'{id(self)}: No conflicting ROAs found')
         self._cached_roa_validity = True
