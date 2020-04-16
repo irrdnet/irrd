@@ -7,6 +7,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 from irrd.conf import get_setting
+from irrd.rpki.status import RPKIStatus
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseQuery, DatabaseStatusQuery
 from irrd.utils.text import remove_auth_hashes
@@ -59,6 +60,7 @@ class SourceExportRunner:
 
         with gzip.open(export_tmpfile, 'wb') as fh:
             query = RPSLDatabaseQuery().sources([self.source])
+            query = query.rpki_status([RPKIStatus.not_found, RPKIStatus.valid])
             for obj in self.database_handler.execute_query(query):
                 object_bytes = remove_auth_hashes(obj['object_text']).encode('utf-8')
                 fh.write(object_bytes + b'\n')

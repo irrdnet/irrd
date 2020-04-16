@@ -5,6 +5,7 @@ import gzip
 from unittest.mock import Mock
 
 from irrd.mirroring.mirror_runners_export import SourceExportRunner, EXPORT_PERMISSIONS
+from irrd.rpki.status import RPKIStatus
 from irrd.utils.test_utils import flatten_mock_calls
 
 
@@ -58,6 +59,12 @@ class TestSourceExportRunner:
             ['record_serial_exported', ('TEST', '424242'), {}],
             ['commit', (), {}],
             ['close', (), {}]
+        ]
+        assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['TEST'],), {}],
+            ['rpki_status', ([RPKIStatus.not_found, RPKIStatus.valid],), {}],
+            ['sources', (['TEST'],), {}],
+            ['rpki_status', ([RPKIStatus.not_found, RPKIStatus.valid],), {}],
         ]
         assert 'Starting a source export for TEST' in caplog.text
         assert 'Export for TEST complete' in caplog.text
