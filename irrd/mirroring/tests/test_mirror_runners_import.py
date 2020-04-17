@@ -341,7 +341,7 @@ class TestROAImportRunner:
     # As the code for retrieving files from HTTP, FTP or local file
     # is shared between ROAImportRunner and RPSLMirrorFullImportRunner,
     # not all protocols are tested here.
-    def test_run_import_http_file_success(self, monkeypatch, config_override, tmpdir):
+    def test_run_import_http_file_success(self, monkeypatch, config_override, tmpdir, caplog):
         config_override({
             'rpki': {
                 'roa_source': 'https://host/roa.json',
@@ -364,6 +364,7 @@ class TestROAImportRunner:
         mock_bulk_validator = Mock(spec=BulkRouteROAValidator)
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.BulkRouteROAValidator', lambda dh, roas: mock_bulk_validator)
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.requests.get', MockRequestsSuccess)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.notify_rpki_invalid_owners', lambda dh, invalids: 1)
 
         mock_bulk_validator.validate_all_routes = lambda: (
             [{'rpsl_pk': 'pk_now_valid1'}, {'rpsl_pk': 'pk_now_valid2'}],
@@ -386,6 +387,7 @@ class TestROAImportRunner:
             ['commit', (), {}],
             ['close', (), {}]
         ]
+        assert '2 newly valid, 2 newly invalid, 2 newly not_found routes, 1 emails sent to contacts of newly invalid authoritative objects' in caplog.text
 
     def test_run_import_http_file_failed_download(self, monkeypatch, config_override, tmpdir, caplog):
         config_override({

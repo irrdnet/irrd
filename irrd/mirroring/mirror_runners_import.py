@@ -17,6 +17,7 @@ from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import DatabaseStatusQuery
 from irrd.utils.whois_client import whois_query
 from .parsers import MirrorFileImportParser, NRTMStreamParser
+from ..rpki.notifications import notify_rpki_invalid_owners
 
 logger = logging.getLogger(__name__)
 
@@ -245,9 +246,11 @@ class ROAImportRunner(FileImportRunnerBase):
                 rpsl_objs_now_not_found=objs_now_not_found,
             )
             self.database_handler.commit()
+            notified = notify_rpki_invalid_owners(self.database_handler, objs_now_invalid)
             logger.info(f'RPKI status updated for all routes, {len(objs_now_valid)} newly valid, '
                         f'{len(objs_now_invalid)} newly invalid, '
-                        f'{len(objs_now_not_found)} newly not_found routes')
+                        f'{len(objs_now_not_found)} newly not_found routes, '
+                        f'{notified} emails sent to contacts of newly invalid authoritative objects')
 
         except OSError as ose:
             # I/O errors can occur and should not log a full traceback (#177)

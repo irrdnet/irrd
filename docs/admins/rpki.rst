@@ -74,6 +74,24 @@ your IRRd, will be up to date with the RPKI status.
 This does not apply to excluded sources, whose objects are never seen
 as RPKI invalid.
 
+.. _rpki-notifications:
+
+Notifications
+-------------
+If a route(6) object in an authoritative source is newly marked RPKI invalid,
+a notification is sent to all contacts. Contacts are determined as any email
+address, of any tech-c and admin-c, on any mnt-by on the route object.
+Emails are aggregated, so a single address will receive a single email with
+all objects listed for which it is a contact.
+
+"Newly" invalid means that an object was previously valid or not_found, but
+a ROA update has changed the status to invalid. At the time this happens,
+the email is sent. If the status returns to valid or not_found, and then
+returns to invalid, another email is sent.
+
+The notification can be disabled or adjusted through configuration options.
+It is enabled by default.
+
 First import with RPKI-aware mode
 ---------------------------------
 When you first enable RPKI-aware mode, the import and validation process

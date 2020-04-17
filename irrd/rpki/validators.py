@@ -103,6 +103,7 @@ class BulkRouteROAValidator:
             new_status = self.validate_route(result['ip_first'], result['prefix_length'],
                                              result['asn_first'], result['source'])
             if new_status != current_status:
+                result['rpki_status'] = new_status
                 objs_changed[new_status].append(result)
 
         return objs_changed[RPKIStatus.valid], objs_changed[RPKIStatus.invalid], objs_changed[RPKIStatus.not_found]
