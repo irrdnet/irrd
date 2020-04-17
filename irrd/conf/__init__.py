@@ -212,8 +212,13 @@ class Configuration:
             errors.append(f'Setting email.from is required and must be an email address.')
         if not self._check_is_str(config, 'email.smtp'):
             errors.append(f'Setting email.smtp is required.')
+        if not self._check_is_str(config, 'email.recipient_override', required=False) \
+                or '@' not in config.get('email.recipient_override', '@'):
+            errors.append(f'Setting email.recipient_override must be an email address if set.')
 
-        string_not_required = ['email.footer', 'server.whois.access_list', 'server.http.access_list']
+        string_not_required = ['email.footer', 'server.whois.access_list', 'server.http.access_list',
+                               'rpki.notification_invalid_subject',
+                               'rpki.notification_invalid_header']
         for setting in string_not_required:
             if not self._check_is_str(config, setting, required=False):
                 errors.append(f'Setting {setting} must be a string, if defined.')
@@ -236,6 +241,13 @@ class Configuration:
         known_sources = set(config.get('sources', {}).keys())
         if config.get('rpki.roa_source'):
             known_sources.add(RPKI_IRR_PSEUDO_SOURCE)
+            if config.get('rpki.notification_invalid_enabled') is None:
+                errors.append(f'RPKI-aware mode is enabled, but rpki.notification_invalid_enabled '
+                              f'is not set. Set to true or false. Note that care is required with '
+                              f'this setting in testing setups with live data, as it may send bulk '
+                              f'emails to real resource contacts unless email.recipient_override '
+                              f'is also set.')
+
         unknown_default_sources = set(config.get('sources_default', [])).difference(known_sources)
         if unknown_default_sources:
             errors.append(f'Setting sources_default contains unknown sources: {", ".join(unknown_default_sources)}')

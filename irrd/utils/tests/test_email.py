@@ -566,3 +566,13 @@ class TestSendEmail:
         assert 'IRRd version' in payload
         assert get_setting('email.footer') in payload
         assert mock_smtp.mock_calls[1][0] == 'quit'
+
+    def test_send_email_with_recipient_override(self, monkeypatch, config_override):
+        config_override({'email': {'recipient_override': 'override@example.com'}})
+        mock_smtp = Mock()
+        monkeypatch.setattr('irrd.utils.email.SMTP', lambda server: mock_smtp)
+        send_email('Sasha <sasha@example.com>', 'subject', 'body')
+        assert mock_smtp.mock_calls[0][0] == 'send_message'
+        assert mock_smtp.mock_calls[0][1][0]['From'] == get_setting('email.from')
+        assert mock_smtp.mock_calls[0][1][0]['To'] == 'override@example.com'
+        assert mock_smtp.mock_calls[0][1][0]['Subject'] == 'subject'

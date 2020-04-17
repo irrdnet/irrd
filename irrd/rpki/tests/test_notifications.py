@@ -14,7 +14,8 @@ from ...utils.email import send_email
 class TestNotifyRPKIInvalidOwners:
     def test_notify_regular(self, monkeypatch, config_override):
         config_override({
-            'sources': {'TEST': {'authoritative': True}}
+            'sources': {'TEST': {'authoritative': True}},
+            'rpki': {'notification_invalid_enabled': True},
         })
         mock_dh = Mock(spec=DatabaseHandler)
         mock_dq = Mock(spec=RPSLDatabaseQuery)
@@ -33,8 +34,8 @@ class TestNotifyRPKIInvalidOwners:
                 {'rpsl_pk': 'TEST-MNT', 'parsed_data': {'tech-c': ['PERSON-TEST', 'DOESNOTEXIST-TEST']}},
             ],
             [
-                {'rpsl_pk': 'PERSON-TEST', 'parsed_data': {'email': ['person@xample.com', 'person2@example.com']}},
-                {'rpsl_pk': 'IGNORED-TEST', 'parsed_data': {'email': ['ignored@xample.com']}},
+                {'rpsl_pk': 'PERSON-TEST', 'parsed_data': {'e-mail': ['person@xample.com', 'person2@example.com']}},
+                {'rpsl_pk': 'IGNORED-TEST', 'parsed_data': {'e-mail': ['ignored@xample.com']}},
             ],
         ])
         mock_dh.execute_query = lambda q: next(query_results)
@@ -44,7 +45,7 @@ class TestNotifyRPKIInvalidOwners:
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}],
             ['rpsl_pks', ({'TEST-MNT', 'DOESNOTEXIST-MNT'},), {}],
-            ['object_classes', (['mnt-by'],), {}],
+            ['object_classes', (['mntner'],), {}],
             ['sources', (['TEST'],), {}],
             ['rpsl_pks', ({'PERSON-TEST', 'DOESNOTEXIST-TEST'},), {}],
             ['object_classes', (['role', 'person'],), {}]]
@@ -112,13 +113,18 @@ class TestNotifyRPKIInvalidOwners:
         assert notified == 0
         assert len(mock_email.mock_calls) == 0
 
-    def test_notify_no_relevant_objects(self, monkeypatch):
+    def test_notify_no_relevant_objects(self, monkeypatch, config_override):
+        config_override({
+            'sources': {'TEST': {'authoritative': True}},
+            'rpki': {'notification_invalid_enabled': True},
+        })
         mock_dh = Mock(spec=DatabaseHandler)
         mock_email = Mock()
         monkeypatch.setattr('irrd.rpki.notifications.send_email', mock_email)
 
         rpsl_dicts_now_invalid = [
-            {'source': 'TEST2', 'object_text': SAMPLE_ROUTE6},  # should be ignored
+            # should be ignored
+            {'source': 'TEST2', 'object_text': SAMPLE_ROUTE6, 'rpki_status': RPKIStatus.invalid},
         ]
 
         notified = notify_rpki_invalid_owners(mock_dh, rpsl_dicts_now_invalid)

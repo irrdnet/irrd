@@ -8,7 +8,6 @@ irrd:
             This AS$AS$ route object represents routing data retrieved
             from the RPKI. This route object is the result of an automated
             RPKI-to-IRR conversion process performed by IRRd.
-        notification_invalid_enabled: true
         notification_invalid_subject: route(6) objects in {sources_str} marked RPKI invalid
         notification_invalid_header: |
             This is to notify that {object_count} route(6) objects for which you are a

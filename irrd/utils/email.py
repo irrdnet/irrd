@@ -69,6 +69,9 @@ class EmailParser:
 
 
 def send_email(recipient, subject, body) -> None:
+    if get_setting('email.recipient_override'):
+        recipient = get_setting('email.recipient_override')
+
     logger.debug(f'Sending email to {recipient}, subject {subject}')
     body += get_setting('email.footer')
     hostname = socket.gethostname()

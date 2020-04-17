@@ -37,7 +37,7 @@ def notify_rpki_invalid_owners(database_handler: DatabaseHandler,
             for obj in rpsl_objs
             if obj.parsed_data['source'] == source
         ]))
-        query = RPSLDatabaseQuery(['rpsk_pk', 'parsed_data']).sources([source]).rpsl_pks(mntner_pks).object_classes(['mnt-by'])
+        query = RPSLDatabaseQuery(['rpsl_pk', 'parsed_data']).sources([source]).rpsl_pks(mntner_pks).object_classes(['mntner'])
         mntners = {
             r['rpsl_pk']: r['parsed_data'].get('tech-c', []) + r['parsed_data'].get('admin-c', [])
             for r in database_handler.execute_query(query)
@@ -46,7 +46,7 @@ def notify_rpki_invalid_owners(database_handler: DatabaseHandler,
 
         query = RPSLDatabaseQuery(['rpsl_pk', 'parsed_data']).sources([source]).rpsl_pks(contact_pks).object_classes(['role', 'person'])
         contacts = {
-            r['rpsl_pk']: r['parsed_data'].get('email')
+            r['rpsl_pk']: r['parsed_data'].get('e-mail', [])
             for r in database_handler.execute_query(query)
         }
 
