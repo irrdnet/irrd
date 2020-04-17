@@ -465,6 +465,19 @@ class TestIntegration:
         query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!j-*')
         assert query_result == 'TEST:Y:1-28:28\nRPKI:N:-'
 
+        # Make the v4 route in irrd1 invalid, triggering a mail
+        with open(self.roa_source1, 'w') as roa_file:
+            ujson.dump({'roas': [{'prefix': '128/1', 'asn': 'AS0', 'maxLength': '32', 'ta': 'TA'}]}, roa_file)
+
+        # irrd1 is authoritative for the now invalid v4 route, should have sent mail
+        time.sleep(2)
+        messages = self._retrieve_mails()
+        assert len(messages) == 1
+        mail_text = self._extract_message_body(messages[0])
+        assert messages[0]['Subject'] == 'route(6) objects in TEST marked RPKI invalid'
+        assert messages[0]['To'] == 'email@example.com'
+        assert '192.0.2.0/24' in mail_text
+
         status1 = requests.get(f'http://127.0.0.1:{self.port_http1}/v1/status/')
         status2 = requests.get(f'http://127.0.0.1:{self.port_http2}/v1/status/')
         assert status1.status_code == 200
@@ -560,6 +573,11 @@ class TestIntegration:
                     },
                 },
 
+                'rpki':{
+                    'roa_import_timer': 1,
+                    'notification_invalid_enabled': True,
+                },
+
                 'auth': {
                     'gnupg_keyring': None,
                     'override_password': '$1$J6KycItM$MbPaBU6iFSGFV299Rk7Di0',
@@ -588,7 +606,7 @@ class TestIntegration:
         config1['irrd']['server']['whois']['port'] = self.port_whois1
         config1['irrd']['auth']['gnupg_keyring'] = str(self.tmpdir) + '/gnupg1'
         config1['irrd']['log']['logfile_path'] = self.logfile1
-        config1['irrd']['rpki'] = {'roa_source': 'file://' + self.roa_source1}
+        config1['irrd']['rpki']['roa_source'] = 'file://' + self.roa_source1
         config1['irrd']['sources']['TEST'] = {
             'authoritative': True,
             'keep_journal': True,
@@ -607,7 +625,7 @@ class TestIntegration:
         config2['irrd']['server']['whois']['port'] = self.port_whois2
         config2['irrd']['auth']['gnupg_keyring'] = str(self.tmpdir) + '/gnupg2'
         config2['irrd']['log']['logfile_path'] = self.logfile2
-        config2['irrd']['rpki'] = {'roa_source': 'file://' + self.roa_source2, 'roa_import_timer': 1}
+        config2['irrd']['rpki']['roa_source'] = 'file://' + self.roa_source2
         config2['irrd']['sources']['TEST'] = {
             'keep_journal': True,
             'import_serial_source': f'file://{self.export_dir1}/TEST.CURRENTSERIAL',

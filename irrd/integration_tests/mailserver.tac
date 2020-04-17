@@ -9,8 +9,6 @@ memory store. This is used to simulate actual SMTP interaction in the
 integration test.
 """
 
-from __future__ import print_function
-
 import os
 import sys
 from zope.interface import implementer

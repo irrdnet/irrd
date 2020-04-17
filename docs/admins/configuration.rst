@@ -209,6 +209,10 @@ Email
 * ``email.smtp``: the SMTP server to use for outbound emails.
   |br| **Default**: not defined, but required.
   |br| **Change takes effect**: after SIGHUP, for all subsequent emails.
+* ``email.recipient_override``: override the recipient of all emails to
+  this email address instead. Useful for testing setups.
+  |br| **Default**: not defined, no override
+  |br| **Change takes effect**: after SIGHUP, for all subsequent emails.
 * ``email.notification_headers``: the header to use when sending notifications
   of (attempted) changes to addresses in `notify`, `mnt-nfy` or `upd-to`
   attributes. The string ``{sources_str}`` will be replaced with the name
@@ -280,9 +284,13 @@ RPKI
   |br| **Change takes effect**: after the next ROA import.
 * ``notification_invalid_enabled``: whether to send notifications to contacts
   of route(6) objects newly marked RPKI invalid in authoritative sources.
+  Set to ``true`` or ``false``. This setting is required if ``rpki.roa_source``
+  is set. Note that care is required with this setting in testing setups
+  with live data, as it may send bulk emails to real resource contacts, unless
+  ``email.recipient_override`` is also set.
   See the :ref:`RPKI notification documentation <rpki-notifications>`
   for further details.
-  |br| **Default**: true
+  |br| **Default**: undefined
   |br| **Change takes effect**: the next time an authoritative route(6)
   object is newly marked RPKI invalid.
 * ``notification_invalid_subject``: the subject of the email noted
