@@ -8,6 +8,30 @@ irrd:
             This AS$AS$ route object represents routing data retrieved
             from the RPKI. This route object is the result of an automated
             RPKI-to-IRR conversion process performed by IRRd.
+        notification_invalid_enabled: true
+        notification_invalid_subject: route(6) objects in {sources_str} marked RPKI invalid
+        notification_invalid_header: |
+            This is to notify that {object_count} route(6) objects for which you are a
+            contact have been marked as RPKI invalid. This concerns
+            objects in the {sources_str} database.
+
+            You have received this message because your e-mail address is
+            listed in one or more of the tech-c or admin-c contacts, on
+            the maintainer(s) for these route objects.
+
+            The {object_count} route(6) objects listed below have been validated using
+            RPKI origin validation, and found to be invalid. This means that
+            these objects are no longer visible on the IRRd instance that
+            sent this e-mail.
+
+            This may affect routing filters based on queries to this IRRd
+            instance. It is also no longer possible to modify these objects.
+
+            To resolve this situation, create or modify ROA objects that
+            result in these route(6) being valid, or not_found. If this
+            happens, the route(6) objects will return to being visible.
+            You may also delete these objects if they are no longer
+            relevant.
     server:
         http:
             interface: '::0'
