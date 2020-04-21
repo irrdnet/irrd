@@ -51,7 +51,7 @@ which records:
   invalid or not_found. For objects other than `route(6)`, this is always
   not_found.
   When :doc:`RPKI-aware mode </admins/rpki>` is disabled, this is
-  set to not_valid for all objects.
+  set to not_found for all objects.
 
 The columns `rpsl_pk` and `source` must be unique together.
 The columns `pk`, `rpsl_pk`, `source`, `ip_version`, `ip_first`,
@@ -85,7 +85,7 @@ Specifically, it records:
 * `origin`: the origin of the operation, i.e. what caused this change.
   Options are:
   * `UNKNOWN`: entry was created before origin field was added
-  * `NRTM_MIRROR`: change received from a mirror
+  * `MIRROR`: change received from a mirror, over NRTM or by file import
   * `SYNTHETIC_NRTM`: change derived from synthesized NRTM
   * `PSEUDO_IRR`: change derived from changes to pseudo-IRR objects
   * `AUTH_CHANGE`: change made by a user of an authoritative database
@@ -126,9 +126,9 @@ For each source, a record is kept of:
   also logged in the IRRd logfile.
 
 The difference between `serial_newest_mirror` and `serial_newest_journal` is
-that the former refers to the serial numbers in the mirror's journal, and
-the latter refers to the local journal. These may be different, e.g. due to
-changes in RPKI status.
+that the former refers to the serial numbers in the remote mirror's journal,
+and the latter refers to the local journal. These may be different, e.g. due
+to changes in RPKI status.
 
 .. note::
     There is no guarantee that all NRTM operations between

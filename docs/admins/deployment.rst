@@ -93,7 +93,7 @@ Beyond a default Redis installation, it is recommended to:
   option in Redis, and using a unix socket URL in the ``redis_url``
   configuration in IRRd. This improves performance.
 
-IRRd will recover from a Redis restart, but certain queries mail fail
+IRRd will recover from a Redis restart, but certain queries may fail
 while Redis is unavailable.
 
 Installing IRRd
@@ -215,6 +215,8 @@ the SQL tables, "upgrade" to the latest version::
 
     /home/irrd/irrd-venv/bin/irrd_database_upgrade
 
+The same command is used to upgrade the database after upgrading IRRd.
+
 A ``--config`` parameter can be passed to set a different configuration
 file path. A ``version`` parameter can be passed to upgrade to a specific
 version, the default is the latest version (`head`).
@@ -234,8 +236,11 @@ The user also needs write access to access to:
 
 * ``auth.gnupg_keyring``
 * ``sources.{name}.export_destination``
-* ``log.logfile_path``. As IRRd creates ``log.logfile_path`` itself,
-  it needs write access to the directory this file is in
+* ``log.logfile_path``, which should either exist with write permissions
+  for the irrd user, or the irrd user should have write access to the
+  directory. Note that if you use log rotation, you must ensure a new
+  file with proper permissions is created before IRRd writes to it,
+  or give write access to the directory.
 * ``piddir``
 
 
@@ -267,9 +272,11 @@ to open privileged ports, e.g.::
 
     # Once, as root:
     setcap 'cap_net_bind_service=+eip' /home/irrd/irrd-venv/bin/python3
+    # To run, start without --uid, as the non-privileged user
+    /home/irrd/irrd-venv/bin/irrd
 
 Alternatively, you can run IRRd on non-privileged ports and use IPtables
-or something similar to redirect connections from the privileged ports.
+or similar tools to redirect connections from the privileged ports.
 
 Logrotate configuration
 ~~~~~~~~~~~~~~~~~~~~~~~

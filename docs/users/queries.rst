@@ -95,7 +95,7 @@ IRRd style queries
   conflict with RPKI ROAs are not included in the output of any query by default.
   After using ``!fno-rpki-filter``, this filter is disabled for the remainder of
   the connection. Disabling the filter only applies to ``!r`` queries and
-  all RIPE style queries.
+  all RIPE style queries. This is only intended as a debugging aid.
 
 Responses
 ^^^^^^^^^
