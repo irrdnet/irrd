@@ -5,6 +5,7 @@ from IPy import IP
 from typing import List
 
 from irrd.conf import RPKI_IRR_PSEUDO_SOURCE, get_setting
+from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.parser import RPSLObject, RPSL_ATTRIBUTE_TEXT_WIDTH
 from irrd.rpsl.rpsl_objects import RPSL_ROUTE_OBJECT_CLASS_FOR_IP_VERSION
 from irrd.storage.database_handler import DatabaseHandler
@@ -125,6 +126,7 @@ class RPSLObjectFromROA(RPSLObject):
         self.prefix_length = self.prefix.prefixlen()
         self.asn_first = asn
         self.asn_last = asn
+        self.rpki_status = RPKIStatus.valid
         self.parsed_data = {
             self.rpsl_object_class: self.prefix_str,
             'origin': 'AS' + str(self.asn),
