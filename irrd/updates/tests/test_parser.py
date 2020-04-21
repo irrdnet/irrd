@@ -216,7 +216,6 @@ class TestSingleChangeRequestHandling:
 
         validator = ReferenceValidator(mock_dh)
         query_results = iter([
-            [{'object_text': SAMPLE_PERSON}],
             [{'object_text': SAMPLE_ROUTE, 'object_class': 'route',
               'rpsl_pk': '192.0.2.0/24', 'source': 'TEST'}],
         ])
@@ -225,7 +224,7 @@ class TestSingleChangeRequestHandling:
         result = parse_change_requests(SAMPLE_ROUTE + 'delete: delete',
                                        mock_dh, AuthValidator(mock_dh), validator)[0]
         result._check_references()
-        assert result.is_valid()
+        assert result.is_valid(), result.error_messages
         assert not result.error_messages
 
         # No lookup for references should be done as part of reference checks,

@@ -16,11 +16,11 @@ class DatabaseOperation(enum.Enum):
 class JournalEntryOrigin(enum.Enum):
     # Legacy journal entries for which the origin is unknown, can be auth_change or mirror
     unknown = 'UNKNOWN'
-    # Journal entry received from a mirror
-    mirror = 'NRTM_MIRROR'
+    # Journal entry received from a mirror by NRTM or importing from a file
+    mirror = 'MIRROR'
     # Journal entry generated from synthesized NRTM
     synthetic_nrtm = 'SYNTHETIC_NRTM'
-    # Journal entry generated from pseudo IRR (i.e. RPSL objects created from ROA's)
+    # Journal entry generated from pseudo IRR
     pseudo_irr = 'PSEUDO_IRR'
     # Journal entry caused by a user-submitted change in an authoritative database
     auth_change = 'AUTH_CHANGE'

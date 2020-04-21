@@ -217,8 +217,8 @@ class Configuration:
             errors.append(f'Setting email.recipient_override must be an email address if set.')
 
         string_not_required = ['email.footer', 'server.whois.access_list', 'server.http.access_list',
-                               'rpki.notification_invalid_subject',
-                               'rpki.notification_invalid_header']
+                               'rpki.notify_invalid_subject',
+                               'rpki.notify_invalid_header']
         for setting in string_not_required:
             if not self._check_is_str(config, setting, required=False):
                 errors.append(f'Setting {setting} must be a string, if defined.')
@@ -241,8 +241,8 @@ class Configuration:
         known_sources = set(config.get('sources', {}).keys())
         if config.get('rpki.roa_source'):
             known_sources.add(RPKI_IRR_PSEUDO_SOURCE)
-            if config.get('rpki.notification_invalid_enabled') is None:
-                errors.append(f'RPKI-aware mode is enabled, but rpki.notification_invalid_enabled '
+            if config.get('rpki.notify_invalid_enabled') is None:
+                errors.append(f'RPKI-aware mode is enabled, but rpki.notify_invalid_enabled '
                               f'is not set. Set to true or false. Note that care is required with '
                               f'this setting in testing setups with live data, as it may send bulk '
                               f'emails to real resource contacts unless email.recipient_override '
@@ -253,7 +253,7 @@ class Configuration:
             errors.append(f'Setting sources_default contains unknown sources: {", ".join(unknown_default_sources)}')
 
         if not str(config.get('rpki.roa_import_timer', '0')).isnumeric():
-            errors.append(f'Setting rpki.roa_import_timer must be a number.')
+            errors.append(f'Setting rpki.roa_import_timer must be set to a number.')
 
         for name, details in config.get('sources', {}).items():
             if config.get('rpki.roa_source') and name == RPKI_IRR_PSEUDO_SOURCE:
@@ -296,16 +296,27 @@ configuration = None
 
 
 def get_configuration() -> Optional[Configuration]:
+    """
+    Get the Configuration object, if initialised.
+    """
     global configuration
     return configuration
 
 
 def config_init(config_path, commit=True) -> None:
+    """
+    Initialise the configuration from a configuration path.
+    If commit is False, only validates the configuration.
+    """
     global configuration
     configuration = Configuration(config_path, commit)
 
 
 def is_config_initialised() -> bool:
+    """
+    Returns whether the configuration is initialised,
+    i.e. whether get_setting() can be called.
+    """
     configuration = get_configuration()
     return configuration is not None
 
@@ -313,8 +324,6 @@ def is_config_initialised() -> bool:
 def get_setting(setting_name: str, default: Any=None) -> Any:
     """
     Convenience wrapper to get the value of a setting.
-    Creates a Configuration object if none exists, and
-    retrieves the live setting from that object.
     """
     configuration = get_configuration()
     if not configuration:  # pragma: no cover

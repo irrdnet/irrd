@@ -99,7 +99,6 @@ class WhoisRequestHandler(socketserver.StreamRequestHandler):
             timer = threading.Timer(self.query_parser.timeout, self.server.shutdown_request, args=[self.request])
             timer.start()
             data = self.rfile.readline()
-
             timer.cancel()
 
             query = data.decode('utf-8', errors='backslashreplace').strip()

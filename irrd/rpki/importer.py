@@ -103,7 +103,7 @@ class ROA:
             trust_anchor=self.trust_anchor,
         )
         database_handler.upsert_rpsl_object(self._rpsl_object, JournalEntryOrigin.pseudo_irr,
-                                            rpsl_safe_insert_only=True)
+                                            rpsl_guaranteed_no_existing=True)
 
 
 class RPSLObjectFromROA(RPSLObject):
@@ -143,7 +143,7 @@ class RPSLObjectFromROA(RPSLObject):
         object_class_display = f'{self.rpsl_object_class}:'.ljust(RPSL_ATTRIBUTE_TEXT_WIDTH)
         remarks_fill = RPSL_ATTRIBUTE_TEXT_WIDTH * ' '
         remarks = get_setting('rpki.pseudo_irr_remarks').replace('\n', '\n' + remarks_fill).strip()
-        remarks = remarks.replace('$AS$', str(self.asn)).replace('$PREFIX$', self.prefix_str)
+        remarks = remarks.format(asn=self.asn, prefix=self.prefix_str)
         rpsl_object_text = f"""
 {object_class_display}{self.prefix_str}
 descr:          RPKI ROA for {self.prefix_str} / AS{self.asn}

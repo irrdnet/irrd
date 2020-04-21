@@ -38,7 +38,7 @@ class Preloader:
     needs to be updated. This interface can be used from any thread
     or process.
     """
-    _loaded_in_memory_time = False
+    _memory_load_timestamp = False
 
     def __init__(self):
         self._redis_conn = redis.Redis.from_url(get_setting('redis_url'))
@@ -55,9 +55,8 @@ class Preloader:
         if those classes are relevant to the data in the preload store.
         """
         relevant_object_classes = {'route', 'route6'}
-        if object_classes_changed is not None and not object_classes_changed.intersection(relevant_object_classes):
-            return
-        self._redis_conn.publish(REDIS_PRELOAD_RELOAD_CHANNEL, 'reload')
+        if object_classes_changed is None or object_classes_changed.intersection(relevant_object_classes):
+            self._redis_conn.publish(REDIS_PRELOAD_RELOAD_CHANNEL, 'reload')
 
     def routes_for_origins(self, origins: Union[List[str], Set[str]], sources: List[str],
                            ip_version: Optional[int] = None) -> Set[str]:
@@ -76,7 +75,7 @@ class Preloader:
         if not origins or not sources:
             return set()
 
-        if self._loaded_in_memory_time:
+        if self._memory_load_timestamp:
             return self._routes_for_origins_memory(origins, sources, ip_version)
         else:
             return self._routes_for_origins_redis(origins, sources, ip_version)
@@ -89,7 +88,7 @@ class Preloader:
         """
         # The in-memory store is a snapshot, and therefore has a limited lifetime,
         # so that long-running connections don't end up serving very outdated data.
-        if time.time() - self._loaded_in_memory_time > MAX_MEMORY_LIFETIME:
+        if time.time() - self._memory_load_timestamp > MAX_MEMORY_LIFETIME:
             self.load_routes_into_memory()
 
         prefix_sets: Set[str] = set()
@@ -134,7 +133,7 @@ class Preloader:
         """
         Pre-preload all routes into memory. This increases performance for
         routes_for_origins() by up to 100x, but takes about 0.2-0.5s.
-        It also means origins are no longer updated as long as this object exists.
+        It also means origins are updated only every MAX_MEMORY_LIFETIME.
         """
         while not self._redis_conn.exists(REDIS_ORIGIN_ROUTE4_STORE_KEY):
             time.sleep(1)  # pragma: no cover
@@ -153,7 +152,7 @@ class Preloader:
         _load(REDIS_ORIGIN_ROUTE4_STORE_KEY, self._origin_route4_store)
         _load(REDIS_ORIGIN_ROUTE6_STORE_KEY, self._origin_route6_store)
 
-        self._loaded_in_memory_time = time.time()
+        self._memory_load_timestamp = time.time()
 
 
 class PreloadStoreManager(ExceptionLoggingProcess):

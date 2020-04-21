@@ -47,10 +47,11 @@ def main():
         daemon_kwargs['stdout'] = sys.stdout
         daemon_kwargs['stderr'] = sys.stderr
 
+    # config_init w/ commit may only be called within DaemonContext
     config_init(args.config_file_path, commit=False)
 
     with daemon.DaemonContext(**daemon_kwargs):
-        config_init(args.config_file_path)  # config_init w/ commit may only be called within DaemonContext
+        config_init(args.config_file_path)
         piddir = get_setting('piddir')
         logger.info('IRRd attempting to secure PID')
         try:

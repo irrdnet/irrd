@@ -111,7 +111,7 @@ class TestMirrorScheduler:
         scheduler = MirrorScheduler()
         scheduler.run()
         time.sleep(0.5)
-        # Second run will not start the thread, as the current one is still running.psql
+        # Second run will not start the thread, as the current one is still running
         scheduler.run()
 
         assert thread_run_count == 1

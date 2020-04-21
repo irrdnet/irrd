@@ -12,6 +12,9 @@ from irrd.storage.queries import RPSLDatabaseQuery, ROADatabaseObjectQuery
 from .importer import ROA
 from .status import RPKIStatus
 
+# Pregenerated conversion from binary to binary strings for performance
+BYTE_BIN = [bin(byte)[2:].zfill(8) for byte in range(256)]
+
 decode_hex = codecs.getdecoder("hex_codec")
 
 
@@ -45,16 +48,13 @@ class BulkRouteROAValidator:
     def __init__(self, dh: DatabaseHandler, roas: Optional[List[ROA]] = None):
         """
         Create a validator object. Can use either a list of ROA objects,
-        or if not give, generates this from the database.
+        or if not given, generates this from the database.
         Due to the overhead in preloading all ROAs, this is only effective
         when many routes have to be validated, otherwise it's more
         efficient to use SingleRouteROAValidator. The break even
         point is in the order of magnitude of checking 10.000 routes.
         """
         self.database_handler = dh
-        # Pregenerated conversion from binary to binary strings for performance
-        # TODO: this should be global
-        self._byte_bin = [bin(byte)[2:].zfill(8) for byte in range(256)]
 
         self.excluded_sources = []
         for source, settings in get_setting('sources', {}).items():
@@ -73,7 +73,7 @@ class BulkRouteROAValidator:
         Validate all RPSL route/route6 objects.
 
         Retrieves all routes from the DB, and aggregates the validation results.
-        Returns a tuple of three sets of RPSL route PKs:
+        Returns a tuple of three sets of RPSL route(6)'s:
         - one with routes that should be set to status VALID, but are not now
         - one with routes that should be set to status INVALID, but are not now
         - one with routes that should be set to status UNKNOWN, but are not now
@@ -164,7 +164,7 @@ class BulkRouteROAValidator:
         """
         address_family = socket.AF_INET6 if ':' in ip else socket.AF_INET
         ip_bin = socket.inet_pton(address_family, ip)
-        ip_bin_str = ''.join([self._byte_bin[b] for b in ip_bin]) + '0'
+        ip_bin_str = ''.join([BYTE_BIN[b] for b in ip_bin]) + '0'
         return ip_bin_str
 
 

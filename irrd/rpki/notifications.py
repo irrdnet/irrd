@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 def notify_rpki_invalid_owners(database_handler: DatabaseHandler,
                                rpsl_dicts_now_invalid: List[Dict[str, str]]) -> int:
-    if not get_setting('rpki.notification_invalid_enabled'):
+    if not get_setting('rpki.notify_invalid_enabled'):
         return 0
 
     rpsl_objs = []
@@ -71,8 +71,8 @@ def notify_rpki_invalid_owners(database_handler: DatabaseHandler,
             except KeyError:  # pragma: no cover
                 pass
 
-    header_template = get_setting('rpki.notification_invalid_header', '')
-    subject_template = get_setting('rpki.notification_invalid_subject', '').replace('\n', ' ')
+    header_template = get_setting('rpki.notify_invalid_header', '')
+    subject_template = get_setting('rpki.notify_invalid_subject', '').replace('\n', ' ')
     for email, objs in objs_per_email.items():
         sources_str = ', '.join(set([obj.parsed_data['source'] for obj in objs]))
         subject = subject_template.format(sources_str=sources_str, object_count=len(objs))

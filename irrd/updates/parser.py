@@ -3,7 +3,6 @@ import logging
 from typing import List, Optional, Set
 
 from irrd.conf import get_setting
-from irrd.conf.defaults import DEFAULT_RPKI_IMPORT_TIMER
 from irrd.rpki.validators import SingleRouteROAValidator
 from irrd.rpki.status import RPKIStatus
 from irrd.storage.database_handler import DatabaseHandler
@@ -32,7 +31,6 @@ class ChangeRequest:
     mntners_notify: List[RPSLMntner]
 
     error_messages: List[str]
-    warning_messages: List[str]
     info_messages: List[str]
 
     def __init__(self, rpsl_text_submitted: str, database_handler: DatabaseHandler, auth_validator: AuthValidator,
@@ -63,7 +61,6 @@ class ChangeRequest:
         self.used_override = False
         self._cached_roa_validity: Optional[bool] = None
         self.roa_validator = SingleRouteROAValidator(database_handler)
-        self.warning_messages = []
 
         try:
             self.rpsl_obj_new = rpsl_object_from_text(rpsl_text_submitted, strict_validation=True)
@@ -155,7 +152,6 @@ class ChangeRequest:
             else:
                 report += '\n' + self.rpsl_obj_new.render_rpsl_text() + '\n'
             report += ''.join([f'ERROR: {e}\n' for e in self.error_messages])
-            report += ''.join([f'WARNING: {e}\n' for e in self.warning_messages])
             report += ''.join([f'INFO: {e}\n' for e in self.info_messages])
         return report
 
@@ -256,9 +252,8 @@ class ChangeRequest:
         of references from the new object to others matter.
         """
         if self.request_type == UpdateRequestType.DELETE and self.rpsl_obj_current is not None:
-            # TODO: shouldn't this check on rpsl_obj_current?
             assert self.rpsl_obj_new
-            references_result = self.reference_validator.check_references_from_others(self.rpsl_obj_new)
+            references_result = self.reference_validator.check_references_from_others(self.rpsl_obj_current)
         else:
             assert self.rpsl_obj_new
             references_result = self.reference_validator.check_references_to_others(self.rpsl_obj_new)
@@ -282,10 +277,10 @@ class ChangeRequest:
         True when not in RPKI-aware mode.
         """
         assert self.rpsl_obj_new
-        if not get_setting('rpki.roa_source') or not self.rpsl_obj_new.rpki_relevant:
-            return True
         if self._cached_roa_validity is not None:
             return self._cached_roa_validity
+        if not get_setting('rpki.roa_source') or not self.rpsl_obj_new.rpki_relevant:
+            return True
         # Deletes are permitted for RPKI-invalids, other operations are not
         if self.request_type == UpdateRequestType.DELETE:
             return True
@@ -295,7 +290,7 @@ class ChangeRequest:
             self.rpsl_obj_new.prefix, self.rpsl_obj_new.asn_first, self.rpsl_obj_new.source()
         )
         if validation_result == RPKIStatus.invalid:
-            import_timer = get_setting(f'rpki.roa_import_timer', DEFAULT_RPKI_IMPORT_TIMER)
+            import_timer = get_setting(f'rpki.roa_import_timer')
             user_message = 'RPKI ROAs were found that conflict with this object. '
             user_message += f'(This IRRd refreshes ROAs every {import_timer} seconds.)'
             logger.debug(f'{id(self)}: Conflicting ROAs found')

@@ -575,7 +575,7 @@ class TestIntegration:
 
                 'rpki':{
                     'roa_import_timer': 1,
-                    'notification_invalid_enabled': True,
+                    'notify_invalid_enabled': True,
                 },
 
                 'auth': {

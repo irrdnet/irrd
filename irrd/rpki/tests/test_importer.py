@@ -35,11 +35,11 @@ class TestROAImportProcess:
             ['insert_roa_object', (),
                 {'ip_version': 4, 'prefix_str': '192.0.2.0/24', 'asn': 64496,
                  'max_length': 26, 'trust_anchor': 'APNIC RPKI Root'}],
-            ['upsert_rpsl_object', ('route/192.0.2.0/24AS64496/ML26/RPKI', 'JournalEntryOrigin.pseudo_irr'), {'rpsl_safe_insert_only': True}],
+            ['upsert_rpsl_object', ('route/192.0.2.0/24AS64496/ML26/RPKI', 'JournalEntryOrigin.pseudo_irr'), {'rpsl_guaranteed_no_existing': True}],
             ['insert_roa_object', (),
                 {'ip_version': 6, 'prefix_str': '2001:db8::/32', 'asn': 64497,
                  'max_length': 40, 'trust_anchor': 'RIPE NCC RPKI Root'}],
-            ['upsert_rpsl_object', ('route6/2001:db8::/32AS64497/ML40/RPKI', 'JournalEntryOrigin.pseudo_irr'), {'rpsl_safe_insert_only': True}],
+            ['upsert_rpsl_object', ('route6/2001:db8::/32AS64497/ML40/RPKI', 'JournalEntryOrigin.pseudo_irr'), {'rpsl_guaranteed_no_existing': True}],
         ]
 
         assert roa_importer.roa_objs[0]._rpsl_object.source() == RPKI_IRR_PSEUDO_SOURCE
