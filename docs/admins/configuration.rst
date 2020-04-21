@@ -67,7 +67,7 @@ This sample shows most configuration options::
             roa_source: https://example.com/roa.json
             roa_import_timer: 7200
             pseudo_irr_remarks: |
-                This AS$AS$ route object represents routing data retrieved
+                This AS{asn} route object represents routing data retrieved
                 from the RPKI. This route object is the result of an automated
                 RPKI-to-IRR conversion process performed by IRRd.
 
@@ -273,16 +273,16 @@ RPKI
   |br| **Default**: ``3600``.
   |br| **Change takes effect**: after SIGHUP.
 * ``pseudo_irr_remarks``: the contents of the remarks field for pseudo-IRR
-  objects created for each ROA. This can have multiple lines. ``$AS$`` and
-  ``$PREFIX$`` are replaced with the ROA's AS number and prefix, respectively.
+  objects created for each ROA. This can have multiple lines. ``{asn}`` and
+  ``{prefix}`` are replaced with the ROA's AS number and prefix, respectively.
   When adding this to the configuration, use the `|` style to preserve newlines, as
   shown in the example configuration file above.
   |br| **Default**::
-  |br| `This AS$AS$ route object represents routing data retrieved`
+  |br| `This AS{asn} route object represents routing data retrieved`
   |br| `from the RPKI. This route object is the result of an automated`
   |br| `RPKI-to-IRR conversion process performed by IRRd.`
   |br| **Change takes effect**: after the next ROA import.
-* ``notification_invalid_enabled``: whether to send notifications to contacts
+* ``notify_invalid_enabled``: whether to send notifications to contacts
   of route(6) objects newly marked RPKI invalid in authoritative sources.
   Set to ``true`` or ``false``. This setting is required if ``rpki.roa_source``
   is set. Note that care is required with this setting in testing setups
@@ -293,27 +293,42 @@ RPKI
   |br| **Default**: undefined
   |br| **Change takes effect**: the next time an authoritative route(6)
   object is newly marked RPKI invalid.
-* ``notification_invalid_subject``: the subject of the email noted
-  in ``notification_invalid_enabled``.
+* ``notify_invalid_subject``: the subject of the email noted
+  in ``notify_invalid_enabled``.
   The string ``{sources_str}`` will be replaced with the name
   of the source(s) (e.g. ``NTTCOM``) of the relevant objects, and
   {object_count} with the number of objects listed in the email.
-  |br| **Default**:
-  |br| `This AS$AS$ route object represents routing data retrieved`
-  |br| `from the RPKI. This route object is the result of an automated`
-  |br| `RPKI-to-IRR conversion process performed by IRRd.`
+  |br| **Default**: ``route(6) objects in {sources_str} marked RPKI invalid``
   |br| **Change takes effect**: after the next ROA import.
-* ``notification_invalid_header``: the header of the email noted in
-  ``notification_invalid_enabled``.
+* ``notify_invalid_header``: the header of the email noted in
+  ``notify_invalid_enabled``.
   The string ``{sources_str}`` will be replaced with the name
   of the source(s) (e.g. ``NTTCOM``) of the relevant objects, and
   {object_count} with the number of objects listed in the email. When adding
   this to the configuration, use the `|` style to preserve newlines, as
   shown in the example configuration file above.
   |br| **Default**:
-  |br| `This AS$AS$ route object represents routing data retrieved`
-  |br| `from the RPKI. This route object is the result of an automated`
-  |br| `RPKI-to-IRR conversion process performed by IRRd.`
+  |br| `This is to notify that {object_count} route(6) objects for which you are a`
+  |br| `contact have been marked as RPKI invalid. This concerns`
+  |br| `objects in the {sources_str} database.`
+  |br|
+  |br| `You have received this message because your e-mail address is`
+  |br| `listed in one or more of the tech-c or admin-c contacts, on`
+  |br| `the maintainer(s) for these route objects.`
+  |br|
+  |br| `The {object_count} route(6) objects listed below have been validated using`
+  |br| `RPKI origin validation, and found to be invalid. This means that`
+  |br| `these objects are no longer visible on the IRRd instance that`
+  |br| `sent this e-mail.`
+  |br|
+  |br| `This may affect routing filters based on queries to this IRRd`
+  |br| `instance. It is also no longer possible to modify these objects.`
+  |br|
+  |br| `To resolve this situation, create or modify ROA objects that`
+  |br| `result in these route(6) being valid, or not_found. If this`
+  |br| `happens, the route(6) objects will return to being visible.`
+  |br| `You may also delete these objects if they are no longer`
+  |br| `relevant.`
   |br| **Change takes effect**: after the next ROA import.
 
 

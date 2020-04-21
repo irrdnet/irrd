@@ -236,6 +236,8 @@ class ROAImportRunner(FileImportRunnerBase):
             roa_objs = self._import_roas()
             # Do an early commit to make the new ROAs available to other processes.
             self.database_handler.commit()
+            # The ROA import does not use journaling, but updating the RPKI
+            # status may create journal entries.
             self.database_handler.enable_journaling()
 
             validator = BulkRouteROAValidator(self.database_handler, roa_objs)

@@ -15,7 +15,7 @@ class TestNotifyRPKIInvalidOwners:
     def test_notify_regular(self, monkeypatch, config_override):
         config_override({
             'sources': {'TEST': {'authoritative': True}},
-            'rpki': {'notification_invalid_enabled': True},
+            'rpki': {'notify_invalid_enabled': True},
         })
         mock_dh = Mock(spec=DatabaseHandler)
         mock_dq = Mock(spec=RPSLDatabaseQuery)
@@ -51,7 +51,7 @@ class TestNotifyRPKIInvalidOwners:
             ['object_classes', (['role', 'person'],), {}]]
 
         assert len(mock_email.mock_calls) == 2
-        actual_recipients = {mock_email.mock_calls[0][1][0], mock_email.mock_calls[1][1][0]}
+        actual_recipients = {call[1][0] for call in mock_email.mock_calls}
         expected_recipients = {'person@xample.com', 'person2@example.com'}
         assert actual_recipients == expected_recipients
         assert mock_email.mock_calls[0][1][1] == 'route(6) objects in TEST marked RPKI invalid'
@@ -99,7 +99,7 @@ class TestNotifyRPKIInvalidOwners:
     def test_notify_disabled(self, monkeypatch, config_override):
         config_override({
             'sources': {'TEST': {'authoritative': True}},
-            'rpki': {'notification_invalid_enabled': False},
+            'rpki': {'notify_invalid_enabled': False},
         })
         mock_dh = Mock(spec=DatabaseHandler)
         mock_email = Mock()
@@ -116,7 +116,7 @@ class TestNotifyRPKIInvalidOwners:
     def test_notify_no_relevant_objects(self, monkeypatch, config_override):
         config_override({
             'sources': {'TEST': {'authoritative': True}},
-            'rpki': {'notification_invalid_enabled': True},
+            'rpki': {'notify_invalid_enabled': True},
         })
         mock_dh = Mock(spec=DatabaseHandler)
         mock_email = Mock()

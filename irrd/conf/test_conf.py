@@ -128,7 +128,7 @@ class TestConfiguration:
                 },
                 'rpki': {
                     'roa_source': 'https://example.com/roa.json',
-                    'notification_invalid_enabled': False,
+                    'notify_invalid_enabled': False,
                 },
                 'sources_default': ['TESTDB2', 'TESTDB', 'RPKI'],
                 'sources': {
@@ -178,8 +178,8 @@ class TestConfiguration:
                 'rpki': {
                     'roa_source': 'https://example.com/roa.json',
                     'roa_import_timer': 'foo',
-                    'notification_invalid_subject': [],
-                    'notification_invalid_header': [],
+                    'notify_invalid_subject': [],
+                    'notify_invalid_header': [],
                 },
                 'sources_default': ['DOESNOTEXIST-DB'],
                 'sources': {
@@ -230,10 +230,10 @@ class TestConfiguration:
         assert 'Setting authoritative for source TESTDB2 can not be enabled when either nrtm_host or import_source are set.' in str(ce.value)
         assert 'Setting authoritative for source TESTDB3 can not be enabled when either nrtm_host or import_source are set.' in str(ce.value)
         assert 'Setting nrtm_port for source TESTDB2 must be a number.' in str(ce.value)
-        assert 'Setting rpki.roa_import_timer must be a number.' in str(ce.value)
-        assert 'Setting rpki.notification_invalid_subject must be a string, if defined.' in str(ce.value)
-        assert 'Setting rpki.notification_invalid_header must be a string, if defined.' in str(ce.value)
-        assert 'RPKI-aware mode is enabled, but rpki.notification_invalid_enabled' in str(ce.value)
+        assert 'Setting rpki.roa_import_timer must be set to a number.' in str(ce.value)
+        assert 'Setting rpki.notify_invalid_subject must be a string, if defined.' in str(ce.value)
+        assert 'Setting rpki.notify_invalid_header must be a string, if defined.' in str(ce.value)
+        assert 'RPKI-aware mode is enabled, but rpki.notify_invalid_enabled' in str(ce.value)
         assert 'Setting import_timer for source TESTDB must be a number.' in str(ce.value)
         assert 'Setting export_timer for source TESTDB must be a number.' in str(ce.value)
         assert 'Invalid source name: lowercase' in str(ce.value)

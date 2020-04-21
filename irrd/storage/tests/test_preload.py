@@ -69,7 +69,7 @@ class TestPreloading:
         for thread in preload_manager._threads:
             thread.is_alive = lambda: False
 
-        # Reload through the redis channel. First call is ignored.
+        # Reload through the redis channel. First call is ignored, inetnums are not relevant.
         Preloader().signal_reload({'inetnum'})
         Preloader().signal_reload()
         Preloader().signal_reload()
@@ -151,7 +151,7 @@ class TestPreloading:
         assert preloader.routes_for_origins(['AS65546'], sources, 4) == {'192.0.2.0/25'}
 
         # Make the preloader think the in-memory store is expired, forcing a refresh
-        preloader._loaded_in_memory_time = time.time() - 3600
+        preloader._memory_load_timestamp = time.time() - 3600
         assert preloader.routes_for_origins(['AS65546'], sources, 4) == set()
 
 

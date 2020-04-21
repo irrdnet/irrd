@@ -59,7 +59,7 @@ class DatabaseHandler:
         self._rpsl_upsert_buffer = []
         self._roa_insert_buffer = []
         self._object_classes_modified: Set[str] = set()
-        self._rpsl_safe_insert_only = True
+        self._rpsl_guaranteed_no_existing = True
         self.status_tracker = DatabaseStatusTracker(self, journaling_enabled=self.journaling_enabled)
 
     def disable_journaling(self):
@@ -109,7 +109,7 @@ class DatabaseHandler:
         return self._connection.execute(statement)
 
     def upsert_rpsl_object(self, rpsl_object: RPSLObject, origin: JournalEntryOrigin,
-                           rpsl_safe_insert_only=False) -> None:
+                           rpsl_guaranteed_no_existing=False) -> None:
         """
         Schedule an RPSLObject for insertion/updating.
 
@@ -123,12 +123,12 @@ class DatabaseHandler:
         The origin indicates the origin of this change, see JournalEntryOrigin
         for the various options.
 
-        If rpsl_safe_insert_only is set to True, the caller guarantees that this
+        If rpsl_guaranteed_no_existing is set to True, the caller guarantees that this
         PK is unique in the database. This essentially only applies to inserting
         RPKI psuedo-IRR objects.
         """
-        if not rpsl_safe_insert_only:
-            self._rpsl_safe_insert_only = False
+        if not rpsl_guaranteed_no_existing:
+            self._rpsl_guaranteed_no_existing = False
         ip_first = str(rpsl_object.ip_first) if rpsl_object.ip_first else None
         ip_last = str(rpsl_object.ip_last) if rpsl_object.ip_last else None
 
@@ -193,6 +193,10 @@ class DatabaseHandler:
         """
         Update the RPKI status for the given RPSL PKs.
         Only PKs whose status have changed should be included.
+
+        Objects that moved to or from invalid generate a journal
+        entry, so that mirrors follow the (in)visibility depending
+        on RPKI status.
         """
         table = RPSLDatabaseObject.__table__
         if rpsl_objs_now_valid:
@@ -283,7 +287,7 @@ class DatabaseHandler:
         rpsl_composite_key = ['rpsl_pk', 'source']
         stmt = pg.insert(RPSLDatabaseObject).values([x[0] for x in self._rpsl_upsert_buffer])
 
-        if not self._rpsl_safe_insert_only:
+        if not self._rpsl_guaranteed_no_existing:
             columns_to_update = {
                 c.name: c
                 for c in stmt.excluded
@@ -303,6 +307,9 @@ class DatabaseHandler:
             raise
 
         for obj, origin in self._rpsl_upsert_buffer:
+            # RPKI invalid objects never generated a journal entry,
+            # as mirrors should not see them. This does not affect
+            # RPKI excluded sources, because they are always not_found.
             if obj['rpki_status'] != RPKIStatus.invalid:
                 self.status_tracker.record_operation(
                     operation=DatabaseOperation.add_or_update,
