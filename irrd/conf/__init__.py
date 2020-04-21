@@ -243,10 +243,10 @@ class Configuration:
             known_sources.add(RPKI_IRR_PSEUDO_SOURCE)
             if config.get('rpki.notify_invalid_enabled') is None:
                 errors.append(f'RPKI-aware mode is enabled, but rpki.notify_invalid_enabled '
-                              f'is not set. Set to true or false. Note that care is required with '
+                              f'is not set. Set to true or false. DANGER: care is required with '
                               f'this setting in testing setups with live data, as it may send bulk '
                               f'emails to real resource contacts unless email.recipient_override '
-                              f'is also set.')
+                              f'is also set. Read documentation carefully.')
 
         unknown_default_sources = set(config.get('sources_default', [])).difference(known_sources)
         if unknown_default_sources:

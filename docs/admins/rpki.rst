@@ -11,7 +11,8 @@ objects that represent ROA data.
 Enabling RPKI-aware mode
 ------------------------
 You can enable RPKI-aware mode by setting the ``rpki.roa_source`` setting
-to a URL of a ROA export in JSON format.
+to a URL of a ROA export in JSON format. RPKI-aware mode is **enabled**
+by default. To disable RPKI-aware mode, set this to ``null``.
 
 As soon as this is enabled and IRRd is (re)started or a SIGHUP is sent,
 IRRd will import the ROAs and mark any invalid existing `route(6)` as
@@ -34,8 +35,9 @@ in any query response. This is determined using
 `RFC6811 origin validation <https://tools.ietf.org/html/rfc6811>` and
 applies to all query types.
 
-To include invalid objects in the response, this filter can be disabled
-for a connection with the ``!fno-rpki-filter`` command. The filter is
+To aid in debugging, it is possible to include invalid objects in the
+response. The RPKI filter can be disabled for a connection with the
+``!fno-rpki-filter`` command. The filter is
 disabled only for ``!r`` queries and all RIPE style queries.
 
 Where validation takes place
@@ -67,7 +69,7 @@ If a ROA is added the next day that results in the route being RPKI valid
 or not_found, an ADD is recorded in the local journal, and the third party
 can pick up the change from an NRTM query to your IRRd. If that ROA is
 deleted again, causing the route to return to RPKI invalid, a DEL is
-recorded in the journal.
+recorded in your local journal.
 
 Therefore, both the local state of your IRRd, and anyone mirroring from
 your IRRd, will be up to date with the RPKI status.
@@ -86,11 +88,19 @@ all objects listed for which it is a contact.
 
 "Newly" invalid means that an object was previously valid or not_found, but
 a ROA update has changed the status to invalid. At the time this happens,
-the email is sent. If the status returns to valid or not_found, and then
-returns to invalid, another email is sent.
+the email is sent. If the status returns to valid or not_found, no email
+is sent. If it then returns to invalid, a new email is sent.
 
-The notification can be disabled or adjusted through configuration options.
-It is enabled by default.
+This behaviour is enabled or disabled with the ``rpki.notify_invalid_enabled``
+setting. You must set this to ``true`` or ``false`` in your configuration.
+
+When first enabling RPKI-aware mode, a large number of objects may be marked
+as newly invalid, which can cause a large amount of notifications.
+
+.. danger::
+    Care is required with the ``rpki.notify_invalid_enabled`` setting in testing
+    setups with live data, as it may send bulk emails to real resource contacts,
+    unless ``email.recipient_override`` is also set.
 
 First import with RPKI-aware mode
 ---------------------------------
@@ -98,14 +108,25 @@ When you first enable RPKI-aware mode, the import and validation process
 will take considerably longer than on subsequent runs. On the first run,
 a large number of objects in the database need to be updated, whereas this
 number is much smaller on subsequent runs.
+Depending on ``rpki.notify_invalid_enabled``, many emails may be sent out
+as well.
+
 The first full import after changing ``sources.{name}.rpki_excluded``
 may also be slower, for the same reason.
+
+.. caution::
+    The first RPKI-aware import may also generate a significant amount
+    of local journal entries, which are used to generate NRTM responses
+    for anyone mirroring any source from your IRRd. Depending on the
+    sources, there may be up to 200.000 NRTM updates. It may be faster
+    to have mirrors reload their copy, as NRTM was not designed
+    for this volume.
 
 Temporary inconsistencies
 -------------------------
 There are three situations that can cause temporary RPKI inconsistencies.
 
-First, when you enable RPKI-aware modeand **at the same time** add a new source,
+First, when you enable RPKI-aware mode and **at the same time** add a new source,
 the objects for the new source may not have the correct RPKI status
 initially. This happens because in the new source import process, no ROAs
 are visible, and to the periodic ROA update, the objects in the new source
@@ -118,14 +139,15 @@ status of new sources will be correct.
 
 Second, when someone adds a ROA and a `route` object in a mirrored source,
 the ROA may not be imported by the time the `route` object is received
-over NRTM. The object may initially be marked as RPKI not found, or, depending
+over NRTM. The object may initially be marked as RPKI not_found, or, depending
 on the ROA change, as invalid. This will be resolved at the next ROA import.
 
-Third, when someone attempts to create a `route` object and has just created
-or modified a ROA, the ROA may not have been imported yet. This can cause
-the object to be initially marked as RPKI not found, or if the `route` is
-RPKI invalid without the ROA change, rejected for being invalid. This will
-be resolved at the next ROA import, allowing the user to create the `route`.
+Third, when someone attempts to create a `route` object in an authoritative
+source and has just created or modified a ROA, the ROA may not have been
+imported yet. This can cause the object to be initially marked as RPKI
+not_found, or if the `route` is RPKI invalid without the ROA change,
+rejected for being invalid. This will be resolved at the next ROA import,
+allowing the user to create the `route`.
 When a user attempts to create any `route` that is RPKI invalid, the error
 messages includes a note of the configured ROA import time.
 

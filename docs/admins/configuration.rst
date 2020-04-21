@@ -261,15 +261,17 @@ Access lists
 
 RPKI
 ~~~~
-* ``roa_source``: an HTTP(s) URL to a JSON file with ROA exports, in the format
+* ``roa_source``: a URL to a JSON file with ROA exports, in the format
   as produced by the RIPE NCC RPKI validator. When set, this enables the
   :doc:`RPKI-aware mode </admins/rpki>`. To disable RPKI-aware mode,
   set this to ``null``.
+  Supports HTTP(s), FTP or local file URLs.
   |br| **Default**: ``https://rpki.gin.ntt.net/api/export.json``
   |br| **Change takes effect**: after SIGHUP. The first RPKI ROA import may
   take several minutes, after which RPKI-aware mode is enabled.
 * ``roa_import_timer``: the time between two attempts to import the ROA
-  file from ``roa_source``
+  file from ``roa_source`` and update the RPKI status of all qualifying
+  route(6) objects.
   |br| **Default**: ``3600``.
   |br| **Change takes effect**: after SIGHUP.
 * ``pseudo_irr_remarks``: the contents of the remarks field for pseudo-IRR
@@ -285,11 +287,12 @@ RPKI
 * ``notify_invalid_enabled``: whether to send notifications to contacts
   of route(6) objects newly marked RPKI invalid in authoritative sources.
   Set to ``true`` or ``false``. This setting is required if ``rpki.roa_source``
-  is set. Note that care is required with this setting in testing setups
-  with live data, as it may send bulk emails to real resource contacts, unless
-  ``email.recipient_override`` is also set.
-  See the :ref:`RPKI notification documentation <rpki-notifications>`
-  for further details.
+  is set. It is recommended to carefully read the
+  :ref:`RPKI notification documentation <rpki-notifications>`, as this may
+  sent out notifications to many users.
+  **DANGER: care is required with this setting in testing setups**
+  **with live data, as it may send bulk emails to real resource contacts, unless**
+  **``email.recipient_override`` is also set.**
   |br| **Default**: undefined
   |br| **Change takes effect**: the next time an authoritative route(6)
   object is newly marked RPKI invalid.
@@ -307,6 +310,9 @@ RPKI
   {object_count} with the number of objects listed in the email. When adding
   this to the configuration, use the `|` style to preserve newlines, as
   shown in the example configuration file above.
+  In the notification emails, this is only followed by a list of newly invalid
+  objects, so this header should explain why this email is being sent and
+  what the list of objects is about.
   |br| **Default**:
   |br| `This is to notify that {object_count} route(6) objects for which you are a`
   |br| `contact have been marked as RPKI invalid. This concerns`

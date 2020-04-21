@@ -6,6 +6,7 @@ IRRd 4.1.0 adds :doc:`RPKI-aware mode </admins/rpki>`
 and a new daemon architecture with full multiprocessing,
 along with several other improvements.
 
+Upgrading to IRRd 4.1.0 requires several changes to the deployment setup.
 This page contains details on the changes compared to
 IRRd 4.0, and how to upgrade.
 
@@ -21,19 +22,19 @@ imports RPKI ROAs and can filter or reject RPSL objects that are
 in conflict with ROAs. Pseudo-IRR objects are generated for all ROAs.
 When RPKI-aware mode is enabled, ``RPKI`` becomes an invalid as a regular
 IRR source name, as it is reserved for pseudo-IRR objects from ROAs.
-
-By default, RPKI-aware mode is **enabled**.
+RPKI-aware mode also affects mirroring.
 
 IRRd 4.1.0 includes several database migrations to support RPKI-aware mode,
 whether enabled or disabled, and facilitate performance improvements needed
 for RPKI-aware mode. Running these migrations is required to run IRRd 4.1.0,
 even if RPKI-aware mode is never enabled.
 
-.. warning::
-    The impact of running IRRd in RPKI-aware mode can be significant, and it is
+.. danger::
+    The impact of running IRRd in RPKI-aware mode can be dramatic, and it is
     strongly recommended to read the
-    :doc:`RPKI integration </admins/rpki>` documentation carefully before
-    enabling it, to understand all consequences.
+    :doc:`RPKI integration </admins/rpki>` documentation very carefully
+    before enabling it, to understand all consequences.
+    **By default, RPKI-aware mode is enabled**.
     RPKI-aware mode can be disabled entirely, or certain sources can be
     excluded from RPKI validation.
 
@@ -53,9 +54,8 @@ Other changes
 ~~~~~~~~~~~~~
 * HTTP(s) downloads are now supported for the ``sources.{name}.import_source``
   and ``sources.{name}.import_serial_source`` settings.
-* The ``redis_url`` and ``piddir`` configuration options were added.
-  See the steps below or the
-  :doc:`configuration documentation </admins/configuration>` for more
+* A number of new configuration options were added, and some are required.
+  See the :doc:`configuration documentation </admins/configuration>` for more
   information on these options.
 
 
@@ -64,6 +64,10 @@ Steps required to upgrade
 The following steps are required to upgrade to IRRd 4.1.0, regardless of
 whether RPKI-aware mode is enabled or not.
 
+* Disable all cron and e-mail triggered tasks. There should be no calls
+  to any IRRd scripts during the upgrade process.
+* Upgrade the IRRd package from within the virtualenv with
+  ``pip install -U irrd``
 * Install a Redis instance as documented in the
   :ref:`deployment guide <deployment-redis-configuration>` and configure
   the ``redis_url`` setting.
@@ -74,7 +78,7 @@ whether RPKI-aware mode is enabled or not.
 * Run the database migrations, using the same command used to
   :ref:`create the tables initially in deployment <deployment-database-upgrade>`.
   **Important note**: some of the migrations change large amounts of data,
-  and may take up to an hour to run in total. While the migrations are
+  and may take up to 15-30 minutes to run in total. While the migrations are
   running, IRRd should be shut down and any cron / e-mail triggered tasks
   must be disabled. There must be no calls to ``irrd_submit_email`` or
   ``irrd_load_database``.
@@ -84,4 +88,6 @@ whether RPKI-aware mode is enabled or not.
   :ref:`updated deployment guide <deployment-starting-irrd>`.
 * Remove the ``--irrd_pidfile`` parameter from calls to ``irrd_submit_email`` and
   ``irrd_load_database``.
+* Ensure that RPKI-aware mode is configured as desired. By default it is
+  **enabled**.
 * Start IRRd and re-enable the cron / e-mail triggered tasks.
