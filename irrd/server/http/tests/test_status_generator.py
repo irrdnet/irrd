@@ -36,12 +36,16 @@ class TestStatusGenerator:
 
         config_override({
             'sources': {
+                'rpki': {
+                    'roa_source': 'roa source'
+                },
                 'TEST1': {
                     'authoritative': False,
                     'keep_journal': True,
                     'nrtm_host': 'nrtm1.example.com',
                     'nrtm_port': 43,
                     'object_class_filter': 'object-class-filter',
+                    'rpki_excluded': True,
                 },
                 'TEST2': {
                     'authoritative': True,
@@ -148,6 +152,7 @@ class TestStatusGenerator:
                 Last update: 2018-06-01 00:00:00+00:00
                 Local journal kept: Yes
                 Last import error occurred at: 2018-01-01 00:00:00+00:00
+                RPKI validation enabled: No
             
             Remote information:
                 NRTM host: nrtm1.example.com port 43
@@ -171,6 +176,7 @@ class TestStatusGenerator:
                 Last update: 2019-06-01 00:00:00+00:00
                 Local journal kept: No
                 Last import error occurred at: 2019-01-01 00:00:00+00:00
+                RPKI validation enabled: Yes
             
             Remote information:
                 NRTM host: nrtm2.example.com port 44
@@ -191,6 +197,7 @@ class TestStatusGenerator:
                 Last update: None
                 Local journal kept: No
                 Last import error occurred at: None
+                RPKI validation enabled: Yes
             
             Remote information:
                 NRTM host: nrtm3.example.com port 45
@@ -211,6 +218,7 @@ class TestStatusGenerator:
                 Last update: None
                 Local journal kept: No
                 Last import error occurred at: None
+                RPKI validation enabled: Yes
             
             Remote information:
                 No NRTM host configured.\n\n""").lstrip()
