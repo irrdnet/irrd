@@ -18,6 +18,7 @@ depends_on = None
 
 def upgrade():
     op.add_column('database_status', sa.Column('serial_newest_mirror', sa.Integer(), nullable=True))
+    op.execute('UPDATE database_status SET serial_newest_mirror = serial_newest_seen')
 
 
 def downgrade():
