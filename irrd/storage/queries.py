@@ -130,6 +130,7 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
                 self.columns.parsed_data,
                 self.columns.object_text,
                 self.columns.source,
+                self.columns.rpki_status,
             ]
         else:
             columns = [self.columns.get(name) for name in column_names]

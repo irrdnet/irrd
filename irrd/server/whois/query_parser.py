@@ -7,7 +7,8 @@ from typing import Optional, List, Set, Tuple
 from irrd import __version__
 from irrd.conf import get_setting, RPKI_IRR_PSEUDO_SOURCE
 from irrd.mirroring.nrtm_generator import NRTMGenerator, NRTMGeneratorException
-from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING, lookup_field_names
+from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING, lookup_field_names, \
+    RPKI_RELEVANT_OBJECT_CLASSES
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.rpki.status import RPKIStatus
 from irrd.storage.preload import Preloader
@@ -52,7 +53,8 @@ class WhoisQueryParser:
         self.object_classes: List[str] = []
         self.user_agent: Optional[str] = None
         self.multiple_command_mode = False
-        self.rpki_invalid_filter_enabled = bool(get_setting('rpki.roa_source'))
+        self.rpki_aware = bool(get_setting('rpki.roa_source'))
+        self.rpki_invalid_filter_enabled = self.rpki_aware
         self.timeout = 30
         self.key_fields_only = False
         self.client_ip = client_ip
@@ -678,7 +680,13 @@ class WhoisQueryParser:
         else:
             result = ''
             for obj in query_response:
-                result += obj['object_text'] + '\n'
+                result += obj['object_text']
+                if self.rpki_aware and obj['object_class'] in RPKI_RELEVANT_OBJECT_CLASSES:
+                    comment = ''
+                    if obj['rpki_status'] == RPKIStatus.not_found:
+                        comment = ' # No ROAs found, or RPKI validation not enabled for source'
+                    result += f'rpki-validation-state: {obj["rpki_status"].name}{comment}\n'
+                result += '\n'
         return result.strip('\n\r')
 
     def _filter_key_fields(self, query_response) -> str:

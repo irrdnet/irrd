@@ -561,6 +561,7 @@ mnt-by:         TEST-MNT
 changed:        changed@example.com 20190701 # comment
 source:         TEST
 remarks:        remark
+rpki-validation-state: valid  # should be discarded
 """
 
 SAMPLE_ROUTE_SET = """route-set:      RS-TEST

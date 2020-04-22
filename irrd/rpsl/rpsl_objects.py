@@ -389,6 +389,7 @@ class RPSLRole(RPSLObject):
 
 class RPSLRoute(RPSLObject):
     rpki_relevant = True
+    discarded_fields = ['rpki-validation-state']
     fields = OrderedDict([
         ('route', RPSLIPv4PrefixField(primary_key=True, lookup_key=True)),
         ('descr', RPSLTextField(multiple=True, optional=True)),
@@ -431,6 +432,7 @@ class RPSLRouteSet(RPSLObject):
 
 class RPSLRoute6(RPSLObject):
     rpki_relevant = True
+    discarded_fields = ['rpki-validation-state']
     fields = OrderedDict([
         ('route6', RPSLIPv6PrefixField(primary_key=True, lookup_key=True)),
         ('descr', RPSLTextField(multiple=True, optional=True)),
@@ -491,6 +493,11 @@ OBJECT_CLASS_MAPPING = {
     'rtr-set': RPSLRtrSet,
 }
 
+RPKI_RELEVANT_OBJECT_CLASSES = [
+    rpsl_object.rpsl_object_class
+    for rpsl_object in OBJECT_CLASS_MAPPING.values()
+    if rpsl_object.rpki_relevant
+]
 
 def lookup_field_names() -> Set[str]:
     """Return all unique names of all lookup keys in all objects, plus 'origin'."""
