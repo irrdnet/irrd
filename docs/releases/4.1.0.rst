@@ -83,7 +83,7 @@ whether RPKI-aware mode is enabled or not.
 * Run the database migrations, using the same command used to
   :ref:`create the tables initially in deployment <deployment-database-upgrade>`.
   **Important note**: some of the migrations change large amounts of data,
-  and may take up to 15-30 minutes to run in total. While the migrations are
+  and may take up to 15-45 minutes to run in total. While the migrations are
   running, IRRd should be shut down and any cron / e-mail triggered tasks
   must be disabled. There must be no calls to ``irrd_submit_email`` or
   ``irrd_load_database``.
