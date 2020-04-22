@@ -140,7 +140,7 @@ class TestRPSLMirrorFullImportRunner:
         mock_ftp = Mock()
         MockMirrorFileImportParser.rpsl_data_calls = []
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.MirrorFileImportParser', MockMirrorFileImportParser)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.FTP', lambda url: mock_ftp)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.FTP', lambda url, timeout: mock_ftp)
         MockMirrorFileImportParser.expected_serial = 424242
 
         mock_bulk_validator_init = Mock()
@@ -213,7 +213,7 @@ class TestRPSLMirrorFullImportRunner:
         mock_ftp = Mock()
         MockMirrorFileImportParser.rpsl_data_calls = []
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.MirrorFileImportParser', MockMirrorFileImportParser)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.FTP', lambda url: mock_ftp)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.FTP', lambda url, timeout: mock_ftp)
         MockMirrorFileImportParser.expected_serial = None
 
         responses = {
@@ -244,7 +244,7 @@ class TestRPSLMirrorFullImportRunner:
         mock_ftp = Mock()
         MockMirrorFileImportParser.rpsl_data_calls = []
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.MirrorFileImportParser', MockMirrorFileImportParser)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.FTP', lambda url: mock_ftp)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.FTP', lambda url, timeout: mock_ftp)
         MockMirrorFileImportParser.expected_serial = 424242
 
         responses = {
@@ -275,7 +275,7 @@ class TestRPSLMirrorFullImportRunner:
         mock_ftp = Mock()
         MockMirrorFileImportParser.rpsl_data_calls = []
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.MirrorFileImportParser', MockMirrorFileImportParser)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.FTP', lambda url: mock_ftp)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.FTP', lambda url, timeout: mock_ftp)
         MockMirrorFileImportParser.expected_serial = 424242
 
         responses = {

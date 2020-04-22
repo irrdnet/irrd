@@ -140,7 +140,7 @@ class FileImportRunnerBase:
         which can be a BytesIO() or a regular file.
         """
         if url_parsed.scheme == 'ftp':
-            ftp = FTP(url_parsed.netloc)
+            ftp = FTP(url_parsed.netloc, timeout=600)
             ftp.login()
             ftp.retrbinary(f'RETR {url_parsed.path}', destination.write)
             ftp.quit()
