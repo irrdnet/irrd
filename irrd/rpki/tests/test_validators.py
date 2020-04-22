@@ -168,11 +168,13 @@ class TestBulkRouteROAValidator:
                     'prefix': '192.0.2.0/24',
                     'asn': 65546,
                     'max_length': 25,
+                    'ip_version': 4,
                 },
                 {
                     'prefix': '192.0.2.0/24',
                     'asn': 65547,
                     'max_length': 24,
+                    'ip_version': 4,
                 },
             ], [  # RPSL objects:
                 {
