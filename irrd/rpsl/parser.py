@@ -65,6 +65,8 @@ class RPSLObject(metaclass=RPSLObjectMeta):
     # Whether this object has a relation to RPKI ROA data, and therefore RPKI
     # checks should be performed in certain scenarios. Enabled for route/route6.
     rpki_relevant = False
+    # Fields whose values are discarded during parsing
+    discarded_fields: List[str] = []
 
     _re_attr_name = re.compile(r'^[a-z0-9_-]+$')
 
@@ -221,7 +223,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                 return
 
             if not line.startswith(continuation_chars):
-                if current_attr:
+                if current_attr and current_attr not in self.discarded_fields:
                     # Encountering a new attribute requires saving the previous attribute data first, if any,
                     # which can't be done earlier as line continuation means we can't know earlier whether
                     # the attribute is finished.
@@ -242,7 +244,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                 # Whitespace between the continuation character and the start of the data is not significant.
                 current_value += '\n' + line[1:].strip()
                 current_continuation_chars += line[0]
-        if current_attr:
+        if current_attr and current_attr not in self.discarded_fields:
             self._object_data.append((current_attr, current_value, current_continuation_chars))
 
     def _validate_object(self) -> None:

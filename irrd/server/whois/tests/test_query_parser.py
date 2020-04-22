@@ -35,6 +35,7 @@ source:         TEST2
 """
 
 MOCK_ROUTE_COMBINED = MOCK_ROUTE1 + '\n' + MOCK_ROUTE2 + '\n' + MOCK_ROUTE3.strip()
+MOCK_ROUTE_COMBINED_WITH_RPKI = MOCK_ROUTE1 + 'rpki-ov-state:  not_found # No ROAs found, or RPKI validation not enabled for source\n\n' + MOCK_ROUTE2 + 'rpki-ov-state:  valid\n\n' + MOCK_ROUTE3 + 'rpki-ov-state:  valid'
 
 
 MOCK_ROUTE_COMBINED_KEY_FIELDS = """route: 192.0.2.0/25
@@ -75,6 +76,7 @@ def prepare_parser(monkeypatch, config_override):
                 'members': ['AS1, AS2']
             },
             'object_text': MOCK_ROUTE1,
+            'rpki_status': RPKIStatus.not_found,
             'source': 'TEST1',
         },
         {
@@ -83,6 +85,7 @@ def prepare_parser(monkeypatch, config_override):
             'object_class': 'route',
             'parsed_data': {'route': '192.0.2.0/25', 'origin': 'AS65544', 'mnt-by': 'MNT-TEST', 'source': 'TEST2'},
             'object_text': MOCK_ROUTE2,
+            'rpki_status': RPKIStatus.valid,
             'source': 'TEST2',
         },
         {
@@ -91,6 +94,7 @@ def prepare_parser(monkeypatch, config_override):
             'object_class': 'route',
             'parsed_data': {'route': '192.0.2.128/25', 'origin': 'AS65545', 'mnt-by': 'MNT-TEST', 'source': 'TEST2'},
             'object_text': MOCK_ROUTE3,
+            'rpki_status': RPKIStatus.valid,
             'source': 'TEST2',
         },
     ]
@@ -971,7 +975,7 @@ class TestWhoisQueryParserIRRD:
         response = parser.handle_query('!r192.0.2.0/25')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
-        assert response.result == MOCK_ROUTE_COMBINED
+        assert response.result == MOCK_ROUTE_COMBINED_WITH_RPKI
         assert flatten_mock_calls(mock_dq) == [
             ['rpki_status', ([RPKIStatus.not_found, RPKIStatus.valid],), {}],
             ['object_classes', (['route', 'route6'],), {}],
@@ -987,7 +991,7 @@ class TestWhoisQueryParserIRRD:
         response = parser.handle_query('!r192.0.2.0/25')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
-        assert response.result == MOCK_ROUTE_COMBINED
+        assert response.result == MOCK_ROUTE_COMBINED_WITH_RPKI
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['route', 'route6'],), {}],
             ['ip_exact', (IP('192.0.2.0/25'),), {}],

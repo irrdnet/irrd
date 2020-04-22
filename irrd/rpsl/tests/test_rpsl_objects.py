@@ -417,8 +417,10 @@ class TestRPSLRoute:
         assert obj.asn_last == 65537
         assert obj.ip_version() == 4
         assert obj.references_strong_inbound() == set()
-        # Field parsing will cause our object to look slightly different than the original, hence the replace()
-        assert obj.render_rpsl_text() == rpsl_text.replace('  192.0.02.0/24', '  192.0.2.0/24')
+
+        expected_text = rpsl_text.replace('  192.0.02.0/24', '  192.0.2.0/24')
+        expected_text = expected_text.replace('rpki-ov-state: valid  # should be discarded\n', '')
+        assert obj.render_rpsl_text() == expected_text
 
     def test_missing_pk_nonstrict(self):
         # In non-strict mode, the parser should not fail validation for missing
