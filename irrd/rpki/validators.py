@@ -61,7 +61,8 @@ class BulkRouteROAValidator:
             if settings.get('rpki_excluded'):
                 self.excluded_sources.append(source)
 
-        self.roa_tree = datrie.Trie('01')
+        self.roa_tree4 = datrie.Trie('01')
+        self.roa_tree6 = datrie.Trie('01')
         if roas is None:
             self._build_roa_tree_from_db()
         else:
@@ -121,9 +122,9 @@ class BulkRouteROAValidator:
         if source in self.excluded_sources:
             return RPKIStatus.not_found
 
-        ip_bin_str = self._ip_to_binary_str(prefix_ip)
-
-        roas_covering = self.roa_tree.prefix_items(ip_bin_str[:prefix_length])
+        ip_version, ip_bin_str = self._ip_to_binary_str(prefix_ip)
+        roa_tree = self.roa_tree6 if ip_version == 6 else self.roa_tree4
+        roas_covering = roa_tree.prefix_items(ip_bin_str[:prefix_length])
         if not roas_covering:
             return RPKIStatus.not_found
         for key, value in roas_covering:
@@ -137,11 +138,12 @@ class BulkRouteROAValidator:
         Build the tree of all ROAs from ROA objects.
         """
         for roa in roas:
+            roa_tree = self.roa_tree6 if roa.prefix.version() == 6 else self.roa_tree4
             key = roa.prefix.strBin()[:roa.prefix.prefixlen()]
-            if key in self.roa_tree:
-                self.roa_tree[key].append((roa.prefix_str, roa.asn, roa.max_length))
+            if key in roa_tree:
+                roa_tree[key].append((roa.prefix_str, roa.asn, roa.max_length))
             else:
-                self.roa_tree[key] = [(roa.prefix_str, roa.asn, roa.max_length)]
+                roa_tree[key] = [(roa.prefix_str, roa.asn, roa.max_length)]
 
     def _build_roa_tree_from_db(self):
         """
@@ -150,22 +152,25 @@ class BulkRouteROAValidator:
         roas = self.database_handler.execute_query(ROADatabaseObjectQuery())
         for roa in roas:
             first_ip, length = roa['prefix'].split('/')
-            ip_bin_str = self._ip_to_binary_str(first_ip)
+            ip_version, ip_bin_str = self._ip_to_binary_str(first_ip)
             key = ip_bin_str[:int(length)]
-            if key in self.roa_tree:
-                self.roa_tree[key].append((roa['prefix'], roa['asn'], roa['max_length']))
+            roa_tree = self.roa_tree6 if ip_version == 6 else self.roa_tree4
+            if key in roa_tree:
+                roa_tree[key].append((roa['prefix'], roa['asn'], roa['max_length']))
             else:
-                self.roa_tree[key] = [(roa['prefix'], roa['asn'], roa['max_length'])]
+                roa_tree[key] = [(roa['prefix'], roa['asn'], roa['max_length'])]
 
-    def _ip_to_binary_str(self, ip: str) -> str:
+    def _ip_to_binary_str(self, ip: str) -> Tuple[int, str]:
         """
         Convert an IP string to a binary string, e.g.
-        192.0.2.139 to 11000000000000000000001010001011.
+        192.0.2.139 to 11000000000000000000001010001011
+        and return the IP version.
         """
         address_family = socket.AF_INET6 if ':' in ip else socket.AF_INET
         ip_bin = socket.inet_pton(address_family, ip)
         ip_bin_str = ''.join([BYTE_BIN[b] for b in ip_bin]) + '0'
-        return ip_bin_str
+        ip_version = 6 if address_family == socket.AF_INET6 else 4
+        return ip_version, ip_bin_str
 
 
 class SingleRouteROAValidator:
