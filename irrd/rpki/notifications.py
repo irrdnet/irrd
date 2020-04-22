@@ -16,6 +16,14 @@ logger = logging.getLogger(__name__)
 
 def notify_rpki_invalid_owners(database_handler: DatabaseHandler,
                                rpsl_dicts_now_invalid: List[Dict[str, str]]) -> int:
+    """
+    Notify the owners/contacts of newly RPKI invalid objects.
+
+    Expects a list of objects, each a dict with their properties.
+    Contacts are resolved as any mnt-nfy, or any email address on any
+    tech-c or admin-c, of any maintainer of the object.
+    One email is sent per email address.
+    """
     if not get_setting('rpki.notify_invalid_enabled'):
         return 0
 
@@ -32,26 +40,41 @@ def notify_rpki_invalid_owners(database_handler: DatabaseHandler,
     sources = set([obj.parsed_data['source'] for obj in rpsl_objs])
     mntner_emails_by_source = {}
     for source in sources:
+        # For each source, a multi-step process is run to fill this
+        # dict with the contact emails for each mntner.
+        mntner_emails = defaultdict(set)
+
+        # Step 1: retrieve all relevant maintainers from the DB
         mntner_pks = set(itertools.chain(*[
             obj.parsed_data.get('mnt-by', [])
             for obj in rpsl_objs
             if obj.parsed_data['source'] == source
         ]))
         query = RPSLDatabaseQuery(['rpsl_pk', 'parsed_data']).sources([source]).rpsl_pks(mntner_pks).object_classes(['mntner'])
-        mntners = {
-            r['rpsl_pk']: r['parsed_data'].get('tech-c', []) + r['parsed_data'].get('admin-c', [])
-            for r in database_handler.execute_query(query)
-        }
-        contact_pks = set(itertools.chain(*mntners.values()))
+        mntners = list(database_handler.execute_query(query))
 
+        # Step 2: any mnt-nfy on these maintainers is a contact address
+        for mntner in mntners:
+            mntner_emails[mntner['rpsl_pk']].update(mntner['parsed_data'].get('mnt-nfy', []))
+
+        # Step 3: extract the contact handles for each maintainer
+        mntner_contacts = {
+            m['rpsl_pk']: m['parsed_data'].get('tech-c', []) + m['parsed_data'].get('admin-c', [])
+            for m in mntners
+        }
+
+        # Step 4: retrieve all these contacts from the DB in bulk,
+        # and extract their e-mail addresses
+        contact_pks = set(itertools.chain(*mntner_contacts.values()))
         query = RPSLDatabaseQuery(['rpsl_pk', 'parsed_data']).sources([source]).rpsl_pks(contact_pks).object_classes(['role', 'person'])
         contacts = {
             r['rpsl_pk']: r['parsed_data'].get('e-mail', [])
             for r in database_handler.execute_query(query)
         }
 
-        mntner_emails = defaultdict(set)
-        for mntner_pk, mntner_contacts in mntners.items():
+        # Step 5: use the contacts per maintainer, and emails per contact
+        # to create a flattened list of emails per maintainer
+        for mntner_pk, mntner_contacts in mntner_contacts.items():
             for contact_pk in mntner_contacts:
                 try:
                     mntner_emails[mntner_pk].update(contacts[contact_pk])
@@ -60,6 +83,9 @@ def notify_rpki_invalid_owners(database_handler: DatabaseHandler,
 
         mntner_emails_by_source[source] = mntner_emails
 
+    # With mntners_emails_by_source filled with per source, per maintainer,
+    # all relevant emails, categorise the RPSL objects on which email
+    # addresses they need to be sent to.
     objs_per_email: Dict[str, Set[RPSLObject]] = defaultdict(set)
     for rpsl_obj in rpsl_objs:
         mntners = rpsl_obj.parsed_data.get('mnt-by', [])

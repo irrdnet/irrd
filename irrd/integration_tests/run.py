@@ -472,10 +472,11 @@ class TestIntegration:
         # irrd1 is authoritative for the now invalid v4 route, should have sent mail
         time.sleep(2)
         messages = self._retrieve_mails()
-        assert len(messages) == 1
+        assert len(messages) == 3
         mail_text = self._extract_message_body(messages[0])
         assert messages[0]['Subject'] == 'route(6) objects in TEST marked RPKI invalid'
-        assert messages[0]['To'] == 'email@example.com'
+        expected_recipients = {'email@example.com', 'mnt-nfy@example.net', 'mnt-nfy2@example.net'}
+        assert {m['To'] for m in messages} == expected_recipients
         assert '192.0.2.0/24' in mail_text
 
         status1 = requests.get(f'http://127.0.0.1:{self.port_http1}/v1/status/')

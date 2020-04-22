@@ -82,7 +82,8 @@ Notifications
 -------------
 If a route(6) object in an authoritative source is newly marked RPKI invalid,
 a notification is sent to all contacts. Contacts are determined as any email
-address, of any tech-c and admin-c, on any mnt-by on the route object.
+address, of any tech-c and admin-c, on any mnt-by on the route object,
+combined with any mnt-nfy of any of those maintainers.
 Emails are aggregated, so a single address will receive a single email with
 all objects listed for which it is a contact.
 

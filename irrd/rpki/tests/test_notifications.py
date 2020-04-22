@@ -24,14 +24,18 @@ class TestNotifyRPKIInvalidOwners:
         monkeypatch.setattr('irrd.rpki.notifications.send_email', mock_email)
 
         rpsl_dicts_now_invalid = [
-            {'source': 'TEST', 'object_text': SAMPLE_ROUTE + 'mnt-by: DOESNOTEXIST-MNT\n', 'rpki_status': RPKIStatus.invalid},
+            {'source': 'TEST', 'object_text': SAMPLE_ROUTE + 'mnt-by: DOESNOTEXIST-MNT\nMISSING-DATA-MNT\n', 'rpki_status': RPKIStatus.invalid},
             {'source': 'TEST', 'object_text': SAMPLE_ROUTE6, 'rpki_status': RPKIStatus.valid},  # should be ignored
             {'source': 'TEST2', 'object_text': SAMPLE_ROUTE6, 'rpki_status': RPKIStatus.invalid},  # should be ignored
         ]
 
         query_results = iter([
             [
-                {'rpsl_pk': 'TEST-MNT', 'parsed_data': {'tech-c': ['PERSON-TEST', 'DOESNOTEXIST-TEST']}},
+                {'rpsl_pk': 'TEST-MNT', 'parsed_data': {
+                    'mnt-nfy': ['mnt-nfy@example.com'],
+                    'tech-c': ['PERSON-TEST', 'DOESNOTEXIST-TEST']
+                }},
+                {'rpsl_pk': 'MISSING-DATA-MNT', 'parsed_data': {}},
             ],
             [
                 {'rpsl_pk': 'PERSON-TEST', 'parsed_data': {'e-mail': ['person@xample.com', 'person2@example.com']}},
@@ -40,7 +44,7 @@ class TestNotifyRPKIInvalidOwners:
         ])
         mock_dh.execute_query = lambda q: next(query_results)
         notified = notify_rpki_invalid_owners(mock_dh, rpsl_dicts_now_invalid)
-        assert notified == 2
+        assert notified == 3
 
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}],
@@ -50,9 +54,9 @@ class TestNotifyRPKIInvalidOwners:
             ['rpsl_pks', ({'PERSON-TEST', 'DOESNOTEXIST-TEST'},), {}],
             ['object_classes', (['role', 'person'],), {}]]
 
-        assert len(mock_email.mock_calls) == 2
+        assert len(mock_email.mock_calls) == 3
         actual_recipients = {call[1][0] for call in mock_email.mock_calls}
-        expected_recipients = {'person@xample.com', 'person2@example.com'}
+        expected_recipients = {'person@xample.com', 'person2@example.com', 'mnt-nfy@example.com'}
         assert actual_recipients == expected_recipients
         assert mock_email.mock_calls[0][1][1] == 'route(6) objects in TEST marked RPKI invalid'
         assert mock_email.mock_calls[0][1][2] == textwrap.dedent("""
