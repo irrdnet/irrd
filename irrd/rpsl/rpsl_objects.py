@@ -499,6 +499,7 @@ RPKI_RELEVANT_OBJECT_CLASSES = [
     if rpsl_object.rpki_relevant
 ]
 
+
 def lookup_field_names() -> Set[str]:
     """Return all unique names of all lookup keys in all objects, plus 'origin'."""
     names = {'origin'}
