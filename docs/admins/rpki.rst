@@ -35,6 +35,10 @@ in any query response. This is determined using
 `RFC6811 origin validation <https://tools.ietf.org/html/rfc6811>` and
 applies to all query types.
 
+Query responses for the text of `route(6)` objects include a
+``rpki-validation-state`` attribute, showing the current status.
+This attribute is discarded from any objects submitted to IRRd.
+
 To aid in debugging, it is possible to include invalid objects in the
 response. The RPKI filter can be disabled for a connection with the
 ``!fno-rpki-filter`` command. The filter is
