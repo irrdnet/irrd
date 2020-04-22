@@ -56,6 +56,9 @@ class TestConfiguration:
                     'from': 'example@example.com',
                     'smtp': '192.0.2.1'
                 },
+                'rpki': {
+                    'roa_source': None,
+                },
                 'access-lists': {
                     'valid-list': {
                         '192/24',

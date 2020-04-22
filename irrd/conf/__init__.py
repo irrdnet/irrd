@@ -239,7 +239,7 @@ class Configuration:
                     errors.append(f'Invalid item in access list {name}: {ve}.')
 
         known_sources = set(config.get('sources', {}).keys())
-        if config.get('rpki.roa_source'):
+        if config.get('rpki.roa_source', 'https://rpki.gin.ntt.net/api/export.json'):
             known_sources.add(RPKI_IRR_PSEUDO_SOURCE)
             if config.get('rpki.notify_invalid_enabled') is None:
                 errors.append(f'RPKI-aware mode is enabled, but rpki.notify_invalid_enabled '
