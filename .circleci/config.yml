@@ -103,11 +103,11 @@ jobs:
             . venv/bin/activate
             flake8 irrd
 
-      #- run:
-      #    name: run mypy
-      #    command: |
-      #      . venv/bin/activate
-      #      mypy irrd --ignore-missing-imports
+      - run:
+          name: run mypy
+          command: |
+            . venv/bin/activate
+            mypy irrd --ignore-missing-imports
 
       - run:
           name: report coverage
