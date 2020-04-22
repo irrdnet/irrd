@@ -58,6 +58,7 @@ class WhoisQueryParser:
         self.client_ip = client_ip
         self.client_str = client_str
         self.preloader = Preloader()
+        self._preloaded_query_count = 0
 
     def handle_query(self, query: str) -> WhoisQueryResponse:
         """
@@ -123,7 +124,6 @@ class WhoisQueryParser:
             raise WhoisQueryParserException(f'Missing parameter for {command} query')
 
         if command == '!':
-            self.preloader.load_routes_into_memory()
             self.multiple_command_mode = True
             result = None
             response_type = WhoisQueryResponseType.NO_RESPONSE
@@ -208,6 +208,7 @@ class WhoisQueryParser:
         except ValidationError as ve:
             raise WhoisQueryParserException(str(ve))
 
+        self._preloaded_query_called()
         prefixes = self.preloader.routes_for_origins([origin_formatted], self.sources, ip_version=ip_version)
         return ' '.join(prefixes)
 
@@ -226,6 +227,7 @@ class WhoisQueryParser:
         if not set_name:
             raise WhoisQueryParserException(f'Missing required set name for A query')
 
+        self._preloaded_query_called()
         self._current_set_root_object_class = 'as-set'
         members = self._recursive_set_resolve({set_name})
         prefixes = self.preloader.routes_for_origins(members, self.sources, ip_version=ip_version)
@@ -236,6 +238,7 @@ class WhoisQueryParser:
         !i query - find all members of an as-set or route-set, possibly recursively.
         e.g. !iAS-FOO for non-recursive, !iAS-FOO,1 for recursive
         """
+        self._preloaded_query_called()
         recursive = False
         if parameter.endswith(',1'):
             recursive = True
@@ -695,3 +698,13 @@ class WhoisQueryParser:
                         result += f'{field_name}: {field_data}\n'
             results.add(result)
         return '\n'.join(results)
+
+    def _preloaded_query_called(self):
+        """
+        Called each time the user runs a query that can be preloaded.
+        After the 5th, load the preload store into memory to speed
+        up expected further queries.
+        """
+        self._preloaded_query_count += 1
+        if self._preloaded_query_count > 5:
+            self.preloader.load_routes_into_memory()

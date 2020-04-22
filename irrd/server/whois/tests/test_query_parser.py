@@ -510,6 +510,15 @@ class TestWhoisQueryParserIRRD:
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert not response.result
 
+        # Test eventual pre-preloading with multiple qualifying queries
+        assert not mock_preloader.load_routes_into_memory.mock_calls
+        parser.handle_query('!gAS65547')
+        parser.handle_query('!gAS65547')
+        parser.handle_query('!gAS65547')
+        parser.handle_query('!gAS65547')
+        parser.handle_query('!gAS65547')
+        assert mock_preloader.load_routes_into_memory.mock_calls
+
         assert not mock_dq.mock_calls
 
     def test_routes_for_origin_v6(self, prepare_parser):
