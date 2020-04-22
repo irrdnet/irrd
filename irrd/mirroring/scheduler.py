@@ -15,6 +15,8 @@ from .mirror_runners_import import RPSLMirrorImportUpdateRunner, ROAImportRunner
 
 logger = logging.getLogger(__name__)
 
+MAX_SIMULTANEOUS_RUNS = 3
+
 
 class ScheduledTaskProcess(multiprocessing.Process):
     def __init__(self, runner, *args, **kwargs):
@@ -47,30 +49,39 @@ class MirrorScheduler:
         self.last_started_time = defaultdict(lambda: 0)
 
     def run(self) -> None:
+        if get_setting('rpki.roa_source'):
+            import_timer = int(get_setting(f'rpki.roa_import_timer'))
+            self.run_if_relevant(RPKI_IRR_PSEUDO_SOURCE, ROAImportRunner, import_timer)
+
+        sources_started = 0
         for source in get_setting('sources', {}).keys():
+            if sources_started >= MAX_SIMULTANEOUS_RUNS:
+                break
+            started_import = False
+            started_export = False
+
             is_mirror = get_setting(f'sources.{source}.import_source') or get_setting(f'sources.{source}.nrtm_host')
             import_timer = int(get_setting(f'sources.{source}.import_timer', DEFAULT_SOURCE_IMPORT_TIMER))
 
             if is_mirror:
-                self.run_if_relevant(source, RPSLMirrorImportUpdateRunner, import_timer)
+                started_import = self.run_if_relevant(source, RPSLMirrorImportUpdateRunner, import_timer)
 
             runs_export = get_setting(f'sources.{source}.export_destination')
             export_timer = int(get_setting(f'sources.{source}.export_timer', DEFAULT_SOURCE_EXPORT_TIMER))
 
             if runs_export:
-                self.run_if_relevant(source, SourceExportRunner, export_timer)
+                started_export = self.run_if_relevant(source, SourceExportRunner, export_timer)
 
-        if get_setting('rpki.roa_source'):
-            import_timer = int(get_setting(f'rpki.roa_import_timer'))
-            self.run_if_relevant(RPKI_IRR_PSEUDO_SOURCE, ROAImportRunner, import_timer)
+            if started_import or started_export:
+                sources_started += 1
 
-    def run_if_relevant(self, source: str, runner_class, timer: int):
+    def run_if_relevant(self, source: str, runner_class, timer: int) -> bool:
         process_name = f'{runner_class.__name__}-{source}'
 
         current_time = time.time()
         has_expired = (self.last_started_time[process_name] + timer) < current_time
         if not has_expired or process_name in self.processes:
-            return
+            return False
 
         logger.debug(f'Started new process {process_name} for mirror import/export for {source}')
         initiator = runner_class(source=source)
@@ -78,6 +89,7 @@ class MirrorScheduler:
         self.processes[process_name] = process
         process.start()
         self.last_started_time[process_name] = int(current_time)
+        return True
 
     def terminate_children(self) -> None:  # pragma: no cover
         logger.info('MirrorScheduler terminating children')

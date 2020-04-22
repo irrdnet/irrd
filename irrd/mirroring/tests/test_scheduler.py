@@ -2,7 +2,7 @@ import time
 
 import threading
 
-from ..scheduler import MirrorScheduler, ScheduledTaskProcess
+from ..scheduler import MirrorScheduler, ScheduledTaskProcess, MAX_SIMULTANEOUS_RUNS
 
 thread_run_count = 0
 
@@ -41,6 +41,41 @@ class TestMirrorScheduler:
         assert len(scheduler.processes.items()) == 1
         scheduler.update_process_state()
         assert len(scheduler.processes.items()) == 0
+
+    def test_scheduler_limits_simultaneous_runs(self, monkeypatch, config_override):
+        monkeypatch.setattr('irrd.mirroring.scheduler.ScheduledTaskProcess', MockScheduledTaskProcess)
+        global thread_run_count
+        thread_run_count = 0
+
+        config_override({
+            'sources': {
+                'TEST': {
+                    'import_source': 'url',
+                    'import_timer': 0,
+                },
+                'TEST2': {
+                    'import_source': 'url',
+                    'import_timer': 0,
+                },
+                'TEST3': {
+                    'import_source': 'url',
+                    'import_timer': 0,
+                },
+                'TEST4': {
+                    'import_source': 'url',
+                    'import_timer': 0,
+                },
+            }
+        })
+
+        monkeypatch.setattr('irrd.mirroring.scheduler.RPSLMirrorImportUpdateRunner', MockRunner)
+        MockRunner.run_sleep = False
+
+        scheduler = MirrorScheduler()
+        scheduler.run()
+
+        time.sleep(0.5)
+        assert thread_run_count == MAX_SIMULTANEOUS_RUNS
 
     def test_scheduler_runs_roa_import(self, monkeypatch, config_override):
         monkeypatch.setattr('irrd.mirroring.scheduler.ScheduledTaskProcess', MockScheduledTaskProcess)
@@ -157,7 +192,7 @@ class MockRunner:
     run_sleep = True
 
     def __init__(self, source):
-        assert source in ['TEST', 'RPKI']
+        assert source in ['TEST', 'TEST2', 'TEST3', 'TEST4', 'RPKI']
 
     def run(self):
         global thread_run_count
