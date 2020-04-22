@@ -159,7 +159,6 @@ filter:         {
                 127.0.0.0/8^- ,
                 169.254.0.0/16^- ,  # The next two lines were introduced to test blank lines with correct cont. chars
                 172.16.0.0/12^- ,   # Note that the trailing whitespace is significant.
-                
 \t               
 +               
                 192.0.2.0/24^- ,
@@ -224,7 +223,7 @@ owner:          keybase.io/mxsasha <mxsasha@keybase.io>
 owner:          Sasha Romijn <gpg@mxsasha.eu>
 fingerpr:       8626 1D8D BEBD A4F5 4692  D64D A838 3BA7 80F2 38C6
 certif:         -----BEGIN PGP PUBLIC KEY BLOCK-----
-+               
+                
                 mQINBFnY7YoBEADH5ooPsoR9G/dNxrdHRMJeDHXCSQbwgXWEez5/F8/BZKV9occ/
 certif:         jZ7w2wH+Ghj4vTQl1DhuNcxi60qDv9DAPxG73DkBrK0I3fDUJUPrdOKW9SXvZCAq
 certif:         LrVEdDVH+YEKhQLlGG7DTODGsfMglL98mn7GD/wD64LtRF3eBAucTIjaOl9hvoqX

@@ -191,7 +191,7 @@ class TestRPSLFilterSet:
         assert obj.__class__ == RPSLFilterSet
         assert not obj.messages.errors()
         assert obj.pk() == 'FLTR-SETTEST'
-        assert obj.render_rpsl_text() == rpsl_text
+        assert obj.render_rpsl_text() == rpsl_text.replace('\t', '+')  # #298
 
 
 class TestRPSLInetRtr:
@@ -255,6 +255,7 @@ class TestRPSLKeyCert:
         obj = RPSLKeyCert()
         assert OBJECT_CLASS_MAPPING[obj.rpsl_object_class] == obj.__class__
 
+    @pytest.mark.usefixtures('tmp_gpg_dir')  # noqa: F811
     def test_parse_parse(self):
         rpsl_text = object_sample_mapping[RPSLKeyCert().rpsl_object_class]
 
@@ -262,11 +263,12 @@ class TestRPSLKeyCert:
         mangled_rpsl_text = rpsl_text.replace('8626 1D8D BEBD A4F5 4692  D64D A838 3BA7 80F2 38C6', 'fingerprint')
         mangled_rpsl_text = mangled_rpsl_text.replace('sasha', 'foo').replace('method:         PGP', 'method: test')
 
+        expected_text = rpsl_text.replace('                \n', '+               \n')  # #298
         obj = rpsl_object_from_text(mangled_rpsl_text)
         assert obj.__class__ == RPSLKeyCert
         assert not obj.messages.errors()
         assert obj.pk() == 'PGPKEY-80F238C6'
-        assert obj.render_rpsl_text() == rpsl_text
+        assert obj.render_rpsl_text() == expected_text
         assert obj.parsed_data['fingerpr'] == '8626 1D8D BEBD A4F5 4692  D64D A838 3BA7 80F2 38C6'
 
     @pytest.mark.usefixtures('tmp_gpg_dir')  # noqa: F811

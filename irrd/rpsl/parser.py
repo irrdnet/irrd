@@ -157,7 +157,11 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                 if idx == 0:
                     output += attr_display + line
                 else:
-                    output += continuation_chars[idx-1] + (RPSL_ATTRIBUTE_TEXT_WIDTH-1) * ' ' + line
+                    continuation_char = continuation_chars[idx - 1]
+                    # Override the continuation char for empty lines #298
+                    if not line:
+                        continuation_char = '+'
+                    output += continuation_char + (RPSL_ATTRIBUTE_TEXT_WIDTH - 1) * ' ' + line
                 output += '\n'
         return output
 
