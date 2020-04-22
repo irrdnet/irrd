@@ -109,12 +109,13 @@ will take considerably longer than on subsequent runs. On the first run,
 a large number of objects in the database need to be updated, whereas this
 number is much smaller on subsequent runs.
 Depending on ``rpki.notify_invalid_enabled``, many emails may be sent out
-as well.
+as well. While the import and validation is running, processing other
+database changes may be delayed.
 
 The first full import after changing ``sources.{name}.rpki_excluded``
 may also be slower, for the same reason.
 
-.. caution::
+.. note::
     The first RPKI-aware import may also generate a significant amount
     of local journal entries, which are used to generate NRTM responses
     for anyone mirroring any source from your IRRd. Depending on the
