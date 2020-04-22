@@ -242,7 +242,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         self.parsed_data: Dict[str, Any[str, List]] = {}
         if not self.messages.errors():
             self._validate_attribute_counts()
-        self._parse_attribute_data()
+        self._parse_attribute_data(allow_invalid_metadata=bool(self.messages.errors()))
 
         if self.strict_validation and not self.messages.errors():
             self.clean()
@@ -280,7 +280,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                         f'Primary key attribute "{attr_pk}" on object {self.rpsl_object_class} is missing'
                     )
 
-    def _parse_attribute_data(self) -> None:
+    def _parse_attribute_data(self, allow_invalid_metadata=False) -> None:
         """
         Clean the data stored in attributes.
 
@@ -288,6 +288,11 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         as they need to be indexed. All parsed values (e.g. without comments) are
         stored in self.parsed_data - stored in upper case unless a field is marked
         case sensitive.
+
+        If allow_invald_metadata is set, the parser will accept invalid metadata
+        being stored, but still make a best effort to extract data. This should
+        only be used if it is already known the object is invalid, and will
+        never be stored.
         """
         for idx, (attr_name, value, continuation_chars) in enumerate(self._object_data):
             field = self.fields.get(attr_name)
@@ -340,7 +345,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                             attr_value = getattr(parsed_value, attr, None)
                             if attr_value:
                                 existing_attr_value = getattr(self, attr, None)
-                                if existing_attr_value:  # pragma: no cover
+                                if existing_attr_value and not allow_invalid_metadata:  # pragma: no cover
                                     raise ValueError(f'Parsing of {parsed_value.value} reads {attr_value} for {attr},'
                                                      f'but value {existing_attr_value} is already set.')
                                 setattr(self, attr, attr_value)

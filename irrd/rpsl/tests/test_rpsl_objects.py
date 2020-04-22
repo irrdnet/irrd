@@ -7,13 +7,17 @@ from pytest import raises
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
 from irrd.utils.rpsl_samples import (object_sample_mapping, SAMPLE_MALFORMED_EMPTY_LINE,
                                      SAMPLE_MALFORMED_ATTRIBUTE_NAME,
-                                     SAMPLE_UNKNOWN_CLASS, SAMPLE_MISSING_MANDATORY_ATTRIBUTE, SAMPLE_MALFORMED_SOURCE,
-                                     SAMPLE_MALFORMED_PK, SAMPLE_UNKNOWN_ATTRIBUTE, SAMPLE_INVALID_MULTIPLE_ATTRIBUTE,
+                                     SAMPLE_UNKNOWN_CLASS, SAMPLE_MISSING_MANDATORY_ATTRIBUTE,
+                                     SAMPLE_MALFORMED_SOURCE,
+                                     SAMPLE_MALFORMED_PK, SAMPLE_UNKNOWN_ATTRIBUTE,
+                                     SAMPLE_INVALID_MULTIPLE_ATTRIBUTE,
                                      KEY_CERT_SIGNED_MESSAGE_VALID, KEY_CERT_SIGNED_MESSAGE_INVALID,
-                                     KEY_CERT_SIGNED_MESSAGE_CORRUPT, KEY_CERT_SIGNED_MESSAGE_WRONG_KEY,
+                                     KEY_CERT_SIGNED_MESSAGE_CORRUPT,
+                                     KEY_CERT_SIGNED_MESSAGE_WRONG_KEY,
                                      TEMPLATE_ROUTE_OBJECT,
-                                     TEMPLATE_PERSON_OBJECT, SAMPLE_LINE_NEITHER_CONTINUATION_NOR_ATTR,
-                                     SAMPLE_MISSING_SOURCE)
+                                     TEMPLATE_PERSON_OBJECT,
+                                     SAMPLE_LINE_NEITHER_CONTINUATION_NOR_ATTR,
+                                     SAMPLE_MISSING_SOURCE, SAMPLE_ROUTE)
 
 from ..parser import UnknownRPSLObjectClassException
 from ..rpsl_objects import (RPSLAsBlock, RPSLAsSet, RPSLAutNum, RPSLDomain, RPSLFilterSet, RPSLInetRtr,
@@ -94,6 +98,11 @@ class TestRPSLParsingGeneric:
         obj = rpsl_object_from_text(SAMPLE_LINE_NEITHER_CONTINUATION_NOR_ATTR, strict_validation=False)
         assert len(obj.messages.errors()) == 1, f'Unexpected extra errors: {obj.messages.errors()}'
         assert 'line is neither continuation nor valid attribute' in obj.messages.errors()[0]
+
+    def test_double_object_297(self):
+        obj = rpsl_object_from_text(SAMPLE_ROUTE + ' \n' + SAMPLE_ROUTE)
+        assert len(obj.messages.errors()) == 3, f'Unexpected extra errors: {obj.messages.errors()}'
+        assert 'Attribute "route" on object route occurs multiple times' in obj.messages.errors()[0]
 
 
 class TestRPSLAsBlock:
