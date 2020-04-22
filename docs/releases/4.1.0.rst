@@ -52,11 +52,16 @@ The ``--uid`` parameter is no longer supported.
 
 Other changes
 ~~~~~~~~~~~~~
+* IRRd starts a maximum of three mirror processes at the same time,
+  to reduce peak loads. A further three, if needed, are started 15 seconds
+  later.
 * HTTP(s) downloads are now supported for the ``sources.{name}.import_source``
   and ``sources.{name}.import_serial_source`` settings.
 * A number of new configuration options were added, and some are required.
   See the :doc:`configuration documentation </admins/configuration>` for more
   information on these options.
+* A timeout was added for FTP connections.
+* A bug was fixed where some invalid objects could cause parser exceptions.
 
 
 Steps required to upgrade
