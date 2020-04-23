@@ -64,8 +64,8 @@ This sample shows most configuration options::
             level: DEBUG
 
         rpki:
-            roa_source: https://example.com/roa.json
-            roa_import_timer: 7200
+            roa_source: https://rpki.gin.ntt.net/api/export.json
+            roa_import_timer: 3600
             pseudo_irr_remarks: |
                 This AS{asn} route object represents routing data retrieved
                 from the RPKI. This route object is the result of an automated
