@@ -93,10 +93,19 @@ def run_irrd(mirror_frequency: int):
 
     def sigterm_handler(signum, frame):
         logging.info(f'Main process received SIGTERM, sending SIGTERM to all child processes')
-        whois_process.terminate()
-        http_process.terminate()
-        preload_manager.terminate()
         mirror_scheduler.terminate_children()
+        try:
+            whois_process.terminate()
+        except Exception:  # pragma no cover
+            pass
+        try:
+            http_process.terminate()
+        except Exception:  # pragma no cover
+            pass
+        try:
+            preload_manager.terminate()
+        except Exception:  # pragma no cover
+            pass
         nonlocal terminated
         terminated = True
     signal.signal(signal.SIGTERM, sigterm_handler)

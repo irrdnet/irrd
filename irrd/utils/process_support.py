@@ -1,4 +1,6 @@
 import logging
+import os
+import signal
 from multiprocessing import Process
 
 logger = logging.getLogger(__name__)
@@ -10,5 +12,6 @@ class ExceptionLoggingProcess(Process):  # pragma: no cover
         try:
             super().run()
         except Exception as e:
-            logger.critical(f'Essential IRRd subprocess encountered a fatal error: {e}')
-            logger.exception(e)
+            logger.critical(f'Essential IRRd subprocess encountered a fatal error, '
+                            f'traceback follows, shutting down: {e}', exc_info=e)
+            os.kill(os.getppid(), signal.SIGTERM)
