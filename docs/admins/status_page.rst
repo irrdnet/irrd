@@ -56,8 +56,8 @@ The local information shows:
 The remote information shows:
 
 * `NRTM host`: the host on which NRTM queries are run, if configured.
-* `Mirrorable`: whether the `!j` response of the NRTM host indicated this
-  source is mirrorable.
+* `Mirror-able`: whether the `!j` response of the NRTM host indicated this
+  source is mirror-able.
 * `Oldest/newest journal serial number`: the oldest and newest serial which
   the NRTM host has in its own journal.
 * `Last export at serial number`: serial at which the NRTM host last created

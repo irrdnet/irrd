@@ -32,7 +32,7 @@ import irrd  # noqa: E402
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode', 'sphinxcontrib.spelling']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -172,3 +172,7 @@ html_context = {
     "github_version": "master",
     "conf_py_path": "/docs/",
 }
+
+spelling_lang = 'en_GB'
+tokenizer_lang = 'en_GB'
+spelling_show_suggestions = True

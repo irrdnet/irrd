@@ -40,7 +40,7 @@ The parser/validator has two modes:
   Validation fails on attributes that are not known, or object classes
   that are not known. Values of all fields are validated.
   Unknown object classes that start with ``*xx`` are silently ignored,
-  as these are harmless artifacts from certain legacy IRRd versions.
+  as these are harmless artefacts from certain legacy IRRd versions.
 
 In addition, the following validation changes to primary/lookup keys apply
 in non-strict mode:

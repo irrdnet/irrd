@@ -8,7 +8,7 @@ IRRd 4.0.2 includes one bugfix and two enhancements:
   IPv4 addresses would be rejected, even when they were
   listed in the access list.
 * `Ignoring of *xx object classes`_, even in strict mode,
-  as these are harmless artifacts sometimes produced by
+  as these are harmless artefacts sometimes produced by
   legacy IRRd versions.
 * `Adding an irrd_mirror_force_reload`_ command, to force
   a reload of a particular mirror. The ``irrd_load_data``

@@ -73,7 +73,7 @@ Mac OS X, as suggested for unit tests.
 The integration test will start two instances of IRRd, one mirroring off the
 other, and an email server that captures all mail. It will then run a series
 of updates and queries, verify the contents of mails, the state of the
-databases, mirroring, utf-8 handling and run all basic types of queries.
+databases, mirroring, UTF-8 handling and run all basic types of queries.
 
 Code coverage is not measured for the integration test, as its purpose is
 not to test all paths, but rather verify that the most important paths

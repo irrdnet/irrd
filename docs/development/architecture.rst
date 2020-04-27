@@ -156,7 +156,7 @@ The utils module contains a few parts used in other places:
 * A wrapper around gpg to validate an inline or PGP/MIME signature.
 * Sample RPSL objects used for tests.
 * Text utilities for working with RPSL paragraphs and lines. Notably,
-  when separating RPSL object lines, unicode newline characters must
+  when separating RPSL object lines, Unicode newline characters must
   not be considered newlines, which is contrary to the behaviour of
   built-in Python functions.
 * A small whois client, used by the status info page.
