@@ -16,7 +16,7 @@ python-daemon==2.2.4   # daemonising the main process
 pid==3.0.3             # managing PID files
 redis==3.4.1          # preloaded data storage & sync through redis
 hiredis==1.0.1         # improved redis response parsing performance
-psutil==5.6.7          # process management
+psutil==5.7.0          # process management
 requests==2.23.0       # HTTP request handling
 
 # Database connections and management
