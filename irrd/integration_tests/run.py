@@ -564,11 +564,11 @@ class TestIntegration:
                 'server': {
                     'http': {
                         'access_list': 'localhost',
-                        'interface': '::0',
+                        'interface': '::1',
                         'port': 8080
                     },
                     'whois': {
-                        'interface': '::0',
+                        'interface': '::1',
                         'max_connections': 10,
                         'port': 8043
                     },
@@ -603,7 +603,9 @@ class TestIntegration:
         config1['irrd']['piddir'] = self.piddir1
         config1['irrd']['database_url'] = self.database_url1
         config1['irrd']['redis_url'] = self.redis_url1
+        config1['irrd']['server']['http']['interface'] = '127.0.0.1'  # #306
         config1['irrd']['server']['http']['port'] = self.port_http1
+        config1['irrd']['server']['whois']['interface'] = '127.0.0.1'
         config1['irrd']['server']['whois']['port'] = self.port_whois1
         config1['irrd']['auth']['gnupg_keyring'] = str(self.tmpdir) + '/gnupg1'
         config1['irrd']['log']['logfile_path'] = self.logfile1

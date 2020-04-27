@@ -1,6 +1,7 @@
 import logging
 import signal
 
+from IPy import IP
 from setproctitle import setproctitle
 import socket
 
@@ -35,13 +36,16 @@ def start_http_server():  # pragma: no cover
     httpd.serve_forever()
 
 
-class HTTPServerForkingIPv6(socketserver.ForkingMixIn, HTTPServer):
+class HTTPServerForkingIPv6(socketserver.ForkingMixIn, HTTPServer):  # pragma: no cover
     # Default HTTP server only supports IPv4
-    address_family = socket.AF_INET6
     allow_reuse_address = False
     timeout = 30
 
-    def handle_error(self, request, client_address):  # pragma: no cover
+    def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True):  # noqa: N803
+        self.address_family = socket.AF_INET6 if IP(server_address[0]).version == 6 else socket.AF_INET
+        super().__init__(server_address, RequestHandlerClass, bind_and_activate)
+
+    def handle_error(self, request, client_address):
         logger.error(f'Error while handling request from {client_address}', exc_info=True)
 
 
