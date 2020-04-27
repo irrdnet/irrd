@@ -65,7 +65,7 @@ A few PostgreSQL settings need to be changed from their default:
   * Each run of ``irrd_submit_email``
 * ``log_min_duration_statement`` can be useful to set to ``0`` initially,
   to log all SQL queries to aid in debugging any issues.
-  Note that initial imports of data produce significant logs if all queres
+  Note that initial imports of data produce significant logs if all queries
   are logged - importing 1GB of data can result in 2-3GB of logs.
 
 The database will be in the order of three times as large as the size of
@@ -337,7 +337,7 @@ the config file could not be loaded.
 
 Processing email changes
 ------------------------
-To process incoming requested changes by email, configure a mailserver to
+To process incoming requested changes by email, configure a mail server to
 deliver the email to the ``irrd_submit_email`` command.
 
 When using the virtualenv as set up above, the full path is::

@@ -86,7 +86,7 @@ Specifically, it records:
   Options are:
   * `UNKNOWN`: entry was created before origin field was added
   * `MIRROR`: change received from a mirror, over NRTM or by file import
-  * `SYNTHETIC_NRTM`: change derived from synthesized NRTM
+  * `SYNTHETIC_NRTM`: change derived from synthesised NRTM
   * `PSEUDO_IRR`: change derived from changes to pseudo-IRR objects
   * `AUTH_CHANGE`: change made by a user of an authoritative database
   * `RPKI_STATUS`: change triggered by a change in RPKI status
@@ -141,7 +141,7 @@ to changes in RPKI status.
     local data for this source, and then start a new import from the URLs
     in the configuration. If others mirror the reloaded source from this
     IRRd instance, they will also have to discard their local data and
-    reimport, as the journal used for NRTM queries will be reset.
+    re-import, as the journal used for NRTM queries will be reset.
 
 
 ROAs
@@ -195,7 +195,7 @@ Note that the indexes are not differentiated by RPSL object class.
 
 To remind you to do this, ``irrd.db.models`` asks ``irrd.rpsl.rpsl_objects``
 for the current set of lookup fields upon initialisation, and compares it to
-a hardcoded list of expected fields. If these are inconsistent, indexes may
+a hard-coded list of expected fields. If these are inconsistent, indexes may
 be missing, and so IRRd will fail to start with the error:
 `Field names of lookup fields do not match expected set. Indexes may be missing.`
 

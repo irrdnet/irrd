@@ -4,7 +4,7 @@ Running whois queries
 
 IRRd accepts whois queries on port 43 (by default).
 The encoding used is always UTF-8, though many objects fit 7-bit ASCII.
-Line seperators are a single newline (``\n``) character.
+Line separators are a single newline (``\n``) character.
 
 .. note::
    Due to caching in IRRd, it can take up to 60 seconds for some types
@@ -47,9 +47,9 @@ IRRd style queries
   return up to 10-20 MB of text. Ensure that your client will not time out
   in this period.
 * ``!gAS<asn>`` finds all IPv4 routes for an origin AS. Only distinct
-  prefixes of the routes are returned, seperated by spaces.
+  prefixes of the routes are returned, separated by spaces.
 * ``!6AS<asn>`` finds all IPv6 routes for an origin AS. Only distinct
-  prefixes of the routes are returned, seperated by spaces.
+  prefixes of the routes are returned, separated by spaces.
 * ``!i<set-name>`` returns all members of an `as-set` or a `route-set`. If
   ``,1`` is appended, the search is performed recursively. Returns all members
   (and possibly names of other sets, if the search was not recursive),
@@ -99,7 +99,7 @@ IRRd style queries
 
 Responses
 ^^^^^^^^^
-For a succesful response returning data, the response is::
+For a successful response returning data, the response is::
 
     A<length>
     <response content>
@@ -146,7 +146,7 @@ Queries
   The differences are:
 
   * ``-x``, e.g. ``-x 192.0.2.0/24``, finds exact matching objects and
-    returnss them
+    returns them
   * ``-l``, e.g. ``-l 192.0.2.0/24``, finds one level less specific objects,
     excluding exact matches, and returns them
   * ``-L``, e.g. ``-L 192.0.2.0/24``, finds all level less specific objects,
@@ -196,7 +196,7 @@ recursion.
 
 Responses
 ^^^^^^^^^
-For a succesful response returning data, the response is simply the object
+For a successful response returning data, the response is simply the object
 data, with different objects separated by a blank line, followed by an
 extra newline.
 
@@ -212,15 +212,15 @@ Source search order
 -------------------
 IRRd queries have a default set of sources enabled, which can be changed
 with the ``!s`` command or the ``-s`` flag. When enabling multiple sources,
-the order in whch they are listed defines their prioritisation, which can
+the order in which they are listed defines their prioritisation, which can
 make a significant difference in some queries. For example, ``!m`` will find
 the first object with a given primary key, from the highest priority source
 in which it was found.
 
 The currently enabled sources and their priority can be seen with ``!s-lc``.
 
-Data preloading and warmup time
--------------------------------
+Data preloading and warm-up time
+--------------------------------
 After startup, IRRd needs some time before certain queries can be answered.
 The ``!g``, ``!6``, ``!a`` and in some cases ``!i`` queries use preloaded
 data, which needs to be loaded before these queries can be answered.

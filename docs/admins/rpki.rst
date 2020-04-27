@@ -46,7 +46,7 @@ disabled only for ``!r`` queries and all RIPE style queries.
 
 Where validation takes place
 ----------------------------
-* Every ``rpki.roa_import_timer``, IRRd reimports the ROA file, and then
+* Every ``rpki.roa_import_timer``, IRRd re-imports the ROA file, and then
   updates the validation status of all `route(6)` objects in the IRR database.
   This ensures that the status is correct when ROAs are added or removed.
 * For each received NRTM update, IRRd sets the validation status using the

@@ -55,7 +55,7 @@ an IRRd instance.
 For developers
 --------------
 
-This documentation is mainly for people who want to develop on the IRRd codebase
+This documentation is mainly for people who want to develop on the IRRd code base
 itself, or want to know how it works.
 
 .. toctree::
@@ -69,13 +69,13 @@ Release notes
 -------------
 .. toctree::
    :maxdepth: 1
+   :glob:
 
-   releases/index
+   releases/*
 
 Other
 -----
 .. toctree::
    :maxdepth: 1
 
-   releases/index
    license

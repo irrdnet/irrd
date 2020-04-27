@@ -344,7 +344,7 @@ Sources
   user selects all sources with ``-a``. The order of this list defines the
   search priority as well. It is not required to include all known sources in
   the default selection. If ``rpki.roa_source`` is defined, this may also
-  include ``RPKI``, which contains psuedo-IRR objects generated from ROAs.
+  include ``RPKI``, which contains pseudo-IRR objects generated from ROAs.
   |br| **Default**: not defined. All sources are enabled, but results are not
   ordered by source.
   |br| **Change takes effect**: after SIGHUP, for all subsequent queries.
@@ -352,7 +352,7 @@ Sources
   all-uppercase, start with a letter, and end with a letter or digit. Valid
   characters are letters, digits and dashes. The minimum length is two
   characters. If ``rpki.roa_source`` is defined, ``RPKI`` is a reserved
-  source name, as it contains psuedo-IRR objects generated from ROAs.
+  source name, as it contains pseudo-IRR objects generated from ROAs.
 * ``sources.{name}.authoritative``: a boolean for whether this source is
   authoritative, i.e. changes are allowed to be submitted to this IRRd instance
   through e.g. email updates.

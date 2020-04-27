@@ -39,7 +39,7 @@ are primarily due to bugs in legacy IRRd, which do not occur in version 4.
   results may be missing, because their origin in the RPSL object is
   encoded in ASDOT format, which is not supported.
 * A handful of `route` objects from the RIPE database may be missing
-  due to invalid unicode characters, which legacy IRRd accepted
+  due to invalid Unicode characters, which legacy IRRd accepted
   (`GH #52 <https://github.com/irrdnet/irrd/issues/52>`_)
 * Objects of various types have host bits enabled in prefixes, which
   is rejected by IRRd version 4. This may cause them to be missing from

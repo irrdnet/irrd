@@ -55,7 +55,7 @@ to objects. A journal can be kept for both authoritative sources and mirrors.
 In typical setups, the files exported to `export_destination` will be published
 over FTP to allow mirrors to load all initial data. After that, NRTM requests
 can be made to receive recent changes. If a mirroring client lags behind too
-far, it may need to reimport the entire database to catch up.
+far, it may need to re-import the entire database to catch up.
 
 The NRTM query format is::
 
@@ -212,7 +212,7 @@ Manual loading uses the ``irrd_load_database`` command:
   an object with an unknown object class, or an object for which
   the `source` attribute is inconsistent with the `--source` argument.
   Unknown object classes that start with ``*xx`` are silently ignored,
-  as these are harmless artifacts from certain legacy IRRd versions.
+  as these are harmless artefacts from certain legacy IRRd versions.
 * The object class filter configured, if any, is followed.
 
 On serials:
