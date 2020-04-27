@@ -33,7 +33,7 @@ coveralls==2.0.0
 twisted==20.3.0    # Used for a mock email server in integration tests
 
 # Documentation generation
-Sphinx==3.0.1
+Sphinx==3.0.3
 
 # Code style and type checks
 mypy==0.770
