@@ -37,7 +37,8 @@ applies to all query types.
 
 Query responses for the text of `route(6)` objects include a
 ``rpki-ov-state`` attribute, showing the current status.
-This attribute is discarded from any objects submitted to IRRd.
+This attribute is discarded from any objects submitted to IRRd,
+and omitted for pseudo-IRR objects.
 
 To aid in debugging, it is possible to include invalid objects in the
 response. The RPKI filter can be disabled for a connection with the

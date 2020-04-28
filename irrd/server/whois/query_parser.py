@@ -681,7 +681,11 @@ class WhoisQueryParser:
             result = ''
             for obj in query_response:
                 result += obj['object_text']
-                if self.rpki_aware and obj['object_class'] in RPKI_RELEVANT_OBJECT_CLASSES:
+                if (
+                        self.rpki_aware and
+                        obj['source'] != RPKI_IRR_PSEUDO_SOURCE and
+                        obj['object_class'] in RPKI_RELEVANT_OBJECT_CLASSES
+                ):
                     comment = ''
                     if obj['rpki_status'] == RPKIStatus.not_found:
                         comment = ' # No ROAs found, or RPKI validation not enabled for source'
