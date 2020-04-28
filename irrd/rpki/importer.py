@@ -26,6 +26,8 @@ class ROADataImporter:
     Importer for ROAs.
 
     Loads all ROAs from the JSON data in the rpki_json_str parameter.
+    If a slurm_json_str is provided, it is used to filter/amend the ROAs.
+
     Expects all existing ROA and pseudo-IRR objects to be deleted
     already, e.g. with:
         database_handler.delete_all_roa_objects()
@@ -53,12 +55,7 @@ class ROADataImporter:
                 if any([prefix in filtered for filtered in self._filtered_combined.get(asn, [])]):
                     continue
 
-                roa_obj = ROA(
-                    prefix,
-                    asn,
-                    roa_dict['maxLength'],
-                    roa_dict['ta'],
-                )
+                roa_obj = ROA(prefix, asn, roa_dict['maxLength'], roa_dict['ta'])
             except KeyError as ke:
                 msg = f'Unable to parse ROA record: missing key {ke} -- full record: {roa_dict}'
                 logger.error(msg)
@@ -71,7 +68,8 @@ class ROADataImporter:
             roa_obj.save(database_handler)
             self.roa_objs.append(roa_obj)
 
-    def _load_roa_dicts(self, rpki_json_str: str) -> None:  # List[Dict[str, str]]:
+    def _load_roa_dicts(self, rpki_json_str: str) -> None:
+        """Load the ROAs from the JSON string into self._roa_dicts"""
         try:
             self._roa_dicts = ujson.loads(rpki_json_str)['roas']
         except ValueError as error:
@@ -84,6 +82,23 @@ class ROADataImporter:
             raise ROAParserException(msg)
 
     def _load_slurm(self, slurm_json_str: str):
+        """
+        Load and apply the SLURM in the provided JSON string.
+
+        Prefix filters are loaded into three instance variables:
+        - self._filtered_asns: a set of ASNs (in "ASxxx" format) that
+          should be filtered, i.e. any ROA with this asn is discarded
+        - self._filtered_prefixes: a set of prefixes (as IP instances)
+          that should be filtered, i.e. any ROA matching or more specific
+          of a prefix in this set should be discarded
+        - self._filtered_combined: a dict with ASNs as keys, sets of
+          prefixes as values, that should be filered. Any ROA matching
+          that ASN and having a prefix that matches or is more specific,
+          should be discarded
+
+        Prefix assertions are directly loaded into self._roa_dicts.
+        This must be called after _load_roa_dicts()
+        """
         slurm = ujson.loads(slurm_json_str)
         version = slurm.get('slurmVersion')
         if version != 1:
