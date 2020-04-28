@@ -274,6 +274,13 @@ RPKI
   route(6) objects.
   |br| **Default**: ``3600``.
   |br| **Change takes effect**: after SIGHUP.
+* ``slurm_source``: a URL to a SLURM (`RFC8416`_) file. When set, the
+  ``prefixAssertions`` and ``prefixFilters`` entries in the SLURM file
+  are used to filter/amend the data from ``roa_source``.
+  See the :ref:`SLURM documentation <rpki-slurm>` for more details.
+  Supports HTTP(s), FTP or local file URLs.
+  |br| **Default**: undefined, optional
+  |br| **Change takes effect**: after SIGHUP, upon next full ROA import.
 * ``pseudo_irr_remarks``: the contents of the remarks field for pseudo-IRR
   objects created for each ROA. This can have multiple lines. ``{asn}`` and
   ``{prefix}`` are replaced with the ROA's AS number and prefix, respectively.
@@ -488,3 +495,5 @@ Compatibility
   performance impact on very large responses.
   |br| **Default**: ``false``, IPv6 members included
   |br| **Change takes effect**: after SIGHUP, for all subsequent queries.
+
+.. _RFC8416: https://tools.ietf.org/html/rfc8416

@@ -115,7 +115,7 @@ class FileImportRunnerBase:
             destination = NamedTemporaryFile(delete=False)
         self._download_file(destination, url, url_parsed)
         if return_contents:
-            value = destination.getvalue().decode('ascii').strip()  # type: ignore
+            value = destination.getvalue().decode('utf-8').strip()  # type: ignore
             logger.info(f'Downloaded {url}, contained {value}')
             return value, False
         else:
@@ -266,17 +266,22 @@ class ROAImportRunner(FileImportRunnerBase):
 
     def _import_roas(self):
         roa_source = get_setting('rpki.roa_source')
-        logger.info(f'Running full ROA import from: {roa_source}')
+        slurm_source = get_setting('rpki.slurm_source')
+        logger.info(f'Running full ROA import from: {roa_source}, SLURM {slurm_source}')
 
         self.database_handler.delete_all_roa_objects()
         self.database_handler.delete_all_rpsl_objects_with_journal(RPKI_IRR_PSEUDO_SOURCE)
 
-        import_filename, to_delete = self._retrieve_file(roa_source, return_contents=False)
-        with open(import_filename) as fh:
-            roa_importer = ROADataImporter(fh.read(), self.database_handler)
-        if to_delete:
-            os.unlink(import_filename)
-        logger.info(f'ROA import from {roa_source} imported {len(roa_importer.roa_objs)} ROAs, running validator')
+        slurm_data = None
+        if slurm_source:
+            slurm_data, _ = self._retrieve_file(slurm_source, return_contents=True)
+
+        roa_filename, roa_to_delete = self._retrieve_file(roa_source, return_contents=False)
+        with open(roa_filename) as fh:
+            roa_importer = ROADataImporter(fh.read(), slurm_data, self.database_handler)
+        if roa_to_delete:
+            os.unlink(roa_filename)
+        logger.info(f'ROA import from {roa_source}, SLURM {slurm_source}, imported {len(roa_importer.roa_objs)} ROAs, running validator')
         return roa_importer.roa_objs
 
 

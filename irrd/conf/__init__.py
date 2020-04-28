@@ -217,8 +217,8 @@ class Configuration:
             errors.append(f'Setting email.recipient_override must be an email address if set.')
 
         string_not_required = ['email.footer', 'server.whois.access_list', 'server.http.access_list',
-                               'rpki.notify_invalid_subject',
-                               'rpki.notify_invalid_header']
+                               'rpki.notify_invalid_subject', 'rpki.notify_invalid_header',
+                               'rpki.slurm_source']
         for setting in string_not_required:
             if not self._check_is_str(config, setting, required=False):
                 errors.append(f'Setting {setting} must be a string, if defined.')

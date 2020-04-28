@@ -1,8 +1,10 @@
+from collections import defaultdict
+
 import ujson
 
 import logging
 from IPy import IP
-from typing import List
+from typing import List, Optional, Dict, Set
 
 from irrd.conf import RPKI_IRR_PSEUDO_SOURCE, get_setting
 from irrd.rpki.status import RPKIStatus
@@ -23,16 +25,55 @@ class ROADataImporter:
     """
     Importer for ROAs.
 
-    Loads all ROAs from the JSON data in the json_str parameter.
+    Loads all ROAs from the JSON data in the rpki_json_str parameter.
     Expects all existing ROA and pseudo-IRR objects to be deleted
     already, e.g. with:
         database_handler.delete_all_roa_objects()
         database_handler.delete_all_rpsl_objects_with_journal(RPKI_IRR_PSEUDO_SOURCE)
     """
-    def __init__(self, json_str: str, database_handler: DatabaseHandler):
+    def __init__(self, rpki_json_str: str, slurm_json_str: Optional[str],
+                 database_handler: DatabaseHandler):
         self.roa_objs: List[ROA] = []
+        self._filtered_asns: Set[str] = set()
+        self._filtered_prefixes: Set[IP] = set()
+        self._filtered_combined: Dict[str, Set[IP]] = defaultdict(set)
+
+        self._load_roa_dicts(rpki_json_str)
+        if slurm_json_str:
+            self._load_slurm(slurm_json_str)
+
+        for roa_dict in self._roa_dicts:
+            try:
+                asn = roa_dict['asn']
+                prefix = IP(roa_dict['prefix'])
+                if asn in self._filtered_asns:
+                    continue
+                if any([prefix in filtered for filtered in self._filtered_prefixes]):
+                    continue
+                if any([prefix in filtered for filtered in self._filtered_combined.get(asn, [])]):
+                    continue
+
+                roa_obj = ROA(
+                    prefix,
+                    asn,
+                    roa_dict['maxLength'],
+                    roa_dict['ta'],
+                )
+            except KeyError as ke:
+                msg = f'Unable to parse ROA record: missing key {ke} -- full record: {roa_dict}'
+                logger.error(msg)
+                raise ROAParserException(msg)
+            except ValueError as ve:
+                msg = f'Invalid value in ROA or SLURM: {ve}'
+                logger.error(msg)
+                raise ROAParserException(msg)
+
+            roa_obj.save(database_handler)
+            self.roa_objs.append(roa_obj)
+
+    def _load_roa_dicts(self, rpki_json_str: str) -> None:  # List[Dict[str, str]]:
         try:
-            roa_dicts = ujson.loads(json_str)['roas']
+            self._roa_dicts = ujson.loads(rpki_json_str)['roas']
         except ValueError as error:
             msg = f'Unable to parse ROA input: invalid JSON: {error}'
             logger.error(msg)
@@ -42,21 +83,34 @@ class ROADataImporter:
             logger.error(msg)
             raise ROAParserException(msg)
 
-        for roa_dict in roa_dicts:
-            try:
-                roa_obj = ROA(
-                    roa_dict['prefix'],
-                    roa_dict['asn'],
-                    roa_dict['maxLength'],
-                    roa_dict['ta'],
-                )
-            except KeyError as ke:
-                msg = f'Unable to parse ROA record: missing key {ke} -- full record: {roa_dict}'
-                logger.error(msg)
-                raise ROAParserException(msg)
+    def _load_slurm(self, slurm_json_str: str):
+        slurm = ujson.loads(slurm_json_str)
+        version = slurm.get('slurmVersion')
+        if version != 1:
+            msg = f'SLURM data has invalid version: {version}'
+            logger.error(msg)
+            raise ROAParserException(msg)
 
-            roa_obj.save(database_handler)
-            self.roa_objs.append(roa_obj)
+        filters = slurm.get('validationOutputFilters', {}).get('prefixFilters', [])
+        for item in filters:
+            if 'asn' in item and 'prefix' not in item:
+                self._filtered_asns.add('AS' + str(item['asn']))
+            if 'asn' not in item and 'prefix' in item:
+                self._filtered_prefixes.add(IP(item['prefix']))
+            if 'asn' in item and 'prefix' in item:
+                self._filtered_combined['AS' + str(item['asn'])].add(IP(item['prefix']))
+
+        assertions = slurm.get('locallyAddedAssertions', {}).get('prefixAssertions', [])
+        for assertion in assertions:
+            max_length = assertion.get('maxPrefixLength')
+            if max_length is None:
+                max_length = IP(assertion['prefix']).prefixlen()
+            self._roa_dicts.append({
+                'asn': 'AS' + str(assertion['asn']),
+                'prefix': assertion['prefix'],
+                'maxLength': max_length,
+                'ta': 'SLURM file',
+            })
 
 
 class ROA:
@@ -66,10 +120,10 @@ class ROA:
     This is used when (re-)importing all ROAs, to save the data to the DB,
     and by the BulkRouteROAValidator when validating all existing routes.
     """
-    def __init__(self, prefix: str, asn: str, max_length: str, trust_anchor: str):
+    def __init__(self, prefix: IP, asn: str, max_length: str, trust_anchor: str):
         try:
-            self.prefix = IP(prefix)
-            self.prefix_str = prefix
+            self.prefix = prefix
+            self.prefix_str = str(prefix)
             _, self.asn = parse_as_number(asn)
             self.max_length = int(max_length)
             self.trust_anchor = trust_anchor
