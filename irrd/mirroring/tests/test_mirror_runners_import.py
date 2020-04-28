@@ -342,9 +342,11 @@ class TestROAImportRunner:
     # is shared between ROAImportRunner and RPSLMirrorFullImportRunner,
     # not all protocols are tested here.
     def test_run_import_http_file_success(self, monkeypatch, config_override, tmpdir, caplog):
+        slurm_path = str(tmpdir) + '/slurm.json'
         config_override({
             'rpki': {
                 'roa_source': 'https://host/roa.json',
+                'slurm_source': 'file://' + slurm_path
             }
         })
 
@@ -357,6 +359,9 @@ class TestROAImportRunner:
 
             def iter_content(self, size):
                 return iter([b'roa_', b'data'])
+
+        with open(slurm_path, 'wb') as fh:
+            fh.write(b'slurm_data')
 
         mock_dh = Mock(spec=DatabaseHandler)
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseHandler', lambda: mock_dh)
@@ -465,8 +470,9 @@ class TestROAImportRunner:
 
 
 class MockROADataImporter:
-    def __init__(self, text: str, database_handler: DatabaseHandler):
-        assert text == 'roa_data'
+    def __init__(self, rpki_text: str, slurm_text: str, database_handler: DatabaseHandler):
+        assert rpki_text == 'roa_data'
+        assert slurm_text == 'slurm_data'
         self.roa_objs = ['roa1', 'roa2']
 
 
