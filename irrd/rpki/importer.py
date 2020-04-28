@@ -3,7 +3,7 @@ from collections import defaultdict
 import ujson
 
 import logging
-from IPy import IP
+from IPy import IP, IPSet
 from typing import List, Optional, Dict, Set
 
 from irrd.conf import RPKI_IRR_PSEUDO_SOURCE, get_setting
@@ -13,6 +13,8 @@ from irrd.rpsl.rpsl_objects import RPSL_ROUTE_OBJECT_CLASS_FOR_IP_VERSION
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.models import JournalEntryOrigin
 from irrd.utils.validators import parse_as_number
+
+SLURM_TRUST_ANCHOR = 'SLURM file'
 
 logger = logging.getLogger(__name__)
 
@@ -37,8 +39,8 @@ class ROADataImporter:
                  database_handler: DatabaseHandler):
         self.roa_objs: List[ROA] = []
         self._filtered_asns: Set[str] = set()
-        self._filtered_prefixes: Set[IP] = set()
-        self._filtered_combined: Dict[str, Set[IP]] = defaultdict(set)
+        self._filtered_prefixes: IPSet = IPSet()
+        self._filtered_combined: Dict[str, IPSet] = defaultdict(IPSet)
 
         self._load_roa_dicts(rpki_json_str)
         if slurm_json_str:
@@ -48,14 +50,16 @@ class ROADataImporter:
             try:
                 asn = roa_dict['asn']
                 prefix = IP(roa_dict['prefix'])
-                if asn in self._filtered_asns:
-                    continue
-                if any([prefix in filtered for filtered in self._filtered_prefixes]):
-                    continue
-                if any([prefix in filtered for filtered in self._filtered_combined.get(asn, [])]):
-                    continue
+                ta = roa_dict['ta']
+                if ta != SLURM_TRUST_ANCHOR:
+                    if asn in self._filtered_asns:
+                        continue
+                    if any([prefix in self._filtered_prefixes]):
+                        continue
+                    if any([prefix in self._filtered_combined.get(asn, [])]):
+                        continue
 
-                roa_obj = ROA(prefix, asn, roa_dict['maxLength'], roa_dict['ta'])
+                roa_obj = ROA(prefix, asn, roa_dict['maxLength'], ta)
             except KeyError as ke:
                 msg = f'Unable to parse ROA record: missing key {ke} -- full record: {roa_dict}'
                 logger.error(msg)
@@ -124,7 +128,7 @@ class ROADataImporter:
                 'asn': 'AS' + str(assertion['asn']),
                 'prefix': assertion['prefix'],
                 'maxLength': max_length,
-                'ta': 'SLURM file',
+                'ta': SLURM_TRUST_ANCHOR,
             })
 
 

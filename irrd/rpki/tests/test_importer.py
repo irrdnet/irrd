@@ -77,6 +77,12 @@ class TestROAImportProcess:
                         "prefix": "192.0.2.0/24",
                         "asn": 64497,
                         "comment": "All VRPs encompassed by prefix, matching ASN",
+                    },
+                    {
+                        # This should not filter out the assertion for 198.51.100/24
+                        "prefix": "198.51.100.0/24",
+                        "asn": 64496,
+                        "comment": "All VRPs encompassed by prefix, matching ASN",
                     }
                 ],
             },
