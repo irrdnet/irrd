@@ -269,9 +269,9 @@ RPKI
   |br| **Default**: ``https://rpki.gin.ntt.net/api/export.json``
   |br| **Change takes effect**: after SIGHUP. The first RPKI ROA import may
   take several minutes, after which RPKI-aware mode is enabled.
-* ``roa_import_timer``: the time between two attempts to import the ROA
-  file from ``roa_source`` and update the RPKI status of all qualifying
-  route(6) objects.
+* ``roa_import_timer``: the time in seconds between two attempts to import
+  the ROA file from ``roa_source`` and update the RPKI status of all
+  qualifying route(6) objects.
   |br| **Default**: ``3600``.
   |br| **Change takes effect**: after SIGHUP.
 * ``slurm_source``: a URL to a SLURM (`RFC8416`_) file. When set, the
