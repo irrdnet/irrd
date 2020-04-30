@@ -55,7 +55,7 @@ class WhoisConnectionLimitedForkingTCPServer(socketserver.ForkingMixIn, socketse
     request_queue_size = 50
 
     def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True):  # noqa: N803
-        self.address_family = socket.AF_INET6 if IP(server_address[0]).version == 6 else socket.AF_INET
+        self.address_family = socket.AF_INET6 if IP(server_address[0]).version() == 6 else socket.AF_INET
         super().__init__(server_address, RequestHandlerClass, bind_and_activate)
 
     def verify_request(self, request, client_address):

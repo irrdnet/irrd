@@ -42,7 +42,7 @@ class HTTPServerForkingIPv6(socketserver.ForkingMixIn, HTTPServer):  # pragma: n
     timeout = 30
 
     def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True):  # noqa: N803
-        self.address_family = socket.AF_INET6 if IP(server_address[0]).version == 6 else socket.AF_INET
+        self.address_family = socket.AF_INET6 if IP(server_address[0]).version() == 6 else socket.AF_INET
         super().__init__(server_address, RequestHandlerClass, bind_and_activate)
 
     def handle_error(self, request, client_address):
