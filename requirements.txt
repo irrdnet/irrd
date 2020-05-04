@@ -14,7 +14,7 @@ datrie==0.8.2            # efficient route searching, used for RPKI
 setproctitle==1.1.10   # updating the process title for useful ps output
 python-daemon==2.2.4   # daemonising the main process
 pid==3.0.3             # managing PID files
-redis==3.4.1          # preloaded data storage & sync through redis
+redis==3.5.0          # preloaded data storage & sync through redis
 hiredis==1.0.1         # improved redis response parsing performance
 requests==2.23.0       # HTTP request handling
 
