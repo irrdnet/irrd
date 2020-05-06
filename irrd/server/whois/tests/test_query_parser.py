@@ -81,6 +81,7 @@ def prepare_parser(monkeypatch, config_override):
         },
         {
             'pk': uuid.uuid4(),
+
             'rpsl_pk': '192.0.2.0/25,AS65544',
             'object_class': 'route',
             'parsed_data': {'route': '192.0.2.0/25', 'origin': 'AS65544', 'mnt-by': 'MNT-TEST', 'source': 'TEST2'},

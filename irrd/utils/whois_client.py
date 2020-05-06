@@ -24,10 +24,7 @@ def whois_query(host: str, port: int, query: str, end_markings: List[str]=None) 
     else:
         end_markings_bytes = []
 
-    s = socket.socket()
-    s.settimeout(5)
-    s.connect((host, port))
-
+    s = socket.create_connection((host, port), timeout=5)
     s.sendall(query.encode('utf-8'))
 
     buffer = b''
@@ -55,10 +52,7 @@ def whois_query_irrd(host: str, port: int, query: str) -> Optional[str]:
     query = query.strip() + '\n'
     logger.debug(f'Running IRRD whois query {query.strip()} on {host} port {port}')
 
-    s = socket.socket()
-    s.settimeout(5)
-    s.connect((host, port))
-
+    s = socket.create_connection((host, port), timeout=5)
     s.sendall(query.encode('utf-8'))
 
     buffer = b''
