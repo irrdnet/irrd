@@ -153,6 +153,7 @@ class RPSLIPv4AddressRangeField(RPSLTextField):
     not have to align to bitwise boundaries of prefixes.
     """
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
+        value = value.replace(',', '')  # #311, process multiline PK correctly
         if '-' in value:
             ip1_input, ip2_input = value.split('-', 1)
         else:
