@@ -22,7 +22,7 @@ requests==2.23.0       # HTTP request handling
 psycopg2-binary==2.8.5
 SQLAlchemy==1.3.17
 alembic==1.4.2
-ujson==2.0.3
+ujson==3.0.0
 
 # Testing and related packages
 pytest==5.4.1
