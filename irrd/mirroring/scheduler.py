@@ -24,12 +24,10 @@ class ScheduledTaskProcess(multiprocessing.Process):
         super().__init__(*args, **kwargs)
 
     def close(self):  # pragma: no cover
-        '''
-        Close the Process object.
-
-        This method releases resources held by the Process object.  It is
-        an error to call this method if the child process is still running.
-        '''
+        """
+        close() is not available in Python 3.6,
+        use our own implementation if needed.
+        """
         if hasattr(super, 'close'):
             return super().close()
         if self._popen is not None:
