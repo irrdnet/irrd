@@ -170,8 +170,8 @@ class TestDatabaseHandlerLive:
         result = list(self.dh.execute_query(query))
         assert len(result) == 2
 
-        self.dh.delete_rpsl_object(rpsl_object_route_v6, JournalEntryOrigin.auth_change)
-        self.dh.delete_rpsl_object(rpsl_object_route_v6, JournalEntryOrigin.auth_change)
+        self.dh.delete_rpsl_object(rpsl_object=rpsl_object_route_v6, origin=JournalEntryOrigin.auth_change)
+        self.dh.delete_rpsl_object(rpsl_object=rpsl_object_route_v6, origin=JournalEntryOrigin.auth_change)
         query = RPSLDatabaseQuery()
         result = list(self.dh.execute_query(query))
         assert len(result) == 1

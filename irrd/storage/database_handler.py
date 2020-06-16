@@ -4,7 +4,7 @@ import logging
 from collections import defaultdict
 
 from datetime import datetime, timezone
-from typing import List, Set, Dict, Any, Tuple, Iterator, Union
+from typing import List, Set, Dict, Any, Tuple, Iterator, Union, Optional
 
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql as pg
@@ -234,7 +234,8 @@ class DatabaseHandler:
         if rpsl_objs_now_valid or rpsl_objs_now_invalid or rpsl_objs_now_not_found:
             self._object_classes_modified.add('route')
 
-    def delete_rpsl_object(self, rpsl_object: RPSLObject, origin: JournalEntryOrigin) -> None:
+    def delete_rpsl_object(self, origin: JournalEntryOrigin, rpsl_object: Optional[RPSLObject]=None,
+                           source: Optional[str]=None, rpsl_pk: Optional[str]=None) -> None:
         """
         Delete an RPSL object from the database.
 
@@ -243,21 +244,24 @@ class DatabaseHandler:
         """
         self._flush_rpsl_object_writing_buffer()
         table = RPSLDatabaseObject.__table__
-        source = rpsl_object.parsed_data['source']
+        if not source and rpsl_object:
+            source = rpsl_object.parsed_data['source']
+        if not rpsl_pk and rpsl_object:
+            rpsl_pk = rpsl_object.pk()
         stmt = table.delete(
-            sa.and_(table.c.rpsl_pk == rpsl_object.pk(), table.c.source == source),
+            sa.and_(table.c.rpsl_pk == rpsl_pk, table.c.source == source),
         ).returning(table.c.pk, table.c.rpsl_pk, table.c.source, table.c.object_class, table.c.object_text)
         results = self._connection.execute(stmt)
 
         if results.rowcount == 0:
-            logger.error(f'Attempted to remove object {rpsl_object.pk()}/{source}, but no database row matched')
+            logger.error(f'Attempted to remove object {rpsl_pk}/{source}, but no database row matched')
             return None
         if results.rowcount > 1:  # pragma: no cover
             # This should not be possible, as rpsl_pk/source are a composite unique value in the database scheme.
             # Therefore, a query should not be able to affect more than one row - and we also can not test this
             # scenario. Due to the possible harm of a bug in this area, we still check for it anyways.
             affected_pks = ','.join([r[0] for r in results.fetchall()])
-            msg = f'Attempted to remove object {rpsl_object.pk()}/{source}, but multiple objects were affected, '
+            msg = f'Attempted to remove object {rpsl_pk}/{source}, but multiple objects were affected, '
             msg += f'internal pks affected: {affected_pks}'
             logger.critical(msg)
             raise ValueError(msg)
