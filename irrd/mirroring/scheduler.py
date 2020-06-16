@@ -36,7 +36,6 @@ class ScheduledTaskProcess(multiprocessing.Process):
             if self._popen.poll() is None:
                 raise ValueError("Cannot close a process while it is still running. "
                                  "You should first call join() or terminate().")
-            self._popen.close()
             self._popen = None
             del self._sentinel
         self._closed = True
