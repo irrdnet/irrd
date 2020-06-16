@@ -23,20 +23,23 @@ class ScheduledTaskProcess(multiprocessing.Process):
         self.runner = runner
         super().__init__(*args, **kwargs)
 
-    def close(self):
+    def close(self):  # pragma: no cover
         '''
         Close the Process object.
 
         This method releases resources held by the Process object.  It is
         an error to call this method if the child process is still running.
         '''
+        if hasattr(super, 'close'):
+            return super().close()
         if self._popen is not None:
             if self._popen.poll() is None:
                 raise ValueError("Cannot close a process while it is still running. "
                                  "You should first call join() or terminate().")
             self._popen.close()
             self._popen = None
-            del self._sentinel
+            if hasattr(self, '_sentinel'):
+                del self._sentinel
         self._closed = True
 
     def run(self):
