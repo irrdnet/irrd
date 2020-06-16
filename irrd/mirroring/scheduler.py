@@ -38,8 +38,7 @@ class ScheduledTaskProcess(multiprocessing.Process):
                                  "You should first call join() or terminate().")
             self._popen.close()
             self._popen = None
-            if hasattr(self, '_sentinel'):
-                del self._sentinel
+            del self._sentinel
         self._closed = True
 
     def run(self):
