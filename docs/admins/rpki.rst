@@ -50,8 +50,9 @@ Where validation takes place
 * Every ``rpki.roa_import_timer``, IRRd re-imports the ROA file, and then
   updates the validation status of all `route(6)` objects in the IRR database.
   This ensures that the status is correct when ROAs are added or removed.
-* For each received NRTM update, IRRd sets the validation status using the
-  current known ROAs, both on creations or changes.
+* For each imported object from NRTM, periodic full imports, or manual data
+  loading, IRRd sets the validation status using the current known ROAs, both
+  on creations or changes.
 * IRRd checks creation or modification of objects in authoritative databases
   against the ROAs, and rejects the objects when they are RPKI invalid.
 * Deletions of RPKI invalid object are permitted, both for authoritative

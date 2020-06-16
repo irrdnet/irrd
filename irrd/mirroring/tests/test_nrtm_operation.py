@@ -103,8 +103,8 @@ class TestNRTMOperation:
         assert operation.save(database_handler=mock_dh)
 
         assert mock_dh.delete_rpsl_object.call_count == 1
-        assert mock_dh.mock_calls[0][1][0].pk() == 'TEST-MNT'
-        assert mock_dh.mock_calls[0][1][1] == JournalEntryOrigin.mirror
+        assert mock_dh.mock_calls[0][2]['rpsl_object'].pk() == 'TEST-MNT'
+        assert mock_dh.mock_calls[0][2]['origin'] == JournalEntryOrigin.mirror
 
     def test_nrtm_add_invalid_unknown_object_class(self):
         mock_dh = Mock()
@@ -163,9 +163,9 @@ class TestNRTMOperation:
         assert operation.save(database_handler=mock_dh)
 
         assert mock_dh.delete_rpsl_object.call_count == 1
-        assert mock_dh.mock_calls[0][1][0].pk() == '192.0.2.0/24AS65537'
-        assert mock_dh.mock_calls[0][1][0].source() == 'TEST'
-        assert mock_dh.mock_calls[0][1][1] == JournalEntryOrigin.mirror
+        assert mock_dh.mock_calls[0][2]['rpsl_object'].pk() == '192.0.2.0/24AS65537'
+        assert mock_dh.mock_calls[0][2]['rpsl_object'].source() == 'TEST'
+        assert mock_dh.mock_calls[0][2]['origin'] == JournalEntryOrigin.mirror
 
     def test_nrtm_add_invalid_incomplete_object(self):
         # Source-less objects are not accepted for add/update

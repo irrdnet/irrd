@@ -74,7 +74,7 @@ class NRTMOperation:
                 obj.rpki_status = roa_validator.validate_route(obj.prefix, obj.asn_first, obj.source())
             database_handler.upsert_rpsl_object(obj, JournalEntryOrigin.mirror)
         elif self.operation == DatabaseOperation.delete:
-            database_handler.delete_rpsl_object(obj, JournalEntryOrigin.mirror)
+            database_handler.delete_rpsl_object(rpsl_object=obj, origin=JournalEntryOrigin.mirror)
 
         logger.info(f'Completed NRTM operation {str(self)}/{obj.rpsl_object_class}/{obj.pk()}, '
                     f'RPKI status {obj.rpki_status.value}')

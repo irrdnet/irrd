@@ -9,18 +9,18 @@ from pathlib import Path
 from irrd.rpki.validators import BulkRouteROAValidator
 
 """
-Load an RPSL file into the database.
+Update a database based on a RPSL file.
 """
 
 logger = logging.getLogger(__name__)
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from irrd.conf import config_init, CONFIG_PATH_DEFAULT, get_setting
-from irrd.mirroring.parsers import MirrorFileImportParser
+from irrd.mirroring.parsers import MirrorUpdateFileImportParser
 from irrd.storage.database_handler import DatabaseHandler
 
 
-def load(source, filename, serial) -> int:
+def update(source, filename) -> int:
     if any([
         get_setting(f'sources.{source}.import_source'),
         get_setting(f'sources.{source}.import_serial_source')
@@ -31,10 +31,8 @@ def load(source, filename, serial) -> int:
 
     dh = DatabaseHandler()
     roa_validator = BulkRouteROAValidator(dh)
-    dh.delete_all_rpsl_objects_with_journal(source)
-    dh.disable_journaling()
-    parser = MirrorFileImportParser(
-        source=source, filename=filename, serial=serial, database_handler=dh,
+    parser = MirrorUpdateFileImportParser(
+        source, filename, database_handler=dh,
         direct_error_return=True, roa_validator=roa_validator)
     error = parser.run_import()
     if error:
@@ -49,12 +47,10 @@ def load(source, filename, serial) -> int:
 
 
 def main():  # pragma: no cover
-    description = """Load an RPSL file into the database."""
+    description = """Update a database based on a RPSL file."""
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('--config', dest='config_file_path', type=str,
                         help=f'use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})')
-    parser.add_argument('--serial', dest='serial', type=int,
-                        help=f'serial number (optional)')
     parser.add_argument('--source', dest='source', type=str, required=True,
                         help=f'name of the source, e.g. NTTCOM')
     parser.add_argument('input_file', type=str,
@@ -63,7 +59,7 @@ def main():  # pragma: no cover
 
     config_init(args.config_file_path)
 
-    sys.exit(load(args.source, args.input_file, args.serial))
+    sys.exit(update(args.source, args.input_file))
 
 
 if __name__ == '__main__':  # pragma: no cover

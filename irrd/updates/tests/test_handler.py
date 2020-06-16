@@ -8,6 +8,7 @@ import pytest
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
 from irrd.utils.test_utils import flatten_mock_calls
 from ..handler import ChangeSubmissionHandler
+from ...storage.models import JournalEntryOrigin
 
 
 @pytest.fixture()
@@ -361,7 +362,8 @@ class TestChangeSubmissionHandler:
             ['lookup_attrs_in', ({'tech-c', 'zone-c', 'admin-c'}, ['PERSON-TEST']), {}]
         ]
         assert mock_dh.mock_calls[0][0] == 'delete_rpsl_object'
-        assert mock_dh.mock_calls[0][1][0].pk() == 'PERSON-TEST'
+        assert mock_dh.mock_calls[0][2]['rpsl_object'].pk() == 'PERSON-TEST'
+        assert mock_dh.mock_calls[0][2]['origin'] == JournalEntryOrigin.auth_change
         assert mock_dh.mock_calls[1][0] == 'commit'
         assert mock_dh.mock_calls[2][0] == 'close'
 
