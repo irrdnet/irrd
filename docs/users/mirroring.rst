@@ -181,7 +181,7 @@ If this setting is undefined, all known classes are accepted.
 Manually loading data
 ---------------------
 IRRd also supports manually loading data. The primary use for this is a
-scenario where an external system or scripts generated RPSL data, and
+scenario where an external system or script generate RPSL data, and
 IRRd should serve that data. It can also be useful for testing.
 
 It's somewhat different from typical mirroring, where the authority
@@ -232,7 +232,7 @@ The ``irrd_load_database`` and ``irrd_update_database`` command work as follows:
 * The object class filter configured, if any, is followed.
 * Manual object loading and other mirroring settings can not be mixed
   for the same source. Both commands will return an error and exit with
-  status 2 if ``import_source`` or ``import_source_serial`` are set for
+  status 2 if ``import_source`` or ``import_serial_source`` are set for
   the provided source.
 
 Serial handling
@@ -241,7 +241,7 @@ The ``irrd_load_database`` command can be passed a serial to set:
 
 * If no serial is provided, and none has in the past, no serial is
   recorded. This is similar to sources that have ``import_source``
-  set, but not ``import_source_serial``.
+  set, but not ``import_serial_source``.
 * If no serial is provided, but a serial has been provided in a past
   command, or through another mirroring process, the existing serial
   is kept.
