@@ -81,7 +81,7 @@ class ROADataImporter:
             logger.error(msg)
             raise ROAParserException(msg)
         except KeyError:
-            msg = f'Unable to parse ROA input: root key "roas" not found'
+            msg = 'Unable to parse ROA input: root key "roas" not found'
             logger.error(msg)
             raise ROAParserException(msg)
 

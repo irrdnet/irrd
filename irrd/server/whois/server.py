@@ -36,7 +36,7 @@ def start_whois_server():  # pragma: no cover
         nonlocal server
 
         def shutdown(server):
-            logging.info(f'Whois server shutting down')
+            logging.info('Whois server shutting down')
             server.shutdown()
             server.server_close()
         # Shutdown must be called from a thread to prevent blocking.

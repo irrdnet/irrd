@@ -91,7 +91,7 @@ class ChangeRequest:
             self.request_type = UpdateRequestType.DELETE
             if not self.rpsl_obj_current:
                 self.status = UpdateRequestStatus.ERROR_PARSING
-                self.error_messages.append(f'Can not delete object: no object found for this key in this database.')
+                self.error_messages.append('Can not delete object: no object found for this key in this database.')
                 logger.debug(f'{id(self)}: Request attempts to delete object {self.rpsl_obj_new}, '
                              f'but no existing object found.')
 
@@ -290,7 +290,7 @@ class ChangeRequest:
             self.rpsl_obj_new.prefix, self.rpsl_obj_new.asn_first, self.rpsl_obj_new.source()
         )
         if validation_result == RPKIStatus.invalid:
-            import_timer = get_setting(f'rpki.roa_import_timer')
+            import_timer = get_setting('rpki.roa_import_timer')
             user_message = 'RPKI ROAs were found that conflict with this object. '
             user_message += f'(This IRRd refreshes ROAs every {import_timer} seconds.)'
             logger.debug(f'{id(self)}: Conflicting ROAs found')

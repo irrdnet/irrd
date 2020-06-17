@@ -98,7 +98,7 @@ class StatusGenerator:
             keep_journal = 'Yes' if get_setting(f'sources.{source}.keep_journal') else 'No'
             authoritative = 'Yes' if get_setting(f'sources.{source}.authoritative') else 'No'
             object_class_filter = get_setting(f'sources.{source}.object_class_filter')
-            rpki_enabled = get_setting(f'rpki.roa_source') and not get_setting(f'sources.{source}.rpki_excluded')
+            rpki_enabled = get_setting('rpki.roa_source') and not get_setting(f'sources.{source}.rpki_excluded')
             rpki_enabled_str = 'Yes' if rpki_enabled else 'No'
 
             nrtm_host = get_setting(f'sources.{source}.nrtm_host')
@@ -160,6 +160,6 @@ class StatusGenerator:
                     Unable to reach remote server for status query
                     """)
         else:
-            return textwrap.dedent(f"""
+            return textwrap.dedent("""
                 No NRTM host configured.
                 """)

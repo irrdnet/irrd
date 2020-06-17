@@ -195,13 +195,13 @@ class Configuration:
         config = self.user_config_staging
 
         if not self._check_is_str(config, 'database_url'):
-            errors.append(f'Setting database_url is required.')
+            errors.append('Setting database_url is required.')
 
         if not self._check_is_str(config, 'redis_url'):
-            errors.append(f'Setting redis_url is required.')
+            errors.append('Setting redis_url is required.')
 
         if not self._check_is_str(config, 'piddir') or not os.path.isdir(config['piddir']):
-            errors.append(f'Setting piddir is required and must point to an existing directory.')
+            errors.append('Setting piddir is required and must point to an existing directory.')
 
         expected_access_lists = {
             config.get('server.whois.access_list'),
@@ -209,12 +209,12 @@ class Configuration:
         }
 
         if not self._check_is_str(config, 'email.from') or '@' not in config.get('email.from'):
-            errors.append(f'Setting email.from is required and must be an email address.')
+            errors.append('Setting email.from is required and must be an email address.')
         if not self._check_is_str(config, 'email.smtp'):
-            errors.append(f'Setting email.smtp is required.')
+            errors.append('Setting email.smtp is required.')
         if not self._check_is_str(config, 'email.recipient_override', required=False) \
                 or '@' not in config.get('email.recipient_override', '@'):
-            errors.append(f'Setting email.recipient_override must be an email address if set.')
+            errors.append('Setting email.recipient_override must be an email address if set.')
 
         string_not_required = ['email.footer', 'server.whois.access_list', 'server.http.access_list',
                                'rpki.notify_invalid_subject', 'rpki.notify_invalid_header',
@@ -224,7 +224,7 @@ class Configuration:
                 errors.append(f'Setting {setting} must be a string, if defined.')
 
         if not self._check_is_str(config, 'auth.gnupg_keyring'):
-            errors.append(f'Setting auth.gnupg_keyring is required.')
+            errors.append('Setting auth.gnupg_keyring is required.')
 
         access_lists = set(config.get('access_lists', {}).keys())
         unresolved_access_lists = {x for x in expected_access_lists.difference(access_lists) if x and isinstance(x, str)}
@@ -242,18 +242,18 @@ class Configuration:
         if config.get('rpki.roa_source', 'https://rpki.gin.ntt.net/api/export.json'):
             known_sources.add(RPKI_IRR_PSEUDO_SOURCE)
             if config.get('rpki.notify_invalid_enabled') is None:
-                errors.append(f'RPKI-aware mode is enabled, but rpki.notify_invalid_enabled '
-                              f'is not set. Set to true or false. DANGER: care is required with '
-                              f'this setting in testing setups with live data, as it may send bulk '
-                              f'emails to real resource contacts unless email.recipient_override '
-                              f'is also set. Read documentation carefully.')
+                errors.append('RPKI-aware mode is enabled, but rpki.notify_invalid_enabled '
+                              'is not set. Set to true or false. DANGER: care is required with '
+                              'this setting in testing setups with live data, as it may send bulk '
+                              'emails to real resource contacts unless email.recipient_override '
+                              'is also set. Read documentation carefully.')
 
         unknown_default_sources = set(config.get('sources_default', [])).difference(known_sources)
         if unknown_default_sources:
             errors.append(f'Setting sources_default contains unknown sources: {", ".join(unknown_default_sources)}')
 
         if not str(config.get('rpki.roa_import_timer', '0')).isnumeric():
-            errors.append(f'Setting rpki.roa_import_timer must be set to a number.')
+            errors.append('Setting rpki.roa_import_timer must be set to a number.')
 
         for name, details in config.get('sources', {}).items():
             if config.get('rpki.roa_source') and name == RPKI_IRR_PSEUDO_SOURCE:

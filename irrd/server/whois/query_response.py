@@ -66,11 +66,11 @@ class WhoisQueryResponse:
             else:
                 return 'C\n'
         elif self.response_type == WhoisQueryResponseType.KEY_NOT_FOUND:
-            return f'D\n'
+            return 'D\n'
         elif self.response_type == WhoisQueryResponseType.ERROR:
             return f'F {self.result}\n'
         elif self.response_type == WhoisQueryResponseType.NO_RESPONSE:
-            return f''
+            return ''
         return None
 
     def _generate_response_ripe(self) -> Optional[str]:

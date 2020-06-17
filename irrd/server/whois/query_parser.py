@@ -114,7 +114,7 @@ class WhoisQueryParser:
     def handle_irrd_command(self, full_command: str) -> WhoisQueryResponse:
         """Handle an IRRD-style query. full_command should not include the first exclamation mark. """
         if not full_command:
-            raise WhoisQueryParserException(f'Missing IRRD command')
+            raise WhoisQueryParserException('Missing IRRD command')
         command = full_command[0].upper()
         parameter = full_command[1:]
         response_type = WhoisQueryResponseType.SUCCESS
@@ -227,7 +227,7 @@ class WhoisQueryParser:
             ip_version = 6
 
         if not set_name:
-            raise WhoisQueryParserException(f'Missing required set name for A query')
+            raise WhoisQueryParserException('Missing required set name for A query')
 
         self._preloaded_query_called()
         self._current_set_root_object_class = 'as-set'
@@ -613,7 +613,7 @@ class WhoisQueryParser:
         try:
             source, version, serial_range = param.split(':')
         except ValueError:
-            raise WhoisQueryParserException(f'Invalid parameter: must contain three elements')
+            raise WhoisQueryParserException('Invalid parameter: must contain three elements')
 
         try:
             serial_start, serial_end = serial_range.split('-')
@@ -633,7 +633,7 @@ class WhoisQueryParser:
             raise WhoisQueryParserException(f'Unknown source: {source}')
 
         if not is_client_permitted(self.client_ip, f'sources.{source}.nrtm_access_list'):
-            raise WhoisQueryParserException(f'Access denied')
+            raise WhoisQueryParserException('Access denied')
 
         try:
             return NRTMGenerator().generate(source, version, serial_start, serial_end, self.database_handler)

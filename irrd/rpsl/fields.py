@@ -497,7 +497,7 @@ def parse_set_name(prefixes: List[str], value: str, messages: RPSLParserMessages
     prefix_display = '/'.join(prefixes)
 
     if strict_validation and len(input_components) > 5:
-        messages.error(f'Set names can have a maximum of five components.')
+        messages.error('Set names can have a maximum of five components.')
         return None
 
     if strict_validation and not any([c.upper().startswith(tuple(prefixes)) for c in input_components]):

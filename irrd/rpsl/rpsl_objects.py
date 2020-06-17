@@ -211,7 +211,7 @@ class RPSLKeyCert(RPSLObject):
         result = gpg.import_keys(certif_data)
 
         if len(result.fingerprints) != 1:
-            msg = f'Unable to read public PGP key: key corrupt or multiple keys provided'
+            msg = 'Unable to read public PGP key: key corrupt or multiple keys provided'
             if result.results:
                 msg = f'{msg}: {result.results[0]["text"]}'
             self.messages.error(msg)
