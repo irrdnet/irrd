@@ -14,7 +14,7 @@ from .parser_state import UpdateRequestType
 
 if TYPE_CHECKING:  # pragma: no cover
     # http://mypy.readthedocs.io/en/latest/common_issues.html#import-cycles
-    import parser  # noqa: F401
+    from .parser import ChangeRequest  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -48,11 +48,12 @@ class ReferenceValidator:
         self._preloaded_new: Set[Tuple[str, str, str]] = set()
         self._preloaded_deleted: Set[Tuple[str, str, str]] = set()
 
-    def preload(self, results: List['parser.ChangeRequest']) -> None:
+    def preload(self, results: List['ChangeRequest']) -> None:
         """Preload an iterable of ChangeRequest objects to be considered valid, or to be considered deleted."""
         self._preloaded_new = set()
         self._preloaded_deleted = set()
         for request in results:
+            assert request.rpsl_obj_new
             if request.request_type == UpdateRequestType.DELETE:
                 self._preloaded_deleted.add((request.rpsl_obj_new.rpsl_object_class, request.rpsl_obj_new.pk(),
                                              request.rpsl_obj_new.source()))
@@ -148,7 +149,7 @@ class AuthValidator:
         self._pre_approved: Set[str] = set()
         self.keycert_obj_pk = keycert_obj_pk
 
-    def pre_approve(self, results: List['parser.ChangeRequest']) -> None:
+    def pre_approve(self, results: List['ChangeRequest']) -> None:
         """
         Pre-approve certain maintainers that are part of this batch of updates.
         This is required for creating new maintainers along with other objects.
