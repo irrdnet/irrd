@@ -65,7 +65,7 @@ class MirrorScheduler:
 
     def run(self) -> None:
         if get_setting('rpki.roa_source'):
-            import_timer = int(get_setting(f'rpki.roa_import_timer'))
+            import_timer = int(get_setting('rpki.roa_import_timer'))
             self.run_if_relevant(RPKI_IRR_PSEUDO_SOURCE, ROAImportRunner, import_timer)
 
         sources_started = 0

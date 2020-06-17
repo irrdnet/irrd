@@ -573,7 +573,7 @@ class TestWhoisQueryParserIRRD:
         )
 
         mock_preloader.routes_for_origins = Mock(return_value=[])
-        response = parser.handle_query(f'!aas-nodata')
+        response = parser.handle_query('!aas-nodata')
         assert response.response_type == WhoisQueryResponseType.KEY_NOT_FOUND
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert not response.result

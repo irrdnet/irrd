@@ -21,7 +21,7 @@ class TestIsClientPermitted:
         assert is_client_permitted(self.client_ip, 'test.access_list', default_deny=False)
         assert is_client_permitted(self.client_ip, 'test.access_list', default_deny=True)
         assert is_client_permitted(f'::ffff:{self.client_ip}', 'test.access_list', default_deny=True)
-        assert is_client_permitted(f'2001:db8::1', 'test.access_list', default_deny=True)
+        assert is_client_permitted('2001:db8::1', 'test.access_list', default_deny=True)
 
     def test_access_list_denied(self, config_override):
         config_override({

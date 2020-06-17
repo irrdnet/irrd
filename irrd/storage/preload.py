@@ -137,7 +137,7 @@ class Preloader:
         """
         while not self._redis_conn.exists(REDIS_ORIGIN_ROUTE4_STORE_KEY):
             time.sleep(1)  # pragma: no cover
-        logger.debug(f'Preloader pre-pre(re)loading routes into memory')
+        logger.debug('Preloader pre-pre(re)loading routes into memory')
 
         self._origin_route4_store = defaultdict(lambda: defaultdict(set))
         self._origin_route6_store = defaultdict(lambda: defaultdict(set))
@@ -195,7 +195,7 @@ class PreloadStoreManager(ExceptionLoggingProcess):
                 self._pubsub.subscribe(REDIS_PRELOAD_RELOAD_CHANNEL)
                 for item in self._pubsub.listen():
                     if item['type'] == 'message':
-                        logger.debug(f'Reload requested through redis channel')
+                        logger.debug('Reload requested through redis channel')
                         self._perform_reload()
                         if self.terminate:
                             return

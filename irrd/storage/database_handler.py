@@ -491,7 +491,7 @@ class DatabaseStatusTracker:
             journal_tablename = RPSLDatabaseJournal.__tablename__
 
             self.database_handler.execute_statement(f'LOCK TABLE {journal_tablename} IN EXCLUSIVE MODE')
-            serial_nrtm = sa.select([sa.text(f'COALESCE(MAX(serial_nrtm), 0) + 1')])
+            serial_nrtm = sa.select([sa.text('COALESCE(MAX(serial_nrtm), 0) + 1')])
             serial_nrtm = serial_nrtm.where(RPSLDatabaseJournal.__table__.c.source == source)
             serial_nrtm = serial_nrtm.as_scalar()
             stmt = RPSLDatabaseJournal.__table__.insert().values(

@@ -528,5 +528,5 @@ class TestOverwriteDateNewChangedAttributes:
         obj_new = rpsl_object_from_text(rpsl_text, strict_validation=True)
 
         obj_new.overwrite_date_new_changed_attributes(obj_current)
-        assert f'Set date in changed line' in obj_new.messages.infos()[1]
+        assert 'Set date in changed line' in obj_new.messages.infos()[1]
         return obj_new.render_rpsl_text()

@@ -28,7 +28,7 @@ class NRTMGenerator:
         try:
             status = next(database_handler.execute_query(q))
         except StopIteration:
-            raise NRTMGeneratorException(f'There are no journal entries for this source.')
+            raise NRTMGeneratorException('There are no journal entries for this source.')
 
         if serial_end_requested and serial_end_requested < serial_start_requested:
             raise NRTMGeneratorException(f'Start of the serial range ({serial_start_requested}) must be lower or '

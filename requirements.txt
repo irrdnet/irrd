@@ -14,33 +14,33 @@ datrie==0.8.2            # efficient route searching, used for RPKI
 setproctitle==1.1.10   # updating the process title for useful ps output
 python-daemon==2.2.4   # daemonising the main process
 pid==3.0.3             # managing PID files
-redis==3.5.0          # preloaded data storage & sync through redis
+redis==3.5.3          # preloaded data storage & sync through redis
 hiredis==1.0.1         # improved redis response parsing performance
 requests==2.23.0       # HTTP request handling
 
 # Database connections and management
 psycopg2-binary==2.8.5
-SQLAlchemy==1.3.16
+SQLAlchemy==1.3.17
 alembic==1.4.2
-ujson==2.0.3
+ujson==3.0.0
 
 # Testing and related packages
-pytest==5.4.1
-pytest-cov==2.8.1
+pytest==5.4.3
+pytest-cov==2.10.0
 coverage==5.1
 coveralls==2.0.0
 twisted==20.3.0    # Used for a mock email server in integration tests
 
 # Documentation generation
-Sphinx==3.0.3
-sphinxcontrib-spelling==5.0.0
+Sphinx==3.1.1
+sphinxcontrib-spelling==5.1.1
 
 # Code style and type checks
-mypy==0.770
-flake8==3.7.9
+mypy==0.780
+flake8==3.8.3
 pep8-naming==0.10.0
 
 # Creating python packages
-setuptools==46.1.3
+setuptools==47.2.0
 wheel==0.34.2
 twine==3.1.1
