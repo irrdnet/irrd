@@ -34,13 +34,13 @@ setuptools.setup(
         'setproctitle==1.1.10',
         'python-daemon==2.2.4',
         'pid==3.0.3',
-        'redis==3.5.0',
+        'redis==3.5.3',
         'hiredis==1.0.1',
         'requests==2.23.0',
         'psycopg2-binary==2.8.5',
-        'SQLAlchemy==1.3.16',
+        'SQLAlchemy==1.3.17',
         'alembic==1.4.2',
-        'ujson==2.0.3',
+        'ujson==3.0.0',
     ],
     extras_require={
         ':python_version < "3.7"': [
