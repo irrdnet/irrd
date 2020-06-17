@@ -38,7 +38,7 @@ def start_http_server():  # pragma: no cover
 
 class HTTPServerForkingIPv6(socketserver.ForkingMixIn, HTTPServer):  # pragma: no cover
     # Default HTTP server only supports IPv4
-    allow_reuse_address = False
+    allow_reuse_address = True
     timeout = 30
 
     def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True):  # noqa: N803

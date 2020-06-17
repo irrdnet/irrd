@@ -51,7 +51,7 @@ class WhoisConnectionLimitedForkingTCPServer(socketserver.ForkingMixIn, socketse
     Server for whois queries.
     Includes a connection limit and a cleaner shutdown process than included by default.
     """
-    allow_reuse_address = False
+    allow_reuse_address = True
     request_queue_size = 50
 
     def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True):  # noqa: N803
