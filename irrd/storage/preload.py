@@ -291,15 +291,26 @@ class PreloadUpdater(threading.Thread):
         time, i.e. if two threads are started, one will wait for the other
         to finish.
 
+        For tests, mock_database_handler can be used to provide a mock.
+        """
+        self.reload_lock.acquire()
+        try:
+            self.update(mock_database_handler)
+        except Exception as exc:
+            logger.critical(f'Updating preload store failed, traceback follows: {exc}', exc_info=exc)
+        finally:
+            self.reload_lock.release()
+
+    def update(self, mock_database_handler=None) -> None:
+        """
+        Update the store.
+
         After loading the data from the database, sets the two new stores
         on the provided preloader object.
         The lock is then released to allow another thread to start, and
         the store_ready_event set to indicate that the store has been
         loaded at least once, and answers can be provided based on it.
-
-        For tests, mock_database_handler can be used to provide a mock.
         """
-        self.reload_lock.acquire()
         logger.debug(f'Starting preload store update from thread {self}')
 
         new_origin_route4_store: Dict[str, set] = defaultdict(set)
@@ -328,4 +339,3 @@ class PreloadUpdater(threading.Thread):
 
         if self.preloader.update_route_store(new_origin_route4_store, new_origin_route6_store):
             logger.info(f'Completed updating preload store from thread {self}')
-        self.reload_lock.release()

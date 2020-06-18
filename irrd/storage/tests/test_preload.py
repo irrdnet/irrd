@@ -218,3 +218,12 @@ class TestPreloadUpdater:
                 {}
             ]
         ]
+
+    def test_preload_updater_failure(self, caplog):
+        mock_database_handler = Mock()
+        mock_reload_lock = Mock()
+        mock_preload_obj = Mock()
+        PreloadUpdater(mock_preload_obj, mock_reload_lock).run(mock_database_handler)
+
+        assert 'Updating preload store failed' in caplog.text
+        assert flatten_mock_calls(mock_reload_lock) == [['acquire', (), {}], ['release', (), {}]]
