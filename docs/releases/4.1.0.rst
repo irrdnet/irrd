@@ -64,6 +64,15 @@ for further details.
 
 Other changes
 ~~~~~~~~~~~~~
+* Serial handling in IRRd has changed. If you mirror a source over NRTM, and
+  keep a local journal, IRRd used to keep these serials identical. The NRTM
+  ADD from the original source would be stored in the local journal under the
+  same serial number, unless it was ignored by the object class filter.
+  In 4.1, IRRd always keeps its own range of serials. That means serials for
+  the same change may be different between different mirrors.
+  If users change their NRTM source to a different one, they should reload the
+  entire database from that source, not just resume NRTM streaming. Simply
+  changing the NRTM host may lead to missing data.
 * IRRd starts a maximum of three mirror processes at the same time,
   to reduce peak loads. A further three, if needed, are started 15 seconds
   later, regardless of whether the previous ones have finished.
