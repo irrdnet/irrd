@@ -6,7 +6,7 @@ python-gnupg==0.4.6    # Integration with gpg for key-cert objects
 passlib==1.7.2         # Password hashing for CRYPT-PW and MD5-PW
 IPy==1.00              # IP address parsing
 dataclasses==0.7; python_version < '3.7'       # PEP 557 dataclasses for python<3.7
-ordered-set==4.0.1     # Ordered sets for simple unique ordered storage
+ordered-set==4.0.2     # Ordered sets for simple unique ordered storage
 dotted==0.1.8          # Dotted path dictionary resolving for settings
 beautifultable==0.8.0  # generating nice-looking ascii tables
 PyYAML==5.3.1          # parsing YAML config files
@@ -16,7 +16,7 @@ python-daemon==2.2.4   # daemonising the main process
 pid==3.0.3             # managing PID files
 redis==3.5.3          # preloaded data storage & sync through redis
 hiredis==1.0.1         # improved redis response parsing performance
-requests==2.23.0       # HTTP request handling
+requests==2.24.0       # HTTP request handling
 
 # Database connections and management
 psycopg2-binary==2.8.5
@@ -33,14 +33,14 @@ twisted==20.3.0    # Used for a mock email server in integration tests
 
 # Documentation generation
 Sphinx==3.1.1
-sphinxcontrib-spelling==5.1.1
+sphinxcontrib-spelling==5.1.2
 
 # Code style and type checks
-mypy==0.780
+mypy==0.781
 flake8==3.8.3
-pep8-naming==0.10.0
+pep8-naming==0.11.1
 
 # Creating python packages
-setuptools==47.2.0
+setuptools==47.3.1
 wheel==0.34.2
 twine==3.1.1
