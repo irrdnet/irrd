@@ -18,6 +18,7 @@ from irrd.server.access_check import is_client_permitted
 from irrd.server.http.status_generator import StatusGenerator
 
 logger = logging.getLogger(__name__)
+HTTP_TIMEOUT = 30
 
 # The start_http_server method and IRRdHTTPRequestHandler are
 # difficult to test in a unit test, and therefore only included
@@ -39,7 +40,7 @@ def start_http_server():  # pragma: no cover
 class HTTPServerForkingIPv6(socketserver.ForkingMixIn, HTTPServer):  # pragma: no cover
     # Default HTTP server only supports IPv4
     allow_reuse_address = True
-    timeout = 30
+    timeout = HTTP_TIMEOUT
 
     def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True):  # noqa: N803
         self.address_family = socket.AF_INET6 if IP(server_address[0]).version() == 6 else socket.AF_INET
@@ -57,6 +58,12 @@ class IRRdHTTPRequestHandler(BaseHTTPRequestHandler):  # pragma: no cover
     IRRdHTTPRequestProcessor, as that class is unit-testable.
     """
     server_version = f'irrd/{__version__}'
+
+    def handle_one_request(self) -> None:
+        # Sockets for client connections don't inherit the timeout,
+        # this wrapper sets it before any data is read.
+        self.connection.settimeout(HTTP_TIMEOUT)
+        return super().handle_one_request()
 
     def do_GET(self):  # noqa: N802
         processor = IRRdHTTPRequestProcessor(self.client_address[0], self.client_address[1])
