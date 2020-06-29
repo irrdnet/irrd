@@ -1,3 +1,4 @@
+import re
 from enum import Enum
 from typing import Optional
 
@@ -74,12 +75,20 @@ class WhoisQueryResponse:
         return None
 
     def _generate_response_ripe(self) -> Optional[str]:
+        s = None
         if self.response_type == WhoisQueryResponseType.SUCCESS:
             if self.result:
-                return self.result + '\n\n'
-            return '%  No entries found for the selected source(s).\n'
+                s = self.result
+            else:
+                s = '%  No entries found for the selected source(s).'
         elif self.response_type == WhoisQueryResponseType.KEY_NOT_FOUND:
-            return '%  No entries found for the selected source(s).\n'
+            s = '%  No entries found for the selected source(s).'
         elif self.response_type == WhoisQueryResponseType.ERROR:
-            return f'%% ERROR: {self.result}\n'
+            s = f'%% ERROR: {self.result}'
+        if s is not None:
+            # Sending an RPSL response in RIPE format. According to
+            # https://www.ripe.net/manage-ips-and-asns/db/support/documentation/ripe-database-query-reference-manual#2-0-querying-the-ripe-database
+            # there need to be exactly 2 empty lines at the end of a response.
+            s = s.rstrip('\n')
+            return "{0}{1}\n\n".format(s, '\n' if len(s) else '')
         return None
