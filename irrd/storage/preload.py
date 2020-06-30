@@ -250,6 +250,7 @@ class PreloadStoreManager(ExceptionLoggingProcess):
             # in order not to block queries.
             origin_route4_str_dict[SENTINEL_HASH_CREATED] = '1'
             origin_route6_str_dict[SENTINEL_HASH_CREATED] = '1'
+            # hmset causes a deprecation warning, but is required for Redis 3 compatibility
             pipeline.hmset(REDIS_ORIGIN_ROUTE4_STORE_KEY, origin_route4_str_dict)
             pipeline.hmset(REDIS_ORIGIN_ROUTE6_STORE_KEY, origin_route6_str_dict)
             pipeline.execute()
