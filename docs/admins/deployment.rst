@@ -83,6 +83,7 @@ the RPSL text imported.
 Redis configuration
 -------------------
 Redis is required for communication and persistence between IRRd's processes.
+IRRd has been tested on Redis 3 and 4.
 Beyond a default Redis installation, it is recommended to:
 
 * Disable snapshotting, by removing all ``save`` lines from the
@@ -92,6 +93,7 @@ Beyond a default Redis installation, it is recommended to:
 * Enable unix socket support with the ``unixsocket`` configuration
   option in Redis, and using a unix socket URL in the ``redis_url``
   configuration in IRRd. This improves performance.
+* Increase ``maxmemory`` to 1GB (no limit is also fine)
 
 IRRd will recover from a Redis restart, but certain queries may fail
 while Redis is unavailable.
