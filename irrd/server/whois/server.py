@@ -89,8 +89,10 @@ class WhoisConnectionLimitedForkingTCPServer(socketserver.TCPServer):  # pragma:
 
 
 class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
-    def __init__(self, queue, *args, **kwargs):
-        self.queue = queue
+    def __init__(self, connection_queue, *args, **kwargs):
+        self.connection_queue = connection_queue
+        # Note that StreamRequestHandler.__init__ is not called - the
+        # input for that is not available, as it's retrieved from the queue.
         super().__init__(*args, **kwargs)
 
     def run(self) -> None:
@@ -101,7 +103,7 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
         while True:
             try:
                 setproctitle('irrd-whois-worker')
-                self.request, self.client_address = self.queue.get()
+                self.request, self.client_address = self.connection_queue.get()
                 self.setup()
                 self.handle_connection()
                 self.close_request()
