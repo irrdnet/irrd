@@ -61,6 +61,7 @@ class WhoisQueryParser:
         self.client_str = client_str
         self.preloader = Preloader()
         self._preloaded_query_count = 0
+        self.database_handler = DatabaseHandler()
 
     def handle_query(self, query: str) -> WhoisQueryResponse:
         """
@@ -68,7 +69,6 @@ class WhoisQueryParser:
         Not thread safe - only one call must be made to this method at the same time.
         """
         # These flags are reset with every query.
-        self.database_handler = DatabaseHandler()
         self.key_fields_only = False
         self.object_classes = []
 

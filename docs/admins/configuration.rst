@@ -194,8 +194,7 @@ Servers
 * ``server.whois.max_connections``: the maximum number of simultaneous whois
   connections permitted.
   |br| **Default**: ``50``.
-  |br| **Change takes effect**: after SIGHUP. Existing connections will not
-  be terminated.
+  |br| **Change takes effect**: after full IRRd restart.
 
 
 Email
