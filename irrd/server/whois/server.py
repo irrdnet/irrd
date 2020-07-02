@@ -14,6 +14,7 @@ from irrd.conf import get_setting
 from irrd.server.access_check import is_client_permitted
 from irrd.server.whois.query_parser import WhoisQueryParser
 from irrd.storage.database_handler import DatabaseHandler
+from irrd.storage.preload import Preloader
 from irrd.utils.process_support import ExceptionLoggingProcess
 
 logger = logging.getLogger(__name__)
@@ -100,6 +101,7 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
         # (signal handlers are inherited)
         signal.signal(signal.SIGTERM, signal.SIG_DFL)
 
+        self.preloader = Preloader()
         while True:
             try:
                 setproctitle('irrd-whois-worker')
@@ -137,7 +139,7 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
             self.wfile.write(b'%% Access denied')
             return
 
-        self.query_parser = WhoisQueryParser(client_ip, self.client_str)
+        self.query_parser = WhoisQueryParser(client_ip, self.client_str, self.preloader)
 
         data = True
         elapsed = time.perf_counter() - start_time
