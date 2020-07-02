@@ -14,6 +14,7 @@ from irrd.conf import get_setting
 from irrd.server.access_check import is_client_permitted
 from irrd.server.whois.query_parser import WhoisQueryParser
 from irrd.storage.database_handler import DatabaseHandler
+from irrd.utils.process_support import ExceptionLoggingProcess
 
 logger = logging.getLogger(__name__)
 mp.allow_connection_pickling()
@@ -62,7 +63,7 @@ class WhoisConnectionLimitedForkingTCPServer(socketserver.TCPServer):  # pragma:
         self.connection_queue = mp.Queue()
         self.workers = []
         # for i in range(int(get_setting('server.whois.max_connections'))):
-        if True:
+        for i in range(2):
             worker = WhoisWorker(self.connection_queue)
             worker.start()
             self.workers.append(worker)
@@ -87,7 +88,7 @@ class WhoisConnectionLimitedForkingTCPServer(socketserver.TCPServer):  # pragma:
         return super().shutdown()
 
 
-class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):  # TODO: exception logging
+class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
     def __init__(self, queue, *args, **kwargs):
         self.queue = queue
         super().__init__(*args, **kwargs)
@@ -97,14 +98,20 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):  # TODO: excep
         # (signal handlers are inherited)
         signal.signal(signal.SIGTERM, signal.SIG_DFL)
 
-        DatabaseHandler()  # Initialise the connection pool
-
         while True:
-            setproctitle('irrd-whois-worker')
-            self.request, self.client_address = self.queue.get()
-            self.setup()
-            self.handle_connection()
-            self.close_request()
+            try:
+                setproctitle('irrd-whois-worker')
+                self.request, self.client_address = self.queue.get()
+                self.setup()
+                self.handle_connection()
+                self.close_request()
+            except Exception as e:
+                try:
+                    self.close_request()
+                except Exception:
+                    pass
+                logger.error(f'Failed to handle whois connection, traceback follows: {e}',
+                             exc_info=e)
 
     def close_request(self):
         self.finish()
