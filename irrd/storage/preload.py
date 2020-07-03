@@ -105,7 +105,7 @@ class Preloader:
         Update the in-memory store. This is called whenever a
         message is sent to REDIS_PRELOAD_COMPLETE_CHANNEL.
         """
-        if redis_message and redis_message['type'] != 'message':
+        if redis_message and redis_message['type'] != 'message':  # pragma: no cover
             return
 
         while not self._redis_conn.exists(REDIS_ORIGIN_ROUTE4_STORE_KEY):

@@ -14,6 +14,7 @@ from ..queries import RPSLDatabaseQuery
 TEST_REDIS_ORIGIN_ROUTE4_STORE_KEY = 'TEST-irrd-preload-origin-route4'
 TEST_REDIS_ORIGIN_ROUTE6_STORE_KEY = 'TEST-irrd-preload-origin-route6'
 TEST_REDIS_PRELOAD_RELOAD_CHANNEL = 'TEST-irrd-preload-reload-channel'
+TEST_REDIS_PRELOAD_COMPLETE_CHANNEL = 'TEST-irrd-preload-complete-channel'
 
 
 @pytest.fixture()
@@ -28,6 +29,7 @@ def mock_redis_keys(monkeypatch, config_override):
     monkeypatch.setattr('irrd.storage.preload.REDIS_ORIGIN_ROUTE4_STORE_KEY', TEST_REDIS_ORIGIN_ROUTE4_STORE_KEY)
     monkeypatch.setattr('irrd.storage.preload.REDIS_ORIGIN_ROUTE6_STORE_KEY', TEST_REDIS_ORIGIN_ROUTE6_STORE_KEY)
     monkeypatch.setattr('irrd.storage.preload.REDIS_PRELOAD_RELOAD_CHANNEL', TEST_REDIS_PRELOAD_RELOAD_CHANNEL)
+    monkeypatch.setattr('irrd.storage.preload.REDIS_PRELOAD_COMPLETE_CHANNEL', TEST_REDIS_PRELOAD_COMPLETE_CHANNEL)
 
 
 class TestPreloading:
@@ -113,6 +115,7 @@ class TestPreloading:
         with pytest.raises(ValueError) as ve:
             preloader.routes_for_origins(['AS65547'], [], 2)
         assert 'Invalid IP version: 2' in str(ve.value)
+
 
 
 class TestPreloadUpdater:

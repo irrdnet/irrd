@@ -131,7 +131,7 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
             # explicitly shutdown.  socket.close() merely releases
             # the socket and waits for GC to perform the actual close.
             self.request.shutdown(socket.SHUT_WR)
-        except OSError:
+        except OSError:  # pragma: no cover
             pass  # some platforms may raise ENOTCONN here
         self.request.close()
 

@@ -25,7 +25,7 @@ def get_engine():
     @sa.event.listens_for(engine, "checkout")
     def checkout(dbapi_connection, connection_record, connection_proxy):
         pid = os.getpid()
-        if connection_record.info['pid'] != pid:
+        if connection_record.info['pid'] != pid:  # pragma: no cover
             connection_record.connection = connection_proxy.connection = None
             raise sa.exc.DisconnectionError(
                     "Connection record belongs to pid %s, "
