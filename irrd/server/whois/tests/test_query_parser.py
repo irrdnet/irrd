@@ -62,9 +62,8 @@ def prepare_parser(monkeypatch, config_override):
     mock_database_query = Mock()
     monkeypatch.setattr('irrd.server.whois.query_parser.RPSLDatabaseQuery', lambda columns=None, ordered_by_sources=True: mock_database_query)
     mock_preloader = Mock(spec=Preloader)
-    monkeypatch.setattr('irrd.server.whois.query_parser.Preloader', lambda: mock_preloader)
 
-    parser = WhoisQueryParser('127.0.0.1', '127.0.0.1:99999')
+    parser = WhoisQueryParser('127.0.0.1', '127.0.0.1:99999', mock_preloader)
 
     mock_query_result = [
         {
@@ -514,16 +513,6 @@ class TestWhoisQueryParserIRRD:
         assert response.response_type == WhoisQueryResponseType.KEY_NOT_FOUND
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert not response.result
-
-        # Test eventual pre-preloading with multiple qualifying queries
-        assert not mock_preloader.load_routes_into_memory.mock_calls
-        parser.handle_query('!gAS65547')
-        parser.handle_query('!gAS65547')
-        parser.handle_query('!gAS65547')
-        parser.handle_query('!gAS65547')
-        parser.handle_query('!gAS65547')
-        assert mock_preloader.load_routes_into_memory.mock_calls
-
         assert not mock_dq.mock_calls
 
     def test_routes_for_origin_v6(self, prepare_parser):
@@ -971,7 +960,7 @@ class TestWhoisQueryParserIRRD:
             'sources_default': [],
             'rpki': {'roa_source': 'https://example.com/roa.json'},
         })
-        parser = WhoisQueryParser('127.0.0.1', '127.0.0.1:99999')
+        parser = WhoisQueryParser('127.0.0.1', '127.0.0.1:99999', mock_preloader)
 
         response = parser.handle_query('!r192.0.2.0/25')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
@@ -1084,7 +1073,7 @@ class TestWhoisQueryParserIRRD:
             'sources_default': [],
             'rpki': {'roa_source': 'https://example.com/roa.json'}
         })
-        parser = WhoisQueryParser('127.0.0.1', '127.0.0.1:99999')
+        parser = WhoisQueryParser('127.0.0.1', '127.0.0.1:99999', mock_preloader)
         response = parser.handle_query('!s-lc')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD

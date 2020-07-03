@@ -42,7 +42,7 @@ def irrd_database(monkeypatch):
                         f'to overwrite existing database.')
     RPSLDatabaseObject.metadata.create_all(engine)
 
-    monkeypatch.setattr('irrd.storage.database_handler.Preloader', lambda: Mock(spec=Preloader))
+    monkeypatch.setattr('irrd.storage.database_handler.Preloader', lambda enable_queries: Mock(spec=Preloader))
 
     yield None
 
