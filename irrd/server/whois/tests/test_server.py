@@ -1,58 +1,74 @@
+import socket
 import time
+
+from queue import Queue
 
 import pytest
 from io import BytesIO
 from unittest.mock import Mock
 
 from irrd.storage.preload import Preloader
-from ..server import WhoisRequestHandler
+from ..server import WhoisWorker
 
 
-class MockServer:
+class MockSocket:
     def __init__(self):
+        # rfile (for read) and wfile (for write) are from the perspective
+        # of the WhoisWorker, opposite of the test's perspective
+        self.rfile = BytesIO()
+        self.wfile = BytesIO()
         self.shutdown_called = False
+        self.close_called = False
 
-    def shutdown_request(self, request):
+    def makefile(self, mode, bufsize):
+        if 'w' in mode:
+            return self.wfile
+        else:
+            return self.rfile
+
+    def sendall(self, bytes):
+        self.wfile.write(bytes)
+
+    def shutdown(self, flags):
         self.shutdown_called = True
 
+    def close(self):
+        self.close_called = True
+
 
 @pytest.fixture()
-def mock_preloader(monkeypatch):
+def create_worker(config_override, monkeypatch):
     mock_preloader = Mock(spec=Preloader)
-    monkeypatch.setattr('irrd.server.whois.query_parser.Preloader', lambda: mock_preloader)
+    monkeypatch.setattr('irrd.server.whois.server.Preloader', lambda: mock_preloader)
 
-
-@pytest.fixture()
-def create_handler(config_override):
     config_override({
         'redis_url': 'redis://invalid-host.example.com',  # Not actually used
     })
-    handler = WhoisRequestHandler.__new__(WhoisRequestHandler)
-    handler.client_address = ('192.0.2.1', 99999)
-    handler.rfile = BytesIO()
-    handler.wfile = BytesIO()
-    handler.request = Mock()
-    handler.server = MockServer()
-    yield handler
+    queue = Queue()
+    worker = WhoisWorker(queue)
+    request = MockSocket()
+    queue.put((request, ('192.0.2.1', 99999)))
+    yield worker, request
 
 
-class TestWhoisRequestHandler:
-    def test_whois_request_handler_no_access_list(self, create_handler):
-        handler = create_handler
+class TestWhoisWorker:
+    def test_whois_request_worker_no_access_list(self, create_worker):
+        worker, request = create_worker
         # Empty query in first line should be ignored.
-        handler.rfile.write(b' \n!v\r\n')
-        handler.rfile.seek(0)
-        handler.handle()
+        request.rfile.write(b' \n!v\r\n')
+        request.rfile.seek(0)
+        worker.run(keep_running=False)
 
-        assert handler.client_str == '192.0.2.1:99999'
-        handler.wfile.seek(0)
-        assert b'IRRd -- version' in handler.wfile.read()
-        assert not handler.server.shutdown_called
+        assert worker.client_str == '192.0.2.1:99999'
+        request.wfile.seek(0)
+        assert b'IRRd -- version' in request.wfile.read()
+        assert request.shutdown_called
+        assert request.close_called
 
-    def test_whois_request_handler_timeout(self, create_handler, mock_preloader):
-        handler = create_handler
+    def test_whois_request_worker_timeout(self, create_worker):
+        worker, request = create_worker
 
-        handler.rfile = Mock()
+        request.rfile = Mock()
         readline_call_count = 0
 
         # This mock implementation simulates user behaviour that
@@ -71,25 +87,25 @@ class TestWhoisRequestHandler:
             if readline_call_count == 3:
                 time.sleep(2)
                 return b''
-        handler.rfile.readline = mock_readline
+        request.rfile.readline = mock_readline
 
-        handler.rfile.seek(0)
-        handler.handle()
+        request.rfile.seek(0)
+        worker.run(keep_running=False)
 
-        handler.wfile.seek(0)
-        assert handler.server.shutdown_called
+        request.wfile.seek(0)
+        assert request.shutdown_called
 
-    def test_whois_request_handler_write_error(self, create_handler, caplog, mock_preloader):
-        handler = create_handler
-        handler.rfile.write(b'!!\n!v\n')
-        handler.rfile.seek(0)
+    def test_whois_request_worker_write_error(self, create_worker, caplog):
+        worker, request = create_worker
+        request.rfile.write(b'!!\n!v\n')
+        request.rfile.seek(0)
         # Write errors are usually due to the connection being
         # dropped, and should cause the connection to be closed
         # from our end.
-        handler.wfile.write = Mock(side_effect=OSError('expected'))
-        handler.handle()
+        request.sendall = Mock(side_effect=socket.error('expected'))
+        worker.run(keep_running=False)
 
-    def test_whois_request_handler_access_list_permitted(self, config_override, create_handler):
+    def test_whois_request_worker_access_list_permitted(self, config_override, create_worker):
         config_override({
             'redis_url': 'redis://invalid-host.example.com',  # Not actually used
             'server': {
@@ -102,15 +118,15 @@ class TestWhoisRequestHandler:
             },
         })
 
-        handler = create_handler
-        handler.rfile.write(b'!q\n')
-        handler.rfile.seek(0)
-        handler.handle()
+        worker, request = create_worker
+        request.rfile.write(b'!q\n')
+        request.rfile.seek(0)
+        worker.run(keep_running=False)
 
-        handler.wfile.seek(0)
-        assert not handler.wfile.read()
+        request.wfile.seek(0)
+        assert not request.wfile.read()
 
-    def test_whois_request_handler_access_list_denied(self, config_override, create_handler):
+    def test_whois_request_worker_access_list_denied(self, config_override, create_worker):
         config_override({
             'redis_url': 'redis://invalid-host.example.com',  # Not actually used
             'server': {
@@ -119,16 +135,15 @@ class TestWhoisRequestHandler:
                 },
             },
             'access_lists': {
-                'test-access-list': ['192.0.2.0/25'],
+                'test-access-list': ['192.0.2.128/25'],
             },
         })
 
-        handler = create_handler
-        handler.client_address = ('192.0.2.200', 99999)
-        handler.rfile.write(b'!v\n')
-        handler.rfile.seek(0)
-        handler.handle()
+        worker, request = create_worker
+        request.rfile.write(b'!v\n')
+        request.rfile.seek(0)
+        worker.run(keep_running=False)
 
-        assert handler.client_str == '192.0.2.200:99999'
-        handler.wfile.seek(0)
-        assert handler.wfile.read() == b'%% Access denied'
+        assert worker.client_str == '192.0.2.1:99999'
+        request.wfile.seek(0)
+        assert request.wfile.read() == b'%% Access denied'

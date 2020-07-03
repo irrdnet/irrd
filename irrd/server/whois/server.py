@@ -30,7 +30,7 @@ def start_whois_server():  # pragma: no cover
     setproctitle('irrd-whois-server-listener')
     address = (get_setting('server.whois.interface'), get_setting('server.whois.port'))
     logger.info(f'Starting whois server on TCP {address}')
-    server = WhoisConnectionLimitedForkingTCPServer(
+    server = WhoisTCPServer(
         server_address=address,
     )
 
@@ -49,10 +49,14 @@ def start_whois_server():  # pragma: no cover
     server.serve_forever()
 
 
-class WhoisConnectionLimitedForkingTCPServer(socketserver.TCPServer):  # pragma: no cover
+class WhoisTCPServer(socketserver.TCPServer):  # pragma: no cover
     """
     Server for whois queries.
-    Includes a connection limit and a cleaner shutdown process than included by default.
+
+    Starts a number of worker processes that handle the client connections.
+    Whenever a client is connected, the connection is pushed onto a queue,
+    from which a worker picks it up. The workers are responsible for the
+    connection from then on.
     """
     allow_reuse_address = True
     request_queue_size = 50
@@ -70,6 +74,7 @@ class WhoisConnectionLimitedForkingTCPServer(socketserver.TCPServer):  # pragma:
             self.workers.append(worker)
 
     def process_request(self, request, client_address):
+        """Push the client connection onto the queue for further handling."""
         self.connection_queue.put((request, client_address))
 
     def handle_error(self, request, client_address):
@@ -96,12 +101,12 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
         # input for that is not available, as it's retrieved from the queue.
         super().__init__(*args, **kwargs)
 
-    def run(self) -> None:
+    def run(self, keep_running=True) -> None:
         # Disable the special sigterm_handler defined in start_whois_server()
         # (signal handlers are inherited)
         signal.signal(signal.SIGTERM, signal.SIG_DFL)
 
-        self.preloader = Preloader()
+        self.preloader = Preloader()  # TODO: wrap exceptions
         while True:
             try:
                 setproctitle('irrd-whois-worker')
@@ -116,6 +121,8 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
                     pass
                 logger.error(f'Failed to handle whois connection, traceback follows: {e}',
                              exc_info=e)
+            if not keep_running:
+                break
 
     def close_request(self):
         self.finish()

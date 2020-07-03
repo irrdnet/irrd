@@ -41,9 +41,16 @@ class Preloader:
     """
     _memory_loaded = False
 
-    def __init__(self, notification_only=False):
+    def __init__(self, enable_queries=True):
+        """
+        Initialise the preloader.
+        If this instance is only used for signalling that the store needs to be
+        updated, set enable_queries=False.
+        This method starts a background thread that keeps an in-memory store,
+        which is automatically updated.
+        """
         self._redis_conn = redis.Redis.from_url(get_setting('redis_url'))
-        if not notification_only:
+        if enable_queries:
             self._pubsub = self._redis_conn.pubsub()
             self._pubsub.subscribe(**{REDIS_PRELOAD_COMPLETE_CHANNEL: self._load_routes_into_memory})
             self._pubsub_thread = self._pubsub.run_in_thread(sleep_time=1)
@@ -74,6 +81,7 @@ class Preloader:
         store has been built.
         Origins must be strings in a cleaned format, e.g. AS65537, but not
         AS065537 or as65537.
+        This call will block until the preload store is loaded.
         """
         while not self._memory_loaded:
             time.sleep(1)  # pragma: no cover
@@ -94,9 +102,8 @@ class Preloader:
 
     def _load_routes_into_memory(self, redis_message):
         """
-        Pre-preload all routes into memory. This increases performance for
-        routes_for_origins() by up to 100x, but takes about 0.2-0.5s.
-        It also means origins are updated only every MAX_MEMORY_LIFETIME.
+        Update the in-memory store. This is called whenever a
+        message is sent to REDIS_PRELOAD_COMPLETE_CHANNEL.
         """
         if redis_message and redis_message['type'] != 'message':
             return
