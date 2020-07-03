@@ -32,6 +32,28 @@ large data sets, this can improve performance.
 """
 
 
+class PersistentPubSubWorkerThread(redis.client.PubSubWorkerThread):  # type: ignore
+    def __init__(self, callback, *args, **kwargs):
+        self.callback = callback
+        self.should_resubscribe = True
+        super().__init__(*args, **kwargs)
+
+    def run(self):
+        self._running.set()
+        while self._running.is_set():
+            try:
+                if self.should_resubscribe:
+                    self.pubsub.subscribe(**{REDIS_PRELOAD_COMPLETE_CHANNEL: self.callback})
+                    self.should_resubscribe = False
+                self.pubsub.get_message(ignore_subscribe_messages=True, timeout=self.sleep_time)
+            except redis.ConnectionError as rce:  # pragma: no cover
+                logger.error(
+                    f'Failed redis pubsub connection, attempting reconnect and reload in 5s: {rce}')
+                time.sleep(5)
+                self.should_resubscribe = True
+        self.pubsub.close()  # pragma: no cover
+
+
 class Preloader:
     """
     A preloader object provides access to the preload store.
@@ -52,8 +74,13 @@ class Preloader:
         self._redis_conn = redis.Redis.from_url(get_setting('redis_url'))
         if enable_queries:
             self._pubsub = self._redis_conn.pubsub()
-            self._pubsub.subscribe(**{REDIS_PRELOAD_COMPLETE_CHANNEL: self._load_routes_into_memory})
-            self._pubsub_thread = self._pubsub.run_in_thread(sleep_time=1, daemon=True)
+            self._pubsub_thread = PersistentPubSubWorkerThread(
+                callback=self._load_routes_into_memory,
+                pubsub=self._pubsub,
+                sleep_time=5,
+                daemon=True
+            )
+            self._pubsub_thread.start()
 
     def signal_reload(self, object_classes_changed: Optional[Set[str]]=None) -> None:
         """
