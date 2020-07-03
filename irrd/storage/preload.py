@@ -289,18 +289,15 @@ class PreloadUpdater(threading.Thread):
         new_origin_route4_store: Dict[str, set] = defaultdict(set)
         new_origin_route6_store: Dict[str, set] = defaultdict(set)
 
-        print('initialising DH')
         if not mock_database_handler:  # pragma: no cover
             from .database_handler import DatabaseHandler
             dh = DatabaseHandler()
         else:
             dh = mock_database_handler
 
-        print('about to run query')
         q = RPSLDatabaseQuery(column_names=['ip_version', 'ip_first', 'prefix_length', 'asn_first', 'source'], enable_ordering=False)
         q = q.object_classes(['route', 'route6']).rpki_status([RPKIStatus.not_found, RPKIStatus.valid])
 
-        print('executing')
         for result in dh.execute_query(q):
             prefix = result['ip_first']
             key = result['source'] + REDIS_KEY_ORIGIN_SOURCE_SEPARATOR + 'AS' + str(result['asn_first'])
@@ -311,7 +308,6 @@ class PreloadUpdater(threading.Thread):
             if result['ip_version'] == 6:
                 new_origin_route6_store[key].add(f'{prefix}/{length}')
 
-        print('completed query')
         dh.close()
 
         if self.preloader.update_route_store(new_origin_route4_store, new_origin_route6_store):
