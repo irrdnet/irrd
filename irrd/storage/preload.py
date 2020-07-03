@@ -53,7 +53,7 @@ class Preloader:
         if enable_queries:
             self._pubsub = self._redis_conn.pubsub()
             self._pubsub.subscribe(**{REDIS_PRELOAD_COMPLETE_CHANNEL: self._load_routes_into_memory})
-            self._pubsub_thread = self._pubsub.run_in_thread(sleep_time=1)
+            self._pubsub_thread = self._pubsub.run_in_thread(sleep_time=1, daemon=True)
 
     def signal_reload(self, object_classes_changed: Optional[Set[str]]=None) -> None:
         """
@@ -105,9 +105,6 @@ class Preloader:
         Update the in-memory store. This is called whenever a
         message is sent to REDIS_PRELOAD_COMPLETE_CHANNEL.
         """
-        if redis_message and redis_message['type'] != 'message':  # pragma: no cover
-            return
-
         while not self._redis_conn.exists(REDIS_ORIGIN_ROUTE4_STORE_KEY):
             time.sleep(1)  # pragma: no cover
         logger.debug('Preloader (re)loading routes locally into memory')

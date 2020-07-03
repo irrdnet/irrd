@@ -117,7 +117,6 @@ class TestPreloading:
         assert 'Invalid IP version: 2' in str(ve.value)
 
 
-
 class TestPreloadUpdater:
     def test_preload_updater(self, monkeypatch):
         mock_database_handler = Mock(spec=DatabaseHandler)

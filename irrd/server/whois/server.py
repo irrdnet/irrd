@@ -1,21 +1,18 @@
-import time
-
 import logging
+import multiprocessing as mp
 import signal
 import socket
 import socketserver
 import threading
+import time
 
 from IPy import IP
 from setproctitle import setproctitle
 
-import multiprocessing as mp
 from irrd.conf import get_setting
 from irrd.server.access_check import is_client_permitted
 from irrd.server.whois.query_parser import WhoisQueryParser
-from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.preload import Preloader
-from irrd.utils.process_support import ExceptionLoggingProcess
 
 logger = logging.getLogger(__name__)
 mp.allow_connection_pickling()
@@ -117,7 +114,7 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
             except Exception as e:
                 try:
                     self.close_request()
-                except Exception:
+                except Exception:  # pragma: no cover
                     pass
                 logger.error(f'Failed to handle whois connection, traceback follows: {e}',
                              exc_info=e)

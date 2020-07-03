@@ -1,11 +1,10 @@
 import socket
 import time
-
+from io import BytesIO
 from queue import Queue
+from unittest.mock import Mock
 
 import pytest
-from io import BytesIO
-from unittest.mock import Mock
 
 from irrd.storage.preload import Preloader
 from ..server import WhoisWorker
