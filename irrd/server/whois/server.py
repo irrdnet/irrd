@@ -103,7 +103,13 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
         # (signal handlers are inherited)
         signal.signal(signal.SIGTERM, signal.SIG_DFL)
 
-        self.preloader = Preloader()  # TODO: wrap exceptions
+        try:
+            self.preloader = Preloader()
+        except Exception as e:
+            logger.error(f'Whois worker failed to initialise preloader, unable to start, '
+                         f'traceback follows: {e}', exc_info=e)
+            return
+
         while True:
             try:
                 setproctitle('irrd-whois-worker')

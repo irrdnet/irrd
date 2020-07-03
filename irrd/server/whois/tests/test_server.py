@@ -76,6 +76,19 @@ class TestWhoisWorker:
         assert request.close_called
         assert 'Failed to handle whois connection' in caplog.text
 
+    def test_whois_request_worker_preload_failed(self, create_worker, monkeypatch, caplog):
+        monkeypatch.setattr('irrd.server.whois.server.Preloader',
+                            Mock(side_effect=OSError('expected')))
+
+        worker, request = create_worker
+        request.rfile.write(b'!v\r\n')
+        request.rfile.seek(0)
+        worker.run(keep_running=False)
+
+        request.wfile.seek(0)
+        assert not request.wfile.read()
+        assert 'worker failed to initialise preloader' in caplog.text
+
     def test_whois_request_worker_timeout(self, create_worker):
         worker, request = create_worker
 
