@@ -197,7 +197,7 @@ Servers
   For example, if you set this to 10, you need about 2 GB of memory just for
   IRRd's whois server
   (and additional memory for other components and PostgreSQL).
-  |br| **Default**: ``5``.
+  |br| **Default**: ``10``.
   |br| **Change takes effect**: after full IRRd restart.
 
 

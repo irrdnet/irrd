@@ -65,9 +65,9 @@ for further details.
 Other changes
 ~~~~~~~~~~~~~
 * The default for ``server.whois.max_connections`` has been reduced from 50
-  to 5. In 4.1, IRRd whois workers use considerably more memory, about 200 MB
+  to 10. In 4.1, IRRd whois workers use considerably more memory, about 200 MB
   each, and one worker is started for each permitted connection. Therefore,
-  at the default 5 connections, the whois processes use about 1 GB of memory,
+  at the default 10 connections, the whois processes use about 2 GB of memory,
   at 50 connections, this is about 10 GB.
 * Serial handling in IRRd has changed. If you mirror a source over NRTM, and
   keep a local journal, IRRd used to keep these serials identical. The NRTM
