@@ -74,12 +74,15 @@ class WhoisQueryResponse:
         return None
 
     def _generate_response_ripe(self) -> Optional[str]:
+        # RIPE-style responses need two empty lines at the end, hence
+        # the multiple newlines for each response (#335)
+        # # https://www.ripe.net/manage-ips-and-asns/db/support/documentation/ripe-database-query-reference-manual#2-0-querying-the-ripe-database
         if self.response_type == WhoisQueryResponseType.SUCCESS:
             if self.result:
-                return self.result + '\n\n'
-            return '%  No entries found for the selected source(s).\n'
+                return self.result + '\n\n\n'
+            return '%  No entries found for the selected source(s).\n\n\n'
         elif self.response_type == WhoisQueryResponseType.KEY_NOT_FOUND:
-            return '%  No entries found for the selected source(s).\n'
+            return '%  No entries found for the selected source(s).\n\n\n'
         elif self.response_type == WhoisQueryResponseType.ERROR:
-            return f'%% ERROR: {self.result}\n'
+            return f'%% ERROR: {self.result}\n\n\n'
         return None
