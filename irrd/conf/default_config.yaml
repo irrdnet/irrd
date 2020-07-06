@@ -39,7 +39,7 @@ irrd:
         whois:
             interface: '::0'
             port: 43
-            max_connections: 50
+            max_connections: 10
     auth:
         gnupg_keyring: null
     email:

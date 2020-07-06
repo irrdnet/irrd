@@ -1,11 +1,10 @@
-import time
-
 import logging
-import os
+import multiprocessing as mp
 import signal
 import socket
 import socketserver
 import threading
+import time
 
 from IPy import IP
 from setproctitle import setproctitle
@@ -13,8 +12,10 @@ from setproctitle import setproctitle
 from irrd.conf import get_setting
 from irrd.server.access_check import is_client_permitted
 from irrd.server.whois.query_parser import WhoisQueryParser
+from irrd.storage.preload import Preloader
 
 logger = logging.getLogger(__name__)
+mp.allow_connection_pickling()
 
 
 # Covered by integration tests
@@ -26,9 +27,8 @@ def start_whois_server():  # pragma: no cover
     setproctitle('irrd-whois-server-listener')
     address = (get_setting('server.whois.interface'), get_setting('server.whois.port'))
     logger.info(f'Starting whois server on TCP {address}')
-    server = WhoisConnectionLimitedForkingTCPServer(
+    server = WhoisTCPServer(
         server_address=address,
-        RequestHandlerClass=WhoisRequestHandler,
     )
 
     # When this process receives SIGTERM, shut down the server cleanly.
@@ -46,21 +46,32 @@ def start_whois_server():  # pragma: no cover
     server.serve_forever()
 
 
-class WhoisConnectionLimitedForkingTCPServer(socketserver.ForkingMixIn, socketserver.TCPServer):  # pragma: no cover
+class WhoisTCPServer(socketserver.TCPServer):  # pragma: no cover
     """
     Server for whois queries.
-    Includes a connection limit and a cleaner shutdown process than included by default.
+
+    Starts a number of worker processes that handle the client connections.
+    Whenever a client is connected, the connection is pushed onto a queue,
+    from which a worker picks it up. The workers are responsible for the
+    connection from then on.
     """
     allow_reuse_address = True
     request_queue_size = 50
 
-    def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True):  # noqa: N803
+    def __init__(self, server_address, bind_and_activate=True):  # noqa: N803
         self.address_family = socket.AF_INET6 if IP(server_address[0]).version() == 6 else socket.AF_INET
-        super().__init__(server_address, RequestHandlerClass, bind_and_activate)
+        super().__init__(server_address, None, bind_and_activate)
 
-    def verify_request(self, request, client_address):
-        active_children = len(self.active_children) if self.active_children else 0
-        return active_children < int(get_setting('server.whois.max_connections'))
+        self.connection_queue = mp.Queue()
+        self.workers = []
+        for i in range(int(get_setting('server.whois.max_connections'))):
+            worker = WhoisWorker(self.connection_queue)
+            worker.start()
+            self.workers.append(worker)
+
+    def process_request(self, request, client_address):
+        """Push the client connection onto the queue for further handling."""
+        self.connection_queue.put((request, client_address))
 
     def handle_error(self, request, client_address):
         logger.error(f'Error while handling request from {client_address}', exc_info=True)
@@ -70,38 +81,91 @@ class WhoisConnectionLimitedForkingTCPServer(socketserver.ForkingMixIn, socketse
         Shut down the server, by killing all child processes,
         and then deferring to built-in TCPServer shutdown.
         """
-        if self.active_children:
-            for pid in self.active_children:
-                try:
-                    os.kill(pid, signal.SIGTERM)
-                except Exception:  # pragma: no cover
-                    pass
+        for worker in self.workers:
+            try:
+                worker.terminate()
+                worker.join()
+            except Exception:  # pragma: no cover
+                pass
         return super().shutdown()
 
 
-class WhoisRequestHandler(socketserver.StreamRequestHandler):
-    def handle(self):
+class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
+    """
+    A whois worker is a process that handles whois client connections,
+    which are retrieved from a queue. After handling a connection,
+    the process waits for the next connection from the queue.s
+    """
+    def __init__(self, connection_queue, *args, **kwargs):
+        self.connection_queue = connection_queue
+        # Note that StreamRequestHandler.__init__ is not called - the
+        # input for that is not available, as it's retrieved from the queue.
+        super().__init__(*args, **kwargs)
+
+    def run(self, keep_running=True) -> None:
         """
-        Handle a whois connection.
-        Upon return, the connection is closed by StreamRequestHandler.
+        Whois worker run loop.
+        This method does not return, except if it failed to initialise a preloader,
+        or if keep_running is set, after the first request is handled. The latter
+        is used in the tests.
         """
         # Disable the special sigterm_handler defined in start_whois_server()
         # (signal handlers are inherited)
         signal.signal(signal.SIGTERM, signal.SIG_DFL)
 
+        try:
+            self.preloader = Preloader()
+        except Exception as e:
+            logger.error(f'Whois worker failed to initialise preloader, unable to start, '
+                         f'traceback follows: {e}', exc_info=e)
+            return
+
+        while True:
+            try:
+                setproctitle('irrd-whois-worker')
+                self.request, self.client_address = self.connection_queue.get()
+                self.setup()
+                self.handle_connection()
+                self.close_request()
+            except Exception as e:
+                try:
+                    self.close_request()
+                except Exception:  # pragma: no cover
+                    pass
+                logger.error(f'Failed to handle whois connection, traceback follows: {e}',
+                             exc_info=e)
+            if not keep_running:
+                break
+
+    def close_request(self):
+        self.finish()
+        # Close the connection in the same way normally done by TCPServer
+        try:
+            # explicitly shutdown.  socket.close() merely releases
+            # the socket and waits for GC to perform the actual close.
+            self.request.shutdown(socket.SHUT_WR)
+        except OSError:  # pragma: no cover
+            pass  # some platforms may raise ENOTCONN here
+        self.request.close()
+
+    def handle_connection(self):
+        """
+        Handle an individual whois client connection.
+        When this method returns, the connection is closed.
+        """
         client_ip = self.client_address[0]
         self.client_str = client_ip + ':' + str(self.client_address[1])
-        setproctitle(f'irrd-whois-server-{self.client_str}')
+        setproctitle(f'irrd-whois-worker-{self.client_str}')
 
         if not self.is_client_permitted(client_ip):
             self.wfile.write(b'%% Access denied')
             return
 
-        self.query_parser = WhoisQueryParser(client_ip, self.client_str)
+        self.query_parser = WhoisQueryParser(client_ip, self.client_str, self.preloader)
 
         data = True
         while data:
-            timer = threading.Timer(self.query_parser.timeout, self.server.shutdown_request, args=[self.request])
+            timer = threading.Timer(self.query_parser.timeout, self.close_request)
             timer.start()
             data = self.rfile.readline()
             timer.cancel()
@@ -110,7 +174,7 @@ class WhoisRequestHandler(socketserver.StreamRequestHandler):
             if not query:
                 continue
 
-            logger.info(f'{self.client_str}: processing query: {query}')
+            logger.debug(f'{self.client_str}: processing query: {query}')
 
             if not self.handle_query(query):
                 return
@@ -134,7 +198,8 @@ class WhoisRequestHandler(socketserver.StreamRequestHandler):
             return False
 
         elapsed = time.perf_counter() - start_time
-        logger.info(f'{self.client_str}: sent answer to query, elapsed {elapsed}s, {len(response_bytes)} bytes: {query}')
+        logger.info(f'{self.client_str}: sent answer to query, elapsed {elapsed}s, '
+                    f'{len(response_bytes)} bytes: {query}')
 
         if not self.query_parser.multiple_command_mode:
             logger.debug(f'{self.client_str}: auto-closed connection')

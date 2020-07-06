@@ -14,6 +14,7 @@ from ..queries import RPSLDatabaseQuery
 TEST_REDIS_ORIGIN_ROUTE4_STORE_KEY = 'TEST-irrd-preload-origin-route4'
 TEST_REDIS_ORIGIN_ROUTE6_STORE_KEY = 'TEST-irrd-preload-origin-route6'
 TEST_REDIS_PRELOAD_RELOAD_CHANNEL = 'TEST-irrd-preload-reload-channel'
+TEST_REDIS_PRELOAD_COMPLETE_CHANNEL = 'TEST-irrd-preload-complete-channel'
 
 
 @pytest.fixture()
@@ -28,6 +29,7 @@ def mock_redis_keys(monkeypatch, config_override):
     monkeypatch.setattr('irrd.storage.preload.REDIS_ORIGIN_ROUTE4_STORE_KEY', TEST_REDIS_ORIGIN_ROUTE4_STORE_KEY)
     monkeypatch.setattr('irrd.storage.preload.REDIS_ORIGIN_ROUTE6_STORE_KEY', TEST_REDIS_ORIGIN_ROUTE6_STORE_KEY)
     monkeypatch.setattr('irrd.storage.preload.REDIS_PRELOAD_RELOAD_CHANNEL', TEST_REDIS_PRELOAD_RELOAD_CHANNEL)
+    monkeypatch.setattr('irrd.storage.preload.REDIS_PRELOAD_COMPLETE_CHANNEL', TEST_REDIS_PRELOAD_COMPLETE_CHANNEL)
 
 
 class TestPreloading:
@@ -113,46 +115,6 @@ class TestPreloading:
         with pytest.raises(ValueError) as ve:
             preloader.routes_for_origins(['AS65547'], [], 2)
         assert 'Invalid IP version: 2' in str(ve.value)
-
-    def test_routes_for_origins_memory(self, mock_redis_keys, monkeypatch):
-        preloader = Preloader()
-        preload_manager = PreloadStoreManager()
-
-        preload_manager.update_route_store(
-            {
-                f'TEST2{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65546': {'192.0.2.0/25'},
-                f'TEST1{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65547': {'192.0.2.128/25', '198.51.100.0/25'},
-            },
-            {
-                f'TEST2{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65547': {'2001:db8::/32'},
-            },
-        )
-        preloader._redis_conn.hmget = None  # Enforce that loading from redis per item can't work
-        preloader.load_routes_into_memory()
-
-        sources = ['TEST1', 'TEST2']
-        assert preloader.routes_for_origins([], sources) == set()
-        assert preloader.routes_for_origins(['AS65545'], sources) == set()
-        assert preloader.routes_for_origins(['AS65546'], []) == set()
-        assert preloader.routes_for_origins(['AS65546'], sources, 4) == {'192.0.2.0/25'}
-        assert preloader.routes_for_origins(['AS65547'], sources, 4) == {'192.0.2.128/25', '198.51.100.0/25'}
-        assert preloader.routes_for_origins(['AS65546'], sources, 6) == set()
-        assert preloader.routes_for_origins(['AS65547'], sources, 6) == {'2001:db8::/32'}
-        assert preloader.routes_for_origins(['AS65546'], sources) == {'192.0.2.0/25'}
-        assert preloader.routes_for_origins(['AS65547'], sources) == {'192.0.2.128/25', '198.51.100.0/25', '2001:db8::/32'}
-        assert preloader.routes_for_origins(['AS65547', 'AS65546'], sources, 4) == {'192.0.2.0/25', '192.0.2.128/25', '198.51.100.0/25'}
-
-        assert preloader.routes_for_origins(['AS65547', 'AS65546'], ['TEST1']) == {'192.0.2.128/25', '198.51.100.0/25'}
-        assert preloader.routes_for_origins(['AS65547', 'AS65546'], ['TEST2']) == {'192.0.2.0/25', '2001:db8::/32'}
-
-        # Load an empty route store. This should not affect the in-memory store,
-        # because that is only periodically updated, i.e. same response for now.
-        preload_manager.update_route_store({}, {})
-        assert preloader.routes_for_origins(['AS65546'], sources, 4) == {'192.0.2.0/25'}
-
-        # Make the preloader think the in-memory store is expired, forcing a refresh
-        preloader._memory_load_timestamp = time.time() - 3600
-        assert preloader.routes_for_origins(['AS65546'], sources, 4) == set()
 
 
 class TestPreloadUpdater:

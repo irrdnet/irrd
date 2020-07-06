@@ -50,7 +50,7 @@ class DatabaseHandler:
         self.journaling_enabled = True
         self._connection = get_engine().connect()
         self._start_transaction()
-        self.preloader = Preloader()
+        self.preloader = Preloader(enable_queries=False)
 
     def _start_transaction(self) -> None:
         """Start a fresh transaction."""

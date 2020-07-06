@@ -1,12 +1,13 @@
+import logging
+import random
 import signal
+import threading
 import time
 from collections import defaultdict
-
-import logging
-import redis
-import threading
-from setproctitle import setproctitle
 from typing import Optional, List, Set, Dict, Union
+
+import redis
+from setproctitle import setproctitle
 
 from irrd.conf import get_setting
 from irrd.rpki.status import RPKIStatus
@@ -16,7 +17,8 @@ from .queries import RPSLDatabaseQuery
 SENTINEL_HASH_CREATED = b'SENTINEL_HASH_CREATED'
 REDIS_ORIGIN_ROUTE4_STORE_KEY = b'irrd-preload-origin-route4'
 REDIS_ORIGIN_ROUTE6_STORE_KEY = b'irrd-preload-origin-route6'
-REDIS_PRELOAD_RELOAD_CHANNEL = b'irrd-preload-reload-channel'
+REDIS_PRELOAD_RELOAD_CHANNEL = 'irrd-preload-reload-channel'
+REDIS_PRELOAD_COMPLETE_CHANNEL = 'irrd-preload-complete-channel'
 REDIS_ORIGIN_LIST_SEPARATOR = ','
 REDIS_KEY_ORIGIN_SOURCE_SEPARATOR = '_'
 MAX_MEMORY_LIFETIME = 60
@@ -31,6 +33,34 @@ large data sets, this can improve performance.
 """
 
 
+class PersistentPubSubWorkerThread(redis.client.PubSubWorkerThread):  # type: ignore
+    def __init__(self, callback, *args, **kwargs):
+        self.callback = callback
+        self.should_resubscribe = True
+        super().__init__(*args, **kwargs)
+
+    def run(self):
+        self._running.set()
+        while self._running.is_set():
+            try:
+                if self.should_resubscribe:
+                    self.pubsub.subscribe(**{REDIS_PRELOAD_COMPLETE_CHANNEL: self.callback})
+                    self.should_resubscribe = False
+                self.pubsub.get_message(ignore_subscribe_messages=True, timeout=self.sleep_time)
+            except redis.ConnectionError as rce:  # pragma: no cover
+                logger.error(f'Failed redis pubsub connection, '
+                             f'attempting reconnect and reload in 5s: {rce}')
+                time.sleep(5)
+                self.should_resubscribe = True
+            except Exception as exc:  # pragma: no cover
+                logger.error(
+                    f'Error while loading in-memory preload, attempting reconnect and reload in 5s,'
+                    f'traceback follows: {exc}', exc_info=exc)
+                time.sleep(5)
+                self.should_resubscribe = True
+        self.pubsub.close()  # pragma: no cover
+
+
 class Preloader:
     """
     A preloader object provides access to the preload store.
@@ -38,10 +68,26 @@ class Preloader:
     needs to be updated. This interface can be used from any thread
     or process.
     """
-    _memory_load_timestamp = False
+    _memory_loaded = False
 
-    def __init__(self):
+    def __init__(self, enable_queries=True):
+        """
+        Initialise the preloader.
+        If this instance is only used for signalling that the store needs to be
+        updated, set enable_queries=False.
+        Otherwise, this method starts a background thread that keeps an in-memory store,
+        which is automatically updated.
+        """
         self._redis_conn = redis.Redis.from_url(get_setting('redis_url'))
+        if enable_queries:
+            self._pubsub = self._redis_conn.pubsub()
+            self._pubsub_thread = PersistentPubSubWorkerThread(
+                callback=self._load_routes_into_memory,
+                pubsub=self._pubsub,
+                sleep_time=5,
+                daemon=True
+            )
+            self._pubsub_thread.start()
 
     def signal_reload(self, object_classes_changed: Optional[Set[str]]=None) -> None:
         """
@@ -69,90 +115,52 @@ class Preloader:
         store has been built.
         Origins must be strings in a cleaned format, e.g. AS65537, but not
         AS065537 or as65537.
+        This call will block until the preload store is loaded.
         """
+        while not self._memory_loaded:
+            time.sleep(1)  # pragma: no cover
         if ip_version and ip_version not in [4, 6]:
             raise ValueError(f'Invalid IP version: {ip_version}')
         if not origins or not sources:
             return set()
 
-        if self._memory_load_timestamp:
-            return self._routes_for_origins_memory(origins, sources, ip_version)
-        else:
-            return self._routes_for_origins_redis(origins, sources, ip_version)
-
-    def _routes_for_origins_memory(self, origins: Union[List[str], Set[str]],
-                                   sources: List[str], ip_version: Optional[int]=None) -> Set[str]:
-        """
-        Implementation of routes_for_origins() when retrieving from memory.
-        Updates the in-memory store if it's older than MAX_MEMORY_LIFETIME.
-        """
-        # The in-memory store is a snapshot, and therefore has a limited lifetime,
-        # so that long-running connections don't end up serving very outdated data.
-        if time.time() - self._memory_load_timestamp > MAX_MEMORY_LIFETIME:
-            self.load_routes_into_memory()
-
         prefix_sets: Set[str] = set()
-        for origin in origins:
-            for source in sources:
-                if not ip_version or ip_version == 4:
-                    prefix_sets.update(self._origin_route4_store[origin][source])
-                if not ip_version or ip_version == 6:
-                    prefix_sets.update(self._origin_route6_store[origin][source])
+        for source in sources:
+            for origin in origins:
+                if (not ip_version or ip_version == 4) and source in self._origin_route4_store and origin in self._origin_route4_store[source]:
+                    prefix_sets.update(self._origin_route4_store[source][origin].split(REDIS_ORIGIN_LIST_SEPARATOR))
+                if (not ip_version or ip_version == 6) and source in self._origin_route6_store and origin in self._origin_route6_store[source]:
+                    prefix_sets.update(self._origin_route6_store[source][origin].split(REDIS_ORIGIN_LIST_SEPARATOR))
 
         return prefix_sets
 
-    def _routes_for_origins_redis(self, origins: Union[List[str], Set[str]],
-                                  sources: List[str], ip_version: Optional[int]=None) -> Set[str]:
+    def _load_routes_into_memory(self, redis_message):
         """
-        Implementation of routes_for_origins() when retrieving directly from redis.
-        """
-        while not self._redis_conn.exists(REDIS_ORIGIN_ROUTE4_STORE_KEY):
-            time.sleep(1)  # pragma: no cover
-
-        prefixes: Set[str] = set()
-        redis_keys = []
-        for source in sources:
-            for origin in origins:
-                redis_keys.append(f'{source}{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}{origin}'.encode('ascii'))
-
-        def _load(hmap_key):
-            prefixes_for_origins = self._redis_conn.hmget(hmap_key, redis_keys)
-            for prefixes_for_origin in prefixes_for_origins:
-                if prefixes_for_origin:
-                    prefixes.update(prefixes_for_origin.decode('ascii').split(REDIS_ORIGIN_LIST_SEPARATOR))
-
-        if not ip_version or ip_version == 4:
-            _load(REDIS_ORIGIN_ROUTE4_STORE_KEY)
-
-        if not ip_version or ip_version == 6:
-            _load(REDIS_ORIGIN_ROUTE6_STORE_KEY)
-
-        return prefixes
-
-    def load_routes_into_memory(self):
-        """
-        Pre-preload all routes into memory. This increases performance for
-        routes_for_origins() by up to 100x, but takes about 0.2-0.5s.
-        It also means origins are updated only every MAX_MEMORY_LIFETIME.
+        Update the in-memory store. This is called whenever a
+        message is sent to REDIS_PRELOAD_COMPLETE_CHANNEL.
         """
         while not self._redis_conn.exists(REDIS_ORIGIN_ROUTE4_STORE_KEY):
             time.sleep(1)  # pragma: no cover
-        logger.debug('Preloader pre-pre(re)loading routes into memory')
 
-        self._origin_route4_store = defaultdict(lambda: defaultdict(set))
-        self._origin_route6_store = defaultdict(lambda: defaultdict(set))
+        # Create a bit of randomness in when workers will update
+        time.sleep(random.random())
+
+        self._origin_route4_store = dict()
+        self._origin_route6_store = dict()
 
         def _load(redis_key, target):
             for key, routes in self._redis_conn.hgetall(redis_key).items():
                 if key == SENTINEL_HASH_CREATED:
                     continue
                 source, origin = key.decode('ascii').split(REDIS_KEY_ORIGIN_SOURCE_SEPARATOR)
-                target[origin][source].update(routes.decode('ascii').split(REDIS_ORIGIN_LIST_SEPARATOR))
+                if source not in target:
+                    target[source] = dict()
+                target[source][origin] = routes.decode('ascii')
 
         _load(REDIS_ORIGIN_ROUTE4_STORE_KEY, self._origin_route4_store)
         _load(REDIS_ORIGIN_ROUTE6_STORE_KEY, self._origin_route6_store)
 
-        self._memory_load_timestamp = time.time()
+        self._memory_loaded = True
 
 
 class PreloadStoreManager(ExceptionLoggingProcess):
@@ -254,6 +262,8 @@ class PreloadStoreManager(ExceptionLoggingProcess):
             pipeline.hmset(REDIS_ORIGIN_ROUTE4_STORE_KEY, origin_route4_str_dict)
             pipeline.hmset(REDIS_ORIGIN_ROUTE6_STORE_KEY, origin_route6_str_dict)
             pipeline.execute()
+
+            self._redis_conn.publish(REDIS_PRELOAD_COMPLETE_CHANNEL, 'complete')
             return True
 
         except redis.ConnectionError as rce:  # pragma: no cover
