@@ -88,8 +88,6 @@ class WhoisQueryParser:
                     mode=WhoisQueryResponseMode.IRRD,
                     result='An internal error occurred while processing this query.'
                 )
-            finally:
-                self.database_handler.close()
 
         try:
             return self.handle_ripe_command(query)
@@ -107,8 +105,6 @@ class WhoisQueryParser:
                 mode=WhoisQueryResponseMode.RIPE,
                 result='An internal error occurred while processing this query.'
             )
-        finally:
-            self.database_handler.close()
 
     def handle_irrd_command(self, full_command: str) -> WhoisQueryResponse:
         """Handle an IRRD-style query. full_command should not include the first exclamation mark. """
