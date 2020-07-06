@@ -58,12 +58,11 @@ def prepare_parser(monkeypatch, config_override):
     })
 
     mock_database_handler = Mock()
-    monkeypatch.setattr('irrd.server.whois.query_parser.DatabaseHandler', lambda: mock_database_handler)
     mock_database_query = Mock()
     monkeypatch.setattr('irrd.server.whois.query_parser.RPSLDatabaseQuery', lambda columns=None, ordered_by_sources=True: mock_database_query)
     mock_preloader = Mock(spec=Preloader)
 
-    parser = WhoisQueryParser('127.0.0.1', '127.0.0.1:99999', mock_preloader)
+    parser = WhoisQueryParser('127.0.0.1', '127.0.0.1:99999', mock_preloader, mock_database_handler)
 
     mock_query_result = [
         {
@@ -950,7 +949,7 @@ class TestWhoisQueryParserIRRD:
             'sources_default': [],
             'rpki': {'roa_source': 'https://example.com/roa.json'},
         })
-        parser = WhoisQueryParser('127.0.0.1', '127.0.0.1:99999', mock_preloader)
+        parser = WhoisQueryParser('127.0.0.1', '127.0.0.1:99999', mock_preloader, mock_dh)
 
         response = parser.handle_query('!r192.0.2.0/25')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
@@ -1059,7 +1058,7 @@ class TestWhoisQueryParserIRRD:
             'sources_default': [],
             'rpki': {'roa_source': 'https://example.com/roa.json'}
         })
-        parser = WhoisQueryParser('127.0.0.1', '127.0.0.1:99999', mock_preloader)
+        parser = WhoisQueryParser('127.0.0.1', '127.0.0.1:99999', mock_preloader, mock_dh)
         response = parser.handle_query('!s-lc')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
