@@ -32,7 +32,7 @@ coveralls==2.0.0
 twisted==20.3.0    # Used for a mock email server in integration tests
 
 # Documentation generation
-Sphinx==3.1.1
+Sphinx==3.1.2
 sphinxcontrib-spelling==5.1.2
 
 # Code style and type checks
