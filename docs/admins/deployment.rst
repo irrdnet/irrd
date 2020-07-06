@@ -68,6 +68,9 @@ A few PostgreSQL settings need to be changed from their default:
   Note that initial imports of data produce significant logs if all queries
   are logged - importing 1GB of data can result in 2-3GB of logs.
 
+The transaction isolation level should be set to "Read committed". This is
+the default in PostgreSQL.
+
 The database will be in the order of three times as large as the size of
 the RPSL text imported.
 

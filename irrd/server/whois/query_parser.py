@@ -44,7 +44,8 @@ class WhoisQueryParser:
     database_handler: DatabaseHandler
     _current_set_root_object_class: Optional[str]
 
-    def __init__(self, client_ip: str, client_str: str, preloader: Preloader) -> None:
+    def __init__(self, client_ip: str, client_str: str, preloader: Preloader,
+                 database_handler: DatabaseHandler) -> None:
         self.all_valid_sources = list(get_setting('sources', {}).keys())
         self.sources_default = get_setting('sources_default')
         self.sources: List[str] = self.sources_default if self.sources_default else self.all_valid_sources
@@ -60,7 +61,7 @@ class WhoisQueryParser:
         self.client_ip = client_ip
         self.client_str = client_str
         self.preloader = preloader
-        self.database_handler = DatabaseHandler()
+        self.database_handler = database_handler
 
     def handle_query(self, query: str) -> WhoisQueryResponse:
         """

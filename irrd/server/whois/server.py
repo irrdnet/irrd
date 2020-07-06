@@ -12,6 +12,7 @@ from setproctitle import setproctitle
 from irrd.conf import get_setting
 from irrd.server.access_check import is_client_permitted
 from irrd.server.whois.query_parser import WhoisQueryParser
+from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.preload import Preloader
 
 logger = logging.getLogger(__name__)
@@ -115,9 +116,10 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
 
         try:
             self.preloader = Preloader()
+            self.database_handler = DatabaseHandler()
         except Exception as e:
-            logger.error(f'Whois worker failed to initialise preloader, unable to start, '
-                         f'traceback follows: {e}', exc_info=e)
+            logger.error(f'Whois worker failed to initialise preloader or database,'
+                         f'unable to start, traceback follows: {e}', exc_info=e)
             return
 
         while True:
@@ -161,7 +163,8 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
             self.wfile.write(b'%% Access denied')
             return
 
-        self.query_parser = WhoisQueryParser(client_ip, self.client_str, self.preloader)
+        self.query_parser = WhoisQueryParser(client_ip, self.client_str, self.preloader,
+                                             self.database_handler)
 
         data = True
         while data:
