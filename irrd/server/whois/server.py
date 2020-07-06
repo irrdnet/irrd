@@ -126,6 +126,7 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
                 self.request, self.client_address = self.connection_queue.get()
                 self.setup()
                 self.handle_connection()
+                self.finish()
                 self.close_request()
             except Exception as e:
                 try:
@@ -138,7 +139,6 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
                 break
 
     def close_request(self):
-        self.finish()
         # Close the connection in the same way normally done by TCPServer
         try:
             # explicitly shutdown.  socket.close() merely releases
