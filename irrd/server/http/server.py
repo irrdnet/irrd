@@ -37,7 +37,7 @@ def start_http_server():  # pragma: no cover
     httpd.serve_forever()
 
 
-class HTTPServerForkingIPv6(socketserver.ForkingMixIn, HTTPServer):  # pragma: no cover
+class HTTPServerForkingIPv6(socketserver.ThreadingMixIn, HTTPServer):  # pragma: no cover
     # Default HTTP server only supports IPv4
     allow_reuse_address = True
     timeout = HTTP_TIMEOUT
