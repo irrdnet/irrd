@@ -51,7 +51,7 @@ class PersistentPubSubWorkerThread(redis.client.PubSubWorkerThread):  # type: ig
                     f'Failed redis pubsub connection, attempting reconnect and reload in 5s: {rce}')
                 time.sleep(5)
                 self.should_resubscribe = True
-            except Exception as exc:
+            except Exception as exc:  # pragma: no cover
                 logger.error(
                     f'Error while loading in-memory preload, attempting reconnect and reload in 5s, traceback follows: {exc}', exc_info=exc)
                 time.sleep(5)
