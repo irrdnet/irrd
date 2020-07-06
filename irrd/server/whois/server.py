@@ -201,7 +201,7 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
             return False
 
         elapsed = time.perf_counter() - start_time
-        logger.info(f'{self.client_str}: sent answer to query, elapsed {elapsed}s, '
+        logger.info(f'{self.client_str}: sent answer to query, elapsed {elapsed:.9f}s, '
                     f'{len(response_bytes)} bytes: {query}')
 
         if not self.query_parser.multiple_command_mode:
