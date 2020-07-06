@@ -64,8 +64,7 @@ class WhoisTCPServer(socketserver.TCPServer):  # pragma: no cover
 
         self.connection_queue = mp.Queue()
         self.workers = []
-        # for i in range(int(get_setting('server.whois.max_connections'))):
-        for i in range(2):
+        for i in range(int(get_setting('server.whois.max_connections'))):
             worker = WhoisWorker(self.connection_queue)
             worker.start()
             self.workers.append(worker)
