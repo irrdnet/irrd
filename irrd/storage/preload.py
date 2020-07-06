@@ -125,10 +125,8 @@ class Preloader:
             return set()
 
         prefix_sets: Set[str] = set()
-        for source_str in sources:
-            source = source_str.encode('ascii')
-            for origin_str in origins:
-                origin = origin_str.encode('ascii')
+        for source in sources:
+            for origin in origins:
                 if (not ip_version or ip_version == 4) and source in self._origin_route4_store and origin in self._origin_route4_store[source]:
                     prefix_sets.update(self._origin_route4_store[source][origin].split(REDIS_ORIGIN_LIST_SEPARATOR))
                 if (not ip_version or ip_version == 6) and source in self._origin_route6_store and origin in self._origin_route6_store[source]:
@@ -149,13 +147,12 @@ class Preloader:
 
         self._origin_route4_store = dict()
         self._origin_route6_store = dict()
-        source_separator = REDIS_KEY_ORIGIN_SOURCE_SEPARATOR.encode('ascii')
 
         def _load(redis_key, target):
             for key, routes in self._redis_conn.hgetall(redis_key).items():
                 if key == SENTINEL_HASH_CREATED:
                     continue
-                source, origin = key.split(source_separator)
+                source, origin = key.decode('ascii').split(REDIS_KEY_ORIGIN_SOURCE_SEPARATOR)
                 if source not in target:
                     target[source] = dict()
                 target[source][origin] = routes.decode('ascii')
