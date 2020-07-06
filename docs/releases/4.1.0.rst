@@ -6,9 +6,9 @@ IRRd 4.1.0 adds :doc:`RPKI-aware mode </admins/rpki>`
 and a new daemon architecture with full multiprocessing,
 along with several other improvements.
 
+IRRd 4.1.0 contains several significant changes, so please
+read these release notes carefully.
 Upgrading to IRRd 4.1.0 requires several changes to the deployment setup.
-This page contains details on the changes compared to
-IRRd 4.0, and how to upgrade.
 
 .. contents:: :backlinks: none
 
@@ -64,6 +64,11 @@ for further details.
 
 Other changes
 ~~~~~~~~~~~~~
+* The default for ``server.whois.max_connections`` has been reduced from 50
+  to 5. In 4.1, IRRd whois workers use considerably more memory, about 200 MB
+  each, and one worker is started for each permitted connection. Therefore,
+  at the default 5 connections, the whois processes use about 1 GB of memory,
+  at 50 connections, this is about 10 GB.
 * Serial handling in IRRd has changed. If you mirror a source over NRTM, and
   keep a local journal, IRRd used to keep these serials identical. The NRTM
   ADD from the original source would be stored in the local journal under the

@@ -192,8 +192,12 @@ Servers
   denied for HTTP.
   |br| **Change takes effect**: after SIGHUP.
 * ``server.whois.max_connections``: the maximum number of simultaneous whois
-  connections permitted.
-  |br| **Default**: ``50``.
+  connections permitted. Note that each permitted connection will result in
+  one IRRd whois worker to be started, each of which use about 200 MB memory.
+  For example, if you set this to 10, you need about 2 GB of memory just for
+  IRRd's whois server
+  (and additional memory for other components and PostgreSQL).
+  |br| **Default**: ``5``.
   |br| **Change takes effect**: after full IRRd restart.
 
 
