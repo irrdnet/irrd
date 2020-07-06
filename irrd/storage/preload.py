@@ -51,6 +51,11 @@ class PersistentPubSubWorkerThread(redis.client.PubSubWorkerThread):  # type: ig
                     f'Failed redis pubsub connection, attempting reconnect and reload in 5s: {rce}')
                 time.sleep(5)
                 self.should_resubscribe = True
+            except Exception as exc:
+                logger.error(
+                    f'Error while loading in-memory preload, attempting reconnect and reload in 5s, traceback follows: {exc}', exc_info=exc)
+                time.sleep(5)
+                self.should_resubscribe = True
         self.pubsub.close()  # pragma: no cover
 
 
@@ -116,19 +121,18 @@ class Preloader:
             raise ValueError(f'Invalid IP version: {ip_version}')
         if not origins or not sources:
             return set()
-        origin_separator = REDIS_ORIGIN_LIST_SEPARATOR.encode('ascii')
 
-        prefix_sets: Set[bytes] = set()
+        prefix_sets: Set[str] = set()
         for source_str in sources:
             source = source_str.encode('ascii')
             for origin_str in origins:
                 origin = origin_str.encode('ascii')
                 if (not ip_version or ip_version == 4) and source in self._origin_route4_store and origin in self._origin_route4_store[source]:
-                    prefix_sets.update(self._origin_route4_store[source][origin].split(origin_separator))
+                    prefix_sets.update(self._origin_route4_store[source][origin].split(REDIS_ORIGIN_LIST_SEPARATOR))
                 if (not ip_version or ip_version == 6) and source in self._origin_route6_store and origin in self._origin_route6_store[source]:
-                    prefix_sets.update(self._origin_route6_store[source][origin].split(origin_separator))
+                    prefix_sets.update(self._origin_route6_store[source][origin].split(REDIS_ORIGIN_LIST_SEPARATOR))
 
-        return {p.decode('ascii') for p in prefix_sets}
+        return prefix_sets
 
     def _load_routes_into_memory(self, redis_message):
         """
@@ -150,7 +154,7 @@ class Preloader:
                 source, origin = key.split(source_separator)
                 if source not in target:
                     target[source] = dict()
-                target[source][origin] = routes
+                target[source][origin] = routes.decode('ascii')
 
         _load(REDIS_ORIGIN_ROUTE4_STORE_KEY, self._origin_route4_store)
         _load(REDIS_ORIGIN_ROUTE6_STORE_KEY, self._origin_route6_store)
