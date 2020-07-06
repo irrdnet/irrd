@@ -58,7 +58,7 @@ A few PostgreSQL settings need to be changed from their default:
   memory to benefit from caching, with a max of a few GB.
 * ``max_connections`` may need to be increased from 100. Generally, there
   will be one open connection for:
-  * Each open whois connection
+  * Each whois connection
   * Each running mirror import and export process
   * Each RPKI update process
   * Each run of ``irrd_load_database``

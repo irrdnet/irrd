@@ -1,12 +1,13 @@
+import logging
+import random
 import signal
+import threading
 import time
 from collections import defaultdict
-
-import logging
-import redis
-import threading
-from setproctitle import setproctitle
 from typing import Optional, List, Set, Dict, Union
+
+import redis
+from setproctitle import setproctitle
 
 from irrd.conf import get_setting
 from irrd.rpki.status import RPKIStatus
@@ -47,13 +48,14 @@ class PersistentPubSubWorkerThread(redis.client.PubSubWorkerThread):  # type: ig
                     self.should_resubscribe = False
                 self.pubsub.get_message(ignore_subscribe_messages=True, timeout=self.sleep_time)
             except redis.ConnectionError as rce:  # pragma: no cover
-                logger.error(
-                    f'Failed redis pubsub connection, attempting reconnect and reload in 5s: {rce}')
+                logger.error(f'Failed redis pubsub connection, '
+                             f'attempting reconnect and reload in 5s: {rce}')
                 time.sleep(5)
                 self.should_resubscribe = True
             except Exception as exc:  # pragma: no cover
                 logger.error(
-                    f'Error while loading in-memory preload, attempting reconnect and reload in 5s, traceback follows: {exc}', exc_info=exc)
+                    f'Error while loading in-memory preload, attempting reconnect and reload in 5s,'
+                    f'traceback follows: {exc}', exc_info=exc)
                 time.sleep(5)
                 self.should_resubscribe = True
         self.pubsub.close()  # pragma: no cover
@@ -73,7 +75,7 @@ class Preloader:
         Initialise the preloader.
         If this instance is only used for signalling that the store needs to be
         updated, set enable_queries=False.
-        This method starts a background thread that keeps an in-memory store,
+        Otherwise, this method starts a background thread that keeps an in-memory store,
         which is automatically updated.
         """
         self._redis_conn = redis.Redis.from_url(get_setting('redis_url'))
@@ -141,7 +143,9 @@ class Preloader:
         """
         while not self._redis_conn.exists(REDIS_ORIGIN_ROUTE4_STORE_KEY):
             time.sleep(1)  # pragma: no cover
-        logger.debug('Preloader (re)loading routes locally into memory')
+
+        # Create a bit of randomness in when workers will update
+        time.sleep(random.random())
 
         self._origin_route4_store = dict()
         self._origin_route6_store = dict()

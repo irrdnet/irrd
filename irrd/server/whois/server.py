@@ -91,6 +91,11 @@ class WhoisTCPServer(socketserver.TCPServer):  # pragma: no cover
 
 
 class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
+    """
+    A whois worker is a process that handles whois client connections,
+    which are retrieved from a queue. After handling a connection,
+    the process waits for the next connection from the queue.s
+    """
     def __init__(self, connection_queue, *args, **kwargs):
         self.connection_queue = connection_queue
         # Note that StreamRequestHandler.__init__ is not called - the
@@ -98,6 +103,12 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
         super().__init__(*args, **kwargs)
 
     def run(self, keep_running=True) -> None:
+        """
+        Whois worker run loop.
+        This method does not return, except if it failed to initialise a preloader,
+        or if keep_running is set, after the first request is handled. The latter
+        is used in the tests.
+        """
         # Disable the special sigterm_handler defined in start_whois_server()
         # (signal handlers are inherited)
         signal.signal(signal.SIGTERM, signal.SIG_DFL)
@@ -138,8 +149,10 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
         self.request.close()
 
     def handle_connection(self):
-        start_time = time.perf_counter()
-
+        """
+        Handle an individual whois client connection.
+        When this method returns, the connection is closed.
+        """
         client_ip = self.client_address[0]
         self.client_str = client_ip + ':' + str(self.client_address[1])
         setproctitle(f'irrd-whois-worker-{self.client_str}')
@@ -151,9 +164,6 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
         self.query_parser = WhoisQueryParser(client_ip, self.client_str, self.preloader)
 
         data = True
-        elapsed = time.perf_counter() - start_time
-        logger.info(f'{self.client_str}: ready to read queries {elapsed}s')
-
         while data:
             timer = threading.Timer(self.query_parser.timeout, self.close_request)
             timer.start()
@@ -164,7 +174,7 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
             if not query:
                 continue
 
-            logger.info(f'{self.client_str}: processing query: {query}')
+            logger.debug(f'{self.client_str}: processing query: {query}')
 
             if not self.handle_query(query):
                 return
