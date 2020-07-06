@@ -30,19 +30,19 @@ class TestWhoisQueryResponse:
         response = WhoisQueryResponse(mode=WhoisQueryResponseMode.RIPE,
                                       response_type=WhoisQueryResponseType.SUCCESS,
                                       result='test').generate_response()
-        assert response == 'test\n\n'
+        assert response == 'test\n\n\n'
         response = WhoisQueryResponse(mode=WhoisQueryResponseMode.RIPE,
                                       response_type=WhoisQueryResponseType.SUCCESS,
                                       result='').generate_response()
-        assert response == '%  No entries found for the selected source(s).\n'
+        assert response == '%  No entries found for the selected source(s).\n\n\n'
         response = WhoisQueryResponse(mode=WhoisQueryResponseMode.RIPE,
                                       response_type=WhoisQueryResponseType.KEY_NOT_FOUND,
                                       result='test').generate_response()
-        assert response == '%  No entries found for the selected source(s).\n'
+        assert response == '%  No entries found for the selected source(s).\n\n\n'
         response = WhoisQueryResponse(mode=WhoisQueryResponseMode.RIPE,
                                       response_type=WhoisQueryResponseType.ERROR,
                                       result='test').generate_response()
-        assert response == '%% ERROR: test\n'
+        assert response == '%% ERROR: test\n\n\n'
 
         with raises(RuntimeError) as ve:
             # noinspection PyTypeChecker

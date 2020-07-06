@@ -140,6 +140,9 @@ The query::
 will set the client name to `my-client` and return all as-sets named
 `AS-EXAMPLE`.
 
+RIPE style queries always end with two empty lines, i.e.
+two newline characters.
+
 Queries
 ^^^^^^^
 * ``-l``, ``-L``, ``-M`` and ``-x`` search for `route` or `route6` objects.

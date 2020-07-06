@@ -86,6 +86,8 @@ Other changes
 * A number of new configuration options were added, and some are required.
   See the :doc:`configuration documentation </admins/configuration>` for more
   information on these options.
+* RIPE style query responses now always end with two empty lines,
+  `consistent with the RIPE database`_.
 * A timeout was added for FTP connections.
 * A bug was fixed where some invalid objects could cause parser exceptions.
 
@@ -122,3 +124,5 @@ whether RPKI-aware mode is enabled or not.
 * Ensure that RPKI-aware mode is configured as desired. By default it is
   **enabled**.
 * Start IRRd and re-enable the cron / e-mail triggered tasks.
+
+.. _consistent with the RIPE database: https://www.ripe.net/manage-ips-and-asns/db/support/documentation/ripe-database-query-reference-manual#2-0-querying-the-ripe-database
