@@ -96,7 +96,7 @@ class IRRdHTTPRequestProcessor:
         if not is_client_permitted(self.client_ip, 'server.http.access_list'):
             return HTTPStatus.FORBIDDEN, 'Access denied'
 
-        if path != '/v1/status/':
+        if path.rstrip('/') != '/v1/status':
             return HTTPStatus.NOT_FOUND, 'Not found'
 
         content = StatusGenerator().generate_status()
