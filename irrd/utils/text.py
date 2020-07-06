@@ -42,7 +42,7 @@ def split_paragraphs_rpsl(input: Union[str, TextIO], strip_comments=True) -> Ite
     if isinstance(input, str):
         generator = splitline_unicodesafe(input)
     else:
-        generator = iter(input.readlines())
+        generator = input
 
     for line in generator:
         line = line.strip('\r\n')
