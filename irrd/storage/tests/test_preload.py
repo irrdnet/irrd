@@ -48,7 +48,7 @@ class TestPreloading:
         assert len(preload_manager._threads) == 1
         mock_preload_updater.reset_mock()
 
-        preload_manager._perform_reload()
+        preload_manager.perform_reload()
 
         assert mock_preload_updater.mock_calls[0][0] == '().is_alive'
         assert mock_preload_updater.mock_calls[1][0] == ''
@@ -59,7 +59,7 @@ class TestPreloading:
         mock_preload_updater.reset_mock()
 
         # Two threads already running, do nothing
-        preload_manager._perform_reload()
+        preload_manager.perform_reload()
 
         assert mock_preload_updater.mock_calls[0][0] == '().is_alive'
         assert mock_preload_updater.mock_calls[1][0] == '().is_alive'
