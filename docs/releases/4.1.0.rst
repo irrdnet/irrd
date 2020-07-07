@@ -125,4 +125,20 @@ whether RPKI-aware mode is enabled or not.
   **enabled**.
 * Start IRRd and re-enable the cron / e-mail triggered tasks.
 
+
+Downgrading from 4.1 to 4.0.x
+-----------------------------
+If you are running IRRd 4.1, and would like to downgrade back to 4.0.x,
+the database schema needs to be modified. You can either restore an older
+copy of your database, start with a fresh database, or use the database
+migrations.
+
+If you want to use the database migrations, run this command **before**
+downgrading your local package installation to 4.0.x::
+
+    /home/irrd/irrd-venv/bin/irrd_database_downgrade --version 28dc1cd85bdc
+
+If you would like to re-upgrade to 4.1 later on, you will need to run
+``irrd_database_upgrade`` again, as noted in the steps above.
+
 .. _consistent with the RIPE database: https://www.ripe.net/manage-ips-and-asns/db/support/documentation/ripe-database-query-reference-manual#2-0-querying-the-ripe-database
