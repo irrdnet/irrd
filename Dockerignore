@@ -1,0 +1,6 @@
+docs
+.git*
+.circleci
+.github
+.coveragerc
+.pyup.yml
