@@ -52,6 +52,23 @@ class DatabaseHandler:
         self._start_transaction()
         self.preloader = Preloader(enable_queries=False)
 
+    def refresh_connection(self) -> None:
+        """
+        Refresh the database connection.
+        Needed when trying to re-use this instance when the
+        SQL server has restarted.
+        """
+        try:
+            self.rollback(start_transaction=False)
+        except Exception:  # pragma: no cover
+            pass
+        try:
+            self.close()
+        except Exception:  # pragma: no cover
+            pass
+        self._connection = get_engine().connect()
+        self._start_transaction()
+
     def _start_transaction(self) -> None:
         """Start a fresh transaction."""
         self._transaction = self._connection.begin()
@@ -87,12 +104,14 @@ class DatabaseHandler:
             logger.error('Exception occurred while committing changes, rolling back', exc_info=exc)
             raise
 
-    def rollback(self) -> None:
+    def rollback(self, start_transaction=True) -> None:
         """Roll back the current transaction, discarding all submitted changes."""
         self._rpsl_upsert_buffer = []
         self._rpsl_pk_source_seen = set()
+        self.status_tracker.reset()
         self._transaction.rollback()
-        self._start_transaction()
+        if start_transaction:
+            self._start_transaction()
 
     def execute_query(self, query: Union[BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery, RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery]) -> Iterator[Dict[str, Any]]:
         """Execute an RPSLDatabaseQuery within the current transaction."""
@@ -442,7 +461,7 @@ class DatabaseStatusTracker:
     def __init__(self, database_handler: DatabaseHandler, journaling_enabled=True) -> None:
         self.database_handler = database_handler
         self.journaling_enabled = journaling_enabled
-        self._reset()
+        self.reset()
 
     def record_serial_newest_mirror(self, source: str, serial: int):
         """
@@ -573,9 +592,9 @@ class DatabaseStatusTracker:
             )
             self.database_handler.execute_statement(stmt)
 
-        self._reset()
+        self.reset()
 
-    def _reset(self):
+    def reset(self):
         self._new_serials_per_source = defaultdict(set)
         self._sources_seen = set()
         self._newest_mirror_serials = dict()

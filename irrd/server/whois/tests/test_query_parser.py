@@ -1086,6 +1086,9 @@ class TestWhoisQueryParserIRRD:
 
         assert 'An exception occurred while processing whois query' in caplog.text
         assert 'test-error' in caplog.text
+        assert flatten_mock_calls(mock_dh)[0][0] == 'execute_query'
+        assert flatten_mock_calls(mock_dh)[1][0] == 'refresh_connection'
+        assert flatten_mock_calls(mock_dh)[2][0] == 'execute_query'
 
     def test_issue_131(self, prepare_parser):
         """Queries like `- 103.67.241.255` could lead to unfiltered SQL queries."""

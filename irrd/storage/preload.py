@@ -198,13 +198,13 @@ class PreloadStoreManager(ExceptionLoggingProcess):
         self.terminate = False  # Used to exit main() in tests
 
         while not self.terminate:
-            self._perform_reload()
+            self.perform_reload()
             try:
                 self._pubsub.subscribe(REDIS_PRELOAD_RELOAD_CHANNEL)
                 for item in self._pubsub.listen():
                     if item['type'] == 'message':
                         logger.debug('Reload requested through redis channel')
-                        self._perform_reload()
+                        self.perform_reload()
                         if self.terminate:
                             return
             except redis.ConnectionError as rce:  # pragma: no cover
@@ -222,7 +222,7 @@ class PreloadStoreManager(ExceptionLoggingProcess):
             logger.error(f'Failed to empty preload store due to redis connection error, '
                          f'queries may have outdated results until full reload is completed (max 30s): {rce}')
 
-    def _perform_reload(self) -> None:
+    def perform_reload(self) -> None:
         """
         Perform a (re)load.
         Should be called after changes to the DB have been committed.
@@ -270,7 +270,7 @@ class PreloadStoreManager(ExceptionLoggingProcess):
             logger.error(f'Failed to update preload store due to redis connection error, '
                          f'attempting new reload in 5s: {rce}')
             time.sleep(5)
-            self._perform_reload()
+            self.perform_reload()
             return False
 
     def _remove_dead_threads(self) -> None:
@@ -298,7 +298,7 @@ class PreloadUpdater(threading.Thread):
         """
         Main thread runner function.
 
-        The reload_lock ensures only a single instance can main at the same
+        The reload_lock ensures only a single instance can run at the same
         time, i.e. if two threads are started, one will wait for the other
         to finish.
 
@@ -308,7 +308,10 @@ class PreloadUpdater(threading.Thread):
         try:
             self.update(mock_database_handler)
         except Exception as exc:
-            logger.critical(f'Updating preload store failed, traceback follows: {exc}', exc_info=exc)
+            logger.critical(f'Updating preload store failed, retrying in 5s, '
+                            f'traceback follows: {exc}', exc_info=exc)
+            time.sleep(5)
+            self.preloader.perform_reload()
         finally:
             self.reload_lock.release()
 

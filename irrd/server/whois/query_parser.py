@@ -83,6 +83,12 @@ class WhoisQueryParser:
                     result=str(exc)
                 )
             except Exception as exc:
+                self.database_handler.refresh_connection()
+                # Do one retry after refreshing the DB connection
+                try:
+                    return self.handle_irrd_command(query[1:])
+                except Exception:
+                    pass
                 logger.error(f'An exception occurred while processing whois query "{query}": {exc}', exc_info=exc)
                 return WhoisQueryResponse(
                     response_type=WhoisQueryResponseType.ERROR,
@@ -100,6 +106,12 @@ class WhoisQueryParser:
                 result=str(exc)
             )
         except Exception as exc:
+            self.database_handler.refresh_connection()
+            # Do one retry after refreshing the DB connection
+            try:
+                return self.handle_ripe_command(query)
+            except Exception:
+                pass
             logger.error(f'An exception occurred while processing whois query "{query}": {exc}', exc_info=exc)
             return WhoisQueryResponse(
                 response_type=WhoisQueryResponseType.ERROR,
