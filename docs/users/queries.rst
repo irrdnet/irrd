@@ -60,9 +60,13 @@ IRRd style queries
   If the ``compatibility.ipv4_only_route_set_members`` setting is enabled,
   IPv6 prefixes will not be returned.
 * ``!j`` returns the serial range for each source, along with the most
-  recent export serial from this IRRd instance. The serial range concerns the
-  lowest and highest serial number seen for this database. It is unrelated
-  to the range available in the journal, if any (which is used for NRTM).
+  recent export serial from this IRRd instance. This can be used to verify
+  whether the local IRRd instance is up to date with a mirror. The lowest
+  serial is always set to zero. The highest serial is the most recent
+  serial imported from the mirror. The serial of the last export is based
+  on the local serial, and may be in an entirely different range - IRRd uses
+  its own set of serials, independent from serials used by mirrors.
+  Usage of the ``!J`` command is strongly recommended over ``!j``.
   For all sources, query ``!j-*``, for a specific source, query
   ``!jEXAMPLE-SOURCE``.
 * ``!m<object-class>,<primary-key>`` searches for objects exactly matching

@@ -123,13 +123,13 @@ class WhoisQueryParser:
         """Handle an IRRD-style query. full_command should not include the first exclamation mark. """
         if not full_command:
             raise WhoisQueryParserException('Missing IRRD command')
-        command = full_command[0].upper()
+        command = full_command[0]
         parameter = full_command[1:]
         response_type = WhoisQueryResponseType.SUCCESS
         result = None
 
         # A is not tested here because it is already handled in handle_irrd_routes_for_as_set
-        queries_with_parameter = list('TG6IJMNORS')
+        queries_with_parameter = list('tg6ijmnors')
         if command in queries_with_parameter and not parameter:
             raise WhoisQueryParserException(f'Missing parameter for {command} query')
 
@@ -141,11 +141,11 @@ class WhoisQueryParser:
             self.rpki_invalid_filter_enabled = False
             result = 'Filtering out RPKI invalids is disabled for !r and RIPE style ' \
                      'queries for the rest of this connection.'
-        elif command == 'V':
+        elif command == 'v':
             result = self.handle_irrd_version()
-        elif command == 'T':
+        elif command == 't':
             self.handle_irrd_timeout_update(parameter)
-        elif command == 'G':
+        elif command == 'g':
             result = self.handle_irrd_routes_for_origin_v4(parameter)
             if not result:
                 response_type = WhoisQueryResponseType.KEY_NOT_FOUND
@@ -153,31 +153,31 @@ class WhoisQueryParser:
             result = self.handle_irrd_routes_for_origin_v6(parameter)
             if not result:
                 response_type = WhoisQueryResponseType.KEY_NOT_FOUND
-        elif command == 'A':
+        elif command == 'a':
             result = self.handle_irrd_routes_for_as_set(parameter)
             if not result:
                 response_type = WhoisQueryResponseType.KEY_NOT_FOUND
-        elif command == 'I':
+        elif command == 'i':
             result = self.handle_irrd_set_members(parameter)
             if not result:
                 response_type = WhoisQueryResponseType.KEY_NOT_FOUND
-        elif command == 'J':
+        elif command == 'j':
             result = self.handle_irrd_database_serial_range(parameter)
-        elif command == 'M':
+        elif command == 'm':
             result = self.handle_irrd_exact_key(parameter)
             if not result:
                 response_type = WhoisQueryResponseType.KEY_NOT_FOUND
-        elif command == 'N':
+        elif command == 'n':
             self.handle_user_agent(parameter)
-        elif command == 'O':
+        elif command == 'o':
             result = self.handle_inverse_attr_search('mnt-by', parameter)
             if not result:
                 response_type = WhoisQueryResponseType.KEY_NOT_FOUND
-        elif command == 'R':
+        elif command == 'r':
             result = self.handle_irrd_route_search(parameter)
             if not result:
                 response_type = WhoisQueryResponseType.KEY_NOT_FOUND
-        elif command == 'S':
+        elif command == 's':
             result = self.handle_irrd_sources_list(parameter)
         else:
             raise WhoisQueryParserException(f'Unrecognised command: {command}')
@@ -417,12 +417,11 @@ class WhoisQueryParser:
         for query_result in query_results:
             source = query_result['source'].upper()
             keep_journal = 'Y' if get_setting(f'sources.{source}.keep_journal') else 'N'
-            serial_oldest = query_result['serial_oldest_seen']
-            serial_newest = query_result['serial_newest_seen']
+            serial_newest = query_result['serial_newest_mirror']
             fields = [
                 source,
                 keep_journal,
-                f'{serial_oldest}-{serial_newest}' if serial_oldest and serial_newest else '-',
+                f'0-{serial_newest}' if serial_newest else '-',
             ]
             if query_result['serial_last_export']:
                 fields.append(str(query_result['serial_last_export']))
