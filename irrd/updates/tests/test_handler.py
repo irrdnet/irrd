@@ -29,7 +29,6 @@ def prepare_mocks(monkeypatch, config_override):
 class TestChangeSubmissionHandler:
     # NOTE: the scope of this test also includes ChangeRequest, ReferenceValidator and AuthValidator -
     # this is more of an update handler integration test.
-    expected_changed_date = datetime.datetime.now().strftime('%Y%m%d')
 
     def test_parse_valid_new_objects_with_override(self, prepare_mocks):
         mock_dq, mock_dh, mock_email = prepare_mocks
@@ -207,18 +206,7 @@ class TestChangeSubmissionHandler:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ---
         Create succeeded: [person] PERSON-TEST
-        
-        person:         Placeholder Person Object
-        address:        The Netherlands
-        phone:          +31 20 000 0000
-        nic-hdl:        PERSON-TEST
-        mnt-by:         TEST-MNT
-        e-mail:         email@example.com
-        changed:        changed@example.com {self.expected_changed_date} # comment
-        source:         TEST
-        
-        INFO: Set date in changed line "changed@example.com 20190701 # comment" to today.
-        
+                
         ---
         Modify succeeded: [mntner] TEST-MNT
 
@@ -254,7 +242,7 @@ class TestChangeSubmissionHandler:
             nic-hdl:        PERSON-TEST
             mnt-by:         TEST-MNT
             e-mail:         email@example.com
-            changed:        changed@example.com {self.expected_changed_date} # comment
+            changed:        changed@example.com 20190701 # comment
             source:         TEST
             
             ---

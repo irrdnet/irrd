@@ -212,7 +212,7 @@ class RPSLObjectFromROA(RPSLObject):
     def pk(self):
         return f'{self.prefix_str}AS{self.asn}/ML{self.max_length}'
 
-    def render_rpsl_text(self):
+    def render_rpsl_text(self, last_modified=None):
         object_class_display = f'{self.rpsl_object_class}:'.ljust(RPSL_ATTRIBUTE_TEXT_WIDTH)
         remarks_fill = RPSL_ATTRIBUTE_TEXT_WIDTH * ' '
         remarks = get_setting('rpki.pseudo_irr_remarks').replace('\n', '\n' + remarks_fill).strip()
