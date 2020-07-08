@@ -1,3 +1,4 @@
+import importlib.util
 import sys
 import time
 
@@ -37,20 +38,16 @@ LOGGING = {
         # Tune down some very loud and not very useful loggers from libraries.
         'passlib.registry': {
             'level': 'INFO',
-            'propagate': True,
         },
         'gnupg': {
             'level': 'INFO',
-            'propagate': True,
         },
         'sqlalchemy': {
             'level': 'WARNING',
-            'propagate': True,
         },
         '': {
             'handlers': ['console'],
             'level': 'INFO',
-            'propagate': True,
         },
     }
 }
@@ -95,8 +92,15 @@ class Configuration:
         if commit:
             self._commit_staging()
 
+            logging_config_path = self.get_setting_live('log.logging_config_path')
             logfile_path = self.get_setting_live('log.logfile_path')
-            if logfile_path:
+            if logging_config_path:
+                spec = importlib.util.spec_from_file_location("logging_config", logging_config_path)
+                config_module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(config_module)  # type: ignore
+                self.logging_config = config_module.LOGGING  # type: ignore
+                logging.config.dictConfig(self.logging_config)
+            elif logfile_path:
                 LOGGING['handlers']['file'] = {   # type:ignore
                     'class': 'logging.handlers.WatchedFileHandler',
                     'filename': logfile_path,
@@ -283,6 +287,9 @@ class Configuration:
         if config.get('log.level') and not config.get('log.level') in ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']:
             errors.append(f'Invalid log.level: {config.get("log.level")}. '
                           f'Valid settings for log.level are `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`.')
+        if config.get('log.logging_config_path') and (config.get('log.logfile_path') or config.get('log.level')):
+            errors.append('Setting log.logging_config_path can not be combined with'
+                          'log.logfile_path or log.level')
 
         return errors
 
