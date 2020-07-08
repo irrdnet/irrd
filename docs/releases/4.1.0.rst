@@ -140,5 +140,6 @@ downgrading your local package installation to 4.0.x::
 
 If you would like to re-upgrade to 4.1 later on, you will need to run
 ``irrd_database_upgrade`` again, as noted in the steps above.
+The downgrade migration typically takes a few seconds.
 
 .. _consistent with the RIPE database: https://www.ripe.net/manage-ips-and-asns/db/support/documentation/ripe-database-query-reference-manual#2-0-querying-the-ripe-database

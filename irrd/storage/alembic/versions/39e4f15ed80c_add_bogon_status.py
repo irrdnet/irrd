@@ -27,3 +27,6 @@ def upgrade():
 def downgrade():
     op.drop_index(op.f('ix_rpsl_objects_bogon_status'), table_name='rpsl_objects')
     op.drop_column('rpsl_objects', 'bogon_status')
+
+    bogon_status = sa.Enum('unknown', 'not_bogon', 'bogon_as', 'bogon_prefix', name='bogonstatus')
+    bogon_status.create(op.get_bind())
