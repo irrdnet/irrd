@@ -3,6 +3,7 @@ import datetime
 import pytest
 from IPy import IP
 from pytest import raises
+from pytz import timezone
 
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
 from irrd.utils.rpsl_samples import (object_sample_mapping, SAMPLE_MALFORMED_EMPTY_LINE,
@@ -497,3 +498,22 @@ class TestRPSLRtrSet:
         ]
         assert obj.references_strong_inbound() == set()
         assert obj.render_rpsl_text() == rpsl_text
+
+
+class TestLastModified:
+    def test_authoritative(self, config_override):
+        config_override({
+            'sources': {'TEST': {'authoritative': True}}
+        })
+        rpsl_text = object_sample_mapping[RPSLRtrSet().rpsl_object_class]
+        obj = rpsl_object_from_text(rpsl_text + 'last-modified: old-value\n')
+        last_modified = datetime.datetime(2020, 1, 1, tzinfo=timezone('UTC'))
+        expected_text = rpsl_text + 'last-modified:  2020-01-01T00:00:00Z\n'
+        assert obj.render_rpsl_text(last_modified=last_modified) == expected_text
+
+    def test_not_authoritative(self):
+        rpsl_text = object_sample_mapping[RPSLRtrSet().rpsl_object_class]
+        obj = rpsl_object_from_text(rpsl_text + 'last-modified: old-value\n')
+        last_modified = datetime.datetime(2020, 1, 1, tzinfo=timezone('UTC'))
+        expected_text = rpsl_text + 'last-modified:  old-value\n'
+        assert obj.render_rpsl_text(last_modified=last_modified) == expected_text

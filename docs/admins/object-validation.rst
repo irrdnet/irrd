@@ -78,3 +78,41 @@ Other changes from RFCs:
   components.
 * IRRd does not accept prefixes with host bits set. RFCs are unclear
   on whether these are allowed.
+
+
+Modifications to objects
+------------------------
+There are a few cases where IRRd makes changes to the object text.
+
+rpki-ov-state
+^^^^^^^^^^^^^
+The ``rpki-ov-state`` attribute, which is used to indicate the
+:doc:`RPKI validation status </admins/rpki>`, is always discarded from all
+incoming objects. Where relevant, it is added to the output of queries.
+This applies to authoritative and non-authoritative sources.
+
+key-cert objects
+^^^^^^^^^^^^^^^^
+In `key-cert` objects, the ``fingerpr`` and ``owner`` attributes are
+updated to values extracted from the PGP key. The ``method`` attribute is
+always set to PGP. This applies to objects from authoritative sources and
+sources for which ``strict_import_keycert_objects`` is set.
+
+.. _last-modified:
+
+last-modified
+^^^^^^^^^^^^^
+For authoritative objects, the ``last-modified`` attribute is set when
+the object is created or updated. Any existing ``last-modified`` values are
+discarded. This timestamp is not updated for changes in RPKI validation
+status. This attribute is visible over NRTM and in exports.
+
+By default, this attribute is only added when an object is changed or
+created. If you have upgraded to IRRd 4.1, you can use the
+``irrd_set_last_modified_auth`` command to set it on all existing
+authoritative objects. This may take in the order of 10 minutes, depending
+on the number of objects to be updated. This only needs to be done once.
+It is safe to execute while other IRRd processes are running.
+Journal entries are not created when running this command, i.e. the bulk
+updates to ``last-modified`` are not visible over NRTM until the object
+is updated for a different reason.

@@ -165,12 +165,13 @@ class DatabaseHandler:
         if rpsl_pk_source in self._rpsl_pk_source_seen:
             self._flush_rpsl_object_writing_buffer()
 
+        update_time = datetime.now(timezone.utc)
         object_dict = {
             'rpsl_pk': rpsl_object.pk(),
             'source': source,
             'object_class': rpsl_object.rpsl_object_class,
             'parsed_data': rpsl_object.parsed_data,
-            'object_text': rpsl_object.render_rpsl_text(),
+            'object_text': rpsl_object.render_rpsl_text(last_modified=update_time),
             'ip_version': rpsl_object.ip_version(),
             'ip_first': ip_first,
             'ip_last': ip_last,
@@ -179,7 +180,7 @@ class DatabaseHandler:
             'asn_first': rpsl_object.asn_first,
             'asn_last': rpsl_object.asn_last,
             'rpki_status': rpsl_object.rpki_status,
-            'updated': datetime.now(timezone.utc),
+            'updated': update_time,
         }
 
         self._rpsl_upsert_buffer.append((object_dict, origin))

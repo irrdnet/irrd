@@ -10,6 +10,7 @@ from irrd.rpsl.parser_state import RPSLParserMessages
 from irrd.rpki.status import RPKIStatus
 from irrd.utils.text import splitline_unicodesafe
 from .fields import RPSLTextField
+from ..conf import get_setting
 
 RPSL_ATTRIBUTE_TEXT_WIDTH = 16
 TypeRPSLObjectData = List[Tuple[str, str, List[str]]]
@@ -154,10 +155,18 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                     result.add(field_name)
         return result
 
-    def render_rpsl_text(self) -> str:
-        """Render the RPSL object as an RPSL string."""
+    def render_rpsl_text(self, last_modified: datetime.datetime=None) -> str:
+        """
+        Render the RPSL object as an RPSL string.
+        If last_modified is provided, removes existing last-modified:
+        attributes and adds a new one with that timestamp, if self.source()
+        is authoritative.
+        """
         output = ""
+        authoritative = get_setting(f'sources.{self.source()}.authoritative')
         for attr, value, continuation_chars in self._object_data:
+            if authoritative and last_modified and attr == 'last-modified':
+                continue
             attr_display = f'{attr}:'.ljust(RPSL_ATTRIBUTE_TEXT_WIDTH)
             value_lines = list(splitline_unicodesafe(value))
             if not value_lines:
@@ -172,6 +181,10 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                         continuation_char = '+'
                     output += continuation_char + (RPSL_ATTRIBUTE_TEXT_WIDTH - 1) * ' ' + line
                 output += '\n'
+        if authoritative and last_modified:
+            output += 'last-modified:'.ljust(RPSL_ATTRIBUTE_TEXT_WIDTH)
+            output += last_modified.replace(microsecond=0).isoformat().replace('+00:00', 'Z')
+            output += '\n'
         return output
 
     def generate_template(self):

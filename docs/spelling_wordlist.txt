@@ -40,6 +40,9 @@ Redistributions
 reStructuredText
 RPSL
 rpsl
+rpki-ov-state
+ov
+rpki
 rr
 setcap
 snapshotting

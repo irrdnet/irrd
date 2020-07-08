@@ -83,6 +83,10 @@ Other changes
   mirror is. For more extensive status information, like the local serials
   in the journal,
   :doc:`use the new !J command </users/queries>`.
+* The ``last-modified`` attribute is set every time an object is created or
+  updated in an authoritative source. You can apply this to all existing
+  authoritative objects with the
+  :ref:`new irrd_set_last_modified_auth command <last-modified>`.
 * IRRd starts a maximum of three mirror processes at the same time,
   to reduce peak loads. A further three, if needed, are started 15 seconds
   later, regardless of whether the previous ones have finished.
@@ -129,6 +133,9 @@ whether RPKI-aware mode is enabled or not.
 * Ensure that RPKI-aware mode is configured as desired. By default it is
   **enabled**.
 * Start IRRd and re-enable the cron / e-mail triggered tasks.
+* If you would like to set ``last-modified`` for existing authoritative
+  objects, use the
+  :ref:`new irrd_set_last_modified_auth command <last-modified>`.
 
 
 Downgrading from 4.1 to 4.0.x
