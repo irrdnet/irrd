@@ -76,8 +76,10 @@ class NRTMOperation:
         elif self.operation == DatabaseOperation.delete:
             database_handler.delete_rpsl_object(rpsl_object=obj, origin=JournalEntryOrigin.mirror)
 
-        logger.info(f'Completed NRTM operation {str(self)}/{obj.rpsl_object_class}/{obj.pk()}, '
-                    f'RPKI status {obj.rpki_status.value}')
+        log = f'Completed NRTM operation {str(self)}/{obj.rpsl_object_class}/{obj.pk()}'
+        if self.rpki_aware and obj.rpki_relevant:
+            log += ', RPKI status {obj.rpki_status.value}'
+        logger.info(log)
         return True
 
     def __repr__(self):
