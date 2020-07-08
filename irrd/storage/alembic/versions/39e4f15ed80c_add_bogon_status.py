@@ -29,4 +29,4 @@ def downgrade():
     op.drop_column('rpsl_objects', 'bogon_status')
 
     bogon_status = sa.Enum('unknown', 'not_bogon', 'bogon_as', 'bogon_prefix', name='bogonstatus')
-    bogon_status.create(op.get_bind())
+    bogon_status.drop(op.get_bind())
