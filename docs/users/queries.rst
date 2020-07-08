@@ -69,6 +69,35 @@ IRRd style queries
   Usage of the ``!J`` command is strongly recommended over ``!j``.
   For all sources, query ``!j-*``, for a specific source, query
   ``!jEXAMPLE-SOURCE``.
+* ``!J`` returns status information for each source. This can be used to check
+  the mirroring status, which databases are authoritative, whether certain
+  object classes are excluded, and various other settings.
+  The query syntax is identical to ``!j``, the output is JSON data, with the
+  following keys for each valid source:
+
+  * ``authoritative``: true if this source is authoritative in this IRRd
+    instance, i.e. whether local changes are allowed. False if the source
+    is mirrored from elsewhere.
+  * ``object_class_filter``: may be a list of object classes that are
+    ignored by this IRRd instance, when mirroring from a remote source.
+  * ``rpki_enabled``: whether RPKI validation is enabled for this source.
+  * ``local_journal_kept``: whether this IRRd instance keeps a local journal
+    of the changes in this source, allowing it to be mirrored over NRTM.
+  * ``serial_oldest_journal`` / ``serial_newest_journal``: the oldest and
+    newest serials in the local journal on this IRRd instance for this source.
+    IRRd does not guarantee that all changes in this range are available over
+    NRTM. This serial range is entirely independent of that used by the
+    mirror source, if any.
+  * ``serial_last_export``: the serial at which the last export for this
+    source took place, if any.
+  * ``serial_newest_mirror``: the newest serial seen from a mirroring source,
+    i.e. the local IRRd has updated up to this serial number from the mirror.
+    This number can be compared to the serials reported by the mirror
+    directly, to see whether IRRd is up to date. This number is independent
+    from the range in the local journal.
+  * ``last_update``: the time of the last change to this source. This may be
+    an authoritative change, an update from a mirror, a re-import, a change
+    in the RPKI status of an object, or something else.
 * ``!m<object-class>,<primary-key>`` searches for objects exactly matching
   the primary key, of the specified RPSL object class. For example:
   ``!maut-num,AS23456``. Stops at the first object. The key is case

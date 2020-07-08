@@ -78,6 +78,11 @@ Other changes
   If users change their NRTM source to a different one, they should reload the
   entire database from that source, not just resume NRTM streaming. Simply
   changing the NRTM host may lead to missing data.
+* The ``!j`` command has changed, and now is exclusively used to check
+  mirroring status. It returns what the most recent serial processed from a
+  mirror is. For more extensive status information, like the local serials
+  in the journal,
+  :doc:`use the new !J command </users/queries>`.
 * IRRd starts a maximum of three mirror processes at the same time,
   to reduce peak loads. A further three, if needed, are started 15 seconds
   later, regardless of whether the previous ones have finished.

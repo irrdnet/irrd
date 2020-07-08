@@ -428,14 +428,20 @@ class TestIntegration:
             query_result = whois_query('127.0.0.1', port, 'dashcare')
             assert 'ROLE-TEST' in query_result
 
-        query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!j-*')
-        assert query_result == 'TEST:Y:1-29:29\nRPKI:N:-'
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!J-*')
+        result = ujson.loads(query_result)
+        assert result['TEST']['serial_newest_journal'] == 29
+        assert result['TEST']['serial_last_export'] == 29
+        assert result['TEST']['serial_newest_mirror'] is None
         # irrd #2 missed the first update from NRTM, as they were done at
         # the same time and loaded from the full export, and one RPKI-invalid object
         # was not recorded in the journal, so its serial should
         # is lower by three
-        query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!j-*')
-        assert query_result == 'TEST:Y:1-26:26\nRPKI:N:-'
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!J-*')
+        result = ujson.loads(query_result)
+        assert result['TEST']['serial_newest_journal'] == 26
+        assert result['TEST']['serial_last_export'] == 26
+        assert result['TEST']['serial_newest_mirror'] == 29
 
         # Make the v4 route in irrd2 valid
         with open(self.roa_source2, 'w') as roa_file:
@@ -448,8 +454,11 @@ class TestIntegration:
         query_result = whois_query('127.0.0.1', self.port_whois2, '-g TEST:3:27-27')
         assert 'ADD 27' in query_result
         assert '192.0.2.0/24' in query_result
-        query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!j-*')
-        assert query_result == 'TEST:Y:1-27:27\nRPKI:N:-'
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!J-*')
+        result = ujson.loads(query_result)
+        assert result['TEST']['serial_newest_journal'] == 27
+        assert result['TEST']['serial_last_export'] == 27
+        assert result['TEST']['serial_newest_mirror'] == 29
 
         # Make the v4 route in irrd2 invalid again
         with open(self.roa_source2, 'w') as roa_file:
@@ -462,8 +471,11 @@ class TestIntegration:
         query_result = whois_query('127.0.0.1', self.port_whois2, '-g TEST:3:28-28')
         assert 'DEL 28' in query_result
         assert '192.0.2.0/24' in query_result
-        query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!j-*')
-        assert query_result == 'TEST:Y:1-28:28\nRPKI:N:-'
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!J-*')
+        result = ujson.loads(query_result)
+        assert result['TEST']['serial_newest_journal'] == 28
+        assert result['TEST']['serial_last_export'] == 28
+        assert result['TEST']['serial_newest_mirror'] == 29
 
         # Make the v4 route in irrd1 invalid, triggering a mail
         with open(self.roa_source1, 'w') as roa_file:
