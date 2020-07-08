@@ -416,45 +416,6 @@ class RPSLObject(metaclass=RPSLObjectMeta):
             self._object_data.insert(insert_idx, (attribute, new_value, []))
             insert_idx += 1
 
-    def overwrite_date_new_changed_attributes(self, existing_obj=None) -> None:
-        """
-        Overwrite the date in any newly added changed: attributes per #242.
-        Which changed: lines are new is determined by comparing to existing_obj,
-        which should be another RPSLObject, or None if all changed: lines
-        should be considered new.
-        """
-        parsed_values_to_overwrite = set(self.parsed_data['changed'])
-        if existing_obj:
-            parsed_values_to_overwrite -= set(existing_obj.parsed_data['changed'])
-
-        # As the value is already validated by RPSLChangedField,
-        # we can safely make assumptions on the format.
-        new_object_data = []
-        removed_values_with_comment: List[Tuple[int, str]] = []
-        for idx, (attr_name, attr_value, continuation_chars) in enumerate(self._object_data):
-            if attr_name == 'changed':
-                attr_value_clean = attr_value.split('#')[0].strip()
-                if attr_value_clean in parsed_values_to_overwrite:
-                    removed_values_with_comment.append((idx, attr_value))
-                    continue
-            new_object_data.append((attr_name, attr_value, continuation_chars))
-        self._object_data = new_object_data
-
-        current_date = datetime.datetime.now().strftime('%Y%m%d')
-        for idx, value in removed_values_with_comment:
-            try:
-                content, comment = map(str.strip, value.split('#'))
-            except ValueError:
-                content = value.strip()
-                comment = ''
-            email = content.split(' ')[0]  # Ignore existing date
-            if comment:
-                new_value = f'{email} {current_date} # {comment}'
-            else:
-                new_value = f'{email} {current_date}'
-            self._object_data.insert(idx, ('changed', new_value, []))
-            self.messages.info(f'Set date in changed line "{value}" to today.')
-
     def __repr__(self):
         source = self.parsed_data.get('source', '')
         return f'{self.rpsl_object_class}/{self.pk()}/{source}'
