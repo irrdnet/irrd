@@ -1,16 +1,20 @@
 import logging
 import re
+from collections import OrderedDict
+from typing import Optional, List, Set, Tuple, Any
+
+import ujson
 from IPy import IP
 from ordered_set import OrderedSet
-from typing import Optional, List, Set, Tuple
+from pytz import timezone
 
 from irrd import __version__
 from irrd.conf import get_setting, RPKI_IRR_PSEUDO_SOURCE
 from irrd.mirroring.nrtm_generator import NRTMGenerator, NRTMGeneratorException
+from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING, lookup_field_names, \
     RPKI_RELEVANT_OBJECT_CLASSES
 from irrd.storage.database_handler import DatabaseHandler
-from irrd.rpki.status import RPKIStatus
 from irrd.storage.preload import Preloader
 from irrd.storage.queries import RPSLDatabaseQuery, DatabaseStatusQuery
 from irrd.utils.validators import parse_as_number, ValidationError
@@ -163,6 +167,8 @@ class WhoisQueryParser:
                 response_type = WhoisQueryResponseType.KEY_NOT_FOUND
         elif command == 'j':
             result = self.handle_irrd_database_serial_range(parameter)
+        elif command == 'J':
+            result = self.handle_irrd_database_status(parameter)
         elif command == 'm':
             result = self.handle_irrd_exact_key(parameter)
             if not result:
@@ -430,6 +436,35 @@ class WhoisQueryParser:
         for invalid_source in invalid_sources:
             result_txt += f'{invalid_source.upper()}:X:Database unknown\n'
         return result_txt.strip()
+
+    def handle_irrd_database_status(self, parameter: str) -> str:
+        """!J query - database status"""
+        if parameter == '-*':
+            sources = self.sources_default if self.sources_default else self.all_valid_sources
+        else:
+            sources = [s.upper() for s in parameter.split(',')]
+        invalid_sources = [s for s in sources if s not in self.all_valid_sources]
+        query = DatabaseStatusQuery().sources(sources)
+        query_results = self.database_handler.execute_query(query)
+
+        results: OrderedDict[str, OrderedDict[str, Any]] = OrderedDict()
+        for query_result in query_results:
+            source = query_result['source'].upper()
+            results[source] = OrderedDict()
+            results[source]['authoritative'] = get_setting(f'sources.{source}.authoritative', False)
+            object_class_filter = get_setting(f'sources.{source}.object_class_filter')
+            results[source]['object_class_filter'] = list(object_class_filter) if object_class_filter else None
+            results[source]['rpki_enabled'] = bool(get_setting('rpki.roa_source') and not get_setting(f'sources.{source}.rpki_excluded'))
+            results[source]['local_journal_kept'] = get_setting(f'sources.{source}.keep_journal', False)
+            results[source]['serial_oldest_journal'] = query_result['serial_oldest_journal']
+            results[source]['serial_newest_journal'] = query_result['serial_newest_journal']
+            results[source]['serial_last_export'] = query_result['serial_last_export']
+            results[source]['serial_newest_mirror'] = query_result['serial_newest_mirror']
+            results[source]['last_update'] = query_result['updated'].astimezone(timezone('UTC')).isoformat()
+
+        for invalid_source in invalid_sources:
+            results[invalid_source.upper()] = OrderedDict({'error': 'Unknown source'})
+        return ujson.dumps(results, indent=4)
 
     def handle_irrd_exact_key(self, parameter: str):
         """!m query - exact object key lookup, e.g. !maut-num,AS65537"""

@@ -1,7 +1,11 @@
-import pytest
+import datetime
+import textwrap
 import uuid
-from IPy import IP
 from unittest.mock import Mock
+
+import pytest
+from IPy import IP
+from pytz import timezone
 
 from irrd.mirroring.nrtm_generator import NRTMGeneratorException
 from irrd.rpki.status import RPKIStatus
@@ -834,6 +838,101 @@ class TestWhoisQueryParserIRRD:
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == 'TEST1:N:0-20:10\nTEST2:N:-\nTEST-INVALID:X:Database unknown'
+        assert flatten_mock_calls(mock_dsq) == [
+            ['sources', (['TEST1', 'TEST-INVALID'],), {}]
+        ]
+
+    def test_database_status(self, monkeypatch, prepare_parser, config_override):
+        config_override({
+            'rpki': {'roa_source': 'http://example.com/'},
+            'sources': {
+                'TEST1': {'authoritative': True, 'object_class_filter': ['route']},
+                'TEST2': {'rpki_excluded': True, 'keep_journal': True}
+            },
+            'sources_default': [],
+        })
+        mock_dq, mock_dh, mock_preloader, parser = prepare_parser
+        mock_dsq = Mock()
+        monkeypatch.setattr('irrd.server.whois.query_parser.DatabaseStatusQuery', lambda: mock_dsq)
+
+        mock_query_result = [
+            {
+                'source': 'TEST1',
+                'serial_oldest_journal': 10,
+                'serial_newest_journal': 10,
+                'serial_last_export': 10,
+                'serial_newest_mirror': 500,
+                'updated': datetime.datetime(2020, 1, 1, tzinfo=timezone('UTC')),
+            },
+            {
+                'source': 'TEST2',
+                'serial_oldest_journal': None,
+                'serial_newest_journal': None,
+                'serial_last_export': None,
+                'serial_newest_mirror': 20,
+                'updated': datetime.datetime(2020, 1, 1, tzinfo=timezone('UTC')),
+            },
+        ]
+        mock_dh.execute_query = lambda query: mock_query_result
+
+        response = parser.handle_query('!J-*')
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert response.result == textwrap.dedent("""
+            {
+             "TEST1": {
+              "authoritative": true,
+              "object_class_filter": [
+               "route"
+              ],
+              "rpki_enabled": true,
+              "local_journal_kept": false,
+              "serial_oldest_journal": 10,
+              "serial_newest_journal": 10,
+              "serial_last_export": 10,
+              "serial_newest_mirror": 500,
+              "last_update": "2020-01-01T00:00:00+00:00"
+             },
+             "TEST2": {
+              "authoritative": false,
+              "object_class_filter": null,
+              "rpki_enabled": false,
+              "local_journal_kept": true,
+              "serial_oldest_journal": null,
+              "serial_newest_journal": null,
+              "serial_last_export": null,
+              "serial_newest_mirror": 20,
+              "last_update": "2020-01-01T00:00:00+00:00"
+             }
+            }""").strip()
+        assert flatten_mock_calls(mock_dsq) == [
+            ['sources', (['TEST1', 'TEST2'],), {}]
+        ]
+        mock_dsq.reset_mock()
+
+        mock_query_result = mock_query_result[:1]
+        response = parser.handle_query('!Jtest1,test-invalid')
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert response.result == textwrap.dedent("""
+            {
+             "TEST1": {
+              "authoritative": true,
+              "object_class_filter": [
+               "route"
+              ],
+              "rpki_enabled": true,
+              "local_journal_kept": false,
+              "serial_oldest_journal": 10,
+              "serial_newest_journal": 10,
+              "serial_last_export": 10,
+              "serial_newest_mirror": 500,
+              "last_update": "2020-01-01T00:00:00+00:00"
+             },
+             "TEST-INVALID": {
+              "error": "Unknown source"
+             }
+            }""").strip()
         assert flatten_mock_calls(mock_dsq) == [
             ['sources', (['TEST1', 'TEST-INVALID'],), {}]
         ]
