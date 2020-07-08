@@ -490,6 +490,134 @@ Logging
   |br| **Default**: ``INFO``.
   |br| **Change takes effect**: after SIGHUP.
 
+If you need more granularity than these settings, you can set
+``log.logging_config_path``. This allows you to set custom Python logging
+configuration This can not be used together with ``log.logfile_path``
+or ``log.level`` - the configuration you provide will be the only logging
+configuration.
+
+.. note::
+    An incorrect configuration may cause log messages
+    to be lost. The ``log.logging_config_path`` setting is powerful,
+    but also allows more mistakes.
+
+The ``log.logging_config_path`` setting should point to a path of a Python
+file, from which a dictionary named ``LOGGING`` will be imported,
+which is then passed to the ``dictConfig()`` Python logging method.
+
+.. highlight:: python
+    :linenothreshold: 5
+
+As a start, this is the internal ``LOGGING`` config used by IRRd when
+the level is set to `DEBUG` and path to ``/var/log/irrd.log``::
+
+
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'verbose': {
+                'format': '%(asctime)s irrd[%(process)d]: [%(name)s#%(levelname)s] %(message)s'
+            },
+        },
+        'handlers': {
+            # "File" handler which writes messages to a file.
+            # Note that the "file" key is arbitrary, you can
+            # create ones like "file1", "file2", if you want
+            # multiple handlers for different paths.
+            'file': {
+                'class': 'logging.handlers.WatchedFileHandler',
+                'filename': '/var/log/irrd.log',
+                'formatter': 'verbose',
+            },
+        },
+        'loggers': {
+            # Tune down some very loud and not very useful loggers
+            # from libraries. Propagation is the default, which means
+            # loggers discard messages below their level, and then the
+            # remaining messages are passed on, eventually reaching
+            # the actual IRRd logger.
+            'passlib.registry': {
+                'level': 'INFO',
+            },
+            'gnupg': {
+                'level': 'INFO',
+            },
+            'sqlalchemy': {
+                'level': 'WARNING',
+            },
+            # Actual IRRd logging feature, passing the log message
+            # to the "file" handler defined above.
+            '': {
+                'handlers': ['file'],
+                'level': 'DEBUG',
+            },
+        }
+    }
+
+If you place this in a Python file, and set ``log.logging_config_path``
+to the path of that file, you have correctly configured custom logging.
+For example, you could define a different logger for ``irrd.mirroring``
+with a different handler, to send mirroring logs to another file,
+and use the ``propagate`` property to not send them to your regular
+log file, as in this example::
+
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'verbose': {
+                'format': '%(asctime)s irrd[%(process)d]: [%(name)s#%(levelname)s] %(message)s'
+            },
+        },
+        'handlers': {
+            'file-regular': {
+                'class': 'logging.handlers.WatchedFileHandler',
+                'filename': '/var/log/irrd.log',
+                'formatter': 'verbose',
+            },
+            'file-mirroring': {
+                'class': 'logging.handlers.WatchedFileHandler',
+                'filename': '/var/log/irrd-mirroring.log',
+                'formatter': 'verbose',
+            },
+        },
+        'loggers': {
+            'passlib.registry': {
+                'level': 'INFO',
+            },
+            'gnupg': {
+                'level': 'INFO',
+            },
+            'sqlalchemy': {
+                'level': 'WARNING',
+            },
+            'irrd.mirroring': {
+                'handlers': ['file-mirroring'],
+                'level': 'DEBUG',
+                # propagate=False means the handling will stop
+                # here, i.e. not be passed to loggers below this
+                # one, for any matching log messages
+                'propagate': False,
+            },
+            '': {
+                'handlers': ['file-regular'],
+                'level': 'DEBUG',
+            },
+        }
+    }
+
+
+Also see the `Python documentation for logging`_ or
+`this example from the logging cookbook`_.
+
+Changes to ``log.logging_config_path`` take effect after a full IRRd restart.
+Errors in the logging config may prevent IRRd from starting. Any errors will
+be printed to the console.
+
+.. _Python documentation for logging: https://docs.python.org/3/library/logging.config.html#logging-config-dictschema
+.. _this example from the logging cookbook: https://docs.python.org/3/howto/logging-cookbook.html#an-example-dictionary-based-configuration
+
 Compatibility
 ~~~~~~~~~~~~~
 * ``compatibility.ipv4_only_route_set_members``: if set to ``true``, ``!i``

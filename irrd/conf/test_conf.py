@@ -1,11 +1,12 @@
 import os
+import textwrap
 
 import pytest
 import signal
 import yaml
 from typing import Dict
 
-from . import get_setting, ConfigurationError, config_init, is_config_initialised
+from . import get_setting, ConfigurationError, config_init, is_config_initialised, get_configuration
 
 
 @pytest.fixture()
@@ -93,7 +94,6 @@ class TestConfiguration:
             }
         }
         save_yaml_config(config)
-        assert list(get_setting('sources_default')) == ['TESTDB2', 'TESTDB']
         assert is_config_initialised()
 
         config['irrd']['sources_default'] = ['TESTDB2']
@@ -107,6 +107,59 @@ class TestConfiguration:
 
         logfile_contents = open(logfile).read()
         assert 'Configuration successfully (re)loaded from ' in logfile_contents
+
+    def test_load_custom_logging_config(self, monkeypatch, save_yaml_config, tmpdir, caplog):
+        logfile = str(tmpdir + '/logfile.txt')
+        logging_config_path = str(tmpdir + '/logging.py')
+        with open(logging_config_path, 'w') as fh:
+            fh.write(textwrap.dedent("""
+                LOGGING = {
+                    'version': 1,
+                    'disable_existing_loggers': False,
+                    'formatters': {
+                        'verbose': {
+                            'format': '%(asctime)s irrd[%(process)d]: [%(name)s#%(levelname)s] %(message)s'
+                        },
+                    },
+                    'handlers': {
+                        'file': {
+                            'class': 'logging.handlers.WatchedFileHandler',
+                            'filename': '""" + logfile + """',
+                            'formatter': 'verbose',
+                        },
+                    },
+                    'loggers': {
+                        '': {
+                            'handlers': ['file'],
+                            'level': 'DEBUG',
+                        },
+                    }
+                }
+            """))
+        config = {
+            'irrd': {
+                'database_url': 'db-url',
+                'redis_url': 'redis-url',
+                'piddir': str(tmpdir),
+                'email': {
+                    'from': 'example@example.com',
+                    'smtp': '192.0.2.1'
+                },
+                'rpki': {
+                    'roa_source': None,
+                },
+                'auth': {
+                    'gnupg_keyring': str(tmpdir)
+                },
+                'log': {
+                    'logging_config_path': logging_config_path,
+                },
+
+            }
+        }
+        save_yaml_config(config)
+        assert is_config_initialised()
+        assert get_configuration().logging_config['handlers']['file']['filename'] == logfile
 
     def test_load_valid_reload_invalid_config(self, save_yaml_config, tmpdir, caplog):
         save_yaml_config({
@@ -208,6 +261,7 @@ class TestConfiguration:
                 },
                 'log': {
                     'level': 'INVALID',
+                    'logging_config_path': 'path',
                 }
             }
         }
@@ -242,6 +296,7 @@ class TestConfiguration:
         assert 'Invalid source name: lowercase' in str(ce.value)
         assert 'Invalid source name: invalid char' in str(ce.value)
         assert 'Invalid log.level: INVALID' in str(ce.value)
+        assert 'Setting log.logging_config_path can not be combined' in str(ce.value)
 
 
 class TestGetSetting:
