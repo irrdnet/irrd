@@ -674,6 +674,7 @@ class TestIntegration:
         connection.execute('DELETE FROM rpsl_objects')
         connection.execute('DELETE FROM rpsl_database_journal')
         connection.execute('DELETE FROM database_status')
+        connection.execute('DELETE FROM roa_object')
 
         config_init(self.config_path2)
         alembic_cfg = config.Config()
@@ -684,6 +685,7 @@ class TestIntegration:
         connection.execute('DELETE FROM rpsl_objects')
         connection.execute('DELETE FROM rpsl_database_journal')
         connection.execute('DELETE FROM database_status')
+        connection.execute('DELETE FROM roa_object')
 
     def _submit_update(self, config_path, request):
         """
