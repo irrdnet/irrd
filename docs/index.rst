@@ -37,6 +37,7 @@ This documentation is mainly for administrators of IRRd deployments.
    admins/object-validation
    admins/status_page
    admins/rpki
+   admins/scopefilter
 
 For end users
 -------------

@@ -1,7 +1,6 @@
 import gzip
 import logging
 import os
-import requests
 import shutil
 from ftplib import FTP
 from io import BytesIO
@@ -9,15 +8,18 @@ from tempfile import NamedTemporaryFile
 from typing import Optional, Tuple, Any, IO
 from urllib.parse import urlparse
 
+import requests
+
 from irrd.conf import get_setting, RPKI_IRR_PSEUDO_SOURCE
 from irrd.conf.defaults import DEFAULT_SOURCE_NRTM_PORT
 from irrd.rpki.importer import ROADataImporter, ROAParserException
+from irrd.rpki.notifications import notify_rpki_invalid_owners
 from irrd.rpki.validators import BulkRouteROAValidator
+from irrd.scopefilter.validators import ScopeFilterValidator
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import DatabaseStatusQuery
 from irrd.utils.whois_client import whois_query
 from .parsers import MirrorFileImportParser, NRTMStreamParser
-from ..rpki.notifications import notify_rpki_invalid_owners
 
 logger = logging.getLogger(__name__)
 
@@ -283,6 +285,40 @@ class ROAImportRunner(FileImportRunnerBase):
             os.unlink(roa_filename)
         logger.info(f'ROA import from {roa_source}, SLURM {slurm_source}, imported {len(roa_importer.roa_objs)} ROAs, running validator')
         return roa_importer.roa_objs
+
+
+class ScopeFilterUpdateRunner:
+    """
+    Update the scope filter status for all objects.
+    This runner does not actually import anything, the scope filter
+    is in the configuration.
+    """
+    # API consistency with other importers, source is actually ignored
+    def __init__(self, source=None):
+        pass
+
+    def run(self):
+        self.database_handler = DatabaseHandler()
+
+        try:
+            validator = ScopeFilterValidator()
+            status = validator.validate_all_rpsl_objects(self.database_handler)
+            rpsl_objs_now_in_scope, rpsl_objs_now_out_scope_as, rpsl_objs_now_out_scope_prefix = status
+            self.database_handler.update_scopefilter_status(
+                rpsl_objs_now_in_scope=rpsl_objs_now_in_scope,
+                rpsl_objs_now_out_scope_as=rpsl_objs_now_out_scope_as,
+                rpsl_objs_now_out_scope_prefix=rpsl_objs_now_out_scope_prefix,
+            )
+            self.database_handler.commit()
+            logger.info(f'Scopefilter status updated for all routes, '
+                        f'{len(rpsl_objs_now_in_scope)} newly in scope, '
+                        f'{len(rpsl_objs_now_out_scope_as)} newly out of scope AS, '
+                        f'{len(rpsl_objs_now_out_scope_prefix)} newly out of scope prefix')
+
+        except Exception as exc:
+            logger.error(f'An exception occurred while attempting a scopefilter status update: {exc}', exc_info=exc)
+        finally:
+            self.database_handler.close()
 
 
 class NRTMImportUpdateStreamRunner:

@@ -9,6 +9,7 @@ from pytz import timezone
 
 from irrd.mirroring.nrtm_generator import NRTMGeneratorException
 from irrd.rpki.status import RPKIStatus
+from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.storage.preload import Preloader
 from irrd.utils.test_utils import flatten_mock_calls
 from ..query_parser import WhoisQueryParser
@@ -67,6 +68,7 @@ def prepare_parser(monkeypatch, config_override):
     mock_preloader = Mock(spec=Preloader)
 
     parser = WhoisQueryParser('127.0.0.1', '127.0.0.1:99999', mock_preloader, mock_database_handler)
+    parser.out_scope_filter_enabled = False
 
     mock_query_result = [
         {
@@ -846,7 +848,11 @@ class TestWhoisQueryParserIRRD:
         config_override({
             'rpki': {'roa_source': 'http://example.com/'},
             'sources': {
-                'TEST1': {'authoritative': True, 'object_class_filter': ['route']},
+                'TEST1': {
+                    'authoritative': True,
+                    'object_class_filter': ['route'],
+                    'scopefilter_excluded': True
+                },
                 'TEST2': {'rpki_excluded': True, 'keep_journal': True}
             },
             'sources_default': [],
@@ -886,6 +892,7 @@ class TestWhoisQueryParserIRRD:
                "route"
               ],
               "rpki_rov_filter": true,
+              "scopefilter_enabled": false,
               "local_journal_kept": false,
               "serial_oldest_journal": 10,
               "serial_newest_journal": 10,
@@ -897,6 +904,7 @@ class TestWhoisQueryParserIRRD:
               "authoritative": false,
               "object_class_filter": null,
               "rpki_rov_filter": false,
+              "scopefilter_enabled": true,
               "local_journal_kept": true,
               "serial_oldest_journal": null,
               "serial_newest_journal": null,
@@ -922,6 +930,7 @@ class TestWhoisQueryParserIRRD:
                "route"
               ],
               "rpki_rov_filter": true,
+              "scopefilter_enabled": false,
               "local_journal_kept": false,
               "serial_oldest_journal": 10,
               "serial_newest_journal": 10,
@@ -1049,6 +1058,7 @@ class TestWhoisQueryParserIRRD:
             'rpki': {'roa_source': 'https://example.com/roa.json'},
         })
         parser = WhoisQueryParser('127.0.0.1', '127.0.0.1:99999', mock_preloader, mock_dh)
+        parser.out_scope_filter_enabled = False
 
         response = parser.handle_query('!r192.0.2.0/25')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
@@ -1070,6 +1080,35 @@ class TestWhoisQueryParserIRRD:
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == MOCK_ROUTE_COMBINED_WITH_RPKI
+        assert flatten_mock_calls(mock_dq) == [
+            ['object_classes', (['route', 'route6'],), {}],
+            ['ip_exact', (IP('192.0.2.0/25'),), {}],
+        ]
+
+    def test_scopefilter(self, prepare_parser, config_override):
+        mock_dq, mock_dh, mock_preloader, _ = prepare_parser
+        parser = WhoisQueryParser('127.0.0.1', '127.0.0.1:99999', mock_preloader, mock_dh)
+
+        response = parser.handle_query('!r192.0.2.0/25')
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert response.result == MOCK_ROUTE_COMBINED
+        assert flatten_mock_calls(mock_dq) == [
+            ['scopefilter_status', ([ScopeFilterStatus.in_scope],), {}],
+            ['object_classes', (['route', 'route6'],), {}],
+            ['ip_exact', (IP('192.0.2.0/25'),), {}],
+        ]
+        mock_dq.reset_mock()
+
+        response = parser.handle_query('!fno-scope-filter')
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert 'Filtering out out-of-scope objects is disabled' in response.result
+
+        response = parser.handle_query('!r192.0.2.0/25')
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert response.result == MOCK_ROUTE_COMBINED
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['route', 'route6'],), {}],
             ['ip_exact', (IP('192.0.2.0/25'),), {}],

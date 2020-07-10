@@ -11,6 +11,7 @@ from setproctitle import setproctitle
 
 from irrd.conf import get_setting
 from irrd.rpki.status import RPKIStatus
+from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.utils.process_support import ExceptionLoggingProcess
 from .queries import RPSLDatabaseQuery
 
@@ -338,6 +339,7 @@ class PreloadUpdater(threading.Thread):
 
         q = RPSLDatabaseQuery(column_names=['ip_version', 'ip_first', 'prefix_length', 'asn_first', 'source'], enable_ordering=False)
         q = q.object_classes(['route', 'route6']).rpki_status([RPKIStatus.not_found, RPKIStatus.valid])
+        q = q.scopefilter_status([ScopeFilterStatus.in_scope])
 
         for result in dh.execute_query(q):
             prefix = result['ip_first']

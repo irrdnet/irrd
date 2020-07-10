@@ -1,25 +1,24 @@
-from io import StringIO
-
 import logging
 from collections import defaultdict
-
 from datetime import datetime, timezone
+from io import StringIO
 from typing import List, Set, Dict, Any, Tuple, Iterator, Union, Optional
 
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql as pg
 
 from irrd.conf import get_setting
+from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.parser import RPSLObject
 from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING
+from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.vendor import postgres_copy
-from .preload import Preloader
-from .queries import (BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery,
-                      RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery)
 from . import get_engine
 from .models import RPSLDatabaseObject, RPSLDatabaseJournal, DatabaseOperation, RPSLDatabaseStatus, \
     ROADatabaseObject, JournalEntryOrigin
-from irrd.rpki.status import RPKIStatus
+from .preload import Preloader
+from .queries import (BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery,
+                      RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery)
 
 logger = logging.getLogger(__name__)
 MAX_RECORDS_BUFFER_BEFORE_INSERT = 15000
@@ -180,6 +179,7 @@ class DatabaseHandler:
             'asn_first': rpsl_object.asn_first,
             'asn_last': rpsl_object.asn_last,
             'rpki_status': rpsl_object.rpki_status,
+            'scopefilter_status': rpsl_object.scopefilter_status,
             'updated': update_time,
         }
 
@@ -253,6 +253,54 @@ class DatabaseHandler:
             )
         if rpsl_objs_now_valid or rpsl_objs_now_invalid or rpsl_objs_now_not_found:
             self._object_classes_modified.add('route')
+
+    def update_scopefilter_status(self, rpsl_objs_now_in_scope: List[Dict[str, str]]=[],
+                                  rpsl_objs_now_out_scope_as: List[Dict[str, str]]=[],
+                                  rpsl_objs_now_out_scope_prefix: List[Dict[str, str]]=[]) -> None:
+        """
+        Update the scopefilter status for the given RPSL PKs.
+        Only PKs whose status have changed should be included.
+
+        Objects that moved to or from in_scope generate a journal
+        entry, so that mirrors follow the (in)visibility depending
+        on scopefilter status.
+        """
+        table = RPSLDatabaseObject.__table__
+        if rpsl_objs_now_in_scope:
+            pks = {o['rpsl_pk'] for o in rpsl_objs_now_in_scope}
+            stmt = table.update().where(table.c.rpsl_pk.in_(pks)).values(scopefilter_status=ScopeFilterStatus.in_scope)
+            self.execute_statement(stmt)
+        if rpsl_objs_now_out_scope_as:
+            pks = {o['rpsl_pk'] for o in rpsl_objs_now_out_scope_as}
+            stmt = table.update().where(table.c.rpsl_pk.in_(pks)).values(scopefilter_status=ScopeFilterStatus.out_scope_as)
+            self.execute_statement(stmt)
+        if rpsl_objs_now_out_scope_prefix:
+            pks = {o['rpsl_pk'] for o in rpsl_objs_now_out_scope_prefix}
+            stmt = table.update().where(table.c.rpsl_pk.in_(pks)).values(scopefilter_status=ScopeFilterStatus.out_scope_prefix)
+            self.execute_statement(stmt)
+
+        for rpsl_obj in rpsl_objs_now_in_scope:
+            self.status_tracker.record_operation(
+                operation=DatabaseOperation.add_or_update,
+                rpsl_pk=rpsl_obj['rpsl_pk'],
+                source=rpsl_obj['source'],
+                object_class=rpsl_obj['object_class'],
+                object_text=rpsl_obj['object_text'],
+                origin=JournalEntryOrigin.scope_filter,
+            )
+            self._object_classes_modified.add(rpsl_obj['object_class'])
+
+        for rpsl_obj in rpsl_objs_now_out_scope_as + rpsl_objs_now_out_scope_prefix:
+            if rpsl_obj['old_status'] == ScopeFilterStatus.in_scope:
+                self.status_tracker.record_operation(
+                    operation=DatabaseOperation.delete,
+                    rpsl_pk=rpsl_obj['rpsl_pk'],
+                    source=rpsl_obj['source'],
+                    object_class=rpsl_obj['object_class'],
+                    object_text=rpsl_obj['object_text'],
+                    origin=JournalEntryOrigin.scope_filter,
+                )
+                self._object_classes_modified.add(rpsl_obj['object_class'])
 
     def delete_rpsl_object(self, origin: JournalEntryOrigin, rpsl_object: Optional[RPSLObject]=None,
                            source: Optional[str]=None, rpsl_pk: Optional[str]=None) -> None:
@@ -334,7 +382,11 @@ class DatabaseHandler:
             # RPKI invalid objects never generated a journal entry,
             # as mirrors should not see them. This does not affect
             # RPKI excluded sources, because they are always not_found.
-            if obj['rpki_status'] != RPKIStatus.invalid:
+            # Same applies for scope filter.
+            rpki_acceptable = obj['rpki_status'] != RPKIStatus.invalid
+            scope_acceptable = obj['scopefilter_status'] == ScopeFilterStatus.in_scope
+
+            if rpki_acceptable and scope_acceptable:
                 self.status_tracker.record_operation(
                     operation=DatabaseOperation.add_or_update,
                     rpsl_pk=obj['rpsl_pk'],

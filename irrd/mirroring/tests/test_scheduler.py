@@ -99,6 +99,47 @@ class TestMirrorScheduler:
 
         assert thread_run_count == 1
 
+    def test_scheduler_runs_scopefilter(self, monkeypatch, config_override):
+        monkeypatch.setattr('irrd.mirroring.scheduler.ScheduledTaskProcess', MockScheduledTaskProcess)
+        global thread_run_count
+        thread_run_count = 0
+
+        config_override({
+            'rpki': {'roa_source': None},
+            'scopefilter': {
+                'prefixes': ['192.0.2.0/24'],
+            }
+        })
+
+        monkeypatch.setattr('irrd.mirroring.scheduler.ScopeFilterUpdateRunner', MockRunner)
+        MockRunner.run_sleep = False
+
+        scheduler = MirrorScheduler()
+        scheduler.run()
+
+        # Second run will not start the thread, as the config hasn't changed
+        config_override({
+            'rpki': {'roa_source': None},
+            'scopefilter': {
+                'prefixes': ['192.0.2.0/24'],
+            }
+        })
+        time.sleep(0.1)
+        scheduler.run()
+        assert thread_run_count == 1
+
+        config_override({
+            'rpki': {'roa_source': None},
+            'scopefilter': {
+                'asns': [23456],
+            }
+        })
+
+        # Should run now, because config has changed
+        scheduler.update_process_state()
+        scheduler.run()
+        assert thread_run_count == 2
+
     def test_scheduler_import_ignores_timer_not_expired(self, monkeypatch, config_override):
         monkeypatch.setattr('irrd.mirroring.scheduler.ScheduledTaskProcess', MockScheduledTaskProcess)
         global thread_run_count
@@ -192,7 +233,7 @@ class MockRunner:
     run_sleep = True
 
     def __init__(self, source):
-        assert source in ['TEST', 'TEST2', 'TEST3', 'TEST4', 'RPKI']
+        assert source in ['TEST', 'TEST2', 'TEST3', 'TEST4', 'RPKI', 'scopefilter']
 
     def run(self):
         global thread_run_count

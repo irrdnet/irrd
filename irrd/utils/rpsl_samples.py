@@ -16,6 +16,7 @@ SAMPLE_AS_SET = """as-set:         AS-SETTEST
 descr:          description
 members:        AS65538, AS65539
 members:        AS65537
+members:        AS-OTHERSET
 tech-c:         PERSON-TEST
 admin-c:        PERSON-TEST
 notify:         notify@example.com
@@ -570,6 +571,7 @@ mbrs-by-ref:    TEST-MNT
 tech-c:         PERSON-TEST
 admin-c:        PERSON-TEST
 mnt-by:         TEST-MNT
+members:        RS-OTHER-SET
 mp-members:     2001:0dB8::/48
 changed:        changed@example.com 20190701 # comment
 source:         TEST

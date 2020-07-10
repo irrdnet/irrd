@@ -6,19 +6,12 @@ from sqlalchemy.ext.declarative import declarative_base, declared_attr
 
 from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import lookup_field_names
+from irrd.scopefilter.status import ScopeFilterStatus
 
 
 class DatabaseOperation(enum.Enum):
     add_or_update = 'ADD'
     delete = 'DEL'
-
-
-# To be moved at a later time
-class ScopeFilterStatus(enum.Enum):
-    unknown = 'UNKNOWN'
-    in_scope = 'IN_SCOPE'
-    out_scope_as = 'OUT_SCOPE_AS'
-    out_scope_prefix = 'OUT_SCOPE_PREFIX'
 
 
 class JournalEntryOrigin(enum.Enum):
@@ -71,7 +64,7 @@ class RPSLDatabaseObject(Base):  # type: ignore
     asn_last = sa.Column(sa.BigInteger, index=True)
 
     rpki_status = sa.Column(sa.Enum(RPKIStatus), nullable=False, index=True, server_default=RPKIStatus.not_found.name)
-    scope_filter_status = sa.Column(sa.Enum(ScopeFilterStatus), nullable=False, index=True, server_default=ScopeFilterStatus.unknown.name)
+    scopefilter_status = sa.Column(sa.Enum(ScopeFilterStatus), nullable=False, index=True, server_default=ScopeFilterStatus.in_scope.name)
 
     created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
     updated = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)

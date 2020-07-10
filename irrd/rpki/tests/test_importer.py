@@ -1,17 +1,27 @@
-import ujson
-
-import pytest
 import textwrap
 from unittest.mock import Mock
 
+import pytest
+import ujson
+
 from irrd.conf import RPKI_IRR_PSEUDO_SOURCE
+from irrd.scopefilter.status import ScopeFilterStatus
+from irrd.scopefilter.validators import ScopeFilterValidator
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.utils.test_utils import flatten_mock_calls
 from ..importer import ROADataImporter, ROAParserException
 
 
+@pytest.fixture()
+def mock_scopefilter(monkeypatch):
+    mock_scopefilter = Mock(spec=ScopeFilterValidator)
+    monkeypatch.setattr('irrd.rpki.importer.ScopeFilterValidator',
+                        lambda: mock_scopefilter)
+    mock_scopefilter.validate_rpsl_object = lambda obj: (ScopeFilterStatus.out_scope_as, '')
+
+
 class TestROAImportProcess:
-    def test_valid_process(self, monkeypatch):
+    def test_valid_process(self, monkeypatch, mock_scopefilter):
         # Note that this test does not mock RPSLObjectFromROA, used
         # for generating the pseudo-IRR object, or the ROA class itself.
 
@@ -131,6 +141,7 @@ class TestROAImportProcess:
              {'rpsl_guaranteed_no_existing': True}],
         ]
 
+        assert roa_importer.roa_objs[0]._rpsl_object.scopefilter_status == ScopeFilterStatus.out_scope_as
         assert roa_importer.roa_objs[0]._rpsl_object.source() == RPKI_IRR_PSEUDO_SOURCE
         assert roa_importer.roa_objs[0]._rpsl_object.render_rpsl_text() == textwrap.dedent("""
             route:          192.0.2.0/24
@@ -143,7 +154,7 @@ class TestROAImportProcess:
             source:         RPKI  # Trust Anchor: APNIC RPKI Root
             """).strip() + '\n'
 
-    def test_invalid_rpki_json(self, monkeypatch):
+    def test_invalid_rpki_json(self, monkeypatch, mock_scopefilter):
         mock_dh = Mock(spec=DatabaseHandler)
 
         with pytest.raises(ROAParserException) as rpe:
@@ -158,7 +169,7 @@ class TestROAImportProcess:
 
         assert flatten_mock_calls(mock_dh) == []
 
-    def test_invalid_data_in_roa(self, monkeypatch):
+    def test_invalid_data_in_roa(self, monkeypatch, mock_scopefilter):
         mock_dh = Mock(spec=DatabaseHandler)
 
         data = ujson.dumps({
@@ -210,7 +221,7 @@ class TestROAImportProcess:
 
         assert flatten_mock_calls(mock_dh) == []
 
-    def test_invalid_slurm_version(self, monkeypatch):
+    def test_invalid_slurm_version(self, monkeypatch, mock_scopefilter):
         mock_dh = Mock(spec=DatabaseHandler)
 
         with pytest.raises(ROAParserException) as rpe:

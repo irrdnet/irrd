@@ -1,12 +1,12 @@
+import gzip
 import os
 from itertools import cycle, repeat
-
-import gzip
 from unittest.mock import Mock
 
-from irrd.mirroring.mirror_runners_export import SourceExportRunner, EXPORT_PERMISSIONS
 from irrd.rpki.status import RPKIStatus
+from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.utils.test_utils import flatten_mock_calls
+from ..mirror_runners_export import SourceExportRunner, EXPORT_PERMISSIONS
 
 
 class TestSourceExportRunner:
@@ -63,8 +63,10 @@ class TestSourceExportRunner:
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}],
             ['rpki_status', ([RPKIStatus.not_found, RPKIStatus.valid],), {}],
+            ['scopefilter_status', ([ScopeFilterStatus.in_scope],), {}],
             ['sources', (['TEST'],), {}],
             ['rpki_status', ([RPKIStatus.not_found, RPKIStatus.valid],), {}],
+            ['scopefilter_status', ([ScopeFilterStatus.in_scope],), {}],
         ]
         assert 'Starting a source export for TEST' in caplog.text
         assert 'Export for TEST complete' in caplog.text

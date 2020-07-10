@@ -1,6 +1,5 @@
 # flake8: noqa: W293
 import itertools
-
 import textwrap
 from unittest.mock import Mock
 
@@ -10,13 +9,16 @@ from pytest import raises
 
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
 from irrd.rpki.status import RPKIStatus
-from irrd.utils.text import splitline_unicodesafe
-from irrd.utils.rpsl_samples import SAMPLE_INETNUM, SAMPLE_AS_SET, SAMPLE_PERSON, SAMPLE_MNTNER, SAMPLE_ROUTE
+from irrd.scopefilter.status import ScopeFilterStatus
+from irrd.scopefilter.validators import ScopeFilterValidator
+from irrd.storage.models import JournalEntryOrigin
+from irrd.utils.rpsl_samples import SAMPLE_INETNUM, SAMPLE_AS_SET, SAMPLE_PERSON, SAMPLE_MNTNER, \
+    SAMPLE_ROUTE
 from irrd.utils.test_utils import flatten_mock_calls
+from irrd.utils.text import splitline_unicodesafe
 from ..parser import parse_change_requests
 from ..parser_state import UpdateRequestType, UpdateRequestStatus
 from ..validators import ReferenceValidator, AuthValidator
-from ...storage.models import JournalEntryOrigin
 
 
 @pytest.fixture()
@@ -27,6 +29,11 @@ def prepare_mocks(monkeypatch):
     mock_dq = Mock()
     monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
     monkeypatch.setattr('irrd.updates.validators.RPSLDatabaseQuery', lambda: mock_dq)
+
+    mock_scopefilter = Mock(spec=ScopeFilterValidator)
+    monkeypatch.setattr('irrd.updates.parser.ScopeFilterValidator',
+                        lambda: mock_scopefilter)
+    mock_scopefilter.validate_rpsl_object = lambda obj: (ScopeFilterStatus.in_scope, '')
     yield mock_dq, mock_dh
 
 
@@ -723,6 +730,43 @@ class TestSingleChangeRequestHandling:
         result_route = parse_change_requests(obj_text, mock_dh, auth_validator, reference_validator)[0]
         assert result_route._check_conflicting_roa()
 
+    def test_scopefilter_validation(self, prepare_mocks, monkeypatch, config_override):
+        mock_scopefilter_validator = Mock(spec=ScopeFilterValidator)
+        monkeypatch.setattr('irrd.updates.parser.ScopeFilterValidator', lambda: mock_scopefilter_validator)
+        mock_dq, mock_dh = prepare_mocks
+
+        reference_validator = ReferenceValidator(mock_dh)
+        auth_validator = AuthValidator(mock_dh)
+
+        # New object, in scope
+        mock_dh.execute_query = lambda query: []
+        mock_scopefilter_validator.validate_rpsl_object = lambda obj: (ScopeFilterStatus.in_scope, '')
+        result_route = parse_change_requests(SAMPLE_ROUTE, mock_dh, auth_validator, reference_validator)[0]
+        assert result_route._check_scopefilter()
+        assert not result_route.error_messages
+
+        # New object, out of scope
+        mock_dh.execute_query = lambda query: []
+        mock_scopefilter_validator.validate_rpsl_object = lambda obj: (ScopeFilterStatus.out_scope_as, 'out of scope AS')
+        result_route = parse_change_requests(SAMPLE_ROUTE, mock_dh, auth_validator, reference_validator)[0]
+        assert not result_route._check_scopefilter()
+        assert result_route.error_messages[0] == 'Contains out of scope information: out of scope AS'
+
+        # Update object, out of scope, permitted
+        mock_dh.execute_query = lambda query: [{'object_text': SAMPLE_ROUTE}]
+        mock_scopefilter_validator.validate_rpsl_object = lambda obj: (ScopeFilterStatus.out_scope_prefix, 'out of scope prefix')
+        result_route = parse_change_requests(SAMPLE_ROUTE, mock_dh, auth_validator, reference_validator)[0]
+        assert result_route._check_scopefilter()
+        assert not result_route.error_messages
+        assert result_route.info_messages[1] == 'Contains out of scope information: out of scope prefix'
+
+        # Delete object, out of scope
+        mock_dh.execute_query = lambda query: [{'object_text': SAMPLE_ROUTE}]
+        mock_scopefilter_validator.validate_rpsl_object = lambda obj: (ScopeFilterStatus.out_scope_as, 'out of scope AS')
+        obj_text = SAMPLE_ROUTE + 'delete: delete'
+        result_route = parse_change_requests(obj_text, mock_dh, auth_validator, reference_validator)[0]
+        assert result_route._check_scopefilter()
+
     def test_user_report(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
 
@@ -783,6 +827,7 @@ class TestSingleChangeRequestHandling:
             descr:          description
             members:        AS65538,AS65539
             members:        AS65537
+            members:        AS-OTHERSET
             tech-c:         PERSON-TEST
             admin-c:        PERSON-TEST
             notify:         notify@example.com

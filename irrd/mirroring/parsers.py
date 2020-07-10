@@ -6,6 +6,7 @@ from irrd.conf import get_setting
 from irrd.rpki.validators import BulkRouteROAValidator
 from irrd.rpsl.parser import UnknownRPSLObjectClassException, RPSLObject
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text, RPSLKeyCert
+from irrd.scopefilter.validators import ScopeFilterValidator
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.models import DatabaseOperation, JournalEntryOrigin
 from irrd.utils.text import split_paragraphs_rpsl
@@ -63,6 +64,7 @@ class MirrorFileImportParserBase(MirrorParser):
         self.obj_ignored_class = 0  # Objects ignored due to object_class_filter setting
         self.obj_unknown = 0  # Objects with unknown classes
         self.unknown_object_classes: Set[str] = set()  # Set of encountered unknown classes
+        self.scopefilter_validator = ScopeFilterValidator()
         super().__init__()
 
     def _parse_object(self, rpsl_text: str) -> Optional[RPSLObject]:
@@ -110,6 +112,8 @@ class MirrorFileImportParserBase(MirrorParser):
                 obj.rpki_status = self.roa_validator.validate_route(
                     str(obj.ip_first), obj.prefix_length, obj.asn_first, obj.source()
                 )
+
+            obj.scopefilter_status, _ = self.scopefilter_validator.validate_rpsl_object(obj)
 
             return obj
 

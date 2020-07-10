@@ -71,6 +71,12 @@ This sample shows most configuration options::
                 from the RPKI. This route object is the result of an automated
                 RPKI-to-IRR conversion process performed by IRRd.
 
+        scopefilter:
+            prefixes:
+                - 10.0.0.0/8
+            asns:
+                - 23456
+                - 64496-64511
         sources_default:
             - AUTHDATABASE
             - MIRROR-SECOND
@@ -348,6 +354,24 @@ RPKI
   |br| **Change takes effect**: after the next ROA import.
 
 
+Scope filter
+------------
+* ``scopefilter.prefixes``: a list of IPv4 or IPv6 prefixes which are
+  considered out of scope. For details, see the
+  :doc:`scope filter documentation </admins/scopefilter>`.
+  |br| **Default**: none, prefix scope filter validation not enabled.
+  |br| **Change takes effect**: after SIGHUP. Updating the status of
+  existing objects may take 10-15 minutes.
+* ``scopefilter.asns``: a list of ASNs which are considered out of
+  scope. Ranges are also permitted, e.g. ``64496-64511``.
+  For details, see the
+  :doc:`scope filter documentation </admins/scopefilter>`.
+  May contain plain AS number, or a range, e.g. ``64496-64511``.
+  |br| **Default**: none, ASN scope filter validation not enabled.
+  |br| **Change takes effect**: after SIGHUP. Updating the status of
+  existing objects may take 10-15 minutes.
+
+
 Sources
 ~~~~~~~
 * ``sources_default``: a list of sources that are enabled by default, or when a
@@ -441,6 +465,11 @@ Sources
   RPKI status.
   |br| **Default**: false, RPKI validation enabled.
   |br| **Change takes effect**: after SIGHUP, upon next full ROA import.
+* ``sources.{name}.scopefilter_excluded``: disable scope filter validation for
+  this source. If set to ``true``, all objects will be considered in scope
+  for their scope filter status.
+  |br| **Default**: false, scope filter validation enabled.
+  |br| **Change takes effect**: after SIGHUP, within a few minutes
 
 
 For more detail on mirroring other sources, and providing mirroring services
