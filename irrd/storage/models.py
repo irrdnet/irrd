@@ -14,11 +14,11 @@ class DatabaseOperation(enum.Enum):
 
 
 # To be moved at a later time
-class BogonStatus(enum.Enum):
+class ScopeFilterStatus(enum.Enum):
     unknown = 'UNKNOWN'
-    not_bogon = 'NOT_BOGON'
-    bogon_as = 'BOGON_AS'
-    bogon_prefix = 'BOGON_PREFIX'
+    in_scope = 'IN_SCOPE'
+    out_scope_as = 'OUT_SCOPE_AS'
+    out_scope_prefix = 'OUT_SCOPE_PREFIX'
 
 
 class JournalEntryOrigin(enum.Enum):
@@ -34,8 +34,8 @@ class JournalEntryOrigin(enum.Enum):
     auth_change = 'AUTH_CHANGE'
     # Journal entry caused by a change in in the RPKI status of an object in an authoritative db
     rpki_status = 'RPKI_STATUS'
-    # Journal entry caused by a change in in the bogon status of an object in an authoritative db
-    bogon_status = 'BOGON_STATUS'
+    # Journal entry caused by a change in the scope filter status
+    scope_filter = 'SCOPE_FILTER'
 
 
 Base = declarative_base()
@@ -71,7 +71,7 @@ class RPSLDatabaseObject(Base):  # type: ignore
     asn_last = sa.Column(sa.BigInteger, index=True)
 
     rpki_status = sa.Column(sa.Enum(RPKIStatus), nullable=False, index=True, server_default=RPKIStatus.not_found.name)
-    bogon_status = sa.Column(sa.Enum(BogonStatus), nullable=False, index=True, server_default=BogonStatus.unknown.name)
+    scope_filter_status = sa.Column(sa.Enum(ScopeFilterStatus), nullable=False, index=True, server_default=ScopeFilterStatus.unknown.name)
 
     created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
     updated = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
