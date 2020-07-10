@@ -242,6 +242,23 @@ class Configuration:
                 except ValueError as ve:
                     errors.append(f'Invalid item in access list {name}: {ve}.')
 
+        for prefix in config.get('scopefilter.prefixes', []):
+            try:
+                IP(prefix)
+            except ValueError as ve:
+                errors.append(f'Invalid item in prefix scopefilter: {prefix}: {ve}.')
+
+        for asn in config.get('scopefilter.asns', []):
+            try:
+                if '-' in str(asn):
+                    first, last = asn.split('-')
+                    int(first)
+                    int(last)
+                else:
+                    int(asn)
+            except ValueError:
+                errors.append(f'Invalid item in asn scopefilter: {asn}.')
+
         known_sources = set(config.get('sources', {}).keys())
         if config.get('rpki.roa_source', 'https://rpki.gin.ntt.net/api/export.json'):
             known_sources.add(RPKI_IRR_PSEUDO_SOURCE)

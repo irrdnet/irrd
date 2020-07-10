@@ -3,24 +3,36 @@ from unittest.mock import Mock
 
 import pytest
 
-from irrd.rpki.validators import BulkRouteROAValidator
 from irrd.rpki.status import RPKIStatus
+from irrd.rpki.validators import BulkRouteROAValidator
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
+from irrd.scopefilter.status import ScopeFilterStatus
+from irrd.scopefilter.validators import ScopeFilterValidator
+from irrd.storage.models import DatabaseOperation, JournalEntryOrigin
 from irrd.utils.rpsl_samples import (
     SAMPLE_ROUTE, SAMPLE_UNKNOWN_CLASS, SAMPLE_UNKNOWN_ATTRIBUTE, SAMPLE_MALFORMED_PK,
     SAMPLE_ROUTE6, SAMPLE_KEY_CERT, KEY_CERT_SIGNED_MESSAGE_VALID, SAMPLE_LEGACY_IRRD_ARTIFACT,
     SAMPLE_ROLE, SAMPLE_RTR_SET)
 from irrd.utils.test_utils import flatten_mock_calls
-from .nrtm_samples import (SAMPLE_NRTM_V3, SAMPLE_NRTM_V1, SAMPLE_NRTM_V1_TOO_MANY_ITEMS, SAMPLE_NRTM_INVALID_VERSION,
+from .nrtm_samples import (SAMPLE_NRTM_V3, SAMPLE_NRTM_V1, SAMPLE_NRTM_V1_TOO_MANY_ITEMS,
+                           SAMPLE_NRTM_INVALID_VERSION,
                            SAMPLE_NRTM_V3_SERIAL_GAP, SAMPLE_NRTM_V3_INVALID_MULTIPLE_START_LINES,
                            SAMPLE_NRTM_INVALID_NO_START_LINE, SAMPLE_NRTM_V3_SERIAL_OUT_OF_ORDER)
-from irrd.storage.models import DatabaseOperation, JournalEntryOrigin
 from ..parsers import NRTMStreamParser, MirrorFileImportParser, MirrorUpdateFileImportParser
+
+
+@pytest.fixture
+def mock_scopefilter(monkeypatch):
+    mock_scopefilter = Mock(spec=ScopeFilterValidator)
+    monkeypatch.setattr('irrd.mirroring.parsers.ScopeFilterValidator',
+                        lambda: mock_scopefilter)
+    mock_scopefilter.validate_rpsl_object = lambda obj: (ScopeFilterStatus.in_scope, '')
+    return mock_scopefilter
 
 
 class TestMirrorFileImportParser:
     # This test also covers the common parts of MirrorFileImportParserBase
-    def test_parse(self, monkeypatch, caplog, tmp_gpg_dir, config_override):
+    def test_parse(self, mock_scopefilter, caplog, tmp_gpg_dir, config_override):
         config_override({
             'sources': {
                 'TEST': {
@@ -59,6 +71,7 @@ class TestMirrorFileImportParser:
         assert mock_dh.mock_calls[0][0] == 'upsert_rpsl_object'
         assert mock_dh.mock_calls[0][1][0].pk() == '192.0.2.0/24AS65537'
         assert mock_dh.mock_calls[0][1][0].rpki_status == RPKIStatus.invalid
+        assert mock_dh.mock_calls[0][1][0].scopefilter_status == ScopeFilterStatus.in_scope
         assert mock_dh.mock_calls[1][0] == 'upsert_rpsl_object'
         assert mock_dh.mock_calls[1][1][0].pk() == 'PGPKEY-80F238C6'
         assert mock_dh.mock_calls[2][0] == 'record_mirror_error'
@@ -76,7 +89,7 @@ class TestMirrorFileImportParser:
         key_cert_obj = rpsl_object_from_text(SAMPLE_KEY_CERT, strict_validation=False)
         assert key_cert_obj.verify(KEY_CERT_SIGNED_MESSAGE_VALID)
 
-    def test_direct_error_return_invalid_source(self, monkeypatch, caplog, tmp_gpg_dir, config_override):
+    def test_direct_error_return_invalid_source(self, mock_scopefilter, caplog, tmp_gpg_dir, config_override):
         config_override({
             'sources': {
                 'TEST': {},
@@ -110,7 +123,7 @@ class TestMirrorFileImportParser:
         assert 'Invalid source BADSOURCE for object' not in caplog.text
         assert 'File import for TEST' not in caplog.text
 
-    def test_direct_error_return_malformed_pk(self, monkeypatch, caplog, tmp_gpg_dir, config_override):
+    def test_direct_error_return_malformed_pk(self, mock_scopefilter, caplog, tmp_gpg_dir, config_override):
         config_override({
             'sources': {
                 'TEST': {},
@@ -135,7 +148,7 @@ class TestMirrorFileImportParser:
         assert 'Invalid address prefix: not-a-prefix' not in caplog.text
         assert 'File import for TEST' not in caplog.text
 
-    def test_direct_error_return_unknown_class(self, monkeypatch, caplog, tmp_gpg_dir, config_override):
+    def test_direct_error_return_unknown_class(self, mock_scopefilter, caplog, tmp_gpg_dir, config_override):
         config_override({
             'sources': {
                 'TEST': {},
@@ -162,7 +175,7 @@ class TestMirrorFileImportParser:
 
 
 class TestMirrorUpdateFileImportParser:
-    def test_parse(self, monkeypatch, caplog, config_override):
+    def test_parse(self, mock_scopefilter, caplog, config_override):
         config_override({
             'sources': {
                 'TEST': {
@@ -171,10 +184,6 @@ class TestMirrorUpdateFileImportParser:
             }
         })
         mock_dh = Mock()
-        mock_database_query = Mock()
-        monkeypatch.setattr('irrd.server.whois.query_parser.RPSLDatabaseQuery',
-                            lambda column_names=None, ordered_by_sources=None,
-                            enable_ordering=False: mock_database_query)
 
         test_data = [
             SAMPLE_ROUTE,  # Valid retained
@@ -233,7 +242,7 @@ class TestMirrorUpdateFileImportParser:
         assert 'ignored 0 due to object_class_filter' in caplog.text
         assert 'Ignored 1 objects found in file import for TEST due to unknown object classes' in caplog.text
 
-    def test_direct_error_return(self, config_override):
+    def test_direct_error_return(self, mock_scopefilter, config_override):
         config_override({
             'sources': {
                 'TEST': {}

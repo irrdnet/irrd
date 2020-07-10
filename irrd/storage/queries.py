@@ -5,9 +5,11 @@ import sqlalchemy as sa
 from IPy import IP
 from sqlalchemy.sql import Select, ColumnCollection
 
-from irrd.rpsl.rpsl_objects import lookup_field_names
-from irrd.storage.models import RPSLDatabaseObject, RPSLDatabaseJournal, RPSLDatabaseStatus, ROADatabaseObject
 from irrd.rpki.status import RPKIStatus
+from irrd.rpsl.rpsl_objects import lookup_field_names
+from irrd.scopefilter.status import ScopeFilterStatus
+from irrd.storage.models import (RPSLDatabaseObject, RPSLDatabaseJournal, RPSLDatabaseStatus,
+                                 ROADatabaseObject)
 from irrd.utils.validators import parse_as_number, ValidationError
 
 logger = logging.getLogger(__name__)
@@ -268,6 +270,13 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         Filter for RPSL objects with a specific RPKI validation status.
         """
         fltr = self.columns.rpki_status.in_(status)
+        return self._filter(fltr)
+
+    def scopefilter_status(self, status: List[ScopeFilterStatus]):
+        """
+        Filter for RPSL objects with a specific scope filter status.
+        """
+        fltr = self.columns.scopefilter_status.in_(status)
         return self._filter(fltr)
 
     def text_search(self, value: str):

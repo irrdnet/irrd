@@ -142,7 +142,7 @@ class TestRPSLAsSet:
         assert obj.references_strong_inbound() == set()
         assert obj.source() == 'TEST'
 
-        assert obj.parsed_data['members'] == ['AS65538', 'AS65539', 'AS65537']
+        assert obj.parsed_data['members'] == ['AS65538', 'AS65539', 'AS65537', 'AS-OTHERSET']
         # Field parsing will cause our object to look slightly different than the original, hence the replace()
         assert obj.render_rpsl_text() == rpsl_text.replace('AS65538, AS65539', 'AS65538,AS65539')
 

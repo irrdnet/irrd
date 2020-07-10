@@ -60,6 +60,10 @@ class TestConfiguration:
                 'rpki': {
                     'roa_source': None,
                 },
+                'scopefilter': {
+                    'prefixes': ['10/8'],
+                    'asns': ['23456', '10-20']
+                },
                 'access-lists': {
                     'valid-list': {
                         '192/24',
@@ -237,6 +241,10 @@ class TestConfiguration:
                     'notify_invalid_subject': [],
                     'notify_invalid_header': [],
                 },
+                'scopefilter': {
+                    'prefixes': ['invalid-prefix'],
+                    'asns': ['invalid', '10-invalid'],
+                },
                 'sources_default': ['DOESNOTEXIST-DB'],
                 'sources': {
                     'TESTDB': {
@@ -280,6 +288,9 @@ class TestConfiguration:
         assert 'Access lists doesnotexist referenced in settings, but not defined.' in str(ce.value)
         assert 'Setting server.http.access_list must be a string, if defined.' in str(ce.value)
         assert 'Invalid item in access list bad-list: IPv4 Address with more than 4 bytes.' in str(ce.value)
+        assert 'Invalid item in prefix scopefilter: invalid-prefix' in str(ce.value)
+        assert 'Invalid item in asn scopefilter: invalid.' in str(ce.value)
+        assert 'Invalid item in asn scopefilter: 10-invalid.' in str(ce.value)
         assert 'Setting sources_default contains unknown sources: DOESNOTEXIST-DB' in str(ce.value)
         assert 'Setting sources contains reserved source name: RPKI' in str(ce.value)
         assert 'Setting keep_journal for source TESTDB can not be enabled unless either ' in str(ce.value)

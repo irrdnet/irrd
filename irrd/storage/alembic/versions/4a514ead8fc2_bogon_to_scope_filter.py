@@ -1,4 +1,4 @@
-"""bogon_to_scope_filter
+"""bogon_to_scopefilter
 
 Revision ID: 4a514ead8fc2
 Revises: 39e4f15ed80c
@@ -17,11 +17,11 @@ depends_on = None
 
 
 def upgrade():
-    scope_filter_status = sa.Enum('unknown', 'in_scope', 'out_scope_as', 'out_scope_prefix', name='scopefilterstatus')
-    scope_filter_status.create(op.get_bind())
+    scopefilter_status = sa.Enum('in_scope', 'out_scope_as', 'out_scope_prefix', name='scopefilterstatus')
+    scopefilter_status.create(op.get_bind())
 
-    op.add_column('rpsl_objects', sa.Column('scope_filter_status', sa.Enum('unknown', 'in_scope', 'out_scope_as', 'out_scope_prefix', name='scopefilterstatus'), server_default='unknown', nullable=False))
-    op.create_index(op.f('ix_rpsl_objects_scope_filter_status'), 'rpsl_objects', ['scope_filter_status'], unique=False)
+    op.add_column('rpsl_objects', sa.Column('scopefilter_status', sa.Enum('in_scope', 'out_scope_as', 'out_scope_prefix', name='scopefilterstatus'), server_default='in_scope', nullable=False))
+    op.create_index(op.f('ix_rpsl_objects_scopefilter_status'), 'rpsl_objects', ['scopefilter_status'], unique=False)
 
     conn = op.get_bind()
     inspector = Inspector.from_engine(conn)
@@ -37,6 +37,8 @@ def upgrade():
         bogon_status = sa.Enum('unknown', 'not_bogon', 'bogon_as', 'bogon_prefix', name='bogonstatus')
         bogon_status.drop(op.get_bind())
 
+    # downgrade() can't remove this entry from the enum, so if this migration
+    # is reverted and then re-applied, altering the enum will fail
     with op.get_context().autocommit_block():
         try:
             op.execute("ALTER TYPE journalentryorigin ADD VALUE 'scope_filter'")
@@ -46,8 +48,8 @@ def upgrade():
 
 
 def downgrade():
-    op.drop_index(op.f('ix_rpsl_objects_scope_filter_status'), table_name='rpsl_objects')
-    op.drop_column('rpsl_objects', 'scope_filter_status')
+    op.drop_index(op.f('ix_rpsl_objects_scopefilter_status'), table_name='rpsl_objects')
+    op.drop_column('rpsl_objects', 'scopefilter_status')
 
-    scope_filter_status = sa.Enum('unknown', 'in_scope', 'out_scope_as', 'out_scope_prefix', name='scopefilterstatus')
-    scope_filter_status.drop(op.get_bind())
+    scopefilter_status = sa.Enum('in_scope', 'out_scope_as', 'out_scope_prefix', name='scopefilterstatus')
+    scopefilter_status.drop(op.get_bind())

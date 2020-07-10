@@ -12,8 +12,9 @@ from irrd import __version__
 from irrd.conf import get_setting, RPKI_IRR_PSEUDO_SOURCE
 from irrd.mirroring.nrtm_generator import NRTMGenerator, NRTMGeneratorException
 from irrd.rpki.status import RPKIStatus
-from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING, lookup_field_names, \
-    RPKI_RELEVANT_OBJECT_CLASSES
+from irrd.rpsl.rpsl_objects import (OBJECT_CLASS_MAPPING, lookup_field_names,
+                                    RPKI_RELEVANT_OBJECT_CLASSES)
+from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.preload import Preloader
 from irrd.storage.queries import RPSLDatabaseQuery, DatabaseStatusQuery
@@ -60,6 +61,7 @@ class WhoisQueryParser:
         self.multiple_command_mode = False
         self.rpki_aware = bool(get_setting('rpki.roa_source'))
         self.rpki_invalid_filter_enabled = self.rpki_aware
+        self.out_scope_filter_enabled = True
         self.timeout = 30
         self.key_fields_only = False
         self.client_ip = client_ip
@@ -144,6 +146,10 @@ class WhoisQueryParser:
         elif full_command.upper() == 'FNO-RPKI-FILTER':
             self.rpki_invalid_filter_enabled = False
             result = 'Filtering out RPKI invalids is disabled for !r and RIPE style ' \
+                     'queries for the rest of this connection.'
+        elif full_command.upper() == 'FNO-SCOPE-FILTER':
+            self.out_scope_filter_enabled = False
+            result = 'Filtering out out-of-scope objects is disabled for !r and RIPE style ' \
                      'queries for the rest of this connection.'
         elif command == 'v':
             result = self.handle_irrd_version()
@@ -455,6 +461,7 @@ class WhoisQueryParser:
             object_class_filter = get_setting(f'sources.{source}.object_class_filter')
             results[source]['object_class_filter'] = list(object_class_filter) if object_class_filter else None
             results[source]['rpki_rov_filter'] = bool(get_setting('rpki.roa_source') and not get_setting(f'sources.{source}.rpki_excluded'))
+            results[source]['scopefilter_enabled'] = not get_setting(f'sources.{source}.scopefilter_excluded')
             results[source]['local_journal_kept'] = get_setting(f'sources.{source}.keep_journal', False)
             results[source]['serial_oldest_journal'] = query_result['serial_oldest_journal']
             results[source]['serial_newest_journal'] = query_result['serial_newest_journal']
@@ -706,6 +713,8 @@ class WhoisQueryParser:
             query.object_classes(self.object_classes)
         if self.rpki_invalid_filter_enabled:
             query.rpki_status([RPKIStatus.not_found, RPKIStatus.valid])
+        if self.out_scope_filter_enabled:
+            query.scopefilter_status([ScopeFilterStatus.in_scope])
         return query
 
     def _execute_query_flatten_output(self, query: RPSLDatabaseQuery) -> str:

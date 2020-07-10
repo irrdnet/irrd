@@ -10,6 +10,7 @@ from irrd.conf import RPKI_IRR_PSEUDO_SOURCE, get_setting
 from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.parser import RPSLObject, RPSL_ATTRIBUTE_TEXT_WIDTH
 from irrd.rpsl.rpsl_objects import RPSL_ROUTE_OBJECT_CLASS_FOR_IP_VERSION
+from irrd.scopefilter.validators import ScopeFilterValidator
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.models import JournalEntryOrigin
 from irrd.utils.validators import parse_as_number
@@ -46,6 +47,8 @@ class ROADataImporter:
         if slurm_json_str:
             self._load_slurm(slurm_json_str)
 
+        scopefilter_validator = ScopeFilterValidator()
+
         for roa_dict in self._roa_dicts:
             try:
                 asn = roa_dict['asn']
@@ -69,7 +72,7 @@ class ROADataImporter:
                 logger.error(msg)
                 raise ROAParserException(msg)
 
-            roa_obj.save(database_handler)
+            roa_obj.save(database_handler, scopefilter_validator)
             self.roa_objs.append(roa_obj)
 
     def _load_roa_dicts(self, rpki_json_str: str) -> None:
@@ -157,7 +160,7 @@ class ROA:
             logger.error(msg)
             raise ROAParserException(msg)
 
-    def save(self, database_handler: DatabaseHandler):
+    def save(self, database_handler: DatabaseHandler, scopefilter_validator: ScopeFilterValidator):
         """
         Save the ROA object to the DB, create a pseudo-IRR object, and save that too.
         """
@@ -174,6 +177,7 @@ class ROA:
             asn=self.asn,
             max_length=self.max_length,
             trust_anchor=self.trust_anchor,
+            scopefilter_validator=scopefilter_validator,
         )
         database_handler.upsert_rpsl_object(self._rpsl_object, JournalEntryOrigin.pseudo_irr,
                                             rpsl_guaranteed_no_existing=True)
@@ -186,7 +190,8 @@ class RPSLObjectFromROA(RPSLObject):
     relevant parts.
     """
     # noinspection PyMissingConstructor
-    def __init__(self, prefix: IP, prefix_str: str, asn: int, max_length: int, trust_anchor: str):
+    def __init__(self, prefix: IP, prefix_str: str, asn: int, max_length: int, trust_anchor: str,
+                 scopefilter_validator: ScopeFilterValidator):
         self.prefix = prefix
         self.prefix_str = prefix_str
         self.asn = asn
@@ -205,6 +210,7 @@ class RPSLObjectFromROA(RPSLObject):
             'origin': 'AS' + str(self.asn),
             'source': RPKI_IRR_PSEUDO_SOURCE,
         }
+        self.scopefilter_status, _ = scopefilter_validator.validate_rpsl_object(self)
 
     def source(self):
         return RPKI_IRR_PSEUDO_SOURCE

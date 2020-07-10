@@ -64,11 +64,18 @@ for further details.
 
 Other changes
 ~~~~~~~~~~~~~
+* A :doc:`scopefilter </admins/scopefilter>` has been added. This allows you
+  to filter RPSL objects matching certain prefixes and AS numbers from your
+  IRRd instance. By default, the scope filter is disabled.
 * The default for ``server.whois.max_connections`` has been reduced from 50
   to 10. In 4.1, IRRd whois workers use considerably more memory, about 200 MB
   each, and one worker is started for each permitted connection. Therefore,
   at the default 10 connections, the whois processes use about 2 GB of memory,
   at 50 connections, this is about 10 GB.
+* The ``last-modified`` attribute is set every time an object is created or
+  updated in an authoritative source. You can apply this to all existing
+  authoritative objects with the
+  :ref:`new irrd_set_last_modified_auth command <last-modified>`.
 * Serial handling in IRRd has changed. If you mirror a source over NRTM, and
   keep a local journal, IRRd used to keep these serials identical. The NRTM
   ADD from the original source would be stored in the local journal under the
@@ -83,10 +90,6 @@ Other changes
   mirror is. For more extensive status information, like the local serials
   in the journal,
   :doc:`use the new !J command </users/queries>`.
-* The ``last-modified`` attribute is set every time an object is created or
-  updated in an authoritative source. You can apply this to all existing
-  authoritative objects with the
-  :ref:`new irrd_set_last_modified_auth command <last-modified>`.
 * IRRd starts a maximum of three mirror processes at the same time,
   to reduce peak loads. A further three, if needed, are started 15 seconds
   later, regardless of whether the previous ones have finished.

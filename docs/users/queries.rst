@@ -129,6 +129,12 @@ IRRd style queries
   After using ``!fno-rpki-filter``, this filter is disabled for the remainder of
   the connection. Disabling the filter only applies to ``!r`` queries and
   all RIPE style queries. This is only intended as a debugging aid.
+* ``!fno-scope-filter`` disables filtering out-of-scope objects. If
+  the scope filter is enabled, objects that are
+  :doc:`out of scope </admins/scopefilter>` are not included in the output of any query by default.
+  After using ``!fno-scope-filter``, this filter is disabled for the remainder of
+  the connection. Disabling the filter only applies to ``!r`` queries and
+  all RIPE style queries. This is only intended as a debugging aid.
 
 Responses
 ^^^^^^^^^

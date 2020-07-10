@@ -6,8 +6,9 @@ from typing import Dict, List, Optional, Tuple, Any, Set
 
 from IPy import IP
 
-from irrd.rpsl.parser_state import RPSLParserMessages
 from irrd.rpki.status import RPKIStatus
+from irrd.rpsl.parser_state import RPSLParserMessages
+from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.utils.text import splitline_unicodesafe
 from .fields import RPSLTextField
 from ..conf import get_setting
@@ -62,6 +63,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
     prefix: IP = None  # Note: not saved to DB, used for performance
     prefix_length: Optional[int] = None
     rpki_status: RPKIStatus = RPKIStatus.not_found
+    scopefilter_status: ScopeFilterStatus = ScopeFilterStatus.in_scope
     default_source: Optional[str] = None  # noqa: E704 (flake8 bug)
     # Whether this object has a relation to RPKI ROA data, and therefore RPKI
     # checks should be performed in certain scenarios. Enabled for route/route6.

@@ -1,16 +1,18 @@
-import time
-
-import pytest
 import threading
+import time
 from unittest.mock import Mock
 
+import pytest
+
 from irrd.rpki.status import RPKIStatus
+from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.utils.test_utils import flatten_mock_calls
 from ..database_handler import DatabaseHandler
-from ..preload import Preloader, PreloadStoreManager, PreloadUpdater, REDIS_KEY_ORIGIN_SOURCE_SEPARATOR
+from ..preload import (Preloader, PreloadStoreManager, PreloadUpdater,
+                       REDIS_KEY_ORIGIN_SOURCE_SEPARATOR)
 from ..queries import RPSLDatabaseQuery
 
-# Use different
+# Use different stores in tests
 TEST_REDIS_ORIGIN_ROUTE4_STORE_KEY = 'TEST-irrd-preload-origin-route4'
 TEST_REDIS_ORIGIN_ROUTE6_STORE_KEY = 'TEST-irrd-preload-origin-route6'
 TEST_REDIS_PRELOAD_RELOAD_CHANNEL = 'TEST-irrd-preload-reload-channel'
@@ -163,6 +165,7 @@ class TestPreloadUpdater:
         assert flatten_mock_calls(mock_database_query) == [
             ['object_classes', (['route', 'route6'],), {}],
             ['rpki_status', ([RPKIStatus.not_found, RPKIStatus.valid],), {}],
+            ['scopefilter_status', ([ScopeFilterStatus.in_scope],), {}],
         ]
 
         assert flatten_mock_calls(mock_preload_obj) == [

@@ -357,7 +357,7 @@ class TestIntegration:
         query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!6AS65537')
         assert query_result == '2001:db8::/48'
         query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!iRS-TEST')
-        assert set(query_result.split(' ')) == {'192.0.2.0/24', '2001:db8::/48'}
+        assert set(query_result.split(' ')) == {'192.0.2.0/24', '2001:db8::/48', 'RS-OTHER-SET'}
         query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!aAS-SETTEST')
         assert set(query_result.split(' ')) == {'192.0.2.0/24', '2001:db8::/48'}
         query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!aAS-TESTREF')
@@ -394,7 +394,7 @@ class TestIntegration:
         query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!6AS65537')
         assert query_result == '2001:db8::/48'
         query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!iRS-TEST')
-        assert query_result == '2001:db8::/48'
+        assert query_result == '2001:db8::/48 RS-OTHER-SET'
         query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!aAS-SETTEST')
         assert query_result == '2001:db8::/48'
         query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!aAS-TESTREF')
@@ -410,7 +410,7 @@ class TestIntegration:
         # These queries should produce identical answers on both instances.
         for port in self.port_whois1, self.port_whois2:
             query_result = whois_query_irrd('127.0.0.1', port, '!iAS-SETTEST')
-            assert set(query_result.split(' ')) == {'AS65537', 'AS65538', 'AS65539'}
+            assert set(query_result.split(' ')) == {'AS65537', 'AS65538', 'AS65539', 'AS-OTHERSET'}
             query_result = whois_query_irrd('127.0.0.1', port, '!iAS-TESTREF')
             assert set(query_result.split(' ')) == {'AS-SETTEST', 'AS65540'}
             query_result = whois_query_irrd('127.0.0.1', port, '!iAS-TESTREF,1')

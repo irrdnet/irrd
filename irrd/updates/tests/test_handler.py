@@ -1,14 +1,15 @@
 # flake8: noqa: W293
-import datetime
 import textwrap
 from unittest.mock import Mock
 
 import pytest
 
+from irrd.scopefilter.status import ScopeFilterStatus
+from irrd.scopefilter.validators import ScopeFilterValidator
+from irrd.storage.models import JournalEntryOrigin
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
 from irrd.utils.test_utils import flatten_mock_calls
 from ..handler import ChangeSubmissionHandler
-from ...storage.models import JournalEntryOrigin
 
 
 @pytest.fixture()
@@ -23,6 +24,11 @@ def prepare_mocks(monkeypatch, config_override):
     mock_email = Mock()
     monkeypatch.setattr('irrd.utils.email.send_email', mock_email)
     config_override({'auth': {'override_password': '$1$J6KycItM$MbPaBU6iFSGFV299Rk7Di0'}})
+
+    mock_scopefilter = Mock(spec=ScopeFilterValidator)
+    monkeypatch.setattr('irrd.updates.parser.ScopeFilterValidator',
+                        lambda: mock_scopefilter)
+    mock_scopefilter.validate_rpsl_object = lambda obj: (ScopeFilterStatus.in_scope, '')
     yield mock_dq, mock_dh, mock_email
 
 

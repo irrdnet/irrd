@@ -21,9 +21,9 @@ depends_on = None
 # This is a very strange migration.
 # The bogon_status column was added at some point, but was never used.
 # Some people's deployments have this migration already deployed, so
-# it can't be removed. For anyone upgrading from earlier, we don't
-# want to re-add it to then remove it in the next migration, because
-# it takes a lot of time.
+# this migration can't be removed. For anyone upgrading from earlier,
+# we don't want to re-add it to then remove it in the next migration,
+# because it takes a lot of time.
 #
 # Therefore, this migration does nothing to upgrade, and on downgrade
 # removes the column, but only if it exists.

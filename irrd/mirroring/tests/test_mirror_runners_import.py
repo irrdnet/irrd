@@ -9,7 +9,8 @@ from irrd.rpki.validators import BulkRouteROAValidator
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.utils.test_utils import flatten_mock_calls
 from ..mirror_runners_import import RPSLMirrorImportUpdateRunner, RPSLMirrorFullImportRunner, \
-    NRTMImportUpdateStreamRunner, ROAImportRunner
+    NRTMImportUpdateStreamRunner, ROAImportRunner, ScopeFilterUpdateRunner
+from ...scopefilter.validators import ScopeFilterValidator
 
 
 class TestRPSLMirrorImportUpdateRunner:
@@ -474,6 +475,45 @@ class MockROADataImporter:
         assert rpki_text == 'roa_data'
         assert slurm_text == 'slurm_data'
         self.roa_objs = ['roa1', 'roa2']
+
+
+class TestScopeFilterUpdateRunner:
+    def test_run(self, monkeypatch, config_override, tmpdir, caplog):
+        mock_dh = Mock(spec=DatabaseHandler)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseHandler', lambda: mock_dh)
+        mock_scopefilter = Mock(spec=ScopeFilterValidator)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.ScopeFilterValidator', lambda: mock_scopefilter)
+
+        mock_scopefilter.validate_all_rpsl_objects = lambda database_handler: (
+            [{'rpsl_pk': 'pk_now_in_scope1'}, {'rpsl_pk': 'pk_now_in_scope2'}],
+            [{'rpsl_pk': 'pk_now_out_scope_as1'}, {'rpsl_pk': 'pk_now_out_scope_as2'}],
+            [{'rpsl_pk': 'pk_now_out_scope_prefix1'}, {'rpsl_pk': 'pk_now_out_scope_prefix2'}],
+        )
+        ScopeFilterUpdateRunner().run()
+
+        assert flatten_mock_calls(mock_dh) == [
+            ['update_scopefilter_status', (), {
+                'rpsl_objs_now_in_scope': [{'rpsl_pk': 'pk_now_in_scope1'}, {'rpsl_pk': 'pk_now_in_scope2'}],
+                'rpsl_objs_now_out_scope_as': [{'rpsl_pk': 'pk_now_out_scope_as1'}, {'rpsl_pk': 'pk_now_out_scope_as2'}],
+                'rpsl_objs_now_out_scope_prefix': [{'rpsl_pk': 'pk_now_out_scope_prefix1'}, {'rpsl_pk': 'pk_now_out_scope_prefix2'}],
+            }],
+            ['commit', (), {}],
+            ['close', (), {}]
+        ]
+        assert '2 newly in scope, 2 newly out of scope AS, 2 newly out of scope prefix' in caplog.text
+
+    def test_exception_handling(self, monkeypatch, config_override, tmpdir, caplog):
+        mock_dh = Mock(spec=DatabaseHandler)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseHandler', lambda: mock_dh)
+        mock_scopefilter = Mock(side_effect=ValueError('expected-test-error'))
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.ScopeFilterValidator', mock_scopefilter)
+
+        ScopeFilterUpdateRunner().run()
+
+        assert flatten_mock_calls(mock_dh) == [
+            ['close', (), {}]
+        ]
+        assert 'expected-test-error' in caplog.text
 
 
 class TestNRTMImportUpdateStreamRunner:

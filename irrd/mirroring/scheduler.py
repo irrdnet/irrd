@@ -11,7 +11,8 @@ from typing import Dict
 from irrd.conf import get_setting, RPKI_IRR_PSEUDO_SOURCE
 from irrd.conf.defaults import DEFAULT_SOURCE_IMPORT_TIMER, DEFAULT_SOURCE_EXPORT_TIMER
 from .mirror_runners_export import SourceExportRunner
-from .mirror_runners_import import RPSLMirrorImportUpdateRunner, ROAImportRunner
+from .mirror_runners_import import RPSLMirrorImportUpdateRunner, ROAImportRunner, \
+    ScopeFilterUpdateRunner
 
 logger = logging.getLogger(__name__)
 
@@ -62,11 +63,21 @@ class MirrorScheduler:
         super().__init__(*args, **kwargs)
         self.processes = dict()
         self.last_started_time = defaultdict(lambda: 0)
+        self.previous_scopefilter_prefixes = None
+        self.previous_scopefilter_asns = None
 
     def run(self) -> None:
         if get_setting('rpki.roa_source'):
             import_timer = int(get_setting('rpki.roa_import_timer'))
             self.run_if_relevant(RPKI_IRR_PSEUDO_SOURCE, ROAImportRunner, import_timer)
+
+        if get_setting('scopefilter') and any([
+            self.previous_scopefilter_prefixes != list(get_setting('scopefilter.prefixes', [])),
+            self.previous_scopefilter_asns != list(get_setting('scopefilter.asns', [])),
+        ]):
+            self.run_if_relevant('scopefilter', ScopeFilterUpdateRunner, 0)
+            self.previous_scopefilter_prefixes = list(get_setting('scopefilter.prefixes', []))
+            self.previous_scopefilter_asns = list(get_setting('scopefilter.asns', []))
 
         sources_started = 0
         for source in get_setting('sources', {}).keys():

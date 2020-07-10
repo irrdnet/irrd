@@ -3,16 +3,18 @@ import logging
 from typing import List, Optional, Set
 
 from irrd.conf import get_setting
-from irrd.rpki.validators import SingleRouteROAValidator
 from irrd.rpki.status import RPKIStatus
-from irrd.storage.database_handler import DatabaseHandler
-from irrd.storage.queries import RPSLDatabaseQuery
+from irrd.rpki.validators import SingleRouteROAValidator
 from irrd.rpsl.parser import UnknownRPSLObjectClassException, RPSLObject
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text, RPSLMntner
+from irrd.scopefilter.status import ScopeFilterStatus
+from irrd.scopefilter.validators import ScopeFilterValidator
+from irrd.storage.database_handler import DatabaseHandler
+from irrd.storage.models import JournalEntryOrigin
+from irrd.storage.queries import RPSLDatabaseQuery
 from irrd.utils.text import splitline_unicodesafe
 from .parser_state import UpdateRequestType, UpdateRequestStatus
 from .validators import ReferenceValidator, AuthValidator
-from ..storage.models import JournalEntryOrigin
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +63,7 @@ class ChangeRequest:
         self.used_override = False
         self._cached_roa_validity: Optional[bool] = None
         self.roa_validator = SingleRouteROAValidator(database_handler)
+        self.scopefilter_validator = ScopeFilterValidator()
 
         try:
             self.rpsl_obj_new = rpsl_object_from_text(rpsl_text_submitted, strict_validation=True)
@@ -220,7 +223,8 @@ class ChangeRequest:
         references_valid = self._check_references()
         self.notification_targets()
         rpki_valid = self._check_conflicting_roa()
-        return references_valid and rpki_valid
+        scopefilter_valid = self._check_scopefilter()
+        return references_valid and rpki_valid and scopefilter_valid
 
     def _check_auth(self) -> bool:
         assert self.rpsl_obj_new
@@ -298,6 +302,22 @@ class ChangeRequest:
         else:
             logger.debug(f'{id(self)}: No conflicting ROAs found')
         self._cached_roa_validity = True
+        return True
+
+    def _check_scopefilter(self) -> bool:
+        if self.request_type == UpdateRequestType.DELETE or not self.rpsl_obj_new:
+            return True
+        result, comment = self.scopefilter_validator.validate_rpsl_object(self.rpsl_obj_new)
+        if result in [ScopeFilterStatus.out_scope_prefix, ScopeFilterStatus.out_scope_as]:
+            user_message = 'Contains out of scope information: ' + comment
+            if self.request_type == UpdateRequestType.CREATE:
+                logger.debug(f'{id(self)}: object out of scope: ' + comment)
+                if self.is_valid():  # Only change the status if this object was valid prior, so this is first failure
+                    self.status = UpdateRequestStatus.ERROR_SCOPEFILTER
+                self.error_messages.append(user_message)
+                return False
+            elif self.request_type == UpdateRequestType.MODIFY:
+                self.info_messages.append(user_message)
         return True
 
 

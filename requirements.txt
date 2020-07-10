@@ -17,6 +17,7 @@ pid==3.0.3             # managing PID files
 redis==3.5.3          # preloaded data storage & sync through redis
 hiredis==1.0.1         # improved redis response parsing performance
 requests==2.24.0       # HTTP request handling
+pytz==2020.1
 
 # Database connections and management
 psycopg2-binary==2.8.5
