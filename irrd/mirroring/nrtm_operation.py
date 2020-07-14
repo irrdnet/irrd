@@ -78,7 +78,7 @@ class NRTMOperation:
 
         log = f'Completed NRTM operation {str(self)}/{obj.rpsl_object_class}/{obj.pk()}'
         if self.rpki_aware and obj.rpki_relevant:
-            log += ', RPKI status {obj.rpki_status.value}'
+            log += f', RPKI status {obj.rpki_status.value}'
         logger.info(log)
         return True
 
