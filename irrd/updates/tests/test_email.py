@@ -38,7 +38,7 @@ class TestHandleEmailSubmission:
         aut-num: AS12345
         """).strip()
 
-    def test_valid_plain(self, mock_email_dh):
+    def test_valid_plain(self, mock_email_dh, tmp_gpg_dir):
         mock_email, mock_dh = mock_email_dh
         handler = handle_email_submission(self.default_email)
         assert handler.request_meta['Message-ID'] == '<1325754288.4989.6.camel@hostname>'
@@ -49,7 +49,7 @@ class TestHandleEmailSubmission:
         assert mock_email.mock_calls[0][1][1] == 'FAILED: my subject'
         assert 'DETAILED EXPLANATION' in mock_email.mock_calls[0][1][2]
 
-    def test_invalid_no_text_plain(self, mock_email_dh):
+    def test_invalid_no_text_plain(self, mock_email_dh, tmp_gpg_dir):
         mock_email, mock_dh = mock_email_dh
 
         email = textwrap.dedent("""
@@ -83,7 +83,7 @@ class TestHandleEmailSubmission:
         assert mock_email.mock_calls[0][1][1] == 'FAILED: my subject'
         assert 'no text/plain' in mock_email.mock_calls[0][1][2]
 
-    def test_handles_exception_email_parser(self, monkeypatch, caplog):
+    def test_handles_exception_email_parser(self, monkeypatch, caplog, tmp_gpg_dir):
         mock_email = Mock()
         monkeypatch.setattr('irrd.utils.email.send_email', mock_email)
 
@@ -96,7 +96,7 @@ class TestHandleEmailSubmission:
         assert 'traceback for test-error follows' in caplog.text
         assert 'test-error' in caplog.text
 
-    def test_handles_exception_submission_request_handler(self, monkeypatch, caplog):
+    def test_handles_exception_submission_request_handler(self, monkeypatch, caplog, tmp_gpg_dir):
         mock_email = Mock()
         monkeypatch.setattr('irrd.utils.email.send_email', mock_email)
 
@@ -114,7 +114,7 @@ class TestHandleEmailSubmission:
         assert 'traceback for test-error follows' in caplog.text
         assert 'test-error' in caplog.text
 
-    def test_handles_exception_smtp(self, mock_email_dh, caplog):
+    def test_handles_exception_smtp(self, mock_email_dh, caplog, tmp_gpg_dir):
         mock_email, mock_dh = mock_email_dh
         mock_email.side_effect = Exception('test-error')
 
@@ -129,7 +129,7 @@ class TestHandleEmailSubmission:
         assert 'traceback for test-error follows' in caplog.text
         assert 'test-error' in caplog.text
 
-    def test_invalid_no_from(self, mock_email_dh, caplog):
+    def test_invalid_no_from(self, mock_email_dh, caplog, tmp_gpg_dir):
         mock_email, mock_dh = mock_email_dh
 
         assert handle_email_submission('') is None
