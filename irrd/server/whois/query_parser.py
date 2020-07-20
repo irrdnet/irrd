@@ -454,7 +454,7 @@ class WhoisQueryParser:
             results[source]['authoritative'] = get_setting(f'sources.{source}.authoritative', False)
             object_class_filter = get_setting(f'sources.{source}.object_class_filter')
             results[source]['object_class_filter'] = list(object_class_filter) if object_class_filter else None
-            results[source]['rpki_enabled'] = bool(get_setting('rpki.roa_source') and not get_setting(f'sources.{source}.rpki_excluded'))
+            results[source]['rpki_rov_filter'] = bool(get_setting('rpki.roa_source') and not get_setting(f'sources.{source}.rpki_excluded'))
             results[source]['local_journal_kept'] = get_setting(f'sources.{source}.keep_journal', False)
             results[source]['serial_oldest_journal'] = query_result['serial_oldest_journal']
             results[source]['serial_newest_journal'] = query_result['serial_newest_journal']

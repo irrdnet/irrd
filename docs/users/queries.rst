@@ -80,7 +80,7 @@ IRRd style queries
     is mirrored from elsewhere.
   * ``object_class_filter``: may be a list of object classes that are
     ignored by this IRRd instance, when mirroring from a remote source.
-  * ``rpki_enabled``: whether RPKI validation is enabled for this source.
+  * ``rpki_rov_filter``: whether RPKI validation is enabled for this source.
   * ``local_journal_kept``: whether this IRRd instance keeps a local journal
     of the changes in this source, allowing it to be mirrored over NRTM.
   * ``serial_oldest_journal`` / ``serial_newest_journal``: the oldest and

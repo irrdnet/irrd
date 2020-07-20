@@ -885,7 +885,7 @@ class TestWhoisQueryParserIRRD:
               "object_class_filter": [
                "route"
               ],
-              "rpki_enabled": true,
+              "rpki_rov_filter": true,
               "local_journal_kept": false,
               "serial_oldest_journal": 10,
               "serial_newest_journal": 10,
@@ -896,7 +896,7 @@ class TestWhoisQueryParserIRRD:
              "TEST2": {
               "authoritative": false,
               "object_class_filter": null,
-              "rpki_enabled": false,
+              "rpki_rov_filter": false,
               "local_journal_kept": true,
               "serial_oldest_journal": null,
               "serial_newest_journal": null,
@@ -921,7 +921,7 @@ class TestWhoisQueryParserIRRD:
               "object_class_filter": [
                "route"
               ],
-              "rpki_enabled": true,
+              "rpki_rov_filter": true,
               "local_journal_kept": false,
               "serial_oldest_journal": 10,
               "serial_newest_journal": 10,
