@@ -28,7 +28,7 @@ setuptools.setup(
         'IPy==1.00',
         'ordered-set==4.0.2',
         'dotted==0.1.8',
-        'beautifultable==1.0.0',
+        'beautifultable==0.8.0',
         'PyYAML==5.3.1',
         'datrie==0.8.2',
         'setproctitle==1.1.10',
