@@ -85,8 +85,8 @@ def run_irrd(mirror_frequency: int):
         # the new config automatically.
         if get_configuration().reload():
             pids = [whois_process.pid, http_process.pid, preload_manager.pid]
-            logging.info(f'Main process received SIGHUP with valid config, sending SIGHUP to '
-                         'child processes {pids}')
+            logging.info('Main process received SIGHUP with valid config, sending SIGHUP to '
+                         f'child processes {pids}')
             for pid in pids:
                 os.kill(pid, signal.SIGHUP)
     signal.signal(signal.SIGHUP, sighup_handler)
