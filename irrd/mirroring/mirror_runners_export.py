@@ -56,8 +56,7 @@ class SourceExportRunner:
         try:
             serial = next(self.database_handler.execute_query(query))['serial_newest_seen']
         except StopIteration:
-            logger.error(f'Unable to run export for {self.source}, internal database status is empty.')
-            return
+            serial = None
 
         with gzip.open(export_tmpfile, 'wb') as fh:
             query = RPSLDatabaseQuery().sources([self.source])
