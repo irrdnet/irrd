@@ -1,6 +1,7 @@
 import gzip
 import os
 from itertools import cycle, repeat
+from pathlib import Path
 from unittest.mock import Mock
 
 from irrd.rpki.status import RPKIStatus
@@ -92,7 +93,7 @@ class TestSourceExportRunner:
         assert 'An exception occurred while attempting to run an export for TEST' in caplog.text
         assert 'expected-test-error' in caplog.text
 
-    def test_no_status(self, tmpdir, config_override, monkeypatch, caplog):
+    def test_export_no_serial(self, tmpdir, config_override, monkeypatch, caplog):
         config_override({
             'sources': {
                 'TEST': {
@@ -102,12 +103,38 @@ class TestSourceExportRunner:
         })
 
         mock_dh = Mock()
+        mock_dq = Mock()
         mock_dsq = Mock()
-        monkeypatch.setattr('irrd.mirroring.mirror_runners_export.DatabaseHandler', lambda: mock_dh)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners_export.DatabaseStatusQuery', lambda: mock_dsq)
-        mock_dh.execute_query = Mock(side_effect=StopIteration())
+
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_export.DatabaseHandler',
+                            lambda: mock_dh)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_export.RPSLDatabaseQuery',
+                            lambda: mock_dq)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_export.DatabaseStatusQuery',
+                            lambda: mock_dsq)
+
+        responses = cycle([
+            iter([]),
+            [
+                # The CRYPT-PW hash must not appear in the output
+                {'object_text': 'object 1 🦄\nauth: CRYPT-PW foobar\n'},
+                {'object_text': 'object 2 🌈\n'},
+            ],
+        ])
+        mock_dh.execute_query = lambda q: next(responses)
 
         runner = SourceExportRunner('TEST')
         runner.run()
+        runner.run()
 
-        assert 'Unable to run export for TEST, internal database status is empty.' in caplog.text
+        serial_filename = Path(tmpdir + '/TEST.CURRENTSERIAL')
+        assert not serial_filename.exists()
+
+        export_filename = tmpdir + '/test.db.gz'
+        with gzip.open(export_filename) as fh:
+            assert fh.read().decode(
+                'utf-8') == 'object 1 🦄\nauth: CRYPT-PW DummyValue  # Filtered for security\n\n' \
+                            'object 2 🌈\n\n# EOF\n'
+
+        assert 'Starting a source export for TEST' in caplog.text
+        assert 'Export for TEST complete' in caplog.text
