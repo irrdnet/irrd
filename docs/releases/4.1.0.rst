@@ -100,7 +100,10 @@ Other changes
   information on these options.
 * RIPE style query responses now always end with two empty lines,
   `consistent with the RIPE database`_.
+* A custom flexible logging config can now be set with the
+  ``log.logging_config_path``.
 * A timeout was added for FTP connections.
+* Memory usage during large RPSL imports has been reduced.
 * A bug was fixed where some invalid objects could cause parser exceptions.
 
 
