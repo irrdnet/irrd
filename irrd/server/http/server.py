@@ -90,7 +90,6 @@ class IRRdHTTPRequestProcessor:
     def __init__(self, client_ip: str, client_port: int):
         self.client_ip = client_ip
         self.client_str = client_ip + ':' + str(client_port)
-        setproctitle(f'irrd-http-server-{self.client_str}')
 
     def handle_get(self, path) -> Tuple[HTTPStatus, str]:
         if not is_client_permitted(self.client_ip, 'server.http.access_list'):
