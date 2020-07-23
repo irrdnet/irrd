@@ -159,13 +159,6 @@ allowing the user to create the `route`.
 When a user attempts to create any `route` that is RPKI invalid, the error
 messages includes a note of the configured ROA import time.
 
-.. note::
-    In IRRd logs, you may see things like ``RPKI status NOT_FOUND`` for objects
-    for which RPKI validation does not apply, like `person` objects. This is
-    intentional and not a bug, as IRRd uses this status for any object for
-    which there is no RPKI information.
-
-
 .. _rpki-slurm:
 
 SLURM support
