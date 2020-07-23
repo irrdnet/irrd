@@ -9,7 +9,7 @@ and AS numbers can be filtered.
 
 Enabling the scope filter
 -------------------------
-You can enable RPKI-aware mode by setting ``scopefilter.prefixes``
+You can enable the scope filter by setting ``scopefilter.prefixes``
 and/or ``scopefilter.asns``. See the
 :doc:`configuration documentation </admins/configuration>` for their
 exact syntax.
