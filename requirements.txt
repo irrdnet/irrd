@@ -28,7 +28,7 @@ ujson==3.0.0
 # Testing and related packages
 pytest==5.4.3
 pytest-cov==2.10.0
-coverage==5.2
+coverage==5.2.1
 coveralls==2.1.1
 twisted==20.3.0    # Used for a mock email server in integration tests
 
