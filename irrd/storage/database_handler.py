@@ -118,8 +118,11 @@ class DatabaseHandler:
         self._flush_rpsl_object_writing_buffer()
         statement = query.finalise_statement()
         result = self._connection.execute(statement)
-        for row in result.fetchall():
-            yield dict(row)
+        row_block = result.fetchmany()
+        while row_block:
+            for row in row_block:
+                yield row
+            row_block = result.fetchmany()
         result.close()
 
     def execute_statement(self, statement):
