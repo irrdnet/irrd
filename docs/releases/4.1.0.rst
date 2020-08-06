@@ -2,13 +2,16 @@
 Release notes for IRRd 4.1.0
 ============================
 
-IRRd 4.1.0 adds :doc:`RPKI-aware mode </admins/rpki>`
-and a new daemon architecture with full multiprocessing,
-along with several other improvements.
+IRRd 4.1.0 adds several major new features, including
+:doc:`RPKI-aware mode </admins/rpki>`,
+a new daemon architecture with full multiprocessing, synthetic NRTM,
+and a scope filter.
 
-IRRd 4.1.0 contains several significant changes, so please
-read these release notes carefully.
+The changes between 4.0.x and 4.1.0 are major. Please read these release
+notes carefully before upgrading.
 Upgrading to IRRd 4.1.0 requires several changes to the deployment setup.
+Downgrading back to IRRd 4.0.x, if needed, also requires steps before
+downgrading the installed IRRd package.
 
 .. contents:: :backlinks: none
 
