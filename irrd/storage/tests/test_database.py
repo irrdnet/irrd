@@ -167,7 +167,6 @@ class TestDatabaseHandlerLive:
         self.dh.rollback()
 
         statistics = list(self.dh.execute_query(RPSLDatabaseObjectStatisticsQuery()))
-        statistics = [dict(x) for x in statistics]
 
         assert statistics == [
             {'source': 'TEST', 'object_class': 'route', 'count': 1},
