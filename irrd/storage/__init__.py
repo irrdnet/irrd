@@ -15,6 +15,7 @@ def get_engine():
         get_setting('database_url'),
         pool_size=2,
         json_deserializer=ujson.loads,
+        isolation_level="AUTOCOMMIT",
     )
 
     # https://docs.sqlalchemy.org/en/13/core/pooling.html#using-connection-pools-with-multiprocessing

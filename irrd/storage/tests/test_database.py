@@ -32,7 +32,7 @@ closely interact with the database.
 @pytest.fixture()
 def irrd_database(monkeypatch):
     engine = get_engine()
-    # RPSLDatabaseObject.metadata.drop_all(engine)
+    RPSLDatabaseObject.metadata.drop_all(engine)
     try:
         engine.execute('CREATE EXTENSION IF NOT EXISTS pgcrypto')
     except ProgrammingError as pe:  # pragma: no cover
@@ -49,7 +49,7 @@ def irrd_database(monkeypatch):
     yield None
 
     engine.dispose()
-    RPSLDatabaseObject.metadata.drop_all(engine)
+    # RPSLDatabaseObject.metadata.drop_all(engine)
 
 
 # noinspection PyTypeChecker
@@ -636,6 +636,9 @@ class TestRPSLDatabaseQueryLive:
         self.dh.upsert_rpsl_object(rpsl_route_more_specific_25_2, JournalEntryOrigin.auth_change)
         self.dh.upsert_rpsl_object(rpsl_route_more_specific_26, JournalEntryOrigin.auth_change)
         self.dh.commit()
+
+        self.dh.close()
+        self.dh = DatabaseHandler(readonly=True)
 
         q = RPSLDatabaseQuery().ip_more_specific(IP('192.0.2.0/24'))
         rpsl_pks = [r['rpsl_pk'] for r in self.dh.execute_query(q)]
