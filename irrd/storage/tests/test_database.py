@@ -32,7 +32,7 @@ closely interact with the database.
 @pytest.fixture()
 def irrd_database(monkeypatch):
     engine = get_engine()
-    RPSLDatabaseObject.metadata.drop_all(engine)
+    # RPSLDatabaseObject.metadata.drop_all(engine)
     try:
         engine.execute('CREATE EXTENSION IF NOT EXISTS pgcrypto')
     except ProgrammingError as pe:  # pragma: no cover
@@ -49,7 +49,7 @@ def irrd_database(monkeypatch):
     yield None
 
     engine.dispose()
-    # RPSLDatabaseObject.metadata.drop_all(engine)
+    RPSLDatabaseObject.metadata.drop_all(engine)
 
 
 # noinspection PyTypeChecker
