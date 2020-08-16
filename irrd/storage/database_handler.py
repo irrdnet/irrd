@@ -44,6 +44,9 @@ class DatabaseHandler:
     def __init__(self, readonly=False):
         """
         Create a new database handler.
+
+        If readonly is True, this instance will expect read queries only.
+        No transaction will be started, all queries will use autocommit.
         """
         self.readonly = readonly
         self.journaling_enabled = not readonly
