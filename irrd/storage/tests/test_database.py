@@ -641,6 +641,7 @@ class TestRPSLDatabaseQueryLive:
 
         self.dh.close()
         self.dh = DatabaseHandler(readonly=True)
+        self.dh.refresh_connection()
 
         q = RPSLDatabaseQuery().ip_more_specific(IP('192.0.2.0/24'))
         rpsl_pks = [r['rpsl_pk'] for r in self.dh.execute_query(q)]
