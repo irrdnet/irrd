@@ -48,9 +48,11 @@ class DatabaseHandler:
         self.readonly = readonly
         self.journaling_enabled = not readonly
         self._connection = get_engine().connect()
+        if self.readonly:
+            self._connection.execution_options(isolation_level="AUTOCOMMIT")
         # By default, autocommit is enabled. Set it False if this session
         # is going to do writes, as we'll do our own transaction management.
-        self._connection.connection.connection.autocommit = readonly
+        # self._connection.connection.connection.autocommit = readonly
         if not self.readonly:
             self._start_transaction()
             self.preloader = Preloader(enable_queries=False)
