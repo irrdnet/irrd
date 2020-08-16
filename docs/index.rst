@@ -1,5 +1,5 @@
-IRRd version 4
-==============
+IRRd version |version|
+======================
 
 Internet Routing Registry daemon version 4 is an IRR database server,
 processing IRR objects in the RPSL format.
