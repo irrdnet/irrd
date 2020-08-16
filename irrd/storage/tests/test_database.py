@@ -164,6 +164,8 @@ class TestDatabaseHandlerLive:
         assert len(self.dh._rpsl_upsert_buffer) == 1
         self.dh.upsert_rpsl_object(rpsl_obj_ignored, JournalEntryOrigin.auth_change)
         assert len(self.dh._rpsl_upsert_buffer) == 1
+        # Flush the buffer to make sure the INSERT is issued but then rolled back
+        self.dh._flush_rpsl_object_writing_buffer()
         self.dh.rollback()
 
         statistics = list(self.dh.execute_query(RPSLDatabaseObjectStatisticsQuery()))
