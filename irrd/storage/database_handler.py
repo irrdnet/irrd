@@ -41,15 +41,21 @@ class DatabaseHandler:
     # The ROA insert buffer is a list of dicts with columm names and their values.
     _roa_insert_buffer: List[Dict[str, Union[str, int]]]
 
-    def __init__(self):
+    def __init__(self, readonly=False):
         """
         Create a new database handler.
 
+        If readonly is True, this instance will expect read queries only.
+        No transaction will be started, all queries will use autocommit.
         """
-        self.journaling_enabled = True
+        self.readonly = readonly
+        self.journaling_enabled = not readonly
         self._connection = get_engine().connect()
-        self._start_transaction()
-        self.preloader = Preloader(enable_queries=False)
+        if self.readonly:
+            self._connection.execution_options(isolation_level="AUTOCOMMIT")
+        else:
+            self._start_transaction()
+            self.preloader = Preloader(enable_queries=False)
 
     def refresh_connection(self) -> None:
         """
@@ -58,7 +64,8 @@ class DatabaseHandler:
         SQL server has restarted.
         """
         try:
-            self.rollback(start_transaction=False)
+            if not self.readonly:
+                self.rollback(start_transaction=False)
         except Exception:  # pragma: no cover
             pass
         try:
@@ -66,7 +73,10 @@ class DatabaseHandler:
         except Exception:  # pragma: no cover
             pass
         self._connection = get_engine().connect()
-        self._start_transaction()
+        if self.readonly:
+            self._connection.execution_options(isolation_level="AUTOCOMMIT")
+        else:
+            self._start_transaction()
 
     def _start_transaction(self) -> None:
         """Start a fresh transaction."""
@@ -115,7 +125,8 @@ class DatabaseHandler:
     def execute_query(self, query: Union[BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery, RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery]) -> Iterator[Dict[str, Any]]:
         """Execute an RPSLDatabaseQuery within the current transaction."""
         # To be able to query objects that were just created, flush the buffer.
-        self._flush_rpsl_object_writing_buffer()
+        if not self.readonly:
+            self._flush_rpsl_object_writing_buffer()
         statement = query.finalise_statement()
         result = self._connection.execute(statement)
         for row in result.fetchall():

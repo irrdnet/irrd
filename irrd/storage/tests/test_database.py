@@ -164,6 +164,8 @@ class TestDatabaseHandlerLive:
         assert len(self.dh._rpsl_upsert_buffer) == 1
         self.dh.upsert_rpsl_object(rpsl_obj_ignored, JournalEntryOrigin.auth_change)
         assert len(self.dh._rpsl_upsert_buffer) == 1
+        # Flush the buffer to make sure the INSERT is issued but then rolled back
+        self.dh._flush_rpsl_object_writing_buffer()
         self.dh.rollback()
 
         statistics = list(self.dh.execute_query(RPSLDatabaseObjectStatisticsQuery()))
@@ -636,6 +638,10 @@ class TestRPSLDatabaseQueryLive:
         self.dh.upsert_rpsl_object(rpsl_route_more_specific_25_2, JournalEntryOrigin.auth_change)
         self.dh.upsert_rpsl_object(rpsl_route_more_specific_26, JournalEntryOrigin.auth_change)
         self.dh.commit()
+
+        self.dh.close()
+        self.dh = DatabaseHandler(readonly=True)
+        self.dh.refresh_connection()
 
         q = RPSLDatabaseQuery().ip_more_specific(IP('192.0.2.0/24'))
         rpsl_pks = [r['rpsl_pk'] for r in self.dh.execute_query(q)]

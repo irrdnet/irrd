@@ -333,7 +333,7 @@ class PreloadUpdater(threading.Thread):
 
         if not mock_database_handler:  # pragma: no cover
             from .database_handler import DatabaseHandler
-            dh = DatabaseHandler()
+            dh = DatabaseHandler(readonly=True)
         else:
             dh = mock_database_handler
 
