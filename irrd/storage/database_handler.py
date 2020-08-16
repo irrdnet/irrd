@@ -70,7 +70,9 @@ class DatabaseHandler:
         except Exception:  # pragma: no cover
             pass
         self._connection = get_engine().connect()
-        if not self.readonly:
+        if self.readonly:
+            self._connection.execution_options(isolation_level="AUTOCOMMIT")
+        else:
             self._start_transaction()
 
     def _start_transaction(self) -> None:
