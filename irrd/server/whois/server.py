@@ -131,7 +131,7 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
 
         try:
             self.preloader = Preloader()
-            self.database_handler = DatabaseHandler()
+            self.database_handler = DatabaseHandler(readonly=True)
         except Exception as e:
             logger.error(f'Whois worker failed to initialise preloader or database,'
                          f'unable to start, traceback follows: {e}', exc_info=e)
