@@ -13,7 +13,7 @@ from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.scopefilter.validators import ScopeFilterValidator
 from irrd.storage.models import JournalEntryOrigin
 from irrd.utils.rpsl_samples import SAMPLE_INETNUM, SAMPLE_AS_SET, SAMPLE_PERSON, SAMPLE_MNTNER, \
-    SAMPLE_ROUTE
+    SAMPLE_ROUTE, SAMPLE_ROUTE6
 from irrd.utils.test_utils import flatten_mock_calls
 from irrd.utils.text import splitline_unicodesafe
 from ..parser import parse_change_requests
@@ -403,7 +403,7 @@ class TestSingleChangeRequestHandling:
             ['rpsl_pk', ('TEST-MNT',), {}],
         ]
 
-    def test_check_auth_invalid_create_mntner_referencing_self_wrong_password(self, prepare_mocks):
+    def test_check_auth_invalid_create_mntner_referencing_self_wrong_override_password(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
 
         mock_dh.execute_query = lambda query: []
@@ -675,6 +675,234 @@ class TestSingleChangeRequestHandling:
         ]
         assert result_inetnum.notification_targets() == {'notify@example.com', 'upd-to@example.net'}
         assert 'Ignoring override password, auth.override_password not set.' in caplog.text
+
+    def test_check_valid_related_mntners_disabled(self, prepare_mocks, config_override):
+        config_override({'auth': {'authenticate_related_mntners': False}})
+        mock_dq, mock_dh = prepare_mocks
+
+        query_answers = [
+            [],  # existing object version
+            [{'object_text': SAMPLE_MNTNER}],  # mntner for object
+            # No further queries expected
+        ]
+        query_results = itertools.cycle(query_answers)
+        mock_dh.execute_query = lambda query: next(query_results)
+
+        reference_validator = ReferenceValidator(mock_dh)
+        auth_validator = AuthValidator(mock_dh)
+
+        result_route = parse_change_requests(SAMPLE_ROUTE + 'password: md5-password',
+                                             mock_dh, auth_validator, reference_validator)[0]
+        assert result_route._check_auth()
+        assert not result_route.error_messages
+        assert result_route.notification_targets() == {'mnt-nfy@example.net', 'mnt-nfy2@example.net'}
+
+        assert flatten_mock_calls(mock_dq, flatten_objects=True) == [
+            ['sources', (['TEST'],), {}], ['object_classes', (['route'],), {}],
+            ['rpsl_pk', ('192.0.2.0/24AS65537',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', ({'TEST-MNT'},), {}],
+        ]
+
+    def test_check_invalid_related_mntners_inetnum_exact(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
+
+        # Break the hash so auth fails for the related mntner only
+        related_mntner = SAMPLE_MNTNER.replace('8PCh', 'aaa').replace('upd-to@', 'upd-to-related@')
+
+        query_answers = [
+            [],  # existing object version
+            [{'object_text': SAMPLE_MNTNER}],  # mntner for object
+            [{
+                # attempt to look for exact inetnum
+                'object_class': 'route',
+                'rpsl_pk': '192.0.2.0/24AS65537',
+                'parsed_data': {'mnt-by': ['RELATED-MNT']}
+            }],
+            [{'object_text': related_mntner}],  # related mntner retrieval
+        ]
+        query_results = itertools.cycle(query_answers)
+        mock_dh.execute_query = lambda query: next(query_results)
+
+        reference_validator = ReferenceValidator(mock_dh)
+        auth_validator = AuthValidator(mock_dh)
+
+        result_route = parse_change_requests(SAMPLE_ROUTE + 'password: md5-password',
+                                             mock_dh, auth_validator, reference_validator)[0]
+        assert not result_route._check_auth()
+        assert result_route.error_messages[0] == (
+            'Authorisation for route 192.0.2.0/24AS65537 failed: must by authenticated by one of: '
+            'RELATED-MNT - from parent route 192.0.2.0/24AS65537')
+        assert result_route.notification_targets() == {'upd-to-related@example.net'}
+
+        assert flatten_mock_calls(mock_dq, flatten_objects=True) == [
+            ['sources', (['TEST'],), {}], ['object_classes', (['route'],), {}],
+            ['rpsl_pk', ('192.0.2.0/24AS65537',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', ({'TEST-MNT'},), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['inetnum'],), {}],
+            ['first_only', (), {}], ['ip_exact', ('192.0.2.0/24',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', ({'RELATED-MNT'},), {}],
+        ]
+
+    def test_check_valid_related_mntners_inet6num_exact(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
+
+        related_mntner = SAMPLE_MNTNER.replace('TEST-MNT', 'RELATED-MNT')
+
+        query_answers = [
+            [],  # existing object version
+            [{'object_text': SAMPLE_MNTNER}],  # mntner for object
+            [{
+                # attempt to look for exact inetnum
+                'object_class': 'route6',
+                'rpsl_pk': '2001:db8::/48AS65537',
+                'parsed_data': {'mnt-by': ['RELATED-MNT']}
+            }],
+            [{'object_text': related_mntner}],  # related mntner retrieval
+        ]
+        query_results = itertools.cycle(query_answers)
+        mock_dh.execute_query = lambda query: next(query_results)
+
+        reference_validator = ReferenceValidator(mock_dh)
+        auth_validator = AuthValidator(mock_dh)
+
+        result_route = parse_change_requests(SAMPLE_ROUTE6 + 'password: md5-password',
+                                             mock_dh, auth_validator, reference_validator)[0]
+        assert result_route._check_auth()
+        assert result_route._check_auth()  # should be cached, no extra db queries
+        assert not result_route.error_messages
+        assert result_route.notification_targets() == {'mnt-nfy2@example.net', 'mnt-nfy@example.net'}
+
+        assert flatten_mock_calls(mock_dq, flatten_objects=True) == [
+            ['sources', (['TEST'],), {}], ['object_classes', (['route6'],), {}],
+            ['rpsl_pk', ('2001:DB8::/48AS65537',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', ({'TEST-MNT'},), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['inet6num'],), {}],
+            ['first_only', (), {}], ['ip_exact', ('2001:db8::/48',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', ({'RELATED-MNT'},), {}],
+        ]
+
+    def test_check_valid_related_mntners_inetnum_less_specific(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
+
+        query_answers = [
+            [],  # existing object version
+            [{'object_text': SAMPLE_MNTNER}],  # mntner for object
+            [],  # attempt to look for exact inetnum
+            [{
+                # attempt to look for less specific inetnum
+                'object_class': 'route',
+                'rpsl_pk': '192.0.2.0/24AS65537',
+                'parsed_data': {'mnt-by': ['RELATED-MNT']}
+            }],
+            [{'object_text': SAMPLE_MNTNER}]  # related mntner retrieval
+        ]
+        query_results = itertools.cycle(query_answers)
+        mock_dh.execute_query = lambda query: next(query_results)
+
+        reference_validator = ReferenceValidator(mock_dh)
+        auth_validator = AuthValidator(mock_dh)
+
+        result_route = parse_change_requests(SAMPLE_ROUTE + 'password: md5-password',
+                                             mock_dh, auth_validator, reference_validator)[0]
+        assert result_route._check_auth()
+        assert not result_route.error_messages
+        assert result_route.notification_targets() == {'mnt-nfy2@example.net', 'mnt-nfy@example.net'}
+
+        assert flatten_mock_calls(mock_dq, flatten_objects=True) == [
+            ['sources', (['TEST'],), {}], ['object_classes', (['route'],), {}],
+            ['rpsl_pk', ('192.0.2.0/24AS65537',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', ({'TEST-MNT'},), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['inetnum'],), {}],
+            ['first_only', (), {}], ['ip_exact', ('192.0.2.0/24',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['inetnum'],), {}],
+            ['first_only', (), {}], ['ip_less_specific_one_level', ('192.0.2.0/24',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', ({'RELATED-MNT'},), {}],
+        ]
+
+    def test_check_valid_related_mntners_route(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
+
+        query_answers = [
+            [],  # existing object version
+            [{'object_text': SAMPLE_MNTNER}],  # mntner for object
+            [],  # attempt to look for exact inetnum
+            [],  # attempt to look for less specific inetnum
+            [{
+                # attempt to look for less specific route
+                'object_class': 'route',
+                'rpsl_pk': '192.0.2.0/24AS65537',
+                'parsed_data': {'mnt-by': ['RELATED-MNT']}
+            }],
+            [{'object_text': SAMPLE_MNTNER}]  # related mntner retrieval
+        ]
+        query_results = itertools.cycle(query_answers)
+        mock_dh.execute_query = lambda query: next(query_results)
+
+        reference_validator = ReferenceValidator(mock_dh)
+        auth_validator = AuthValidator(mock_dh)
+
+        result_route = parse_change_requests(SAMPLE_ROUTE + 'password: md5-password',
+                                             mock_dh, auth_validator, reference_validator)[0]
+        assert result_route._check_auth()
+        assert not result_route.error_messages
+        assert result_route.notification_targets() == {'mnt-nfy2@example.net', 'mnt-nfy@example.net'}
+
+        assert flatten_mock_calls(mock_dq, flatten_objects=True) == [
+            ['sources', (['TEST'],), {}], ['object_classes', (['route'],), {}],
+            ['rpsl_pk', ('192.0.2.0/24AS65537',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', ({'TEST-MNT'},), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['inetnum'],), {}],
+            ['first_only', (), {}], ['ip_exact', ('192.0.2.0/24',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['inetnum'],), {}],
+            ['first_only', (), {}], ['ip_less_specific_one_level', ('192.0.2.0/24',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['route'],), {}],
+            ['first_only', (), {}], ['ip_less_specific_one_level', ('192.0.2.0/24',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', ({'RELATED-MNT'},), {}],
+        ]
+
+    def test_check_valid_no_related_mntners(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
+
+        query_answers = [
+            [],  # existing object version
+            [{'object_text': SAMPLE_MNTNER}],  # mntner for object
+            [],  # attempt to look for exact inetnum
+            [],  # attempt to look for less specific inetnum
+            [],  # attempt to look for less specific route
+        ]
+        query_results = itertools.cycle(query_answers)
+        mock_dh.execute_query = lambda query: next(query_results)
+
+        reference_validator = ReferenceValidator(mock_dh)
+        auth_validator = AuthValidator(mock_dh)
+
+        result_route = parse_change_requests(SAMPLE_ROUTE + 'password: md5-password',
+                                             mock_dh, auth_validator, reference_validator)[0]
+        assert result_route._check_auth()
+        assert not result_route.error_messages
+        assert result_route.notification_targets() == {'mnt-nfy2@example.net', 'mnt-nfy@example.net'}
+
+        assert flatten_mock_calls(mock_dq, flatten_objects=True) == [
+            ['sources', (['TEST'],), {}], ['object_classes', (['route'],), {}],
+            ['rpsl_pk', ('192.0.2.0/24AS65537',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', ({'TEST-MNT'},), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['inetnum'],), {}],
+            ['first_only', (), {}], ['ip_exact', ('192.0.2.0/24',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['inetnum'],), {}],
+            ['first_only', (), {}], ['ip_less_specific_one_level', ('192.0.2.0/24',), {}],
+            ['sources', (['TEST'],), {}], ['object_classes', (['route'],), {}],
+            ['first_only', (), {}], ['ip_less_specific_one_level', ('192.0.2.0/24',), {}],
+        ]
 
     def test_rpki_validation(self, prepare_mocks, monkeypatch, config_override):
         config_override({'rpki': {'roa_source': None}})

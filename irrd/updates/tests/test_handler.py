@@ -224,9 +224,10 @@ class TestChangeSubmissionHandler:
             or object authorisation failures.
             
             You may receive this message because you are listed in
-            the notify attribute on the changed object(s), or because
+            the notify attribute on the changed object(s), because
             you are listed in the mnt-nfy or upd-to attribute on a maintainer
-            of the object(s).
+            of the object(s), or the upd-to attribute on the maintainer of a
+            parent of newly created object(s).
             
             This message is auto-generated.
             The request was made by email, with the following details:
@@ -388,9 +389,10 @@ class TestChangeSubmissionHandler:
             or object authorisation failures.
             
             You may receive this message because you are listed in
-            the notify attribute on the changed object(s), or because
+            the notify attribute on the changed object(s), because
             you are listed in the mnt-nfy or upd-to attribute on a maintainer
-            of the object(s).
+            of the object(s), or the upd-to attribute on the maintainer of a
+            parent of newly created object(s).
             
             This message is auto-generated.
             The request was made by email, with the following details:
@@ -618,9 +620,10 @@ class TestChangeSubmissionHandler:
             or object authorisation failures.
             
             You may receive this message because you are listed in
-            the notify attribute on the changed object(s), or because
+            the notify attribute on the changed object(s), because
             you are listed in the mnt-nfy or upd-to attribute on a maintainer
-            of the object(s).
+            of the object(s), or the upd-to attribute on the maintainer of a
+            parent of newly created object(s).
             
             This message is auto-generated.
             The request was made by email, with the following details:

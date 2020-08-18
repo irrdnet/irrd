@@ -234,9 +234,10 @@ Email
   |br| `or object authorisation failures.`
   |br|
   |br| `You may receive this message because you are listed in`
-  |br| `the notify attribute on the changed object(s), or because`
+  |br| `the notify attribute on the changed object(s), because`
   |br| `you are listed in the mnt-nfy or upd-to attribute on a maintainer`
-  |br| `of the object(s).`
+  |br| `of the object(s), or the upd-to attribute on the maintainer of a`
+  |br| `parent of newly created object(s).`
 
 
 Authentication
@@ -245,7 +246,12 @@ Authentication
   which can be used to override any
   authorisation requirements for authoritative databases.
   |br| **Default**: not defined, no override password will be accepted.
-  |br| **Change takes effect**: after SIGHUP.
+  |br| **Change takes effect**: upon the next update attempt.
+* ``auth.authenticate_related_mntners``: whether to check for
+  :ref:`related object maintainers <auth-related-mntners>` when processing
+  updates.
+  |br| **Default**: true, check enabled
+  |br| **Change takes effect**: upon the next update attempt.
 * ``auth.gnupg_keyring``: the full path to the gnupg keyring.
   |br| **Default**: not defined, but required.
   |br| **Change takes effect**: after full IRRd restart.
