@@ -33,10 +33,6 @@ Objects that may be filtered
   or the prefix overlaps with any out of scope prefix.
 * An `aut-num` object is out of scope if its primary key is an out of
   scope ASN.
-* A `route-set` object is out of scope if any of the direct members
-  (without recursion) overlaps with any out of scope prefix.
-* An `as-set` object is rejected if any of the direct members are out
-  of scope ASNs.
 * Other object classes are never out of scope.
 
 "Overlaps" for prefixes includes an exact match, less specific or more

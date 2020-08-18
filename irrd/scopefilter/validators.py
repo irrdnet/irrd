@@ -7,7 +7,6 @@ from irrd.conf import get_setting
 from irrd.rpsl.parser import RPSLObject
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseQuery
-from irrd.utils.validators import parse_as_number
 from .status import ScopeFilterStatus
 
 
@@ -63,15 +62,14 @@ class ScopeFilterValidator:
         return ScopeFilterStatus.in_scope
 
     def _validate_rpsl_data(self, source: str, object_class: str, prefix: Optional[IP],
-                            asn_first: Optional[int], members: List[str], mp_members: List[str]
-                            ) -> Tuple[ScopeFilterStatus, str]:
+                            asn_first: Optional[int]) -> Tuple[ScopeFilterStatus, str]:
         """
         Validate whether a particular set of RPSL data is in scope.
         Depending on object_class, members and mp_members are also validated.
         Returns a ScopeFilterStatus.
         """
         out_of_scope = [ScopeFilterStatus.out_scope_prefix, ScopeFilterStatus.out_scope_as]
-        if object_class not in ['route', 'route6', 'aut-num', 'as-set', 'route-set']:
+        if object_class not in ['route', 'route6']:
             return ScopeFilterStatus.in_scope, ''
 
         if prefix:
@@ -83,26 +81,6 @@ class ScopeFilterValidator:
             asn_state = self.validate(source, asn=asn_first)
             if asn_state in out_of_scope:
                 return asn_state, f'ASN {asn_first} is out of scope'
-
-        if object_class == 'route-set':
-            for member in members + mp_members:
-                try:
-                    prefix = IP(member)
-                except ValueError:
-                    continue
-                prefix_state = self.validate(source, prefix=prefix)
-                if prefix_state in out_of_scope:
-                    return prefix_state, f'member prefix {member} is out of scope'
-
-        if object_class == 'as-set':
-            for member in members:
-                try:
-                    _, asn = parse_as_number(member)
-                except ValueError:
-                    continue
-                asn_state = self.validate(source, asn=asn)
-                if asn_state in out_of_scope:
-                    return asn_state, f'member ASN {member} is out of scope'
 
         return ScopeFilterStatus.in_scope, ''
 
@@ -116,8 +94,6 @@ class ScopeFilterValidator:
             rpsl_object.rpsl_object_class,
             rpsl_object.prefix,
             rpsl_object.asn_first,
-            rpsl_object.parsed_data.get('members', []),
-            rpsl_object.parsed_data.get('mp-members', []),
         )
 
     def validate_all_rpsl_objects(self, database_handler: DatabaseHandler) -> \
@@ -141,35 +117,25 @@ class ScopeFilterValidator:
 
         objs_changed: Dict[ScopeFilterStatus, List[Dict[str, str]]] = defaultdict(list)
 
-        def process_results(results):
-            for result in results:
-                current_status = result['scopefilter_status']
-                result['old_status'] = current_status
-                prefix = None
-                if result['ip_first']:
-                    prefix = IP(result['ip_first'] + '/' + str(result['prefix_length']))
-                new_status, _ = self._validate_rpsl_data(
-                    result['source'],
-                    result['object_class'],
-                    prefix,
-                    result['asn_first'],
-                    result.get('parsed_data', {}).get('members', []),
-                    result.get('parsed_data', {}).get('mp-members', []),
-                )
-                if new_status != current_status:
-                    result['scopefilter_status'] = new_status
-                    objs_changed[new_status].append(result)
-
         q = RPSLDatabaseQuery(column_names=columns, enable_ordering=False)
-        q = q.object_classes(['route', 'route6', 'aut-num'])
-        process_results(database_handler.execute_query(q))
+        q = q.object_classes(['route', 'route6'])
+        results = database_handler.execute_query(q)
 
-        # parsed_data is only retrieved when needed, as it has a performance impact
-        columns.append('parsed_data')
-        q = RPSLDatabaseQuery(column_names=columns, enable_ordering=False)
-        q = q.object_classes(['as-set', 'route-set'])
-        process_results(database_handler.execute_query(q))
-
+        for result in results:
+            current_status = result['scopefilter_status']
+            result['old_status'] = current_status
+            prefix = None
+            if result['ip_first']:
+                prefix = IP(result['ip_first'] + '/' + str(result['prefix_length']))
+            new_status, _ = self._validate_rpsl_data(
+                result['source'],
+                result['object_class'],
+                prefix,
+                result['asn_first'],
+            )
+            if new_status != current_status:
+                result['scopefilter_status'] = new_status
+                objs_changed[new_status].append(result)
         return (objs_changed[ScopeFilterStatus.in_scope],
                 objs_changed[ScopeFilterStatus.out_scope_as],
                 objs_changed[ScopeFilterStatus.out_scope_prefix])
