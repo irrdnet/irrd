@@ -1,15 +1,16 @@
+import functools
 import logging
-from passlib.hash import md5_crypt
+from dataclasses import dataclass, field
 from typing import Set, Tuple, List, Optional, TYPE_CHECKING
 
-from dataclasses import dataclass, field
 from ordered_set import OrderedSet
+from passlib.hash import md5_crypt
 
 from irrd.conf import get_setting
-from irrd.storage.database_handler import DatabaseHandler
-from irrd.storage.queries import RPSLDatabaseQuery
 from irrd.rpsl.parser import RPSLObject
 from irrd.rpsl.rpsl_objects import RPSLMntner, rpsl_object_from_text
+from irrd.storage.database_handler import DatabaseHandler
+from irrd.storage.queries import RPSLDatabaseQuery
 from .parser_state import UpdateRequestType
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -211,6 +212,17 @@ class AuthValidator:
             result.mntners_notify = mntner_objs_current
         else:
             result.mntners_notify = mntner_objs_new
+            if get_setting('auth.authenticate_related_mntners'):
+                mntners_related = self._find_related_mntners(rpsl_obj_new)
+                if mntners_related:
+                    related_object_class, related_pk, related_mntner_list = mntners_related
+                    logger.debug(f'Checking auth for related object {related_object_class} / '
+                                 f'{related_pk} with mntners {related_mntner_list}')
+                    valid, mntner_objs_related = self._check_mntners(related_mntner_list, source)
+                    if not valid:
+                        self._generate_failure_message(result, related_mntner_list, rpsl_obj_new,
+                                                       related_object_class, related_pk)
+                        result.mntners_notify = mntner_objs_related
 
         if isinstance(rpsl_obj_new, RPSLMntner):
             if not rpsl_obj_current:
@@ -268,8 +280,57 @@ class AuthValidator:
 
         return False, mntner_objs
 
-    def _generate_failure_message(self, result: ValidatorResult, failed_mntner_list: List[str], rpsl_obj) -> None:
+    def _generate_failure_message(self, result: ValidatorResult, failed_mntner_list: List[str],
+                                  rpsl_obj, related_object_class: Optional[str]=None,
+                                  related_pk: Optional[str]=None) -> None:
         mntner_str = ', '.join(failed_mntner_list)
         msg = f'Authorisation for {rpsl_obj.rpsl_object_class} {rpsl_obj.pk()} failed: '
         msg += f'must by authenticated by one of: {mntner_str}'
+        if related_object_class and related_pk:
+            msg += f' - from parent {related_object_class} {related_pk}'
         result.error_messages.add(msg)
+
+    @functools.lru_cache(maxsize=50)
+    def _find_related_mntners(self, rpsl_obj_new: RPSLObject) -> Optional[Tuple[str, str, List[str]]]:
+        """
+        Find the maintainers of the related object to rpsl_obj_new, if any.
+        This is used to authorise creating objects.
+
+        Returns a tuple of:
+        - object class of the related object
+        - PK of the related object
+        - List of maintainers for the related object (at least one must pass)
+        Returns None of no related objects were found that should be authenticated.
+        """
+        if rpsl_obj_new.rpsl_object_class not in ['route', 'route6']:
+            return None
+
+        inetnum_class = {
+            'route': 'inetnum',
+            'route6': 'inet6num',
+        }
+
+        def init_query(rpsl_object_class: str) -> RPSLDatabaseQuery:
+            query = RPSLDatabaseQuery().sources([rpsl_obj_new.source()])
+            query = query.object_classes([rpsl_object_class])
+            return query.first_only()
+
+        object_class = inetnum_class[rpsl_obj_new.rpsl_object_class]
+        query = init_query(object_class).ip_exact(rpsl_obj_new.prefix)
+        inetnums = list(self.database_handler.execute_query(query))
+        if not inetnums:
+            query = init_query(object_class).ip_less_specific_one_level(rpsl_obj_new.prefix)
+            inetnums = list(self.database_handler.execute_query(query))
+
+        if inetnums:
+            mntners = inetnums[0].get('parsed_data', {}).get('mnt-by', [])
+            return inetnums[0]['object_class'], inetnums[0]['rpsl_pk'], mntners
+
+        object_class = rpsl_obj_new.rpsl_object_class
+        query = init_query(object_class).ip_less_specific_one_level(rpsl_obj_new.prefix)
+        routes = list(self.database_handler.execute_query(query))
+        if routes:
+            mntners = routes[0].get('parsed_data', {}).get('mnt-by', [])
+            return routes[0]['object_class'], routes[0]['rpsl_pk'], mntners
+
+        return None

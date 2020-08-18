@@ -146,6 +146,20 @@ When creating a new `mntner`, a submission must pass authorisation for
 one of the auth methods of the new mntner. Other objects can be submitted
 that depend on the new `mntner` in the same submission.
 
+.. _auth-related-mntners:
+
+When you create new `route(6)` objects, authentication also needs to pass
+for the parent object. IRRd searches for the parent object in the following
+order, only considering the first match:
+
+* An `inet(6)num` that is an exact match to the new `route(6)`.
+* The smallest `inet(6)num` that is a less specific of the new `route(6)`.
+* The smallest `route(6)` that is a less specific of the new `route(6)`.
+
+If no objects match, there is no parent object, and there are no extra
+authentication requirements.
+This behaviour can be disabled by setting
+``auth.authenticate_related_mntners`` to false.
 
 Object templates
 ----------------
@@ -174,7 +188,7 @@ retrieved with ``-t route``, looks like this::
     remarks:        [optional]   [multiple]  []
     notify:         [optional]   [multiple]  []
     mnt-by:         [mandatory]  [multiple]  [look-up key, strong references mntner]
-    changed:        [mandatory]  [multiple]  []
+    changed:        [optional]   [multiple]  []
     source:         [mandatory]  [single]    []
 
 This template shows:
@@ -214,14 +228,19 @@ Authentication and notification overview
      - Authentication must pass
      - Notifications sent to
    * - Create, auth success
-     - New object
+     - New object and parent object, if any
      -
        * ``mnt-nfy`` for all maintainers of new object 
        * report sent to the submitter of the change
-   * - Create, auth fail
-     - New object
+   * - Create, auth fail not through parent object
+     - New object and parent object, if any
      -
        * ``upd-to`` for all maintainers of new object 
+       * report sent to the submitter of the change
+   * - Create, auth fail through parent object
+     - New object and parent object
+     -
+       * ``upd-to`` for all maintainers of parent object
        * report sent to the submitter of the change
    * - Update or delete, auth success
      - Existing object and new object

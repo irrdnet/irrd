@@ -94,6 +94,11 @@ Other changes
   NRTM source, the default behaviour in 4.0.
   See the :ref`NRTM serial handling documentation <mirroring-nrtm-serials>`
   for further details.
+* When users create `route(6)` objects in authoritative databases, IRRd
+  also verifies authorisation from
+  :ref:`related object maintainers <auth-related-mntners>`. This behaviour
+  is enabled by default, but can be disabled with the
+  ``auth.authenticate_related_mntners`` setting.
 * The ``!j`` command has changed, and now is exclusively used to check
   mirroring status. It returns what the most recent serial processed from a
   mirror is. For more extensive status information, like the local serials
