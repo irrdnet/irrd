@@ -303,7 +303,8 @@ RPKI
 * ``notify_invalid_enabled``: whether to send notifications to contacts
   of route(6) objects newly marked RPKI invalid in authoritative sources.
   Set to ``true`` or ``false``. This setting is required if ``rpki.roa_source``
-  is set. It is recommended to carefully read the
+  is set and one or more authoritative sources are configured.
+  It is recommended to carefully read the
   :ref:`RPKI notification documentation <rpki-notifications>`, as this may
   sent out notifications to many users.
   **DANGER: care is required with this setting in testing setups**
