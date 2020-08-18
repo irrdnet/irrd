@@ -260,23 +260,11 @@ class Configuration:
                 errors.append(f'Invalid item in asn scopefilter: {asn}.')
 
         known_sources = set(config.get('sources', {}).keys())
-        if config.get('rpki.roa_source', 'https://rpki.gin.ntt.net/api/export.json'):
-            known_sources.add(RPKI_IRR_PSEUDO_SOURCE)
-            if config.get('rpki.notify_invalid_enabled') is None:
-                errors.append('RPKI-aware mode is enabled, but rpki.notify_invalid_enabled '
-                              'is not set. Set to true or false. DANGER: care is required with '
-                              'this setting in testing setups with live data, as it may send bulk '
-                              'emails to real resource contacts unless email.recipient_override '
-                              'is also set. Read documentation carefully.')
 
-        unknown_default_sources = set(config.get('sources_default', [])).difference(known_sources)
-        if unknown_default_sources:
-            errors.append(f'Setting sources_default contains unknown sources: {", ".join(unknown_default_sources)}')
-
-        if not str(config.get('rpki.roa_import_timer', '0')).isnumeric():
-            errors.append('Setting rpki.roa_import_timer must be set to a number.')
-
+        has_authoritative_sources = False
         for name, details in config.get('sources', {}).items():
+            if details.get('authoritative'):
+                has_authoritative_sources = True
             if config.get('rpki.roa_source') and name == RPKI_IRR_PSEUDO_SOURCE:
                 errors.append(f'Setting sources contains reserved source name: {RPKI_IRR_PSEUDO_SOURCE}')
             if not SOURCE_NAME_RE.match(name):
@@ -300,6 +288,23 @@ class Configuration:
                 errors.append(f'Setting import_timer for source {name} must be a number.')
             if not str(details.get('export_timer', '0')).isnumeric():
                 errors.append(f'Setting export_timer for source {name} must be a number.')
+
+        if config.get('rpki.roa_source', 'https://rpki.gin.ntt.net/api/export.json'):
+            known_sources.add(RPKI_IRR_PSEUDO_SOURCE)
+            if has_authoritative_sources and config.get('rpki.notify_invalid_enabled') is None:
+                errors.append('RPKI-aware mode is enabled and authoritative sources are configured, '
+                              'but rpki.notify_invalid_enabled is not set. Set to true or false.'
+                              'DANGER: care is required with this setting in testing setups with '
+                              'live data, as it may send bulk emails to real resource contacts '
+                              'unless email.recipient_override is also set. '
+                              'Read documentation carefully.')
+
+        unknown_default_sources = set(config.get('sources_default', [])).difference(known_sources)
+        if unknown_default_sources:
+            errors.append(f'Setting sources_default contains unknown sources: {", ".join(unknown_default_sources)}')
+
+        if not str(config.get('rpki.roa_import_timer', '0')).isnumeric():
+            errors.append('Setting rpki.roa_import_timer must be set to a number.')
 
         if config.get('log.level') and not config.get('log.level') in ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']:
             errors.append(f'Invalid log.level: {config.get("log.level")}. '
