@@ -221,7 +221,6 @@ class ChangeRequest:
         if not auth_valid:
             return False
         references_valid = self._check_references()
-        self.notification_targets()
         rpki_valid = self._check_conflicting_roa()
         scopefilter_valid = self._check_scopefilter()
         return references_valid and rpki_valid and scopefilter_valid

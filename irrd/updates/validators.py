@@ -111,7 +111,7 @@ class ReferenceValidator:
         Check for any references to this object in the DB.
         Used for validating deletions.
 
-        Checks self._preload_deleted, because a reference from an object
+        Checks self._preloaded_deleted, because a reference from an object
         that is also about to be deleted, is acceptable.
         """
         result = ValidatorResult()
@@ -239,17 +239,20 @@ class AuthValidator:
 
         Returns True if at least one of the mntners in mntner_list
         passes authentication, given self.passwords and
-        self.keycert_obj_pk. Updates and checks self.passed_mntner_cache
+        self.keycert_obj_pk. Updates and checks self._mntner_db_cache
         to prevent double checking of maintainers.
         """
         mntner_pk_set = set(mntner_pk_list)
-        mntner_objs: List[RPSLMntner] = [m for m in self._mntner_db_cache if m.pk() in mntner_pk_set and m.source() == source]
+        mntner_objs: List[RPSLMntner] = [
+            m for m in self._mntner_db_cache
+            if m.pk() in mntner_pk_set and m.source() == source
+        ]
         mntner_pks_to_resolve: Set[str] = mntner_pk_set - {m.pk() for m in mntner_objs}
 
         if mntner_pks_to_resolve:
             query = RPSLDatabaseQuery().sources([source])
             query = query.object_classes(['mntner']).rpsl_pks(mntner_pks_to_resolve)
-            results = list(self.database_handler.execute_query(query))
+            results = self.database_handler.execute_query(query)
 
             retrieved_mntner_objs: List[RPSLMntner] = [rpsl_object_from_text(r['object_text']) for r in results]   # type: ignore
             self._mntner_db_cache.update(retrieved_mntner_objs)
