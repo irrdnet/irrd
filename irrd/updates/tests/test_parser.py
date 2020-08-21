@@ -84,7 +84,7 @@ class TestSingleChangeRequestHandling:
         assert result_invalid.rpsl_text_submitted.startswith('aut-num:')
         assert result_invalid.rpsl_obj_new.rpsl_object_class == 'aut-num'
         assert not result_invalid.info_messages
-        assert len(result_invalid.error_messages) == 6
+        assert len(result_invalid.error_messages) == 5
         assert 'Mandatory attribute' in result_invalid.error_messages[0]
 
         assert auth_validator.passwords == ['pw1', 'pw2', 'pw3']

@@ -50,7 +50,7 @@ class TestRPSLParsingGeneric:
     def test_missing_mandatory_attribute(self):
         obj = rpsl_object_from_text(SAMPLE_MISSING_MANDATORY_ATTRIBUTE, strict_validation=True)
         assert len(obj.messages.errors()) == 1, f'Unexpected extra errors: {obj.messages.errors()}'
-        assert 'Mandatory attribute "changed" on object route is missing' in obj.messages.errors()[0]
+        assert 'Mandatory attribute "mnt-by" on object route is missing' in obj.messages.errors()[0]
 
         obj = rpsl_object_from_text(SAMPLE_MISSING_MANDATORY_ATTRIBUTE, strict_validation=False)
         assert len(obj.messages.errors()) == 0, f'Unexpected extra errors: {obj.messages.errors()}'
