@@ -632,7 +632,6 @@ source:         TEST
 
 SAMPLE_MISSING_MANDATORY_ATTRIBUTE = """route:          192.0.2.0/24
 origin:         AS65537
-mnt-by:         TEST-MNT
 source:         TEST
 """
 
@@ -825,7 +824,7 @@ roa-uri:        [optional]   [single]    []
 remarks:        [optional]   [multiple]  []
 notify:         [optional]   [multiple]  []
 mnt-by:         [mandatory]  [multiple]  [look-up key, strong references mntner]
-changed:        [mandatory]  [multiple]  []
+changed:        [optional]   [multiple]  []
 source:         [mandatory]  [single]    []
 """
 
@@ -838,6 +837,6 @@ nic-hdl:   [mandatory]  [single]    [primary/look-up key]
 remarks:   [optional]   [multiple]  []
 notify:    [optional]   [multiple]  []
 mnt-by:    [mandatory]  [multiple]  [look-up key, strong references mntner]
-changed:   [mandatory]  [multiple]  []
+changed:   [optional]   [multiple]  []
 source:    [mandatory]  [single]    []
 """
