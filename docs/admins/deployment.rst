@@ -14,7 +14,7 @@ Requirements
 ------------
 IRRd requires:
 
-* Linux or MacOS. Other platforms are untested, but may work.
+* Linux, OpenBSD or MacOS. Other platforms are untested, but may work.
 * Python 3.6 or 3.7 with `pip` and `virtualenv` installed.
   At this point, 3.8 has had limited testing.
 * A recent version of PostgreSQL. Versions 9.6 and 10.5 have been
