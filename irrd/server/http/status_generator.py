@@ -8,7 +8,7 @@ from beautifultable import BeautifulTable
 from irrd import __version__
 from irrd.conf import get_setting
 from irrd.conf.defaults import DEFAULT_SOURCE_NRTM_PORT
-from irrd.storage.database_handler import DatabaseHandler
+from irrd.storage.database_handler import DatabaseHandler, is_serial_synchronised
 from irrd.storage.queries import DatabaseStatusQuery, RPSLDatabaseObjectStatisticsQuery
 from irrd.utils.whois_client import whois_query_source_status
 
@@ -28,7 +28,11 @@ class StatusGenerator:
         status_query = DatabaseStatusQuery()
         self.status_results = list(database_handler.execute_query(status_query))
 
-        results = [self._generate_header(), self._generate_statistics_table(), self._generate_source_detail()]
+        results = [
+            self._generate_header(),
+            self._generate_statistics_table(),
+            self._generate_source_detail(database_handler)
+        ]
         database_handler.close()
         return '\n\n'.join(results)
 
@@ -84,13 +88,14 @@ class StatusGenerator:
         autnum_obj = sum([s['count'] for s in source_statistics if s['object_class'] == 'aut-num'])
         return total_obj, route_obj, autnum_obj
 
-    def _generate_source_detail(self) -> str:
+    def _generate_source_detail(self, database_handler: DatabaseHandler) -> str:
         """
         Generate status details for each database.
 
         This includes local configuration, local database status metadata,
         and serial information queried from the remote NRTM host,
         queried by _generate_remote_status_info().
+        :param database_handler:
         """
         result_txt = ''
         for status_result in self.status_results:
@@ -100,6 +105,9 @@ class StatusGenerator:
             object_class_filter = get_setting(f'sources.{source}.object_class_filter')
             rpki_enabled = get_setting('rpki.roa_source') and not get_setting(f'sources.{source}.rpki_excluded')
             rpki_enabled_str = 'Yes' if rpki_enabled else 'No'
+            scopefilter_enabled = get_setting('rpki.scopefiler') and not get_setting(f'sources.{source}.scopefilter_excluded')
+            scopefilter_enabled_str = 'Yes' if scopefilter_enabled else 'No'
+            synchronised_serials_str = 'Yes' if is_serial_synchronised(database_handler, source) else 'No'
 
             nrtm_host = get_setting(f'sources.{source}.nrtm_host')
             nrtm_port = int(get_setting(f'sources.{source}.nrtm_port', DEFAULT_SOURCE_NRTM_PORT))
@@ -119,10 +127,12 @@ class StatusGenerator:
                 Newest local journal serial number: {status_result['serial_newest_journal']}
                 Last export at serial number: {status_result['serial_last_export']}
                 Newest serial number mirrored: {status_result['serial_newest_mirror']}
+                Synchronised NRTM serials: {synchronised_serials_str}
                 Last update: {status_result['updated']}
                 Local journal kept: {keep_journal}
                 Last import error occurred at: {status_result['last_error_timestamp']}
                 RPKI validation enabled: {rpki_enabled_str}
+                Scope filter enabled: {scopefilter_enabled_str}
 
             Remote information:{remote_information}
             """)

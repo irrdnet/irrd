@@ -15,7 +15,7 @@ from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import (OBJECT_CLASS_MAPPING, lookup_field_names,
                                     RPKI_RELEVANT_OBJECT_CLASSES)
 from irrd.scopefilter.status import ScopeFilterStatus
-from irrd.storage.database_handler import DatabaseHandler
+from irrd.storage.database_handler import DatabaseHandler, is_serial_synchronised
 from irrd.storage.preload import Preloader
 from irrd.storage.queries import RPSLDatabaseQuery, DatabaseStatusQuery
 from irrd.utils.validators import parse_as_number, ValidationError
@@ -468,6 +468,7 @@ class WhoisQueryParser:
             results[source]['serial_last_export'] = query_result['serial_last_export']
             results[source]['serial_newest_mirror'] = query_result['serial_newest_mirror']
             results[source]['last_update'] = query_result['updated'].astimezone(timezone('UTC')).isoformat()
+            results[source]['synchronised_serials'] = is_serial_synchronised(self.database_handler, source)
 
         for invalid_source in invalid_sources:
             results[invalid_source.upper()] = OrderedDict({'error': 'Unknown source'})

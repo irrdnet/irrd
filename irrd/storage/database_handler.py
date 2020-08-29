@@ -1,6 +1,7 @@
 import logging
 from collections import defaultdict
 from datetime import datetime, timezone
+from functools import lru_cache
 from io import StringIO
 from typing import List, Set, Dict, Any, Tuple, Iterator, Union, Optional
 
@@ -36,8 +37,9 @@ class DatabaseHandler:
     _transaction: sa.engine.base.Transaction
     _rpsl_pk_source_seen: Set[str]
     # The RPSL upsert buffer is a list of tuples. Each tuple first has a dict
-    # with all database column names and their values, and then the origin of the change.
-    _rpsl_upsert_buffer: List[Tuple[dict, JournalEntryOrigin]]
+    # with all database column names and their values, and then the origin of the change
+    # and the serial of the change at the NRTM source, if any.
+    _rpsl_upsert_buffer: List[Tuple[dict, JournalEntryOrigin, Optional[int]]]
     # The ROA insert buffer is a list of dicts with columm names and their values.
     _roa_insert_buffer: List[Dict[str, Union[str, int]]]
 
@@ -122,10 +124,16 @@ class DatabaseHandler:
         if start_transaction:
             self._start_transaction()
 
-    def execute_query(self, query: Union[BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery, RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery]) -> Iterator[Dict[str, Any]]:
-        """Execute an RPSLDatabaseQuery within the current transaction."""
+    def execute_query(self,
+                      query: Union[BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery, RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery],
+                      flush_rpsl_buffer=True,
+                      ) -> Iterator[Dict[str, Any]]:
+        """
+        Execute an RPSLDatabaseQuery within the current transaction.
+        If flush_rpsl_buffer is set, the RPSL object buffer is flushed first.
+        """
         # To be able to query objects that were just created, flush the buffer.
-        if not self.readonly:
+        if not self.readonly and flush_rpsl_buffer:
             self._flush_rpsl_object_writing_buffer()
         statement = query.finalise_statement()
         result = self._connection.execute(statement)
@@ -137,8 +145,11 @@ class DatabaseHandler:
         """Execute a raw SQLAlchemy statement, without flushing the upsert buffer."""
         return self._connection.execute(statement)
 
-    def upsert_rpsl_object(self, rpsl_object: RPSLObject, origin: JournalEntryOrigin,
-                           rpsl_guaranteed_no_existing=False) -> None:
+    def upsert_rpsl_object(self,
+                           rpsl_object: RPSLObject,
+                           origin: JournalEntryOrigin,
+                           rpsl_guaranteed_no_existing=False,
+                           source_serial: Optional[int]=None) -> None:
         """
         Schedule an RPSLObject for insertion/updating.
 
@@ -150,7 +161,8 @@ class DatabaseHandler:
         reasons, but commit() will ensure all writes are flushed to the DB first.
 
         The origin indicates the origin of this change, see JournalEntryOrigin
-        for the various options.
+        for the various options. The source_serial is the serial that an NRTM
+        source assigned to this change, if any.
 
         If rpsl_guaranteed_no_existing is set to True, the caller guarantees that this
         PK is unique in the database. This essentially only applies to inserting
@@ -194,7 +206,7 @@ class DatabaseHandler:
             'updated': update_time,
         }
 
-        self._rpsl_upsert_buffer.append((object_dict, origin))
+        self._rpsl_upsert_buffer.append((object_dict, origin, source_serial))
 
         self._rpsl_pk_source_seen.add(rpsl_pk_source)
         self._object_classes_modified.add(rpsl_object.rpsl_object_class)
@@ -252,6 +264,7 @@ class DatabaseHandler:
                     object_class=rpsl_obj['object_class'],
                     object_text=rpsl_obj['object_text'],
                     origin=JournalEntryOrigin.rpki_status,
+                    source_serial=None,
                 )
         for rpsl_obj in rpsl_objs_now_invalid:
             self.status_tracker.record_operation(
@@ -261,6 +274,7 @@ class DatabaseHandler:
                 object_class=rpsl_obj['object_class'],
                 object_text=rpsl_obj['object_text'],
                 origin=JournalEntryOrigin.rpki_status,
+                source_serial=None,
             )
         if rpsl_objs_now_valid or rpsl_objs_now_invalid or rpsl_objs_now_not_found:
             self._object_classes_modified.add('route')
@@ -298,6 +312,7 @@ class DatabaseHandler:
                 object_class=rpsl_obj['object_class'],
                 object_text=rpsl_obj['object_text'],
                 origin=JournalEntryOrigin.scope_filter,
+                source_serial=None,
             )
             self._object_classes_modified.add(rpsl_obj['object_class'])
 
@@ -310,11 +325,13 @@ class DatabaseHandler:
                     object_class=rpsl_obj['object_class'],
                     object_text=rpsl_obj['object_text'],
                     origin=JournalEntryOrigin.scope_filter,
+                    source_serial=None,
                 )
                 self._object_classes_modified.add(rpsl_obj['object_class'])
 
     def delete_rpsl_object(self, origin: JournalEntryOrigin, rpsl_object: Optional[RPSLObject]=None,
-                           source: Optional[str]=None, rpsl_pk: Optional[str]=None) -> None:
+                           source: Optional[str]=None, rpsl_pk: Optional[str]=None,
+                           source_serial: Optional[int]=None) -> None:
         """
         Delete an RPSL object from the database.
 
@@ -353,6 +370,7 @@ class DatabaseHandler:
             object_class=result['object_class'],
             object_text=result['object_text'],
             origin=origin,
+            source_serial=source_serial,
         )
         self._object_classes_modified.add(result['object_class'])
 
@@ -389,7 +407,7 @@ class DatabaseHandler:
             logger.error(f'Exception occurred while executing statement: {stmt}, rolling back', exc_info=exc)
             raise
 
-        for obj, origin in self._rpsl_upsert_buffer:
+        for obj, origin, source_serial in self._rpsl_upsert_buffer:
             # RPKI invalid objects never generated a journal entry,
             # as mirrors should not see them. This does not affect
             # RPKI excluded sources, because they are always not_found.
@@ -405,6 +423,7 @@ class DatabaseHandler:
                     object_class=obj['object_class'],
                     object_text=obj['object_text'],
                     origin=origin,
+                    source_serial=source_serial,
                 )
 
         self._rpsl_pk_source_seen = set()
@@ -467,8 +486,14 @@ class DatabaseHandler:
         discarded and reloaded from the source.
         """
         table = RPSLDatabaseStatus.__table__
-        stmt = table.update().where(table.c.source == source).values(force_reload=True)
+        synchronised_serials = is_serial_synchronised(self, source, settings_only=True)
+        stmt = table.update().where(table.c.source == source).values(
+            force_reload=True,
+            synchronised_serials=synchronised_serials,
+        )
         self._connection.execute(stmt)
+        logger.info(f'force_reload flag set for {source}, serial synchronisation based on '
+                    f'current settings: {synchronised_serials}')
 
     def record_serial_newest_mirror(self, source: str, serial: int) -> None:
         """
@@ -558,7 +583,7 @@ class DatabaseStatusTracker:
         self._exported_serials[source] = serial
 
     def record_operation(self, operation: DatabaseOperation, rpsl_pk: str, source: str, object_class: str,
-                         object_text: str, origin: JournalEntryOrigin) -> None:
+                         object_text: str, origin: JournalEntryOrigin, source_serial: Optional[int]) -> None:
         """
         Make a record in the journal of a change to an object.
 
@@ -571,12 +596,16 @@ class DatabaseStatusTracker:
         """
         self._sources_seen.add(source)
         if self.journaling_enabled and get_setting(f'sources.{source}.keep_journal'):
+            serial_nrtm: Union[int, sa.sql.expression.Select]
             journal_tablename = RPSLDatabaseJournal.__tablename__
 
-            self.database_handler.execute_statement(f'LOCK TABLE {journal_tablename} IN EXCLUSIVE MODE')
-            serial_nrtm = sa.select([sa.text('COALESCE(MAX(serial_nrtm), 0) + 1')])
-            serial_nrtm = serial_nrtm.where(RPSLDatabaseJournal.__table__.c.source == source)
-            serial_nrtm = serial_nrtm.as_scalar()
+            if self._is_serial_synchronised(source):
+                serial_nrtm = source_serial
+            else:
+                self.database_handler.execute_statement(f'LOCK TABLE {journal_tablename} IN EXCLUSIVE MODE')
+                serial_nrtm = sa.select([sa.text('COALESCE(MAX(serial_nrtm), 0) + 1')])
+                serial_nrtm = serial_nrtm.where(RPSLDatabaseJournal.__table__.c.source == source)
+                serial_nrtm = serial_nrtm.as_scalar()
             stmt = RPSLDatabaseJournal.__table__.insert().values(
                 rpsl_pk=rpsl_pk,
                 source=source,
@@ -603,11 +632,15 @@ class DatabaseStatusTracker:
             stmt = pg.insert(RPSLDatabaseStatus).values(
                 source=source,
                 force_reload=False,
+                synchronised_serials=self._is_serial_synchronised(source),
                 updated=datetime.now(timezone.utc),
             )
             stmt = stmt.on_conflict_do_update(
                 index_elements=['source'],
-                set_={'force_reload': False},
+                set_={
+                    'force_reload': False,
+                    'synchronised_serials': self._is_serial_synchronised(source),
+                },
             )
             self.database_handler.execute_statement(stmt)
 
@@ -658,9 +691,41 @@ class DatabaseStatusTracker:
 
         self.reset()
 
+    @lru_cache(maxsize=100)
+    def _is_serial_synchronised(self, source: str) -> bool:
+        # Cached wrapper method
+        return is_serial_synchronised(self.database_handler, source)
+
     def reset(self):
         self._new_serials_per_source = defaultdict(set)
         self._sources_seen = set()
         self._newest_mirror_serials = dict()
         self._mirroring_error = dict()
         self._exported_serials = dict()
+        self._is_serial_synchronised.cache_clear()
+
+
+def is_serial_synchronised(database_handler: DatabaseHandler, source: str, settings_only=False) -> bool:
+    """
+    Determine whether a source should use / is using serial synchronisation
+    from the NRTM mirror source.
+    If settings_only is set, only look at whether serial synchronisation should
+    be enabled based on the current config. Otherwise, also looks at the current
+    flag in the database, which catches cases where serials have gone out of
+    sync in the past.
+    """
+    if settings_only:
+        db_status = True
+    else:
+        db_query = DatabaseStatusQuery().source(source)
+        db_result = database_handler.execute_query(db_query, flush_rpsl_buffer=False)
+        try:
+            db_status = next(db_result)['synchronised_serials']
+        except StopIteration:
+            db_status = True
+    settings_status = all([
+        not get_setting('scopefilter') or get_setting(f'sources.{source}.scopefilter_excluded'),
+        not get_setting('rpki.roa_source') or get_setting(f'sources.{source}.rpki_excluded'),
+        get_setting(f'sources.{source}.nrtm_host')
+    ])
+    return db_status and settings_status

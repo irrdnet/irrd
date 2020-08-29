@@ -860,6 +860,7 @@ class TestWhoisQueryParserIRRD:
         mock_dq, mock_dh, mock_preloader, parser = prepare_parser
         mock_dsq = Mock()
         monkeypatch.setattr('irrd.server.whois.query_parser.DatabaseStatusQuery', lambda: mock_dsq)
+        monkeypatch.setattr('irrd.server.whois.query_parser.is_serial_synchronised', lambda dh, s: False)
 
         mock_query_result = [
             {
@@ -898,7 +899,8 @@ class TestWhoisQueryParserIRRD:
               "serial_newest_journal": 10,
               "serial_last_export": 10,
               "serial_newest_mirror": 500,
-              "last_update": "2020-01-01T00:00:00+00:00"
+              "last_update": "2020-01-01T00:00:00+00:00",
+              "synchronised_serials": false
              },
              "TEST2": {
               "authoritative": false,
@@ -910,7 +912,8 @@ class TestWhoisQueryParserIRRD:
               "serial_newest_journal": null,
               "serial_last_export": null,
               "serial_newest_mirror": 20,
-              "last_update": "2020-01-01T00:00:00+00:00"
+              "last_update": "2020-01-01T00:00:00+00:00",
+              "synchronised_serials": false
              }
             }""").strip()
         assert flatten_mock_calls(mock_dsq) == [
@@ -936,7 +939,8 @@ class TestWhoisQueryParserIRRD:
               "serial_newest_journal": 10,
               "serial_last_export": 10,
               "serial_newest_mirror": 500,
-              "last_update": "2020-01-01T00:00:00+00:00"
+              "last_update": "2020-01-01T00:00:00+00:00",
+              "synchronised_serials": false
              },
              "TEST-INVALID": {
               "error": "Unknown source"

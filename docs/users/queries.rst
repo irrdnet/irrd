@@ -98,6 +98,8 @@ IRRd style queries
   * ``last_update``: the time of the last change to this source. This may be
     an authoritative change, an update from a mirror, a re-import, a change
     in the RPKI status of an object, or something else.
+  * ``synchronised_serials``: whether or not a mirrored source is running with
+    :ref:`synchronised serials <mirroring-nrtm-serials>`.
 * ``!m<object-class>,<primary-key>`` searches for objects exactly matching
   the primary key, of the specified RPSL object class. For example:
   ``!maut-num,AS23456``. Stops at the first object. The key is case
