@@ -75,9 +75,11 @@ class NRTMOperation:
                 obj.rpki_status = roa_validator.validate_route(obj.prefix, obj.asn_first, obj.source())
             scope_validator = ScopeFilterValidator()
             obj.scopefilter_status, _ = scope_validator.validate_rpsl_object(obj)
-            database_handler.upsert_rpsl_object(obj, JournalEntryOrigin.mirror)
+            database_handler.upsert_rpsl_object(obj, JournalEntryOrigin.mirror,
+                                                source_serial=self.serial)
         elif self.operation == DatabaseOperation.delete:
-            database_handler.delete_rpsl_object(rpsl_object=obj, origin=JournalEntryOrigin.mirror)
+            database_handler.delete_rpsl_object(rpsl_object=obj, origin=JournalEntryOrigin.mirror,
+                                                source_serial=self.serial)
 
         log = f'Completed NRTM operation {str(self)}/{obj.rpsl_object_class}/{obj.pk()}'
         if self.rpki_aware and obj.rpki_relevant:

@@ -17,6 +17,8 @@ class TestStatusGenerator:
         monkeypatch.setattr('irrd.server.http.status_generator.DatabaseHandler', lambda: mock_database_handler)
         mock_status_query = Mock()
         monkeypatch.setattr('irrd.server.http.status_generator.DatabaseStatusQuery', lambda: mock_status_query)
+        monkeypatch.setattr('irrd.server.http.status_generator.is_serial_synchronised',
+                            lambda dh, source: False)
         mock_statistics_query = Mock()
         monkeypatch.setattr('irrd.server.http.status_generator.RPSLDatabaseObjectStatisticsQuery',
                             lambda: mock_statistics_query)
@@ -120,7 +122,7 @@ class TestStatusGenerator:
                 },
             ],
         ])
-        mock_database_handler.execute_query = lambda query: next(mock_query_result)
+        mock_database_handler.execute_query = lambda query, flush_rpsl_buffer=True: next(mock_query_result)
 
         status_report = StatusGenerator().generate_status()
         expected_report = textwrap.dedent(f"""
@@ -149,10 +151,12 @@ class TestStatusGenerator:
                 Newest local journal serial number: 20
                 Last export at serial number: 16
                 Newest serial number mirrored: 25
+                Synchronised NRTM serials: No
                 Last update: 2018-06-01 00:00:00+00:00
                 Local journal kept: Yes
                 Last import error occurred at: 2018-01-01 00:00:00+00:00
                 RPKI validation enabled: No
+                Scope filter enabled: No
             
             Remote information:
                 NRTM host: nrtm1.example.com port 43
@@ -173,10 +177,12 @@ class TestStatusGenerator:
                 Newest local journal serial number: None
                 Last export at serial number: None
                 Newest serial number mirrored: None
+                Synchronised NRTM serials: No
                 Last update: 2019-06-01 00:00:00+00:00
                 Local journal kept: No
                 Last import error occurred at: 2019-01-01 00:00:00+00:00
                 RPKI validation enabled: Yes
+                Scope filter enabled: No
             
             Remote information:
                 NRTM host: nrtm2.example.com port 44
@@ -194,10 +200,12 @@ class TestStatusGenerator:
                 Newest local journal serial number: None
                 Last export at serial number: None
                 Newest serial number mirrored: None
+                Synchronised NRTM serials: No
                 Last update: None
                 Local journal kept: No
                 Last import error occurred at: None
                 RPKI validation enabled: Yes
+                Scope filter enabled: No
             
             Remote information:
                 NRTM host: nrtm3.example.com port 45
@@ -215,10 +223,12 @@ class TestStatusGenerator:
                 Newest local journal serial number: None
                 Last export at serial number: None
                 Newest serial number mirrored: None
+                Synchronised NRTM serials: No
                 Last update: None
                 Local journal kept: No
                 Last import error occurred at: None
                 RPKI validation enabled: Yes
+                Scope filter enabled: No
             
             Remote information:
                 No NRTM host configured.\n\n""").lstrip()

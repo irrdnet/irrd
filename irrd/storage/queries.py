@@ -378,6 +378,7 @@ class DatabaseStatusQuery:
             self.columns.serial_last_export,
             self.columns.serial_newest_mirror,
             self.columns.force_reload,
+            self.columns.synchronised_serials,
             self.columns.last_error,
             self.columns.last_error_timestamp,
             self.columns.created,

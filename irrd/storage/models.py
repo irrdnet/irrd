@@ -143,6 +143,7 @@ class RPSLDatabaseStatus(Base):  # type: ignore
     serial_newest_mirror = sa.Column(sa.Integer)
 
     force_reload = sa.Column(sa.Boolean(), default=False, nullable=False)
+    synchronised_serials = sa.Column(sa.Boolean(), default=True, nullable=False)
 
     last_error = sa.Column(sa.Text)
     last_error_timestamp = sa.Column(sa.DateTime(timezone=True))
