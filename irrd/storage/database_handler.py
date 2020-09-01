@@ -647,27 +647,38 @@ class DatabaseStatusTracker:
             self.database_handler.execute_statement(stmt)
 
         for source, serials in self._new_serials_per_source.items():
+            serial_oldest_journal_q = sa.select([
+                sa.func.min(self.c_journal.serial_nrtm)
+            ]).where(self.c_journal.source == source)
+            try:
+                result = self.database_handler.execute_statement(serial_oldest_journal_q)
+                serial_oldest_journal = next(result)[0]
+            except StopIteration:
+                serial_oldest_journal = None
+
+            serial_newest_journal_q = sa.select([
+                sa.func.max(self.c_journal.serial_nrtm)
+            ]).where(self.c_journal.source == source)
+            try:
+                result = self.database_handler.execute_statement(serial_newest_journal_q)
+                serial_newest_journal = next(result)[0]
+            except StopIteration:
+                serial_newest_journal = None
+
             serial_oldest_seen = sa.select([
                 sa.func.least(
                     sa.func.min(self.c_status.serial_oldest_seen),
-                    sa.func.min(self.c_status.serial_oldest_journal),
+                    serial_oldest_journal,
                     min(serials)
                 )
             ]).where(self.c_status.source == source)
             serial_newest_seen = sa.select([
                 sa.func.greatest(
                     sa.func.max(self.c_status.serial_newest_seen),
-                    sa.func.max(self.c_status.serial_newest_journal),
+                    serial_newest_journal,
                     max(serials)
                 ),
             ]).where(self.c_status.source == source)
-
-            serial_oldest_journal = sa.select([
-                sa.func.min(self.c_journal.serial_nrtm)
-            ]).where(self.c_journal.source == source)
-            serial_newest_journal = sa.select([
-                sa.func.max(self.c_journal.serial_nrtm)
-            ]).where(self.c_journal.source == source)
 
             stmt = RPSLDatabaseStatus.__table__.update().where(self.c_status.source == source).values(
                 serial_oldest_seen=serial_oldest_seen,
