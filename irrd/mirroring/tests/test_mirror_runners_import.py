@@ -142,7 +142,6 @@ class TestRPSLMirrorFullImportRunner:
         MockMirrorFileImportParser.rpsl_data_calls = []
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.MirrorFileImportParser', MockMirrorFileImportParser)
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.FTP', lambda url, timeout: mock_ftp)
-        MockMirrorFileImportParser.expected_serial = 424242
 
         mock_bulk_validator_init = Mock()
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.BulkRouteROAValidator', mock_bulk_validator_init)
@@ -189,7 +188,6 @@ class TestRPSLMirrorFullImportRunner:
         mock_dh = Mock()
         MockMirrorFileImportParser.rpsl_data_calls = []
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.MirrorFileImportParser', MockMirrorFileImportParser)
-        MockMirrorFileImportParser.expected_serial = 424242
 
         RPSLMirrorFullImportRunner('TEST').run(mock_dh)
 
@@ -215,7 +213,6 @@ class TestRPSLMirrorFullImportRunner:
         MockMirrorFileImportParser.rpsl_data_calls = []
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.MirrorFileImportParser', MockMirrorFileImportParser)
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.FTP', lambda url, timeout: mock_ftp)
-        MockMirrorFileImportParser.expected_serial = None
 
         responses = {
             # gzipped data, contains 'source1'
@@ -246,7 +243,6 @@ class TestRPSLMirrorFullImportRunner:
         MockMirrorFileImportParser.rpsl_data_calls = []
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.MirrorFileImportParser', MockMirrorFileImportParser)
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.FTP', lambda url, timeout: mock_ftp)
-        MockMirrorFileImportParser.expected_serial = 424242
 
         responses = {
             # gzipped data, contains 'source1'
@@ -277,7 +273,6 @@ class TestRPSLMirrorFullImportRunner:
         MockMirrorFileImportParser.rpsl_data_calls = []
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.MirrorFileImportParser', MockMirrorFileImportParser)
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.FTP', lambda url, timeout: mock_ftp)
-        MockMirrorFileImportParser.expected_serial = 424242
 
         responses = {
             # gzipped data, contains 'source1'
@@ -326,12 +321,11 @@ class TestRPSLMirrorFullImportRunner:
 
 class MockMirrorFileImportParser:
     rpsl_data_calls: List[str] = []
-    expected_serial = 424242
 
     def __init__(self, source, filename, serial, database_handler, direct_error_return=False, roa_validator=None):
         self.filename = filename
         assert source == 'TEST'
-        assert serial == self.expected_serial
+        assert serial == None
 
     def run_import(self):
         with open(self.filename, 'r') as f:
