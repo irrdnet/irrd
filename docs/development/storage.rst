@@ -126,8 +126,9 @@ For each source, a record is kept of:
   also logged in the IRRd logfile.
 
 The difference between `serial_newest_mirror` and `serial_newest_journal` is
-that the former refers to the serial numbers that were seen, and the latter
-refers specifically to the local journal.
+that the former refers to the serial numbers in the remote mirror's journal,
+and the latter refers to the local journal. These may be different, e.g. due
+to changes in RPKI status.
 
 .. note::
     There is no guarantee that all NRTM operations between
