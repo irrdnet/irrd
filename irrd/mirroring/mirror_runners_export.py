@@ -58,7 +58,7 @@ class SourceExportRunner:
         except StopIteration:
             serial = None
 
-        with gzip.open(export_tmpfile, 'wb') as fh:
+        with gzip.open(export_tmpfile.name, 'wb') as fh:
             query = RPSLDatabaseQuery().sources([self.source])
             query = query.rpki_status([RPKIStatus.not_found, RPKIStatus.valid])
             query = query.scopefilter_status([ScopeFilterStatus.in_scope])
