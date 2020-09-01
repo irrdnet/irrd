@@ -34,7 +34,7 @@ def irrd_database(monkeypatch):
     engine = get_engine()
     # RPSLDatabaseObject.metadata.drop_all(engine)
     try:
-        engine.execute('CREATE EXTENSION IF NOT EXISTS pcrypto')
+        engine.execute('CREATE EXTENSION IF NOT EXISTS pgcrypto')
     except ProgrammingError as pe:  # pragma: no cover
         print(f'WARNING: unable to create extension pgcrypto on the database. Queries may fail: {pe}')
 
