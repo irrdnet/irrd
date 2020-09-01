@@ -650,20 +650,14 @@ class DatabaseStatusTracker:
             serial_oldest_journal_q = sa.select([
                 sa.func.min(self.c_journal.serial_nrtm)
             ]).where(self.c_journal.source == source)
-            try:
-                result = self.database_handler.execute_statement(serial_oldest_journal_q)
-                serial_oldest_journal = next(result)[0]
-            except StopIteration:
-                serial_oldest_journal = None
+            result = self.database_handler.execute_statement(serial_oldest_journal_q)
+            serial_oldest_journal = next(result)[0]
 
             serial_newest_journal_q = sa.select([
                 sa.func.max(self.c_journal.serial_nrtm)
             ]).where(self.c_journal.source == source)
-            try:
-                result = self.database_handler.execute_statement(serial_newest_journal_q)
-                serial_newest_journal = next(result)[0]
-            except StopIteration:
-                serial_newest_journal = None
+            result = self.database_handler.execute_statement(serial_newest_journal_q)
+            serial_newest_journal = next(result)[0]
 
             serial_oldest_seen = sa.select([
                 sa.func.least(
