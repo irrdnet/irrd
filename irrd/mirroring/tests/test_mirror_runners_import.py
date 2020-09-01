@@ -325,7 +325,7 @@ class MockMirrorFileImportParser:
     def __init__(self, source, filename, serial, database_handler, direct_error_return=False, roa_validator=None):
         self.filename = filename
         assert source == 'TEST'
-        assert serial == None
+        assert serial is None
 
     def run_import(self):
         with open(self.filename, 'r') as f:
