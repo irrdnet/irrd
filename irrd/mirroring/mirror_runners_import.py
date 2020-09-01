@@ -44,7 +44,7 @@ class RPSLMirrorImportUpdateRunner:
         try:
             serial_newest_mirror, force_reload = self._status()
             nrtm_enabled = bool(get_setting(f'sources.{self.source}.nrtm_host'))
-            logger.debug(f'Most recent serial seen for {self.source}: {serial_newest_mirror},'
+            logger.debug(f'Most recent mirrored serial for {self.source}: {serial_newest_mirror}, '
                          f'force_reload: {force_reload}, nrtm enabled: {nrtm_enabled}')
             if force_reload or not serial_newest_mirror or not nrtm_enabled:
                 self.full_import_runner.run(database_handler=self.database_handler,
@@ -211,7 +211,7 @@ class RPSLMirrorFullImportRunner(FileImportRunnerBase):
 
         database_handler.disable_journaling()
         for import_filename, to_delete in import_data:
-            p = MirrorFileImportParser(source=self.source, filename=import_filename, serial=import_serial,
+            p = MirrorFileImportParser(source=self.source, filename=import_filename, serial=None,
                                        database_handler=database_handler, roa_validator=roa_validator)
             p.run_import()
             if to_delete:

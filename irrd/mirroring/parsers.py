@@ -143,7 +143,7 @@ class MirrorFileImportParser(MirrorFileImportParserBase):
     def __init__(self, serial: Optional[int]=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.serial = serial
-        logger.debug(f'Starting file import of {self.source} from {self.filename}, setting serial {serial}')
+        logger.debug(f'Starting file import of {self.source} from {self.filename}')
 
     def run_import(self) -> Optional[str]:
         """
@@ -164,7 +164,8 @@ class MirrorFileImportParser(MirrorFileImportParserBase):
 
         self.log_report()
         f.close()
-        self.database_handler.record_serial_seen(self.source, self.serial if self.serial else 1)
+        if self.serial:
+            self.database_handler.record_serial_seen(self.source, self.serial)
 
         return None
 
@@ -174,7 +175,7 @@ class MirrorFileImportParser(MirrorFileImportParserBase):
                     f'{obj_successful} objects inserted, '
                     f'ignored {self.obj_errors} due to errors, '
                     f'ignored {self.obj_ignored_class} due to object_class_filter, '
-                    f'serial {self.serial}, source {self.filename}')
+                    f'source {self.filename}')
         if self.obj_unknown:
             unknown_formatted = ', '.join(self.unknown_object_classes)
             logger.warning(f'Ignored {self.obj_unknown} objects found in file import for {self.source} due to unknown '
