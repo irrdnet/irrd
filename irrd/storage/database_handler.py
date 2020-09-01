@@ -490,6 +490,8 @@ class DatabaseHandler:
         stmt = table.update().where(table.c.source == source).values(
             force_reload=True,
             synchronised_serials=synchronised_serials,
+            serial_oldest_seen=None,
+            serial_newest_seen=None,
         )
         self._connection.execute(stmt)
         logger.info(f'force_reload flag set for {source}, serial synchronisation based on '
@@ -646,10 +648,18 @@ class DatabaseStatusTracker:
 
         for source, serials in self._new_serials_per_source.items():
             serial_oldest_seen = sa.select([
-                sa.func.least(sa.func.min(self.c_status.serial_oldest_seen), min(serials))
+                sa.func.least(
+                    sa.func.min(self.c_status.serial_oldest_seen),
+                    sa.func.min(self.c_status.serial_oldest_journal),
+                    min(serials)
+                )
             ]).where(self.c_status.source == source)
             serial_newest_seen = sa.select([
-                sa.func.greatest(sa.func.max(self.c_status.serial_newest_seen), max(serials))
+                sa.func.greatest(
+                    sa.func.max(self.c_status.serial_newest_seen),
+                    sa.func.max(self.c_status.serial_newest_journal),
+                    max(serials)
+                ),
             ]).where(self.c_status.source == source)
 
             serial_oldest_journal = sa.select([

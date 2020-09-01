@@ -131,7 +131,7 @@ class RPSLDatabaseStatus(Base):  # type: ignore
     pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text('gen_random_uuid()'), primary_key=True)
     source = sa.Column(sa.String, index=True, nullable=False, unique=True)
 
-    # The oldest and newest serials seen, for any reason at any time
+    # The oldest and newest serials seen, for any reason since the last import
     serial_oldest_seen = sa.Column(sa.Integer)
     serial_newest_seen = sa.Column(sa.Integer)
     # The oldest and newest serials in the current local journal
