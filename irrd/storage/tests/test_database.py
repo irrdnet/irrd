@@ -240,7 +240,7 @@ class TestDatabaseHandlerLive:
         status_test = list(self.dh.execute_query(DatabaseStatusQuery().source('TEST')))
         assert self._clean_result(status_test) == [
             {'source': 'TEST', 'serial_oldest_journal': 1, 'serial_newest_journal': 2,
-             'serial_oldest_seen': 1, 'serial_newest_seen': 2,
+             'serial_oldest_seen': None, 'serial_newest_seen': None,
              'serial_last_export': None, 'serial_newest_mirror': None,
              'last_error': None, 'force_reload': True,
              'synchronised_serials': True},
