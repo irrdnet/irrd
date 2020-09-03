@@ -140,6 +140,21 @@ class TestMirrorScheduler:
         scheduler.run()
         assert thread_run_count == 2
 
+        config_override({
+            'rpki': {'roa_source': None},
+            'scopefilter': {
+                'asns': [23456],
+            },
+            'sources': {
+                'TEST': {'scopefilter_excluded': True}
+            },
+        })
+
+        # Should run again, because exclusions have changed
+        scheduler.update_process_state()
+        scheduler.run()
+        assert thread_run_count == 3
+
     def test_scheduler_import_ignores_timer_not_expired(self, monkeypatch, config_override):
         monkeypatch.setattr('irrd.mirroring.scheduler.ScheduledTaskProcess', MockScheduledTaskProcess)
         global thread_run_count

@@ -65,19 +65,15 @@ class MirrorScheduler:
         self.last_started_time = defaultdict(lambda: 0)
         self.previous_scopefilter_prefixes = None
         self.previous_scopefilter_asns = None
+        self.previous_scopefilter_excluded = None
 
     def run(self) -> None:
         if get_setting('rpki.roa_source'):
             import_timer = int(get_setting('rpki.roa_import_timer'))
             self.run_if_relevant(RPKI_IRR_PSEUDO_SOURCE, ROAImportRunner, import_timer)
 
-        if get_setting('scopefilter') and any([
-            self.previous_scopefilter_prefixes != list(get_setting('scopefilter.prefixes', [])),
-            self.previous_scopefilter_asns != list(get_setting('scopefilter.asns', [])),
-        ]):
+        if self._check_scopefilter_change():
             self.run_if_relevant('scopefilter', ScopeFilterUpdateRunner, 0)
-            self.previous_scopefilter_prefixes = list(get_setting('scopefilter.prefixes', []))
-            self.previous_scopefilter_asns = list(get_setting('scopefilter.asns', []))
 
         sources_started = 0
         for source in get_setting('sources', {}).keys():
@@ -100,6 +96,33 @@ class MirrorScheduler:
 
             if started_import or started_export:
                 sources_started += 1
+
+    def _check_scopefilter_change(self) -> bool:
+        """
+        Check whether the scope filter has changed since last call.
+        Always returns True on the first call.
+        """
+        if not get_setting('scopefilter'):
+            return False
+
+        current_prefixes = list(get_setting('scopefilter.prefixes', []))
+        current_asns = list(get_setting('scopefilter.asns', []))
+        current_exclusions = {
+            name
+            for name, settings in get_setting('sources', {}).items()
+            if settings['scopefilter_excluded']
+        }
+
+        if any([
+            self.previous_scopefilter_prefixes != current_prefixes,
+            self.previous_scopefilter_asns != current_asns,
+            self.previous_scopefilter_excluded != current_exclusions,
+        ]):
+            self.previous_scopefilter_prefixes = current_prefixes
+            self.previous_scopefilter_asns = current_asns
+            self.previous_scopefilter_excluded = current_exclusions
+            return True
+        return False
 
     def run_if_relevant(self, source: str, runner_class, timer: int) -> bool:
         process_name = f'{runner_class.__name__}-{source}'
