@@ -2,7 +2,8 @@ from io import StringIO
 
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
-from ..text import splitline_unicodesafe, split_paragraphs_rpsl, remove_auth_hashes
+from ..text import (splitline_unicodesafe, split_paragraphs_rpsl, remove_auth_hashes,
+                    remove_last_modified)
 
 
 def test_remove_auth_hashes():
@@ -15,6 +16,13 @@ def test_remove_auth_hashes():
     assert 'CRYPT-PW LEuuhsBJNFV0Q' not in result
     assert 'MD5-pw ' + PASSWORD_HASH_DUMMY_VALUE in result
     assert 'MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.' not in result
+
+
+def test_remove_last_modified():
+    # This descr line should be kept, only real last-modified attributes should be removed
+    expected_text = SAMPLE_MNTNER + 'descr: last-modified:  2020-01-01T00:00:00Z\n'
+    result = remove_last_modified(expected_text + 'last-modified:  2020-01-01T00:00:00Z\n')
+    assert result == expected_text
 
 
 def test_splitline_unicodesafe():
