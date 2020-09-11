@@ -9,7 +9,7 @@ from irrd.rpsl.rpsl_objects import rpsl_object_from_text, RPSLKeyCert
 from irrd.scopefilter.validators import ScopeFilterValidator
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.models import DatabaseOperation, JournalEntryOrigin
-from irrd.utils.text import split_paragraphs_rpsl
+from irrd.utils.text import split_paragraphs_rpsl, remove_last_modified
 from .nrtm_operation import NRTMOperation
 from ..storage.queries import RPSLDatabaseQuery
 
@@ -252,7 +252,7 @@ class MirrorUpdateFileImportParser(MirrorFileImportParserBase):
                 file_obj = file_objs_by_pk[row['rpsl_pk']]
             except KeyError:
                 continue
-            if file_obj.render_rpsl_text() != row['object_text']:
+            if file_obj.render_rpsl_text() != remove_last_modified(row['object_text']):
                 self.database_handler.upsert_rpsl_object(file_obj, JournalEntryOrigin.synthetic_nrtm)
                 self.obj_modified += 1
 

@@ -195,11 +195,13 @@ class TestMirrorUpdateFileImportParser:
         ]
         test_input = '\n\n'.join(test_data)
 
+        route_with_last_modified = SAMPLE_ROUTE + 'last-modified:  2020-01-01T00:00:00Z\n'
         mock_query_result = [
             {
                 # Retained object (with format cleaning)
+                # includes a last-modified which should be ignored in the comparison
                 'rpsl_pk': '192.0.2.0/24AS65537',
-                'object_text': rpsl_object_from_text(SAMPLE_ROUTE).render_rpsl_text(),
+                'object_text': rpsl_object_from_text(route_with_last_modified).render_rpsl_text(),
             },
             {
                 # Modified object
