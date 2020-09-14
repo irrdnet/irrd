@@ -336,13 +336,13 @@ class TestWhoisQueryParserRIPE:
 
     def test_text_search(self, prepare_parser):
         mock_query_resolver, mock_dh, parser = prepare_parser
-        mock_query_resolver.text_search = Mock(return_value=MOCK_DATABASE_RESPONSE)
+        mock_query_resolver.rpsl_text_search = Mock(return_value=MOCK_DATABASE_RESPONSE)
 
         response = parser.handle_query('query')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert response.result == MOCK_ROUTE_COMBINED
-        mock_query_resolver.text_search.assert_called_once_with('query')
+        mock_query_resolver.rpsl_text_search.assert_called_once_with('query')
 
     def test_missing_argument(self, prepare_parser):
         mock_query_resolver, mock_dh, parser = prepare_parser
@@ -356,7 +356,7 @@ class TestWhoisQueryParserRIPE:
 
     def test_exception_handling(self, prepare_parser, caplog):
         mock_query_resolver, mock_dh, parser = prepare_parser
-        mock_query_resolver.text_search = Mock(side_effect=Exception('test-error'))
+        mock_query_resolver.rpsl_text_search = Mock(side_effect=Exception('test-error'))
 
         response = parser.handle_query('foo')
         assert response.response_type == WhoisQueryResponseType.ERROR
@@ -367,7 +367,7 @@ class TestWhoisQueryParserRIPE:
         assert 'test-error' in caplog.text
         assert flatten_mock_calls(mock_dh)[0][0] == 'refresh_connection'
 
-        mock_query_resolver.text_search = Mock(side_effect=InvalidQueryException('user error'))
+        mock_query_resolver.rpsl_text_search = Mock(side_effect=InvalidQueryException('user error'))
 
         response = parser.handle_query('foo')
         assert response.response_type == WhoisQueryResponseType.ERROR
