@@ -1,23 +1,20 @@
 import logging
 import re
-from collections import OrderedDict
-from typing import Optional, List, Set, Tuple, Any
+from typing import Optional
 
 import ujson
 from IPy import IP
 from ordered_set import OrderedSet
-from pytz import timezone
 
 from irrd import __version__
 from irrd.conf import get_setting, RPKI_IRR_PSEUDO_SOURCE
 from irrd.mirroring.nrtm_generator import NRTMGenerator, NRTMGeneratorException
 from irrd.rpki.status import RPKIStatus
-from irrd.rpsl.rpsl_objects import (OBJECT_CLASS_MAPPING, lookup_field_names,
-                                    RPKI_RELEVANT_OBJECT_CLASSES)
-from irrd.scopefilter.status import ScopeFilterStatus
-from irrd.storage.database_handler import DatabaseHandler, is_serial_synchronised
+from irrd.rpsl.rpsl_objects import (OBJECT_CLASS_MAPPING, RPKI_RELEVANT_OBJECT_CLASSES)
+from irrd.server.query_resolver import QueryResolver, RouteLookupType, InvalidQueryException
+from irrd.storage.database_handler import DatabaseHandler, RPSLDatabaseResponse
 from irrd.storage.preload import Preloader
-from irrd.storage.queries import RPSLDatabaseQuery, DatabaseStatusQuery
+from irrd.storage.queries import DatabaseStatusQuery
 from irrd.utils.validators import parse_as_number, ValidationError
 from .query_response import WhoisQueryResponseType, WhoisQueryResponseMode, WhoisQueryResponse
 from ..access_check import is_client_permitted
@@ -25,63 +22,44 @@ from ..access_check import is_client_permitted
 logger = logging.getLogger(__name__)
 
 
-class WhoisQueryParserException(ValueError):
-    """
-    This exception can be thrown by parsers of individual commands, and
-    is handled in WhoisQueryParser.handle_query to be turned into a
-    WhoisQueryResponse with a suitable error message.
-    """
-    pass
-
-
 class WhoisQueryParser:
     """
     Parser for all whois-style queries.
 
     This parser distinguishes RIPE-style, e.g. '-K 192.0.2.1' or '-i mnt-by FOO'
-    from IRRD-style, e.g. '!oFOO'.
+    from IRRD-style, e.g. '!oFOO'. Query processing is mostly handled by
+    QueryResolver, with a few exceptions that are whois-specific.
 
     Some query flags, particularly -k/!! and -s/!s retain state across queries,
     so a single instance of this object should be created per session, with
     handle_query() being called for each individual query.
     """
-    lookup_field_names = lookup_field_names()
-    database_handler: DatabaseHandler
-    _current_set_root_object_class: Optional[str]
-
     def __init__(self, client_ip: str, client_str: str, preloader: Preloader,
                  database_handler: DatabaseHandler) -> None:
-        self.all_valid_sources = list(get_setting('sources', {}).keys())
-        self.sources_default = get_setting('sources_default')
-        self.sources: List[str] = self.sources_default if self.sources_default else self.all_valid_sources
-        if get_setting('rpki.roa_source'):
-            self.all_valid_sources.append(RPKI_IRR_PSEUDO_SOURCE)
-        self.object_classes: List[str] = []
-        self.user_agent: Optional[str] = None
         self.multiple_command_mode = False
-        self.rpki_aware = bool(get_setting('rpki.roa_source'))
-        self.rpki_invalid_filter_enabled = self.rpki_aware
-        self.out_scope_filter_enabled = True
         self.timeout = 30
         self.key_fields_only = False
         self.client_ip = client_ip
         self.client_str = client_str
-        self.preloader = preloader
         self.database_handler = database_handler
+        self.query_resolver = QueryResolver(
+            client_ip=client_ip,
+            client_str=client_str,
+            preloader=preloader,
+            database_handler=database_handler,
+        )
 
     def handle_query(self, query: str) -> WhoisQueryResponse:
         """
         Process a single query. Always returns a WhoisQueryResponse object.
         Not thread safe - only one call must be made to this method at the same time.
         """
-        # These flags are reset with every query.
         self.key_fields_only = False
-        self.object_classes = []
 
         if query.startswith('!'):
             try:
                 return self.handle_irrd_command(query[1:])
-            except WhoisQueryParserException as exc:
+            except InvalidQueryException as exc:
                 logger.info(f'{self.client_str}: encountered parsing error while parsing query "{query}": {exc}')
                 return WhoisQueryResponse(
                     response_type=WhoisQueryResponseType.ERROR,
@@ -104,7 +82,7 @@ class WhoisQueryParser:
 
         try:
             return self.handle_ripe_command(query)
-        except WhoisQueryParserException as exc:
+        except InvalidQueryException as exc:
             logger.info(f'{self.client_str}: encountered parsing error while parsing query "{query}": {exc}')
             return WhoisQueryResponse(
                 response_type=WhoisQueryResponseType.ERROR,
@@ -128,7 +106,7 @@ class WhoisQueryParser:
     def handle_irrd_command(self, full_command: str) -> WhoisQueryResponse:
         """Handle an IRRD-style query. full_command should not include the first exclamation mark. """
         if not full_command:
-            raise WhoisQueryParserException('Missing IRRD command')
+            raise InvalidQueryException('Missing IRRD command')
         command = full_command[0]
         parameter = full_command[1:]
         response_type = WhoisQueryResponseType.SUCCESS
@@ -137,18 +115,18 @@ class WhoisQueryParser:
         # A is not tested here because it is already handled in handle_irrd_routes_for_as_set
         queries_with_parameter = list('tg6ijmnors')
         if command in queries_with_parameter and not parameter:
-            raise WhoisQueryParserException(f'Missing parameter for {command} query')
+            raise InvalidQueryException(f'Missing parameter for {command} query')
 
         if command == '!':
             self.multiple_command_mode = True
             result = None
             response_type = WhoisQueryResponseType.NO_RESPONSE
         elif full_command.upper() == 'FNO-RPKI-FILTER':
-            self.rpki_invalid_filter_enabled = False
+            self.query_resolver.disable_rpki_filter()
             result = 'Filtering out RPKI invalids is disabled for !r and RIPE style ' \
                      'queries for the rest of this connection.'
         elif full_command.upper() == 'FNO-SCOPE-FILTER':
-            self.out_scope_filter_enabled = False
+            self.query_resolver.disable_out_of_scope_filter()
             result = 'Filtering out out-of-scope objects is disabled for !r and RIPE style ' \
                      'queries for the rest of this connection.'
         elif command == 'v':
@@ -192,7 +170,7 @@ class WhoisQueryParser:
         elif command == 's':
             result = self.handle_irrd_sources_list(parameter)
         else:
-            raise WhoisQueryParserException(f'Unrecognised command: {command}')
+            raise InvalidQueryException(f'Unrecognised command: {command}')
 
         return WhoisQueryResponse(
             response_type=response_type,
@@ -205,12 +183,12 @@ class WhoisQueryParser:
         try:
             timeout_value = int(timeout)
         except ValueError:
-            raise WhoisQueryParserException(f'Invalid value for timeout: {timeout}')
+            raise InvalidQueryException(f'Invalid value for timeout: {timeout}')
 
         if timeout_value > 0 and timeout_value <= 1000:
             self.timeout = timeout_value
         else:
-            raise WhoisQueryParserException(f'Invalid value for timeout: {timeout}')
+            raise InvalidQueryException(f'Invalid value for timeout: {timeout}')
 
     def handle_irrd_routes_for_origin_v4(self, origin: str) -> str:
         """!g query - find all originating IPv4 prefixes from an origin, e.g. !gAS65537"""
@@ -228,9 +206,9 @@ class WhoisQueryParser:
         try:
             origin_formatted, _ = parse_as_number(origin)
         except ValidationError as ve:
-            raise WhoisQueryParserException(str(ve))
+            raise InvalidQueryException(str(ve))
 
-        prefixes = self.preloader.routes_for_origins([origin_formatted], self.sources, ip_version=ip_version)
+        prefixes = self.query_resolver.routes_for_origin(origin_formatted, ip_version)
         return ' '.join(prefixes)
 
     def handle_irrd_routes_for_as_set(self, set_name: str) -> str:
@@ -246,11 +224,9 @@ class WhoisQueryParser:
             ip_version = 6
 
         if not set_name:
-            raise WhoisQueryParserException('Missing required set name for A query')
+            raise InvalidQueryException('Missing required set name for A query')
 
-        self._current_set_root_object_class = 'as-set'
-        members = self._recursive_set_resolve({set_name})
-        prefixes = self.preloader.routes_for_origins(members, self.sources, ip_version=ip_version)
+        prefixes = self.query_resolver.routes_for_as_set(set_name, ip_version)
         return ' '.join(prefixes)
 
     def handle_irrd_set_members(self, parameter: str) -> str:
@@ -263,165 +239,20 @@ class WhoisQueryParser:
             recursive = True
             parameter = parameter[:-2]
 
-        self._current_set_root_object_class = None
-        if not recursive:
-            members, leaf_members = self._find_set_members({parameter})
-            members.update(leaf_members)
-        else:
-            members = self._recursive_set_resolve({parameter})
-        if parameter in members:
-            members.remove(parameter)
-
-        if get_setting('compatibility.ipv4_only_route_set_members'):
-            original_members = set(members)
-            for member in original_members:
-                try:
-                    IP(member)
-                except ValueError:
-                    continue  # This is not a prefix, ignore.
-                try:
-                    IP(member, ipversion=4)
-                except ValueError:
-                    # This was a valid prefix, but not a valid IPv4 prefix,
-                    # and should be removed.
-                    members.remove(member)
-
-        return ' '.join(sorted(members))
-
-    def _recursive_set_resolve(self, members: Set[str], sets_seen=None) -> Set[str]:
-        """
-        Resolve all members of a number of sets, recursively.
-
-        For each set in members, determines whether it has been seen already (to prevent
-        infinite recursion), ignores it if already seen, and then either adds
-        it directly or adds it to a set that requires further resolving.
-        """
-        if not sets_seen:
-            sets_seen = set()
-
-        if all([member in sets_seen for member in members]):
-            return set()
-        sets_seen.update(members)
-
-        set_members = set()
-        resolved_as_members = set()
-        sub_members, leaf_members = self._find_set_members(members)
-
-        for sub_member in sub_members:
-            if self._current_set_root_object_class is None or self._current_set_root_object_class == 'route-set':
-                try:
-                    IP(sub_member)
-                    set_members.add(sub_member)
-                    continue
-                except ValueError:
-                    pass
-            # AS numbers are permitted in route-sets and as-sets, per RFC 2622 5.3.
-            # When an AS number is encountered as part of route-set resolving,
-            # the prefixes originating from that AS should be added to the response.
-            try:
-                as_number_formatted, _ = parse_as_number(sub_member)
-                if self._current_set_root_object_class == 'route-set':
-                    set_members.update(self.preloader.routes_for_origins(
-                        [as_number_formatted], self.sources))
-                    resolved_as_members.add(sub_member)
-                else:
-                    set_members.add(sub_member)
-                continue
-            except ValueError:
-                pass
-
-        further_resolving_required = sub_members - set_members - sets_seen - resolved_as_members
-        new_members = self._recursive_set_resolve(further_resolving_required, sets_seen)
-        set_members.update(new_members)
-
-        return set_members
-
-    def _find_set_members(self, set_names: Set[str]) -> Tuple[Set[str], Set[str]]:
-        """
-        Find all members of a number of route-sets or as-sets. Includes both
-        direct members listed in members attribute, but also
-        members included by mbrs-by-ref/member-of.
-
-        Returns a tuple of two sets:
-        - members found of the sets included in set_names, both
-          references to other sets and direct AS numbers, etc.
-        - leaf members that were included in set_names, i.e.
-          names for which no further data could be found - for
-          example references to non-existent other sets
-        """
-        members: Set[str] = set()
-        sets_already_resolved: Set[str] = set()
-
-        columns = ['parsed_data', 'rpsl_pk', 'source', 'object_class']
-        query = self._prepare_query(column_names=columns)
-
-        object_classes = ['as-set', 'route-set']
-        # Per RFC 2622 5.3, route-sets can refer to as-sets,
-        # but as-sets can only refer to other as-sets.
-        if self._current_set_root_object_class == 'as-set':
-            object_classes = [self._current_set_root_object_class]
-
-        query = query.object_classes(object_classes).rpsl_pks(set_names)
-        query_result = list(self.database_handler.execute_query(query))
-
-        if not query_result:
-            # No sub-members are found, and apparantly all inputs were leaf members.
-            return set(), set_names
-
-        # Track the object class of the root object set.
-        # In one case self._current_set_root_object_class may already be set
-        # on the first run: when the set resolving should be fixed to one
-        # type of set object.
-        if not self._current_set_root_object_class:
-            self._current_set_root_object_class = query_result[0]['object_class']
-
-        for result in query_result:
-            rpsl_pk = result['rpsl_pk']
-
-            # The same PK may occur in multiple sources, but we are
-            # only interested in the first matching object, prioritised
-            # according to the source order. This priority is part of the
-            # query ORDER BY, so basically we only process an RPSL pk once.
-            if rpsl_pk in sets_already_resolved:
-                continue
-            sets_already_resolved.add(rpsl_pk)
-
-            object_class = result['object_class']
-            object_data = result['parsed_data']
-            mbrs_by_ref = object_data.get('mbrs-by-ref', None)
-            for members_attr in ['members', 'mp-members']:
-                if members_attr in object_data:
-                    members.update(set(object_data[members_attr]))
-
-            if not rpsl_pk or not object_class or not mbrs_by_ref:
-                continue
-
-            # If mbrs-by-ref is set, find any objects with member-of pointing to the route/as-set
-            # under query, and include a maintainer listed in mbrs-by-ref, unless mbrs-by-ref
-            # is set to ANY.
-            query_object_class = ['route', 'route6'] if object_class == 'route-set' else ['aut-num']
-            query = self._prepare_query(column_names=columns).object_classes(query_object_class)
-            query = query.lookup_attrs_in(['member-of'], [rpsl_pk])
-
-            if 'ANY' not in [m.strip().upper() for m in mbrs_by_ref]:
-                query = query.lookup_attrs_in(['mnt-by'], mbrs_by_ref)
-
-            referring_objects = self.database_handler.execute_query(query)
-
-            for result in referring_objects:
-                member_object_class = result['object_class']
-                members.add(result['parsed_data'][member_object_class])
-
-        leaf_members = set_names - sets_already_resolved
-        return members, leaf_members
+        members = self.query_resolver.members_for_set(parameter, recursive)
+        return ' '.join(members)
 
     def handle_irrd_database_serial_range(self, parameter: str) -> str:
-        """!j query - database serial range"""
+        """
+        !j query - database serial range
+        This query is legacy and only available in whois, so resolved
+        directly here instead of in the query resolver.
+        """
         if parameter == '-*':
-            sources = self.sources_default if self.sources_default else self.all_valid_sources
+            sources = self.query_resolver.sources_default if self.query_resolver.sources_default else self.query_resolver.all_valid_sources
         else:
             sources = [s.upper() for s in parameter.split(',')]
-        invalid_sources = [s for s in sources if s not in self.all_valid_sources]
+        invalid_sources = [s for s in sources if s not in self.query_resolver.all_valid_sources]
         query = DatabaseStatusQuery().sources(sources)
         query_results = self.database_handler.execute_query(query)
 
@@ -446,32 +277,10 @@ class WhoisQueryParser:
     def handle_irrd_database_status(self, parameter: str) -> str:
         """!J query - database status"""
         if parameter == '-*':
-            sources = self.sources_default if self.sources_default else self.all_valid_sources
+            sources = None
         else:
             sources = [s.upper() for s in parameter.split(',')]
-        invalid_sources = [s for s in sources if s not in self.all_valid_sources]
-        query = DatabaseStatusQuery().sources(sources)
-        query_results = self.database_handler.execute_query(query)
-
-        results: OrderedDict[str, OrderedDict[str, Any]] = OrderedDict()
-        for query_result in query_results:
-            source = query_result['source'].upper()
-            results[source] = OrderedDict()
-            results[source]['authoritative'] = get_setting(f'sources.{source}.authoritative', False)
-            object_class_filter = get_setting(f'sources.{source}.object_class_filter')
-            results[source]['object_class_filter'] = list(object_class_filter) if object_class_filter else None
-            results[source]['rpki_rov_filter'] = bool(get_setting('rpki.roa_source') and not get_setting(f'sources.{source}.rpki_excluded'))
-            results[source]['scopefilter_enabled'] = not get_setting(f'sources.{source}.scopefilter_excluded')
-            results[source]['local_journal_kept'] = get_setting(f'sources.{source}.keep_journal', False)
-            results[source]['serial_oldest_journal'] = query_result['serial_oldest_journal']
-            results[source]['serial_newest_journal'] = query_result['serial_newest_journal']
-            results[source]['serial_last_export'] = query_result['serial_last_export']
-            results[source]['serial_newest_mirror'] = query_result['serial_newest_mirror']
-            results[source]['last_update'] = query_result['updated'].astimezone(timezone('UTC')).isoformat()
-            results[source]['synchronised_serials'] = is_serial_synchronised(self.database_handler, source)
-
-        for invalid_source in invalid_sources:
-            results[invalid_source.upper()] = OrderedDict({'error': 'Unknown source'})
+        results = self.query_resolver.database_status(sources)
         return ujson.dumps(results, indent=4)
 
     def handle_irrd_exact_key(self, parameter: str):
@@ -479,9 +288,10 @@ class WhoisQueryParser:
         try:
             object_class, rpsl_pk = parameter.split(',', maxsplit=1)
         except ValueError:
-            raise WhoisQueryParserException(f'Invalid argument for object lookup: {parameter}')
-        query = self._prepare_query().object_classes([object_class]).rpsl_pk(rpsl_pk).first_only()
-        return self._execute_query_flatten_output(query)
+            raise InvalidQueryException(f'Invalid argument for object lookup: {parameter}')
+
+        query = self.query_resolver.key_lookup(object_class, rpsl_pk)
+        return self._flatten_query_output(query)
 
     def handle_irrd_route_search(self, parameter: str):
         """
@@ -500,25 +310,25 @@ class WhoisQueryParser:
         try:
             address = IP(address)
         except ValueError:
-            raise WhoisQueryParserException(f'Invalid input for route search: {parameter}')
+            raise InvalidQueryException(f'Invalid input for route search: {parameter}')
 
-        query = self._prepare_query(ordered_by_sources=False).object_classes(['route', 'route6'])
-        if option is None or option == 'o':
-            query = query.ip_exact(address)
-        elif option == 'l':
-            query = query.ip_less_specific_one_level(address)
-        elif option == 'L':
-            query = query.ip_less_specific(address)
-        elif option == 'M':
-            query = query.ip_more_specific(address)
-        else:
-            raise WhoisQueryParserException(f'Invalid route search option: {option}')
+        lookup_types = {
+            None: RouteLookupType.EXACT,
+            'o': RouteLookupType.EXACT,
+            'l': RouteLookupType.LESS_SPECIFIC_ONE_LEVEL,
+            'L': RouteLookupType.LESS_SPECIFIC_WITH_EXACT,
+            'M': RouteLookupType.MORE_SPECIFIC_WITHOUT_EXACT,
+        }
+        try:
+            lookup_type = lookup_types[option]
+        except KeyError:
+            raise InvalidQueryException(f'Invalid route search option: {option}')
 
+        result = self.query_resolver.route_search(address, lookup_type)
         if option == 'o':
-            query_result = self.database_handler.execute_query(query)
-            prefixes = [r['parsed_data']['origin'] for r in query_result]
+            prefixes = [r['parsed_data']['origin'] for r in result]
             return ' '.join(prefixes)
-        return self._execute_query_flatten_output(query)
+        return self._flatten_query_output(result)
 
     def handle_irrd_sources_list(self, parameter: str) -> Optional[str]:
         """
@@ -527,13 +337,10 @@ class WhoisQueryParser:
            !sripe,nttcom limits sources to ripe and nttcom
         """
         if parameter == '-lc':
-            return ','.join(self.sources)
+            return ','.join(self.query_resolver.sources)
 
         sources = parameter.upper().split(',')
-        if not all([source in self.all_valid_sources for source in sources]):
-            raise WhoisQueryParserException('One or more selected sources are unavailable.')
-        self.sources = sources
-
+        self.query_resolver.set_query_sources(sources)
         return None
 
     def handle_irrd_version(self):
@@ -585,9 +392,9 @@ class WhoisQueryParser:
                     elif command in ['F', 'r']:
                         continue  # These flags disable recursion, but IRRd never performs recursion anyways
                     else:
-                        raise WhoisQueryParserException(f'Unrecognised flag/search: {command}')
+                        raise InvalidQueryException(f'Unrecognised flag/search: {command}')
                 except IndexError:
-                    raise WhoisQueryParserException(f'Missing argument for flag/search: {command}')
+                    raise InvalidQueryException(f'Missing argument for flag/search: {command}')
             else:  # assume query to be a free text search
                 result = self.handle_ripe_text_search(component)
 
@@ -608,59 +415,52 @@ class WhoisQueryParser:
         try:
             address = IP(parameter)
         except ValueError:
-            raise WhoisQueryParserException(f'Invalid input for route search: {parameter}')
+            raise InvalidQueryException(f'Invalid input for route search: {parameter}')
 
-        query = self._prepare_query(ordered_by_sources=False).object_classes(['route', 'route6'])
-        if command == 'x':
-            query = query.ip_exact(address)
-        elif command == 'l':
-            query = query.ip_less_specific_one_level(address)
-        elif command == 'L':
-            query = query.ip_less_specific(address)
-        elif command == 'M':
-            query = query.ip_more_specific(address)
-
-        return self._execute_query_flatten_output(query)
+        lookup_types = {
+            'x': RouteLookupType.EXACT,
+            'l': RouteLookupType.LESS_SPECIFIC_ONE_LEVEL,
+            'L': RouteLookupType.LESS_SPECIFIC_WITH_EXACT,
+            'M': RouteLookupType.MORE_SPECIFIC_WITHOUT_EXACT,
+        }
+        lookup_type = lookup_types[command]
+        result = self.query_resolver.route_search(address, lookup_type)
+        return self._flatten_query_output(result)
 
     def handle_ripe_sources_list(self, sources_list: Optional[str]) -> None:
         """-s/-a parameter - set sources list. Empty list enables all sources. """
         if sources_list:
             sources = sources_list.upper().split(',')
-            if not all([source in self.all_valid_sources for source in sources]):
-                raise WhoisQueryParserException('One or more selected sources are unavailable.')
-            self.sources = sources
+            self.query_resolver.set_query_sources(sources)
         else:
-            self.sources = self.sources_default if self.sources_default else self.all_valid_sources
+            self.query_resolver.set_query_sources(None)
 
     def handle_ripe_restrict_object_class(self, object_classes) -> None:
         """-T parameter - restrict object classes for this query, comma-seperated"""
-        self.object_classes = object_classes.split(',')
+        self.query_resolver.set_object_class_filter_next_query(object_classes.split(','))
 
     def handle_ripe_request_object_template(self, object_class) -> str:
         """-t query - return the RPSL template for an object class"""
-        try:
-            return OBJECT_CLASS_MAPPING[object_class]().generate_template()
-        except KeyError:
-            raise WhoisQueryParserException(f'Unknown object class: {object_class}')
+        return self.query_resolver.rpsl_object_template(object_class)
 
     def handle_ripe_key_fields_only(self) -> None:
         """-K paramater - only return primary key and members fields"""
         self.key_fields_only = True
 
     def handle_ripe_text_search(self, value: str) -> str:
-        query = self._prepare_query(ordered_by_sources=False).text_search(value)
-        return self._execute_query_flatten_output(query)
+        result = self.query_resolver.text_search(value)
+        return self._flatten_query_output(result)
 
     def handle_user_agent(self, user_agent: str):
         """-V/!n parameter/query - set a user agent for the client"""
-        self.user_agent = user_agent
+        self.query_resolver.user_agent = user_agent
         logger.info(f'{self.client_str}: user agent set to: {user_agent}')
 
     def handle_nrtm_request(self, param):
         try:
             source, version, serial_range = param.split(':')
         except ValueError:
-            raise WhoisQueryParserException('Invalid parameter: must contain three elements')
+            raise InvalidQueryException('Invalid parameter: must contain three elements')
 
         try:
             serial_start, serial_end = serial_range.split('-')
@@ -670,22 +470,22 @@ class WhoisQueryParser:
             else:
                 serial_end = int(serial_end)
         except ValueError:
-            raise WhoisQueryParserException(f'Invalid serial range: {serial_range}')
+            raise InvalidQueryException(f'Invalid serial range: {serial_range}')
 
         if version not in ['1', '3']:
-            raise WhoisQueryParserException(f'Invalid NRTM version: {version}')
+            raise InvalidQueryException(f'Invalid NRTM version: {version}')
 
         source = source.upper()
-        if source not in self.all_valid_sources:
-            raise WhoisQueryParserException(f'Unknown source: {source}')
+        if source not in self.query_resolver.all_valid_sources:
+            raise InvalidQueryException(f'Unknown source: {source}')
 
         if not is_client_permitted(self.client_ip, f'sources.{source}.nrtm_access_list'):
-            raise WhoisQueryParserException('Access denied')
+            raise InvalidQueryException('Access denied')
 
         try:
             return NRTMGenerator().generate(source, version, serial_start, serial_end, self.database_handler)
         except NRTMGeneratorException as nge:
-            raise WhoisQueryParserException(str(nge))
+            raise InvalidQueryException(str(nge))
 
     def handle_inverse_attr_search(self, attribute: str, value: str) -> str:
         """
@@ -693,37 +493,14 @@ class WhoisQueryParser:
         e.g. `-i mnt-by FOO` finds all objects where (one of the) maintainer(s) is FOO,
         as does `!oFOO`. Restricted to designated lookup fields.
         """
-        if attribute not in self.lookup_field_names:
-            readable_lookup_field_names = ', '.join(self.lookup_field_names)
-            msg = (f'Inverse attribute search not supported for {attribute},' +
-                   f'only supported for attributes: {readable_lookup_field_names}')
-            raise WhoisQueryParserException(msg)
-        query = self._prepare_query(ordered_by_sources=False).lookup_attr(attribute, value)
-        return self._execute_query_flatten_output(query)
+        result = self.query_resolver.rpsl_attribute_search(attribute, value)
+        return self._flatten_query_output(result)
 
-    def _prepare_query(self, column_names=None, ordered_by_sources=True) -> RPSLDatabaseQuery:
-        """Prepare an RPSLDatabaseQuery by applying relevant sources/class filters."""
-        query = RPSLDatabaseQuery(column_names, ordered_by_sources)
-        if self.sources and self.sources != self.all_valid_sources:
-            query.sources(self.sources)
-        else:
-            default = list(get_setting('sources_default', []))
-            if default:
-                query.sources(list(default))
-        if self.object_classes:
-            query.object_classes(self.object_classes)
-        if self.rpki_invalid_filter_enabled:
-            query.rpki_status([RPKIStatus.not_found, RPKIStatus.valid])
-        if self.out_scope_filter_enabled:
-            query.scopefilter_status([ScopeFilterStatus.in_scope])
-        return query
-
-    def _execute_query_flatten_output(self, query: RPSLDatabaseQuery) -> str:
+    def _flatten_query_output(self, query_response: RPSLDatabaseResponse) -> str:
         """
-        Execute an RPSLDatabaseQuery, and flatten the output into a string with object text
+        Flatten an RPSL database response into a string with object text
         for easy passing to a WhoisQueryResponse.
         """
-        query_response = self.database_handler.execute_query(query)
         if self.key_fields_only:
             result = self._filter_key_fields(query_response)
         else:
@@ -731,7 +508,7 @@ class WhoisQueryParser:
             for obj in query_response:
                 result += obj['object_text']
                 if (
-                        self.rpki_aware and
+                        self.query_resolver.rpki_aware and
                         obj['source'] != RPKI_IRR_PSEUDO_SOURCE and
                         obj['object_class'] in RPKI_RELEVANT_OBJECT_CLASSES
                 ):

@@ -23,6 +23,7 @@ from .queries import (BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery,
 
 logger = logging.getLogger(__name__)
 MAX_RECORDS_BUFFER_BEFORE_INSERT = 15000
+RPSLDatabaseResponse = Iterator[Dict[str, Any]]
 
 
 class DatabaseHandler:
@@ -127,7 +128,7 @@ class DatabaseHandler:
     def execute_query(self,
                       query: Union[BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery, RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery],
                       flush_rpsl_buffer=True,
-                      ) -> Iterator[Dict[str, Any]]:
+                      ) -> RPSLDatabaseResponse:
         """
         Execute an RPSLDatabaseQuery within the current transaction.
         If flush_rpsl_buffer is set, the RPSL object buffer is flushed first.
