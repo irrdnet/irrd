@@ -58,6 +58,59 @@ class QueryResolver:
         self.preloader = preloader
         self.database_handler = database_handler
 
+    def set_query_sources(self, sources: Optional[List[str]]) -> None:
+        """Set the sources for future queries. If sources is None, default source list is set."""
+        if sources is None:
+            sources = self.sources_default if self.sources_default else self.all_valid_sources
+        elif not all([source in self.all_valid_sources for source in sources]):
+            raise InvalidQueryException('One or more selected sources are unavailable.')
+        self.sources = sources
+
+    def disable_rpki_filter(self) -> None:
+        self.rpki_invalid_filter_enabled = False
+
+    def disable_out_of_scope_filter(self) -> None:
+        self.out_scope_filter_enabled = False
+
+    def set_object_class_filter_next_query(self, object_classes: List[str]) -> None:
+        """Restrict object classes for the next query, comma-seperated"""
+        self.object_class_filter = object_classes
+
+    def key_lookup(self, object_class: str, rpsl_pk: str) -> RPSLDatabaseResponse:
+        """RPSL exact key lookup."""
+        query = self._prepare_query().object_classes([object_class]).rpsl_pk(rpsl_pk).first_only()
+        return self.database_handler.execute_query(query)
+
+    def rpsl_text_search(self, value: str) -> RPSLDatabaseResponse:
+        query = self._prepare_query(ordered_by_sources=False).text_search(value)
+        return self.database_handler.execute_query(query)
+
+    def route_search(self, address: IP, lookup_type: RouteLookupType):
+        """Route(6) object search for an address, supporting exact/less/more specific."""
+        query = self._prepare_query(ordered_by_sources=False).object_classes(['route', 'route6'])
+        lookup_queries = {
+            RouteLookupType.EXACT: query.ip_exact,
+            RouteLookupType.LESS_SPECIFIC_ONE_LEVEL: query.ip_less_specific_one_level,
+            RouteLookupType.LESS_SPECIFIC_WITH_EXACT: query.ip_less_specific,
+            RouteLookupType.MORE_SPECIFIC_WITHOUT_EXACT: query.ip_more_specific,
+        }
+        query = lookup_queries[lookup_type](address)
+        return self.database_handler.execute_query(query)
+
+    def rpsl_attribute_search(self, attribute: str, value: str) -> RPSLDatabaseResponse:
+        """
+        -i/!o query - inverse search for attribute values
+        e.g. `-i mnt-by FOO` finds all objects where (one of the) maintainer(s) is FOO,
+        as does `!oFOO`. Restricted to designated lookup fields.
+        """
+        if attribute not in self.lookup_field_names:
+            readable_lookup_field_names = ', '.join(self.lookup_field_names)
+            msg = (f'Inverse attribute search not supported for {attribute},' +
+                   f'only supported for attributes: {readable_lookup_field_names}')
+            raise InvalidQueryException(msg)
+        query = self._prepare_query(ordered_by_sources=False).lookup_attr(attribute, value)
+        return self.database_handler.execute_query(query)
+
     def routes_for_origin(self, origin: str, ip_version: Optional[int]=None) -> Set[str]:
         """
         Resolve all route(6)s prefixes for an origin, returning a set
@@ -261,65 +314,12 @@ class QueryResolver:
             results[invalid_source.upper()] = OrderedDict({'error': 'Unknown source'})
         return results
 
-    def key_lookup(self, object_class: str, rpsl_pk: str) -> RPSLDatabaseResponse:
-        """RPSL exact key lookup."""
-        query = self._prepare_query().object_classes([object_class]).rpsl_pk(rpsl_pk).first_only()
-        return self.database_handler.execute_query(query)
-
-    def route_search(self, address: IP, lookup_type: RouteLookupType):
-        """Route(6) object search for an address, supporting exact/less/more specific."""
-        query = self._prepare_query(ordered_by_sources=False).object_classes(['route', 'route6'])
-        lookup_queries = {
-            RouteLookupType.EXACT: query.ip_exact,
-            RouteLookupType.LESS_SPECIFIC_ONE_LEVEL: query.ip_less_specific_one_level,
-            RouteLookupType.LESS_SPECIFIC_WITH_EXACT: query.ip_less_specific,
-            RouteLookupType.MORE_SPECIFIC_WITHOUT_EXACT: query.ip_more_specific,
-        }
-        query = lookup_queries[lookup_type](address)
-        return self.database_handler.execute_query(query)
-
-    def set_query_sources(self, sources: Optional[List[str]]) -> None:
-        """Set the sources for future queries. If sources is None, default source list is set."""
-        if sources is None:
-            sources = self.sources_default if self.sources_default else self.all_valid_sources
-        elif not all([source in self.all_valid_sources for source in sources]):
-            raise InvalidQueryException('One or more selected sources are unavailable.')
-        self.sources = sources
-
-    def set_object_class_filter_next_query(self, object_classes: List[str]) -> None:
-        """Restrict object classes for the next query, comma-seperated"""
-        self.object_class_filter = object_classes
-
     def rpsl_object_template(self, object_class) -> str:
         """Return the RPSL template for an object class"""
         try:
             return OBJECT_CLASS_MAPPING[object_class]().generate_template()
         except KeyError:
             raise InvalidQueryException(f'Unknown object class: {object_class}')
-
-    def disable_rpki_filter(self) -> None:
-        self.rpki_invalid_filter_enabled = False
-
-    def disable_out_of_scope_filter(self) -> None:
-        self.out_scope_filter_enabled = False
-
-    def text_search(self, value: str) -> RPSLDatabaseResponse:
-        query = self._prepare_query(ordered_by_sources=False).text_search(value)
-        return self.database_handler.execute_query(query)
-
-    def rpsl_attribute_search(self, attribute: str, value: str) -> RPSLDatabaseResponse:
-        """
-        -i/!o query - inverse search for attribute values
-        e.g. `-i mnt-by FOO` finds all objects where (one of the) maintainer(s) is FOO,
-        as does `!oFOO`. Restricted to designated lookup fields.
-        """
-        if attribute not in self.lookup_field_names:
-            readable_lookup_field_names = ', '.join(self.lookup_field_names)
-            msg = (f'Inverse attribute search not supported for {attribute},' +
-                   f'only supported for attributes: {readable_lookup_field_names}')
-            raise InvalidQueryException(msg)
-        query = self._prepare_query(ordered_by_sources=False).lookup_attr(attribute, value)
-        return self.database_handler.execute_query(query)
 
     def _prepare_query(self, column_names=None, ordered_by_sources=True) -> RPSLDatabaseQuery:
         """Prepare an RPSLDatabaseQuery by applying relevant sources/class filters."""

@@ -448,7 +448,7 @@ class WhoisQueryParser:
         self.key_fields_only = True
 
     def handle_ripe_text_search(self, value: str) -> str:
-        result = self.query_resolver.text_search(value)
+        result = self.query_resolver.rpsl_text_search(value)
         return self._flatten_query_output(result)
 
     def handle_user_agent(self, user_agent: str):

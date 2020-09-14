@@ -98,60 +98,6 @@ def prepare_resolver(monkeypatch, config_override):
 
 
 class TestQueryResolver:
-    def test_route_search_exact(self, prepare_resolver):
-        mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
-
-        result = resolver.route_search(IP('192.0.2.0/25'), RouteLookupType.EXACT)
-        assert list(result) == mock_query_result
-        assert flatten_mock_calls(mock_dq) == [
-            ['object_classes', (['route', 'route6'],), {}],
-            ['ip_exact', (IP('192.0.2.0/25'),), {}]
-        ]
-        mock_dq.reset_mock()
-
-    def test_route_search_less_specific_one_level(self, prepare_resolver):
-        mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
-
-        result = resolver.route_search(IP('192.0.2.0/25'), RouteLookupType.LESS_SPECIFIC_ONE_LEVEL)
-        assert list(result) == mock_query_result
-        assert flatten_mock_calls(mock_dq) == [
-            ['object_classes', (['route', 'route6'],), {}],
-            ['ip_less_specific_one_level', (IP('192.0.2.0/25'),), {}]
-        ]
-
-    def test_route_search_less_specific(self, prepare_resolver):
-        mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
-
-        result = resolver.route_search(IP('192.0.2.0/25'), RouteLookupType.LESS_SPECIFIC_WITH_EXACT)
-        assert list(result) == mock_query_result
-        assert flatten_mock_calls(mock_dq) == [
-            ['object_classes', (['route', 'route6'],), {}],
-            ['ip_less_specific', (IP('192.0.2.0/25'),), {}]
-        ]
-
-    def test_route_search_more_specific(self, prepare_resolver):
-        mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
-
-        result = resolver.route_search(IP('192.0.2.0/25'), RouteLookupType.MORE_SPECIFIC_WITHOUT_EXACT)
-        assert list(result) == mock_query_result
-        assert flatten_mock_calls(mock_dq) == [
-            ['object_classes', (['route', 'route6'],), {}],
-            ['ip_more_specific', (IP('192.0.2.0/25'),), {}]
-        ]
-
-    def test_rpsl_attribute_search(self, prepare_resolver):
-        mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
-
-        result = resolver.rpsl_attribute_search('mnt-by', 'MNT-TEST')
-        assert list(result) == mock_query_result
-        assert flatten_mock_calls(mock_dq) == [
-            ['lookup_attr', ('mnt-by', 'MNT-TEST'), {}],
-        ]
-
-        mock_dh.execute_query = lambda query: []
-        with pytest.raises(InvalidQueryException):
-            resolver.rpsl_attribute_search('invalid-attr', 'MNT-TEST')
-
     def test_set_sources(self, prepare_resolver):
         mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
 
@@ -195,26 +141,146 @@ class TestQueryResolver:
             ['lookup_attr', ('mnt-by', 'MNT-TEST'), {}],
         ]
 
-    def test_object_template(self, prepare_resolver):
+    def test_key_lookup(self, prepare_resolver):
         mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
-        mock_dh.reset_mock()
 
-        result = resolver.rpsl_object_template('aut-num')
-        assert 'aut-num:[mandatory][single][primary/look-upkey]' in result.replace(' ', '')
-        mock_dh.reset_mock()
+        result = resolver.key_lookup('route', '192.0.2.0/25')
+        assert list(result) == mock_query_result
+        assert flatten_mock_calls(mock_dq) == [
+            ['object_classes', (['route'],), {}],
+            ['rpsl_pk', ('192.0.2.0/25',), {}],
+            ['first_only', (), {}],
+        ]
 
-        with pytest.raises(InvalidQueryException):
-            resolver.rpsl_object_template('does-not-exist')
+    def test_limit_sources_key_lookup(self, prepare_resolver):
+        mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
+
+        resolver.set_query_sources(['TEST1'])
+        result = resolver.key_lookup('route', '192.0.2.0/25')
+        assert list(result) == mock_query_result
+        assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['TEST1'],), {}],
+            ['object_classes', (['route'],), {}],
+            ['rpsl_pk', ('192.0.2.0/25',), {}],
+            ['first_only', (), {}],
+        ]
 
     def test_text_search(self, prepare_resolver):
         mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
         mock_dh.reset_mock()
 
-        result = resolver.text_search('query')
+        result = resolver.rpsl_text_search('query')
         assert list(result) == mock_query_result
         assert flatten_mock_calls(mock_dq) == [
             ['text_search', ('query',), {}],
         ]
+
+    def test_route_search_exact(self, prepare_resolver):
+        mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
+
+        result = resolver.route_search(IP('192.0.2.0/25'), RouteLookupType.EXACT)
+        assert list(result) == mock_query_result
+        assert flatten_mock_calls(mock_dq) == [
+            ['object_classes', (['route', 'route6'],), {}],
+            ['ip_exact', (IP('192.0.2.0/25'),), {}]
+        ]
+        mock_dq.reset_mock()
+
+    def test_route_search_less_specific_one_level(self, prepare_resolver):
+        mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
+
+        result = resolver.route_search(IP('192.0.2.0/25'), RouteLookupType.LESS_SPECIFIC_ONE_LEVEL)
+        assert list(result) == mock_query_result
+        assert flatten_mock_calls(mock_dq) == [
+            ['object_classes', (['route', 'route6'],), {}],
+            ['ip_less_specific_one_level', (IP('192.0.2.0/25'),), {}]
+        ]
+
+    def test_route_search_less_specific(self, prepare_resolver):
+        mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
+
+        result = resolver.route_search(IP('192.0.2.0/25'), RouteLookupType.LESS_SPECIFIC_WITH_EXACT)
+        assert list(result) == mock_query_result
+        assert flatten_mock_calls(mock_dq) == [
+            ['object_classes', (['route', 'route6'],), {}],
+            ['ip_less_specific', (IP('192.0.2.0/25'),), {}]
+        ]
+
+    def test_route_search_more_specific(self, prepare_resolver):
+        mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
+
+        result = resolver.route_search(IP('192.0.2.0/25'), RouteLookupType.MORE_SPECIFIC_WITHOUT_EXACT)
+        assert list(result) == mock_query_result
+        assert flatten_mock_calls(mock_dq) == [
+            ['object_classes', (['route', 'route6'],), {}],
+            ['ip_more_specific', (IP('192.0.2.0/25'),), {}]
+        ]
+
+    def test_route_search_exact_rpki_aware(self, prepare_resolver, config_override):
+        mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
+        config_override({
+            'sources': {'TEST1': {}, 'TEST2': {}},
+            'sources_default': [],
+            'rpki': {'roa_source': 'https://example.com/roa.json'},
+        })
+        resolver = QueryResolver('127.0.0.1', '127.0.0.1:99999', mock_preloader, mock_dh)
+        resolver.out_scope_filter_enabled = False
+
+        result = resolver.route_search(IP('192.0.2.0/25'), RouteLookupType.EXACT)
+        assert list(result) == mock_query_result
+        assert flatten_mock_calls(mock_dq) == [
+            ['rpki_status', ([RPKIStatus.not_found, RPKIStatus.valid],), {}],
+            ['object_classes', (['route', 'route6'],), {}],
+            ['ip_exact', (IP('192.0.2.0/25'),), {}]
+        ]
+        mock_dq.reset_mock()
+
+        resolver.disable_rpki_filter()
+        result = resolver.route_search(IP('192.0.2.0/25'), RouteLookupType.EXACT)
+        assert list(result) == mock_query_result
+        assert flatten_mock_calls(mock_dq) == [
+            ['object_classes', (['route', 'route6'],), {}],
+            ['ip_exact', (IP('192.0.2.0/25'),), {}]
+        ]
+        mock_dq.reset_mock()
+
+        resolver.set_query_sources(['RPKI'])
+        assert resolver.sources == ['RPKI']
+
+    def test_route_search_exact_with_scopefilter(self, prepare_resolver, config_override):
+        mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
+        resolver.out_scope_filter_enabled = True
+
+        result = resolver.route_search(IP('192.0.2.0/25'), RouteLookupType.EXACT)
+        assert list(result) == mock_query_result
+        assert flatten_mock_calls(mock_dq) == [
+            ['scopefilter_status', ([ScopeFilterStatus.in_scope],), {}],
+            ['object_classes', (['route', 'route6'],), {}],
+            ['ip_exact', (IP('192.0.2.0/25'),), {}]
+        ]
+        mock_dq.reset_mock()
+
+        resolver.disable_out_of_scope_filter()
+        result = resolver.route_search(IP('192.0.2.0/25'), RouteLookupType.EXACT)
+        assert list(result) == mock_query_result
+        assert flatten_mock_calls(mock_dq) == [
+            ['object_classes', (['route', 'route6'],), {}],
+            ['ip_exact', (IP('192.0.2.0/25'),), {}]
+        ]
+        mock_dq.reset_mock()
+
+    def test_rpsl_attribute_search(self, prepare_resolver):
+        mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
+
+        result = resolver.rpsl_attribute_search('mnt-by', 'MNT-TEST')
+        assert list(result) == mock_query_result
+        assert flatten_mock_calls(mock_dq) == [
+            ['lookup_attr', ('mnt-by', 'MNT-TEST'), {}],
+        ]
+
+        mock_dh.execute_query = lambda query: []
+        with pytest.raises(InvalidQueryException):
+            resolver.rpsl_attribute_search('invalid-attr', 'MNT-TEST')
 
     def test_routes_for_origin(self, prepare_resolver):
         mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
@@ -576,79 +642,13 @@ class TestQueryResolver:
             ['sources', (['TEST1', 'TEST-INVALID'],), {}]
         ]
 
-    def test_key_lookup(self, prepare_resolver):
+    def test_object_template(self, prepare_resolver):
         mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
+        mock_dh.reset_mock()
 
-        result = resolver.key_lookup('route', '192.0.2.0/25')
-        assert list(result) == mock_query_result
-        assert flatten_mock_calls(mock_dq) == [
-            ['object_classes', (['route'],), {}],
-            ['rpsl_pk', ('192.0.2.0/25',), {}],
-            ['first_only', (), {}],
-        ]
+        result = resolver.rpsl_object_template('aut-num')
+        assert 'aut-num:[mandatory][single][primary/look-upkey]' in result.replace(' ', '')
+        mock_dh.reset_mock()
 
-    def test_limit_sources_key_lookup(self, prepare_resolver):
-        mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
-
-        resolver.set_query_sources(['TEST1'])
-        result = resolver.key_lookup('route', '192.0.2.0/25')
-        assert list(result) == mock_query_result
-        assert flatten_mock_calls(mock_dq) == [
-            ['sources', (['TEST1'],), {}],
-            ['object_classes', (['route'],), {}],
-            ['rpsl_pk', ('192.0.2.0/25',), {}],
-            ['first_only', (), {}],
-        ]
-
-    def test_route_search_exact_rpki_aware(self, prepare_resolver, config_override):
-        mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
-        config_override({
-            'sources': {'TEST1': {}, 'TEST2': {}},
-            'sources_default': [],
-            'rpki': {'roa_source': 'https://example.com/roa.json'},
-        })
-        resolver = QueryResolver('127.0.0.1', '127.0.0.1:99999', mock_preloader, mock_dh)
-        resolver.out_scope_filter_enabled = False
-
-        result = resolver.route_search(IP('192.0.2.0/25'), RouteLookupType.EXACT)
-        assert list(result) == mock_query_result
-        assert flatten_mock_calls(mock_dq) == [
-            ['rpki_status', ([RPKIStatus.not_found, RPKIStatus.valid],), {}],
-            ['object_classes', (['route', 'route6'],), {}],
-            ['ip_exact', (IP('192.0.2.0/25'),), {}]
-        ]
-        mock_dq.reset_mock()
-
-        resolver.disable_rpki_filter()
-        result = resolver.route_search(IP('192.0.2.0/25'), RouteLookupType.EXACT)
-        assert list(result) == mock_query_result
-        assert flatten_mock_calls(mock_dq) == [
-            ['object_classes', (['route', 'route6'],), {}],
-            ['ip_exact', (IP('192.0.2.0/25'),), {}]
-        ]
-        mock_dq.reset_mock()
-
-        resolver.set_query_sources(['RPKI'])
-        assert resolver.sources == ['RPKI']
-
-    def test_route_search_exact_with_scopefilter(self, prepare_resolver, config_override):
-        mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
-        resolver.out_scope_filter_enabled = True
-
-        result = resolver.route_search(IP('192.0.2.0/25'), RouteLookupType.EXACT)
-        assert list(result) == mock_query_result
-        assert flatten_mock_calls(mock_dq) == [
-            ['scopefilter_status', ([ScopeFilterStatus.in_scope],), {}],
-            ['object_classes', (['route', 'route6'],), {}],
-            ['ip_exact', (IP('192.0.2.0/25'),), {}]
-        ]
-        mock_dq.reset_mock()
-
-        resolver.disable_out_of_scope_filter()
-        result = resolver.route_search(IP('192.0.2.0/25'), RouteLookupType.EXACT)
-        assert list(result) == mock_query_result
-        assert flatten_mock_calls(mock_dq) == [
-            ['object_classes', (['route', 'route6'],), {}],
-            ['ip_exact', (IP('192.0.2.0/25'),), {}]
-        ]
-        mock_dq.reset_mock()
+        with pytest.raises(InvalidQueryException):
+            resolver.rpsl_object_template('does-not-exist')
