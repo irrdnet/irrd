@@ -34,7 +34,7 @@ This sample shows most configuration options::
 
         server:
             http:
-                access_list: http_database_status
+                status_access_list: http_database_status
                 interface: '::0'
                 port: 8080
             whois:
@@ -184,26 +184,45 @@ Storage
 Servers
 ~~~~~~~
 * ``server.[whois|http].interface``: the network interface on which the whois or
-  HTTP interface will listen
-  |br| **Default**: ``::0``.
+  HTTP interface will listen. Running the HTTP interface behind nginx or a
+  similar service :ref:`is strongly recommended <deployment-https>`.
+  |br| **Default**: ``::0`` for whois, ``127.0.0.1`` for HTTP.
   |br| **Change takes effect**: after full IRRd restart.
 * ``server.[whois|http].port``: the port on which the whois or HTTP interface
   will listen.
-  |br| **Default**: ``43`` for whois, ``80`` for HTTP.
+  |br| **Default**: ``43`` for whois, ``8000`` for HTTP.
   |br| **Change takes effect**: after full IRRd restart.
-* ``server.[whois|http].access_list``: a reference to an access list in the
+* ``server.whois.access_list``: a reference to an access list in the
   configuration, where only IPs in the access list are permitted access. If not
-  defined, all access is permitted for whois, but all access is denied for HTTP.
-  |br| **Default**: not defined, all access permitted for whois, all access
-  denied for HTTP.
+  defined, all access is permitted.
+  |br| **Default**: not defined, all access permitted for whois
+  |br| **Change takes effect**: after SIGHUP.
+* ``server.whois.status_access_list``: a reference to an access list in the
+  configuration, where only IPs in the access list are permitted access to the
+  :doc:`HTTP status page </admins/status_page>`. If not defined, all access is denied.
+  |br| **Default**: not defined, all access denied for HTTP status page
   |br| **Change takes effect**: after SIGHUP.
 * ``server.whois.max_connections``: the maximum number of simultaneous whois
   connections permitted. Note that each permitted connection will result in
   one IRRd whois worker to be started, each of which use about 200 MB memory.
   For example, if you set this to 50, you need about 10 GB of memory just for
-  IRRd's whois server
+  IRRd's whois server.
   (and additional memory for other components and PostgreSQL).
   |br| **Default**: ``10``.
+  |br| **Change takes effect**: after full IRRd restart.
+* ``server.http.workers``: the number of HTTP workers launched on startup.
+  Each worker can process one GraphQL query or other HTTP request at a time.
+  Note that each worker uses about 200 MB memory.
+  For example, if you set this to 50, you need about 10 GB of memory just for
+  IRRd's HTTP server.
+  (and additional memory for other components and PostgreSQL).
+  |br| **Default**: ``10``.
+  |br| **Change takes effect**: after full IRRd restart.
+* ``server.http.forwarded_allowed_ips``: a comma-separated list of IPs from
+  which IRRd will trust the ``X-Forwarded-For`` header. This header is used
+  for IRRd to know the real client address, rather than the address of a
+  proxy.
+  |br| **Default**: ``127.0.0.1``.
   |br| **Change takes effect**: after full IRRd restart.
 
 

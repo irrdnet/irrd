@@ -41,8 +41,7 @@ class QueryResolver:
     database_handler: DatabaseHandler
     _current_set_root_object_class: Optional[str]
 
-    def __init__(self, client_ip: str, client_str: str, preloader: Preloader,
-                 database_handler: DatabaseHandler) -> None:
+    def __init__(self, preloader: Preloader, database_handler: DatabaseHandler) -> None:
         self.all_valid_sources = list(get_setting('sources', {}).keys())
         self.sources_default = list(get_setting('sources_default', []))
         self.sources: List[str] = self.sources_default if self.sources_default else self.all_valid_sources
@@ -53,10 +52,10 @@ class QueryResolver:
         self.rpki_invalid_filter_enabled = self.rpki_aware
         self.out_scope_filter_enabled = True
         self.user_agent: Optional[str] = None
-        self.client_ip = client_ip
-        self.client_str = client_str
         self.preloader = preloader
         self.database_handler = database_handler
+        self.sql_queries: List[str] = []
+        self.sql_trace = False
 
     def set_query_sources(self, sources: Optional[List[str]]) -> None:
         """Set the sources for future queries. If sources is None, default source list is set."""
@@ -79,11 +78,11 @@ class QueryResolver:
     def key_lookup(self, object_class: str, rpsl_pk: str) -> RPSLDatabaseResponse:
         """RPSL exact key lookup."""
         query = self._prepare_query().object_classes([object_class]).rpsl_pk(rpsl_pk).first_only()
-        return self.database_handler.execute_query(query)
+        return self._execute_query(query)
 
     def rpsl_text_search(self, value: str) -> RPSLDatabaseResponse:
         query = self._prepare_query(ordered_by_sources=False).text_search(value)
-        return self.database_handler.execute_query(query)
+        return self._execute_query(query)
 
     def route_search(self, address: IP, lookup_type: RouteLookupType):
         """Route(6) object search for an address, supporting exact/less/more specific."""
@@ -95,7 +94,7 @@ class QueryResolver:
             RouteLookupType.MORE_SPECIFIC_WITHOUT_EXACT: query.ip_more_specific,
         }
         query = lookup_queries[lookup_type](address)
-        return self.database_handler.execute_query(query)
+        return self._execute_query(query)
 
     def rpsl_attribute_search(self, attribute: str, value: str) -> RPSLDatabaseResponse:
         """
@@ -109,7 +108,7 @@ class QueryResolver:
                    f'only supported for attributes: {readable_lookup_field_names}')
             raise InvalidQueryException(msg)
         query = self._prepare_query(ordered_by_sources=False).lookup_attr(attribute, value)
-        return self.database_handler.execute_query(query)
+        return self._execute_query(query)
 
     def routes_for_origin(self, origin: str, ip_version: Optional[int]=None) -> Set[str]:
         """
@@ -119,21 +118,25 @@ class QueryResolver:
         prefixes = self.preloader.routes_for_origins([origin], self.sources, ip_version=ip_version)
         return prefixes
 
-    def routes_for_as_set(self, set_name: str, ip_version: Optional[int]=None) -> Set[str]:
+    def routes_for_as_set(self, set_name: str, ip_version: Optional[int]=None, exclude_sets: Set[str]=None) -> Set[str]:
         """
         Find all originating prefixes for all members of an AS-set. May be restricted
         to IPv4 or IPv6. Returns a set of all prefixes.
         """
         self._current_set_root_object_class = 'as-set'
+        self._current_excluded_sets = exclude_sets if exclude_sets else set()
+        self._current_set_maximum_depth = 0
         members = self._recursive_set_resolve({set_name})
         return self.preloader.routes_for_origins(members, self.sources, ip_version=ip_version)
 
-    def members_for_set(self, parameter: str, recursive=False) -> List[str]:
+    def members_for_set(self, parameter: str, exclude_sets: Set[str]=None, depth=0, recursive=False) -> List[str]:
         """
         Find all members of an as-set or route-set, possibly recursively.
         Returns a list of all members, including leaf members.
         """
         self._current_set_root_object_class = None
+        self._current_excluded_sets = exclude_sets if exclude_sets else set()
+        self._current_set_maximum_depth = depth
         if not recursive:
             members, leaf_members = self._find_set_members({parameter})
             members.update(leaf_members)
@@ -174,6 +177,7 @@ class QueryResolver:
         sets_seen.update(members)
 
         set_members = set()
+
         resolved_as_members = set()
         sub_members, leaf_members = self._find_set_members(members)
 
@@ -200,7 +204,11 @@ class QueryResolver:
             except ValueError:
                 pass
 
-        further_resolving_required = sub_members - set_members - sets_seen - resolved_as_members
+        self._current_set_maximum_depth -= 1
+        if self._current_set_maximum_depth == 0:
+            return set_members | sub_members | leaf_members
+
+        further_resolving_required = sub_members - set_members - sets_seen - resolved_as_members - self._current_excluded_sets
         new_members = self._recursive_set_resolve(further_resolving_required, sets_seen)
         set_members.update(new_members)
 
@@ -232,7 +240,7 @@ class QueryResolver:
             object_classes = [self._current_set_root_object_class]
 
         query = query.object_classes(object_classes).rpsl_pks(set_names)
-        query_result = list(self.database_handler.execute_query(query))
+        query_result = list(self._execute_query(query))
 
         if not query_result:
             # No sub-members are found, and apparantly all inputs were leaf members.
@@ -276,7 +284,7 @@ class QueryResolver:
             if 'ANY' not in [m.strip().upper() for m in mbrs_by_ref]:
                 query = query.lookup_attrs_in(['mnt-by'], mbrs_by_ref)
 
-            referring_objects = self.database_handler.execute_query(query)
+            referring_objects = self._execute_query(query)
 
             for result in referring_objects:
                 member_object_class = result['object_class']
@@ -291,7 +299,7 @@ class QueryResolver:
             sources = self.sources_default if self.sources_default else self.all_valid_sources
         invalid_sources = [s for s in sources if s not in self.all_valid_sources]
         query = DatabaseStatusQuery().sources(sources)
-        query_results = self.database_handler.execute_query(query)
+        query_results = self._execute_query(query)
 
         results: OrderedDict[str, OrderedDict[str, Any]] = OrderedDict()
         for query_result in query_results:
@@ -321,6 +329,15 @@ class QueryResolver:
         except KeyError:
             raise InvalidQueryException(f'Unknown object class: {object_class}')
 
+    def enable_sql_trace(self):
+        self.sql_trace = True
+
+    def retrieve_sql_trace(self) -> List[str]:
+        trace = self.sql_queries
+        self.sql_trace = False
+        self.sql_queries = []
+        return trace
+
     def _prepare_query(self, column_names=None, ordered_by_sources=True) -> RPSLDatabaseQuery:
         """Prepare an RPSLDatabaseQuery by applying relevant sources/class filters."""
         query = RPSLDatabaseQuery(column_names, ordered_by_sources)
@@ -334,3 +351,8 @@ class QueryResolver:
             query.scopefilter_status([ScopeFilterStatus.in_scope])
         self.object_class_filter = []
         return query
+
+    def _execute_query(self, query) -> RPSLDatabaseResponse:
+        if self.sql_trace:
+            self.sql_queries.append(repr(query))
+        return self.database_handler.execute_query(query, refresh_on_error=True)

@@ -34,8 +34,10 @@ irrd:
             relevant.
     server:
         http:
-            interface: '::0'
-            port: 80
+            interface: 127.0.0.1
+            port: 8000
+            workers: 4
+            forwarded_allow_ips: 127.0.0.1
         whois:
             interface: '::0'
             port: 43

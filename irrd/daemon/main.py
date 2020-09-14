@@ -1,17 +1,16 @@
 #!/usr/bin/env python
 # flake8: noqa: E402
-import sys
-import time
-from pwd import getpwnam
-
 import argparse
-import daemon
 import logging
 import os
 import signal
+import sys
+import time
 from pathlib import Path
-from pid import PidFile, PidFileError
 
+import daemon
+import psutil
+from pid import PidFile, PidFileError
 
 logger = logging.getLogger(__name__)
 sys.path.append(str(Path(__file__).resolve().parents[2]))
@@ -19,7 +18,7 @@ sys.path.append(str(Path(__file__).resolve().parents[2]))
 from irrd import __version__
 from irrd.conf import config_init, CONFIG_PATH_DEFAULT, get_setting, get_configuration
 from irrd.mirroring.scheduler import MirrorScheduler
-from irrd.server.http.server import start_http_server
+from irrd.server.http.server import run_http_server
 from irrd.server.whois.server import start_whois_server
 from irrd.storage.preload import PreloadStoreManager
 from irrd.utils.process_support import ExceptionLoggingProcess
@@ -57,7 +56,7 @@ def main():
         try:
             with PidFile(pidname='irrd', piddir=piddir):
                 logger.info(f'IRRd {__version__} starting, PID {os.getpid()}, PID file in {piddir}')
-                run_irrd(mirror_frequency)
+                run_irrd(mirror_frequency, args.config_file_path if args.config_file_path else CONFIG_PATH_DEFAULT)
         except PidFileError as pfe:
             logger.error(f'Failed to start IRRd, unable to lock PID file irrd.pid in {piddir}: {pfe}')
         except Exception as e:
@@ -66,46 +65,46 @@ def main():
             os.kill(os.getpid(), signal.SIGTERM)
 
 
-def run_irrd(mirror_frequency: int):
+def run_irrd(mirror_frequency: int, config_file_path: str):
     terminated = False
 
     mirror_scheduler = MirrorScheduler()
     whois_process = ExceptionLoggingProcess(target=start_whois_server, name='irrd-whois-server-listener')
     whois_process.start()
-    http_process = ExceptionLoggingProcess(target=start_http_server, name='irrd-http-server-listener')
-    http_process.start()
     preload_manager = PreloadStoreManager(name='irrd-preload-store-manager')
     preload_manager.start()
+    uvicorn_process = ExceptionLoggingProcess(target=run_http_server, name='irrd-http-server-listener', args=(config_file_path, ))
+    uvicorn_process.start()
 
     def sighup_handler(signum, frame):
         # On SIGHUP, check if the configuration is valid and reload in
-        # this process, and if it is valid, signal our three long-running
-        # child processes. All other processes are short-lived and forked
-        # from those or this process, so any new ones will pick up
-        # the new config automatically.
+        # this process, and if it is valid, signal SIGHUP to all
+        # child processes.
         if get_configuration().reload():
-            pids = [whois_process.pid, http_process.pid, preload_manager.pid]
-            logging.info('Main process received SIGHUP with valid config, sending SIGHUP to '
-                         f'child processes {pids}')
-            for pid in pids:
-                os.kill(pid, signal.SIGHUP)
+            parent = psutil.Process(os.getpid())
+            children = parent.children(recursive=True)
+            for process in children:
+                process.send_signal(signal.SIGHUP)
+            if children:
+                logging.info('Main process received SIGHUP with valid config, sent SIGHUP to '
+                             f'child processes {[c.pid for c in children]}')
     signal.signal(signal.SIGHUP, sighup_handler)
 
     def sigterm_handler(signum, frame):
-        logging.info(f'Main process received SIGTERM, sending SIGTERM to all child processes')
         mirror_scheduler.terminate_children()
-        try:
-            whois_process.terminate()
-        except Exception:  # pragma no cover
-            pass
-        try:
-            http_process.terminate()
-        except Exception:  # pragma no cover
-            pass
-        try:
-            preload_manager.terminate()
-        except Exception:  # pragma no cover
-            pass
+        parent = psutil.Process(os.getpid())
+        children = parent.children(recursive=True)
+        for process in children:
+            try:
+                process.send_signal(signal.SIGTERM)
+            except Exception:
+                # If we can't SIGTERM some of the processes,
+                # do the best we can.
+                pass
+        if children:
+            logging.info('Main process received SIGTERM, sent SIGTERM to '
+                         f'child processes {[c.pid for c in children]}')
+
         nonlocal terminated
         terminated = True
     signal.signal(signal.SIGTERM, sigterm_handler)
@@ -122,7 +121,7 @@ def run_irrd(mirror_frequency: int):
 
     logging.debug(f'Main process waiting for child processes to terminate')
     whois_process.join()
-    http_process.join()
+    uvicorn_process.join()
     preload_manager.join()
     logging.info(f'Main process exiting')
 

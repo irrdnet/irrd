@@ -10,14 +10,17 @@ ordered-set==4.0.2     # Ordered sets for simple unique ordered storage
 dotted==0.1.8          # Dotted path dictionary resolving for settings
 beautifultable==0.8.0  # pyup: <1.0.0
 PyYAML==5.3.1          # parsing YAML config files
-datrie==0.8.2            # efficient route searching, used for RPKI
+datrie==0.8.2           # efficient route searching, used for RPKI
 setproctitle==1.1.10   # updating the process title for useful ps output
 python-daemon==2.2.4   # daemonising the main process
 pid==3.0.4             # managing PID files
-redis==3.5.3          # preloaded data storage & sync through redis
+redis==3.5.3           # preloaded data storage & sync through redis
 hiredis==1.1.0         # improved redis response parsing performance
-requests==2.24.0       # HTTP request handling
+requests==2.22.0       # HTTP request handling
 pytz==2020.4
+uvicorn==0.12.3        # ASGI server
+starlette==0.13.8      # ASGI framework
+psutil==5.7.3          # Process management
 
 # Database connections and management
 psycopg2-binary==2.8.6
@@ -31,6 +34,7 @@ pytest-cov==2.10.1
 coverage==5.3
 coveralls==2.1.2
 twisted==20.3.0    # Used for a mock email server in integration tests
+python-graphql-client==0.4.0
 
 # Documentation generation
 Sphinx==3.3.0
@@ -45,3 +49,5 @@ pep8-naming==0.11.1
 setuptools==50.3.2
 wheel==0.35.1
 twine==3.2.0
+
+-e git://github.com/mirumee/ariadne.git#egg=ariadne

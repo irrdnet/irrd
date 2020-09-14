@@ -1,4 +1,5 @@
 import datetime
+import itertools
 import json
 import re
 from collections import OrderedDict, Counter
@@ -35,6 +36,9 @@ class RPSLObjectMeta(type):
             cls.attrs_allowed = [field[0] for field in fields.items()]
             cls.attrs_required = [field[0] for field in fields.items() if not field[1].optional]
             cls.attrs_multiple = [field[0] for field in fields.items() if field[1].multiple]
+            cls.field_extracts = list(itertools.chain(
+                *[field[1].extracts for field in fields.items() if field[1].primary_key or field[1].lookup_key]
+            ))
             cls.referring_strong_fields = [(field[0], field[1].referring) for field in fields.items() if hasattr(field[1], 'referring') and getattr(field[1], 'strong')]
 
 

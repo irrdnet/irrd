@@ -223,7 +223,7 @@ class TestConfiguration:
                         'access_list': 'doesnotexist',
                     },
                     'http': {
-                        'access_list': ['foo'],
+                        'status_access_list': ['foo'],
                     },
                 },
                 'email': {
@@ -286,7 +286,7 @@ class TestConfiguration:
         assert 'Setting email.recipient_override must be an email address if set.' in str(ce.value)
         assert 'Setting auth.gnupg_keyring is required.' in str(ce.value)
         assert 'Access lists doesnotexist referenced in settings, but not defined.' in str(ce.value)
-        assert 'Setting server.http.access_list must be a string, if defined.' in str(ce.value)
+        assert 'Setting server.http.status_access_list must be a string, if defined.' in str(ce.value)
         assert 'Invalid item in access list bad-list: IPv4 Address with more than 4 bytes.' in str(ce.value)
         assert 'Invalid item in prefix scopefilter: invalid-prefix' in str(ce.value)
         assert 'Invalid item in asn scopefilter: invalid.' in str(ce.value)

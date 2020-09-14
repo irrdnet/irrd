@@ -6,6 +6,7 @@ bugfix
 conf
 config
 cron
+enums
 dev
 gpg
 gzipped
@@ -29,6 +30,7 @@ multipart
 nrtm
 nd
 nfy
+nginx
 ntt
 postgres
 pre

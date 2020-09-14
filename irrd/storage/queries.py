@@ -133,6 +133,12 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
                 self.columns.object_text,
                 self.columns.source,
                 self.columns.rpki_status,
+                self.columns.updated,
+                self.columns.asn_first,
+                self.columns.asn_last,
+                self.columns.ip_first,
+                self.columns.ip_last,
+                self.columns.prefix_length,
             ]
         else:
             columns = [self.columns.get(name) for name in column_names]
@@ -279,7 +285,7 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         fltr = self.columns.scopefilter_status.in_(status)
         return self._filter(fltr)
 
-    def text_search(self, value: str):
+    def text_search(self, value: str, extract_asn_ip=True):
         """
         Search the database for a specific free text.
 
@@ -291,19 +297,21 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         - Otherwise, return all objects where the RPSL primary key is exactly this value,
           or it matches part of a person/role name (not nic-hdl, their
           actual person/role attribute value).
+         If extract_asn_ip is False, the first two steps are skipped.
         """
         self._check_query_frozen()
-        try:
-            _, asn = parse_as_number(value)
-            return self.object_classes(['as-block', 'as-set', 'aut-num']).asn_less_specific(asn)
-        except ValidationError:
-            pass
+        if extract_asn_ip:
+            try:
+                _, asn = parse_as_number(value)
+                return self.object_classes(['as-block', 'as-set', 'aut-num']).asn_less_specific(asn)
+            except ValidationError:
+                pass
 
-        try:
-            ip = IP(value)
-            return self.ip_less_specific(ip)
-        except ValueError:
-            pass
+            try:
+                ip = IP(value)
+                return self.ip_less_specific(ip)
+            except ValueError:
+                pass
 
         counter = self._lookup_attr_counter
         self._lookup_attr_counter += 1
@@ -324,7 +332,7 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         return self
 
     def __repr__(self):
-        return f'RPSLDatabaseQuery: {self.statement}\nPARAMS: {self.statement.compile().params}'
+        return f'{self.statement}\nPARAMS: {self.statement.compile().params}'
 
 
 class RPSLDatabaseJournalQuery(BaseRPSLObjectDatabaseQuery):
@@ -345,6 +353,7 @@ class RPSLDatabaseJournalQuery(BaseRPSLObjectDatabaseQuery):
             self.columns.operation,
             self.columns.object_class,
             self.columns.object_text,
+            self.columns.origin,
             self.columns.timestamp,
         ]).order_by(self.columns.source.asc(), self.columns.serial_nrtm.asc())
 

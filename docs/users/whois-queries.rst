@@ -275,4 +275,4 @@ range between several seconds and one minute.
 
 Once the initial preload is complete, updates to the database do not cause
 delays in queries. However, they may cause queries to return responses
-based on slightly outdated data, typically 5-15 seconds.
+based on slightly outdated data, typically 15-60 seconds.

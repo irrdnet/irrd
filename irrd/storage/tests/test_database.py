@@ -203,28 +203,36 @@ class TestDatabaseHandlerLive:
         # have a separate sequence of NRTM serials.
         assert journal == [
             {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 1,
-             'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
+             'operation': DatabaseOperation.add_or_update, 'object_class': 'route',
+             'object_text': 'object-text', 'origin': JournalEntryOrigin.auth_change},
             {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 2,
-             'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
+             'operation': DatabaseOperation.add_or_update, 'object_class': 'route',
+             'object_text': 'object-text', 'origin': JournalEntryOrigin.auth_change},
             {'rpsl_pk': '2001:db8::/64,AS65537', 'source': 'TEST2', 'serial_nrtm': 42,
-             'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
+             'operation': DatabaseOperation.add_or_update, 'object_class': 'route',
+             'object_text': 'object-text', 'origin': JournalEntryOrigin.auth_change},
             {'rpsl_pk': '2001:db8::/64,AS65537', 'source': 'TEST2', 'serial_nrtm': 43,
-             'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
+             'operation': DatabaseOperation.add_or_update, 'object_class': 'route',
+             'object_text': 'object-text', 'origin': JournalEntryOrigin.auth_change},
             {'rpsl_pk': '2001:db8::/64,AS65537', 'source': 'TEST2', 'serial_nrtm': 44,
-             'operation': DatabaseOperation.delete, 'object_class': 'route', 'object_text': 'object-text'},
+             'operation': DatabaseOperation.delete, 'object_class': 'route',
+             'object_text': 'object-text', 'origin': JournalEntryOrigin.auth_change},
         ]
 
         partial_journal = self._clean_result(self.dh.execute_query(RPSLDatabaseJournalQuery().sources(['TEST']).serial_range(1, 1)))
         assert partial_journal == [
             {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 1,
-             'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
+             'operation': DatabaseOperation.add_or_update, 'object_class': 'route',
+             'object_text': 'object-text', 'origin': JournalEntryOrigin.auth_change},
         ]
         partial_journal = self._clean_result(self.dh.execute_query(RPSLDatabaseJournalQuery().sources(['TEST']).serial_range(1)))
         assert partial_journal == [
             {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 1,
-             'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
+             'operation': DatabaseOperation.add_or_update, 'object_class': 'route',
+             'object_text': 'object-text', 'origin': JournalEntryOrigin.auth_change},
             {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 2,
-             'operation': DatabaseOperation.add_or_update, 'object_class': 'route', 'object_text': 'object-text'},
+             'operation': DatabaseOperation.add_or_update, 'object_class': 'route',
+             'object_text': 'object-text', 'origin': JournalEntryOrigin.auth_change},
         ]
 
         # Override the config to enable synchronised serials for TEST
