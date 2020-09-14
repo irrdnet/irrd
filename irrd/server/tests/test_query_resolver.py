@@ -53,7 +53,7 @@ def prepare_resolver(monkeypatch, config_override):
                         lambda columns=None, ordered_by_sources=True: mock_database_query)
     mock_preloader = Mock(spec=Preloader)
 
-    resolver = QueryResolver('127.0.0.1', '127.0.0.1:99999', mock_preloader, mock_database_handler)
+    resolver = QueryResolver(mock_preloader, mock_database_handler)
     resolver.out_scope_filter_enabled = False
 
     mock_query_result = [
@@ -92,7 +92,7 @@ def prepare_resolver(monkeypatch, config_override):
             'source': 'TEST2',
         },
     ]
-    mock_database_handler.execute_query = lambda query: mock_query_result
+    mock_database_handler.execute_query = lambda query, refresh_on_error=False: mock_query_result
 
     yield mock_database_query, mock_database_handler, mock_preloader, mock_query_result, resolver
 
@@ -118,7 +118,7 @@ class TestQueryResolver:
             'sources': {'TEST1': {}, 'TEST2': {}},
             'sources_default': ['TEST2', 'TEST1'],
         })
-        resolver = QueryResolver('', '', mock_preloader, mock_dh)
+        resolver = QueryResolver(mock_preloader, mock_dh)
         assert list(resolver.sources_default) == ['TEST2', 'TEST1']
 
     def test_restrict_object_class(self, prepare_resolver):
@@ -151,6 +151,15 @@ class TestQueryResolver:
             ['rpsl_pk', ('192.0.2.0/25',), {}],
             ['first_only', (), {}],
         ]
+
+    def test_key_lookup_with_sql_trace(self, prepare_resolver):
+        mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
+        resolver.enable_sql_trace()
+
+        result = resolver.key_lookup('route', '192.0.2.0/25')
+        assert list(result) == mock_query_result
+        assert len(resolver.retrieve_sql_trace()) == 1
+        assert len(resolver.retrieve_sql_trace()) == 0
 
     def test_limit_sources_key_lookup(self, prepare_resolver):
         mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
@@ -223,7 +232,7 @@ class TestQueryResolver:
             'sources_default': [],
             'rpki': {'roa_source': 'https://example.com/roa.json'},
         })
-        resolver = QueryResolver('127.0.0.1', '127.0.0.1:99999', mock_preloader, mock_dh)
+        resolver = QueryResolver(mock_preloader, mock_dh)
         resolver.out_scope_filter_enabled = False
 
         result = resolver.route_search(IP('192.0.2.0/25'), RouteLookupType.EXACT)
@@ -278,7 +287,7 @@ class TestQueryResolver:
             ['lookup_attr', ('mnt-by', 'MNT-TEST'), {}],
         ]
 
-        mock_dh.execute_query = lambda query: []
+        mock_dh.execute_query = lambda query, refresh_on_error=False: []
         with pytest.raises(InvalidQueryException):
             resolver.rpsl_attribute_search('invalid-attr', 'MNT-TEST')
 
@@ -371,7 +380,7 @@ class TestQueryResolver:
                 'source': 'TEST2',
             },
         ]
-        mock_dh.execute_query = lambda query: iter(mock_query_result1)
+        mock_dh.execute_query = lambda query, refresh_on_error=False: iter(mock_query_result1)
 
         result = resolver.members_for_set('AS-FIRSTLEVEL', recursive=False)
         assert result == ['AS-2nd-UNKNOWN', 'AS-SECONDLEVEL', 'AS65547']
@@ -384,7 +393,7 @@ class TestQueryResolver:
         mock_query_iterator = iter(
             [mock_query_result1, mock_query_result2, mock_query_result3, [], mock_query_result1,
              []])
-        mock_dh.execute_query = lambda query: iter(next(mock_query_iterator))
+        mock_dh.execute_query = lambda query, refresh_on_error=False: iter(next(mock_query_iterator))
 
         result = resolver.members_for_set('AS-FIRSTLEVEL', recursive=True)
         assert result == ['AS65544', 'AS65545', 'AS65547']
@@ -400,7 +409,11 @@ class TestQueryResolver:
         ]
         mock_dq.reset_mock()
 
-        mock_dh.execute_query = lambda query: iter([])
+        result = resolver.members_for_set('AS-FIRSTLEVEL', depth=1, recursive=True)
+        assert result == ['AS-2nd-UNKNOWN', 'AS-SECONDLEVEL', 'AS65547']
+        mock_dq.reset_mock()
+
+        mock_dh.execute_query = lambda query, refresh_on_error=False: iter([])
         result = resolver.members_for_set('AS-NOTEXIST', recursive=True)
         assert not result
         assert flatten_mock_calls(mock_dq) == [
@@ -445,7 +458,7 @@ class TestQueryResolver:
             },
         ]
         mock_query_iterator = iter([mock_query_result1, mock_query_result2, mock_query_result3, []])
-        mock_dh.execute_query = lambda query: iter(next(mock_query_iterator))
+        mock_dh.execute_query = lambda query, refresh_on_error=False: iter(next(mock_query_iterator))
         mock_preloader.routes_for_origins = Mock(return_value=['192.0.2.128/25'])
 
         result = resolver.members_for_set('RS-FIRSTLEVEL', recursive=True)
@@ -486,7 +499,7 @@ class TestQueryResolver:
             },
         ]
         mock_query_iterator = iter([mock_query_result1, mock_query_result2, [], [], []])
-        mock_dh.execute_query = lambda query: iter(next(mock_query_iterator))
+        mock_dh.execute_query = lambda query, refresh_on_error=False: iter(next(mock_query_iterator))
 
         result = resolver.members_for_set('RRS-TEST', recursive=True)
         assert result == ['192.0.2.0/24', '192.0.2.0/32', '2001:db8::/32']
@@ -529,7 +542,7 @@ class TestQueryResolver:
                 'source': 'TEST1',
             },
         ]
-        mock_dh.execute_query = lambda query: mock_query_result
+        mock_dh.execute_query = lambda query, refresh_on_error=False: mock_query_result
 
         result = resolver.members_for_set('RS-TEST', recursive=False)
         assert result == ['192.0.2.0/32', '192.0.2.1/32', '2001:db8::/32', 'RS-OTHER']
@@ -578,7 +591,7 @@ class TestQueryResolver:
                 'updated': datetime.datetime(2020, 1, 1, tzinfo=timezone('UTC')),
             },
         ]
-        mock_dh.execute_query = lambda query: mock_query_result
+        mock_dh.execute_query = lambda query, refresh_on_error=False: mock_query_result
 
         result = resolver.database_status()
         assert result == {

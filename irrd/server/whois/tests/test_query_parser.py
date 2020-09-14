@@ -92,7 +92,7 @@ def prepare_parser(monkeypatch, config_override):
     mock_query_resolver = Mock(spec=QueryResolver)
     mock_query_resolver.rpki_aware = False
     monkeypatch.setattr('irrd.server.whois.query_parser.QueryResolver',
-                        lambda client_ip, client_str, preloader, database_handler: mock_query_resolver)
+                        lambda preloader, database_handler: mock_query_resolver)
 
     mock_dh = Mock(spec=DatabaseHandler)
     parser = WhoisQueryParser('127.0.0.1', '127.0.0.1:99999', None, mock_dh)
@@ -365,7 +365,6 @@ class TestWhoisQueryParserRIPE:
 
         assert 'An exception occurred while processing whois query' in caplog.text
         assert 'test-error' in caplog.text
-        assert flatten_mock_calls(mock_dh)[0][0] == 'refresh_connection'
 
         mock_query_resolver.rpsl_text_search = Mock(side_effect=InvalidQueryException('user error'))
 
@@ -515,14 +514,14 @@ class TestWhoisQueryParserIRRD:
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == 'MEMBER1 MEMBER2'
-        mock_query_resolver.members_for_set.assert_called_once_with('AS-FOO', False)
+        mock_query_resolver.members_for_set.assert_called_once_with('AS-FOO', recursive=False)
         mock_query_resolver.members_for_set.reset_mock()
 
         response = parser.handle_query('!iAS-FOO,1')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == 'MEMBER1 MEMBER2'
-        mock_query_resolver.members_for_set.assert_called_once_with('AS-FOO', True)
+        mock_query_resolver.members_for_set.assert_called_once_with('AS-FOO', recursive=True)
 
         mock_query_resolver.members_for_set = Mock(return_value=[])
         response = parser.handle_query('!iAS-FOO')
@@ -542,7 +541,7 @@ class TestWhoisQueryParserIRRD:
             {'source': 'TEST1', 'serial_oldest_seen': 10, 'serial_newest_mirror': 20, 'serial_last_export': 10},
             {'source': 'TEST2', 'serial_oldest_seen': None, 'serial_newest_mirror': None, 'serial_last_export': None},
         ]
-        mock_dh.execute_query = lambda query: mock_query_result
+        mock_dh.execute_query = lambda query, refresh_on_error=False: mock_query_result
 
         response = parser.handle_query('!j-*')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
@@ -568,14 +567,14 @@ class TestWhoisQueryParserIRRD:
         response = parser.handle_query('!J-*')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
-        assert response.result == '{\n "dict": true\n}'
+        assert response.result == '{\n    "dict": true\n}'
         mock_query_resolver.database_status.assert_called_once_with(None)
         mock_query_resolver.database_status.reset_mock()
 
         response = parser.handle_query('!Jtest1,test-invalid')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
-        assert response.result == '{\n "dict": true\n}'
+        assert response.result == '{\n    "dict": true\n}'
         mock_query_resolver.database_status.assert_called_once_with(['TEST1', 'TEST-INVALID'])
 
     def test_exact_key(self, prepare_parser):
@@ -770,7 +769,6 @@ class TestWhoisQueryParserIRRD:
 
         assert 'An exception occurred while processing whois query' in caplog.text
         assert 'test-error' in caplog.text
-        assert flatten_mock_calls(mock_dh)[0][0] == 'refresh_connection'
 
         mock_query_resolver.members_for_set = Mock(side_effect=InvalidQueryException('user error'))
 

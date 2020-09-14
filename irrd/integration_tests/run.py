@@ -16,6 +16,8 @@ import yaml
 from alembic import command, config
 from pathlib import Path
 
+from python_graphql_client import GraphqlClient
+
 from irrd.conf import config_init, PASSWORD_HASH_DUMMY_VALUE
 from irrd.utils.rpsl_samples import (SAMPLE_MNTNER, SAMPLE_PERSON, SAMPLE_KEY_CERT, SIGNED_PERSON_UPDATE_VALID,
                                      SAMPLE_AS_SET, SAMPLE_AUT_NUM, SAMPLE_DOMAIN, SAMPLE_FILTER_SET, SAMPLE_INET_RTR,
@@ -31,6 +33,7 @@ sys.path.append(IRRD_ROOT_PATH)
 AS_SET_REFERRING_OTHER_SET = """as-set:         AS65537:AS-TESTREF
 descr:          description
 members:        AS65537:AS-SETTEST, AS65540
+mbrs-by-ref:    TEST-MNT
 tech-c:         PERSON-TEST
 admin-c:        PERSON-TEST
 notify:         notify@example.com
@@ -428,6 +431,7 @@ class TestIntegration:
             query_result = whois_query('127.0.0.1', port, 'dashcare')
             assert 'ROLE-TEST' in query_result
 
+        # Check the mirroring status
         query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!J-*')
         result = ujson.loads(query_result)
         assert result['TEST']['serial_newest_journal'] == 29
@@ -435,7 +439,7 @@ class TestIntegration:
         assert result['TEST']['serial_newest_mirror'] is None
         # irrd #2 missed the first update from NRTM, as they were done at
         # the same time and loaded from the full export, and one RPKI-invalid object
-        # was not recorded in the journal, so its serial should
+        # was not recorded in the journal, so its local serial should
         # is lower by three
         query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!J-*')
         result = ujson.loads(query_result)
@@ -458,6 +462,8 @@ class TestIntegration:
         result = ujson.loads(query_result)
         assert result['TEST']['serial_newest_journal'] == 27
         assert result['TEST']['serial_last_export'] == 27
+        # This was a local journal update from RPKI status change,
+        # so serial_newest_mirror did not update.
         assert result['TEST']['serial_newest_mirror'] == 29
 
         # Make the v4 route in irrd2 invalid again
@@ -491,6 +497,10 @@ class TestIntegration:
         assert {m['To'] for m in messages} == expected_recipients
         assert '192.0.2.0/24' in mail_text
 
+        self.check_http()
+        self.check_graphql()
+
+    def check_http(self):
         status1 = requests.get(f'http://127.0.0.1:{self.port_http1}/v1/status/')
         status2 = requests.get(f'http://127.0.0.1:{self.port_http2}/v1/status/')
         assert status1.status_code == 200
@@ -503,6 +513,161 @@ class TestIntegration:
         assert 'RPKI' in status2.text
         assert 'Authoritative: Yes' in status1.text
         assert 'Authoritative: Yes' not in status2.text
+
+    def check_graphql(self):
+        client = GraphqlClient(endpoint=f"http://127.0.0.1:{self.port_http1}/graphql/")
+        # Regular rpslObjects query including journal and several references
+        query = """query {
+          rpslObjects(rpslPk: "PERSON-TEST") {
+            rpslPk
+            ... on RPSLContact {
+                mntBy
+            }
+            mntByObjs {
+              rpslPk
+              adminCObjs {
+                ... on RPSLContact {
+                  rpslPk
+                }
+              }
+              adminCObjs {
+                ... on RPSLContact {
+                  rpslPk
+                }
+              }
+            }
+            journal {
+              serialNrtm
+              operation
+              origin
+            }
+          }
+        }
+        """
+        result = client.execute(query=query)
+        assert result['data']['rpslObjects'] == [{
+            'rpslPk': 'PERSON-TEST',
+            'mntBy': ['TEST-MNT'],
+            'mntByObjs': [{'rpslPk': 'TEST-MNT', 'adminCObjs': [{'rpslPk': 'PERSON-TEST'}]}],
+            'journal': [
+                {'serialNrtm': 2, 'operation': 'add_or_update', 'origin': 'auth_change'},
+                {'serialNrtm': 4, 'operation': 'add_or_update', 'origin': 'auth_change'},
+                {'serialNrtm': 5, 'operation': 'delete', 'origin': 'auth_change'},
+                {'serialNrtm': 9, 'operation': 'add_or_update', 'origin': 'auth_change'}
+            ]
+        }]
+
+        # Test memberOfObjs resolving and IP search
+        query = """query {
+          rpslObjects(ipLessSpecificOneLevel: "192.0.2.1" rpkiStatus:[invalid,valid,not_found]) {
+            rpslPk
+            ... on RPSLRoute {
+                memberOfObjs {
+                  rpslPk
+                }
+            }
+          }
+        }
+        """
+        result = client.execute(query=query)
+        assert result['data']['rpslObjects'] == [
+            {'rpslPk': '192.0.2.0/24AS65537', 'memberOfObjs': [{'rpslPk': 'RS-TEST'}]},
+            {'rpslPk': '192.0.2.0 - 192.0.2.255'}
+        ]
+
+        # Test membersObjs and mbrsByRefObjs resolving
+        query = """query {
+          rpslObjects(rpslPk: ["AS65537:AS-TESTREF", "DOESNOTEXIST"]) {
+            rpslPk
+            ... on RPSLAsSet {
+                membersObjs {
+                  rpslPk
+                }
+                mbrsByRefObjs {
+                  rpslPk
+                }
+            }
+          }
+        }
+        """
+        result = client.execute(query=query)
+        assert result['data']['rpslObjects'] == [{
+            'rpslPk': 'AS65537:AS-TESTREF',
+            'membersObjs': [{'rpslPk': 'AS65537:AS-SETTEST'}],
+            'mbrsByRefObjs': [{'rpslPk': 'TEST-MNT'}],
+        }]
+
+        # Test databaseStatus query
+        query = """query {
+          databaseStatus {
+            source
+            authoritative
+            serialOldestJournal
+            serialNewestJournal
+            serialNewestMirror
+          }
+        }
+        """
+        result = client.execute(query=query)
+        assert result['data']['databaseStatus'] == [
+            {
+                'source': 'TEST',
+                'authoritative': True,
+                'serialOldestJournal': 1,
+                'serialNewestJournal': 30,
+                'serialNewestMirror': None
+            }, {
+                'source': 'RPKI',
+                'authoritative': False,
+                'serialOldestJournal': None,
+                'serialNewestJournal': None,
+                'serialNewestMirror': None
+            }
+        ]
+
+        # Test asnPrefixes query
+        query = """query {
+          asnPrefixes(asns: [65537]) {
+            asn
+            prefixes
+          }
+        }
+        """
+        result = client.execute(query=query)
+        asnPrefixes = result['data']['asnPrefixes']
+        assert len(asnPrefixes) == 1
+        assert asnPrefixes[0]['asn'] == 65537
+        assert set(asnPrefixes[0]['prefixes']) == {'2001:db8::/48'}
+
+        # Test asSetPrefixes query
+        query = """query {
+          asSetPrefixes(setNames: ["AS65537:AS-TESTREF"]) {
+            rpslPk
+            prefixes
+          }
+        }
+        """
+        result = client.execute(query=query)
+        asSetPrefixes = result['data']['asSetPrefixes']
+        assert len(asSetPrefixes) == 1
+        assert asSetPrefixes[0]['rpslPk'] == 'AS65537:AS-TESTREF'
+        assert set(asSetPrefixes[0]['prefixes']) == {'2001:db8::/48'}
+
+        # Test recursiveSetMembers query
+        query = """query {
+          recursiveSetMembers(setNames: ["AS65537:AS-TESTREF"]) {
+            rpslPk
+            members
+          }
+        }
+        """
+        result = client.execute(query=query)
+        recursiveSetMembers = result['data']['recursiveSetMembers']
+        assert len(recursiveSetMembers) == 1
+        assert recursiveSetMembers[0]['rpslPk'] == 'AS65537:AS-TESTREF'
+        assert set(recursiveSetMembers[0]['members']) == {
+            'AS65537', 'AS65538', 'AS65539', 'AS65540'
+        }
 
     def _start_mailserver(self):
         """
@@ -575,7 +740,7 @@ class TestIntegration:
 
                 'server': {
                     'http': {
-                        'access_list': 'localhost',
+                        'status_access_list': 'localhost',
                         'interface': '::1',
                         'port': 8080
                     },
@@ -792,4 +957,3 @@ class TestIntegration:
             except (FileNotFoundError, ProcessLookupError, ValueError) as exc:
                 print(f'Failed to kill: {pidfile}: {exc}')
                 pass
-

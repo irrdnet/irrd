@@ -5,11 +5,13 @@ from urllib.parse import urlparse
 
 from IPy import IP
 
+from irrd.utils.text import clean_ip_value_error
+from irrd.utils.validators import parse_as_number, ValidationError
 from .config import PASSWORD_HASHERS
 from .parser_state import RPSLParserMessages, RPSLFieldParseResult
-from irrd.utils.validators import parse_as_number, ValidationError
 
 # The IPv4/IPv6 regexes are for initial screening - not full validators
+
 re_ipv4_prefix = re.compile(r"^\d+\.\d+\.\d+\.\d+/\d+$")
 re_ipv6_prefix = re.compile(r"^[A-F\d:]+/\d+$", re.IGNORECASE)
 
@@ -25,9 +27,6 @@ re_generic_name = re.compile(r"^[A-Z][A-Z0-9_-]*[A-Z0-9]$", re.IGNORECASE)
 reserved_words = ["ANY", "AS-ANY", "RS_ANY", "PEERAS", "AND", "OR", "NOT", "ATOMIC", "FROM", "TO", "AT", "ACTION",
                   "ACCEPT", "ANNOUNCE", "EXCEPT", "REFINE", "NETWORKS", "INTO", "INBOUND", "OUTBOUND"]
 reserved_prefixes = ["AS-", "RS-", "RTRS-", "FLTR-", "PRNG-"]
-
-# Turn "IP('193.0.1.1/21') has invalid prefix length (21)" into "invalid prefix length (21)"
-re_clean_ip_error = re.compile(r"IP\('[A-F0-9:./]+'\) has ", re.IGNORECASE)
 
 """
 Fields for RPSL data.
@@ -53,8 +52,13 @@ class RPSLTextField:
     If keep_case is False, all data is converted to upper case. The original object text is not
     modified for this. As parsed_data is indexed in the databases, this is important for searches,
     to match e.g. 'mntner: FOO' to 'mnt-by: foo' - as these values are equivalent.
+
+    The extracts property defines which fields from RPSLFieldParseResult are extracted
+    by a field, other than the value. The parser only consider these extractions
+    for primary key or lookup key fields.
     """
     keep_case = True
+    extracts: List[str] = []
 
     def __init__(self, optional: bool=False, multiple: bool=False, primary_key: bool=False, lookup_key: bool=False) -> None:
         self.optional = optional
@@ -92,6 +96,8 @@ class RPSLFieldListMixin:
 
 class RPSLIPv4PrefixField(RPSLTextField):
     """Field for a single IPv4 prefix."""
+    extracts = ['ip_first', 'ip_last', 'prefix', 'prefix_length']
+
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
         if not re_ipv4_prefix.match(value):
             messages.error(f'Invalid address prefix: {value}')
@@ -120,6 +126,8 @@ class RPSLIPv4PrefixesField(RPSLFieldListMixin, RPSLIPv4PrefixField):
 
 class RPSLIPv6PrefixField(RPSLTextField):
     """Field for a single IPv6 prefix."""
+    extracts = ['ip_first', 'ip_last', 'prefix', 'prefix_length']
+
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
         if not re_ipv6_prefix.match(value):
             messages.error(f'Invalid address prefix: {value}')
@@ -153,6 +161,8 @@ class RPSLIPv4AddressRangeField(RPSLTextField):
     Note that a single IP address is also valid, and that the range does
     not have to align to bitwise boundaries of prefixes.
     """
+    extracts = ['ip_first', 'ip_last']
+
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
         value = value.replace(',', '')  # #311, process multiline PK correctly
         if '-' in value:
@@ -264,6 +274,8 @@ class RPSLRouteSetMembersField(RPSLFieldListMixin, RPSLRouteSetMemberField):
 
 class RPSLASNumberField(RPSLTextField):
     """Field for a single AS number (in ASxxxx syntax)."""
+    extracts = ['asn']
+
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
         try:
             parsed_str, parsed_int = parse_as_number(value)
@@ -277,6 +289,8 @@ class RPSLASNumberField(RPSLTextField):
 
 class RPSLASBlockField(RPSLTextField):
     """Field for a block of AS numbers, e.g. AS1 - AS5."""
+    extracts = ['asn_first', 'asn_last']
+
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
         if '-' not in value:
             messages.error(f'Invalid AS range: {value}: does not contain a hyphen')
@@ -453,7 +467,7 @@ class RPSLReferenceField(RPSLTextField):
 
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
         if not self.referring_identifier_fields:
-            self._build_cache()
+            self.resolve_references()
 
         referring_field_messages = RPSLParserMessages()
         for identifier_field in self.referring_identifier_fields:
@@ -465,7 +479,7 @@ class RPSLReferenceField(RPSLTextField):
         messages.merge_messages(referring_field_messages)
         return None
 
-    def _build_cache(self):
+    def resolve_references(self):
         from .rpsl_objects import OBJECT_CLASS_MAPPING
         for ref in self.referring:
             rpsl_object_class = OBJECT_CLASS_MAPPING[ref]
@@ -548,7 +562,3 @@ def parse_set_name(prefixes: List[str], value: str, messages: RPSLParserMessages
     if parsed_value != value:
         messages.info(f'Set name {value} was reformatted as {parsed_value}')
     return RPSLFieldParseResult(parsed_value)
-
-
-def clean_ip_value_error(value_error):
-    return re.sub(re_clean_ip_error, '', str(value_error))

@@ -36,12 +36,19 @@ setuptools.setup(
         'pid==3.0.4',
         'redis==3.5.3',
         'hiredis==1.1.0',
-        'requests==2.24.0',
+        'requests==2.22.0',
         'pytz==2020.4',
+        'uvicorn==0.12.3',
+        'starlette==0.13.8',
+        'psutil==5.7.3',
         'psycopg2-binary==2.8.6',
         'SQLAlchemy==1.3.20',
         'alembic==1.4.3',
         'ujson==4.0.1',
+        'ariadne==0.13git'
+    ],
+    dependency_links=[
+        'https://github.com/mirumee/ariadne/tarball/master#egg=ariadne-0.13git'
     ],
     extras_require={
         ':python_version < "3.7"': [

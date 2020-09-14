@@ -49,7 +49,8 @@ an IRRd instance.
 .. toctree::
    :maxdepth: 1
 
-   users/queries
+   users/http-queries
+   users/whois-queries
    users/database-changes
    users/mirroring
 

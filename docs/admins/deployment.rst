@@ -283,6 +283,55 @@ to open privileged ports, e.g.::
 Alternatively, you can run IRRd on non-privileged ports and use IPtables
 or similar tools to redirect connections from the privileged ports.
 
+.. _deployment-https:
+
+HTTPS services configuration
+----------------------------
+By default, the HTTP interface runs on ``127.0.0.1:8000``. It is strongly
+recommended to run a service like nginx in front of this, to support
+and default to TLS connections.
+
+A sample nginx configuration could initially look as follows::
+
+    http {
+        include       mime.types;
+        default_type  application/octet-stream;
+
+        gzip on;
+        gzip_types application/json;
+
+        server {
+            server_name  [your hostname];
+            listen       80;
+            listen       [::]:80;
+
+            location / {
+                proxy_set_header Host $http_host;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_read_timeout 900;
+                proxy_connect_timeout 900;
+                proxy_send_timeout 900;
+                proxy_buffering off;
+                proxy_pass http://127.0.0.1:8080;
+                add_header Server $upstream_http_server;
+            }
+        }
+    }
+
+Based on this configuration, ``certbot --nginx`` can be used on most platforms
+to generate the right certificates from LetsEncrypt and update the
+configuration to configure HTTPS.
+
+You can also use other services or your own configuration. If your service
+runs on a different host, set ``server.http.forwarded_allow_ips`` to let
+IRRd trust the ``X-Forwarded-For`` header.
+
+.. warning::
+    While running the HTTP services over plain HTTP is possible, using
+    HTTPS is strongly recommended, particularly so that clients can verify
+    the authenticity of queries.
+
 Logrotate configuration
 ~~~~~~~~~~~~~~~~~~~~~~~
 The following logrotate configuration can be used for IRRd::

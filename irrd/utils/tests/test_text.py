@@ -3,7 +3,7 @@ from io import StringIO
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
 from ..text import (splitline_unicodesafe, split_paragraphs_rpsl, remove_auth_hashes,
-                    remove_last_modified)
+                    remove_last_modified, snake_to_camel_case)
 
 
 def test_remove_auth_hashes():
@@ -44,3 +44,8 @@ def test_split_paragraphs_rpsl():
         'par 1\npar 1\n',
         'par 2\npar \u20282\n',
     ]
+
+
+def test_snake_to_camel_case():
+    assert snake_to_camel_case('foo1_bar') == 'foo1Bar'
+    assert snake_to_camel_case(['foo1_bar', 'second_item']) == ['foo1Bar', 'secondItem']

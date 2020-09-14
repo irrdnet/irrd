@@ -128,16 +128,30 @@ class DatabaseHandler:
     def execute_query(self,
                       query: Union[BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery, RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery],
                       flush_rpsl_buffer=True,
+                      refresh_on_error=False,
                       ) -> RPSLDatabaseResponse:
         """
         Execute an RPSLDatabaseQuery within the current transaction.
         If flush_rpsl_buffer is set, the RPSL object buffer is flushed first.
+        If refresh_on_error is set, if any exception occurs, will refresh
+        the connection and retry.
         """
-        # To be able to query objects that were just created, flush the buffer.
-        if not self.readonly and flush_rpsl_buffer:
-            self._flush_rpsl_object_writing_buffer()
-        statement = query.finalise_statement()
-        result = self._connection.execute(statement)
+        def execute_query():
+            # To be able to query objects that were just created, flush the buffer.
+            if not self.readonly and flush_rpsl_buffer:
+                self._flush_rpsl_object_writing_buffer()
+            statement = query.finalise_statement()
+            return self._connection.execute(statement)
+
+        try:
+            result = execute_query()
+        except Exception as exc:  # pragma: no cover
+            if refresh_on_error:
+                self.refresh_connection()
+                result = execute_query()
+            else:
+                raise exc
+
         for row in result.fetchall():
             yield dict(row)
         result.close()

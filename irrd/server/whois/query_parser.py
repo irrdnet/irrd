@@ -43,8 +43,6 @@ class WhoisQueryParser:
         self.client_str = client_str
         self.database_handler = database_handler
         self.query_resolver = QueryResolver(
-            client_ip=client_ip,
-            client_str=client_str,
             preloader=preloader,
             database_handler=database_handler,
         )
@@ -67,12 +65,6 @@ class WhoisQueryParser:
                     result=str(exc)
                 )
             except Exception as exc:
-                self.database_handler.refresh_connection()
-                # Do one retry after refreshing the DB connection
-                try:
-                    return self.handle_irrd_command(query[1:])
-                except Exception:
-                    pass
                 logger.error(f'An exception occurred while processing whois query "{query}": {exc}', exc_info=exc)
                 return WhoisQueryResponse(
                     response_type=WhoisQueryResponseType.ERROR,
@@ -90,12 +82,6 @@ class WhoisQueryParser:
                 result=str(exc)
             )
         except Exception as exc:
-            self.database_handler.refresh_connection()
-            # Do one retry after refreshing the DB connection
-            try:
-                return self.handle_ripe_command(query)
-            except Exception:
-                pass
             logger.error(f'An exception occurred while processing whois query "{query}": {exc}', exc_info=exc)
             return WhoisQueryResponse(
                 response_type=WhoisQueryResponseType.ERROR,
@@ -239,7 +225,7 @@ class WhoisQueryParser:
             recursive = True
             parameter = parameter[:-2]
 
-        members = self.query_resolver.members_for_set(parameter, recursive)
+        members = self.query_resolver.members_for_set(parameter, recursive=recursive)
         return ' '.join(members)
 
     def handle_irrd_database_serial_range(self, parameter: str) -> str:
@@ -254,7 +240,7 @@ class WhoisQueryParser:
             sources = [s.upper() for s in parameter.split(',')]
         invalid_sources = [s for s in sources if s not in self.query_resolver.all_valid_sources]
         query = DatabaseStatusQuery().sources(sources)
-        query_results = self.database_handler.execute_query(query)
+        query_results = self.database_handler.execute_query(query, refresh_on_error=True)
 
         result_txt = ''
         for query_result in query_results:

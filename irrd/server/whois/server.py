@@ -1,6 +1,5 @@
 import logging
 import multiprocessing as mp
-import os
 import signal
 import socket
 import socketserver
@@ -10,7 +9,7 @@ import time
 from IPy import IP
 from setproctitle import setproctitle
 
-from irrd.conf import get_setting, get_configuration
+from irrd.conf import get_setting
 from irrd.server.access_check import is_client_permitted
 from irrd.server.whois.query_parser import WhoisQueryParser
 from irrd.storage.database_handler import DatabaseHandler
@@ -45,16 +44,6 @@ def start_whois_server():  # pragma: no cover
         threading.Thread(target=shutdown, args=(server,)).start()
     signal.signal(signal.SIGTERM, sigterm_handler)
 
-    def sighup_handler(signum, frame):
-        nonlocal server
-
-        def sighup(server):
-            get_configuration().reload()
-            server.sighup_workers()
-        # sighup must be called from a thread to prevent blocking.
-        threading.Thread(target=sighup, args=(server,)).start()
-    signal.signal(signal.SIGHUP, sighup_handler)
-
     server.serve_forever()
 
 
@@ -87,10 +76,6 @@ class WhoisTCPServer(socketserver.TCPServer):  # pragma: no cover
 
     def handle_error(self, request, client_address):
         logger.error(f'Error while handling request from {client_address}', exc_info=True)
-
-    def sighup_workers(self):
-        for worker in self.workers:
-            os.kill(worker.pid, signal.SIGHUP)
 
     def shutdown(self):
         """
