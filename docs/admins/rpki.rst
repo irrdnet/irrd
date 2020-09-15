@@ -32,7 +32,7 @@ Query responses
 ---------------
 By default, `route(6)` objects that conflict with a ROA are not included
 in any query response. This is determined using
-`RFC6811 origin validation <https://tools.ietf.org/html/rfc6811>` and
+`RFC6811 origin validation <https://tools.ietf.org/html/rfc6811>`_ and
 applies to all query types.
 
 Query responses for the text of `route(6)` objects include a
@@ -87,22 +87,25 @@ as RPKI invalid.
 Notifications
 -------------
 If a route(6) object in an authoritative source is newly marked RPKI invalid,
-a notification is sent to all contacts. Contacts are determined as any email
+a notification may be sent to all contacts. Contacts are determined as any email
 address, of any tech-c and admin-c, on any mnt-by on the route object,
 combined with any mnt-nfy of any of those maintainers.
 Emails are aggregated, so a single address will receive a single email with
 all objects listed for which it is a contact.
+
+This behaviour is enabled or disabled with the ``rpki.notify_invalid_enabled``
+setting. If you have any authoritative sources configured, you must explicitly
+set this to ``true`` or ``false`` in your configuration.
 
 "Newly" invalid means that an object was previously valid or not_found, but
 a ROA update has changed the status to invalid. At the time this happens,
 the email is sent. If the status returns to valid or not_found, no email
 is sent. If it then returns to invalid, a new email is sent.
 
-This behaviour is enabled or disabled with the ``rpki.notify_invalid_enabled``
-setting. You must set this to ``true`` or ``false`` in your configuration.
-
 When first enabling RPKI-aware mode, a large number of objects may be marked
 as newly invalid, which can cause a large amount of notifications.
+
+Notifications are never sent for objects from non-authoritative sources.
 
 .. danger::
     Care is required with the ``rpki.notify_invalid_enabled`` setting in testing
