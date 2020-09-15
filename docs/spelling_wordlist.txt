@@ -30,6 +30,7 @@ nd
 nfy
 ntt
 postgres
+pre
 Pre
 preload
 preloaded
