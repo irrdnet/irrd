@@ -6,6 +6,7 @@ bugfix
 conf
 config
 cron
+dev
 gpg
 gzipped
 hostname

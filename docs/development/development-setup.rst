@@ -134,8 +134,7 @@ To create a new packaged version of IRRD:
 * Your source archive and built distribution are now in ``dist/``
 * Create a new release on GitHub
 * If this is not a pre-release, upload to PyPI with ``twine upload dist/*``
-* If this is a new minor release (x.y), create a new branch for it first - otherwise
-  switch to the branch of the current minor release.
+* If this is a new minor release (x.y), create a new branch for it.
 
 For more background, a good start is the `Python packaging tutorial`_.
 
