@@ -110,7 +110,7 @@ class MirrorScheduler:
         current_exclusions = {
             name
             for name, settings in get_setting('sources', {}).items()
-            if settings['scopefilter_excluded']
+            if settings.get('scopefilter_excluded')
         }
 
         if any([
