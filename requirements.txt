@@ -3,7 +3,7 @@
 # includes packages needed for deployment.
 
 python-gnupg==0.4.6    # Integration with gpg for key-cert objects
-passlib==1.7.2         # Password hashing for CRYPT-PW and MD5-PW
+passlib==1.7.4         # Password hashing for CRYPT-PW and MD5-PW
 IPy==1.00              # IP address parsing
 dataclasses==0.7; python_version < '3.7'       # PEP 557 dataclasses for python<3.7
 ordered-set==4.0.2     # Ordered sets for simple unique ordered storage
