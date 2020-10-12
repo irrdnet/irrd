@@ -887,34 +887,34 @@ class TestWhoisQueryParserIRRD:
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == textwrap.dedent("""
             {
-             "TEST1": {
-              "authoritative": true,
-              "object_class_filter": [
-               "route"
-              ],
-              "rpki_rov_filter": true,
-              "scopefilter_enabled": false,
-              "local_journal_kept": false,
-              "serial_oldest_journal": 10,
-              "serial_newest_journal": 10,
-              "serial_last_export": 10,
-              "serial_newest_mirror": 500,
-              "last_update": "2020-01-01T00:00:00+00:00",
-              "synchronised_serials": false
-             },
-             "TEST2": {
-              "authoritative": false,
-              "object_class_filter": null,
-              "rpki_rov_filter": false,
-              "scopefilter_enabled": true,
-              "local_journal_kept": true,
-              "serial_oldest_journal": null,
-              "serial_newest_journal": null,
-              "serial_last_export": null,
-              "serial_newest_mirror": 20,
-              "last_update": "2020-01-01T00:00:00+00:00",
-              "synchronised_serials": false
-             }
+                "TEST1": {
+                    "authoritative": true,
+                    "object_class_filter": [
+                        "route"
+                    ],
+                    "rpki_rov_filter": true,
+                    "scopefilter_enabled": false,
+                    "local_journal_kept": false,
+                    "serial_oldest_journal": 10,
+                    "serial_newest_journal": 10,
+                    "serial_last_export": 10,
+                    "serial_newest_mirror": 500,
+                    "last_update": "2020-01-01T00:00:00+00:00",
+                    "synchronised_serials": false
+                },
+                "TEST2": {
+                    "authoritative": false,
+                    "object_class_filter": null,
+                    "rpki_rov_filter": false,
+                    "scopefilter_enabled": true,
+                    "local_journal_kept": true,
+                    "serial_oldest_journal": null,
+                    "serial_newest_journal": null,
+                    "serial_last_export": null,
+                    "serial_newest_mirror": 20,
+                    "last_update": "2020-01-01T00:00:00+00:00",
+                    "synchronised_serials": false
+                }
             }""").strip()
         assert flatten_mock_calls(mock_dsq) == [
             ['sources', (['TEST1', 'TEST2'],), {}]
@@ -925,26 +925,27 @@ class TestWhoisQueryParserIRRD:
         response = parser.handle_query('!Jtest1,test-invalid')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
+        print(response.result)
         assert response.result == textwrap.dedent("""
             {
-             "TEST1": {
-              "authoritative": true,
-              "object_class_filter": [
-               "route"
-              ],
-              "rpki_rov_filter": true,
-              "scopefilter_enabled": false,
-              "local_journal_kept": false,
-              "serial_oldest_journal": 10,
-              "serial_newest_journal": 10,
-              "serial_last_export": 10,
-              "serial_newest_mirror": 500,
-              "last_update": "2020-01-01T00:00:00+00:00",
-              "synchronised_serials": false
-             },
-             "TEST-INVALID": {
-              "error": "Unknown source"
-             }
+                "TEST1": {
+                    "authoritative": true,
+                    "object_class_filter": [
+                        "route"
+                    ],
+                    "rpki_rov_filter": true,
+                    "scopefilter_enabled": false,
+                    "local_journal_kept": false,
+                    "serial_oldest_journal": 10,
+                    "serial_newest_journal": 10,
+                    "serial_last_export": 10,
+                    "serial_newest_mirror": 500,
+                    "last_update": "2020-01-01T00:00:00+00:00",
+                    "synchronised_serials": false
+                },
+                "TEST-INVALID": {
+                    "error": "Unknown source"
+                }
             }""").strip()
         assert flatten_mock_calls(mock_dsq) == [
             ['sources', (['TEST1', 'TEST-INVALID'],), {}]
