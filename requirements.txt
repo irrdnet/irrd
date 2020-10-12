@@ -37,7 +37,7 @@ Sphinx==3.2.1
 sphinxcontrib-spelling==5.4.0
 
 # Code style and type checks
-mypy==0.782
+mypy==0.790
 flake8==3.8.3
 pep8-naming==0.11.1
 
