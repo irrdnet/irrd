@@ -24,7 +24,7 @@ setuptools.setup(
         # but should not include packages used for testing, generating docs
         # or packages.
         'python-gnupg==0.4.6',
-        'passlib==1.7.2',
+        'passlib==1.7.4',
         'IPy==1.00',
         'ordered-set==4.0.2',
         'dotted==0.1.8',
@@ -38,10 +38,10 @@ setuptools.setup(
         'hiredis==1.1.0',
         'requests==2.24.0',
         'pytz==2020.1',
-        'psycopg2-binary==2.8.5',
-        'SQLAlchemy==1.3.18',
-        'alembic==1.4.2',
-        'ujson==3.0.0',
+        'psycopg2-binary==2.8.6',
+        'SQLAlchemy==1.3.19',
+        'alembic==1.4.3',
+        'ujson==4.0.1',
     ],
     extras_require={
         ':python_version < "3.7"': [
