@@ -1,6 +1,7 @@
 import datetime
 import re
 from typing import List, Type, Optional
+from urllib.parse import urlparse
 
 from IPy import IP
 
@@ -363,6 +364,19 @@ class RPSLDNSNameField(RPSLTextField):
             messages.error(f'Invalid DNS name: {value}')
             return None
         return RPSLFieldParseResult(value)
+
+
+class RPSLURLField(RPSLTextField):
+    """Field for a URL name, as used in e.g. geofeed attribute."""
+    keep_case = False
+    permitted_schemes = ['http', 'https']
+
+    def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
+        result = urlparse(value)
+        if all([result.scheme in self.permitted_schemes, result.netloc]):
+            return RPSLFieldParseResult(value)
+        messages.error(f'Invalid {"/".join(self.permitted_schemes)} URL: {value}')
+        return None
 
 
 class RPSLGenericNameField(RPSLTextField):

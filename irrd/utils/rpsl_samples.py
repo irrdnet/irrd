@@ -207,6 +207,7 @@ netname:        NET-TEST-V4
 descr:          description
 country:        IT
 notify:         notify@example.com
+geofeed:        https://example.com/geofeed
 admin-c:        PERSON-TEST
 tech-c:         PERSON-TEST
 status:         ASSIGNED PA

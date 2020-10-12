@@ -6,9 +6,12 @@ from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
 from irrd.utils.pgp import get_gpg_instance
 from .config import PASSWORD_HASHERS
 from .fields import (RPSLTextField, RPSLIPv4PrefixField, RPSLIPv4PrefixesField, RPSLIPv6PrefixField,
-                     RPSLIPv6PrefixesField, RPSLIPv4AddressRangeField, RPSLASNumberField, RPSLASBlockField,
-                     RPSLSetNameField, RPSLEmailField, RPSLDNSNameField, RPSLGenericNameField, RPSLReferenceField,
-                     RPSLReferenceListField, RPSLAuthField, RPSLRouteSetMembersField, RPSLChangedField)
+                     RPSLIPv6PrefixesField, RPSLIPv4AddressRangeField, RPSLASNumberField,
+                     RPSLASBlockField,
+                     RPSLSetNameField, RPSLEmailField, RPSLDNSNameField, RPSLGenericNameField,
+                     RPSLReferenceField,
+                     RPSLReferenceListField, RPSLAuthField, RPSLRouteSetMembersField,
+                     RPSLChangedField, RPSLURLField)
 from .parser import RPSLObject, UnknownRPSLObjectClassException
 
 RPSL_ROUTE_OBJECT_CLASS_FOR_IP_VERSION = {
@@ -149,6 +152,7 @@ class RPSLInet6Num(RPSLObject):
         ('tech-c', RPSLReferenceField(lookup_key=True, multiple=True, referring=['role', 'person'])),
         ('rev-srv', RPSLTextField(optional=True, multiple=True)),
         ('status', RPSLTextField()),
+        ('geofeed', RPSLURLField(optional=True)),
         ('remarks', RPSLTextField(optional=True, multiple=True)),
         ('notify', RPSLEmailField(optional=True, multiple=True)),
         ('mnt-by', RPSLReferenceListField(lookup_key=True, multiple=True, referring=['mntner'])),
@@ -167,6 +171,7 @@ class RPSLInetnum(RPSLObject):
         ('tech-c', RPSLReferenceField(lookup_key=True, multiple=True, referring=['role', 'person'])),
         ('rev-srv', RPSLTextField(optional=True, multiple=True)),
         ('status', RPSLTextField()),
+        ('geofeed', RPSLURLField(optional=True)),
         ('remarks', RPSLTextField(optional=True, multiple=True)),
         ('notify', RPSLEmailField(optional=True, multiple=True)),
         ('mnt-by', RPSLReferenceListField(lookup_key=True, multiple=True, referring=['mntner'])),
