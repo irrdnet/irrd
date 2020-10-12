@@ -26,7 +26,7 @@ alembic==1.4.3
 ujson==4.0.1
 
 # Testing and related packages
-pytest==5.4.3
+pytest==6.1.1
 pytest-cov==2.10.0
 coverage==5.2
 coveralls==2.1.1
