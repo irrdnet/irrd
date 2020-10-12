@@ -3,7 +3,7 @@
 # includes packages needed for deployment.
 
 python-gnupg==0.4.6    # Integration with gpg for key-cert objects
-passlib==1.7.2         # Password hashing for CRYPT-PW and MD5-PW
+passlib==1.7.4         # Password hashing for CRYPT-PW and MD5-PW
 IPy==1.00              # IP address parsing
 dataclasses==0.7; python_version < '3.7'       # PEP 557 dataclasses for python<3.7
 ordered-set==4.0.2     # Ordered sets for simple unique ordered storage
@@ -20,28 +20,28 @@ requests==2.24.0       # HTTP request handling
 pytz==2020.1
 
 # Database connections and management
-psycopg2-binary==2.8.5
-SQLAlchemy==1.3.18
-alembic==1.4.2
-ujson==3.0.0
+psycopg2-binary==2.8.6
+SQLAlchemy==1.3.19
+alembic==1.4.3
+ujson==4.0.1
 
 # Testing and related packages
-pytest==5.4.3
-pytest-cov==2.10.0
-coverage==5.2
-coveralls==2.1.1
+pytest==6.1.1
+pytest-cov==2.10.1
+coverage==5.3
+coveralls==2.1.2
 twisted==20.3.0    # Used for a mock email server in integration tests
 
 # Documentation generation
-Sphinx==3.1.2
-sphinxcontrib-spelling==5.1.2
+Sphinx==3.2.1
+sphinxcontrib-spelling==5.4.0
 
 # Code style and type checks
-mypy==0.782
-flake8==3.8.3
+mypy==0.790
+flake8==3.8.4
 pep8-naming==0.11.1
 
 # Creating python packages
-setuptools==49.2.0
-wheel==0.34.2
+setuptools==50.3.0
+wheel==0.35.1
 twine==3.2.0
