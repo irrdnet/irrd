@@ -2,9 +2,12 @@ from IPy import IP
 from pytest import raises
 
 from ..fields import (RPSLIPv4PrefixField, RPSLIPv4PrefixesField, RPSLIPv6PrefixField,
-                      RPSLIPv6PrefixesField, RPSLIPv4AddressRangeField, RPSLASNumberField, RPSLASBlockField,
-                      RPSLSetNameField, RPSLEmailField, RPSLDNSNameField, RPSLGenericNameField, RPSLReferenceField,
-                      RPSLReferenceListField, RPSLTextField, RPSLAuthField, RPSLRouteSetMemberField, RPSLChangedField)
+                      RPSLIPv6PrefixesField, RPSLIPv4AddressRangeField, RPSLASNumberField,
+                      RPSLASBlockField,
+                      RPSLSetNameField, RPSLEmailField, RPSLDNSNameField, RPSLGenericNameField,
+                      RPSLReferenceField,
+                      RPSLReferenceListField, RPSLTextField, RPSLAuthField, RPSLRouteSetMemberField,
+                      RPSLChangedField, RPSLURLField)
 from ..parser_state import RPSLParserMessages
 
 
@@ -309,6 +312,18 @@ def test_validate_dns_name_field():
     assert not messages.errors()
 
     assert_validation_err('Invalid DNS name', field.parse, 'foo.bar+baz@')
+
+
+def test_validate_url_field():
+    field = RPSLURLField()
+    messages = RPSLParserMessages()
+    assert field.parse('http://example.com', messages).value == 'http://example.com'
+    assert field.parse('https://example.com', messages).value == 'https://example.com'
+    assert not messages.errors()
+
+    assert_validation_err('Invalid http/https URL', field.parse, 'ftp://test')
+    assert_validation_err('Invalid http/https URL', field.parse, 'test')
+    assert_validation_err('Invalid http/https URL', field.parse, 'test')
 
 
 def test_validate_generic_name_field():

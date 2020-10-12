@@ -1039,6 +1039,7 @@ class TestSingleChangeRequestHandling:
             descr:          description
             country:        IT
             notify:         notify@example.com
+            geofeed:        https://example.com/geofeed
             admin-c:        PERSON-TEST
             tech-c:         PERSON-TEST
             status:         ASSIGNED PA
@@ -1070,10 +1071,10 @@ class TestSingleChangeRequestHandling:
         assert result_inetnum_modify.notification_target_report() == textwrap.dedent("""
             Modify succeeded for object below: [inetnum] 192.0.2.0 - 192.0.2.255:
             
-            @@ -3,8 +3,8 @@
-             descr:          description
+            @@ -4,8 +4,8 @@
              country:        IT
              notify:         notify@example.com
+             geofeed:        https://example.com/geofeed
             -admin-c:        PERSON-TEST
             -tech-c:         PERSON-TEST
             +admin-c:        NEW-TEST
@@ -1089,6 +1090,7 @@ class TestSingleChangeRequestHandling:
             descr:          description
             country:        IT
             notify:         notify@example.com
+            geofeed:        https://example.com/geofeed
             admin-c:        NEW-TEST
             tech-c:         NEW-TEST
             status:         ASSIGNED PA
@@ -1103,10 +1105,10 @@ class TestSingleChangeRequestHandling:
         assert result_inetnum_modify.notification_target_report() == textwrap.dedent("""
             Modify FAILED AUTHORISATION for object below: [inetnum] 192.0.2.0 - 192.0.2.255:
             
-            @@ -3,8 +3,8 @@
-             descr:          description
+            @@ -4,8 +4,8 @@
              country:        IT
              notify:         notify@example.com
+             geofeed:        https://example.com/geofeed
             -admin-c:        PERSON-TEST
             -tech-c:         PERSON-TEST
             +admin-c:        NEW-TEST
@@ -1122,6 +1124,7 @@ class TestSingleChangeRequestHandling:
             descr:          description
             country:        IT
             notify:         notify@example.com
+            geofeed:        https://example.com/geofeed
             admin-c:        NEW-TEST
             tech-c:         NEW-TEST
             status:         ASSIGNED PA
