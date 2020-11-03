@@ -2,10 +2,10 @@ import gzip
 import logging
 import os
 import shutil
-from ftplib import FTP
 from io import BytesIO
 from tempfile import NamedTemporaryFile
 from typing import Optional, Tuple, Any, IO
+from urllib import request
 from urllib.parse import urlparse
 
 import requests
@@ -142,10 +142,11 @@ class FileImportRunnerBase:
         which can be a BytesIO() or a regular file.
         """
         if url_parsed.scheme == 'ftp':
-            ftp = FTP(url_parsed.netloc, timeout=600)
-            ftp.login()
-            ftp.retrbinary(f'RETR {url_parsed.path}', destination.write)
-            ftp.quit()
+            r = request.urlopen(url)
+            if r.status == 200:
+                shutil.copyfileobj(r, destination)
+            else:
+                raise IOError(f'Failed to download {url}: {r.status}: {str(r.reason)}')
         elif url_parsed.scheme in ['http', 'https']:
             r = requests.get(url, stream=True)
             if r.status_code == 200:
