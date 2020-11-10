@@ -13,6 +13,7 @@ from .fields import (RPSLTextField, RPSLIPv4PrefixField, RPSLIPv4PrefixesField, 
                      RPSLReferenceListField, RPSLAuthField, RPSLRouteSetMembersField,
                      RPSLChangedField, RPSLURLField)
 from .parser import RPSLObject, UnknownRPSLObjectClassException
+from ..utils.validators import parse_as_number, ValidationError
 
 RPSL_ROUTE_OBJECT_CLASS_FOR_IP_VERSION = {
     4: 'route',
@@ -58,6 +59,15 @@ class RPSLAsSet(RPSLObject):
         ('changed', RPSLChangedField(optional=True, multiple=True)),
         ('source', RPSLGenericNameField()),
     ])
+
+    def clean_for_create(self) -> bool:
+        first_segment = self.pk().split(':')[0]
+        try:
+            parse_as_number(first_segment)
+            return True
+        except ValidationError as ve:
+            self.messages.error('AS set names must be hierarchical and the first component must '
+                                f'be an AS number, e.g. "AS65537:AS-EXAMPLE": {str(ve)}')
 
 
 class RPSLAutNum(RPSLObject):

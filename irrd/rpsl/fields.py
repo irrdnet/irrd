@@ -312,7 +312,7 @@ class RPSLSetNameField(RPSLTextField):
     must be a valid set name for this specific set, i.e. start with the given prefix.
 
     The prefix provided is the expected prefix of the set name, e.g. 'RS' for
-    a route-set, or 'AS' for an as-set.R
+    a route-set, or 'AS' for an as-set.
     """
     keep_case = False
 
