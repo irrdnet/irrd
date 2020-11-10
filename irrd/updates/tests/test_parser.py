@@ -1074,9 +1074,9 @@ class TestSingleChangeRequestHandling:
         """).strip() + '\n'
 
         assert result_as_set.notification_target_report() == textwrap.dedent("""
-            Create succeeded for object below: [as-set] AS-SETTEST:
+            Create succeeded for object below: [as-set] AS65537:AS-SETTEST:
             
-            as-set:         AS-SETTEST
+            as-set:         AS65537:AS-SETTEST
             descr:          description
             members:        AS65538,AS65539
             members:        AS65537
