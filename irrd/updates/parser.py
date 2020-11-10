@@ -217,7 +217,7 @@ class ChangeRequest:
         return targets
 
     def validate(self) -> bool:
-        if self.request_type == UpdateRequestType.CREATE:
+        if self.rpsl_obj_new and self.request_type == UpdateRequestType.CREATE:
             if not self.rpsl_obj_new.clean_for_create():
                 self.error_messages += self.rpsl_obj_new.messages.errors()
                 self.status = UpdateRequestStatus.ERROR_PARSING

@@ -68,6 +68,7 @@ class RPSLAsSet(RPSLObject):
         except ValidationError as ve:
             self.messages.error('AS set names must be hierarchical and the first component must '
                                 f'be an AS number, e.g. "AS65537:AS-EXAMPLE": {str(ve)}')
+        return False
 
 
 class RPSLAutNum(RPSLObject):
