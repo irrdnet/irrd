@@ -56,9 +56,13 @@ otherwise you risk spending a lot of time working on something that the
 project's developers might not want to merge into the project.
 
 Please adhere to the coding guidelines used throughout the
-project (indentation, accurate comments, etc.) and any other requirements
-(such as test coverage). If you're unable to write tests, or run into
-issues with your pull request, the maintainers are happy to help out.
+project. There is continuous integration that checks for code style and
+code coverage. Most changes should be included in the release notes,
+and new features should be documented. IRRd is also fairly strong in
+maintaining backwards compatibility, but there are exceptions.
+
+If you have difficulties with your PR, for example in adjusting the tests,
+the maintainers are happy to help out.
 
 **IMPORTANT**: By submitting a patch, you agree to allow the project owners to
 license your work under the terms of the [BSD-2-Clause](LICENSE).
