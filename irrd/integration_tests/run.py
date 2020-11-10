@@ -28,9 +28,9 @@ from .constants import (EMAIL_SMTP_PORT, EMAIL_DISCARD_MSGS_COMMAND, EMAIL_RETUR
 IRRD_ROOT_PATH = str(Path(__file__).resolve().parents[2])
 sys.path.append(IRRD_ROOT_PATH)
 
-AS_SET_REFERRING_OTHER_SET = """as-set:         AS-TESTREF
+AS_SET_REFERRING_OTHER_SET = """as-set:         AS65537:AS-TESTREF
 descr:          description
-members:        AS-SETTEST, AS65540
+members:        AS65537:AS-SETTEST, AS65540
 tech-c:         PERSON-TEST
 admin-c:        PERSON-TEST
 notify:         notify@example.com
@@ -358,13 +358,13 @@ class TestIntegration:
         assert query_result == '2001:db8::/48'
         query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!iRS-TEST')
         assert set(query_result.split(' ')) == {'192.0.2.0/24', '2001:db8::/48', 'RS-OTHER-SET'}
-        query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!aAS-SETTEST')
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!aAS65537:AS-SETTEST')
         assert set(query_result.split(' ')) == {'192.0.2.0/24', '2001:db8::/48'}
-        query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!aAS-TESTREF')
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!aAS65537:AS-TESTREF')
         assert set(query_result.split(' ')) == {'192.0.2.0/24', '2001:db8::/48'}
-        query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!a4AS-TESTREF')
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!a4AS65537:AS-TESTREF')
         assert query_result == '192.0.2.0/24'
-        query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!a6AS-TESTREF')
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!a6AS65537:AS-TESTREF')
         assert query_result == '2001:db8::/48'
         query_result = whois_query_irrd('127.0.0.1', self.port_whois1, '!r192.0.2.0/24')
         assert 'example route' in query_result
@@ -395,9 +395,9 @@ class TestIntegration:
         assert query_result == '2001:db8::/48'
         query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!iRS-TEST')
         assert query_result == '2001:db8::/48 RS-OTHER-SET'
-        query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!aAS-SETTEST')
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!aAS65537:AS-SETTEST')
         assert query_result == '2001:db8::/48'
-        query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!aAS-TESTREF')
+        query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!aAS65537:AS-TESTREF')
         assert query_result == '2001:db8::/48'
         query_result = whois_query('127.0.0.1', self.port_whois2, '-x 192.0.02.0/24')
         assert 'example route' not in query_result
@@ -409,11 +409,11 @@ class TestIntegration:
 
         # These queries should produce identical answers on both instances.
         for port in self.port_whois1, self.port_whois2:
-            query_result = whois_query_irrd('127.0.0.1', port, '!iAS-SETTEST')
+            query_result = whois_query_irrd('127.0.0.1', port, '!iAS65537:AS-SETTEST')
             assert set(query_result.split(' ')) == {'AS65537', 'AS65538', 'AS65539', 'AS-OTHERSET'}
-            query_result = whois_query_irrd('127.0.0.1', port, '!iAS-TESTREF')
-            assert set(query_result.split(' ')) == {'AS-SETTEST', 'AS65540'}
-            query_result = whois_query_irrd('127.0.0.1', port, '!iAS-TESTREF,1')
+            query_result = whois_query_irrd('127.0.0.1', port, '!iAS65537:AS-TESTREF')
+            assert set(query_result.split(' ')) == {'AS65537:AS-SETTEST', 'AS65540'}
+            query_result = whois_query_irrd('127.0.0.1', port, '!iAS65537:AS-TESTREF,1')
             assert set(query_result.split(' ')) == {'AS65537', 'AS65538', 'AS65539', 'AS65540'}
             query_result = whois_query_irrd('127.0.0.1', port, '!maut-num,as65537')
             assert 'AS65537' in query_result

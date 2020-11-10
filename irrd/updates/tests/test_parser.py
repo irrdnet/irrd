@@ -18,7 +18,7 @@ from irrd.utils.test_utils import flatten_mock_calls
 from irrd.utils.text import splitline_unicodesafe
 from ..parser import parse_change_requests
 from ..parser_state import UpdateRequestType, UpdateRequestStatus
-from ..validators import ReferenceValidator, AuthValidator
+from ..validators import ReferenceValidator, AuthValidator, ValidatorResult
 
 
 @pytest.fixture()
@@ -116,6 +116,30 @@ class TestSingleChangeRequestHandling:
         assert result.status == UpdateRequestStatus.ERROR_NON_AUTHORITIVE
         assert not result.is_valid()
         assert result.error_messages == ['This instance is not authoritative for source TEST2']
+
+    def test_validates_for_create(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
+
+        mock_dh.execute_query = lambda query: []
+
+        auth_validator = Mock()
+        invalid_auth_result = ValidatorResult()
+        invalid_auth_result.error_messages.add('error catch')
+        auth_validator.process_auth = lambda new, cur: invalid_auth_result
+
+        invalid_create_text = SAMPLE_AS_SET.replace('AS65537:AS-SETTEST', 'AS-SETTEST')
+        result = parse_change_requests(invalid_create_text, mock_dh, auth_validator, None)[0]
+
+        assert not result.validate()
+        assert result.status == UpdateRequestStatus.ERROR_PARSING
+        assert len(result.error_messages) == 1
+        assert 'AS set names must be hierarchical and the first' in result.error_messages[0]
+
+        # Test again with an UPDATE (which then fails on auth to stop)
+        mock_dh.execute_query = lambda query: [{'object_text': SAMPLE_AS_SET}]
+        result = parse_change_requests(invalid_create_text, mock_dh, auth_validator, None)[0]
+        assert not result.validate()
+        assert result.error_messages == ['error catch']
 
     def test_save_nonexistent_object(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
@@ -1015,7 +1039,7 @@ class TestSingleChangeRequestHandling:
         assert 'remarks: ' in report_inetnum  # full RPSL object should be included
         assert 'INFO: Address range 192' in report_inetnum
 
-        assert report_as_set == 'Create succeeded: [as-set] AS-SETTEST\n'
+        assert report_as_set == 'Create succeeded: [as-set] AS65537:AS-SETTEST\n'
 
         assert 'FAILED' in report_unknown
         assert 'ERROR: unknown object class' in report_unknown
@@ -1050,9 +1074,9 @@ class TestSingleChangeRequestHandling:
         """).strip() + '\n'
 
         assert result_as_set.notification_target_report() == textwrap.dedent("""
-            Create succeeded for object below: [as-set] AS-SETTEST:
+            Create succeeded for object below: [as-set] AS65537:AS-SETTEST:
             
-            as-set:         AS-SETTEST
+            as-set:         AS65537:AS-SETTEST
             descr:          description
             members:        AS65538,AS65539
             members:        AS65537

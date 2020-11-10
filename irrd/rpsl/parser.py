@@ -212,6 +212,15 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         return template
 
     def clean(self) -> bool:
+        """
+        Additional cleaning steps for some objects.
+        """
+        return True
+
+    def clean_for_create(self) -> bool:
+        """
+        Additional cleaning steps for creations only.
+        """
         return True
 
     def _extract_attributes_values(self, text: str) -> None:

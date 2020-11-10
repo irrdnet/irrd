@@ -132,8 +132,9 @@ class TestRPSLAsSet:
         rpsl_text = object_sample_mapping[RPSLAsSet().rpsl_object_class]
         obj = rpsl_object_from_text(rpsl_text)
         assert obj.__class__ == RPSLAsSet
+        assert obj.clean_for_create()
         assert not obj.messages.errors()
-        assert obj.pk() == 'AS-SETTEST'
+        assert obj.pk() == 'AS65537:AS-SETTEST'
         assert obj.referred_strong_objects() == [
             ('admin-c', ['role', 'person'], ['PERSON-TEST']),
             ('tech-c', ['role', 'person'], ['PERSON-TEST']),
@@ -145,6 +146,15 @@ class TestRPSLAsSet:
         assert obj.parsed_data['members'] == ['AS65538', 'AS65539', 'AS65537', 'AS-OTHERSET']
         # Field parsing will cause our object to look slightly different than the original, hence the replace()
         assert obj.render_rpsl_text() == rpsl_text.replace('AS65538, AS65539', 'AS65538,AS65539')
+
+    def test_invalid_clean_for_create(self):
+        rpsl_text = object_sample_mapping[RPSLAsSet().rpsl_object_class]
+        rpsl_text = rpsl_text.replace('AS65537:AS-SETTEST', 'AS-SETTEST')
+        obj = rpsl_object_from_text(rpsl_text)
+        assert obj.__class__ == RPSLAsSet
+        assert not obj.messages.errors()
+        assert not obj.clean_for_create()
+        assert 'AS set names must be hierarchical and the first ' in obj.messages.errors()[0]
 
 
 class TestRPSLAutNum:

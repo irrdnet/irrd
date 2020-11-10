@@ -12,7 +12,7 @@ source:         TEST
 remarks:        remark
 """
 
-SAMPLE_AS_SET = """as-set:         AS-SETTEST
+SAMPLE_AS_SET = """as-set:         AS65537:AS-SETTEST
 descr:          description
 members:        AS65538, AS65539
 members:        AS65537
