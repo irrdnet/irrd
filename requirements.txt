@@ -17,24 +17,24 @@ pid==3.0.4             # managing PID files
 redis==3.5.3          # preloaded data storage & sync through redis
 hiredis==1.1.0         # improved redis response parsing performance
 requests==2.24.0       # HTTP request handling
-pytz==2020.1
+pytz==2020.4
 
 # Database connections and management
 psycopg2-binary==2.8.6
-SQLAlchemy==1.3.19
+SQLAlchemy==1.3.20
 alembic==1.4.3
 ujson==4.0.1
 
 # Testing and related packages
-pytest==6.1.1
+pytest==6.1.2
 pytest-cov==2.10.1
 coverage==5.3
 coveralls==2.1.2
 twisted==20.3.0    # Used for a mock email server in integration tests
 
 # Documentation generation
-Sphinx==3.2.1
-sphinxcontrib-spelling==5.4.0
+Sphinx==3.3.0
+sphinxcontrib-spelling==7.1.0
 
 # Code style and type checks
 mypy==0.790
@@ -42,6 +42,6 @@ flake8==3.8.4
 pep8-naming==0.11.1
 
 # Creating python packages
-setuptools==50.3.0
+setuptools==50.3.2
 wheel==0.35.1
 twine==3.2.0
