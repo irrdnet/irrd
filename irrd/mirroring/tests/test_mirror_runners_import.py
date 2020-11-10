@@ -1,4 +1,5 @@
 from base64 import b64decode
+from io import BytesIO
 from typing import List
 from unittest.mock import Mock
 
@@ -138,21 +139,21 @@ class TestRPSLMirrorFullImportRunner:
         })
 
         mock_dh = Mock()
-        mock_ftp = Mock()
+        request = Mock()
         MockMirrorFileImportParser.rpsl_data_calls = []
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.MirrorFileImportParser', MockMirrorFileImportParser)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.FTP', lambda url, timeout: mock_ftp)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.request', request)
 
         mock_bulk_validator_init = Mock()
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.BulkRouteROAValidator', mock_bulk_validator_init)
 
         responses = {
             # gzipped data, contains 'source1'
-            'RETR /source1.gz': b64decode('H4sIAE4CfFsAAyvOLy1KTjUEAE5Fj0oHAAAA'),
-            'RETR /source2': b'source2',
-            'RETR /serial': b'424242',
+            'ftp://host/source1.gz': b64decode('H4sIAE4CfFsAAyvOLy1KTjUEAE5Fj0oHAAAA'),
+            'ftp://host/source2': b'source2',
+            'ftp://host/serial': b'424242',
         }
-        mock_ftp.retrbinary = lambda path, callback: callback(responses[path])
+        request.urlopen = lambda url: MockUrlopenResponse(responses[url], 200)
         RPSLMirrorFullImportRunner('TEST').run(mock_dh, serial_newest_mirror=424241)
 
         assert MockMirrorFileImportParser.rpsl_data_calls == ['source1', 'source2']
@@ -162,6 +163,29 @@ class TestRPSLMirrorFullImportRunner:
             ['record_serial_newest_mirror', ('TEST', 424242), {}],
         ]
         assert mock_bulk_validator_init.mock_calls[0][1][0] == mock_dh
+
+    def test_failed_import_ftp(self, monkeypatch, config_override):
+        config_override({
+            'rpki': {'roa_source': 'https://example.com/roa.json'},
+            'sources': {
+                'TEST': {
+                    'import_source': 'ftp://host/source1.gz',
+                }
+            }
+        })
+
+        mock_dh = Mock()
+        request = Mock()
+        MockMirrorFileImportParser.rpsl_data_calls = []
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.MirrorFileImportParser', MockMirrorFileImportParser)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.request', request)
+
+        mock_bulk_validator_init = Mock()
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.BulkRouteROAValidator', mock_bulk_validator_init)
+
+        request.urlopen = lambda url: MockUrlopenResponse(b'', 400)
+        with pytest.raises(IOError):
+            RPSLMirrorFullImportRunner('TEST').run(mock_dh, serial_newest_mirror=424241)
 
     def test_run_import_local_file(self, monkeypatch, config_override, tmpdir):
         tmp_import_source1 = tmpdir + '/source1.rpsl.gz'
@@ -209,17 +233,17 @@ class TestRPSLMirrorFullImportRunner:
         })
 
         mock_dh = Mock()
-        mock_ftp = Mock()
+        request = Mock()
         MockMirrorFileImportParser.rpsl_data_calls = []
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.MirrorFileImportParser', MockMirrorFileImportParser)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.FTP', lambda url, timeout: mock_ftp)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.request', request)
 
         responses = {
             # gzipped data, contains 'source1'
-            'RETR /source1.gz': b64decode('H4sIAE4CfFsAAyvOLy1KTjUEAE5Fj0oHAAAA'),
-            'RETR /source2': b'source2',
+            'ftp://host/source1.gz': b64decode('H4sIAE4CfFsAAyvOLy1KTjUEAE5Fj0oHAAAA'),
+            'ftp://host/source2': b'source2',
         }
-        mock_ftp.retrbinary = lambda path, callback: callback(responses[path])
+        request.urlopen = lambda url: MockUrlopenResponse(responses[url], 200)
         RPSLMirrorFullImportRunner('TEST').run(mock_dh, serial_newest_mirror=42)
 
         assert MockMirrorFileImportParser.rpsl_data_calls == ['source1', 'source2']
@@ -239,18 +263,18 @@ class TestRPSLMirrorFullImportRunner:
         })
 
         mock_dh = Mock()
-        mock_ftp = Mock()
+        request = Mock()
         MockMirrorFileImportParser.rpsl_data_calls = []
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.MirrorFileImportParser', MockMirrorFileImportParser)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.FTP', lambda url, timeout: mock_ftp)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.request', request)
 
         responses = {
             # gzipped data, contains 'source1'
-            'RETR /source1.gz': b64decode('H4sIAE4CfFsAAyvOLy1KTjUEAE5Fj0oHAAAA'),
-            'RETR /source2': b'source2',
-            'RETR /serial': b'424242',
+            'ftp://host/source1.gz': b64decode('H4sIAE4CfFsAAyvOLy1KTjUEAE5Fj0oHAAAA'),
+            'ftp://host/source2': b'source2',
+            'ftp://host/serial': b'424242',
         }
-        mock_ftp.retrbinary = lambda path, callback: callback(responses[path])
+        request.urlopen = lambda url: MockUrlopenResponse(responses[url], 200)
         RPSLMirrorFullImportRunner('TEST').run(mock_dh, serial_newest_mirror=424243)
 
         assert not MockMirrorFileImportParser.rpsl_data_calls
@@ -269,18 +293,18 @@ class TestRPSLMirrorFullImportRunner:
         })
 
         mock_dh = Mock()
-        mock_ftp = Mock()
+        request = Mock()
         MockMirrorFileImportParser.rpsl_data_calls = []
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.MirrorFileImportParser', MockMirrorFileImportParser)
-        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.FTP', lambda url, timeout: mock_ftp)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.request', request)
 
         responses = {
             # gzipped data, contains 'source1'
-            'RETR /source1.gz': b64decode('H4sIAE4CfFsAAyvOLy1KTjUEAE5Fj0oHAAAA'),
-            'RETR /source2': b'source2',
-            'RETR /serial': b'424242',
+            'ftp://host/source1.gz': b64decode('H4sIAE4CfFsAAyvOLy1KTjUEAE5Fj0oHAAAA'),
+            'ftp://host/source2': b'source2',
+            'ftp://host/serial': b'424242',
         }
-        mock_ftp.retrbinary = lambda path, callback: callback(responses[path])
+        request.urlopen = lambda url: MockUrlopenResponse(responses[url], 200)
         RPSLMirrorFullImportRunner('TEST').run(mock_dh, serial_newest_mirror=424243, force_reload=True)
 
         assert MockMirrorFileImportParser.rpsl_data_calls == ['source1', 'source2']
@@ -317,6 +341,13 @@ class TestRPSLMirrorFullImportRunner:
         with pytest.raises(ValueError) as ve:
             RPSLMirrorFullImportRunner('TEST').run(mock_dh)
         assert 'scheme gopher is not supported' in str(ve.value)
+
+
+class MockUrlopenResponse(BytesIO):
+    def __init__(self, bytes: bytes, status: int, reason: str=''):
+        self.status = status
+        self.reason = reason
+        super().__init__(bytes)
 
 
 class MockMirrorFileImportParser:
