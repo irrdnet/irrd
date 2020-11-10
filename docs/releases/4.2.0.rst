@@ -5,5 +5,7 @@ Release notes for IRRd 4.2.0
 * The optional ``geofeed`` attribute was added for `inetnum` and `inet6num`
   objects, which can contain a URL which in turn contains geographical
   information, as defined in `draft-ymbk-opsawg-finding-geofeeds-03`_.
+* Retrieval of files over FTP now follows the ``ftp_proxy`` environment
+  variable, if set.
 
 .. _draft-ymbk-opsawg-finding-geofeeds-03: https://tools.ietf.org/html/draft-ymbk-opsawg-finding-geofeeds-03
