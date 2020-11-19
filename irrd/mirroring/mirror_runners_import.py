@@ -7,6 +7,7 @@ from tempfile import NamedTemporaryFile
 from typing import Optional, Tuple, Any, IO
 from urllib import request
 from urllib.parse import urlparse
+from urllib.error import URLError
 
 import requests
 
@@ -142,11 +143,11 @@ class FileImportRunnerBase:
         which can be a BytesIO() or a regular file.
         """
         if url_parsed.scheme == 'ftp':
-            r = request.urlopen(url)
-            if r.status == 200:
+            try:
+                r = request.urlopen(url)
                 shutil.copyfileobj(r, destination)
-            else:
-                raise IOError(f'Failed to download {url}: {r.status}: {str(r.reason)}')
+            except URLError as error:
+                raise IOError(f'Failed to download {url}: {str(error)}')
         elif url_parsed.scheme in ['http', 'https']:
             r = requests.get(url, stream=True)
             if r.status_code == 200:
