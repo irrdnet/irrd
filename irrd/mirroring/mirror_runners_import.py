@@ -163,6 +163,7 @@ class FileImportRunnerBase:
                 logger.debug(f'Local file is expected to be gzipped, gunzipping from {path}')
                 with gzip.open(path, 'rb') as f_in:
                     shutil.copyfileobj(f_in, destination)
+                destination.close()
                 return destination.name, True
             else:
                 return path, False
