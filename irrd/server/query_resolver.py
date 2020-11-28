@@ -4,6 +4,7 @@ from enum import Enum
 from typing import Optional, List, Set, Tuple, Any
 
 from IPy import IP
+from pypika import Query, Table, Case
 from pytz import timezone
 
 from irrd.conf import get_setting, RPKI_IRR_PSEUDO_SOURCE
@@ -231,7 +232,10 @@ class QueryResolver:
         sets_already_resolved: Set[str] = set()
 
         columns = ['parsed_data', 'rpsl_pk', 'source', 'object_class']
-        query = self._prepare_query(column_names=columns)
+        # query = self._prepare_query(column_names=columns)
+
+        rpsl_table = Table('rpsl_objects')
+        q = Query.from_('rpsl_objects').select(*columns)
 
         object_classes = ['as-set', 'route-set']
         # Per RFC 2622 5.3, route-sets can refer to as-sets,
@@ -239,8 +243,23 @@ class QueryResolver:
         if self._current_set_root_object_class == 'as-set':
             object_classes = [self._current_set_root_object_class]
 
-        query = query.object_classes(object_classes).rpsl_pks(set_names)
-        query_result = list(self._execute_query(query))
+        # query = query.object_classes(object_classes).rpsl_pks(set_names)
+        order = Case()
+        for idx, source in enumerate(self.sources):
+            order = order.when(rpsl_table.source == source, idx + 1)
+        order = order.else_(100000)
+        q = q.where(
+            rpsl_table.object_class.isin(object_classes) &
+            rpsl_table.rpsl_pk.isin(set_names)
+        ).orderby(
+            order
+        )
+
+        result = self.database_handler.execute_statement(str(q))
+        query_result = []
+        for row in result.fetchall():
+            query_result.append(dict(row))
+        # query_result = list(self._execute_query(query))
 
         if not query_result:
             # No sub-members are found, and apparantly all inputs were leaf members.
