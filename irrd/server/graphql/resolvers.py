@@ -241,6 +241,7 @@ def _rpsl_db_query_to_graphql_out(query: RPSLDatabaseQuery, info: GraphQLResolve
         yield graphql_result
 
 
+@ariadne.convert_kwargs_to_snake_case
 def resolve_database_status(_, info: GraphQLResolveInfo, sources: Optional[List[str]]=None):
     """Resolve a databaseStatus query"""
     for name, data in query_resolver.database_status(sources=sources).items():
@@ -251,6 +252,7 @@ def resolve_database_status(_, info: GraphQLResolveInfo, sources: Optional[List[
         yield camel_case_data
 
 
+@ariadne.convert_kwargs_to_snake_case
 def resolve_asn_prefixes(_, info: GraphQLResolveInfo, asns: List[int], ip_version: Optional[int]=None, sources: Optional[List[str]]=None):
     """Resolve an asnPrefixes query"""
     query_resolver.set_query_sources(sources)
