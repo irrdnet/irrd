@@ -20,6 +20,7 @@ jobs:
           IRRD_REDIS_URL_INTEGRATION_1: 'redis://localhost/4'
           IRRD_REDIS_URL_INTEGRATION_2: 'redis://localhost/5'
           PYTHON_INTERPRETER: python3
+          SUDO: sudo
 
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
@@ -41,9 +42,9 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-          - v1-dependencies-{{ checksum "requirements.txt" }}
+          - v2-dependencies-{{ checksum "requirements.txt" }}
           # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-
+          - v2-dependencies-
 
       - run:
           name: install dependencies
@@ -55,18 +56,18 @@ jobs:
       - save_cache:
           paths:
             - ./venv
-          key: v1-dependencies-{{ checksum "requirements.txt" }}
+          key: v2-dependencies-{{ checksum "requirements.txt" }}
 
       - run:
           name: apt update
           command: |
             set +e
-            sudo apt update
+            $SUDO apt update
             echo
 
       - run:
           name: Installing psql client and enchant
-          command: sudo apt install postgresql-client python-enchant
+          command: $SUDO apt install postgresql-client python-enchant
 
       - run:
           name: Waiting for PostgreSQL to be ready
@@ -142,16 +143,18 @@ jobs:
           IRRD_REDIS_URL_INTEGRATION_1: 'redis://localhost/4'
           IRRD_REDIS_URL_INTEGRATION_2: 'redis://localhost/5'
           PYTHON_INTERPRETER: python3
+          SUDO: sudo
 
   pypy-3.7:
     <<: *test-template
     docker:
       - image: pypy:3.7
         environment:
-          IRRD_DATABASE_URL: 'postgresql://root@localhost/circle_test'
-          IRRD_DATABASE_URL_INTEGRATION_1: 'postgresql://root@localhost/circle_test_integration_1'
-          IRRD_DATABASE_URL_INTEGRATION_2: 'postgresql://root@localhost/circle_test_integration_2'
+          IRRD_DATABASE_URL: 'postgresql+psycopg2cffi://root@localhost/circle_test'
+          IRRD_DATABASE_URL_INTEGRATION_1: 'postgresql+psycopg2cffi://root@localhost/circle_test_integration_1'
+          IRRD_DATABASE_URL_INTEGRATION_2: 'postgresql+psycopg2cffi://root@localhost/circle_test_integration_2'
           IRRD_REDIS_URL: 'redis://localhost'
           IRRD_REDIS_URL_INTEGRATION_1: 'redis://localhost/4'
           IRRD_REDIS_URL_INTEGRATION_2: 'redis://localhost/5'
           PYTHON_INTERPRETER: pypy3
+          SUDO: ''
