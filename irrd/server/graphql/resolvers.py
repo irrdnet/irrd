@@ -75,7 +75,14 @@ def resolve_rpsl_objects(_, info: GraphQLResolveInfo, **kwargs):
     low_specificity_kwargs = {
         'object_class', 'rpki_status', 'scope_filter_status', 'sources', 'sql_trace'
     }
-    if not (set(kwargs.keys()) - low_specificity_kwargs):
+    # A query is sufficiently specific if it has other fields than listed above,
+    # except that rpki_status is sufficient if it is exclusively selecting on
+    # valid or invalid.
+    low_specificity = all([
+        not (set(kwargs.keys()) - low_specificity_kwargs),
+        kwargs.get('rpki_status', []) not in [[RPKIStatus.valid], [RPKIStatus.invalid]],
+    ])
+    if low_specificity:
         raise ValueError('Your query must be more specific.')
 
     if kwargs.get('sql_trace'):

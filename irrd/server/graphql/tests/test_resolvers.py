@@ -91,6 +91,14 @@ class TestGraphQLResolvers:
             resolvers.resolve_rpsl_objects(None, info)
         with pytest.raises(ValueError):
             resolvers.resolve_rpsl_objects(None, info, object_class='route', sql_trace=True)
+        with pytest.raises(ValueError):
+            resolvers.resolve_rpsl_objects(None, info, object_class='route',
+                                           rpki_status=[RPKIStatus.not_found], sql_trace=True)
+
+        # Should not raise ValueError
+        resolvers.resolve_rpsl_objects(None, info, object_class='route',
+                                       rpki_status=[RPKIStatus.invalid], sql_trace=True)
+        mock_database_query.reset_mock()
 
         result = list(resolvers.resolve_rpsl_objects(
             None,
