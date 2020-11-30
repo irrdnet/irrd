@@ -37,12 +37,11 @@ jobs:
     steps:
       - checkout
 
-      # Download and cache dependencies
-#      - restore_cache:
-#          keys:
-#          - v3-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}
-#          # fallback to using the latest cache if no exact match is found
-#          - v3-dependencies-{{ .Environment.CIRCLE_JOB }}
+      - restore_cache:
+          keys:
+          - v3-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}
+          # fallback to using the latest cache if no exact match is found
+          - v3-dependencies-{{ .Environment.CIRCLE_JOB }}
 
       - run:
           name: install dependencies
