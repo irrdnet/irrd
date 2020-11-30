@@ -23,9 +23,6 @@ jobs:
           SUDO: sudo
           ENCHANT_PACKAGE: python3-enchant
 
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
       - image: circleci/postgres:9.6
         environment:
           POSTGRES_USER: root
@@ -68,7 +65,7 @@ jobs:
 
       - run:
           name: Installing psql client and enchant
-          command: $SUDO apt -y install postgresql-client $ENCHANT_PACKAGE
+          command: $SUDO apt -y install postgresql-client netcat $ENCHANT_PACKAGE
 
       - run:
           name: Waiting for PostgreSQL to be ready
@@ -147,6 +144,15 @@ jobs:
           SUDO: sudo
           ENCHANT_PACKAGE: python3-enchant
 
+      - image: circleci/postgres:9.6
+        environment:
+          POSTGRES_USER: root
+          POSTGRES_DB: circle_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+
+      - image: circleci/redis:5.0.4
+
+
   pypy-3.7:
     <<: *test-template
     docker:
@@ -161,3 +167,12 @@ jobs:
           PYTHON_INTERPRETER: pypy3
           SUDO: ''
           ENCHANT_PACKAGE: python-enchant
+
+      - image: circleci/postgres:9.6
+        environment:
+          POSTGRES_USER: root
+          POSTGRES_DB: circle_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+
+      - image: circleci/redis:5.0.4
+
