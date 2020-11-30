@@ -1,10 +1,18 @@
 # Check https://circleci.com/docs/2.0/language-python/ for more details
 #
 version: 2
+workflows:
+  version: 2
+  test:
+    jobs:
+      - cpython-3.6
+      - cpython-3.8
+      - pypy-3.7
+      - pypy-3.6
 jobs:
-  build:
+  cpython-3.6: &test-template
     docker:
-      - image: circleci/python:3.6.7-stretch
+      - image: cimg/python:3.6
         environment:
           IRRD_DATABASE_URL: 'postgresql://root@localhost/circle_test'
           IRRD_DATABASE_URL_INTEGRATION_1: 'postgresql://root@localhost/circle_test_integration_1'
@@ -12,11 +20,11 @@ jobs:
           IRRD_REDIS_URL: 'redis://localhost'
           IRRD_REDIS_URL_INTEGRATION_1: 'redis://localhost/4'
           IRRD_REDIS_URL_INTEGRATION_2: 'redis://localhost/5'
+          PYTHON_INTERPRETER: python3
+          SUDO: sudo
+          ENCHANT_PACKAGE: python3-enchant
 
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-      - image: circleci/postgres:9.6
+      - image: circleci/postgres:9.6-ram
         environment:
           POSTGRES_USER: root
           POSTGRES_DB: circle_test
@@ -24,41 +32,39 @@ jobs:
 
       - image: circleci/redis:5.0.4
 
-
-    working_directory: ~/repo
+    working_directory: /mnt/ramdisk
 
     steps:
       - checkout
 
-      # Download and cache dependencies
       - restore_cache:
           keys:
-          - v1-dependencies-{{ checksum "requirements.txt" }}
+          - v4-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}
           # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-
+          - v4-dependencies-{{ .Environment.CIRCLE_JOB }}
 
       - run:
           name: install dependencies
           command: |
-            python3 -m venv venv
+            $PYTHON_INTERPRETER -m venv venv
             . venv/bin/activate
             pip install -r requirements.txt
 
       - save_cache:
           paths:
             - ./venv
-          key: v1-dependencies-{{ checksum "requirements.txt" }}
+          key: v4-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}
 
       - run:
           name: apt update
           command: |
             set +e
-            sudo apt update
+            $SUDO apt update
             echo
 
       - run:
           name: Installing psql client and enchant
-          command: sudo apt install postgresql-client python-enchant
+          command: $SUDO apt -y install postgresql-client netcat $ENCHANT_PACKAGE
 
       - run:
           name: Waiting for PostgreSQL to be ready
@@ -83,7 +89,7 @@ jobs:
           name: run regular tests
           command: |
             . venv/bin/activate
-            py.test --cov=irrd irrd --junitxml=test-reports/junit.xml --cov-fail-under=100 --cov-report term-missing:skip-covered
+            py.test -s -vvvv --cov=irrd irrd --junitxml=test-reports/junit.xml --cov-fail-under=100 --cov-report term-missing:skip-covered
 
       - run:
           name: run integration tests
@@ -107,7 +113,7 @@ jobs:
           name: run mypy
           command: |
             . venv/bin/activate
-            mypy irrd --ignore-missing-imports
+            if command -v COMMAND &> /dev/null; then mypy irrd --ignore-missing-imports; fi
 
       - run:
           name: report coverage
@@ -121,3 +127,73 @@ jobs:
 
       - store_artifacts:
           path: /tmp/pytest-of-circleci/
+
+  cpython-3.8:
+    <<: *test-template
+    docker:
+      - image: cimg/python:3.8
+        environment:
+          IRRD_DATABASE_URL: 'postgresql://root@localhost/circle_test'
+          IRRD_DATABASE_URL_INTEGRATION_1: 'postgresql://root@localhost/circle_test_integration_1'
+          IRRD_DATABASE_URL_INTEGRATION_2: 'postgresql://root@localhost/circle_test_integration_2'
+          IRRD_REDIS_URL: 'redis://localhost'
+          IRRD_REDIS_URL_INTEGRATION_1: 'redis://localhost/4'
+          IRRD_REDIS_URL_INTEGRATION_2: 'redis://localhost/5'
+          PYTHON_INTERPRETER: python3
+          SUDO: sudo
+          ENCHANT_PACKAGE: python3-enchant
+
+      - image: circleci/postgres:9.6
+        environment:
+          POSTGRES_USER: root
+          POSTGRES_DB: circle_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+
+      - image: circleci/redis:5.0.4
+
+  pypy-3.7:
+    <<: *test-template
+    docker:
+      - image: pypy:3.7
+        environment:
+          IRRD_DATABASE_URL: 'postgresql+psycopg2cffi://root@localhost/circle_test'
+          IRRD_DATABASE_URL_INTEGRATION_1: 'postgresql+psycopg2cffi://root@localhost/circle_test_integration_1'
+          IRRD_DATABASE_URL_INTEGRATION_2: 'postgresql+psycopg2cffi://root@localhost/circle_test_integration_2'
+          IRRD_REDIS_URL: 'redis://localhost'
+          IRRD_REDIS_URL_INTEGRATION_1: 'redis://localhost/4'
+          IRRD_REDIS_URL_INTEGRATION_2: 'redis://localhost/5'
+          PYTHON_INTERPRETER: pypy3
+          SUDO: ''
+          ENCHANT_PACKAGE: python-enchant
+
+      - image: circleci/postgres:9.6
+        environment:
+          POSTGRES_USER: root
+          POSTGRES_DB: circle_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+
+      - image: circleci/redis:5.0.4
+
+  pypy-3.6:
+    <<: *test-template
+    docker:
+      - image: pypy:3.6
+        environment:
+          IRRD_DATABASE_URL: 'postgresql+psycopg2cffi://root@localhost/circle_test'
+          IRRD_DATABASE_URL_INTEGRATION_1: 'postgresql+psycopg2cffi://root@localhost/circle_test_integration_1'
+          IRRD_DATABASE_URL_INTEGRATION_2: 'postgresql+psycopg2cffi://root@localhost/circle_test_integration_2'
+          IRRD_REDIS_URL: 'redis://localhost'
+          IRRD_REDIS_URL_INTEGRATION_1: 'redis://localhost/4'
+          IRRD_REDIS_URL_INTEGRATION_2: 'redis://localhost/5'
+          PYTHON_INTERPRETER: pypy3
+          SUDO: ''
+          ENCHANT_PACKAGE: python-enchant
+
+      - image: circleci/postgres:9.6
+        environment:
+          POSTGRES_USER: root
+          POSTGRES_DB: circle_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+
+      - image: circleci/redis:5.0.4
+

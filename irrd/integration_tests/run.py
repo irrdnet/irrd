@@ -1,6 +1,8 @@
 # flake8: noqa: W293
 import sys
 import time
+import unittest
+
 import ujson
 
 import base64
@@ -84,6 +86,7 @@ class TestIntegration:
     port_whois2 = 6044
 
     def test_irrd_integration(self, tmpdir):
+        self.assertCountEqual = unittest.TestCase().assertCountEqual
         # IRRD_DATABASE_URL and IRRD_REDIS_URL override the yaml config, so should be removed
         if 'IRRD_DATABASE_URL' in os.environ:
             del os.environ['IRRD_DATABASE_URL']
@@ -451,7 +454,7 @@ class TestIntegration:
         with open(self.roa_source2, 'w') as roa_file:
             ujson.dump({'roas': [{'prefix': '198.51.100.0/24', 'asn': 'AS0', 'maxLength': '32', 'ta': 'TA'}]}, roa_file)
 
-        time.sleep(2)
+        time.sleep(3)
         query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!gAS65537')
         assert query_result == '192.0.2.0/24'
         # RPKI invalid object should now be added in the journal
@@ -470,7 +473,7 @@ class TestIntegration:
         with open(self.roa_source2, 'w') as roa_file:
             ujson.dump({'roas': [{'prefix': '128/1', 'asn': 'AS0', 'maxLength': '32', 'ta': 'TA'}]}, roa_file)
 
-        time.sleep(2)
+        time.sleep(3)
         query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!gAS65537')
         assert not query_result
         # RPKI invalid object should now be deleted in the journal
@@ -570,10 +573,10 @@ class TestIntegration:
         }
         """
         result = client.execute(query=query)
-        assert result['data']['rpslObjects'] == [
+        self.assertCountEqual(result['data']['rpslObjects'], [
             {'rpslPk': '192.0.2.0/24AS65537', 'memberOfObjs': [{'rpslPk': 'RS-TEST'}]},
             {'rpslPk': '192.0.2.0 - 192.0.2.255'}
-        ]
+        ])
 
         # Test membersObjs and mbrsByRefObjs resolving
         query = """query {
@@ -609,7 +612,7 @@ class TestIntegration:
         }
         """
         result = client.execute(query=query)
-        assert result['data']['databaseStatus'] == [
+        self.assertCountEqual(result['data']['databaseStatus'], [
             {
                 'source': 'TEST',
                 'authoritative': True,
@@ -623,7 +626,7 @@ class TestIntegration:
                 'serialNewestJournal': None,
                 'serialNewestMirror': None
             }
-        ]
+        ])
 
         # Test asnPrefixes query
         query = """query {
