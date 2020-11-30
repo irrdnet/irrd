@@ -1,4 +1,6 @@
 import os
+import platform
+
 import sqlalchemy as sa
 import ujson
 
@@ -12,7 +14,7 @@ def get_engine():
     if engine:
         return engine
     engine = sa.create_engine(
-        get_setting('database_url'),
+        translate_url(get_setting('database_url')),
         pool_size=2,
         json_deserializer=ujson.loads,
     )
@@ -34,3 +36,11 @@ def get_engine():
             )
 
     return engine
+
+
+def translate_url(url_str: str) -> sa.engine.url.URL:
+    """Translate a url string to a SQLAlchemy URL object with the right driver"""
+    url = sa.engine.url.make_url(url_str)
+    if url.drivername == 'postgresql' and platform.python_implementation() == 'PyPy':  # pragma: no cover
+        url.drivername = 'postgresql+psycopg2cffi'
+    return url

@@ -156,9 +156,9 @@ jobs:
     docker:
       - image: pypy:3.7
         environment:
-          IRRD_DATABASE_URL: 'postgresql+psycopg2cffi://root@localhost/circle_test'
-          IRRD_DATABASE_URL_INTEGRATION_1: 'postgresql+psycopg2cffi://root@localhost/circle_test_integration_1'
-          IRRD_DATABASE_URL_INTEGRATION_2: 'postgresql+psycopg2cffi://root@localhost/circle_test_integration_2'
+          IRRD_DATABASE_URL: 'postgresql://root@localhost/circle_test'
+          IRRD_DATABASE_URL_INTEGRATION_1: 'postgresql://root@localhost/circle_test_integration_1'
+          IRRD_DATABASE_URL_INTEGRATION_2: 'postgresql://root@localhost/circle_test_integration_2'
           IRRD_REDIS_URL: 'redis://localhost'
           IRRD_REDIS_URL_INTEGRATION_1: 'redis://localhost/4'
           IRRD_REDIS_URL_INTEGRATION_2: 'redis://localhost/5'
@@ -179,9 +179,9 @@ jobs:
     docker:
       - image: pypy:3.6
         environment:
-          IRRD_DATABASE_URL: 'postgresql+psycopg2cffi://root@localhost/circle_test'
-          IRRD_DATABASE_URL_INTEGRATION_1: 'postgresql+psycopg2cffi://root@localhost/circle_test_integration_1'
-          IRRD_DATABASE_URL_INTEGRATION_2: 'postgresql+psycopg2cffi://root@localhost/circle_test_integration_2'
+          IRRD_DATABASE_URL: 'postgresql://root@localhost/circle_test'
+          IRRD_DATABASE_URL_INTEGRATION_1: 'postgresql://root@localhost/circle_test_integration_1'
+          IRRD_DATABASE_URL_INTEGRATION_2: 'postgresql://root@localhost/circle_test_integration_2'
           IRRD_REDIS_URL: 'redis://localhost'
           IRRD_REDIS_URL_INTEGRATION_1: 'redis://localhost/4'
           IRRD_REDIS_URL_INTEGRATION_2: 'redis://localhost/5'

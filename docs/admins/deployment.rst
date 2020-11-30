@@ -15,13 +15,15 @@ Requirements
 IRRd requires:
 
 * Linux, OpenBSD or MacOS. Other platforms are untested, but may work.
-* Python 3.6 or 3.7 with `pip` and `virtualenv` installed.
-  At this point, 3.8 has had limited testing.
+* PyPy or CPython 3.6, 3.7 or 3.8 with `pip` and `virtualenv` installed.
 * A recent version of PostgreSQL. Versions 9.6 and 10.5 have been
   extensively tested.
 * At least 32GB RAM
 * At least 4 CPU cores
 * At least 100GB of disk space (SSD recommended)
+
+PyPy is recommended over CPython (the "default" Python interpreter),
+due to improved performance.
 
 A number of other Python packages are required. However, those are
 automatically installed in the installation process.
@@ -45,7 +47,7 @@ all privileges on the database.
 
 The database, username and password have to be configured in the
 ``database_url`` :doc:`setting </admins/configuration>`. In this example,
-the URL would be ``postgresql://irrd:irrd@localhost:5432/irrd``.
+the URL would be: ``postgresql://irrd:irrd@localhost:5432/irrd``.
 
 A few PostgreSQL settings need to be changed from their default:
 
@@ -109,9 +111,13 @@ Python work will be done, including different versions of IRRd
 on the same host, this step can be skipped, but this is not
 recommended
 
-Create the virtualenv with a command like this::
+Create the virtualenv with a command like this for PyPy::
 
-    virtualenv -p python3 /home/irrd/irrd-venv
+    pypy3 -m venv /home/irrd/irrd-venv
+
+Or, like this for CPython::
+
+    python3 -m venv /home/irrd/irrd-venv
 
 To run commands inside the virtualenv, use either of::
 
@@ -272,7 +278,7 @@ IRRd can be stopped by sending a SIGTERM signal.
     IRRd is started in the background, log output is lost.
 
 IRRd should be run as a non-privileged user. When binding to privileged
-ports, like 80 and 43, you can use ``setcap`` assign that user permissions
+ports, like 43 for whois, you can use ``setcap`` assign that user permissions
 to open privileged ports, e.g.::
 
     # Once, as root:

@@ -6,6 +6,8 @@ from alembic import context
 from pathlib import Path
 from sqlalchemy import create_engine
 
+from irrd.storage import translate_url
+
 sys.path.append(str(Path(__file__).resolve().parents[3]))
 
 from irrd.conf import get_setting, config_init, is_config_initialised
@@ -28,7 +30,7 @@ def run_migrations_offline():
     """
     if not is_config_initialised():
         config_init(os.environ['IRRD_CONFIG_FILE'])
-    url = get_setting('database_url')
+    url = translate_url(get_setting('database_url'))
     context.configure(
         url=url, target_metadata=target_metadata, literal_binds=True,
         transaction_per_migration=True,
@@ -47,7 +49,7 @@ def run_migrations_online():
     """
     if not is_config_initialised():
         config_init(os.environ['IRRD_CONFIG_FILE'])
-    engine = create_engine(get_setting('database_url'))
+    engine = create_engine(translate_url(get_setting('database_url')))
 
     with engine.connect() as connection:
         context.configure(

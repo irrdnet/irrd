@@ -28,6 +28,7 @@ from irrd.utils.rpsl_samples import (SAMPLE_MNTNER, SAMPLE_PERSON, SAMPLE_KEY_CE
 from irrd.utils.whois_client import whois_query, whois_query_irrd
 from .constants import (EMAIL_SMTP_PORT, EMAIL_DISCARD_MSGS_COMMAND, EMAIL_RETURN_MSGS_COMMAND, EMAIL_SEPARATOR,
                         EMAIL_END)
+from ..storage import translate_url
 
 IRRD_ROOT_PATH = str(Path(__file__).resolve().parents[2])
 sys.path.append(IRRD_ROOT_PATH)
@@ -838,7 +839,7 @@ class TestIntegration:
         alembic_cfg.set_main_option('script_location', f'{IRRD_ROOT_PATH}/irrd/storage/alembic')
         command.upgrade(alembic_cfg, 'head')
 
-        connection = sa.create_engine(self.database_url1).connect()
+        connection = sa.create_engine(translate_url(self.database_url1)).connect()
         connection.execute('DELETE FROM rpsl_objects')
         connection.execute('DELETE FROM rpsl_database_journal')
         connection.execute('DELETE FROM database_status')
@@ -849,7 +850,7 @@ class TestIntegration:
         alembic_cfg.set_main_option('script_location', f'{IRRD_ROOT_PATH}/irrd/storage/alembic')
         command.upgrade(alembic_cfg, 'head')
 
-        connection = sa.create_engine(self.database_url2).connect()
+        connection = sa.create_engine(translate_url(self.database_url2)).connect()
         connection.execute('DELETE FROM rpsl_objects')
         connection.execute('DELETE FROM rpsl_database_journal')
         connection.execute('DELETE FROM database_status')

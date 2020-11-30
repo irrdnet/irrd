@@ -5,6 +5,7 @@ boolean
 bugfix
 conf
 config
+CPython
 cron
 enums
 dev
