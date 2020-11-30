@@ -19,6 +19,7 @@ jobs:
           IRRD_REDIS_URL: 'redis://localhost'
           IRRD_REDIS_URL_INTEGRATION_1: 'redis://localhost/4'
           IRRD_REDIS_URL_INTEGRATION_2: 'redis://localhost/5'
+          PYTHON_INTERPRETER: python
 
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
@@ -133,16 +134,24 @@ jobs:
     <<: *test-template
     docker:
       - image: cimg/python:3.8.6
+        environment:
+          IRRD_DATABASE_URL: 'postgresql://root@localhost/circle_test'
+          IRRD_DATABASE_URL_INTEGRATION_1: 'postgresql://root@localhost/circle_test_integration_1'
+          IRRD_DATABASE_URL_INTEGRATION_2: 'postgresql://root@localhost/circle_test_integration_2'
+          IRRD_REDIS_URL: 'redis://localhost'
+          IRRD_REDIS_URL_INTEGRATION_1: 'redis://localhost/4'
+          IRRD_REDIS_URL_INTEGRATION_2: 'redis://localhost/5'
+          PYTHON_INTERPRETER: python
 
   pypy-3.7:
     <<: *test-template
     docker:
       - image: pypy:3.7
-
-      - run:
-          name: install dependencies
-          command: |
-            pypy3 -m venv venv
-            . venv/bin/activate
-            pip install -r requirements.txt
-
+        environment:
+          IRRD_DATABASE_URL: 'postgresql://root@localhost/circle_test'
+          IRRD_DATABASE_URL_INTEGRATION_1: 'postgresql://root@localhost/circle_test_integration_1'
+          IRRD_DATABASE_URL_INTEGRATION_2: 'postgresql://root@localhost/circle_test_integration_2'
+          IRRD_REDIS_URL: 'redis://localhost'
+          IRRD_REDIS_URL_INTEGRATION_1: 'redis://localhost/4'
+          IRRD_REDIS_URL_INTEGRATION_2: 'redis://localhost/5'
+          PYTHON_INTERPRETER: pypy3
