@@ -38,9 +38,9 @@ jobs:
 
       - restore_cache:
           keys:
-          - v3-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}
+          - v4-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}
           # fallback to using the latest cache if no exact match is found
-          - v3-dependencies-{{ .Environment.CIRCLE_JOB }}
+          - v4-dependencies-{{ .Environment.CIRCLE_JOB }}
 
       - run:
           name: install dependencies
@@ -52,7 +52,7 @@ jobs:
       - save_cache:
           paths:
             - ./venv
-          key: v3-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}
+          key: v4-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}
 
       - run:
           name: apt update

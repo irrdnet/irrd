@@ -454,7 +454,7 @@ class TestIntegration:
         with open(self.roa_source2, 'w') as roa_file:
             ujson.dump({'roas': [{'prefix': '198.51.100.0/24', 'asn': 'AS0', 'maxLength': '32', 'ta': 'TA'}]}, roa_file)
 
-        time.sleep(2)
+        time.sleep(3)
         query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!gAS65537')
         assert query_result == '192.0.2.0/24'
         # RPKI invalid object should now be added in the journal
@@ -473,7 +473,7 @@ class TestIntegration:
         with open(self.roa_source2, 'w') as roa_file:
             ujson.dump({'roas': [{'prefix': '128/1', 'asn': 'AS0', 'maxLength': '32', 'ta': 'TA'}]}, roa_file)
 
-        time.sleep(2)
+        time.sleep(3)
         query_result = whois_query_irrd('127.0.0.1', self.port_whois2, '!gAS65537')
         assert not query_result
         # RPKI invalid object should now be deleted in the journal
