@@ -300,7 +300,7 @@ def _columns_for_graphql_selection(info: GraphQLResolveInfo) -> Set[str]:
     """
     # Some columns are always retrieved
     columns = {'object_class', 'source', 'parsed_data', 'rpsl_pk'}
-    fields = _collect_predicate_names(info)
+    fields = _collect_predicate_names(info.field_nodes[0].selection_set.selections)  # type: ignore
     requested_fields = {ariadne.convert_camel_case_to_snake(f) for f in fields}
 
     for field in requested_fields:
@@ -313,13 +313,12 @@ def _columns_for_graphql_selection(info: GraphQLResolveInfo) -> Set[str]:
 
 
 # https://github.com/mirumee/ariadne/issues/287
-def _collect_predicate_names(info: GraphQLResolveInfo):  # pragma: no cover
+def _collect_predicate_names(selections):  # pragma: no cover
     predicates = []
-    if hasattr(info, 'field_nodes'):
-        for selection in info.field_nodes[0].selection_set.selections:   # type: ignore
-            if isinstance(selection, graphql.InlineFragmentNode):
-                predicates.extend(_collect_predicate_names(selection.selection_set.selections))   # type: ignore
-            else:
-                predicates.append(selection.name.value)   # type: ignore
+    for selection in selections:
+        if isinstance(selection, graphql.InlineFragmentNode):
+            predicates.extend(_collect_predicate_names(selection.selection_set.selections))
+        else:
+            predicates.append(selection.name.value)
 
     return predicates

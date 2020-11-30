@@ -74,6 +74,7 @@ def prepare_resolver(monkeypatch):
 
     info = Mock()
     info.context = {}
+    info.field_nodes = [Mock(selection_set=Mock(selections=Mock()))]
     info.context['request'] = HTTPConnection({
         'type': 'http',
         'client': ('127.0.0.1', '8000'),
