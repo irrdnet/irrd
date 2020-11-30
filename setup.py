@@ -41,18 +41,20 @@ setuptools.setup(
         'uvicorn==0.12.3',
         'starlette==0.13.8',
         'psutil==5.7.3',
-        'psycopg2-binary==2.8.6',
         'SQLAlchemy==1.3.20',
         'alembic==1.4.3',
         'ujson==4.0.1',
-        'ariadne==0.13git'
-    ],
-    dependency_links=[
-        'https://github.com/mirumee/ariadne/tarball/master#egg=ariadne-0.13git'
+        'ariadne@https://github.com/mirumee/ariadne/tarball/master#egg=ariadne-0.12'
     ],
     extras_require={
         ':python_version < "3.7"': [
             'dataclasses==0.7',
+        ],
+        ':platform_python_implementation == "CPython"': [
+            'psycopg2-binary==2.8.6',
+        ],
+        ':platform_python_implementation == "PyPy"': [
+            'psycopg2cffi==2.8.1',
         ],
     },
     entry_points={
