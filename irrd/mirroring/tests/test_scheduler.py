@@ -126,8 +126,8 @@ class TestMirrorScheduler:
                 'prefixes': ['192.0.2.0/24'],
             }
         })
-        time.sleep(0.1)
         scheduler.run()
+        time.sleep(0.2)
         assert thread_run_count == 1
 
         print('third run')
@@ -139,9 +139,9 @@ class TestMirrorScheduler:
         })
 
         # Should run now, because config has changed
-        time.sleep(0.2)
         scheduler.update_process_state()
         scheduler.run()
+        time.sleep(0.2)
         assert thread_run_count == 2
 
         print('fourth run')
@@ -157,9 +157,9 @@ class TestMirrorScheduler:
         })
 
         # Should run again, because exclusions have changed
-        time.sleep(0.2)
         scheduler.update_process_state()
         scheduler.run()
+        time.sleep(0.2)
         assert thread_run_count == 3
 
     def test_scheduler_import_ignores_timer_not_expired(self, monkeypatch, config_override):
