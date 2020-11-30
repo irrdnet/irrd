@@ -15,7 +15,7 @@ from irrd.server.query_resolver import QueryResolver
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.preload import Preloader
 from irrd.storage.queries import RPSLDatabaseQuery, RPSLDatabaseJournalQuery
-from irrd.utils.text import snake_to_camel_case
+from irrd.utils.text import snake_to_camel_case, remove_auth_hashes
 from .schema_generator import SchemaGenerator
 
 database_handler: DatabaseHandler
@@ -233,6 +233,8 @@ def _rpsl_db_query_to_graphql_out(query: RPSLDatabaseQuery, info: GraphQLResolve
 
     for row in database_handler.execute_query(query, refresh_on_error=True):
         graphql_result = {snake_to_camel_case(k): v for k, v in row.items() if k != 'parsed_data'}
+        if 'object_text' in row:
+            graphql_result['objectText'] = remove_auth_hashes(row['object_text'])
         if 'rpki_status' in row:
             graphql_result['rpkiStatus'] = row['rpki_status']
         if row.get('ip_first') and row.get('prefix_length'):

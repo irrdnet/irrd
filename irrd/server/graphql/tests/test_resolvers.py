@@ -18,7 +18,7 @@ from .. import resolvers
 EXPECTED_RPSL_GRAPHQL_OUTPUT = [{
     'rpslPk': '192.0.2.0/25,AS65547',
     'objectClass': 'route',
-    'objectText': 'object text',
+    'objectText': 'object text\nauth: CRYPT-PW DummyValue  # Filtered for security',
     'operation': DatabaseOperation.add_or_update,
     'rpkiStatus': RPKIStatus.not_found,
     'scopefilterStatus': ScopeFilterStatus.out_scope_as,
@@ -48,7 +48,7 @@ MOCK_RPSL_DB_RESULT = [{
     'prefix_length': 25,
     'asn_first': 65547,
     'asn_last': 65547,
-    'object_text': 'object text',
+    'object_text': 'object text\nauth: CRYPT-PW LEuuhsBJNFV0Q',
     'rpki_status': RPKIStatus.not_found,
     'scopefilter_status': ScopeFilterStatus.out_scope_as,
     'source': 'TEST1',
@@ -116,6 +116,7 @@ class TestGraphQLResolvers:
             unknownKwarg='ignored',
         ))
 
+        print(result)
         assert result == EXPECTED_RPSL_GRAPHQL_OUTPUT
         assert flatten_mock_calls(mock_database_query) == [
             ['rpsl_pks', ('pk',), {}],
