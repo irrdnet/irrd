@@ -21,6 +21,7 @@ jobs:
           IRRD_REDIS_URL_INTEGRATION_2: 'redis://localhost/5'
           PYTHON_INTERPRETER: python3
           SUDO: sudo
+          ENCHANT_PACKAGE: python3-enchant
 
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
@@ -67,7 +68,7 @@ jobs:
 
       - run:
           name: Installing psql client and enchant
-          command: $SUDO apt install postgresql-client python-enchant
+          command: $SUDO apt -y install postgresql-client $ENCHANT_PACKAGE
 
       - run:
           name: Waiting for PostgreSQL to be ready
@@ -144,6 +145,7 @@ jobs:
           IRRD_REDIS_URL_INTEGRATION_2: 'redis://localhost/5'
           PYTHON_INTERPRETER: python3
           SUDO: sudo
+          ENCHANT_PACKAGE: python3-enchant
 
   pypy-3.7:
     <<: *test-template
@@ -158,3 +160,4 @@ jobs:
           IRRD_REDIS_URL_INTEGRATION_2: 'redis://localhost/5'
           PYTHON_INTERPRETER: pypy3
           SUDO: ''
+          ENCHANT_PACKAGE: python-enchant
