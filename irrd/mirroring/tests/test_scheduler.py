@@ -114,10 +114,12 @@ class TestMirrorScheduler:
         monkeypatch.setattr('irrd.mirroring.scheduler.ScopeFilterUpdateRunner', MockRunner)
         MockRunner.run_sleep = False
 
+        print('first run')
         scheduler = MirrorScheduler()
         scheduler.run()
 
         # Second run will not start the thread, as the config hasn't changed
+        print('second not run')
         config_override({
             'rpki': {'roa_source': None},
             'scopefilter': {
@@ -128,6 +130,7 @@ class TestMirrorScheduler:
         scheduler.run()
         assert thread_run_count == 1
 
+        print('third run')
         config_override({
             'rpki': {'roa_source': None},
             'scopefilter': {
@@ -136,10 +139,12 @@ class TestMirrorScheduler:
         })
 
         # Should run now, because config has changed
-        time.sleep(1)
+        time.sleep(0.2)
         scheduler.update_process_state()
         scheduler.run()
         assert thread_run_count == 2
+
+        print('fourth run')
 
         config_override({
             'rpki': {'roa_source': None},
@@ -152,7 +157,7 @@ class TestMirrorScheduler:
         })
 
         # Should run again, because exclusions have changed
-        time.sleep(1)
+        time.sleep(0.2)
         scheduler.update_process_state()
         scheduler.run()
         assert thread_run_count == 3
@@ -254,9 +259,12 @@ class MockRunner:
 
     def run(self):
         global thread_run_count
+        print(f'run called, thread count {thread_run_count}')
         thread_run_count += 1
+        print(f'thread run count raised to {thread_run_count}')
         if self.run_sleep:
             time.sleep(1.5)
+        print('run complete')
 
 
 class MockScheduledTaskProcess(threading.Thread):
