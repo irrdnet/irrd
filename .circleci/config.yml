@@ -19,7 +19,7 @@ jobs:
           IRRD_REDIS_URL: 'redis://localhost'
           IRRD_REDIS_URL_INTEGRATION_1: 'redis://localhost/4'
           IRRD_REDIS_URL_INTEGRATION_2: 'redis://localhost/5'
-          PYTHON_INTERPRETER: python
+          PYTHON_INTERPRETER: python3
 
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
@@ -48,7 +48,7 @@ jobs:
       - run:
           name: install dependencies
           command: |
-            python -m venv venv
+            $PYTHON_INTERPRETER -m venv venv
             . venv/bin/activate
             pip install -r requirements.txt
 
@@ -141,7 +141,7 @@ jobs:
           IRRD_REDIS_URL: 'redis://localhost'
           IRRD_REDIS_URL_INTEGRATION_1: 'redis://localhost/4'
           IRRD_REDIS_URL_INTEGRATION_2: 'redis://localhost/5'
-          PYTHON_INTERPRETER: python
+          PYTHON_INTERPRETER: python3
 
   pypy-3.7:
     <<: *test-template
