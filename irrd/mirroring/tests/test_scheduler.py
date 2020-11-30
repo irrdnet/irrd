@@ -136,7 +136,7 @@ class TestMirrorScheduler:
         })
 
         # Should run now, because config has changed
-        time.sleep(0.2)
+        time.sleep(1)
         scheduler.update_process_state()
         scheduler.run()
         assert thread_run_count == 2
@@ -152,7 +152,7 @@ class TestMirrorScheduler:
         })
 
         # Should run again, because exclusions have changed
-        time.sleep(0.2)
+        time.sleep(1)
         scheduler.update_process_state()
         scheduler.run()
         assert thread_run_count == 3
