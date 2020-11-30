@@ -1,10 +1,17 @@
 # Check https://circleci.com/docs/2.0/language-python/ for more details
 #
 version: 2
-jobs:
-  build:
+workflows:
+  version: 2
+  test:
+    jobs:
+      - cpython-3.6
+      - cpython-3.8
+      - pypy-3.7
+- jobs:
+  cpython-3.6: &test-template
     docker:
-      - image: circleci/python:3.6.7-stretch
+      - image: cimg/python:3.6.12
         environment:
           IRRD_DATABASE_URL: 'postgresql://root@localhost/circle_test'
           IRRD_DATABASE_URL_INTEGRATION_1: 'postgresql://root@localhost/circle_test_integration_1'
@@ -121,3 +128,13 @@ jobs:
 
       - store_artifacts:
           path: /tmp/pytest-of-circleci/
+
+  cpython-3.8:
+    <<: *test-template
+    docker:
+      - image: cimg/python:3.8.6
+
+  test-3.8:
+    <<: *test-template
+    docker:
+      - image: pypy:3.7
