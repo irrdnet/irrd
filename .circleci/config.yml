@@ -134,7 +134,7 @@ workflows:
     docker:
       - image: cimg/python:3.8.6
 
-  test-3.8:
+  pypy-3.7:
     <<: *test-template
     docker:
       - image: pypy:3.7
