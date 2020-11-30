@@ -11,6 +11,9 @@ re_remove_last_modified = re.compile(r'^last-modified: [^\n]+\n', flags=re.MULTI
 def remove_auth_hashes(input: Optional[str]):
     if not input:
         return input
+    # If there are no hashes, skip the RE for performance.
+    if not any([pw_hash in input for pw_hash in PASSWORD_HASHERS.keys()]):
+        return input
     return re_remove_passwords.sub(r'\1 %s  # Filtered for security' % PASSWORD_HASH_DUMMY_VALUE, input)
 
 

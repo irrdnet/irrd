@@ -16,6 +16,7 @@ def test_remove_auth_hashes():
     assert 'CRYPT-PW LEuuhsBJNFV0Q' not in result
     assert 'MD5-pw ' + PASSWORD_HASH_DUMMY_VALUE in result
     assert 'MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.' not in result
+    assert 'other_text' == remove_auth_hashes('other_text')
 
 
 def test_remove_last_modified():
