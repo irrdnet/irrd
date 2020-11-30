@@ -1,6 +1,8 @@
 # flake8: noqa: W293
 import sys
 import time
+import unittest
+
 import ujson
 
 import base64
@@ -84,6 +86,7 @@ class TestIntegration:
     port_whois2 = 6044
 
     def test_irrd_integration(self, tmpdir):
+        self.assertCountEqual = unittest.TestCase().assertCountEqual
         # IRRD_DATABASE_URL and IRRD_REDIS_URL override the yaml config, so should be removed
         if 'IRRD_DATABASE_URL' in os.environ:
             del os.environ['IRRD_DATABASE_URL']
@@ -570,10 +573,10 @@ class TestIntegration:
         }
         """
         result = client.execute(query=query)
-        assert result['data']['rpslObjects'] == [
+        self.assertCountEqual(result['data']['rpslObjects'], [
             {'rpslPk': '192.0.2.0/24AS65537', 'memberOfObjs': [{'rpslPk': 'RS-TEST'}]},
             {'rpslPk': '192.0.2.0 - 192.0.2.255'}
-        ]
+        ])
 
         # Test membersObjs and mbrsByRefObjs resolving
         query = """query {
@@ -609,7 +612,7 @@ class TestIntegration:
         }
         """
         result = client.execute(query=query)
-        assert result['data']['databaseStatus'] == [
+        self.assertCountEqual(result['data']['databaseStatus'], [
             {
                 'source': 'TEST',
                 'authoritative': True,
@@ -623,7 +626,7 @@ class TestIntegration:
                 'serialNewestJournal': None,
                 'serialNewestMirror': None
             }
-        ]
+        ])
 
         # Test asnPrefixes query
         query = """query {
