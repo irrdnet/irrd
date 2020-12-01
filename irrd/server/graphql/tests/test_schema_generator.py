@@ -467,6 +467,7 @@ type RPSLRoute implements RPSLObject {
   prefixLength: Int
   asn: ASN
   rpkiStatus: RPKIStatus
+  rpkiMaxLength: Int
 }
 
 type RPSLRouteSet implements RPSLObject {
@@ -528,6 +529,7 @@ type RPSLRoute6 implements RPSLObject {
   prefixLength: Int
   asn: ASN
   rpkiStatus: RPKIStatus
+  rpkiMaxLength: Int
 }
 
 type RPSLRtrSet implements RPSLObject {
