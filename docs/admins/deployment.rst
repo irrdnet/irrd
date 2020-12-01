@@ -8,7 +8,9 @@ For upgrades from a legacy version of IRRd, please read the
 :doc:`migration notes </admins/migrating-legacy-irrd>` for relevant
 changes.
 
-.. contents:: :backlinks: none
+.. contents::
+   :backlinks: none
+   :local:
 
 Requirements
 ------------

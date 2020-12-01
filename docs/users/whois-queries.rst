@@ -10,7 +10,9 @@ Line separators are a single newline (``\n``) character.
    Due to caching in IRRd, it can take up to 60 seconds for some types
    of changes to be visible in the result of some queries.
 
-.. contents:: :backlinks: none
+.. contents::
+   :backlinks: none
+   :local:
 
 IRRd vs RIPE style
 ------------------

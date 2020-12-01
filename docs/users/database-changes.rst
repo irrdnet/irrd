@@ -7,7 +7,9 @@ IRRd. For each change, a number of integrity, authentication, and reference
 checks are performed.
 Additionally, notifications may be sent on attempted or successful changes.
 
-.. contents:: :backlinks: none
+.. contents::
+   :backlinks: none
+   :local:
 
 Submission format & passwords
 -----------------------------

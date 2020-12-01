@@ -6,7 +6,8 @@ IRRd can operate in RPKI-aware mode, where it imports ROA objects which
 are used to validate `route(6)` objects. IRRd also generates pseudo-IRR
 objects that represent ROA data.
 
-.. contents:: :backlinks: none
+.. contents::
+   :backlinks: none
 
 Enabling RPKI-aware mode
 ------------------------
