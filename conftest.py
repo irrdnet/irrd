@@ -4,12 +4,12 @@ Fixtures defined here are available to all tests.
 """
 import os
 import pytest
-from dotted.collection import DottedDict
 from typing import Dict, Any
 
 from irrd import conf
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.utils.rpsl_samples import SAMPLE_KEY_CERT
+from irrd.vendor.dotted.collection import DottedDict
 
 
 @pytest.fixture()

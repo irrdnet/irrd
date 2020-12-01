@@ -8,9 +8,10 @@ import re
 import signal
 import yaml
 from IPy import IP
-from dotted.collection import DottedDict
 from pathlib import Path
 from typing import Any, List, Optional
+
+from irrd.vendor.dotted.collection import DottedDict
 
 CONFIG_PATH_DEFAULT = '/etc/irrd.yaml'
 
@@ -213,7 +214,7 @@ class Configuration:
             config.get('server.http.status_access_list'),
         }
 
-        if not self._check_is_str(config, 'email.from') or '@' not in config.get('email.from'):
+        if not self._check_is_str(config, 'email.from') or '@' not in config.get('email.from', ''):
             errors.append('Setting email.from is required and must be an email address.')
         if not self._check_is_str(config, 'email.smtp'):
             errors.append('Setting email.smtp is required.')
