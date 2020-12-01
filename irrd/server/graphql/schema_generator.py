@@ -235,6 +235,8 @@ class SchemaGenerator:
                 graphql_fields[snake_to_camel_case(field_name)] = graphql_type
             if klass.rpki_relevant:
                 graphql_fields['rpkiStatus'] = 'RPKIStatus'
+                graphql_fields['rpkiMaxLength'] = 'Int'
+                self.graphql_types[object_name]['rpki_max_length'] = 'Int'
             implements = 'RPSLContact & RPSLObject' if klass in [RPSLPerson, RPSLRole] else 'RPSLObject'
             schema = self._generate_schema_str(object_name, 'type', graphql_fields, implements)
             schemas[object_name] = schema

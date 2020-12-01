@@ -209,6 +209,7 @@ class RPSLObjectFromROA(RPSLObject):
             self.rpsl_object_class: self.prefix_str,
             'origin': 'AS' + str(self.asn),
             'source': RPKI_IRR_PSEUDO_SOURCE,
+            'rpki_max_length': max_length,
         }
         self.scopefilter_status, _ = scopefilter_validator.validate_rpsl_object(self)
 

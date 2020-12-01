@@ -143,6 +143,12 @@ class TestROAImportProcess:
 
         assert roa_importer.roa_objs[0]._rpsl_object.scopefilter_status == ScopeFilterStatus.out_scope_as
         assert roa_importer.roa_objs[0]._rpsl_object.source() == RPKI_IRR_PSEUDO_SOURCE
+        assert roa_importer.roa_objs[0]._rpsl_object.parsed_data == {
+            'origin': 'AS64496',
+            'route': '192.0.2.0/24',
+            'rpki_max_length': 26,
+            'source': 'RPKI',
+        }
         assert roa_importer.roa_objs[0]._rpsl_object.render_rpsl_text() == textwrap.dedent("""
             route:          192.0.2.0/24
             descr:          RPKI ROA for 192.0.2.0/24 / AS64496
