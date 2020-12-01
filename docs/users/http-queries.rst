@@ -739,6 +739,8 @@ You can use the ``RPSLContact`` object::
     the local IRRd database because it was not mirrored, ``mntBy`` will show
     the reference to ``DEMO-MNT``, but ``mntByObjs`` will be empty.
 
+.. _graphql-journal:
+
 Journal queries
 ~~~~~~~~~~~~~~~
 ``RPSLObject`` also has a field ``journal``, which returns an array of

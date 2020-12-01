@@ -199,7 +199,7 @@ Servers
   defined, all access is permitted.
   |br| **Default**: not defined, all access permitted for whois
   |br| **Change takes effect**: after SIGHUP.
-* ``server.whois.status_access_list``: a reference to an access list in the
+* ``server.http.status_access_list``: a reference to an access list in the
   configuration, where only IPs in the access list are permitted access to the
   :doc:`HTTP status page </admins/status_page>`. If not defined, all access is denied.
   |br| **Default**: not defined, all access denied for HTTP status page
@@ -481,6 +481,8 @@ Sources
 * ``sources.{name}.nrtm_access_list``: a reference to an access list in the
   configuration, where only IPs in the access list are permitted access to the
   NRTM stream for this particular source (``-g`` queries).
+  This same list is used to restrict access to
+  :ref:`GraphQL journal queries <graphql-journal>`.
   |br| **Default**: not defined, all access denied.
   |br| **Change takes effect**: after SIGHUP, upon next request.
 * ``sources.{name}.strict_import_keycert_objects``: a setting used when
