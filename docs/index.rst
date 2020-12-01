@@ -29,6 +29,7 @@ For administrators
 This documentation is mainly for administrators of IRRd deployments.
 
 .. toctree::
+   :caption: For administrators
    :maxdepth: 1
 
    admins/deployment
@@ -47,6 +48,7 @@ instances, or trying to add objects to an instance, or running mirrors of
 an IRRd instance.
 
 .. toctree::
+   :caption: For end users
    :maxdepth: 1
 
    users/http-queries
@@ -61,23 +63,18 @@ This documentation is mainly for people who want to develop on the IRRd code bas
 itself, or want to know how it works.
 
 .. toctree::
+   :caption: For developers
    :maxdepth: 1
 
    development/architecture
    development/development-setup
    development/storage
 
-Release notes
--------------
-.. toctree::
-   :maxdepth: 1
-   :glob:
-
-   releases/*
-
 Other
 -----
 .. toctree::
+   :caption: Other
    :maxdepth: 1
 
+   releases/index.rst
    license

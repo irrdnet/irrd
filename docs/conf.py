@@ -84,18 +84,26 @@ todo_include_todos = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+html_theme = 'sphinx_material'
+html_show_sourcelink = False
+
+html_sidebars = {
+    "**": ["logo-text.html", "globaltoc.html", "localtoc.html", "searchbox.html"]
+}
 
 # Theme options are theme-specific and customize the look and feel of a
 # theme further.  For a list of options available for each theme, see the
 # documentation.
 #
 html_theme_options = {
-    'logo': 'logo.png',
-    'github_user': 'irrdnet',
-    'github_repo': 'irrd',
-    'github_banner': True,
-    'show_powered_by': False,
+    'nav_title': 'IRRd',
+    'color_primary': 'indigo',
+    'color_accent': 'light-blue',
+    'repo_url': 'https://github.com/irrdnet/irrd/',
+    'repo_name': 'IRRd',
+    'globaltoc_depth': -1,
+    'master_doc': False,
+    'logo_icon': '&#xe1db',
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,

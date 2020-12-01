@@ -5,7 +5,9 @@ Scope filtering
 IRRd supports a scope filter, where RPSL objects matching certain prefixes
 and AS numbers can be filtered.
 
-.. contents:: :backlinks: none
+.. contents::
+   :backlinks: none
+   :local:
 
 Enabling the scope filter
 -------------------------

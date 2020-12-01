@@ -9,7 +9,9 @@ Configuration
 IRRd reads its configuration from a YAML file in a specified location. Many
 configuration options can be changed without restarting IRRd, but not all.
 
-.. contents:: :backlinks: none
+.. contents::
+   :backlinks: none
+   :local:
 
 Example configuration file
 --------------------------
@@ -381,7 +383,7 @@ RPKI
 
 
 Scope filter
-------------
+~~~~~~~~~~~~
 * ``scopefilter.prefixes``: a list of IPv4 or IPv6 prefixes which are
   considered out of scope. For details, see the
   :doc:`scope filter documentation </admins/scopefilter>`.

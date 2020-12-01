@@ -17,7 +17,9 @@ IRRd has an HTTP interface which accepts GraphQL_ queries.
 .. _fragments: https://graphql.org/learn/queries/#fragments
 .. _variables: https://graphql.org/learn/queries/#variables
 
-.. contents:: :backlinks: none
+.. contents::
+   :backlinks: none
+   :local:
 
 Introduction to GraphQL
 -----------------------
