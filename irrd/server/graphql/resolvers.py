@@ -263,23 +263,25 @@ def resolve_asn_prefixes(_, info: GraphQLResolveInfo, asns: List[int], ip_versio
 
 
 @ariadne.convert_kwargs_to_snake_case
-def resolve_as_set_prefixes(_, info: GraphQLResolveInfo, set_names: List[str], sources: Optional[List[str]]=None, ip_version: Optional[int]=None, exclude_sets: Optional[List[str]]=None, sql_trace: bool=False):
+async def resolve_as_set_prefixes(_, info: GraphQLResolveInfo, set_names: List[str], sources: Optional[List[str]]=None, ip_version: Optional[int]=None, exclude_sets: Optional[List[str]]=None, sql_trace: bool=False):
     """Resolve an asSetPrefixes query"""
     query_resolver = QueryResolver(
         info.context['request'].app.state.preloader,
-        info.context['request'].app.state.database_handler
+        info.context['request'].app.state.database_handler,
+        info.context['request'].app.state.d
     )
     if sql_trace:
         query_resolver.enable_sql_trace()
     set_names_set = {i.upper() for i in set_names}
     exclude_sets_set = {i.upper() for i in exclude_sets} if exclude_sets else set()
     query_resolver.set_query_sources(sources)
+    r = []
     for set_name in set_names_set:
-        prefixes = list(query_resolver.routes_for_as_set(set_name, ip_version, exclude_sets=exclude_sets_set))
-        yield dict(rpslPk=set_name, prefixes=prefixes)
+        prefixes = await query_resolver.aroutes_for_as_set(set_name, ip_version, exclude_sets=exclude_sets_set)
+        r.append(dict(rpslPk=set_name, prefixes=list(prefixes)))
     if sql_trace:
         info.context['sql_queries'] = query_resolver.retrieve_sql_trace()
-
+    return r
 
 @ariadne.convert_kwargs_to_snake_case
 def resolve_recursive_set_members(_, info: GraphQLResolveInfo, set_names: List[str], depth: int=0, sources: Optional[List[str]]=None, exclude_sets: Optional[List[str]]=None, sql_trace: bool=False):
