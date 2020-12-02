@@ -60,14 +60,14 @@ class WhoisQueryParser:
             except InvalidQueryException as exc:
                 logger.info(f'{self.client_str}: encountered parsing error while parsing query "{query}": {exc}')
                 return WhoisQueryResponse(
-                    response_type=WhoisQueryResponseType.ERROR,
+                    response_type=WhoisQueryResponseType.ERROR_USER,
                     mode=WhoisQueryResponseMode.IRRD,
                     result=str(exc)
                 )
             except Exception as exc:
                 logger.error(f'An exception occurred while processing whois query "{query}": {exc}', exc_info=exc)
                 return WhoisQueryResponse(
-                    response_type=WhoisQueryResponseType.ERROR,
+                    response_type=WhoisQueryResponseType.ERROR_INTERNAL,
                     mode=WhoisQueryResponseMode.IRRD,
                     result='An internal error occurred while processing this query.'
                 )
@@ -77,14 +77,14 @@ class WhoisQueryParser:
         except InvalidQueryException as exc:
             logger.info(f'{self.client_str}: encountered parsing error while parsing query "{query}": {exc}')
             return WhoisQueryResponse(
-                response_type=WhoisQueryResponseType.ERROR,
+                response_type=WhoisQueryResponseType.ERROR_USER,
                 mode=WhoisQueryResponseMode.RIPE,
                 result=str(exc)
             )
         except Exception as exc:
             logger.error(f'An exception occurred while processing whois query "{query}": {exc}', exc_info=exc)
             return WhoisQueryResponse(
-                response_type=WhoisQueryResponseType.ERROR,
+                response_type=WhoisQueryResponseType.ERROR_INTERNAL,
                 mode=WhoisQueryResponseMode.RIPE,
                 result='An internal error occurred while processing this query.'
             )

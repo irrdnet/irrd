@@ -106,7 +106,7 @@ class TestWhoisQueryParserRIPE:
         mock_query_resolver, mock_dh, parser = prepare_parser
 
         response = parser.handle_query('-e foo')
-        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.response_type == WhoisQueryResponseType.ERROR_USER
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert response.result == 'Unrecognised flag/search: e'
 
@@ -184,7 +184,7 @@ class TestWhoisQueryParserRIPE:
         mock_query_resolver, mock_dh, parser = prepare_parser
 
         response = parser.handle_query('-x not-a-prefix')
-        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.response_type == WhoisQueryResponseType.ERROR_USER
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert response.result == 'Invalid input for route search: not-a-prefix'
 
@@ -283,7 +283,7 @@ class TestWhoisQueryParserRIPE:
         mock_nrg.generate = lambda source, version, serial_start, serial_end, dh: f'{source}/{version}/{serial_start}/{serial_end}'
 
         response = parser.handle_query('-g TEST1:3:1-5')
-        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.response_type == WhoisQueryResponseType.ERROR_USER
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert response.result == 'Access denied'
 
@@ -308,29 +308,29 @@ class TestWhoisQueryParserRIPE:
         assert response.result == 'TEST1/3/1/None'
 
         response = parser.handle_query('-g TEST1:9:1-LAST')
-        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.response_type == WhoisQueryResponseType.ERROR_USER
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert response.result == 'Invalid NRTM version: 9'
 
         response = parser.handle_query('-g TEST1:1:1-LAST:foo')
-        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.response_type == WhoisQueryResponseType.ERROR_USER
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert response.result == 'Invalid parameter: must contain three elements'
 
         response = parser.handle_query('-g UNKNOWN:1:1-LAST')
-        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.response_type == WhoisQueryResponseType.ERROR_USER
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert response.result == 'Unknown source: UNKNOWN'
 
         for invalid_range in ['1', 'LAST-1', 'LAST', '1-last']:
             response = parser.handle_query(f'-g TEST1:3:{invalid_range}')
-            assert response.response_type == WhoisQueryResponseType.ERROR
+            assert response.response_type == WhoisQueryResponseType.ERROR_USER
             assert response.mode == WhoisQueryResponseMode.RIPE
             assert response.result == f'Invalid serial range: {invalid_range}'
 
         mock_nrg.generate = Mock(side_effect=NRTMGeneratorException('expected-test-error'))
         response = parser.handle_query('-g TEST1:3:1-5')
-        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.response_type == WhoisQueryResponseType.ERROR_USER
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert response.result == 'expected-test-error'
 
@@ -350,7 +350,7 @@ class TestWhoisQueryParserRIPE:
         missing_arg_queries = ['-i ', '-i mnt-by ', '-s', '-T', '-t', '-V', '-x   ']
         for query in missing_arg_queries:
             response = parser.handle_query(query)
-            assert response.response_type == WhoisQueryResponseType.ERROR
+            assert response.response_type == WhoisQueryResponseType.ERROR_USER
             assert response.mode == WhoisQueryResponseMode.RIPE
             assert response.result == 'Missing argument for flag/search: ' + query[1]
 
@@ -359,7 +359,7 @@ class TestWhoisQueryParserRIPE:
         mock_query_resolver.rpsl_text_search = Mock(side_effect=Exception('test-error'))
 
         response = parser.handle_query('foo')
-        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.response_type == WhoisQueryResponseType.ERROR_INTERNAL
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert response.result == 'An internal error occurred while processing this query.'
 
@@ -369,7 +369,7 @@ class TestWhoisQueryParserRIPE:
         mock_query_resolver.rpsl_text_search = Mock(side_effect=InvalidQueryException('user error'))
 
         response = parser.handle_query('foo')
-        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.response_type == WhoisQueryResponseType.ERROR_USER
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert response.result == 'user error'
 
@@ -381,12 +381,12 @@ class TestWhoisQueryParserIRRD:
         mock_query_resolver, mock_dh, parser = prepare_parser
 
         response = parser.handle_query('!')
-        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.response_type == WhoisQueryResponseType.ERROR_USER
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == 'Missing IRRD command'
 
         response = parser.handle_query('!e')
-        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.response_type == WhoisQueryResponseType.ERROR_USER
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == 'Unrecognised command: e'
 
@@ -396,7 +396,7 @@ class TestWhoisQueryParserIRRD:
         queries_with_parameter = list('tg6ijmnors')
         for query in queries_with_parameter:
             response = parser.handle_query(f'!{query}')
-            assert response.response_type == WhoisQueryResponseType.ERROR
+            assert response.response_type == WhoisQueryResponseType.ERROR_USER
             assert response.mode == WhoisQueryResponseMode.IRRD
             assert response.result == f'Missing parameter for {query} query'
 
@@ -420,7 +420,7 @@ class TestWhoisQueryParserIRRD:
 
         for invalid_value in ['foo', '-5', '1001']:
             response = parser.handle_query(f'!t{invalid_value}')
-            assert response.response_type == WhoisQueryResponseType.ERROR
+            assert response.response_type == WhoisQueryResponseType.ERROR_USER
             assert response.mode == WhoisQueryResponseMode.IRRD
             assert response.result == f'Invalid value for timeout: {invalid_value}'
 
@@ -462,7 +462,7 @@ class TestWhoisQueryParserIRRD:
         mock_query_resolver, mock_dh, parser = prepare_parser
 
         response = parser.handle_query('!gASfoobar')
-        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.response_type == WhoisQueryResponseType.ERROR_USER
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == 'Invalid AS number ASFOOBAR: number part is not numeric'
 
@@ -471,7 +471,7 @@ class TestWhoisQueryParserIRRD:
 
         for parameter in ['', '4', '6']:
             response = parser.handle_query(f'!a{parameter}')
-            assert response.response_type == WhoisQueryResponseType.ERROR
+            assert response.response_type == WhoisQueryResponseType.ERROR_USER
             assert response.mode == WhoisQueryResponseMode.IRRD
             assert response.result == 'Missing required set name for A query'
 
@@ -594,7 +594,7 @@ class TestWhoisQueryParserIRRD:
         assert not response.result
 
         response = parser.handle_query('!mfoo')
-        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.response_type == WhoisQueryResponseType.ERROR_USER
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == 'Invalid argument for object lookup: foo'
 
@@ -703,17 +703,17 @@ class TestWhoisQueryParserIRRD:
         mock_query_resolver, mock_dh, parser = prepare_parser
 
         response = parser.handle_query('!rz')
-        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.response_type == WhoisQueryResponseType.ERROR_USER
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == 'Invalid input for route search: z'
 
         response = parser.handle_query('!rz,o')
-        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.response_type == WhoisQueryResponseType.ERROR_USER
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == 'Invalid input for route search: z,o'
 
         response = parser.handle_query('!r192.0.2.0/25,z')
-        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.response_type == WhoisQueryResponseType.ERROR_USER
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == 'Invalid route search option: z'
 
@@ -763,7 +763,7 @@ class TestWhoisQueryParserIRRD:
         mock_query_resolver.members_for_set = Mock(side_effect=Exception('test-error'))
 
         response = parser.handle_query('!i123')
-        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.response_type == WhoisQueryResponseType.ERROR_INTERNAL
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == 'An internal error occurred while processing this query.'
 
@@ -773,6 +773,6 @@ class TestWhoisQueryParserIRRD:
         mock_query_resolver.members_for_set = Mock(side_effect=InvalidQueryException('user error'))
 
         response = parser.handle_query('!i123')
-        assert response.response_type == WhoisQueryResponseType.ERROR
+        assert response.response_type == WhoisQueryResponseType.ERROR_USER
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == 'user error'

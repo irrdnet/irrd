@@ -11,9 +11,13 @@ class WhoisQueryResponseType(Enum):
     NO_RESPONSE means no response should be sent at all.
     """
     SUCCESS = 'success'
-    ERROR = 'error'
+    ERROR_INTERNAL = 'error_internal'
+    ERROR_USER = 'error_user'
     KEY_NOT_FOUND = 'key_not_found'
     NO_RESPONSE = 'no_response'
+
+
+ERROR_TYPES = [WhoisQueryResponseType.ERROR_INTERNAL, WhoisQueryResponseType.ERROR_USER]
 
 
 class WhoisQueryResponseMode(Enum):
@@ -44,7 +48,7 @@ class WhoisQueryResponse:
         self.result = result
 
     def generate_response(self) -> str:
-        self.result = remove_auth_hashes(self.result)
+        self.clean_response()
 
         if self.mode == WhoisQueryResponseMode.IRRD:
             response = self._generate_response_irrd()
@@ -58,6 +62,9 @@ class WhoisQueryResponse:
 
         raise RuntimeError(f'Unable to formulate response for {self.response_type} / {self.mode}: {self.result}')
 
+    def clean_response(self):
+        self.result = remove_auth_hashes(self.result)
+
     def _generate_response_irrd(self) -> Optional[str]:
         if self.response_type == WhoisQueryResponseType.SUCCESS:
             if self.result:
@@ -67,7 +74,7 @@ class WhoisQueryResponse:
                 return 'C\n'
         elif self.response_type == WhoisQueryResponseType.KEY_NOT_FOUND:
             return 'D\n'
-        elif self.response_type == WhoisQueryResponseType.ERROR:
+        elif self.response_type in ERROR_TYPES:
             return f'F {self.result}\n'
         elif self.response_type == WhoisQueryResponseType.NO_RESPONSE:
             return ''
@@ -83,6 +90,6 @@ class WhoisQueryResponse:
             return '%  No entries found for the selected source(s).\n\n\n'
         elif self.response_type == WhoisQueryResponseType.KEY_NOT_FOUND:
             return '%  No entries found for the selected source(s).\n\n\n'
-        elif self.response_type == WhoisQueryResponseType.ERROR:
+        elif self.response_type in ERROR_TYPES:
             return f'%% ERROR: {self.result}\n\n\n'
         return None
