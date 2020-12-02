@@ -60,8 +60,6 @@ MOCK_RPSL_DB_RESULT = [{
 
 @pytest.fixture()
 def prepare_resolver(monkeypatch):
-    resolvers.query_resolver = Mock(spec=QueryResolver)
-    resolvers.preloader = Mock(spec=Preloader)
     resolvers._collect_predicate_names = lambda info: ['asn', 'ip_first']
 
     mock_database_query = Mock(spec=RPSLDatabaseQuery)
@@ -69,8 +67,16 @@ def prepare_resolver(monkeypatch):
                         lambda **kwargs: mock_database_query)
     mock_database_query.columns = RPSLDatabaseQuery.columns
 
-    resolvers.database_handler = Mock(spec=DatabaseHandler)
-    resolvers.database_handler.execute_query = lambda query, refresh_on_error: MOCK_RPSL_DB_RESULT
+    mock_query_resolver = Mock(spec=QueryResolver)
+    monkeypatch.setattr('irrd.server.graphql.resolvers.QueryResolver',
+                        lambda preloader, database_handler: mock_query_resolver)
+
+    app = Mock(state=Mock(
+        database_handler=Mock(spec=DatabaseHandler),
+        preloader=Mock(spec=Preloader),
+    ))
+    app.state.database_handler = Mock(spec=DatabaseHandler)
+    app.state.database_handler.execute_query = lambda query, refresh_on_error: MOCK_RPSL_DB_RESULT
 
     info = Mock()
     info.context = {}
@@ -78,14 +84,15 @@ def prepare_resolver(monkeypatch):
     info.context['request'] = HTTPConnection({
         'type': 'http',
         'client': ('127.0.0.1', '8000'),
+        'app': app,
     })
 
-    yield info, mock_database_query
+    yield info, mock_database_query, mock_query_resolver
 
 
 class TestGraphQLResolvers:
     def test_resolve_rpsl_objects(self, prepare_resolver, config_override):
-        info, mock_database_query = prepare_resolver
+        info, mock_database_query, mock_query_resolver = prepare_resolver
 
         with pytest.raises(ValueError):
             resolvers.resolve_rpsl_objects(None, info)
@@ -148,7 +155,7 @@ class TestGraphQLResolvers:
         ]
 
     def test_resolve_rpsl_object_mnt_by_objs(self, prepare_resolver):
-        info, mock_database_query = prepare_resolver
+        info, mock_database_query, mock_query_resolver = prepare_resolver
 
         mock_rpsl_object = {
             'objectClass': 'route',
@@ -172,7 +179,7 @@ class TestGraphQLResolvers:
         assert not list(resolvers.resolve_rpsl_object_mnt_by_objs(mock_rpsl_object, info))
 
     def test_resolve_rpsl_object_adminc_objs(self, prepare_resolver):
-        info, mock_database_query = prepare_resolver
+        info, mock_database_query, mock_query_resolver = prepare_resolver
 
         mock_rpsl_object = {
             'objectClass': 'route',
@@ -189,7 +196,7 @@ class TestGraphQLResolvers:
         ]
 
     def test_resolve_rpsl_object_techc_objs(self, prepare_resolver):
-        info, mock_database_query = prepare_resolver
+        info, mock_database_query, mock_query_resolver = prepare_resolver
 
         mock_rpsl_object = {
             'objectClass': 'route',
@@ -206,7 +213,7 @@ class TestGraphQLResolvers:
         ]
 
     def test_resolve_rpsl_object_members_by_ref_objs(self, prepare_resolver):
-        info, mock_database_query = prepare_resolver
+        info, mock_database_query, mock_query_resolver = prepare_resolver
 
         mock_rpsl_object = {
             'objectClass': 'route',
@@ -223,7 +230,7 @@ class TestGraphQLResolvers:
         ]
 
     def test_resolve_rpsl_object_member_of_objs(self, prepare_resolver):
-        info, mock_database_query = prepare_resolver
+        info, mock_database_query, mock_query_resolver = prepare_resolver
 
         mock_rpsl_object = {
             'objectClass': 'route',
@@ -240,7 +247,7 @@ class TestGraphQLResolvers:
         ]
 
     def test_resolve_rpsl_object_members_objs(self, prepare_resolver):
-        info, mock_database_query = prepare_resolver
+        info, mock_database_query, mock_query_resolver = prepare_resolver
 
         mock_rpsl_object = {
             'objectClass': 'as-set',
@@ -270,7 +277,7 @@ class TestGraphQLResolvers:
         ]
 
     def test_resolve_rpsl_object_journal(self, prepare_resolver, monkeypatch, config_override):
-        info, mock_database_query = prepare_resolver
+        info, mock_database_query, mock_query_resolver = prepare_resolver
 
         mock_journal_query = Mock(spec=RPSLDatabaseJournalQuery)
         monkeypatch.setattr('irrd.server.graphql.resolvers.RPSLDatabaseJournalQuery',
@@ -295,12 +302,12 @@ class TestGraphQLResolvers:
         ]
 
     def test_resolve_database_status(self, prepare_resolver):
-        info, mock_database_query = prepare_resolver
+        info, mock_database_query, mock_query_resolver = prepare_resolver
         mock_status = {
             'SOURCE1': {'status_field': 1},
             'SOURCE2': {'status_field': 2},
         }
-        resolvers.query_resolver.database_status = lambda sources: mock_status
+        mock_query_resolver.database_status = lambda sources: mock_status
 
         result = list(resolvers.resolve_database_status(None, info))
         assert result[0]['source'] == 'SOURCE1'
@@ -309,8 +316,8 @@ class TestGraphQLResolvers:
         assert result[1]['statusField'] == 2
 
     def test_resolve_asn_prefixes(self, prepare_resolver):
-        info, mock_database_query = prepare_resolver
-        resolvers.query_resolver.routes_for_origin = lambda asn, ip_version: [f'prefix-{asn}']
+        info, mock_database_query, mock_query_resolver = prepare_resolver
+        mock_query_resolver.routes_for_origin = lambda asn, ip_version: [f'prefix-{asn}']
 
         result = list(resolvers.resolve_asn_prefixes(
             None,
@@ -322,11 +329,11 @@ class TestGraphQLResolvers:
             {'asn': 65550, 'prefixes': ['prefix-AS65550']},
             {'asn': 65551, 'prefixes': ['prefix-AS65551']},
         ]
-        resolvers.query_resolver.set_query_sources.assert_called_once()
+        mock_query_resolver.set_query_sources.assert_called_once()
 
     def test_resolve_as_set_prefixes(self, prepare_resolver):
-        info, mock_database_query = prepare_resolver
-        resolvers.query_resolver.routes_for_as_set = lambda set_name, ip_version, exclude_sets: [f'prefix-{set_name}']
+        info, mock_database_query, mock_query_resolver = prepare_resolver
+        mock_query_resolver.routes_for_as_set = lambda set_name, ip_version, exclude_sets: [f'prefix-{set_name}']
 
         result = list(resolvers.resolve_as_set_prefixes(
             None,
@@ -339,11 +346,11 @@ class TestGraphQLResolvers:
             {'rpslPk': 'AS-A', 'prefixes': ['prefix-AS-A']},
             {'rpslPk': 'AS-B', 'prefixes': ['prefix-AS-B']},
         ], key=str)
-        resolvers.query_resolver.set_query_sources.assert_called_once()
+        mock_query_resolver.set_query_sources.assert_called_once()
 
     def test_resolve_recursive_set_members(self, prepare_resolver):
-        info, mock_database_query = prepare_resolver
-        resolvers.query_resolver.members_for_set = lambda set_name, exclude_sets, depth, recursive: [f'member-{set_name}']
+        info, mock_database_query, mock_query_resolver = prepare_resolver
+        mock_query_resolver.members_for_set = lambda set_name, exclude_sets, depth, recursive: [f'member-{set_name}']
 
         result = list(resolvers.resolve_recursive_set_members(
             None,
@@ -356,4 +363,4 @@ class TestGraphQLResolvers:
             {'rpslPk': 'AS-A', 'members': ['member-AS-A']},
             {'rpslPk': 'AS-B', 'members': ['member-AS-B']},
         ], key=str)
-        resolvers.query_resolver.set_query_sources.assert_called_once()
+        mock_query_resolver.set_query_sources.assert_called_once()

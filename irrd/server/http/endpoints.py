@@ -12,5 +12,3 @@ class StatusEndpoint(HTTPEndpoint):
 
         response = StatusGenerator().generate_status()
         return PlainTextResponse(response)
-
-
