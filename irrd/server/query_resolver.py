@@ -417,7 +417,6 @@ class QueryResolver:
 
         query = query.object_classes(object_classes).rpsl_pks(set_names)
         query = query.finalise_statement()
-        print(query)
         query_result = await self.d.fetch_all(query=query)
         query_result = [dict(row) for row in query_result]
 
