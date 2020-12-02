@@ -40,6 +40,17 @@ This documentation is mainly for administrators of IRRd deployments.
    admins/rpki
    admins/scopefilter
 
+Running queries
+---------------
+
+.. toctree::
+   :caption: Running queries
+   :maxdepth: 1
+
+   users/queries/index
+   users/queries/graphql
+   users/queries/whois
+
 For end users
 -------------
 
@@ -51,8 +62,6 @@ an IRRd instance.
    :caption: For end users
    :maxdepth: 1
 
-   users/http-queries
-   users/whois-queries
    users/database-changes
    users/mirroring
 
