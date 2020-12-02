@@ -108,30 +108,31 @@ async def resolve_rpsl_objects(_, info: GraphQLResolveInfo, **kwargs):
 
 async def resolve_rpsl_object_mnt_by_objs(rpsl_object, info: GraphQLResolveInfo):
     """Resolve mntByObjs on RPSL objects"""
-    return _resolve_subquery(rpsl_object, info, ['mntner'], pk_field='mntBy')
-
+    r = await _resolve_subquery(rpsl_object, info, ['mntner'], pk_field='mntBy')
+    return r
 
 async def resolve_rpsl_object_adminc_objs(rpsl_object, info: GraphQLResolveInfo):
     """Resolve adminCObjs on RPSL objects"""
-    return _resolve_subquery(rpsl_object, info, ['role', 'person'], pk_field='adminC')
-
+    r = await _resolve_subquery(rpsl_object, info, ['role', 'person'], pk_field='adminC')
+    return r
 
 async def resolve_rpsl_object_techc_objs(rpsl_object, info: GraphQLResolveInfo):
     """Resolve techCObjs on RPSL objects"""
-    return _resolve_subquery(rpsl_object, info, ['role', 'person'], pk_field='techC')
-
+    r = await _resolve_subquery(rpsl_object, info, ['role', 'person'], pk_field='techC')
+    return r
 
 async def resolve_rpsl_object_members_by_ref_objs(rpsl_object, info: GraphQLResolveInfo):
     """Resolve mbrsByRefObjs on RPSL objects"""
-    return _resolve_subquery(rpsl_object, info, ['mntner'], pk_field='mbrsByRef')
+    r = await _resolve_subquery(rpsl_object, info, ['mntner'], pk_field='mbrsByRef')
+    return r
 
 
 async def resolve_rpsl_object_member_of_objs(rpsl_object, info: GraphQLResolveInfo):
     """Resolve memberOfObjs on RPSL objects"""
     object_klass = OBJECT_CLASS_MAPPING[rpsl_object['objectClass']]
     sub_object_classes = object_klass.fields['member-of'].referring   # type: ignore
-    return _resolve_subquery(rpsl_object, info, sub_object_classes, pk_field='memberOf')
-
+    r = await _resolve_subquery(rpsl_object, info, sub_object_classes, pk_field='memberOf')
+    return r
 
 async def resolve_rpsl_object_members_objs(rpsl_object, info: GraphQLResolveInfo):
     """Resolve membersObjs on RPSL objects"""
@@ -143,7 +144,8 @@ async def resolve_rpsl_object_members_objs(rpsl_object, info: GraphQLResolveInfo
         sub_object_classes.remove('aut-num')
     if 'inet-rtr' in sub_object_classes:
         sub_object_classes.remove('inet-rtr')
-    return _resolve_subquery(rpsl_object, info, sub_object_classes, 'members', sticky_source=False)
+    r = await _resolve_subquery(rpsl_object, info, sub_object_classes, 'members', sticky_source=False)
+    return r
 
 
 async def _resolve_subquery(rpsl_object, info: GraphQLResolveInfo, object_classes: List[str], pk_field: str, sticky_source=True):
@@ -165,7 +167,8 @@ async def _resolve_subquery(rpsl_object, info: GraphQLResolveInfo, object_classe
     query.object_classes(object_classes).rpsl_pks(pks)
     if sticky_source:
         query.sources([rpsl_object['source']])
-    return _rpsl_db_query_to_graphql_out(query, info)
+    r = await _rpsl_db_query_to_graphql_out(query, info)
+    return r
 
 
 def resolve_rpsl_object_journal(rpsl_object, info: GraphQLResolveInfo):
