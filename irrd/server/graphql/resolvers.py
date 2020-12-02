@@ -208,7 +208,7 @@ async def _rpsl_db_query_to_graphql_out(query: RPSLDatabaseQuery, info: GraphQLR
     query = query.finalise_statement()
     results = []
     rows = await info.context['request'].app.state.d.fetch_all(query=query)
-    async for row in rows:
+    for row in rows:
         row = dict(row)
     # for row in database_handler.execute_query(query, refresh_on_error=True):
         graphql_result = {snake_to_camel_case(k): v for k, v in row.items() if k != 'parsed_data'}
