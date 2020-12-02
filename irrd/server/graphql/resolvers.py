@@ -36,7 +36,7 @@ def resolve_rpsl_object_type(obj: Dict[str, str], *_) -> str:
 
 
 @ariadne.convert_kwargs_to_snake_case
-def resolve_rpsl_objects(_, info: GraphQLResolveInfo, **kwargs):
+async def resolve_rpsl_objects(_, info: GraphQLResolveInfo, **kwargs):
     """
     Resolve a `rpslObjects` query. This query has a considerable
     number of parameters, each of which is applied to an RPSL
@@ -102,7 +102,8 @@ def resolve_rpsl_objects(_, info: GraphQLResolveInfo, **kwargs):
         if attr in lookup_fields:
             query.lookup_attrs_in([attr], value)
 
-    return _rpsl_db_query_to_graphql_out(query, info)
+    output = await _rpsl_db_query_to_graphql_out(query, info)
+    return output
 
 
 def resolve_rpsl_object_mnt_by_objs(rpsl_object, info: GraphQLResolveInfo):
@@ -186,7 +187,7 @@ def resolve_rpsl_object_journal(rpsl_object, info: GraphQLResolveInfo):
         yield response
 
 
-def _rpsl_db_query_to_graphql_out(query: RPSLDatabaseQuery, info: GraphQLResolveInfo):
+async def _rpsl_db_query_to_graphql_out(query: RPSLDatabaseQuery, info: GraphQLResolveInfo):
     """
     Given an RPSL database query, execute it and clean up the output
     to be suitable to return to GraphQL.
@@ -196,14 +197,19 @@ def _rpsl_db_query_to_graphql_out(query: RPSLDatabaseQuery, info: GraphQLResolve
     - Adding the asn and prefix fields if applicable
     - Ensuring the right fields are returned as a list of strings or a string
     """
-    database_handler = info.context['request'].app.state.database_handler
+
+    # database_handler = info.context['request'].app.state.database_handler
     if info.context.get('sql_trace'):
         if 'sql_queries' not in info.context:
             info.context['sql_queries'] = [repr(query)]
         else:
             info.context['sql_queries'].append(repr(query))
 
-    for row in database_handler.execute_query(query, refresh_on_error=True):
+    query = query.finalise_statement()
+    results = []
+    async for row in info.context['request'].app.state.d.iterate(query=query):
+        row = dict(row)
+    # for row in database_handler.execute_query(query, refresh_on_error=True):
         graphql_result = {snake_to_camel_case(k): v for k, v in row.items() if k != 'parsed_data'}
         if 'object_text' in row:
             graphql_result['objectText'] = remove_auth_hashes(row['object_text'])
@@ -219,7 +225,8 @@ def _rpsl_db_query_to_graphql_out(query: RPSLDatabaseQuery, info: GraphQLResolve
             if graphql_type == 'String' and isinstance(value, list):
                 value = '\n'.join(value)
             graphql_result[snake_to_camel_case(key)] = value
-        yield graphql_result
+        results.append(graphql_result)
+    return results
 
 
 @ariadne.convert_kwargs_to_snake_case

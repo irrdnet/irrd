@@ -1,12 +1,13 @@
 import os
 
 from ariadne.asgi import GraphQL
+from databases import Database
 from setproctitle import setproctitle
 from starlette.applications import Starlette
 from starlette.routing import Mount
 
 # Relative imports are not allowed in this file
-from irrd.conf import config_init
+from irrd.conf import config_init, get_setting
 from irrd.server.graphql import ENV_UVICORN_WORKER_CONFIG_PATH
 from irrd.server.graphql.extensions import error_formatter, QueryMetadataExtension
 from irrd.server.graphql.schema_builder import build_executable_schema
@@ -35,12 +36,15 @@ async def startup():
     config_init(config_path)
     app.state.database_handler = DatabaseHandler(readonly=True)
     app.state.preloader = Preloader(enable_queries=True)
+    app.state.d = Database(get_setting('database_url'))
+    await app.state.d.connect()
 
 
 async def shutdown():
     global app
     app.state.database_handler.close()
     app.state.preloader = None
+    await app.state.d.disconnect()
 
 
 graphql = GraphQL(
