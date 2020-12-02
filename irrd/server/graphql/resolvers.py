@@ -206,7 +206,7 @@ async def _rpsl_db_query_to_graphql_out(query: RPSLDatabaseQuery, info: GraphQLR
             info.context['sql_queries'].append(repr(query))
 
     query = query.finalise_statement()
-    # results = []
+    results = []
     rows = await info.context['request'].app.state.d.fetch_all(query=query)
     async for row in rows:
         row = dict(row)
@@ -226,9 +226,9 @@ async def _rpsl_db_query_to_graphql_out(query: RPSLDatabaseQuery, info: GraphQLR
             if graphql_type == 'String' and isinstance(value, list):
                 value = '\n'.join(value)
             graphql_result[snake_to_camel_case(key)] = value
-        yield graphql_result
-        # results.append(graphql_result)
-    # return results
+        # yield graphql_result
+        results.append(graphql_result)
+    return results
 
 
 @ariadne.convert_kwargs_to_snake_case
