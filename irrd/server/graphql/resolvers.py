@@ -102,8 +102,8 @@ async def resolve_rpsl_objects(_, info: GraphQLResolveInfo, **kwargs):
         if attr in lookup_fields:
             query.lookup_attrs_in([attr], value)
 
-    return _rpsl_db_query_to_graphql_out(query, info)
-        # yield r
+    r = await _rpsl_db_query_to_graphql_out(query, info)
+    return r
 
 
 async def resolve_rpsl_object_mnt_by_objs(rpsl_object, info: GraphQLResolveInfo):
