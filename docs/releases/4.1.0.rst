@@ -103,7 +103,7 @@ Other changes
   mirroring status. It returns what the most recent serial processed from a
   mirror is. For more extensive status information, like the local serials
   in the journal,
-  :doc:`use the new !J command </users/http-queries>`.
+  :doc:`use the new !J command </users/queries/whois>`.
 * IRRd starts a maximum of three mirror processes at the same time,
   to reduce peak loads. A further three, if needed, are started 15 seconds
   later, regardless of whether the previous ones have finished.

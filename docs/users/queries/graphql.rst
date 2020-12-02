@@ -1,6 +1,6 @@
-============================
-Running HTTP/GraphQL queries
-============================
+==========================
+Querying IRRd over GraphQL
+==========================
 
 IRRd has an HTTP interface which accepts GraphQL_ queries.
 
@@ -16,10 +16,6 @@ IRRd has an HTTP interface which accepts GraphQL_ queries.
 .. _aliases: https://graphql.org/learn/queries/#aliases
 .. _fragments: https://graphql.org/learn/queries/#fragments
 .. _variables: https://graphql.org/learn/queries/#variables
-
-.. contents::
-   :backlinks: none
-   :local:
 
 Introduction to GraphQL
 -----------------------

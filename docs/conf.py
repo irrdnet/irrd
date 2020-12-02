@@ -101,7 +101,7 @@ html_theme_options = {
     'color_accent': 'light-blue',
     'repo_url': 'https://github.com/irrdnet/irrd/',
     'repo_name': 'IRRd',
-    'globaltoc_depth': -1,
+    'globaltoc_depth': 2,
     'master_doc': False,
     'logo_icon': '&#xe1db',
 }
