@@ -7,6 +7,7 @@ conf
 config
 CPython
 cron
+Escribano
 enums
 dev
 gpg
@@ -42,6 +43,7 @@ preloader
 preloading
 py
 Redis
+Rey
 Redistributions
 reStructuredText
 RPSL
