@@ -24,7 +24,11 @@ class TestWhoisQueryResponse:
                                       result='test').generate_response()
         assert response == ''
         response = WhoisQueryResponse(mode=WhoisQueryResponseMode.IRRD,
-                                      response_type=WhoisQueryResponseType.ERROR,
+                                      response_type=WhoisQueryResponseType.ERROR_INTERNAL,
+                                      result='test').generate_response()
+        assert response == 'F test\n'
+        response = WhoisQueryResponse(mode=WhoisQueryResponseMode.IRRD,
+                                      response_type=WhoisQueryResponseType.ERROR_USER,
                                       result='test').generate_response()
         assert response == 'F test\n'
         response = WhoisQueryResponse(mode=WhoisQueryResponseMode.RIPE,
@@ -40,13 +44,17 @@ class TestWhoisQueryResponse:
                                       result='test').generate_response()
         assert response == '%  No entries found for the selected source(s).\n\n\n'
         response = WhoisQueryResponse(mode=WhoisQueryResponseMode.RIPE,
-                                      response_type=WhoisQueryResponseType.ERROR,
+                                      response_type=WhoisQueryResponseType.ERROR_INTERNAL,
+                                      result='test').generate_response()
+        assert response == '%% ERROR: test\n\n\n'
+        response = WhoisQueryResponse(mode=WhoisQueryResponseMode.RIPE,
+                                      response_type=WhoisQueryResponseType.ERROR_USER,
                                       result='test').generate_response()
         assert response == '%% ERROR: test\n\n\n'
 
         with raises(RuntimeError) as ve:
             # noinspection PyTypeChecker
-            WhoisQueryResponse(mode='bar', response_type=WhoisQueryResponseType.ERROR,
+            WhoisQueryResponse(mode='bar', response_type=WhoisQueryResponseType.ERROR_USER,
                                result='foo').generate_response()  # type:ignore
         assert 'foo' in str(ve.value)
 
@@ -64,7 +72,7 @@ class TestWhoisQueryResponse:
 
     def test_auth_hash_removal(self):
         response = WhoisQueryResponse(mode=WhoisQueryResponseMode.RIPE,
-                                      response_type=WhoisQueryResponseType.ERROR,
+                                      response_type=WhoisQueryResponseType.ERROR_USER,
                                       result=SAMPLE_MNTNER).generate_response()
         assert 'CRYPT-PW ' + PASSWORD_HASH_DUMMY_VALUE in response
         assert 'CRYPT-PW LEuuhsBJNFV0Q' not in response

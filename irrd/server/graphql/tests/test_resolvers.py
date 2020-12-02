@@ -75,7 +75,6 @@ def prepare_resolver(monkeypatch):
         database_handler=Mock(spec=DatabaseHandler),
         preloader=Mock(spec=Preloader),
     ))
-    app.state.database_handler = Mock(spec=DatabaseHandler)
     app.state.database_handler.execute_query = lambda query, refresh_on_error: MOCK_RPSL_DB_RESULT
 
     info = Mock()
