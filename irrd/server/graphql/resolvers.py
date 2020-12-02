@@ -102,38 +102,37 @@ async def resolve_rpsl_objects(_, info: GraphQLResolveInfo, **kwargs):
         if attr in lookup_fields:
             query.lookup_attrs_in([attr], value)
 
-    output = await _rpsl_db_query_to_graphql_out(query, info)
-    return output
+    return _rpsl_db_query_to_graphql_out(query, info)
 
 
-def resolve_rpsl_object_mnt_by_objs(rpsl_object, info: GraphQLResolveInfo):
+async def resolve_rpsl_object_mnt_by_objs(rpsl_object, info: GraphQLResolveInfo):
     """Resolve mntByObjs on RPSL objects"""
     return _resolve_subquery(rpsl_object, info, ['mntner'], pk_field='mntBy')
 
 
-def resolve_rpsl_object_adminc_objs(rpsl_object, info: GraphQLResolveInfo):
+async def resolve_rpsl_object_adminc_objs(rpsl_object, info: GraphQLResolveInfo):
     """Resolve adminCObjs on RPSL objects"""
     return _resolve_subquery(rpsl_object, info, ['role', 'person'], pk_field='adminC')
 
 
-def resolve_rpsl_object_techc_objs(rpsl_object, info: GraphQLResolveInfo):
+async def resolve_rpsl_object_techc_objs(rpsl_object, info: GraphQLResolveInfo):
     """Resolve techCObjs on RPSL objects"""
     return _resolve_subquery(rpsl_object, info, ['role', 'person'], pk_field='techC')
 
 
-def resolve_rpsl_object_members_by_ref_objs(rpsl_object, info: GraphQLResolveInfo):
+async def resolve_rpsl_object_members_by_ref_objs(rpsl_object, info: GraphQLResolveInfo):
     """Resolve mbrsByRefObjs on RPSL objects"""
     return _resolve_subquery(rpsl_object, info, ['mntner'], pk_field='mbrsByRef')
 
 
-def resolve_rpsl_object_member_of_objs(rpsl_object, info: GraphQLResolveInfo):
+async def resolve_rpsl_object_member_of_objs(rpsl_object, info: GraphQLResolveInfo):
     """Resolve memberOfObjs on RPSL objects"""
     object_klass = OBJECT_CLASS_MAPPING[rpsl_object['objectClass']]
     sub_object_classes = object_klass.fields['member-of'].referring   # type: ignore
     return _resolve_subquery(rpsl_object, info, sub_object_classes, pk_field='memberOf')
 
 
-def resolve_rpsl_object_members_objs(rpsl_object, info: GraphQLResolveInfo):
+async def resolve_rpsl_object_members_objs(rpsl_object, info: GraphQLResolveInfo):
     """Resolve membersObjs on RPSL objects"""
     object_klass = OBJECT_CLASS_MAPPING[rpsl_object['objectClass']]
     sub_object_classes = object_klass.fields['members'].referring   # type: ignore
@@ -146,7 +145,7 @@ def resolve_rpsl_object_members_objs(rpsl_object, info: GraphQLResolveInfo):
     return _resolve_subquery(rpsl_object, info, sub_object_classes, 'members', sticky_source=False)
 
 
-def _resolve_subquery(rpsl_object, info: GraphQLResolveInfo, object_classes: List[str], pk_field: str, sticky_source=True):
+async def _resolve_subquery(rpsl_object, info: GraphQLResolveInfo, object_classes: List[str], pk_field: str, sticky_source=True):
     """
     Resolve a subquery, like techCobjs, on an RPSL object, considering
     a number of object classes, extracting the PK from pk_field.
@@ -207,7 +206,8 @@ async def _rpsl_db_query_to_graphql_out(query: RPSLDatabaseQuery, info: GraphQLR
 
     query = query.finalise_statement()
     results = []
-    async for row in info.context['request'].app.state.d.iterate(query=query):
+    rows = await info.context['request'].app.state.d.fetch_all(query=query)
+    async for row in rows:
         row = dict(row)
     # for row in database_handler.execute_query(query, refresh_on_error=True):
         graphql_result = {snake_to_camel_case(k): v for k, v in row.items() if k != 'parsed_data'}
