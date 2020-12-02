@@ -6,51 +6,21 @@ import graphql
 from IPy import IP
 from graphql import GraphQLResolveInfo, GraphQLError
 
-from irrd.conf import config_init, get_setting, RPKI_IRR_PSEUDO_SOURCE
+from irrd.conf import get_setting, RPKI_IRR_PSEUDO_SOURCE
 from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING, lookup_field_names
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.server.access_check import is_client_permitted
-from irrd.server.query_resolver import QueryResolver
-from irrd.storage.database_handler import DatabaseHandler
-from irrd.storage.preload import Preloader
 from irrd.storage.queries import RPSLDatabaseQuery, RPSLDatabaseJournalQuery
 from irrd.utils.text import snake_to_camel_case, remove_auth_hashes
 from .schema_generator import SchemaGenerator
-
-database_handler: DatabaseHandler
-preloader: Optional[Preloader]
-query_resolver: QueryResolver
+from ..query_resolver import QueryResolver
 
 """
 Resolvers resolve GraphQL queries, usually by translating them
 to a database query and then translating the results to an
 appropriate format for GraphQL.
 """
-
-
-def init_resolvers(config_path: str) -> None:  # pragma: no cover
-    """
-    Prepare the resolvers by setting up a database connection,
-    preloader and query resolver. Each resolver is run in a
-    separate process, therefore global variables are safe to use.
-    It is also difficult to keep global state otherwise - a class
-    is tricky to tie the resolvers in with the schema builder.
-    """
-    global database_handler, preloader, query_resolver
-    config_init(config_path)
-    database_handler = DatabaseHandler(readonly=True)
-    preloader = Preloader(enable_queries=True)
-    query_resolver = QueryResolver(preloader, database_handler)
-
-
-def close_resolvers() -> None:  # pragma: no cover
-    """
-    Wrap up the resolvers by closing the database connection.
-    """
-    global preloader
-    database_handler.close()
-    preloader = None
 
 
 schema = SchemaGenerator()
@@ -201,6 +171,7 @@ def resolve_rpsl_object_journal(rpsl_object, info: GraphQLResolveInfo):
     """
     Resolve a journal subquery on an RPSL object.
     """
+    database_handler = info.context['request'].app.state.database_handler
     access_list = f"sources.{rpsl_object['source']}.nrtm_access_list"
     if not is_client_permitted(info.context['request'].client.host, access_list):
         raise GraphQLError(f"Access to journal denied for source {rpsl_object['source']}")
@@ -225,6 +196,7 @@ def _rpsl_db_query_to_graphql_out(query: RPSLDatabaseQuery, info: GraphQLResolve
     - Adding the asn and prefix fields if applicable
     - Ensuring the right fields are returned as a list of strings or a string
     """
+    database_handler = info.context['request'].app.state.database_handler
     if info.context.get('sql_trace'):
         if 'sql_queries' not in info.context:
             info.context['sql_queries'] = [repr(query)]
@@ -253,6 +225,10 @@ def _rpsl_db_query_to_graphql_out(query: RPSLDatabaseQuery, info: GraphQLResolve
 @ariadne.convert_kwargs_to_snake_case
 def resolve_database_status(_, info: GraphQLResolveInfo, sources: Optional[List[str]]=None):
     """Resolve a databaseStatus query"""
+    query_resolver = QueryResolver(
+        info.context['request'].app.state.preloader,
+        info.context['request'].app.state.database_handler
+    )
     for name, data in query_resolver.database_status(sources=sources).items():
         camel_case_data = OrderedDict(data)
         camel_case_data['source'] = name
@@ -264,6 +240,10 @@ def resolve_database_status(_, info: GraphQLResolveInfo, sources: Optional[List[
 @ariadne.convert_kwargs_to_snake_case
 def resolve_asn_prefixes(_, info: GraphQLResolveInfo, asns: List[int], ip_version: Optional[int]=None, sources: Optional[List[str]]=None):
     """Resolve an asnPrefixes query"""
+    query_resolver = QueryResolver(
+        info.context['request'].app.state.preloader,
+        info.context['request'].app.state.database_handler
+    )
     query_resolver.set_query_sources(sources)
     for asn in asns:
         yield dict(
@@ -275,6 +255,10 @@ def resolve_asn_prefixes(_, info: GraphQLResolveInfo, asns: List[int], ip_versio
 @ariadne.convert_kwargs_to_snake_case
 def resolve_as_set_prefixes(_, info: GraphQLResolveInfo, set_names: List[str], sources: Optional[List[str]]=None, ip_version: Optional[int]=None, exclude_sets: Optional[List[str]]=None, sql_trace: bool=False):
     """Resolve an asSetPrefixes query"""
+    query_resolver = QueryResolver(
+        info.context['request'].app.state.preloader,
+        info.context['request'].app.state.database_handler
+    )
     if sql_trace:
         query_resolver.enable_sql_trace()
     set_names_set = {i.upper() for i in set_names}
@@ -290,6 +274,10 @@ def resolve_as_set_prefixes(_, info: GraphQLResolveInfo, set_names: List[str], s
 @ariadne.convert_kwargs_to_snake_case
 def resolve_recursive_set_members(_, info: GraphQLResolveInfo, set_names: List[str], depth: int=0, sources: Optional[List[str]]=None, exclude_sets: Optional[List[str]]=None, sql_trace: bool=False):
     """Resolve an recursiveSetMembers query"""
+    query_resolver = QueryResolver(
+        info.context['request'].app.state.preloader,
+        info.context['request'].app.state.database_handler
+    )
     if sql_trace:
         query_resolver.enable_sql_trace()
     set_names_set = {i.upper() for i in set_names}
