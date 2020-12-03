@@ -220,7 +220,7 @@ Servers
   (and additional memory for other components and PostgreSQL).
   |br| **Default**: ``10``.
   |br| **Change takes effect**: after full IRRd restart.
-* ``server.http.forwarded_allowed_ips``: a comma-separated list of IPs from
+* ``server.http.forwarded_allowed_ips``: a single IP or list of IPs from
   which IRRd will trust the ``X-Forwarded-For`` header. This header is used
   for IRRd to know the real client address, rather than the address of a
   proxy.
