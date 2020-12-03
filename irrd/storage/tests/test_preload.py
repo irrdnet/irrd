@@ -38,9 +38,8 @@ class TestPreloading:
     def test_load_reload_thread_management(self, mock_preload_updater, mock_redis_keys):
         preload_manager = PreloadStoreManager()
 
-        preload_manager_thread = threading.Thread(target=preload_manager.main)
+        preload_manager_thread = threading.Thread(target=preload_manager.main, daemon=True)
         preload_manager_thread.start()
-
         time.sleep(1)
         assert mock_preload_updater.mock_calls[0][0] == ''
         assert mock_preload_updater.mock_calls[0][1][0] == preload_manager
@@ -90,6 +89,9 @@ class TestPreloading:
         preloader = Preloader()
         preload_manager = PreloadStoreManager()
 
+        # Wait for the preloader instance to start listening on pubsub
+        time.sleep(1)
+
         preload_manager.update_route_store(
             {
                 f'TEST2{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65546': {'192.0.2.0/25'},
@@ -99,6 +101,7 @@ class TestPreloading:
                 f'TEST2{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65547': {'2001:db8::/32'},
             },
         )
+
         sources = ['TEST1', 'TEST2']
         assert preloader.routes_for_origins([], sources) == set()
         assert preloader.routes_for_origins(['AS65545'], sources) == set()
