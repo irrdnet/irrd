@@ -28,7 +28,7 @@ def run_http_server(config_path: str):
         host=get_setting('server.http.interface'),
         port=get_setting('server.http.port'),
         workers=get_setting('server.http.workers'),
-        forwarded_allow_ips=get_setting('server.http.forwarded_allow_ips'),
+        forwarded_allow_ips=get_setting('server.http.forwarded_allowed_ips'),
         headers=[['Server', f'IRRd {__version__}']],
         log_config=configuration.logging_config,
     )

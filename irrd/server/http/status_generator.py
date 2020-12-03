@@ -105,7 +105,7 @@ class StatusGenerator:
             object_class_filter = get_setting(f'sources.{source}.object_class_filter')
             rpki_enabled = get_setting('rpki.roa_source') and not get_setting(f'sources.{source}.rpki_excluded')
             rpki_enabled_str = 'Yes' if rpki_enabled else 'No'
-            scopefilter_enabled = get_setting('rpki.scopefiler') and not get_setting(f'sources.{source}.scopefilter_excluded')
+            scopefilter_enabled = get_setting('scopefilter') and not get_setting(f'sources.{source}.scopefilter_excluded')
             scopefilter_enabled_str = 'Yes' if scopefilter_enabled else 'No'
             synchronised_serials_str = 'Yes' if is_serial_synchronised(database_handler, source) else 'No'
 

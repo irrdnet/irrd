@@ -40,8 +40,9 @@ class WhoisQueryEndpoint(HTTPEndpoint):
         response.clean_response()
 
         elapsed = time.perf_counter() - start_time
+        length = len(response.result) if response.result else 0
         logger.info(f'{client_str}: sent answer to HTTP query, elapsed {elapsed:.9f}s, '
-                    f'{len(response.result)} chars: {query}')
+                    f'{length} chars: {query}')
 
         if response.response_type == WhoisQueryResponseType.ERROR_INTERNAL:
             return PlainTextResponse(response.result, status_code=500)

@@ -142,6 +142,8 @@ If a `SIGHUP` is sent and the new configuration is invalid, errors will be
 written to the logfile, but IRRd will keep running with the last valid
 configuration. A successful reload after a `SIGHUP` is also logged.
 
+IRRd will reject unknown configuration options, and fail to start or reload.
+
 .. important::
 
     Not all configuration errors are caught when reloading, such as making IRRd
@@ -243,7 +245,7 @@ Email
   this email address instead. Useful for testing setups.
   |br| **Default**: not defined, no override
   |br| **Change takes effect**: after SIGHUP, for all subsequent emails.
-* ``email.notification_headers``: the header to use when sending notifications
+* ``email.notification_header``: the header to use when sending notifications
   of (attempted) changes to addresses in `notify`, `mnt-nfy` or `upd-to`
   attributes. The string ``{sources_str}`` will be replaced with the name
   of the source(s) (e.g. ``NTTCOM``) of the relevant objects. When adding
