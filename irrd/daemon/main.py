@@ -120,8 +120,8 @@ def run_irrd(mirror_frequency: int, config_file_path: str):
         sleeps += 1
 
     logging.debug(f'Main process waiting for child processes to terminate')
-    for process in whois_process, uvicorn_process, preload_manager:
-        process.join(timeout=3)
+    for child_process in whois_process, uvicorn_process, preload_manager:
+        child_process.join(timeout=3)
 
     parent = psutil.Process(os.getpid())
     children = parent.children(recursive=True)

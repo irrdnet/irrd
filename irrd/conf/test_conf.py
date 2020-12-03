@@ -64,7 +64,7 @@ class TestConfiguration:
                     'prefixes': ['10/8'],
                     'asns': ['23456', '10-20']
                 },
-                'access-lists': {
+                'access_lists': {
                     'valid-list': {
                         '192/24',
                         '192.0.2.1',
@@ -175,7 +175,7 @@ class TestConfiguration:
                     'from': 'example@example.com',
                     'smtp': '192.0.2.1'
                 },
-                'access-lists': {
+                'access_lists': {
                     'valid-list': {
                         '192/24',
                         '192.0.2.1',
@@ -252,6 +252,7 @@ class TestConfiguration:
                         'import_timer': 'foo',
                         'export_timer': 'bar',
                         'nrtm_host': '192.0.2.1',
+                        'unknown': True,
                     },
                     'TESTDB2': {
                         'authoritative': True,
@@ -270,7 +271,9 @@ class TestConfiguration:
                 'log': {
                     'level': 'INVALID',
                     'logging_config_path': 'path',
-                }
+                    'unknown': True,
+                },
+                'unknown_setting': False,
             }
         }
 
@@ -308,6 +311,9 @@ class TestConfiguration:
         assert 'Setting sources_default contains unknown sources: DOESNOTEXIST-DB' in str(ce.value)
         assert 'Invalid log.level: INVALID' in str(ce.value)
         assert 'Setting log.logging_config_path can not be combined' in str(ce.value)
+        assert 'Unknown setting key: unknown_setting' in str(ce.value)
+        assert 'Unknown setting key: log.unknown' in str(ce.value)
+        assert 'Unknown key(s) under source TESTDB: unknown' in str(ce.value)
 
 
 class TestGetSetting:
@@ -321,3 +327,11 @@ class TestGetSetting:
     def test_get_setting_env(self, monkeypatch):
         monkeypatch.setenv(self.env_name, 'env_value')
         assert get_setting(self.setting_name) == 'env_value'
+
+    def test_get_setting_unknown(self, monkeypatch):
+        with pytest.raises(ValueError):
+            get_setting('unknown')
+        with pytest.raises(ValueError):
+            get_setting('log.unknown')
+        with pytest.raises(ValueError):
+            get_setting('sources.TEST.unknown')
