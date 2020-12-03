@@ -120,9 +120,20 @@ def run_irrd(mirror_frequency: int, config_file_path: str):
         sleeps += 1
 
     logging.debug(f'Main process waiting for child processes to terminate')
-    whois_process.join()
-    uvicorn_process.join()
-    preload_manager.join()
+    for process in whois_process, uvicorn_process, preload_manager:
+        process.join(timeout=3)
+
+    parent = psutil.Process(os.getpid())
+    children = parent.children(recursive=True)
+    for process in children:
+        try:
+            process.send_signal(signal.SIGKILL)
+        except Exception:
+            pass
+    if children:
+        logging.info('Some processes left alive after SIGTERM, send SIGKILL to '
+                     f'child processes {[c.pid for c in children]}')
+
     logging.info(f'Main process exiting')
 
 
