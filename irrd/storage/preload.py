@@ -241,7 +241,7 @@ class PreloadStoreManager(ExceptionLoggingProcess):
         if len(self._threads) > 1:
             # Another thread is already scheduled to follow the current one
             return
-        thread = PreloadUpdater(self, self._reload_lock)
+        thread = PreloadUpdater(self, self._reload_lock, daemon=True)
         thread.start()
         self._threads.append(thread)
 
