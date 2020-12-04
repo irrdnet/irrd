@@ -38,7 +38,7 @@ setuptools.setup(
         'hiredis==1.1.0',
         'requests==2.22.0',
         'pytz==2020.4',
-        'uvicorn==0.12.3',
+        'uvicorn[standard]==0.12.3',
         'starlette==0.13.8',
         'psutil==5.7.3',
         'asgiref==3.3.1',

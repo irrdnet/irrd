@@ -17,10 +17,10 @@ redis==3.5.3           # preloaded data storage & sync through redis
 hiredis==1.1.0         # improved redis response parsing performance
 requests==2.22.0       # HTTP request handling
 pytz==2020.4
-uvicorn==0.12.3        # ASGI server
+uvicorn[standard]==0.12.3 # ASGI server
 starlette==0.13.8      # ASGI framework
 psutil==5.7.3          # Process management
-asgiref==3.3.1
+asgiref==3.3.1         # ASGI utilities
 
 # Database connections and management
 psycopg2-binary==2.8.6; platform_python_implementation == "CPython"
