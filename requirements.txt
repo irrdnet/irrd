@@ -18,7 +18,7 @@ hiredis==1.1.0         # improved redis response parsing performance
 requests==2.25.0       # HTTP request handling
 pytz==2020.4
 uvicorn[standard]==0.12.3 # ASGI server
-starlette==0.13.8      # ASGI framework
+starlette==0.14.1      # ASGI framework
 psutil==5.7.3          # Process management
 asgiref==3.3.1         # ASGI utilities
 
