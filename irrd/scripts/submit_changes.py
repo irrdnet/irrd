@@ -23,7 +23,7 @@ from irrd.updates.handler import ChangeSubmissionHandler
 
 
 def main(data):
-    handler = ChangeSubmissionHandler(data)
+    handler = ChangeSubmissionHandler().load_text_blob(data)
     print(handler.submitter_report())
 
 
