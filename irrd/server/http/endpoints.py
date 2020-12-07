@@ -1,11 +1,16 @@
 import logging
 import time
+from json import JSONDecodeError
 
+import pydantic
+from asgiref.sync import sync_to_async
 from starlette.endpoints import HTTPEndpoint
 from starlette.requests import Request
-from starlette.responses import PlainTextResponse, Response
+from starlette.responses import PlainTextResponse, Response, JSONResponse
 
 from irrd.server.access_check import is_client_permitted
+from irrd.updates.handler import ChangeSubmissionHandler
+from irrd.utils.validators import RPSLChangeSubmission
 from .status_generator import StatusGenerator
 from ..whois.query_parser import WhoisQueryParser
 from ..whois.query_response import WhoisQueryResponseType
@@ -53,7 +58,28 @@ class WhoisQueryEndpoint(HTTPEndpoint):
         else:
             return Response(status_code=204)
 
-#
-# class ObjectSubmissionEndpoint(HTTPEndpoint):
-#     def post(self, request: Request) -> Response:
-#         pass
+
+class ObjectSubmissionEndpoint(HTTPEndpoint):
+    async def post(self, request: Request) -> Response:
+        return await self._handle_submission(request, delete=False)
+
+    async def delete(self, request: Request) -> Response:
+        return await self._handle_submission(request, delete=True)
+
+    async def _handle_submission(self, request: Request, delete=False):
+        try:
+            json = await request.json()
+            data = RPSLChangeSubmission.parse_obj(json)
+        except (JSONDecodeError, pydantic.ValidationError) as error:
+            return PlainTextResponse(str(error), status_code=400)
+
+        request_meta = {
+            'HTTP-client-IP': request.client.host,
+            'HTTP-User-Agent': request.headers.get('User-Agent'),
+        }
+        handler = ChangeSubmissionHandler()
+        await sync_to_async(handler.load_change_submission)(
+            data=data, delete=delete, request_meta=request_meta
+        )
+        await sync_to_async(handler.send_notification_target_reports)()
+        return JSONResponse(handler.submitter_report_json())

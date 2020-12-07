@@ -42,6 +42,7 @@ setuptools.setup(
         'starlette==0.13.8',
         'psutil==5.7.3',
         'asgiref==3.3.1',
+        'pydantic==1.7.3',
         'SQLAlchemy==1.3.20',
         'alembic==1.4.3',
         'ujson==4.0.1',

@@ -10,7 +10,7 @@ from irrd.conf import config_init
 from irrd.server.graphql import ENV_UVICORN_WORKER_CONFIG_PATH
 from irrd.server.graphql.extensions import error_formatter, QueryMetadataExtension
 from irrd.server.graphql.schema_builder import build_executable_schema
-from irrd.server.http.endpoints import StatusEndpoint, WhoisQueryEndpoint
+from irrd.server.http.endpoints import StatusEndpoint, WhoisQueryEndpoint, ObjectSubmissionEndpoint
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.preload import Preloader
 
@@ -53,6 +53,7 @@ graphql = GraphQL(
 routes = [
     Mount("/v1/status", StatusEndpoint),
     Mount("/v1/whois", WhoisQueryEndpoint),
+    Mount("/v1/submit", ObjectSubmissionEndpoint),
     Mount("/graphql", graphql),
 ]
 

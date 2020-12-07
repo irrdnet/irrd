@@ -24,7 +24,7 @@ from irrd.updates.handler import ChangeSubmissionHandler
 
 def main(data):
     handler = ChangeSubmissionHandler().load_text_blob(data)
-    print(handler.submitter_report())
+    print(handler.submitter_report_human())
 
 
 if __name__ == '__main__':  # pragma: no cover

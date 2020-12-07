@@ -1030,10 +1030,10 @@ class TestSingleChangeRequestHandling:
 
         result_inetnum, result_as_set, result_unknown, result_invalid = parse_change_requests(
             self._request_text(), mock_dh, AuthValidator(mock_dh), None)
-        report_inetnum = result_inetnum.submitter_report()
-        report_as_set = result_as_set.submitter_report()
-        report_unknown = result_unknown.submitter_report()
-        report_invalid = result_invalid.submitter_report()
+        report_inetnum = result_inetnum.submitter_report_human()
+        report_as_set = result_as_set.submitter_report_human()
+        report_unknown = result_unknown.submitter_report_human()
+        report_invalid = result_invalid.submitter_report_human()
 
         assert 'Delete succeeded' in report_inetnum
         assert 'remarks: ' in report_inetnum  # full RPSL object should be included

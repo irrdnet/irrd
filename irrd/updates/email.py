@@ -42,10 +42,10 @@ def handle_email_submission(email_txt: str) -> Optional[ChangeSubmissionHandler]
         else:
             handler = ChangeSubmissionHandler().load_text_blob(msg.body, msg.pgp_fingerprint, request_meta)
             logger.info(f'Processed e-mail {msg.message_id} from {msg.message_from}: {handler.status()}')
-            logger.debug(f'Report for e-mail {msg.message_id} from {msg.message_from}: {handler.submitter_report()}')
+            logger.debug(f'Report for e-mail {msg.message_id} from {msg.message_from}: {handler.submitter_report_human()}')
 
             subject = f'{handler.status()}: {msg.message_subject}'
-            reply_content = handler.submitter_report()
+            reply_content = handler.submitter_report_human()
 
     except Exception as exc:
         logger.critical(f'An exception occurred while attempting to process the following update: {email_txt}\n'
