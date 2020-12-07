@@ -34,7 +34,7 @@ pytest==6.1.2
 pytest-cov==2.10.1
 coverage==5.3
 twisted==20.3.0    # Used for a mock email server in integration tests
-python-graphql-client==0.4.0
+python-graphql-client==0.4.2
 
 # Documentation generation
 Sphinx==3.3.0
