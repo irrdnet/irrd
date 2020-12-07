@@ -75,7 +75,7 @@ class TestChangeSubmissionHandler:
         remarks:        remark
         """)
 
-        handler = ChangeSubmissionHandler(rpsl_text)
+        handler = ChangeSubmissionHandler().load_text_blob(rpsl_text)
         assert handler.status() == 'SUCCESS'
 
         assert flatten_mock_calls(mock_dq) == [
@@ -172,8 +172,9 @@ class TestChangeSubmissionHandler:
         ])
         mock_dh.execute_query = lambda query: next(query_responses)
 
-        handler = ChangeSubmissionHandler(rpsl_text, pgp_fingerprint='8626 1D8DBEBD A4F5 4692  D64D A838 3BA7 80F2 38C6',
-                                          request_meta={'Message-ID': 'test', 'From': 'example@example.com'})
+        handler = ChangeSubmissionHandler().load_text_blob(rpsl_text,
+                                                           pgp_fingerprint='8626 1D8DBEBD A4F5 4692  D64D A838 3BA7 80F2 38C6',
+                                                           request_meta={'Message-ID': 'test', 'From': 'example@example.com'})
         assert handler.status() == 'SUCCESS', handler.submitter_report()
 
         assert flatten_mock_calls(mock_dq) == [
@@ -311,7 +312,7 @@ class TestChangeSubmissionHandler:
         ])
         mock_dh.execute_query = lambda query: next(query_responses)
 
-        handler = ChangeSubmissionHandler(rpsl_text, pgp_fingerprint='8626 1D8DBEBD A4F5 4692  D64D A838 3BA7 80F2 38C6')
+        handler = ChangeSubmissionHandler().load_text_blob(rpsl_text, pgp_fingerprint='8626 1D8DBEBD A4F5 4692  D64D A838 3BA7 80F2 38C6')
         assert handler.status() == 'FAILED', handler.submitter_report()
 
         assert flatten_mock_calls(mock_dq) == [
@@ -346,7 +347,7 @@ class TestChangeSubmissionHandler:
         ])
         mock_dh.execute_query = lambda query: next(query_responses)
 
-        handler = ChangeSubmissionHandler(rpsl_person + 'delete: delete\npassword: crypt-password\n')
+        handler = ChangeSubmissionHandler().load_text_blob(rpsl_person + 'delete: delete\npassword: crypt-password\n')
         assert handler.status() == 'SUCCESS'
 
         assert flatten_mock_calls(mock_dq) == [
@@ -466,7 +467,7 @@ class TestChangeSubmissionHandler:
         source:         TEST
         """)
 
-        handler = ChangeSubmissionHandler(rpsl_text)
+        handler = ChangeSubmissionHandler().load_text_blob(rpsl_text)
         assert handler.status() == 'FAILED'
 
         assert flatten_mock_calls(mock_dq) == [
@@ -570,7 +571,7 @@ class TestChangeSubmissionHandler:
         source:         TEST
         """)
 
-        handler = ChangeSubmissionHandler(rpsl_text)
+        handler = ChangeSubmissionHandler().load_text_blob(rpsl_text)
         assert handler.status() == 'FAILED'
 
         assert flatten_mock_calls(mock_dq) == [
@@ -702,7 +703,7 @@ class TestChangeSubmissionHandler:
         remarks:        remark
         """)
 
-        handler = ChangeSubmissionHandler(rpsl_text)
+        handler = ChangeSubmissionHandler().load_text_blob(rpsl_text)
         assert handler.status() == 'FAILED'
 
         assert flatten_mock_calls(mock_dq) == [
@@ -798,7 +799,7 @@ class TestChangeSubmissionHandler:
         source:         TEST
         """)
 
-        handler = ChangeSubmissionHandler(rpsl_text)
+        handler = ChangeSubmissionHandler().load_text_blob(rpsl_text)
         assert handler.status() == 'FAILED'
 
         assert flatten_mock_calls(mock_dq) == []

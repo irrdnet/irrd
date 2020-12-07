@@ -24,18 +24,23 @@ class ChangeSubmissionHandler:
     those part of the same message, and checking authentication.
     """
 
-    def __init__(self, object_texts: str, pgp_fingerprint: str=None, request_meta: Dict[str, Optional[str]]=None) -> None:
+    def load_text_blob(self, object_texts_blob: str, pgp_fingerprint: str=None, request_meta: Dict[str, Optional[str]]=None):
         self.database_handler = DatabaseHandler()
         self.request_meta = request_meta if request_meta else {}
         self._pgp_key_id = self._resolve_pgp_key_id(pgp_fingerprint) if pgp_fingerprint else None
-        self._handle_object_texts(object_texts)
-        self.database_handler.commit()
-        self.database_handler.close()
 
-    def _handle_object_texts(self, object_texts: str) -> None:
         reference_validator = ReferenceValidator(self.database_handler)
         auth_validator = AuthValidator(self.database_handler, self._pgp_key_id)
-        results = parse_change_requests(object_texts, self.database_handler, auth_validator, reference_validator)
+        change_requests = parse_change_requests(object_texts_blob, self.database_handler, auth_validator, reference_validator)
+
+        self._handle_change_requests(change_requests, reference_validator, auth_validator)
+        self.database_handler.commit()
+        self.database_handler.close()
+        return self
+
+    def _handle_change_requests(self, change_requests: List[ChangeRequest],
+                             reference_validator: ReferenceValidator,
+                             auth_validator: AuthValidator) -> None:
 
         # When an object references another object, e.g. tech-c referring a person or mntner,
         # an add/update is only valid if those referred objects exist. To complicate matters,
@@ -47,10 +52,10 @@ class ChangeSubmissionHandler:
         # becomes invalid on the first scan, which is why another scan is performed, which
         # will mark B invalid due to the reference to an invalid C, etc. This continues until
         # all references are resolved and repeated scans lead to the same conclusions.
-        valid_changes = [r for r in results if r.is_valid()]
+        valid_changes = [r for r in change_requests if r.is_valid()]
         previous_valid_changes: List[ChangeRequest] = []
         loop_count = 0
-        loop_max = len(results) + 10
+        loop_max = len(change_requests) + 10
 
         while valid_changes != previous_valid_changes:
             previous_valid_changes = valid_changes
@@ -59,7 +64,7 @@ class ChangeSubmissionHandler:
 
             for result in valid_changes:
                 result.validate()
-            valid_changes = [r for r in results if r.is_valid()]
+            valid_changes = [r for r in change_requests if r.is_valid()]
 
             loop_count += 1
             if loop_count > loop_max:  # pragma: no cover
@@ -68,11 +73,11 @@ class ChangeSubmissionHandler:
                 logger.error(msg)
                 raise ValueError(msg)
 
-        for result in results:
+        for result in change_requests:
             if result.is_valid():
                 result.save(self.database_handler)
 
-        self.results = results
+        self.results = change_requests
 
     def _resolve_pgp_key_id(self, pgp_fingerprint: str) -> Optional[str]:
         """

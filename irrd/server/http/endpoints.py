@@ -52,3 +52,8 @@ class WhoisQueryEndpoint(HTTPEndpoint):
             return PlainTextResponse(response.result)
         else:
             return Response(status_code=204)
+
+#
+# class ObjectSubmissionEndpoint(HTTPEndpoint):
+#     def post(self, request: Request) -> Response:
+#         pass
