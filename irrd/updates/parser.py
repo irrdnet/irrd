@@ -1,6 +1,6 @@
 import difflib
 import logging
-from typing import List, Optional, Set
+from typing import List, Optional, Set, Dict, Union
 
 from irrd.conf import get_setting
 from irrd.rpki.status import RPKIStatus
@@ -137,10 +137,10 @@ class ChangeRequest:
             database_handler.upsert_rpsl_object(self.rpsl_obj_new, JournalEntryOrigin.auth_change)
         self.status = UpdateRequestStatus.SAVED
 
-    def is_valid(self):
+    def is_valid(self) -> bool:
         return self.status in [UpdateRequestStatus.SAVED, UpdateRequestStatus.PROCESSING]
 
-    def submitter_report(self) -> str:
+    def submitter_report_human(self) -> str:
         """Produce a string suitable for reporting back status and messages to the human submitter."""
         status = 'succeeded' if self.is_valid() else 'FAILED'
 
@@ -153,6 +153,22 @@ class ChangeRequest:
             report += ''.join([f'ERROR: {e}\n' for e in self.error_messages])
             report += ''.join([f'INFO: {e}\n' for e in self.info_messages])
         return report
+
+    def submitter_report_json(self) -> Dict[str, Union[None, bool, str, List[str]]]:
+        """Produce a dict suitable for reporting back status and messages in JSON."""
+        new_object_text = None
+        if self.rpsl_obj_new and not self.error_messages:
+            new_object_text = self.rpsl_obj_new.render_rpsl_text()
+        return {
+            'successful': self.is_valid(),
+            'type': str(self.request_type.value) if self.request_type else None,
+            'object_class': self.object_class_str(),
+            'rpsl_pk': self.object_pk_str(),
+            'info_messages': self.info_messages,
+            'error_messages': self.error_messages,
+            'new_object_text': new_object_text,
+            'submitted_object_text': self.rpsl_text_submitted,
+        }
 
     def notification_target_report(self):
         """

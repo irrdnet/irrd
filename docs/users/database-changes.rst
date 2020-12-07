@@ -2,25 +2,148 @@
 Making changes to IRR objects
 =============================
 
-For authoritative databases, changes to objects can be submitted to
+For authoritative databases, you can submit changes to objects to
 IRRd. For each change, a number of integrity, authentication, and reference
 checks are performed.
 Additionally, notifications may be sent on attempted or successful changes.
 
-.. contents::
-   :backlinks: none
-   :local:
-
-Submission format & passwords
------------------------------
-
 .. highlight:: yaml
 
-Changes are submitted by e-mail, to be configured by an IRRd administrator.
-Both simple ``text/plain`` e-mails as well as MIME multipart messages with
+Submission format
+-----------------
+There are two ways to submit changes:
+
+* By sending an e-mail with the RPSL objects. This method supports MD5-PW,
+  CRYPT-PW and PGPKEY authentication. You will receive a reply by e-mail
+  with the result.
+* Over HTTPS, through a REST API. This method supports MD5-PW and CRYPT-PW
+  authentication. You receive the results in the HTTP response.
+
+All objects submitted are validated for the presence, count and syntax,
+though the syntax validation is limited for some attributes.
+Values like prefixes are also rewritten into a standard format. If this
+results in changes compared to the original submitted text, an info message
+is added in the response.
+
+IRRd will attempt to process as many changes as possible, meaning that it's
+possible that some changes will fail, and some will succeed. A response will
+be sent with the results of the submitted changes, and why any failures
+occurred.
+
+Submitting over HTTP
+^^^^^^^^^^^^^^^^^^^^
+To submit changes over HTTP, make a POST or DELETE request to ``/v1/submit/``.
+For example, if the IRRd instance is running on ``rr.example.net``, the URL is::
+
+    https://rr.example.net/v1/submit/
+
+The expected request body is a JSON object, with a number of keys:
+
+* ``objects``: a list of objects. Each is a JSON object with
+  either a ``object_text`` key containing the full RPSL text,
+  or an ``attributes`` key which is a list of objects, each having a
+  ``name`` and ``value`` key.
+  In other words, you can choose to submit the full object text, or
+  the individual attributes separately. The ``value`` key may also be
+  a list, which will be translated into RPSL by IRRd.
+* ``passwords``: an optional list of passwords to use for authentication.
+  Each password will be considered for each object to be changed.
+* ``delete_reason``: an optional string with the reason for object deletion.
+* ``override``: an optional string containing the override password.
+
+If your request is an HTTP POST, the objects are created or modified, depending
+on whether an object already exists with the same primary key and source.
+If your request is an HTTP DELETE, the objects are deleted.
+
+This is an example of a body that creates/modifies two objects.
+One uses the ``object_text`` option to provide a single string,
+the other specifies individual attributes::
+
+    {
+        'objects': [
+            {
+                'object_text': 'person: PERSON1-TEST\n...'
+            },
+            {
+                'attributes': [
+                    {
+                        'name': 'person',
+                        'value': 'PERSON2-TEST'
+                    },
+                    {
+                        'name': 'mnt-by',
+                        'value': ['DEMO-TEST', 'DEMO2-TEST']
+                    }
+                ]
+            }
+        ],
+        'passwords': ['password1', 'password2']
+    }
+
+There are two possible responses:
+
+* If there is a syntax error in your JSON object, you will receive
+  a ``text/plain`` response with status code 400. The response will
+  tell you what the issue is with your JSON.
+* If the request was syntactically valid, you always receive a
+  ``text/json`` response with status code 200, and the details of
+  your change.
+
+Here is an example of a JSON response::
+
+    {
+        "request_meta": {
+            "HTTP-client-IP": "127.0.0.1",
+            "HTTP-User-Agent": "user-agent"
+        },
+        "summary": {
+            "objects_found": 2,
+            "successful": 1,
+            "successful_create": 0,
+            "successful_modify": 1,
+            "successful_delete": 0,
+            "failed": 1,
+            "failed_create": 1,
+            "failed_modify": 0,
+            "failed_delete": 0
+        },
+        "objects": [
+            {
+                "successful": true,
+                "type": "modify",
+                "object_class": "mntner",
+                "rpsl_pk": "TEST-MNT",
+                "info_messages": [],
+                "error_messages": [],
+                "new_object_text": "[trimmed]",
+                "submitted_object_text": "[trimmed]"
+            },
+            {
+                "successful": false,
+                "type": "create",
+                "object_class": "person",
+                "rpsl_pk": "PERSON-TEST",
+                "info_messages": [],
+                "error_messages": [
+                    "Mandatory attribute \"address\" on object person is missing"
+                ],
+                "new_object_text": None,
+                "submitted_object_text": "[trimmed]"
+            }
+        ]
+    }
+
+The order of the ``objects`` in the response matches the order
+of ``objects`` in your request.
+
+Submitting over e-mail
+^^^^^^^^^^^^^^^^^^^^^^
+
+The e-mail destination is configured by the IRRd administrator.
+Both ``text/plain`` e-mails as well as MIME multipart messages with
 a ``text/plain`` part are accepted.
 
-The message content should simply be the object texts, separated by an empty
+The message content should be the object texts, each separated by an empty
 line. If no objects exist with the same primary key, an object creation
 is attempted. If an object does exist, an update is attempted.
 
@@ -32,7 +155,7 @@ To delete an object, submit the current version of the object with a
     [other object data]
     delete: <your deletion reason>
 
-For authentication, ``password`` attributes can be included anywhere
+For authentication, you can include ``password`` attributes anywhere
 in the submission, on their own or as part of objects, e.g.::
 
     route: 192.0.2.0/24
@@ -45,36 +168,34 @@ in the submission, on their own or as part of objects, e.g.::
 You may submit multiple passwords, and each password will be considered
 for each authentication check.
 
-For PGP authentication, messages can be signed with a PGP/MIME signature
-or inline PGP. PGP signatures and passwords can be combined, and each method
+For PGP authentication, sign your message with a PGP/MIME signature
+or inline PGP. You can combine PGP signatures and passwords, and each method
 will be considered for each authentication check.
-
-IRRd will attempt to process as many changes as possible, meaning that it's
-possible that some changes will fail, and some will succeed. A response will
-be sent with the results of the submitted changes, and why any failures
-occurred.
-
-All objects submitted are validated for the presence, count and syntax,
-though the syntax validation is limited for some attributes.
-Values like prefixes are also rewritten into a standard format. If this
-results in changes compared to the original submitted text, an info message
-is added in the reply.
-
 
 Override password
 -----------------
-An override password can be configured, which admins can use
-In the same way, admins can use to bypass all authentication requirements.
+An IRRd administrator can configure an override password.
+This bypasses all authentication requirements.
 Even with the override password, changes can only be made to objects in
 authoritative databases, and will need to pass checks for syntax and
-referential integrity like any other change. Override passwords are provided
-in the override attribute, e.g.::
+referential integrity like any other change.
+
+In HTTP submission, provide the override password in the root object, e.g.::
+
+    {
+        'objects': [....],
+        'override': '<override password>'
+    }
+
+In e-mails, provide the password in the override pseudo-attribute, e.g.::
 
     route: 192.0.2.0/24
     origin: AS65536
     [other object data]
     mnt-by: MNT-EXAMPLE
     override: <override password>
+
+Like the password pseudo-attribute, this can occur at any place in the e-mail.
 
 Notifications to maintainers or the address in the ``notify`` attribute are
 **not** sent when a **valid** override password was used.
@@ -97,10 +218,10 @@ masked for security reasons. For example::
     auth: MD5-PW DummyValue  # Filtered for security
     auth: PGPKEY-12345678
 
-When submitting a new `mntner` object, it must include at least one valid
+When you submit a new `mntner` object, it must include at least one valid
 `auth` value, which can not be a dummy value.
 
-When submitting changes to an existing `mntner` object, there are two options:
+When you submit changes to an existing `mntner` object, there are two options:
 
 * Submit without any dummy values in `auth` values. If otherwise valid, the
   `auth` lines submitted will now be the only valid authentication methods.
@@ -116,36 +237,36 @@ the message, is considered an error.
 
 Referential integrity
 ---------------------
-IRRd enforces referential integrity between objects. This means it is not
+IRRd enforces referential integrity between objects. This means you are not
 permitted to delete an object that is still referenced by other
-objects. When an object is created or updated, all references to other
+objects. When you create or update an object, all references to other
 objects, such as a `mntner`, must be valid. This only applies to strong
 references, as indicated in the object template. For weak references,
 only the syntax is validated.
 
-When creating or deleting multiple objects, these are considered together,
-which means that an attempt to delete A and B in one submission, while B depends
-on A, the deletion will pass referential integrity checks.
+When you create or delete multiple objects in one request, these are evaluated
+together, which means that if you attempt to delete A and B in one submission,
+while B depends on A, the deletion will pass referential integrity checks.
 (If authentication fails for the deletion of A, the deletion of B will also
 fail, as A still exists.)
 
-In the same way, it's possible to create multiple objects that depend on each
+In the same way, you can create multiple objects that depend on each
 other in the same submission to IRRd.
 
 
 Authentication checks
 ---------------------
-When changing an object, authentication must pass for one of the
+When you change an object, authentication must pass for one of the
 maintainers referred by the affected object itself. In case
 of updates to existing objects, this refers to both one of the existing
 object maintainers, and one of the maintainers in the newly submitted version.
 Using a valid override password overrides the requirement to pass
 authentication for the affected objects.
 
-Changes can only be made to authoritative databases.
+You can only make changes to objects in authoritative databases.
 
-When creating a new `mntner`, a submission must pass authorisation for
-one of the auth methods of the new mntner. Other objects can be submitted
+When you create a new `mntner`, a submission must pass authorisation for
+one of the auth methods of the new mntner. You can submit other objects
 that depend on the new `mntner` in the same submission.
 
 .. _auth-related-mntners:
@@ -166,7 +287,7 @@ This behaviour can be disabled by setting
 Object templates
 ----------------
 
-The ``-t`` query can be used to get the object template for a particular
+You can use the ``-t`` query to get the object template for a particular
 object class. This includes which attributes are permitted, which are
 mandatory, look-up keys, primary keys and references to other objects.
 

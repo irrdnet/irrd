@@ -1,9 +1,14 @@
 from unittest.mock import Mock
 
+import ujson
 from starlette.requests import HTTPConnection
+from starlette.testclient import TestClient
 
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.preload import Preloader
+from irrd.updates.handler import ChangeSubmissionHandler
+from irrd.utils.validators import RPSLChangeSubmission
+from ..app import app
 from ..endpoints import StatusEndpoint, WhoisQueryEndpoint
 from ..status_generator import StatusGenerator
 from ...whois.query_parser import WhoisQueryParser
@@ -128,3 +133,59 @@ class TestWhoisQueryEndpoint:
         result = endpoint.get(mock_request)
         assert result.status_code == 500
         assert result.body.decode('utf-8') == 'result query 🦄'
+
+
+class TestObjectSubmissionEndpoint:
+    def test_endpoint(self, monkeypatch):
+        mock_handler = Mock(spec=ChangeSubmissionHandler)
+        monkeypatch.setattr('irrd.server.http.endpoints.ChangeSubmissionHandler',
+                            lambda: mock_handler)
+        mock_handler.submitter_report_json = lambda: {'response': True}
+
+        client = TestClient(app)
+        data = {
+            'objects': [
+                {'attributes': [
+                    {'name': 'person', 'value': 'Placeholder Person Object'},
+                    {'name': 'nic-hdl', 'value': 'PERSON-TEST'},
+                    {'name': 'changed', 'value': 'changed@example.com 20190701 # comment'},
+                    {'name': 'source', 'value': 'TEST'},
+                ]},
+            ],
+            'passwords': ['invalid1', 'invalid2'],
+        }
+        expected_data = RPSLChangeSubmission.parse_obj(data)
+
+        response_post = client.post('/v1/submit/', data=ujson.dumps(data))
+        assert response_post.status_code == 200
+        assert response_post.text == '{"response":true}'
+        mock_handler.load_change_submission.assert_called_once_with(
+            data=expected_data,
+            delete=False,
+            request_meta={'HTTP-client-IP': 'testclient', 'HTTP-User-Agent': 'testclient'},
+        )
+        mock_handler.send_notification_target_reports.assert_called_once()
+        mock_handler.reset_mock()
+
+        response_delete = client.delete('/v1/submit/', data=ujson.dumps(data))
+        assert response_delete.status_code == 200
+        assert response_delete.text == '{"response":true}'
+        mock_handler.load_change_submission.assert_called_once_with(
+            data=expected_data,
+            delete=True,
+            request_meta={'HTTP-client-IP': 'testclient', 'HTTP-User-Agent': 'testclient'},
+        )
+        mock_handler.send_notification_target_reports.assert_called_once()
+        mock_handler.reset_mock()
+
+        response_invalid_format = client.post('/v1/submit/', data='{"invalid": true}')
+        assert response_invalid_format.status_code == 400
+        assert 'field required' in response_invalid_format.text
+        mock_handler.load_change_submission.assert_not_called()
+        mock_handler.send_notification_target_reports.assert_not_called()
+
+        response_invalid_json = client.post('/v1/submit/', data='invalid')
+        assert response_invalid_json.status_code == 400
+        assert 'expect' in response_invalid_json.text.lower()
+        mock_handler.load_change_submission.assert_not_called()
+        mock_handler.send_notification_target_reports.assert_not_called()
