@@ -76,6 +76,7 @@ class TestPreloading:
         Preloader().signal_reload({'inetnum'})
         Preloader().signal_reload()
         Preloader().signal_reload()
+        time.sleep(0.5)
 
         # As all threads are considered dead, a new thread should be started
         assert mock_preload_updater.mock_calls[0][0] == ''
