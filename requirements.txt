@@ -5,20 +5,20 @@
 python-gnupg==0.4.6    # Integration with gpg for key-cert objects
 passlib==1.7.4         # Password hashing for CRYPT-PW and MD5-PW
 IPy==1.01              # IP address parsing
-dataclasses==0.7; python_version < '3.7'       # PEP 557 dataclasses for python<3.7
+dataclasses==0.8; python_version < '3.7'       # PEP 557 dataclasses for python<3.7
 ordered-set==4.0.2     # Ordered sets for simple unique ordered storage
 beautifultable==0.8.0  # pyup: <1.0.0
 PyYAML==5.3.1          # parsing YAML config files
 datrie==0.8.2           # efficient route searching, used for RPKI
-setproctitle==1.1.10   # updating the process title for useful ps output
+setproctitle==1.2.1   # updating the process title for useful ps output
 python-daemon==2.2.4   # daemonising the main process
 pid==3.0.4             # managing PID files
 redis==3.5.3           # preloaded data storage & sync through redis
 hiredis==1.1.0         # improved redis response parsing performance
-requests==2.22.0       # HTTP request handling
+requests==2.25.0       # HTTP request handling
 pytz==2020.4
 uvicorn[standard]==0.12.3 # ASGI server
-starlette==0.13.8      # ASGI framework
+starlette==0.13.8 # pyup: <0.14      # ASGI framework - pinned to <0.14 for ariadne
 psutil==5.7.3          # Process management
 asgiref==3.3.1         # ASGI utilities
 pydantic==1.7.3        # Input validation
@@ -35,10 +35,10 @@ pytest==6.1.2
 pytest-cov==2.10.1
 coverage==5.3
 twisted==20.3.0    # Used for a mock email server in integration tests
-python-graphql-client==0.4.0
+python-graphql-client==0.4.2
 
 # Documentation generation
-Sphinx==3.3.0
+Sphinx==3.3.1
 sphinxcontrib-spelling==7.1.0
 sphinx-material==0.0.32
 
@@ -48,8 +48,8 @@ flake8==3.8.4
 pep8-naming==0.11.1
 
 # Creating python packages
-setuptools==50.3.2
-wheel==0.35.1
+setuptools==51.0.0
+wheel==0.36.1
 twine==3.2.0
 
 -e git://github.com/mirumee/ariadne.git#egg=ariadne
