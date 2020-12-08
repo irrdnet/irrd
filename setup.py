@@ -31,12 +31,12 @@ setuptools.setup(
         'beautifultable==0.8.0',
         'PyYAML==5.3.1',
         'datrie==0.8.2',
-        'setproctitle==1.1.10',
+        'setproctitle==1.2.1',
         'python-daemon==2.2.4',
         'pid==3.0.4',
         'redis==3.5.3',
         'hiredis==1.1.0',
-        'requests==2.22.0',
+        'requests==2.25.0',
         'pytz==2020.4',
         'uvicorn[standard]==0.12.3',
         'starlette==0.13.8',
@@ -49,7 +49,7 @@ setuptools.setup(
     ],
     extras_require={
         ':python_version < "3.7"': [
-            'dataclasses==0.7',
+            'dataclasses==0.8',
         ],
         ':platform_python_implementation == "CPython"': [
             'psycopg2-binary==2.8.6',
