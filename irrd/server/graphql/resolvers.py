@@ -214,8 +214,11 @@ def _rpsl_db_query_to_graphql_out(query: RPSLDatabaseQuery, info: GraphQLResolve
         if row.get('asn_first') and row.get('asn_first') == row.get('asn_last'):
             graphql_result['asn'] = row['asn_first']
 
+        object_type = resolve_rpsl_object_type(row)
         for key, value in row.get('parsed_data', dict()).items():
-            graphql_type = schema.graphql_types[resolve_rpsl_object_type(row)][key]
+            if key == 'auth':
+                value = remove_auth_hashes(value)
+            graphql_type = schema.graphql_types[object_type][key]
             if graphql_type == 'String' and isinstance(value, list):
                 value = '\n'.join(value)
             graphql_result[snake_to_camel_case(key)] = value

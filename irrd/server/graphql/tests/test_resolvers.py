@@ -122,7 +122,6 @@ class TestGraphQLResolvers:
             unknownKwarg='ignored',
         ))
 
-        print(result)
         assert result == EXPECTED_RPSL_GRAPHQL_OUTPUT
         assert flatten_mock_calls(mock_database_query) == [
             ['rpsl_pks', ('pk',), {}],
@@ -152,6 +151,28 @@ class TestGraphQLResolvers:
             ['scopefilter_status', ([ScopeFilterStatus.in_scope],), {}],
             ['sources', (['TEST1'],), {}],
         ]
+
+    def test_strips_auth_attribute_hashes(self, prepare_resolver):
+        info, mock_database_query, mock_query_resolver = prepare_resolver
+
+        rpsl_db_mntner_result = [{
+            'object_class': 'mntner',
+            'parsed_data': {
+                'auth': 'CRYPT-PW LEuuhsBJNFV0Q',
+            },
+        }]
+
+        info.context['request'].app.state.database_handler.execute_query = lambda query, refresh_on_error: rpsl_db_mntner_result
+        result = list(resolvers.resolve_rpsl_objects(
+            None,
+            info,
+            sql_trace=True,
+            rpsl_pk='pk',
+        ))
+        assert result == [{
+            'objectClass': 'mntner',
+            'auth': 'CRYPT-PW DummyValue  # Filtered for security',
+        }]
 
     def test_resolve_rpsl_object_mnt_by_objs(self, prepare_resolver):
         info, mock_database_query, mock_query_resolver = prepare_resolver
