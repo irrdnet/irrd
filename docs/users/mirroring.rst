@@ -14,9 +14,6 @@ the :doc:`configuration documentation </admins/configuration>`.
     is also affected by RPKI validation. This is documented in
     the RPKI integration documentation.
 
-.. contents::
-   :backlinks: none
-   :local:
 
 Scheduling
 ----------

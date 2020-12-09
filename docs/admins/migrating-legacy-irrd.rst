@@ -3,7 +3,7 @@ Migrating from legacy IRRd
 ==========================
 
 There are a number of things to keep in mind when migrating from a legacy
-(version < 4) IRRd instance to IRRd 4.0.0.
+(version < 4) IRRd instance to IRRd 4.
 
 In general, there are many legacy IRRd versions out there. They come with
 different versions of documentation, and are not all consistent with each
