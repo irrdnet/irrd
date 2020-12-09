@@ -60,7 +60,7 @@ MOCK_RPSL_DB_RESULT = [{
 
 @pytest.fixture()
 def prepare_resolver(monkeypatch):
-    resolvers._collect_predicate_names = lambda info: ['asn', 'ip_first']
+    resolvers._collect_predicate_names = lambda info: ['asn', 'prefix', 'ipLast']
 
     mock_database_query = Mock(spec=RPSLDatabaseQuery)
     monkeypatch.setattr('irrd.server.graphql.resolvers.RPSLDatabaseQuery',

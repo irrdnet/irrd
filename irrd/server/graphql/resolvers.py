@@ -309,6 +309,9 @@ def _columns_for_graphql_selection(info: GraphQLResolveInfo) -> Set[str]:
         if field == 'asn':
             columns.add('asn_first')
             columns.add('asn_last')
+        if field == 'prefix':
+            columns.add('ip_first')
+            columns.add('prefix_length')
     return columns
 
 
