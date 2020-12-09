@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 class SourceExportRunner:
     """
-    This SourceExportRunner is the entry point for the expect process
+    This SourceExportRunner is the entry point for the export process
     for a single source.
 
     A gzipped file will be created in the export_destination directory

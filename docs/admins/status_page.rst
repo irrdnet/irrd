@@ -2,11 +2,11 @@
 HTTP status page
 ================
 
-A status page is available through a small HTTP server in IRRd.
+A status page is available through on the HTTP server in IRRd.
 This page is only accessible to IPs :doc:`configured </admins/configuration>`
-in the access list set in the ``server.http.access_list`` setting.
+in the access list set in the ``server.http.status_access_list`` setting.
 
-The only valid URL on the status page is ``/v1/status``.
+The URL of the status page is: ``/v1/status/``.
 
 Statistics overview
 -------------------

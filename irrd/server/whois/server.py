@@ -107,7 +107,7 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
         """
         Whois worker run loop.
         This method does not return, except if it failed to initialise a preloader,
-        or if keep_running is set, after the first request is handled. The latter
+        or if keep_running is False, after the first request is handled. The latter
         is used in the tests.
         """
         # Disable the special sigterm_handler defined in start_whois_server()
