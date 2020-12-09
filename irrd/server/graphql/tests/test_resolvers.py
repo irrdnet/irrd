@@ -130,9 +130,9 @@ class TestGraphQLResolvers:
             ['text_search', ('text',), {}],
             ['rpki_status', ([RPKIStatus.invalid],), {}],
             ['scopefilter_status', ([ScopeFilterStatus.out_scope_as],), {}],
-            ['ip_exact', (IP('192.0.2.1'),), {}],
             ['sources', (['TEST1'],), {}],
-            ['lookup_attrs_in', (['mnt-by'], 'mnt-by'), {}]
+            ['lookup_attrs_in', (['mnt-by'], 'mnt-by'), {}],
+            ['ip_exact', (IP('192.0.2.1'),), {}],
         ]
         assert info.context['sql_trace']
 

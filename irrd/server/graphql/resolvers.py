@@ -81,11 +81,6 @@ def resolve_rpsl_objects(_, info: GraphQLResolveInfo, **kwargs):
     else:
         query.scopefilter_status([ScopeFilterStatus.in_scope])
 
-    ip_filters = 'ip_exact', 'ip_less_specific', 'ip_less_specific_one_level', 'ip_more_specific'
-    for ip_filter in ip_filters:
-        if ip_filter in kwargs:
-            getattr(query, ip_filter)(IP(kwargs[ip_filter]))
-
     all_valid_sources = set(get_setting('sources', {}).keys())
     if get_setting('rpki.roa_source'):
         all_valid_sources.add(RPKI_IRR_PSEUDO_SOURCE)
@@ -101,6 +96,11 @@ def resolve_rpsl_objects(_, info: GraphQLResolveInfo, **kwargs):
         attr = attr.replace('_', '-')
         if attr in lookup_fields:
             query.lookup_attrs_in([attr], value)
+
+    ip_filters = 'ip_exact', 'ip_less_specific', 'ip_more_specific', 'ip_less_specific_one_level'
+    for ip_filter in ip_filters:
+        if ip_filter in kwargs:
+            getattr(query, ip_filter)(IP(kwargs[ip_filter]))
 
     return _rpsl_db_query_to_graphql_out(query, info)
 
