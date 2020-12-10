@@ -2,7 +2,7 @@
 HTTP status page
 ================
 
-A status page is available through on the HTTP server in IRRd.
+A status page is available on the HTTP server in IRRd.
 This page is only accessible to IPs :doc:`configured </admins/configuration>`
 in the access list set in the ``server.http.status_access_list`` setting.
 
