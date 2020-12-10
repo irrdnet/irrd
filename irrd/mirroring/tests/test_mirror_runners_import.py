@@ -376,7 +376,7 @@ class TestROAImportRunner:
         assert flatten_mock_calls(mock_dh) == [
             ['disable_journaling', (), {}],
             ['delete_all_roa_objects', (), {}],
-            ['delete_all_rpsl_objects_with_journal', ('RPKI',), {}],
+            ['delete_all_rpsl_objects_with_journal', ('RPKI',), {'journal_guaranteed_empty': True}],
             ['commit', (), {}],
             ['enable_journaling', (), {}],
             ['update_rpki_status', (), {
@@ -435,7 +435,7 @@ class TestROAImportRunner:
         assert flatten_mock_calls(mock_dh) == 2 * [
             ['disable_journaling', (), {}],
             ['delete_all_roa_objects', (), {}],
-            ['delete_all_rpsl_objects_with_journal', ('RPKI',), {}],
+            ['delete_all_rpsl_objects_with_journal', ('RPKI',), {'journal_guaranteed_empty': True}],
             ['close', (), {}]
         ]
 
@@ -457,7 +457,7 @@ class TestROAImportRunner:
         assert flatten_mock_calls(mock_dh) == [
             ['disable_journaling', (), {}],
             ['delete_all_roa_objects', (), {}],
-            ['delete_all_rpsl_objects_with_journal', ('RPKI',), {}],
+            ['delete_all_rpsl_objects_with_journal', ('RPKI',), {'journal_guaranteed_empty': True}],
             ['close', (), {}]
         ]
 

@@ -450,7 +450,7 @@ class DatabaseHandler:
         postgres_copy.copy_from(roa_csv, ROADatabaseObject, self._connection, columns=columns, format='csv')
         self._roa_insert_buffer = []
 
-    def delete_all_rpsl_objects_with_journal(self, source):
+    def delete_all_rpsl_objects_with_journal(self, source, journal_guaranteed_empty=False):
         """
         Delete all RPSL objects for a source from the database,
         all journal entries and the database status.
@@ -461,8 +461,9 @@ class DatabaseHandler:
         table = RPSLDatabaseObject.__table__
         stmt = table.delete(table.c.source == source)
         self._connection.execute(stmt)
-        table = RPSLDatabaseJournal.__table__
-        stmt = table.delete(table.c.source == source)
+        if not journal_guaranteed_empty:
+            table = RPSLDatabaseJournal.__table__
+            stmt = table.delete(table.c.source == source)
         self._connection.execute(stmt)
         table = RPSLDatabaseStatus.__table__
         stmt = table.delete(table.c.source == source)
