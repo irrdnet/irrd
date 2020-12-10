@@ -275,7 +275,10 @@ class ROAImportRunner(FileImportRunnerBase):
         logger.info(f'Running full ROA import from: {roa_source}, SLURM {slurm_source}')
 
         self.database_handler.delete_all_roa_objects()
-        self.database_handler.delete_all_rpsl_objects_with_journal(RPKI_IRR_PSEUDO_SOURCE)
+        self.database_handler.delete_all_rpsl_objects_with_journal(
+            RPKI_IRR_PSEUDO_SOURCE,
+            journal_guaranteed_empty=True,
+        )
 
         slurm_data = None
         if slurm_source:
