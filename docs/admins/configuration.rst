@@ -220,7 +220,7 @@ Servers
   For example, if you set this to 50, you need about 10 GB of memory just for
   IRRd's HTTP server.
   (and additional memory for other components and PostgreSQL).
-  |br| **Default**: ``10``.
+  |br| **Default**: ``4``.
   |br| **Change takes effect**: after full IRRd restart.
 * ``server.http.forwarded_allowed_ips``: a single IP or list of IPs from
   which IRRd will trust the ``X-Forwarded-For`` header. This header is used

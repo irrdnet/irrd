@@ -63,6 +63,7 @@ A few PostgreSQL settings need to be changed from their default:
 * ``max_connections`` may need to be increased from 100. Generally, there
   will be one open connection for:
   * Each permitted whois connection
+  * Each HTTP worker
   * Each running mirror import and export process
   * Each RPKI update process
   * Each run of ``irrd_load_database``

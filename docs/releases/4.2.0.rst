@@ -2,10 +2,84 @@
 Release notes for IRRd 4.2.0
 ============================
 
+New features
+------------
+
+IRRd 4.2.0 adds several major features:
+
+* A new :doc:`GraphQL </users/queries/graphql>` query interface.
+  This allows great flexibility in querying RPSL data, over HTTP.
+* A new :doc:`HTTPS API call for whois queries </users/queries/whois/>`.
+  This supports the same whois queries as port 43, but using
+  standard HTTP instead of the more complex raw TCP sockets.
+* A new
+  :doc:`HTTPS API call for submitting RPSL objects </users/database-changes>`.
+  This allows submitting one or multiple objects, and returns a JSON response
+  with the result of the requested changes.
+
+The new HTTP interfaces are intended to be used with HTTPS, to provide
+secure and authenticated transport. The deployment guide
+:ref:`has been updated <deployment-https>` with an nginx example.
+
+PyPy, an alternative to CPython, is now an officially supported deployment
+platform. It offers improved performance in the order of 10% for some queries,
+and even higher for some GraphQL queries. IRRd 4.2 was continuously tested
+against CPython 3.6 and 3.9, and PyPy 3.6 and 3.7.
+
+Other changes
+-------------
+* IRRd now rejects unknown settings in the config file, i.e. settings
+  that are found in the file, but unknown to IRRd. This reduces unintentional
+  configuration errors.
+* An issue was fixed in the RPKI importer, where it would cause other
+  database changes to be blocked during part of the RPKI import.
+  No data was lost, but NRTM imports and authoritative changes would
+  be delayed for up to 5-10 minutes on every RPKI import.
 * The optional ``geofeed`` attribute was added for `inetnum` and `inet6num`
   objects, which can contain a URL which in turn contains geographical
   information, as defined in `draft-ymbk-opsawg-finding-geofeeds-03`_.
 * Retrieval of files over FTP now follows the ``ftp_proxy`` environment
   variable, if set.
+* New `as-set` objects created in authoritative databases are required
+  to have a hierarchical name, like ``AS65540:AS-CUSTOMERS``. For example,
+  ``AS-CUSTOMERS`` is no longer allowed.
 
 .. _draft-ymbk-opsawg-finding-geofeeds-03: https://tools.ietf.org/html/draft-ymbk-opsawg-finding-geofeeds-03
+
+Changes needed to upgrade
+-------------------------
+IRRd 4.2 is a relatively small upgrade compared to 4.1. If you are upgrading
+from an older version, please make sure to also follow all steps in the
+:doc:`4.1 release notes </releases/4.1.0>`.
+
+Several configuration options have been added or changed:
+
+* The ``server.http.access_list`` setting is now called
+  ``server.http.status_access_list``. The access list only applies to the
+  status page - not the entire HTTP interface. The setting was renamed
+  to reflect this change.
+* The default port and interface for the HTTP interface is now
+  ``127.0.0.1:8000``. This was changed because the HTTP interface should
+  be run behind an HTTPS proxy.
+* A new setting ``server.http.workers`` was added, set to 4 by default.
+  This is the number of HTTP worker processes started. Note that like
+  whois, each HTTP worker process uses up to 200MB of memory. Depending
+  on available resources, a higher number of workers may be appropriate.
+* A new setting ``server.http.forwarded_allowed_ips`` was added. This
+  needs to be set when the proxy in front of IRRd is not running on
+  the local host.
+
+As IRRd now rejects unknown settings, it is possible that there are other
+settings in your configuration file that were always unknown, but will now
+be rejected by IRRd 4.1.
+
+Other than updating these settings, you should also install nginx or a
+similar service to serve as an HTTPS proxy. An nginx example
+:ref:`is included in the deployment guide <deployment-https>`.
+
+There are no database changes compared to 4.1, so an upgrade from 4.1 does
+not require running ``irrd_upgrade_database``.
+
+Downgrading from 4.2 to 4.1.x
+-----------------------------
+There are no specific steps required to downgrade from 4.1 to 4.1.x.
