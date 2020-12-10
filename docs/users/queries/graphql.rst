@@ -16,6 +16,50 @@ IRRd has an HTTP interface which accepts GraphQL_ queries.
 .. _aliases: https://graphql.org/learn/queries/#aliases
 .. _fragments: https://graphql.org/learn/queries/#fragments
 .. _variables: https://graphql.org/learn/queries/#variables
+.. _graphql-cli: https://github.com/Urigo/graphql-cli
+
+Quick start
+-----------
+GraphQL runs on ``/graphql``. For example, if the IRRd instance
+is running on ``rr.example.net``, open::
+
+    https://rr.example.net/graphql
+
+This shows the GraphQL playground, which lets you execute queries, like this::
+
+    query {
+      rpslObjects(asn: [65539, 65540]) {
+        rpslPk
+        objectClass
+        source
+        mntByObjs {
+          objectText
+        }
+        ... on RPSLRoute {
+          prefix
+          rpkiStatus
+        }
+      }
+    }
+
+This query:
+
+* Looks for RPSL objects that match either AS65539 or 65540.
+* Retrieves the RPSL primary key, object class and source of all objects found.
+* Retrieves the object text of all maintainers referred by each object.
+* For RPSL route objects, also retrieves the prefix and RPKI status.
+
+As the example shows, GraphQL lets you query individual attributes, which
+means you don't have to parse RPSL yourself. You can also directly query
+related objects. The output of GraphQL is always JSON.
+
+You can use the "copy curl" button to copy a curl command line that runs the
+same query. For more flexible use, use a dedicated GraphQL client like
+`graphql-cli`_ or a HTTP or GraphQL client library.
+
+The GraphQL playground has partial auto-complete to help you write your query,
+and syntax validation.
+
 
 Introduction to GraphQL
 -----------------------
