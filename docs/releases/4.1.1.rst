@@ -1,0 +1,8 @@
+============================
+Release notes for IRRd 4.1.1
+============================
+
+An issue was fixed in the RPKI importer, where it would cause other
+database changes to be blocked during part of the RPKI import.
+No data was lost, but NRTM imports and authoritative changes would
+be delayed for up to 5-10 minutes on every RPKI import.
