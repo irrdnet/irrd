@@ -307,7 +307,7 @@ A sample nginx configuration could initially look as follows::
         default_type  application/octet-stream;
 
         gzip on;
-        gzip_types application/json;
+        gzip_types application/json text/plain;
 
         server {
             server_name  [your hostname];
