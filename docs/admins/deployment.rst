@@ -342,7 +342,7 @@ IRRd trust the ``X-Forwarded-For`` header.
     the authenticity of queries.
 
 Logrotate configuration
-~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------
 The following logrotate configuration can be used for IRRd::
 
     /home/irrd/server.log {
@@ -363,7 +363,7 @@ This assumes the ``log.logfile_path`` setting is set to
 ``/etc/logrotate.d/irrd`` with permissions ``0644``.
 
 Systemd configuration
-~~~~~~~~~~~~~~~~~~~~~
+---------------------
 
 The following configuration can be used to run IRRd under systemd,
 using setcap, to be created in ``/lib/systemd/system/irrd.service``::
@@ -393,7 +393,7 @@ Then, IRRd can be started under systemd with::
     systemctl start irrd
 
 Errors
-~~~~~~
+------
 
 Errors will generally be written to the IRRd log, or in the console, if
 the config file could not be loaded.
