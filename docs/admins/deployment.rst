@@ -371,7 +371,8 @@ using setcap, to be created in ``/lib/systemd/system/irrd.service``::
     [Unit]
     Description=IRRD4 Service
     Wants=basic.target
-    After=basic.target network.target
+    Requires=redis-server.service postgresql@11-main.service
+    After=basic.target network.target redis-server.service postgresql@11-main.service
 
     [Service]
     Type=simple
@@ -385,6 +386,8 @@ using setcap, to be created in ``/lib/systemd/system/irrd.service``::
 
     [Install]
     WantedBy=multi-user.target
+
+You may need to update the PostgreSQL version if you are not using PosgreSQL 11.
 
 Then, IRRd can be started under systemd with::
 
