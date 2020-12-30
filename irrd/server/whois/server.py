@@ -1,5 +1,6 @@
 import logging
 import multiprocessing as mp
+import os
 import signal
 import socket
 import socketserver
@@ -9,6 +10,7 @@ import time
 from IPy import IP
 from setproctitle import setproctitle
 
+from irrd import ENV_MAIN_PROCESS_PID
 from irrd.conf import get_setting
 from irrd.server.access_check import is_client_permitted
 from irrd.server.whois.query_parser import WhoisQueryParser
@@ -118,8 +120,14 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
             self.preloader = Preloader()
             self.database_handler = DatabaseHandler(readonly=True)
         except Exception as e:
-            logger.error(f'Whois worker failed to initialise preloader or database,'
-                         f'unable to start, traceback follows: {e}', exc_info=e)
+            logger.critical(f'Whois worker failed to initialise preloader or database, '
+                            f'unable to start, terminating IRRd, traceback follows: {e}',
+                            exc_info=e)
+            main_pid = os.getenv(ENV_MAIN_PROCESS_PID)
+            if main_pid:  # pragma: no cover
+                os.kill(int(main_pid), signal.SIGTERM)
+            else:
+                logger.error('Failed to terminate IRRd, unable to find main process PID')
             return
 
         while True:
