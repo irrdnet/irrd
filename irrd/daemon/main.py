@@ -15,7 +15,7 @@ from pid import PidFile, PidFileError
 logger = logging.getLogger(__name__)
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
-from irrd import __version__
+from irrd import __version__, ENV_MAIN_PROCESS_PID
 from irrd.conf import config_init, CONFIG_PATH_DEFAULT, get_setting, get_configuration
 from irrd.mirroring.scheduler import MirrorScheduler
 from irrd.server.http.server import run_http_server
@@ -67,6 +67,7 @@ def main():
 
 def run_irrd(mirror_frequency: int, config_file_path: str):
     terminated = False
+    os.environ[ENV_MAIN_PROCESS_PID] = str(os.getpid())
 
     mirror_scheduler = MirrorScheduler()
     whois_process = ExceptionLoggingProcess(target=start_whois_server, name='irrd-whois-server-listener')

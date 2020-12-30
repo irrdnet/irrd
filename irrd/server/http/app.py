@@ -1,4 +1,6 @@
+import logging
 import os
+import signal
 
 from ariadne.asgi import GraphQL
 from setproctitle import setproctitle
@@ -6,6 +8,7 @@ from starlette.applications import Starlette
 from starlette.routing import Mount
 
 # Relative imports are not allowed in this file
+from irrd import ENV_MAIN_PROCESS_PID
 from irrd.conf import config_init
 from irrd.server.graphql import ENV_UVICORN_WORKER_CONFIG_PATH
 from irrd.server.graphql.extensions import error_formatter, QueryMetadataExtension
@@ -13,6 +16,8 @@ from irrd.server.graphql.schema_builder import build_executable_schema
 from irrd.server.http.endpoints import StatusEndpoint, WhoisQueryEndpoint, ObjectSubmissionEndpoint
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.preload import Preloader
+
+logger = logging.getLogger(__name__)
 
 """
 Starlette app and GraphQL sub-app.
@@ -33,8 +38,18 @@ async def startup():
     global app
     config_path = os.getenv(ENV_UVICORN_WORKER_CONFIG_PATH)
     config_init(config_path)
-    app.state.database_handler = DatabaseHandler(readonly=True)
-    app.state.preloader = Preloader(enable_queries=True)
+    try:
+        app.state.database_handler = DatabaseHandler(readonly=True)
+        app.state.preloader = Preloader(enable_queries=True)
+    except Exception as e:
+        logger.critical(f'HTTP worker failed to initialise preloader or database, '
+                        f'unable to start, terminating IRRd, traceback follows: {e}', exc_info=e)
+        main_pid = os.getenv(ENV_MAIN_PROCESS_PID)
+        if main_pid:
+            os.kill(int(main_pid), signal.SIGTERM)
+        else:
+            logger.error('Failed to terminate IRRd, unable to find main process PID')
+        return
 
 
 async def shutdown():
