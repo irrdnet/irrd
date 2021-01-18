@@ -32,7 +32,7 @@ ujson==4.0.1
 
 # Testing and related packages
 pytest==6.2.1
-pytest-cov==2.10.1
+pytest-cov==2.11.0
 coverage==5.3
 twisted==20.3.0    # Used for a mock email server in integration tests
 python-graphql-client==0.4.2
