@@ -372,7 +372,9 @@ class TestDatabaseHandlerLive:
     def test_rpki_status_storage(self, monkeypatch, irrd_database, database_handler_with_route):
         monkeypatch.setenv('IRRD_SOURCES_TEST_KEEP_JOURNAL', '1')
         dh = database_handler_with_route
+        route_pk = list(dh.execute_query(RPSLDatabaseQuery().rpsl_pk('192.0.2.0/24,AS65537')))[0]['pk']
         route_rpsl_objs = [{
+            'pk': route_pk,
             'rpsl_pk': '192.0.2.0/24,AS65537',
             'source': 'TEST',
             'object_class': 'route',
