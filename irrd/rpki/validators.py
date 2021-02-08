@@ -84,8 +84,8 @@ class BulkRouteROAValidator:
         Routes where their current validation status in the DB matches the new
         validation result, are not included in the return value.
         """
-        columns = ['rpsl_pk', 'ip_first', 'prefix_length', 'asn_first', 'source', 'object_class',
-                   'object_text', 'rpki_status']
+        columns = ['pk', 'rpsl_pk', 'ip_first', 'prefix_length', 'asn_first', 'source',
+                   'object_class', 'object_text', 'rpki_status']
         q = RPSLDatabaseQuery(column_names=columns, enable_ordering=False)
         q = q.object_classes(['route', 'route6'])
         if sources:

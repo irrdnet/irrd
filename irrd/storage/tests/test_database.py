@@ -372,7 +372,28 @@ class TestDatabaseHandlerLive:
     def test_rpki_status_storage(self, monkeypatch, irrd_database, database_handler_with_route):
         monkeypatch.setenv('IRRD_SOURCES_TEST_KEEP_JOURNAL', '1')
         dh = database_handler_with_route
+
+        # Create a second route object, whose status should never be changed,
+        # even though it has the same rpsl_pk - see #461
+        second_route_obj = Mock(
+            pk=lambda: '192.0.2.0/24,AS65537',
+            rpsl_object_class='route',
+            parsed_data={'mnt-by': ['MNT-TEST', 'MNT-TEST2'], 'source': 'RPKI-EXCLUDED'},
+            render_rpsl_text=lambda last_modified: 'object-text',
+            ip_version=lambda: 4,
+            ip_first=IP('192.0.2.0'),
+            ip_last=IP('192.0.2.255'),
+            prefix_length=24,
+            asn_first=65537,
+            asn_last=65537,
+            rpki_status=RPKIStatus.not_found,
+            scopefilter_status=ScopeFilterStatus.in_scope,
+        )
+        dh.upsert_rpsl_object(second_route_obj, JournalEntryOrigin.auth_change)
+
+        route1_pk = list(dh.execute_query(RPSLDatabaseQuery().sources(['TEST'])))[0]['pk']
         route_rpsl_objs = [{
+            'pk': route1_pk,
             'rpsl_pk': '192.0.2.0/24,AS65537',
             'source': 'TEST',
             'object_class': 'route',
@@ -381,14 +402,15 @@ class TestDatabaseHandlerLive:
         }]
 
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.invalid])))) == 1
+        assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.not_found])))) == 1
 
         dh.update_rpki_status(rpsl_objs_now_not_found=route_rpsl_objs)
-        assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.not_found])))) == 1
+        assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.not_found])))) == 2
         journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_range(1, 1)))
         assert journal_entry[0]['operation'] == DatabaseOperation.add_or_update
 
         dh.update_rpki_status()
-        assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.not_found])))) == 1
+        assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.not_found])))) == 2
         assert len(list(dh.execute_query(RPSLDatabaseJournalQuery()))) == 1  # no new entry
 
         dh.update_rpki_status(rpsl_objs_now_invalid=route_rpsl_objs)
@@ -402,7 +424,7 @@ class TestDatabaseHandlerLive:
         assert journal_entry[0]['operation'] == DatabaseOperation.delete
 
         dh.update_rpki_status(rpsl_objs_now_not_found=route_rpsl_objs)
-        assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.not_found])))) == 1
+        assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.not_found])))) == 2
         journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_range(4, 4)))
         assert journal_entry[0]['operation'] == DatabaseOperation.add_or_update
 
