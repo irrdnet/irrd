@@ -243,16 +243,16 @@ class DatabaseHandler:
         """
         table = RPSLDatabaseObject.__table__
         if rpsl_objs_now_valid:
-            pks = {o['rpsl_pk'] for o in rpsl_objs_now_valid}
-            stmt = table.update().where(table.c.rpsl_pk.in_(pks)).values(rpki_status=RPKIStatus.valid)
+            pks = {o['pk'] for o in rpsl_objs_now_valid}
+            stmt = table.update().where(table.c.pk.in_(pks)).values(rpki_status=RPKIStatus.valid)
             self.execute_statement(stmt)
         if rpsl_objs_now_invalid:
-            pks = {o['rpsl_pk'] for o in rpsl_objs_now_invalid}
-            stmt = table.update().where(table.c.rpsl_pk.in_(pks)).values(rpki_status=RPKIStatus.invalid)
+            pks = {o['pk'] for o in rpsl_objs_now_invalid}
+            stmt = table.update().where(table.c.pk.in_(pks)).values(rpki_status=RPKIStatus.invalid)
             self.execute_statement(stmt)
         if rpsl_objs_now_not_found:
-            pks = {o['rpsl_pk'] for o in rpsl_objs_now_not_found}
-            stmt = table.update().where(table.c.rpsl_pk.in_(pks)).values(rpki_status=RPKIStatus.not_found)
+            pks = {o['pk'] for o in rpsl_objs_now_not_found}
+            stmt = table.update().where(table.c.pk.in_(pks)).values(rpki_status=RPKIStatus.not_found)
             self.execute_statement(stmt)
 
         for rpsl_obj in rpsl_objs_now_valid + rpsl_objs_now_not_found:
