@@ -1,0 +1,29 @@
+============================
+Release notes for IRRd 4.1.2
+============================
+
+IRRd 4.1.2 was released on February 10th, 2021, and resolves an
+issue in the RPKI importer, where the status of certain objects
+could be incorrect, if RPKI aware mode was enabled,
+and one or more sources where excluded from RPKI validation.
+
+Specifically, this applied to objects when:
+
+* RPKI aware mode was enabled.
+* Multiple route(6) objects existed with the same primary key
+  (i.e. the same prefix and origin) in different sources.
+* RPKI exclusion was enabled for one or more, but not all, of
+  the sources with the identical primary key route(6) objects.
+* According to RPKI data, the combination of prefix and origin
+  was covered by a ROA.
+
+In this situation, the object from the RPKI excluded source(s)
+should be marked as not found, the other objects as invalid or
+valid. However, the RPKI importer would incorrectly update all
+objects with the same primary key, from all sources.
+
+Therefore, on one run, all objects would be updated to not found,
+then the next run, all objects to invalid or valid, flipping every
+time the RPKI importer was run. If the objects were invalid according
+to RPKI data, this also flipped them between being visible and
+invisible.
