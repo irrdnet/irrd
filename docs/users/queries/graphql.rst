@@ -457,6 +457,7 @@ The query is defined as follows::
         ipLessSpecific: IP
         ipLessSpecificOneLevel: IP
         ipMoreSpecific: IP
+        ipAny: IP
         asn: [ASN!]
         rpkiStatus: [RPKIStatus!]
         scopeFilterStatus: [ScopeFilterStatus!]
@@ -477,7 +478,7 @@ The other possible arguments for the query are:
 * ``sources``: filter on objects from one of these sources.
 * ``objectClass``: filter on one of these RPSL object classes.
 * ``ip...``: filter on exact match, less specific (including exact match),
-  one level less specific, or more specific prefixes.
+  one level less specific, more specific, or any of those prefixes.
 * ``asn``: filter on objects matching one of the provided ASNs.
 * ``rpkiStatus``: filter on objects that have one of these RPKI validation
   statuses in the database. If omitted, the default is to filter on

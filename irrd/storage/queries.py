@@ -246,6 +246,30 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         )
         return self._filter(fltr)
 
+    def ip_any(self, ip: IP):
+        """
+        Filter any less specifics, more specifics or exact matches of a prefix.
+
+        Note that this only finds full more specifics: objects for which their
+        IP range is fully encompassed by the ip parameter - not partial overlaps.
+        """
+        fltr = sa.and_(
+            sa.or_(
+                sa.and_(
+                    self.columns.ip_first <= str(ip.net()),
+                    self.columns.ip_last >= str(ip.broadcast()),
+                ),
+                sa.and_(
+                    self.columns.ip_first >= str(ip.net()),
+                    self.columns.ip_first <= str(ip.broadcast()),
+                    self.columns.ip_last <= str(ip.broadcast()),
+                    self.columns.ip_last >= str(ip.net()),
+                ),
+            ),
+            self.columns.ip_version == ip.version()
+        )
+        return self._filter(fltr)
+
     def asn(self, asn: int):
         """
         Filter for exact matches on an ASN.
