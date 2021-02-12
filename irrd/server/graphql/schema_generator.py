@@ -132,6 +132,7 @@ class SchemaGenerator:
             'ipLessSpecific: IP',
             'ipLessSpecificOneLevel: IP',
             'ipMoreSpecific: IP',
+            'ipAny: IP',
             'asn: [ASN!]',
             'rpkiStatus: [RPKIStatus!]',
             'scopeFilterStatus: [ScopeFilterStatus!]',
