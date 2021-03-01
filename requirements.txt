@@ -34,7 +34,7 @@ ujson==4.0.2
 pytest==6.2.2
 pytest-cov==2.11.1
 coverage==5.5
-twisted==20.3.0    # Used for a mock email server in integration tests
+twisted==21.2.0    # Used for a mock email server in integration tests
 python-graphql-client==0.4.2
 
 # Documentation generation
