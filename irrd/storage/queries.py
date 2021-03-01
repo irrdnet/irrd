@@ -4,6 +4,7 @@ from typing import List, Optional
 import sqlalchemy as sa
 from IPy import IP
 from sqlalchemy.sql import Select, ColumnCollection
+import sqlalchemy.dialects.postgresql as pg
 
 from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import lookup_field_names
@@ -25,6 +26,7 @@ class BaseRPSLObjectDatabaseQuery:
         self._sources_list = []
         self._ordered_by_sources = ordered_by_sources
         self._enable_ordering = enable_ordering
+        self._set_object_classes = []
 
     def pk(self, pk: str):
         """Filter on an exact object PK (UUID)."""
@@ -58,6 +60,7 @@ class BaseRPSLObjectDatabaseQuery:
         Classes list must be an iterable. Will match objects from any
         of the mentioned classes.
         """
+        self._set_object_classes = object_classes
         fltr = self.columns.object_class.in_(object_classes)
         return self._filter(fltr)
 
@@ -195,11 +198,15 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
 
     def ip_less_specific(self, ip: IP):
         """Filter any less specifics or exact matches of a prefix."""
-        fltr = sa.and_(
-            self.columns.ip_first <= str(ip.net()),
-            self.columns.ip_last >= str(ip.broadcast()),
-            self.columns.ip_version == ip.version()
-        )
+        if self._prefix_query_permitted():
+            pg_prefix = sa.cast(str(ip), pg.CIDR)
+            fltr = self.columns.prefix.op(">>=")(pg_prefix)
+        else:
+            fltr = sa.and_(
+                self.columns.ip_first <= str(ip.net()),
+                self.columns.ip_last >= str(ip.broadcast()),
+                self.columns.ip_version == ip.version()
+            )
         return self._filter(fltr)
 
     def ip_less_specific_one_level(self, ip: IP):
@@ -236,14 +243,18 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         Note that this only finds full more specifics: objects for which their
         IP range is fully encompassed by the ip parameter.
         """
-        fltr = sa.and_(
-            self.columns.ip_first >= str(ip.net()),
-            self.columns.ip_first <= str(ip.broadcast()),
-            self.columns.ip_last <= str(ip.broadcast()),
-            self.columns.ip_last >= str(ip.net()),
-            self.columns.ip_version == ip.version(),
-            sa.not_(sa.and_(self.columns.ip_first == str(ip.net()), self.columns.ip_last == str(ip.broadcast()))),
-        )
+        if self._prefix_query_permitted():
+            pg_prefix = sa.cast(str(ip), pg.CIDR)
+            fltr = self.columns.prefix.op("<<")(pg_prefix)
+        else:
+            fltr = sa.and_(
+                self.columns.ip_first >= str(ip.net()),
+                self.columns.ip_first <= str(ip.broadcast()),
+                self.columns.ip_last <= str(ip.broadcast()),
+                self.columns.ip_last >= str(ip.net()),
+                self.columns.ip_version == ip.version(),
+                sa.not_(sa.and_(self.columns.ip_first == str(ip.net()), self.columns.ip_last == str(ip.broadcast()))),
+            )
         return self._filter(fltr)
 
     def ip_any(self, ip: IP):
@@ -253,21 +264,28 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         Note that this only finds full more specifics: objects for which their
         IP range is fully encompassed by the ip parameter - not partial overlaps.
         """
-        fltr = sa.and_(
-            sa.or_(
-                sa.and_(
-                    self.columns.ip_first <= str(ip.net()),
-                    self.columns.ip_last >= str(ip.broadcast()),
+        if self._prefix_query_permitted():
+            pg_prefix = sa.cast(str(ip), pg.CIDR)
+            fltr = sa.or_(
+                self.columns.prefix.op(">>=")(pg_prefix),
+                self.columns.prefix.op("<<")(pg_prefix),
+            )
+        else:
+            fltr = sa.and_(
+                sa.or_(
+                    sa.and_(
+                        self.columns.ip_first <= str(ip.net()),
+                        self.columns.ip_last >= str(ip.broadcast()),
+                    ),
+                    sa.and_(
+                        self.columns.ip_first >= str(ip.net()),
+                        self.columns.ip_first <= str(ip.broadcast()),
+                        self.columns.ip_last <= str(ip.broadcast()),
+                        self.columns.ip_last >= str(ip.net()),
+                    ),
                 ),
-                sa.and_(
-                    self.columns.ip_first >= str(ip.net()),
-                    self.columns.ip_first <= str(ip.broadcast()),
-                    self.columns.ip_last <= str(ip.broadcast()),
-                    self.columns.ip_last >= str(ip.net()),
-                ),
-            ),
-            self.columns.ip_version == ip.version()
-        )
+                self.columns.ip_version == ip.version()
+            )
         return self._filter(fltr)
 
     def asn(self, asn: int):
@@ -354,6 +372,9 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
             **{f'lookup_attr_text_search{counter}': '%' + value + '%'}
         )
         return self
+
+    def _prefix_query_permitted(self):
+        return self._set_object_classes and 'inetnum' not in self._set_object_classes
 
     def __repr__(self):
         return f'{self.statement}\nPARAMS: {self.statement.compile().params}'

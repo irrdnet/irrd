@@ -59,6 +59,7 @@ class RPSLDatabaseObject(Base):  # type: ignore
     ip_size = sa.Column(sa.DECIMAL(scale=0))
     # Only filled for route/route6
     prefix_length = sa.Column(sa.Integer, nullable=True)
+    prefix = sa.Column(pg.CIDR, nullable=True)
 
     asn_first = sa.Column(sa.BigInteger, index=True)
     asn_last = sa.Column(sa.BigInteger, index=True)
@@ -76,6 +77,8 @@ class RPSLDatabaseObject(Base):  # type: ignore
             sa.Index('ix_rpsl_objects_ip_first_ip_last', 'ip_first', 'ip_last', ),
             sa.Index('ix_rpsl_objects_ip_last_ip_first', 'ip_last', 'ip_first'),
             sa.Index('ix_rpsl_objects_asn_first_asn_last', 'asn_first', 'asn_last'),
+            sa.Index('ix_rpsl_objects_prefix_gist', sa.text('prefix inet_ops'),
+                     postgresql_using='gist')
         ]
         for name in lookup_field_names():
             index_name = 'ix_rpsl_objects_parsed_data_' + name.replace('-', '_')
