@@ -6,6 +6,7 @@ from IPy import IP
 from sqlalchemy.sql import Select, ColumnCollection
 import sqlalchemy.dialects.postgresql as pg
 
+from irrd.conf import get_setting
 from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import lookup_field_names
 from irrd.scopefilter.status import ScopeFilterStatus
@@ -374,7 +375,10 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         return self
 
     def _prefix_query_permitted(self):
-        return self._set_object_classes and 'inetnum' not in self._set_object_classes
+        return (
+            get_setting('compatibility.inetnum_search_disabled')
+            or (self._set_object_classes and 'inetnum' not in self._set_object_classes)
+        ) and not get_setting('compatibility.irrd42_migration_in_progress')
 
     def __repr__(self):
         return f'{self.statement}\nPARAMS: {self.statement.compile().params}'

@@ -58,3 +58,20 @@ different ways of detecting the end of a response.
 As these are raw TCP sockets, you will have to write your own client
 that handles the two different output formats.
 To extract RPSL attributes, you need to use your own RPSL parser.
+
+.. _performance_prefix_queries:
+
+Performance of prefix queries
+-----------------------------
+Queries for prefixes in IRRd aim to use the most efficient query execution.
+Due to internal indexing considerations, prefix queries are much faster if
+they do not include `inetnum` objects. The speed improvement can be in the
+order of 100x.
+
+High performance prefix queries are used when you:
+
+* Use the ``-t`` parameter in RIPE queries.
+* Use type-specific queries like ``!r`` or ``-L``.
+* As the server admin, set ``compatibility.inetnum_search_disabled``.
+
+Note that this is specific to `inetnum`, not `inet6num`.

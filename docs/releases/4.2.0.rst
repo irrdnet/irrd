@@ -16,6 +16,9 @@ IRRd 4.2.0 adds several major features:
   :doc:`HTTPS API call for submitting RPSL objects </users/database-changes>`.
   This allows submitting one or multiple objects, and returns a JSON response
   with the result of the requested changes.
+* Prefix searches can have up to a 100x
+  :ref:`performance improvement <performance_prefix_queries>` in several
+  circumstances.
 
 The new HTTP interfaces are intended to be used with HTTPS, to provide
 secure and authenticated transport. The deployment guide
@@ -68,17 +71,71 @@ Several configuration options have been added or changed:
 * A new setting ``server.http.forwarded_allowed_ips`` was added. This
   needs to be set when the proxy in front of IRRd is not running on
   the local host.
+* The new setting ``compatibility.inetnum_search_disabled`` allows IRRd
+  to default to
+  :ref:`high performance prefix queries <performance_prefix_queries>`.
+  You should enable this setting if you are certain your instance does
+  not process `inetnum` objects.
 
 As IRRd now rejects unknown settings, it is possible that there are other
 settings in your configuration file that were always unknown, but will now
 be rejected by IRRd 4.1.
 
-Other than updating these settings, you should also install nginx or a
+Other than the settings changes, IRRd 4.2 includes database migrations.
+There are two upgrade paths for this:
+
+* A simpler path where IRRd is shut down during all migrations. These
+  take about 15-45 minutes, during which IRRd will not be available.
+* A more complex path where IRRd is only shut down during one fast migration.
+  This limits the downtime, but consists of more steps.
+
+Simpler upgrade
+^^^^^^^^^^^^^^^
+* Disable all cron and e-mail triggered tasks. There should be no calls
+  to any IRRd scripts during the upgrade process.
+* Upgrade the IRRd package from within the virtualenv with
+  ``pip install -U irrd``
+* Update your settings file as noted above.
+* Shut down your IRRd instance.
+* Run the database migrations, using the
+  :ref:`irrd_database_upgrade <deployment-database-upgrade>` command.
+  **Important note**: some of the migrations change large amounts of data,
+  and may take up to 15-45 minutes to run in total. While the migrations are
+  running, IRRd should be shut down and any cron / e-mail triggered tasks
+  must be disabled. There must be no calls to ``irrd_submit_email`` or
+  ``irrd_load_database``.
+* Start IRRd and re-enable the cron / e-mail triggered tasks.
+
+Low downtime upgrade
+^^^^^^^^^^^^^^^^^^^^
+* Disable all cron and e-mail triggered tasks.
+* Upgrade the IRRd package from within the virtualenv with
+  ``pip install -U irrd``
+* Update your settings file as noted above.
+* In your settings file, set ``compatibility.irrd42_migration_in_progress``
+  to ``true``.
+* Run only the first database migration, using the
+  :ref:`irrd_database_upgrade <deployment-database-upgrade>` command as:
+  ``irrd_database_upgrade --version f4c837d8258c``. This should take a few
+  seconds.
+* Shut down your IRRd instance (the running 4.1 instance) and start the 4.2
+  instance.
+* Re-enable the cron / e-mail triggered tasks.
+* Run the remaining migrations by running ``irrd_database_upgrade``
+  without a version parameter.
+  These may take up to 15-45 minutes to run. Performance may be affected.
+* After all migrations are complete, remove the
+  ``compatibility.irrd42_migration_in_progress`` setting.
+* Send a SIGHUP to the running IRRd process.
+
+HTTP service
+^^^^^^^^^^^^
+With either path, you should also install nginx or a
 similar service to serve as an HTTPS proxy. An nginx example
 :ref:`is included in the deployment guide <deployment-https>`.
+As no current services depend on this, you can do this after completing
+all other upgrade steps.
 
-There are no database changes compared to 4.1, so an upgrade from 4.1 does
-not require running ``irrd_upgrade_database``.
 
 Downgrading from 4.2 to 4.1.x
 -----------------------------
