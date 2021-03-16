@@ -695,6 +695,12 @@ class TestRPSLDatabaseQueryLive:
         self.dh = DatabaseHandler(readonly=True)
         self.dh.refresh_connection()
 
+        q = RPSLDatabaseQuery().ip_any(IP('192.0.2.0/25'))
+        rpsl_pks = [r['rpsl_pk'] for r in self.dh.execute_query(q)]
+        assert len(rpsl_pks) == 2, f'Failed query: {q}'
+        assert '192.0.2.0/25,AS65537' in rpsl_pks
+        assert '192.0.2.0/26,AS65537' in rpsl_pks
+
         q = RPSLDatabaseQuery().ip_more_specific(IP('192.0.2.0/24'))
         rpsl_pks = [r['rpsl_pk'] for r in self.dh.execute_query(q)]
         assert len(rpsl_pks) == 3, f'Failed query: {q}'
