@@ -516,6 +516,7 @@ class TestRPSLDatabaseQueryLive:
         q = q.lookup_attr('mnt-by', 'MNT-TEST').ip_exact(IP('192.0.2.0/24')).asn_less_specific(65537)
         q = q.ip_less_specific(IP('192.0.2.0/25')).ip_less_specific(IP('192.0.2.0/24'))
         q = q.ip_more_specific(IP('192.0.0.0/21'))
+        q = q.ip_any(IP('192.0.0.0/21'))
 
         result = [i for i in self.dh.execute_query(q)]
         assert len(result) == 1, f'Failed query: {q}'
