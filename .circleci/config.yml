@@ -39,9 +39,16 @@ jobs:
 
       - restore_cache:
           keys:
-          - v5-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}
+          - v6-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}
           # fallback to using the latest cache if no exact match is found
-          - v5-dependencies-{{ .Environment.CIRCLE_JOB }}
+          - v6-dependencies-{{ .Environment.CIRCLE_JOB }}
+
+      - run:
+          name: install dependencies
+          command: |
+            $PYTHON_INTERPRETER -m venv venv
+            . venv/bin/activate
+            pip install -U pip
 
       - run:
           name: install dependencies
@@ -53,7 +60,7 @@ jobs:
       - save_cache:
           paths:
             - ./venv
-          key: v5-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}
+          key: v6-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}
 
       - run:
           name: apt update
