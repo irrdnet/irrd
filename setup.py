@@ -23,7 +23,7 @@ setuptools.setup(
         # This list must be kept in sync with requirements.txt version-wise,
         # but should not include packages used for testing, generating docs
         # or packages.
-        'python-gnupg==0.4.6',
+        'python-gnupg==0.4.7',
         'passlib==1.7.4',
         'IPy==1.01',
         'ordered-set==4.0.2',
@@ -31,25 +31,28 @@ setuptools.setup(
         'PyYAML==5.4.1',
         'datrie==0.8.2',
         'setproctitle==1.2.2',
-        'python-daemon==2.2.4',
+        'python-daemon==2.3.0',
         'pid==3.0.4',
         'redis==3.5.3',
         'hiredis==1.1.0',
         'requests==2.25.1',
         'pytz==2021.1',
-        'uvicorn[standard]==0.13.3',
+        'uvicorn==0.13.4',
         'starlette==0.13.8',
         'psutil==5.8.0',
         'asgiref==3.3.1',
-        'pydantic==1.7.3',
+        'pydantic==1.8.1',
         'SQLAlchemy==1.3.23',
-        'alembic==1.5.4',
+        'alembic==1.5.7',
         'ujson==4.0.2',
         'ariadne@https://github.com/mirumee/ariadne/tarball/master#egg=ariadne-0.12'
     ],
     extras_require={
         ':python_version < "3.7"': [
             'dataclasses==0.8',
+        ],
+        ':python_version > "3.7"': [
+            'uvicorn[standard]==0.13.4',
         ],
         ':platform_python_implementation == "CPython"': [
             'psycopg2-binary==2.8.6',
