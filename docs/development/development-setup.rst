@@ -121,9 +121,9 @@ Making a release
 ----------------
 To create a new packaged version of IRRD:
 
-* Create the new release notes and commit them in the master branch.
-* If you are adding changes from master to an existing release branch,
-  cherry-pick the changes from the master branch, at least including the release
+* Create the new release notes and commit them in the main branch.
+* If you are adding changes from main to an existing release branch,
+  cherry-pick the changes from the main branch, at least including the release
   notes commit. Version updates of dependencies are not generally applied to
   the release branch, except in case of known important bugs or security issues.
 * Ensure the version is correct/updated in ``irrd/__init__.py``.

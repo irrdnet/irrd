@@ -27,7 +27,7 @@ Guidelines for bug reports:
    reported.
 
 2. **Check if the issue has been fixed** &mdash; try to reproduce it using the
-   latest `master` branch.
+   latest `main` branch.
 
 3. **Isolate the problem** &mdash; ideally create a reproducible process which
    the maintainers can use to reproduce the problem. Include any error messages,
