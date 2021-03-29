@@ -14,7 +14,7 @@ setproctitle==1.2.2   # updating the process title for useful ps output
 python-daemon==2.3.0   # daemonising the main process
 pid==3.0.4             # managing PID files
 redis==3.5.3           # preloaded data storage & sync through redis
-hiredis==1.1.0         # improved redis response parsing performance
+hiredis==2.0.0         # improved redis response parsing performance
 requests==2.25.1       # HTTP request handling
 pytz==2021.1
 uvicorn==0.13.4        # ASGI server
