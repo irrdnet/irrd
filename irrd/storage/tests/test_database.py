@@ -64,6 +64,7 @@ def database_handler_with_route():
         ip_first=IP('192.0.2.0'),
         ip_last=IP('192.0.2.255'),
         prefix_length=24,
+        prefix=IP('192.0.2.0/24'),
         asn_first=65537,
         asn_last=65537,
         rpki_status=RPKIStatus.invalid,
@@ -99,6 +100,7 @@ class TestDatabaseHandlerLive:
             ip_version=lambda: 4,
             ip_first=IP('192.0.2.0'),
             ip_last=IP('192.0.2.255'),
+            prefix=IP('192.0.2.0/24'),
             prefix_length=24,
             asn_first=65537,
             asn_last=65537,
@@ -123,6 +125,7 @@ class TestDatabaseHandlerLive:
             ip_version=lambda: 6,
             ip_first=IP('2001:db8::'),
             ip_last=IP('2001:db8::ffff:ffff:ffff:ffff'),
+            prefix=IP('2001:db8::/32'),
             prefix_length=32,
             asn_first=65537,
             asn_last=65537,
@@ -160,6 +163,7 @@ class TestDatabaseHandlerLive:
             ip_version=lambda: None,
             ip_first=None,
             ip_last=None,
+            prefix=None,
             prefix_length=None,
             asn_first=65537,
             asn_last=65537,
@@ -303,6 +307,7 @@ class TestDatabaseHandlerLive:
             ip_version=lambda: 4,
             ip_first=IP('192.0.2.0'),
             ip_last=IP('192.0.2.255'),
+            prefix=IP('192.0.2.0/24'),
             prefix_length=24,
             asn_first=65537,
             asn_last=65537,
@@ -383,6 +388,7 @@ class TestDatabaseHandlerLive:
             ip_version=lambda: 4,
             ip_first=IP('192.0.2.0'),
             ip_last=IP('192.0.2.255'),
+            prefix=IP('192.0.2.0/24'),
             prefix_length=24,
             asn_first=65537,
             asn_last=65537,
@@ -510,6 +516,7 @@ class TestRPSLDatabaseQueryLive:
         q = q.lookup_attr('mnt-by', 'MNT-TEST').ip_exact(IP('192.0.2.0/24')).asn_less_specific(65537)
         q = q.ip_less_specific(IP('192.0.2.0/25')).ip_less_specific(IP('192.0.2.0/24'))
         q = q.ip_more_specific(IP('192.0.0.0/21'))
+        q = q.ip_any(IP('192.0.0.0/21'))
 
         result = [i for i in self.dh.execute_query(q)]
         assert len(result) == 1, f'Failed query: {q}'
@@ -548,6 +555,7 @@ class TestRPSLDatabaseQueryLive:
             ip_version=lambda: 4,
             ip_first=IP('192.0.2.1'),
             ip_last=IP('192.0.2.1'),
+            prefix=IP('192.0.2.0/32'),
             prefix_length=32,
             asn_first=65537,
             asn_last=65537,
@@ -562,6 +570,7 @@ class TestRPSLDatabaseQueryLive:
             ip_version=lambda: 4,
             ip_first=IP('192.0.2.2'),
             ip_last=IP('192.0.2.2'),
+            prefix=IP('192.0.2.0/24'),
             prefix_length=32,
             asn_first=65537,
             asn_last=65537,
@@ -600,6 +609,7 @@ class TestRPSLDatabaseQueryLive:
             ip_version=lambda: None,
             ip_first=None,
             ip_last=None,
+            prefix=None,
             prefix_length=None,
             asn_first=None,
             asn_last=None,
@@ -614,6 +624,7 @@ class TestRPSLDatabaseQueryLive:
             ip_version=lambda: None,
             ip_first=None,
             ip_last=None,
+            prefix=None,
             prefix_length=None,
             asn_first=None,
             asn_last=None,
@@ -639,6 +650,7 @@ class TestRPSLDatabaseQueryLive:
             ip_version=lambda: 4,
             ip_first=IP('192.0.2.0'),
             ip_last=IP('192.0.2.127'),
+            prefix=IP('192.0.2.0/25'),
             prefix_length=25,
             asn_first=65537,
             asn_last=65537,
@@ -653,6 +665,7 @@ class TestRPSLDatabaseQueryLive:
             ip_version=lambda: 4,
             ip_first=IP('192.0.2.128'),
             ip_last=IP('192.0.2.255'),
+            prefix=IP('192.0.2.128/25'),
             prefix_length=25,
             asn_first=65537,
             asn_last=65537,
@@ -667,6 +680,7 @@ class TestRPSLDatabaseQueryLive:
             ip_version=lambda: 4,
             ip_first=IP('192.0.2.0'),
             ip_last=IP('192.0.2.63'),
+            prefix=IP('192.0.2.0/26'),
             prefix_length=26,
             asn_first=65537,
             asn_last=65537,
@@ -681,6 +695,13 @@ class TestRPSLDatabaseQueryLive:
         self.dh.close()
         self.dh = DatabaseHandler(readonly=True)
         self.dh.refresh_connection()
+
+        q = RPSLDatabaseQuery().ip_any(IP('192.0.2.0/25'))
+        rpsl_pks = [r['rpsl_pk'] for r in self.dh.execute_query(q)]
+        assert len(rpsl_pks) == 3, f'Failed query: {q}'
+        assert '192.0.2.0/24,AS65537' in rpsl_pks
+        assert '192.0.2.0/25,AS65537' in rpsl_pks
+        assert '192.0.2.0/26,AS65537' in rpsl_pks
 
         q = RPSLDatabaseQuery().ip_more_specific(IP('192.0.2.0/24'))
         rpsl_pks = [r['rpsl_pk'] for r in self.dh.execute_query(q)]

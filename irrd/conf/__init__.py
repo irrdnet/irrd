@@ -73,6 +73,8 @@ KNOWN_CONFIG_KEYS = DottedDict({
     },
     'sources_default': {},
     'compatibility': {
+        'inetnum_search_disabled': {},
+        'irrd42_migration_in_progress': {},
         'ipv4_only_route_set_members': {},
     }
 })

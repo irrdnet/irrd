@@ -213,6 +213,7 @@ class DatabaseHandler:
             'ip_first': ip_first,
             'ip_last': ip_last,
             'ip_size': ip_size,
+            'prefix': str(rpsl_object.prefix) if rpsl_object.prefix else None,
             'prefix_length': rpsl_object.prefix_length,
             'asn_first': rpsl_object.asn_first,
             'asn_last': rpsl_object.asn_last,
