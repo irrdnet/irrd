@@ -687,7 +687,7 @@ Compatibility
   for all queries. However, if this is enabled and your IRRd instance does
   store `inetnum` objects, they may be missing from responses to queries.
   Therefore, only enable this when you do not process any `inetnum` objects.
-  |br| **Default**: ``false``, operating normally
+  |br| **Default**: ``false``, i.e. `inetnum` search is enabled
   |br| **Change takes effect**: after SIGHUP, for all subsequent queries.
 * ``compatibility.irrd42_migration_in_progress``: this setting is used
   when doing a minimum downtime upgrade from IRRd 4.1.x to IRRd 4.2.x.
