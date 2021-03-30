@@ -37,15 +37,15 @@ setuptools.setup(
         'hiredis==2.0.0',
         'requests==2.25.1',
         'pytz==2021.1',
+        'ariadne==0.13.0',
         'uvicorn==0.13.4',
-        'starlette==0.13.8',
+        'starlette==0.14.2',
         'psutil==5.8.0',
         'asgiref==3.3.1',
         'pydantic==1.8.1',
         'SQLAlchemy==1.3.23',
         'alembic==1.5.8',
         'ujson==4.0.2',
-        'ariadne@https://github.com/mirumee/ariadne/tarball/master#egg=ariadne-0.12'
     ],
     extras_require={
         ':python_version < "3.7"': [
