@@ -34,7 +34,7 @@ setuptools.setup(
         'python-daemon==2.3.0',
         'pid==3.0.4',
         'redis==3.5.3',
-        'hiredis==1.1.0',
+        'hiredis==2.0.0',
         'requests==2.25.1',
         'pytz==2021.1',
         'uvicorn==0.13.4',
@@ -43,7 +43,7 @@ setuptools.setup(
         'asgiref==3.3.1',
         'pydantic==1.8.1',
         'SQLAlchemy==1.3.23',
-        'alembic==1.5.7',
+        'alembic==1.5.8',
         'ujson==4.0.2',
         'ariadne@https://github.com/mirumee/ariadne/tarball/master#egg=ariadne-0.12'
     ],
