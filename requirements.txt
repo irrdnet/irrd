@@ -17,9 +17,10 @@ redis==3.5.3           # preloaded data storage & sync through redis
 hiredis==2.0.0         # improved redis response parsing performance
 requests==2.25.1       # HTTP request handling
 pytz==2021.1
+ariadne==0.13.0
 uvicorn==0.13.4        # ASGI server
 uvicorn[standard]==0.13.4; python_version > '3.7'  # ASGI server extras
-starlette==0.13.8 # pyup: <0.14      # ASGI framework - pinned to <0.14 for ariadne
+starlette==0.14.2 # pyup: <0.15      # ASGI framework - pinned to <0.15 for ariadne
 psutil==5.8.0          # Process management
 asgiref==3.3.1         # ASGI utilities
 pydantic==1.8.1        # Input validation
@@ -52,5 +53,3 @@ pep8-naming==0.11.1
 setuptools==54.2.0
 wheel==0.36.2
 twine==3.4.1
-
--e git://github.com/mirumee/ariadne.git#egg=ariadne
