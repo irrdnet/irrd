@@ -462,6 +462,7 @@ The query is defined as follows::
         rpkiStatus: [RPKIStatus!]
         scopeFilterStatus: [ScopeFilterStatus!]
         textSearch: String
+        recordLimit: Boolean
         sqlTrace: Boolean
       ): [RPSLObject!]
       ...
@@ -488,6 +489,9 @@ The other possible arguments for the query are:
   statuses in the database. If omitted, the default is to filter on
   in_scope objects. Valid values are defined in the ``ScopeFilterStatus``
   enum in the schema.
+* ``recordLimit``: limits the query to return this many results. Related
+  object query results (explained in detail later) do not count towards
+  this limit.
 
 Most arguments expect an array, and this is interpreted as an OR query.
 The separate arguments are joined as an AND query.

@@ -137,6 +137,7 @@ class SchemaGenerator:
             'rpkiStatus: [RPKIStatus!]',
             'scopeFilterStatus: [ScopeFilterStatus!]',
             'textSearch: String',
+            'recordLimit: Int',
             'sqlTrace: Boolean',
         ]
         self.rpsl_query_fields = ', '.join(params)
