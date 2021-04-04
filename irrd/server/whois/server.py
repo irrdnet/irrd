@@ -8,6 +8,7 @@ import threading
 import time
 
 from IPy import IP
+from daemon.daemon import change_process_owner
 from setproctitle import setproctitle
 
 from irrd import ENV_MAIN_PROCESS_PID
@@ -22,7 +23,7 @@ mp.allow_connection_pickling()
 
 
 # Covered by integration tests
-def start_whois_server():  # pragma: no cover
+def start_whois_server(uid, gid):  # pragma: no cover
     """
     Start the whois server, listening forever.
     This function does not return, except after SIGTERM is received.
@@ -32,6 +33,8 @@ def start_whois_server():  # pragma: no cover
     logger.info(f'Starting whois server on TCP {address}')
     server = WhoisTCPServer(
         server_address=address,
+        uid=uid,
+        gid=gid,
     )
 
     # When this process receives SIGTERM, shut down the server cleanly.
@@ -61,9 +64,11 @@ class WhoisTCPServer(socketserver.TCPServer):  # pragma: no cover
     allow_reuse_address = True
     request_queue_size = 50
 
-    def __init__(self, server_address, bind_and_activate=True):  # noqa: N803
+    def __init__(self, server_address, uid, gid, bind_and_activate=True):  # noqa: N803
         self.address_family = socket.AF_INET6 if IP(server_address[0]).version() == 6 else socket.AF_INET
         super().__init__(server_address, None, bind_and_activate)
+        if uid and gid:
+            change_process_owner(uid=uid, gid=gid)
 
         self.connection_queue = mp.Queue()
         self.workers = []

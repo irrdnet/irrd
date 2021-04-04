@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 # flake8: noqa: E402
 import argparse
+import grp
 import logging
 import os
+import pwd
 import signal
 import sys
 import time
@@ -10,6 +12,7 @@ from pathlib import Path
 
 import daemon
 import psutil
+from daemon.daemon import change_process_owner
 from pid import PidFile, PidFileError
 
 logger = logging.getLogger(__name__)
@@ -46,7 +49,8 @@ def main():
         daemon_kwargs['stdout'] = sys.stdout
         daemon_kwargs['stderr'] = sys.stderr
 
-    # config_init w/ commit may only be called within DaemonContext
+    # config_init with commit may only be called within DaemonContext,
+    # but this causes fast failure for most misconfigurations
     config_init(args.config_file_path, commit=False)
 
     with daemon.DaemonContext(**daemon_kwargs):
@@ -66,12 +70,26 @@ def main():
 
 
 def run_irrd(mirror_frequency: int, config_file_path: str):
+    user = get_setting('user')
+    group = get_setting('group')
+    uid = gid = None
+    if user and group:
+        uid = pwd.getpwnam(user).pw_uid
+        gid = grp.getgrnam(group).gr_gid
+
     terminated = False
     os.environ[ENV_MAIN_PROCESS_PID] = str(os.getpid())
 
-    mirror_scheduler = MirrorScheduler()
-    whois_process = ExceptionLoggingProcess(target=start_whois_server, name='irrd-whois-server-listener')
+    whois_process = ExceptionLoggingProcess(
+        target=start_whois_server,
+        name='irrd-whois-server-listener',
+        kwargs={'uid': uid, 'gid': gid}
+    )
     whois_process.start()
+    if uid and gid:
+        change_process_owner(uid=uid, gid=gid)
+
+    mirror_scheduler = MirrorScheduler()
     preload_manager = PreloadStoreManager(name='irrd-preload-store-manager')
     preload_manager.start()
     uvicorn_process = ExceptionLoggingProcess(target=run_http_server, name='irrd-http-server-listener', args=(config_file_path, ))

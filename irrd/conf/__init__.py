@@ -26,6 +26,8 @@ KNOWN_CONFIG_KEYS = DottedDict({
     'database_url': {},
     'redis_url': {},
     'piddir': {},
+    'user': {},
+    'group': {},
     'server': {
         'http': {
             'interface': {},
