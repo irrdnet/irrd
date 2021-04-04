@@ -211,9 +211,9 @@ def _rpsl_db_query_to_graphql_out(query: RPSLDatabaseQuery, info: GraphQLResolve
             graphql_result['objectText'] = remove_auth_hashes(row['object_text'])
         if 'rpki_status' in row:
             graphql_result['rpkiStatus'] = row['rpki_status']
-        if row.get('ip_first') and row.get('prefix_length'):
+        if row.get('ip_first') is not None and row.get('prefix_length'):
             graphql_result['prefix'] = row['ip_first'] + '/' + str(row['prefix_length'])
-        if row.get('asn_first') and row.get('asn_first') == row.get('asn_last'):
+        if row.get('asn_first') is not None and row.get('asn_first') == row.get('asn_last'):
             graphql_result['asn'] = row['asn_first']
 
         object_type = resolve_rpsl_object_type(row)
