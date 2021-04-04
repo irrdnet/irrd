@@ -67,7 +67,11 @@ class BaseRPSLObjectDatabaseQuery:
 
     def first_only(self):
         """Only return the first match."""
-        self.statement = self.statement.limit(1)
+        return self.limit(1)
+
+    def limit(self, record_limit: int):
+        """Limit the response to a certain number of rows"""
+        self.statement = self.statement.limit(record_limit)
         return self
 
     def finalise_statement(self) -> Select:

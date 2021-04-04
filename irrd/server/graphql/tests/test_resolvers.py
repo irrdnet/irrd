@@ -120,10 +120,12 @@ class TestGraphQLResolvers:
             sources=['TEST1'],
             mntBy='mnt-by',
             unknownKwarg='ignored',
+            record_limit=2,
         ))
 
         assert result == EXPECTED_RPSL_GRAPHQL_OUTPUT
         assert flatten_mock_calls(mock_database_query) == [
+            ['limit', (2,), {}],
             ['rpsl_pks', ('pk',), {}],
             ['object_classes', ('route',), {}],
             ['asns_first', ([65550],), {}],

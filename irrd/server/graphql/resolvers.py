@@ -64,6 +64,8 @@ def resolve_rpsl_objects(_, info: GraphQLResolveInfo, **kwargs):
         enable_ordering=False
     )
 
+    if 'record_limit' in kwargs:
+        query.limit(kwargs['record_limit'])
     if 'rpsl_pk' in kwargs:
         query.rpsl_pks(kwargs['rpsl_pk'])
     if 'object_class' in kwargs:
