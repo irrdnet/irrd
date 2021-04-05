@@ -218,6 +218,7 @@ class TestConfiguration:
         config = {
             'irrd': {
                 'piddir': str(tmpdir + '/does-not-exist'),
+                'user': 'a',
                 'server': {
                     'whois': {
                         'access_list': 'doesnotexist',
@@ -287,6 +288,7 @@ class TestConfiguration:
         assert 'Setting email.smtp is required.' in str(ce.value)
         assert 'Setting email.footer must be a string, if defined.' in str(ce.value)
         assert 'Setting email.recipient_override must be an email address if set.' in str(ce.value)
+        assert 'Settings user and group must both be defined, or neither.' in str(ce.value)
         assert 'Setting auth.gnupg_keyring is required.' in str(ce.value)
         assert 'Access lists doesnotexist referenced in settings, but not defined.' in str(ce.value)
         assert 'Setting server.http.status_access_list must be a string, if defined.' in str(ce.value)
