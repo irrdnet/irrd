@@ -9,6 +9,7 @@ import signal
 import sys
 import time
 from pathlib import Path
+from typing import Tuple, Optional
 
 import daemon
 import psutil
@@ -55,12 +56,22 @@ def main():
 
     with daemon.DaemonContext(**daemon_kwargs):
         config_init(args.config_file_path)
+        uid, gid = get_configured_owner()
+        if not os.environ.get('CI') and not uid and os.geteuid() == 0:
+            logging.critical('Unable to start: user and group must be defined in settings '
+                             'when starting IRRd as root')
+            return
+
         piddir = get_setting('piddir')
         logger.info('IRRd attempting to secure PID')
         try:
             with PidFile(pidname='irrd', piddir=piddir):
                 logger.info(f'IRRd {__version__} starting, PID {os.getpid()}, PID file in {piddir}')
-                run_irrd(mirror_frequency, args.config_file_path if args.config_file_path else CONFIG_PATH_DEFAULT)
+                run_irrd(mirror_frequency=mirror_frequency,
+                         config_file_path=args.config_file_path if args.config_file_path else CONFIG_PATH_DEFAULT,
+                         uid=uid,
+                         gid=gid,
+                )
         except PidFileError as pfe:
             logger.error(f'Failed to start IRRd, unable to lock PID file irrd.pid in {piddir}: {pfe}')
         except Exception as e:
@@ -69,14 +80,7 @@ def main():
             os.kill(os.getpid(), signal.SIGTERM)
 
 
-def run_irrd(mirror_frequency: int, config_file_path: str):
-    user = get_setting('user')
-    group = get_setting('group')
-    uid = gid = None
-    if user and group:
-        uid = pwd.getpwnam(user).pw_uid
-        gid = grp.getgrnam(group).gr_gid
-
+def run_irrd(mirror_frequency: int, config_file_path: str, uid: Optional[int], gid: Optional[int]):
     terminated = False
     os.environ[ENV_MAIN_PROCESS_PID] = str(os.getpid())
 
@@ -154,6 +158,16 @@ def run_irrd(mirror_frequency: int, config_file_path: str):
                      f'child processes {[c.pid for c in children]}')
 
     logging.info(f'Main process exiting')
+
+
+def get_configured_owner() -> Tuple[int, int]:
+    uid = gid = None
+    user = get_setting('user')
+    group = get_setting('group')
+    if user and group:
+        uid = pwd.getpwnam(user).pw_uid
+        gid = grp.getgrnam(group).gr_gid
+    return uid, gid
 
 
 if __name__ == '__main__':  # pragma: no cover
