@@ -556,12 +556,16 @@ Logging
   e.g. by a log rotation process, IRRd will create a new file in the same
   location, and continue writing to the new file. Timestamps in logs are always
   in UTC, regardless of local machine timezone.
-  |br| **Default**: not defined, logs will be sent to the console.
+  |br| **Default**: not defined.
   |br| **Change takes effect**: after full IRRd restart.
 * ``log.level``: the loglevel, one of `DEBUG`, `INFO`, `WARNING`, `ERROR`,
   `CRITICAL`. The recommended level is `INFO`.
   |br| **Default**: ``INFO``.
   |br| **Change takes effect**: after SIGHUP.
+
+IRRd requires ``logfile_path`` or ``logging_config_path`` to be set if
+IRRd is started into the background. If IRRd is started with ``--foreground``,
+these options may be left undefined and all logs will be printed to stdout.
 
 If you need more granularity than these settings, you can set
 ``log.logging_config_path``. This allows you to set custom Python logging
@@ -685,8 +689,8 @@ Also see the `Python documentation for logging`_ or
 `this example from the logging cookbook`_.
 
 Changes to ``log.logging_config_path`` take effect after a full IRRd restart.
-Errors in the logging config may prevent IRRd from starting. Any errors will
-be printed to the console.
+Errors in the logging config may prevent IRRd from starting. Any such errors
+will be printed to the console.
 
 .. _Python documentation for logging: https://docs.python.org/3/library/logging.config.html#logging-config-dictschema
 .. _this example from the logging cookbook: https://docs.python.org/3/howto/logging-cookbook.html#an-example-dictionary-based-configuration
