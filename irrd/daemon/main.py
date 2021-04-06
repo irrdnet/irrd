@@ -51,12 +51,13 @@ def main():
         daemon_kwargs['stderr'] = sys.stderr
 
     # config_init with commit may only be called within DaemonContext,
-    # but this causes fast failure for most misconfigurations
+    # but this call here causes fast failure for most misconfigurations
     config_init(args.config_file_path, commit=False)
 
     with daemon.DaemonContext(**daemon_kwargs):
         config_init(args.config_file_path)
         uid, gid = get_configured_owner()
+        # Running as root is permitted on CI
         if not os.environ.get('CI') and not uid and os.geteuid() == 0:
             logging.critical('Unable to start: user and group must be defined in settings '
                              'when starting IRRd as root')

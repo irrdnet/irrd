@@ -193,7 +193,7 @@ General settings
   as the recommended deployment is to have
   :ref:`an HTTPS proxy <deployment-https>` in front. Therefore, there is no
   need for IRRd to bind to port 80 or 443.
-  |br| **Default**: not defined, IRRd does not drop privileges
+  |br| **Default**: not defined, IRRd does not drop privileges.
   |br| **Change takes effect**: after full IRRd restart.
 
 
