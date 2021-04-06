@@ -276,10 +276,6 @@ Useful options:
 
 IRRd can be stopped by sending a SIGTERM signal.
 
-.. note::
-    Although ``log.logfile_path`` is not required, if it is unset and
-    IRRd is started in the background, log output is lost.
-
 IRRd typically binds to port 43 for whois, which is a privileged port.
 To support this, start IRRd as root, and set the ``user`` and ``group``
 settings in the config file. IRRd will drop privileges to this user/group

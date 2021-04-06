@@ -54,8 +54,18 @@ def main():
     # but this call here causes fast failure for most misconfigurations
     config_init(args.config_file_path, commit=False)
 
+    if not any([
+        get_configuration().user_config_staging.get('log.logfile_path'),
+        get_configuration().user_config_staging.get('log.logging_config_path'),
+        args.foreground,
+    ]):
+        logging.critical('Unable to start: when not running in the foreground, you must set '
+                         'either log.logfile_path or log.logging_config_path in the settings')
+        return
+
     with daemon.DaemonContext(**daemon_kwargs):
         config_init(args.config_file_path)
+
         uid, gid = get_configured_owner()
         # Running as root is permitted on CI
         if not os.environ.get('CI') and not uid and os.geteuid() == 0:
