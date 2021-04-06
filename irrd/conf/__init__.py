@@ -26,6 +26,8 @@ KNOWN_CONFIG_KEYS = DottedDict({
     'database_url': {},
     'redis_url': {},
     'piddir': {},
+    'user': {},
+    'group': {},
     'server': {
         'http': {
             'interface': {},
@@ -320,10 +322,13 @@ class Configuration:
 
         string_not_required = ['email.footer', 'server.whois.access_list',
                                'server.http.status_access_list', 'rpki.notify_invalid_subject',
-                               'rpki.notify_invalid_header', 'rpki.slurm_source']
+                               'rpki.notify_invalid_header', 'rpki.slurm_source', 'user', 'group']
         for setting in string_not_required:
             if not self._check_is_str(config, setting, required=False):
                 errors.append(f'Setting {setting} must be a string, if defined.')
+
+        if bool(config.get('user')) != bool(config.get('group')):
+            errors.append('Settings user and group must both be defined, or neither.')
 
         if not self._check_is_str(config, 'auth.gnupg_keyring'):
             errors.append('Setting auth.gnupg_keyring is required.')

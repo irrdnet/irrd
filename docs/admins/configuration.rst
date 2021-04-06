@@ -25,6 +25,8 @@ This sample shows most configuration options::
         database_url: 'postgresql:///irrd'
         redis_url: 'unix:///usr/local/var/run/redis.sock'
         piddir: /var/run/
+        user: irrd
+        group: irrd
 
         access_lists:
             http_database_status:
@@ -161,8 +163,8 @@ IRRd will reject unknown configuration options, and fail to start or reload.
 Configuration options
 ---------------------
 
-Storage
-~~~~~~~
+General settings
+~~~~~~~~~~~~~~~~
 * ``database_url``: a RFC1738 PostgreSQL database URL for the database used by
   IRRd, e.g. ``postgresql://username:password@localhost:5432/irrd`` to connect
   to `localhost` on port 5432, database `irrd`, username `username`,
@@ -182,6 +184,16 @@ Storage
 * ``piddir``: an existing writable directory where the IRRd PID file will
   be written (as ``irrd.pid``).
   |br| **Default**: not defined, but required.
+  |br| **Change takes effect**: after full IRRd restart.
+* ``user`` and ``group``: the user and group name to which IRRd will drop
+  privileges, after binding to ``server.whois.port``.
+  This allows IRRd to be started as root, bind to port 43, and then
+  drop privileges. Both must be defined, or neither.
+  Note that binding to ``server.http.port`` happens after dropping privileges,
+  as the recommended deployment is to have
+  :ref:`an HTTPS proxy <deployment-https>` in front. Therefore, there is no
+  need for IRRd to bind to port 80 or 443.
+  |br| **Default**: not defined, IRRd does not drop privileges.
   |br| **Change takes effect**: after full IRRd restart.
 
 

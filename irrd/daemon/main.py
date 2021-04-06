@@ -1,15 +1,19 @@
 #!/usr/bin/env python
 # flake8: noqa: E402
 import argparse
+import grp
 import logging
 import os
+import pwd
 import signal
 import sys
 import time
 from pathlib import Path
+from typing import Tuple, Optional
 
 import daemon
 import psutil
+from daemon.daemon import change_process_owner
 from pid import PidFile, PidFileError
 
 logger = logging.getLogger(__name__)
@@ -46,17 +50,29 @@ def main():
         daemon_kwargs['stdout'] = sys.stdout
         daemon_kwargs['stderr'] = sys.stderr
 
-    # config_init w/ commit may only be called within DaemonContext
+    # config_init with commit may only be called within DaemonContext,
+    # but this call here causes fast failure for most misconfigurations
     config_init(args.config_file_path, commit=False)
 
     with daemon.DaemonContext(**daemon_kwargs):
         config_init(args.config_file_path)
+        uid, gid = get_configured_owner()
+        # Running as root is permitted on CI
+        if not os.environ.get('CI') and not uid and os.geteuid() == 0:
+            logging.critical('Unable to start: user and group must be defined in settings '
+                             'when starting IRRd as root')
+            return
+
         piddir = get_setting('piddir')
         logger.info('IRRd attempting to secure PID')
         try:
             with PidFile(pidname='irrd', piddir=piddir):
                 logger.info(f'IRRd {__version__} starting, PID {os.getpid()}, PID file in {piddir}')
-                run_irrd(mirror_frequency, args.config_file_path if args.config_file_path else CONFIG_PATH_DEFAULT)
+                run_irrd(mirror_frequency=mirror_frequency,
+                         config_file_path=args.config_file_path if args.config_file_path else CONFIG_PATH_DEFAULT,
+                         uid=uid,
+                         gid=gid,
+                )
         except PidFileError as pfe:
             logger.error(f'Failed to start IRRd, unable to lock PID file irrd.pid in {piddir}: {pfe}')
         except Exception as e:
@@ -65,13 +81,20 @@ def main():
             os.kill(os.getpid(), signal.SIGTERM)
 
 
-def run_irrd(mirror_frequency: int, config_file_path: str):
+def run_irrd(mirror_frequency: int, config_file_path: str, uid: Optional[int], gid: Optional[int]):
     terminated = False
     os.environ[ENV_MAIN_PROCESS_PID] = str(os.getpid())
 
-    mirror_scheduler = MirrorScheduler()
-    whois_process = ExceptionLoggingProcess(target=start_whois_server, name='irrd-whois-server-listener')
+    whois_process = ExceptionLoggingProcess(
+        target=start_whois_server,
+        name='irrd-whois-server-listener',
+        kwargs={'uid': uid, 'gid': gid}
+    )
     whois_process.start()
+    if uid and gid:
+        change_process_owner(uid=uid, gid=gid)
+
+    mirror_scheduler = MirrorScheduler()
     preload_manager = PreloadStoreManager(name='irrd-preload-store-manager')
     preload_manager.start()
     uvicorn_process = ExceptionLoggingProcess(target=run_http_server, name='irrd-http-server-listener', args=(config_file_path, ))
@@ -136,6 +159,16 @@ def run_irrd(mirror_frequency: int, config_file_path: str):
                      f'child processes {[c.pid for c in children]}')
 
     logging.info(f'Main process exiting')
+
+
+def get_configured_owner() -> Tuple[int, int]:
+    uid = gid = None
+    user = get_setting('user')
+    group = get_setting('group')
+    if user and group:
+        uid = pwd.getpwnam(user).pw_uid
+        gid = grp.getgrnam(group).gr_gid
+    return uid, gid
 
 
 if __name__ == '__main__':  # pragma: no cover

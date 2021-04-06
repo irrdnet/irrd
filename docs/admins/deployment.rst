@@ -280,14 +280,11 @@ IRRd can be stopped by sending a SIGTERM signal.
     Although ``log.logfile_path`` is not required, if it is unset and
     IRRd is started in the background, log output is lost.
 
-IRRd should be run as a non-privileged user. When binding to privileged
-ports, like 43 for whois, you can use ``setcap`` assign that user permissions
-to open privileged ports, e.g.::
-
-    # Once, as root:
-    setcap 'cap_net_bind_service=+eip' /home/irrd/irrd-venv/bin/python3
-    # To run, start without --uid, as the non-privileged user
-    /home/irrd/irrd-venv/bin/irrd
+IRRd typically binds to port 43 for whois, which is a privileged port.
+To support this, start IRRd as root, and set the ``user`` and ``group``
+settings in the config file. IRRd will drop privileges to this user/group
+right after binding to the whois port. IRRd will refuse to run as root
+if ``user`` and ``group`` are not set.
 
 Alternatively, you can run IRRd on non-privileged ports and use IPtables
 or similar tools to redirect connections from the privileged ports.
@@ -377,8 +374,7 @@ using setcap, to be created in ``/lib/systemd/system/irrd.service``::
     [Service]
     Type=simple
     WorkingDirectory=/home/irrd
-    User=irrd
-    Group=irrd
+    User=root
     PIDFile=/home/irrd/irrd.pid  # must match piddir config in the settings
     ExecStart=/home/irrd/irrd-venv/bin/irrd --foreground
     Restart=on-failure

@@ -46,6 +46,10 @@ Other changes
 * New `as-set` objects created in authoritative databases are required
   to have a hierarchical name, like ``AS65540:AS-CUSTOMERS``. For example,
   ``AS-CUSTOMERS`` is no longer allowed.
+* IRRd now supports dropping privileges after binding to the whois port,
+  by setting the ``user`` and ``group`` settings.
+  This allows you to start IRRd as root, have it bind to port 43, and then
+  drop privileges. This is now the recommended deployment method.
 
 .. _draft-ymbk-opsawg-finding-geofeeds-03: https://tools.ietf.org/html/draft-ymbk-opsawg-finding-geofeeds-03
 
