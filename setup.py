@@ -43,7 +43,7 @@ setuptools.setup(
         'psutil==5.8.0',
         'asgiref==3.3.1',
         'pydantic==1.8.1',
-        'SQLAlchemy==1.3.23',
+        'SQLAlchemy==1.3.24',
         'alembic==1.5.8',
         'ujson==4.0.2',
     ],
