@@ -7,7 +7,7 @@ Its main features are:
 
 * Validating, cleaning and storing IRR data, and extracting
   information for indexing.
-* Providing a whois query interface to query the IRR data.
+* Providing several query interfaces to query the IRR data.
 * Handling authoritative IRR data, and allowing users with the appropriate
   authorisation to submit requests to change objects.
 * Mirroring other IRR databases using file imports and NRTM.
@@ -17,8 +17,8 @@ Legacy versions of IRRd are or were in use at NTT and RADB, amongst other
 places. Difficulties with continued maintenance and extension of these
 older versions lead to the IRRd v4 project.
 
-This project was commissioned by NTT_ and designed and developed by
-DashCare_.
+This project was originally commissioned by NTT_ and designed and
+developed by DashCare_.
 
 .. _NTT: https://us.ntt.net
 .. _DashCare: https://www.dashcare.nl

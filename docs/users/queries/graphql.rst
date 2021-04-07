@@ -21,11 +21,12 @@ IRRd has an HTTP interface which accepts GraphQL_ queries.
 Quick start
 -----------
 GraphQL runs on ``/graphql``. For example, if the IRRd instance
-is running on ``rr.example.net``, open::
+is running on ``rr.example.net``, you can find the GraphQL API on::
 
     https://rr.example.net/graphql
 
-This shows the GraphQL playground, which lets you execute queries, like this::
+Opening this in a browser shows the GraphQL playground, which lets you
+execute queries, like this::
 
     query {
       rpslObjects(asn: [65539, 65540]) {
@@ -63,23 +64,21 @@ and syntax validation.
 
 Introduction to GraphQL
 -----------------------
-GraphQL_ is a query language. Under the hood, queries are sent with an HTTP
-POST request, where the payload is the query in GraphQL language. This
-language is inspired by JSON. The response is always JSON data.
-
-GraphQL uses a schema which defines which queries and responses exist. The
-schema can be introspected_. All query fields and response fields are defined
-in this schema, including their types. So you can use the schema to learn
-exactly what queries you can run, and what responses can look like.
-
-Typically, you do not write the HTTP payloads yourself, but use a client
-library. There are several `clients listed on the GraphQL website`_, and
-the awesome-graphql_ repository has even more. However, any HTTP library
-will work.
-
-In GraphQL, you always specify exactly which fields you want the API to return.
-It uses camel case for names, so an RPSL attribute like ``tech-c`` will
-be referred to as ``techC`` in the GraphQL API.
+* GraphQL_ is a query language. Under the hood, queries are sent with an HTTP
+  POST request, where the payload is the query in GraphQL language. This
+  language is inspired by JSON.
+* The response is always JSON data.
+* GraphQL uses a schema that defines exactly which queries and responses exist.
+  The schema can be introspected_. All query fields and response fields are
+  defined in this schema, including their types. You can use the schema to learn
+  exactly what queries you can run, and what responses can look like.
+* Typically, you do not write the HTTP payloads yourself, but use a client
+  library. There are several `clients listed on the GraphQL website`_, and
+  the awesome-graphql_ repository has even more. However, any HTTP library
+  will work.
+* In GraphQL, you always specify exactly which fields you want the API to return.
+  It uses camel case for names, so an RPSL attribute like ``tech-c`` will
+  be referred to as ``techC`` in the GraphQL API.
 
 Here's an example IRRd GraphQL query::
 
@@ -129,7 +128,7 @@ Some of the latter queries could also be answered using a ``rpslObjects``
 query. However, the specific purposes queries are much more efficient,
 both in query execution and output format.
 
-There are much fewer types of queries than in whois, because the queries
+The GraphQL API only has few queries compared to whois, because the queries
 themselves are much more flexible. Particularly, the ``rpslObjects`` query
 is the most feature rich, allowing advanced and
 complex queries on RPSL data. This document walks through the various
@@ -430,7 +429,7 @@ An example query::
 RPSL objects query
 ------------------
 The ``rpslObjects`` query is the single query for RPSL objects.
-It's very versatile, and replaces quite a few whois queries.
+It's very versatile, and replaces many whois queries.
 Unlike other queries, it also supports resolving related objects.
 
 Making a query
@@ -462,7 +461,7 @@ The query is defined as follows::
         rpkiStatus: [RPKIStatus!]
         scopeFilterStatus: [ScopeFilterStatus!]
         textSearch: String
-        recordLimit: Boolean
+        recordLimit: Int
         sqlTrace: Boolean
       ): [RPSLObject!]
       ...
@@ -574,16 +573,16 @@ have a ``members`` attribute. You'd expect to be able to query::
     }
 
 However, this fails, with the following GraphQL error:
-"Cannot query field 'members' on type 'RPSLObject'. Did you mean to use an
-inline fragment on 'RPSLAsSet', 'RPSLRouteSet', or 'RPSLRtrSet'?".
+*"Cannot query field 'members' on type 'RPSLObject'. Did you mean to use an
+inline fragment on 'RPSLAsSet', 'RPSLRouteSet', or 'RPSLRtrSet'?"*.
 
 .. tip::
     GraphQL makes a decent effort at trying to determine what you were trying
     to query for, including issues like field misspellings.
 
 ``RPSLObject`` only contains the fields listed above, and not ``members``.
-To query that, you need to inform GraphQL that you are would like some fields
-from the ``RPSLAsSet`` object instead, using an `inline fragment`_.
+To query that, you need to inform GraphQL that you would like some fields
+from the ``RPSLAsSet`` object, using an `inline fragment`_.
 For this particular example::
 
     query {
@@ -845,7 +844,7 @@ metadata is kept in the journal. Worth noting are the fields:
     of the object changed
   * ``scope_filter``: generated because the
     :doc:`scopefilter status </admins/scopefilter>` of the object changed
-* ``serialNRTM``: the local serial of this change.
+* ``serialNrtm``: the local serial of this change.
 
 Custom types in IRRd
 --------------------
@@ -888,17 +887,3 @@ query is being executed.
 
 SQL tracing has a significant performance impact, and increases the size
 of the result, so this should generally not be enabled.
-
-Data preloading and warm-up time
---------------------------------
-After startup, IRRd needs some time before certain queries can be answered.
-The ``asnPrefixes`` and ``asSetPrefixes`` queries use preloaded
-data, which needs to be loaded before these queries can be answered.
-If these queries are used before the preloading is complete, IRRd will
-answer them after preloading has completed. The time this takes depends
-on the load and speed of the server on which IRRd is deployed, and can
-range between several seconds and one minute.
-
-Once the initial preload is complete, updates to the database do not cause
-delays in queries. However, they may cause queries to return responses
-based on slightly outdated data, typically 15-60 seconds.

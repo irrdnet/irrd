@@ -10,7 +10,51 @@ different versions of documentation, and are not all consistent with each
 other or their own documentation.
 Therefore, there may be an unknown number of unknown inconsistencies
 between IRRd version 4 and a legacy version of IRRd. The significant
-known changes are listed below
+known changes are listed below.
+
+
+Migrating existing data
+-----------------------
+To migrate data from an existing IRR server, configure the new IRRd
+instance as a mirror first.
+
+If you intend to make your new IRRd instance
+authoritative at some point, you must enable
+``strict_import_keycert_object`` in IRRd 4's mirror configuration,
+to ensure PGP keys are loaded into the local key chain, allowing them
+to be used for authentication in the future.
+
+Mirrored sources use
+:doc:`less strict validation than authoritative data </admins/object-validation>`
+This means that IRRd will permit objects that are invalid under strict
+validation while running as a mirror. After making IRRd 4 authoritative,
+any future changes to objects need to meet strict validation rules.
+This allows graceful upgrades of slightly invalid objects.
+
+However, some objects may be too invalid for IRRd to be able to import them
+even in non-strict mode. These objects are logged. While running IRRd 4
+as a mirror, you should check the logs for any such objects - they will
+disappear when you make IRRd 4 your authoritative instance.
+
+Once the IRRd 4 mirror is running, you can use it to test queries.
+The general plan for switching over to a new IRRd v4 instance would be:
+
+* Block update emails.
+* Ensure an NRTM update has run so that the instances are in sync
+  (it may be worthwhile to lower ``import_timer``)
+* Remove the mirror configuration from the new IRRd 4 instance for
+  any authoritative sources.
+* Set the authoritative sources to ``authoritative: true`` in the config.
+* Redirect queries to the new instance.
+* Redirect update emails to the new instance.
+* Ensure published exports are now taken from the new instance.
+
+Depending on the time that the authoritative source has been mirrored
+prior to migrating, the migration may be fluent for others that
+mirror data from the new IRRd 4 instance. In other cases, they may
+need to do a new full import, similar to any other scenario where they
+have too much lag to use NRTM. This is because the new IRRd 4 instance
+only has journal entries for NRTM for the period it has been mirroring.
 
 
 Configuration and data storage
@@ -18,19 +62,13 @@ Configuration and data storage
 The configuration file is different, and some obsolete options have been
 dropped. The new format of the configuration file is
 :doc:`documented in detail </admins/configuration>`.
-
-The RPSL data is now stored in an SQL database. The migration path for data
-is covered in the
-``TODO: link to deployment guide``
-, but essentially comes down to performing
-a fresh import of all data, while initially configuring your authoritative
-databases as a simple mirror.
+The RPSL data is now stored in an SQL database.
 
 
 Whois query handling
 --------------------
 A sample of 230.000 queries from rr.ntt.net were executed against IRRd
-version 4 and the version NTT was running at the time, with identical
+version 4.0.0 and the 2.x version NTT was running at the time, with identical
 data. Along with a number of solved bugs, this identified a number of cases where
 legacy versions may currently provide different responses. Different responses
 are primarily due to bugs in legacy IRRd, which do not occur in version 4.

@@ -2,8 +2,8 @@
 RPKI integration
 ================
 
-IRRd can operate in RPKI-aware mode, where it imports ROA objects which
-are used to validate `route(6)` objects. IRRd also generates pseudo-IRR
+IRRd can operate in RPKI-aware mode, where it imports ROA objects and
+uses those to validate `route(6)` objects. IRRd also generates pseudo-IRR
 objects that represent ROA data.
 
 .. contents::
@@ -11,11 +11,11 @@ objects that represent ROA data.
 
 Enabling RPKI-aware mode
 ------------------------
-You can enable RPKI-aware mode by setting the ``rpki.roa_source`` setting
+You can enable RPKI-aware mode by setting ``rpki.roa_source``
 to a URL of a ROA export in JSON format. RPKI-aware mode is **enabled**
 by default. To disable RPKI-aware mode, set this to ``null``.
 
-As soon as this is enabled and IRRd is (re)started or a SIGHUP is sent,
+As soon as this is enabled and you (re)start IRRd or send a SIGHUP,
 IRRd will import the ROAs and mark any invalid existing `route(6)` as
 such in the database.
 

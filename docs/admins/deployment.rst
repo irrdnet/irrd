@@ -4,9 +4,12 @@ Deployment
 
 This document details install and deploying a new instance of IRRd,
 or upgrading from a legacy IRRd installation.
-For upgrades from a legacy version of IRRd, please read the
-:doc:`migration notes </admins/migrating-legacy-irrd>` for relevant
-changes.
+
+.. important::
+    For upgrades from a legacy version of IRRd, also read the
+    :doc:`migration notes </admins/migrating-legacy-irrd>`.
+    For upgrades from previous versions of IRRd 4, also read
+    the release notes between your new and old versions.
 
 .. contents::
    :backlinks: none
@@ -18,14 +21,17 @@ IRRd requires:
 
 * Linux, OpenBSD or MacOS. Other platforms are untested, but may work.
 * PyPy or CPython 3.6 through 3.9 with `pip` and `virtualenv` installed.
+  PyPy is recommended over CPython (the "default" Python interpreter),
+  due to some improved performance.
 * A recent version of PostgreSQL. Versions 9.6 and 10.5 have been
   extensively tested.
 * At least 32GB RAM
 * At least 4 CPU cores
 * At least 100GB of disk space (SSD recommended)
 
-PyPy is recommended over CPython (the "default" Python interpreter),
-due to improved performance.
+Depending on your needs from IRRd, you may be able to run with
+fewer resources. This depends on how much data you intend to load,
+and your query load.
 
 A number of other Python packages are required. However, those are
 automatically installed in the installation process.
@@ -51,7 +57,7 @@ The database, username and password have to be configured in the
 ``database_url`` :doc:`setting </admins/configuration>`. In this example,
 the URL would be: ``postgresql://irrd:irrd@localhost:5432/irrd``.
 
-A few PostgreSQL settings need to be changed from their default:
+You need to change a few PostgreSQL settings from their default:
 
 * ``random_page_cost`` should be set to ``1.0``. Otherwise, PostgreSQL is
   too reluctant to use the efficient indexes in the IRRd database, and
@@ -82,7 +88,7 @@ the RPSL text imported.
 .. important::
 
     The PostgreSQL database is the only source of IRRd's data.
-    This means backups of the database should be run regularly.
+    This means you need to run regular backups of the database.
     It is also possible to restore data from recent exports,
     but changes made since the most recent export will be lost.
 
@@ -94,6 +100,8 @@ Redis is required for communication and persistence between IRRd's processes.
 IRRd has been tested on Redis 3 and 4.
 Beyond a default Redis installation, it is recommended to:
 
+* Increase ``maxmemory`` to 1GB (no limit is also fine). This is a hard
+  requirement - IRRd will exceed the default maximum memory otherwise.
 * Disable snapshotting, by removing all ``save`` lines from the
   Redis configuration. IRRd always reloads the existing data upon startup
   of restart of either IRRd or Redis, and therefore Redis persistence
@@ -101,7 +109,6 @@ Beyond a default Redis installation, it is recommended to:
 * Enable unix socket support with the ``unixsocket`` configuration
   option in Redis, and using a unix socket URL in the ``redis_url``
   configuration in IRRd. This improves performance.
-* Increase ``maxmemory`` to 1GB (no limit is also fine)
 
 IRRd will recover from a Redis restart, but certain queries may fail
 while Redis is unavailable.
@@ -112,7 +119,7 @@ To contain IRRd's dependencies, it is recommended to install it
 in a Python virtualenv. If it is entirely sure that no other
 Python work will be done, including different versions of IRRd
 on the same host, this step can be skipped, but this is not
-recommended
+recommended.
 
 Create the virtualenv with a command like this for PyPy::
 
@@ -144,15 +151,15 @@ path to a local distribution file.
 Creating a configuration file
 -----------------------------
 IRRd uses a :doc:`YAML configuration file </admins/configuration>`,
-which has its own documentation. The config file should either be placed
-in ``/etc/irrd.yaml``, or another path can be set in the
+which has its own documentation. Place the config file
+in ``/etc/irrd.yaml``, or configure another path with the
 ``--config`` parameter.
 
 
 Adding a new empty source
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 To create an entirely new source without existing data, add
-an entry and mark it as authoritative, and probably enable
+an entry and mark it as authoritative, and (if desired) enable
 journal keeping::
 
     sources:
@@ -164,61 +171,6 @@ This new source may not be visible in some status overviews until
 the first object has been added. Exports are also skipped until
 the source has a first object.
 
-Migrating existing data
-~~~~~~~~~~~~~~~~~~~~~~~
-Mirrored sources, where the current production instance is not
-authoritative, can also be configured as a mirror in the new IRRd instance.
-Adding the source to the config, along with the settings for initial downloads
-and (where applicable) NRTM, will cause them to be automatically
-downloaded, imported, and further updates to be received over NRTM.
-
-Current authoritative sources can also be configured as a mirror, of
-the current production instance, with ``keep_journal`` enabled.
-This is the most efficient way to import existing authoritative data.
-
-.. admonition:: Data validation and key-certs
-
-    Validation for objects from mirrors is
-    :doc:`less strict than authoritative data </admins/object-validation>`
-    submitted directly to IRRd. With this migration process, objects
-    may be migrated that are invalid under strict validation. This is
-    practical, because it allows migrating legacy objects, which users
-    will be forced to correct only when they try to submit new changes.
-
-    **However, if the data to be migrated contains key-cert objects,
-    a specific setting should be enabled** on the soon-to-be
-    authoritative source:
-    ``strict_import_keycert_objects``.
-    This setting forces stricter validation for `key-cert` objects,
-    which may cause some to be rejected. However, it is essential when
-    mirroring data for which the new IRRd instance will soon be authoritative,
-    as only in strict validation the PGP keys are loaded into the local
-    gpg keychain. This loading is required to be able to use them for
-    authentication once the new IRRd instance is authoritative.
-
-Once these mirrors are running, and you're not seeing any issues,
-the general plan for switching over to a new IRRd v4 instance would be:
-
-* Block update emails.
-* Ensure an NRTM update has run so that the instances are in sync
-  (it may be worthwhile to lower ``import_timer``)
-* Remove the mirror configuration from the new IRRd 4 instance for
-  any authoritative sources.
-* Set the authoritative sources to ``authoritative: true`` in the config.
-* Redirect queries to the new instance.
-* Redirect update emails to the new instance.
-* Ensure published exports are now taken from the new instance.
-
-Depending on the time that the authoritative source has been mirrored
-prior to migrating, the migration may be fluent for others that
-mirror data from the new IRRd 4 instance. In other cases, they may
-need to do a new full import, similar to any other scenario where they
-have too much lag to use NRTM.
-
-.. note::
-    During an initial import of many large sources at the same time, IRRd's
-    memory use may reach 3-4GB. During this import, query performance may
-    be reduced. This may take around 30-45 minutes.
 
 .. _deployment-database-upgrade:
 
@@ -257,6 +209,15 @@ The user also needs write access to access to:
   or give write access to the directory.
 * ``piddir``
 
+IRRd typically binds to port 43 for whois, which is a privileged port.
+To support this, start IRRd as root, and set the ``user`` and ``group``
+settings in the config file. IRRd will drop privileges to this user/group
+right after binding to the whois port. IRRd will refuse to run as root
+if ``user`` and ``group`` are not set.
+
+Alternatively, you can run IRRd on non-privileged ports and use IPtables
+or similar tools to redirect connections from the privileged ports.
+
 
 .. _deployment-starting-irrd:
 
@@ -276,14 +237,6 @@ Useful options:
 
 IRRd can be stopped by sending a SIGTERM signal.
 
-IRRd typically binds to port 43 for whois, which is a privileged port.
-To support this, start IRRd as root, and set the ``user`` and ``group``
-settings in the config file. IRRd will drop privileges to this user/group
-right after binding to the whois port. IRRd will refuse to run as root
-if ``user`` and ``group`` are not set.
-
-Alternatively, you can run IRRd on non-privileged ports and use IPtables
-or similar tools to redirect connections from the privileged ports.
 
 .. _deployment-https:
 
@@ -332,7 +285,7 @@ IRRd trust the ``X-Forwarded-For`` header.
 .. warning::
     While running the HTTP services over plain HTTP is possible, using
     HTTPS is strongly recommended, particularly so that clients can verify
-    the authenticity of queries.
+    the authenticity of query responses.
 
 Logrotate configuration
 -----------------------
