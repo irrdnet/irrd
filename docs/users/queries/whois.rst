@@ -1,16 +1,12 @@
-========================
-Whois protocol reference
-========================
+=============
+Whois queries
+=============
 
 IRRd accepts whois queries in two ways:
 
-* Raw TCP sockets on port 43 (by default)
+* Raw TCP sockets on (by default) port 43
 * HTTPS requests
 
-The encoding used is always UTF-8, though many objects fit 7-bit ASCII.
-Line separators are a single newline (``\n``) character.
-Due to caching in IRRd, it can take up to 60 seconds for some types
-of changes to be visible in the result of some queries.
 
 Making queries
 --------------
@@ -36,14 +32,14 @@ IRRd supports two styles of queries:
 
 * IRRd style queries, many of which return processed data
   rather than raw RPSL object text. For example,
-  ``!iRS-EXAMPLE,1`` finds all members of route-set `RS-EXAMPLE`,
-  recursively and returns them as a space-separated list of prefixes.
+  ``!iRS-EXAMPLE,1`` recursively finds all members of route-set `RS-EXAMPLE`,
+  and returns them as a space-separated list of prefixes.
 * RIPE style queries, which you may know from the RIPE whois database and many
   similar implementations. For example, ``-s APNIC -M 192.0.2/21`` finds
   all more specific objects of 192.0.2/21 from source APNIC.
 
 The two styles can not be combined in a single query, but can be mixed in
-a single connection.
+a single TCP connection.
 
 IRRd style queries
 ------------------
@@ -148,7 +144,7 @@ IRRd style queries
 * ``!v`` returns the current version of IRRd
 * ``!fno-rpki-filter`` disables filtering RPKI invalid routes. If
   :doc:`RPKI-aware mode is enabled </admins/rpki>`, `route(6)` objects that
-  conflict with RPKI ROAs are not included in the output of any query by default.
+  are RPKI invalid are not included in the output of any query by default.
   After using ``!fno-rpki-filter``, this filter is disabled for the remainder of
   the connection. Disabling the filter only applies to ``!r`` queries and
   all RIPE style queries. This is only intended as a debugging aid.
@@ -230,7 +226,8 @@ Supported flags
 Flags are placed before the query, i.e. ``-s`` should precede ``-x``.
 
 The ``-F`` and ``-r`` flags are accepted but ignored, as IRRd does not support
-recursion.
+recursion on whois.
+
 
 Query responses
 ---------------
@@ -261,6 +258,8 @@ HTTPS queries have four possible responses:
 
 Raw TCP responses
 ^^^^^^^^^^^^^^^^^
+The character encoding is always UTF-8, though many objects fit 7-bit ASCII.
+Line separators are a single newline (``\n``) character.
 
 IRRd style TCP responses
 """"""""""""""""""""""""
@@ -314,17 +313,3 @@ the first object with a given primary key, from the highest priority source
 in which it was found.
 
 The currently enabled sources and their priority can be seen with ``!s-lc``.
-
-Data preloading and warm-up time
---------------------------------
-After startup, IRRd needs some time before certain queries can be answered.
-The ``!g``, ``!6``, ``!a`` and in some cases ``!i`` queries use preloaded
-data, which needs to be loaded before these queries can be answered.
-If these queries are used before the preloading is complete, IRRd will
-answer them after preloading has completed. The time this takes depends
-on the load and speed of the server on which IRRd is deployed, and can
-range between several seconds and one minute.
-
-Once the initial preload is complete, updates to the database do not cause
-delays in queries. However, they may cause queries to return responses
-based on slightly outdated data, typically 15-60 seconds.

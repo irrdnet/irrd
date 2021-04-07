@@ -10,6 +10,9 @@ In addition to the validations as described below, IRRd supports
 an :doc:`RPKI-aware mode </admins/rpki>` where objects are also
 validated against ROAs.
 
+
+General requirements
+--------------------
 The ``irrd.rpsl`` module deals with parsing and validation in general.
 The general requirements for validation are:
 
@@ -29,18 +32,23 @@ The general requirements for validation are:
   a route object with an invalid prefix, the object will be ignored and
   IRRd will record errors in the logs.
 
+
+Validation modes
+----------------
 The parser/validator has two modes:
 
-* Non-strict: includes validation of the presence of all primary key
+* **Non-strict**: includes validation of the presence of all primary key
   fields, and the correct syntax of all primary key and look-up fields.
   Object classes that are unknown are ignored. The syntax of an attribute
   name is validated, i.e. whether it contains valid characters only,
   but values are usually not validated.
-* Strict: validates presence, count, and correct syntax of all fields.
+* **Strict**: validates presence, count, and correct syntax of all fields.
   Validation fails on attributes that are not known, or object classes
   that are not known. Values of all fields are validated.
   Unknown object classes that start with ``*xx`` are silently ignored,
   as these are harmless artefacts from certain legacy IRRd versions.
+  Strong references to other objects are enforced, like the reference
+  to a `tech-c` from a `route` object.
 
 In addition, the following validation changes to primary/lookup keys apply
 in non-strict mode:
@@ -54,16 +62,11 @@ in non-strict mode:
 
 Non-strict mode is used for mirroring, because a significant number
 of objects are not RFC-compliant, and some IRRs add custom fields
-to their databases. So with non-strict mode, IRRd accepts a
+to their databases. For example, in non-strict mode, IRRd accepts a
 ``notify`` attribute that does not contain a valid e-mail address.
-for example. However, primary and look-up keys need to be indexed,
+However, primary and look-up keys need to be indexed,
 and therefore valid, as otherwise IRRd would give incomplete responses
 to queries.
-
-In all modes, values like prefixes are rewritten into a standard format.
-If this results in changes compared to the original submitted text, the
-parser will emit info messages, which are included in e.g. a report sent
-to the submitter of a requested change.
 
 Other changes from RFCs:
 
@@ -83,6 +86,13 @@ Other changes from RFCs:
 Modifications to objects
 ------------------------
 There are a few cases where IRRd makes changes to the object text.
+
+Reformatting
+^^^^^^^^^^^^
+In all modes, values like prefixes are rewritten into a standard format.
+If this results in changes compared to the original submitted text, the
+parser will emit info messages, which are included in e.g. a report sent
+to the submitter of a requested change.
 
 rpki-ov-state
 ^^^^^^^^^^^^^
@@ -109,8 +119,10 @@ status. This attribute is visible over NRTM and in exports.
 
 By default, this attribute is only added when an object is changed or
 created. If you have upgraded to IRRd 4.1, you can use the
-``irrd_set_last_modified_auth`` command to set it on all existing
-authoritative objects. This may take in the order of 10 minutes, depending
+``irrd_set_last_modified_auth`` command to set it to the current time on
+all existing authoritative objects.
+
+This may take in the order of 10 minutes, depending
 on the number of objects to be updated. This only needs to be done once.
 It is safe to execute while other IRRd processes are running.
 Journal entries are not created when running this command, i.e. the bulk

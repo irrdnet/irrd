@@ -31,7 +31,7 @@ Whois queries over HTTPS
 ------------------------
 :doc:`Whois queries <whois>`, in the form of ``!iAS-EXAMPLE,1`` or
 ``-i mnt-by DEMO-MNT``,
-can be executed over a very small HTTPS API.
+can be executed over a small HTTPS API.
 This API offers exactly the same query functionality as whois queries over
 plain TCP sockets, at a small performance cost. However, clients can use
 any standard HTTPS client library.
@@ -45,9 +45,9 @@ Whois queries over plain TCP sockets
 :doc:`Whois queries <whois>` can also be executed over plain TCP sockets,
 typically on
 port 43. This is the most well known and traditional whois query method,
-and it is used by many existing tools.
+and used by many existing tools.
 
-This method has the highest performance, as raw TCP sockets have less
+This method has the best performance, as raw TCP sockets have less
 overhead. However, it provides no authentication or encryption, i.e.
 there is no way to verify the server connection or the data,
 and clients are more complex than for other methods.
@@ -70,8 +70,26 @@ order of 100x.
 
 High performance prefix queries are used when you:
 
-* Use the ``-t`` parameter in RIPE queries.
-* Use type-specific queries like ``!r`` or ``-L``.
-* As the server admin, set ``compatibility.inetnum_search_disabled``.
+* use the ``-t`` parameter in RIPE queries; or
+* use type-specific queries like ``!r`` or ``-L``; or
+* as the server admin, set ``compatibility.inetnum_search_disabled``.
 
 Note that this is specific to `inetnum`, not `inet6num`.
+
+Data preloading and warm-up time
+--------------------------------
+After startup, IRRd needs some time before certain queries can be answered.
+Some queries use preloaded data, which needs to be loaded before these queries
+can be answered. If these queries are used before the preloading is complete,
+IRRd will answer them after preloading has completed. The time this takes depends
+on the load and speed of the server on which IRRd is deployed, and can
+range between several seconds and one minute.
+
+This concerns the whois queries ``!g``, ``!6``, ``!a`` and in some cases ``!i``,
+and the GraphQL queries ``asnPrefixes`` and ``asSetPrefixes``.
+
+Once the initial preload is complete, updates to the database do not cause
+delays in queries. However, they may cause queries to return responses
+based on slightly outdated data, typically 15-60 seconds.
+Data preloading and warm-up time
+

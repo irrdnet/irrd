@@ -16,7 +16,7 @@ and/or ``scopefilter.asns``. See the
 :doc:`configuration documentation </admins/configuration>` for their
 exact syntax.
 
-As soon as this is enabled and IRRd is (re)started or a SIGHUP is sent,
+As soon as this is enabled and you (re)start IRRd or send a SIGHUP,
 IRRd will check all RPSL in the database against the scope filter.
 
 Query responses
