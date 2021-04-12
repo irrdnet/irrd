@@ -22,7 +22,7 @@ uvicorn==0.13.4        # ASGI server
 uvicorn[standard]==0.13.4; python_version > '3.7'  # ASGI server extras
 starlette==0.14.2 # pyup: <0.15      # ASGI framework - pinned to <0.15 for ariadne
 psutil==5.8.0          # Process management
-asgiref==3.3.1         # ASGI utilities
+asgiref==3.3.4         # ASGI utilities
 pydantic==1.8.1        # Input validation
 
 # Database connections and management
@@ -40,7 +40,7 @@ twisted==21.2.0    # Used for a mock email server in integration tests
 python-graphql-client==0.4.2
 
 # Documentation generation
-Sphinx==3.5.3
+Sphinx==3.5.4
 sphinxcontrib-spelling==7.1.0
 sphinx-material==0.0.32
 
@@ -50,6 +50,6 @@ flake8==3.9.0
 pep8-naming==0.11.1
 
 # Creating python packages
-setuptools==54.2.0
+setuptools==56.0.0
 wheel==0.36.2
 twine==3.4.1
