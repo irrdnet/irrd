@@ -39,9 +39,9 @@ jobs:
 
       - restore_cache:
           keys:
-          - v6-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}
+          - v7-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}
           # fallback to using the latest cache if no exact match is found
-          - v6-dependencies-{{ .Environment.CIRCLE_JOB }}
+          - v7-dependencies-{{ .Environment.CIRCLE_JOB }}
 
       - run:
           name: install dependencies
