@@ -46,6 +46,7 @@ setuptools.setup(
         'SQLAlchemy==1.3.24',
         'alembic==1.5.8',
         'ujson==4.0.2',
+        'wheel==0.36.2',
     ],
     extras_require={
         ':python_version < "3.7"': [
