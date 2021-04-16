@@ -21,8 +21,10 @@ IRRd requires:
 
 * Linux, OpenBSD or MacOS. Other platforms are untested, but may work.
 * PyPy or CPython 3.6 through 3.9 with `pip` and `virtualenv` installed.
-  PyPy is recommended over CPython (the "default" Python interpreter),
-  due to some improved performance.
+  PyPy is slightly recommended over CPython (the "default" Python interpreter),
+  due to improved performance, in the order of 10% for some queries,
+  and even higher for some GraphQL queries. However, you might prefer
+  CPython if it is easier to install on your deployment platform.
 * A recent version of PostgreSQL. Versions 9.6 and 10.5 have been
   extensively tested.
 * At least 32GB RAM
