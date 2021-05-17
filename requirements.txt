@@ -33,7 +33,7 @@ alembic==1.6.2
 ujson==4.0.2
 
 # Testing and related packages
-pytest==6.2.3
+pytest==6.2.4
 pytest-cov==2.11.1
 coverage==5.5
 twisted==21.2.0    # Used for a mock email server in integration tests
