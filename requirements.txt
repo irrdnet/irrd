@@ -23,7 +23,7 @@ uvicorn[standard]==0.13.4; python_version > '3.7'  # ASGI server extras
 starlette==0.14.2 # pyup: <0.15      # ASGI framework - pinned to <0.15 for ariadne
 psutil==5.8.0          # Process management
 asgiref==3.3.4         # ASGI utilities
-pydantic==1.8.1        # Input validation
+pydantic==1.8.2        # Input validation
 
 # Database connections and management
 psycopg2-binary==2.8.6; platform_python_implementation == "CPython"
