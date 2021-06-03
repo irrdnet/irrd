@@ -661,6 +661,7 @@ class TestIntegration:
         query = """query {
           recursiveSetMembers(setNames: ["AS65537:AS-TESTREF"]) {
             rpslPk
+            rootSource
             members
           }
         }
@@ -669,6 +670,7 @@ class TestIntegration:
         recursiveSetMembers = result['data']['recursiveSetMembers']
         assert len(recursiveSetMembers) == 1
         assert recursiveSetMembers[0]['rpslPk'] == 'AS65537:AS-TESTREF'
+        assert recursiveSetMembers[0]['rootSource'] == 'TEST'
         assert set(recursiveSetMembers[0]['members']) == {
             'AS65537', 'AS65538', 'AS65539', 'AS65540'
         }

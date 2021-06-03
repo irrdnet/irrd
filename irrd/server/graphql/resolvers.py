@@ -291,8 +291,9 @@ def resolve_recursive_set_members(_, info: GraphQLResolveInfo, set_names: List[s
     exclude_sets_set = {i.upper() for i in exclude_sets} if exclude_sets else set()
     query_resolver.set_query_sources(sources)
     for set_name in set_names_set:
-        members = list(query_resolver.members_for_set(set_name, exclude_sets=exclude_sets_set, depth=depth, recursive=True))
-        yield dict(rpslPk=set_name, members=members)
+        results = query_resolver.members_for_set_per_source(set_name, exclude_sets=exclude_sets_set, depth=depth, recursive=True)
+        for source, members in results.items():
+            yield dict(rpslPk=set_name, rootSource=source, members=members)
     if sql_trace:
         info.context['sql_queries'] = query_resolver.retrieve_sql_trace()
 

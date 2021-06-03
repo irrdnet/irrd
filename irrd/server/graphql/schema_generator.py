@@ -92,6 +92,7 @@ class SchemaGenerator:
 
             type SetMembers {
                 rpslPk: String!
+                rootSource: String!
                 members: [String!]
             }
         """

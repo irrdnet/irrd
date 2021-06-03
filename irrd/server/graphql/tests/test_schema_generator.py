@@ -73,6 +73,7 @@ enum ScopeFilterStatus {
 
             type SetMembers {
                 rpslPk: String!
+                rootSource: String!
                 members: [String!]
             }
         interface RPSLObject {
