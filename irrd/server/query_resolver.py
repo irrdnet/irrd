@@ -1,7 +1,7 @@
 import logging
 from collections import OrderedDict
 from enum import Enum
-from typing import Optional, List, Set, Tuple, Any
+from typing import Optional, List, Set, Tuple, Any, Dict
 
 from IPy import IP
 from pytz import timezone
@@ -129,19 +129,44 @@ class QueryResolver:
         members = self._recursive_set_resolve({set_name})
         return self.preloader.routes_for_origins(members, self.sources, ip_version=ip_version)
 
-    def members_for_set(self, parameter: str, exclude_sets: Set[str]=None, depth=0, recursive=False) -> List[str]:
+    def members_for_set_per_source(self, parameter: str, exclude_sets: Set[str]=None, depth=0, recursive=False) -> Dict[str, List[str]]:
+        """
+        Find all members of an as-set or route-set, possibly recursively, distinguishing
+        between multiple objects in different sources with the same name.
+        Returns a dict with sources as keys, list of all members, including leaf members,
+        as values.
+        """
+        query = self._prepare_query(column_names=['source'])
+        object_classes = ['as-set', 'route-set']
+        query = query.object_classes(object_classes).rpsl_pk(parameter)
+        set_sources = [row['source'] for row in self._execute_query(query)]
+
+        return {
+            source: self.members_for_set(
+                parameter=parameter,
+                exclude_sets=exclude_sets,
+                depth=depth,
+                recursive=recursive,
+                root_source=source,
+            )
+            for source in set_sources
+        }
+
+    def members_for_set(self, parameter: str, exclude_sets: Set[str]=None, depth=0, recursive=False, root_source: Optional[str]=None) -> List[str]:
         """
         Find all members of an as-set or route-set, possibly recursively.
         Returns a list of all members, including leaf members.
+        If root_source is set, the root object is only looked for in that source -
+        resolving is then continued using the currently set sources.
         """
         self._current_set_root_object_class = None
         self._current_excluded_sets = exclude_sets if exclude_sets else set()
         self._current_set_maximum_depth = depth
         if not recursive:
-            members, leaf_members = self._find_set_members({parameter})
+            members, leaf_members = self._find_set_members({parameter}, limit_source=root_source)
             members.update(leaf_members)
         else:
-            members = self._recursive_set_resolve({parameter})
+            members = self._recursive_set_resolve({parameter}, root_source=root_source)
         if parameter in members:
             members.remove(parameter)
 
@@ -161,13 +186,15 @@ class QueryResolver:
 
         return sorted(members)
 
-    def _recursive_set_resolve(self, members: Set[str], sets_seen=None) -> Set[str]:
+    def _recursive_set_resolve(self, members: Set[str], sets_seen=None, root_source: Optional[str]=None) -> Set[str]:
         """
         Resolve all members of a number of sets, recursively.
 
         For each set in members, determines whether it has been seen already (to prevent
         infinite recursion), ignores it if already seen, and then either adds
         it directly or adds it to a set that requires further resolving.
+        If root_source is set, the root object is only looked for in that source -
+        resolving is then continued using the currently set sources.
         """
         if not sets_seen:
             sets_seen = set()
@@ -179,7 +206,7 @@ class QueryResolver:
         set_members = set()
 
         resolved_as_members = set()
-        sub_members, leaf_members = self._find_set_members(members)
+        sub_members, leaf_members = self._find_set_members(members, limit_source=root_source)
 
         for sub_member in sub_members:
             if self._current_set_root_object_class is None or self._current_set_root_object_class == 'route-set':
@@ -214,11 +241,12 @@ class QueryResolver:
 
         return set_members
 
-    def _find_set_members(self, set_names: Set[str]) -> Tuple[Set[str], Set[str]]:
+    def _find_set_members(self, set_names: Set[str], limit_source: Optional[str]=None) -> Tuple[Set[str], Set[str]]:
         """
         Find all members of a number of route-sets or as-sets. Includes both
         direct members listed in members attribute, but also
         members included by mbrs-by-ref/member-of.
+        If limit_source is set, the set_names are only looked for in that source.
 
         Returns a tuple of two sets:
         - members found of the sets included in set_names, both
@@ -240,6 +268,8 @@ class QueryResolver:
             object_classes = [self._current_set_root_object_class]
 
         query = query.object_classes(object_classes).rpsl_pks(set_names)
+        if limit_source:
+            query = query.sources([limit_source])
         query_result = list(self._execute_query(query))
 
         if not query_result:

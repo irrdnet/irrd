@@ -420,6 +420,16 @@ class TestQueryResolver:
             ['object_classes', (['as-set', 'route-set'],), {}],
             ['rpsl_pks', ({'AS-NOTEXIST'},), {}]
         ]
+        mock_dq.reset_mock()
+
+        mock_dh.execute_query = lambda query, refresh_on_error=False: iter([])
+        result = resolver.members_for_set('AS-NOTEXIST', recursive=True, root_source='ROOT')
+        assert not result
+        assert flatten_mock_calls(mock_dq) == [
+            ['object_classes', (['as-set', 'route-set'],), {}],
+            ['rpsl_pks', ({'AS-NOTEXIST'},), {}],
+            ['sources', (['ROOT'],), {}],
+        ]
 
     def test_route_set_members(self, prepare_resolver):
         mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
@@ -553,6 +563,58 @@ class TestQueryResolver:
 
         result = resolver.members_for_set('RS-TEST', recursive=False)
         assert result == ['192.0.2.0/32', '192.0.2.1/32', 'RS-OTHER']
+
+    def test_members_for_set_per_source(self, prepare_resolver):
+        mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
+
+        mock_query_result = iter([
+            [
+                {
+                    'rpsl_pk': 'AS-TEST',
+                    'source': 'TEST1',
+                },
+                {
+                    'rpsl_pk': 'AS-TEST',
+                    'source': 'TEST2',
+                },
+            ], [
+                {
+                    'pk': uuid.uuid4(),
+                    'rpsl_pk': 'AS-TEST',
+                    'parsed_data': {'as-set': 'AS-TEST',
+                                    'members': ['AS65547']},
+                    'object_text': 'text',
+                    'object_class': 'as-set',
+                    'source': 'TEST1',
+                },
+            ], [
+                {
+                    'pk': uuid.uuid4(),
+                    'rpsl_pk': 'AS-TEST',
+                    'parsed_data': {'as-set': 'AS-TEST',
+                                    'members': ['AS65548']},
+                    'object_text': 'text',
+                    'object_class': 'as-set',
+                    'source': 'TEST2',
+                },
+            ]
+        ])
+
+        mock_dh.execute_query = lambda query, refresh_on_error=False: next(mock_query_result)
+
+        result = resolver.members_for_set_per_source('AS-TEST', recursive=False)
+        assert result == {'TEST1': ['AS65547'], 'TEST2': ['AS65548']}
+        assert flatten_mock_calls(mock_dq) == [
+            ['object_classes', (['as-set', 'route-set'],), {}],
+            ['rpsl_pk', ('AS-TEST',), {}],
+            ['object_classes', (['as-set', 'route-set'],), {}],
+            ['rpsl_pks', ({'AS-TEST'},), {}],
+            ['sources', (['TEST1'],), {}],
+            ['object_classes', (['as-set', 'route-set'],), {}],
+            ['rpsl_pks', ({'AS-TEST'},), {}],
+            ['sources', (['TEST2'],), {}],
+        ]
+        mock_dq.reset_mock()
 
     def test_database_status(self, monkeypatch, prepare_resolver, config_override):
         config_override({
