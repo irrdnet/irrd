@@ -582,7 +582,17 @@ class TestQueryResolver:
                     'pk': uuid.uuid4(),
                     'rpsl_pk': 'AS-TEST',
                     'parsed_data': {'as-set': 'AS-TEST',
-                                    'members': ['AS65547']},
+                                    'members': ['AS65547', 'AS-SECONDLEVEL']},
+                    'object_text': 'text',
+                    'object_class': 'as-set',
+                    'source': 'TEST1',
+                },
+            ], [
+                {
+                    'pk': uuid.uuid4(),
+                    'rpsl_pk': 'AS-SECONDLEVEL',
+                    'parsed_data': {'as-set': 'AS-SECONDLEVEL',
+                                    'members': ['AS65548']},
                     'object_text': 'text',
                     'object_class': 'as-set',
                     'source': 'TEST1',
@@ -592,27 +602,30 @@ class TestQueryResolver:
                     'pk': uuid.uuid4(),
                     'rpsl_pk': 'AS-TEST',
                     'parsed_data': {'as-set': 'AS-TEST',
-                                    'members': ['AS65548']},
+                                    'members': ['AS65549']},
                     'object_text': 'text',
                     'object_class': 'as-set',
                     'source': 'TEST2',
                 },
-            ]
+            ],
+            [],
         ])
 
         mock_dh.execute_query = lambda query, refresh_on_error=False: next(mock_query_result)
 
-        result = resolver.members_for_set_per_source('AS-TEST', recursive=False)
-        assert result == {'TEST1': ['AS65547'], 'TEST2': ['AS65548']}
+        result = resolver.members_for_set_per_source('AS-TEST', recursive=True)
+        assert result == {'TEST1': ['AS65547', 'AS65548'], 'TEST2': ['AS65549']}
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['as-set', 'route-set'],), {}],
             ['rpsl_pk', ('AS-TEST',), {}],
             ['object_classes', (['as-set', 'route-set'],), {}],
             ['rpsl_pks', ({'AS-TEST'},), {}],
             ['sources', (['TEST1'],), {}],
+            ['object_classes', (['as-set'],), {}],
+            ['rpsl_pks', ({'AS-SECONDLEVEL'},), {}],
             ['object_classes', (['as-set', 'route-set'],), {}],
             ['rpsl_pks', ({'AS-TEST'},), {}],
-            ['sources', (['TEST2'],), {}],
+            ['sources', (['TEST2'],), {}]
         ]
         mock_dq.reset_mock()
 
