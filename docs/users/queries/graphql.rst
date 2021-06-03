@@ -366,6 +366,7 @@ The response type is::
 
     type SetMembers {
       rpslPk: String!
+      rootSource: String!
       members: [String!]
     }
 
@@ -374,11 +375,16 @@ and return the result for each resolved set separately.
 You can also limit the recursion depth,
 or exclude certain sets from consideration.
 
+If there are multiple sets with the same name in different sources, this
+query will return each of them along with their members, with a different
+``rootSource``.
+
 An example query::
 
     query {
       recursiveSetMembers(setNames: ["RS-KROOT-LINX"]) {
         rpslPk
+        rootSource
         members
       }
     }
