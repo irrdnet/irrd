@@ -132,7 +132,7 @@ class QueryResolver:
     def members_for_set_per_source(self, parameter: str, exclude_sets: Set[str]=None, depth=0, recursive=False) -> Dict[str, List[str]]:
         """
         Find all members of an as-set or route-set, possibly recursively, distinguishing
-        between multiple objects in different sources with the same name.
+        between multiple root objects in different sources with the same name.
         Returns a dict with sources as keys, list of all members, including leaf members,
         as values.
         """
