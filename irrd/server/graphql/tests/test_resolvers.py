@@ -372,7 +372,7 @@ class TestGraphQLResolvers:
 
     def test_resolve_recursive_set_members(self, prepare_resolver):
         info, mock_database_query, mock_query_resolver = prepare_resolver
-        mock_query_resolver.members_for_set = lambda set_name, exclude_sets, depth, recursive: [f'member-{set_name}']
+        mock_query_resolver.members_for_set_per_source = lambda set_name, exclude_sets, depth, recursive: {'TEST1': [f'member1-{set_name}'], 'TEST2': [f'member2-{set_name}']}
 
         result = list(resolvers.resolve_recursive_set_members(
             None,
@@ -382,7 +382,9 @@ class TestGraphQLResolvers:
             sql_trace=True,
         ))
         assert sorted(result, key=str) == sorted([
-            {'rpslPk': 'AS-A', 'members': ['member-AS-A']},
-            {'rpslPk': 'AS-B', 'members': ['member-AS-B']},
+            {'rpslPk': 'AS-A', 'rootSource': 'TEST1', 'members': ['member1-AS-A']},
+            {'rpslPk': 'AS-A', 'rootSource': 'TEST2', 'members': ['member2-AS-A']},
+            {'rpslPk': 'AS-B', 'rootSource': 'TEST1', 'members': ['member1-AS-B']},
+            {'rpslPk': 'AS-B', 'rootSource': 'TEST2', 'members': ['member2-AS-B']},
         ], key=str)
         mock_query_resolver.set_query_sources.assert_called_once()
