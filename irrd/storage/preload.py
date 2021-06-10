@@ -146,8 +146,8 @@ class Preloader:
         # Create a bit of randomness in when workers will update
         time.sleep(random.random())
 
-        self._origin_route4_store = dict()
-        self._origin_route6_store = dict()
+        new_origin_route4_store = dict()
+        new_origin_route6_store = dict()
 
         def _load(redis_key, target):
             for key, routes in self._redis_conn.hgetall(redis_key).items():
@@ -158,8 +158,11 @@ class Preloader:
                     target[source] = dict()
                 target[source][origin] = routes.decode('ascii')
 
-        _load(REDIS_ORIGIN_ROUTE4_STORE_KEY, self._origin_route4_store)
-        _load(REDIS_ORIGIN_ROUTE6_STORE_KEY, self._origin_route6_store)
+        _load(REDIS_ORIGIN_ROUTE4_STORE_KEY, new_origin_route4_store)
+        _load(REDIS_ORIGIN_ROUTE6_STORE_KEY, new_origin_route6_store)
+
+        self._origin_route4_store = new_origin_route4_store
+        self._origin_route6_store = new_origin_route6_store
 
         self._memory_loaded = True
 
