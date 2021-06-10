@@ -4,7 +4,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/python:3.6.7-stretch
+      - image: cimg/python:3.6
         environment:
           IRRD_DATABASE_URL: 'postgresql://root@localhost/circle_test'
           IRRD_DATABASE_URL_INTEGRATION_1: 'postgresql://root@localhost/circle_test_integration_1'
@@ -33,21 +33,22 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-          - v4-dependencies-{{ checksum "requirements.txt" }}
+          - v5-dependencies-{{ checksum "requirements.txt" }}
           # fallback to using the latest cache if no exact match is found
-          - v4-dependencies-
+          - v5-dependencies-
 
       - run:
           name: install dependencies
           command: |
             python3 -m venv venv
             . venv/bin/activate
+            pip install -U pip
             pip install -r requirements.txt
 
       - save_cache:
           paths:
             - ./venv
-          key: v1-dependencies-{{ checksum "requirements.txt" }}
+          key: v5-dependencies-{{ checksum "requirements.txt" }}
 
       - run:
           name: apt update
@@ -58,7 +59,7 @@ jobs:
 
       - run:
           name: Installing psql client and enchant
-          command: sudo apt install postgresql-client python-enchant
+          command: sudo apt install postgresql-client python3-enchant
 
       - run:
           name: Waiting for PostgreSQL to be ready
