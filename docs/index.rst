@@ -23,6 +23,12 @@ DashCare_.
 .. _NTT: https://us.ntt.net
 .. _DashCare: https://www.dashcare.nl
 
+.. warning::
+    IRRd 4.1.x versions prior to 4.1.3 had a bug where responses to
+    certain queries could be incorrect. All 4.1.x users are urged to
+    update to 4.1.3 or later.
+    See the :doc:`4.1.3 release notes </releases/4.1.3>` for further details.
+
 For administrators
 ------------------
 
