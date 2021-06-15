@@ -1,0 +1,26 @@
+============================
+Release notes for IRRd 4.1.3
+============================
+
+IRRd 4.1.3 was released on June 15th, 2021, and resolves a serious issue
+where responses to ``!g``, ``!6`` and ``!a`` queries would be missing or
+incomplete. This was mostly visible in certain situations with a high load
+and/or a high ``server.whois.max_connections`` setting, but could occur in
+any 4.1.x deployment.
+
+This issue affected all previous 4.1.x versions. Upgrading is strongly
+recommended for all deployments. The incorrect query responses occur
+erratically but frequent, and it is not always visible to end users that
+responses are incorrect. 4.0.x versions are not affected.
+
+This issue would occur after changes to route(6) objects from any method,
+including NRTM, authoritative change, and RPKI status change. All IRRd whois
+workers keep a local store of all prefixes originated by each ASN, and this
+store needs to be updated on every change to the (visible) route(6) objects.
+This update was not atomic - causing queries to be answered from an empty or
+incomplete store until the store was rebuilt. The rebuild time, and therefore
+the time frame with incorrect responses, depends on the system load and number
+of whois workers.
+
+In 4.1.3, queries are answered from the existing store until the new one is
+fully rebuilt.
