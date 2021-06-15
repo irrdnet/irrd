@@ -38,7 +38,7 @@ setuptools.setup(
         'requests==2.25.1',
         'pytz==2021.1',
         'ariadne==0.13.0',
-        'uvicorn==0.13.4',
+        'uvicorn==0.14.0',
         'starlette==0.14.2',
         'psutil==5.8.0',
         'asgiref==3.3.4',
