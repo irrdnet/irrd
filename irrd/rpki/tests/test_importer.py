@@ -29,7 +29,7 @@ class TestROAImportProcess:
 
         rpki_data = ujson.dumps({
             "roas": [{
-                "asn": "AS64496",
+                "asn": "64496",
                 "prefix": "192.0.2.0/24",
                 "maxLength": 26,
                 "ta": "APNIC RPKI Root"
@@ -40,7 +40,7 @@ class TestROAImportProcess:
                 "ta": "RIPE NCC RPKI Root"
             }, {
                 # Filtered out by SLURM due to origin
-                "asn": "AS64498",
+                "asn": "64498",
                 "prefix": "192.0.2.0/24",
                 "maxLength": 32,
                 "ta": "APNIC RPKI Root"
@@ -218,6 +218,18 @@ class TestROAImportProcess:
         with pytest.raises(ROAParserException) as rpe:
             ROADataImporter(data, None, mock_dh)
         assert 'Invalid ROA: prefix size 24 is smaller than max length 22' in str(rpe.value)
+
+        data = ujson.dumps({
+            "roas": [{
+                "asn": "AS64496",
+                "prefix": "192.0.2.0/24",
+                "maxLength": 'xx',
+                "ta": "APNIC RPKI Root"
+            }]
+        })
+        with pytest.raises(ROAParserException) as rpe:
+            ROADataImporter(data, None, mock_dh)
+        assert 'xx' in str(rpe.value)
 
         assert flatten_mock_calls(mock_dh) == []
 
