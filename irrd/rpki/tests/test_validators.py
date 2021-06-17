@@ -124,20 +124,20 @@ class TestBulkRouteROAValidator:
         roas = [
             # Valid for pk_route_v4_d0_l25 and pk_route_v4_d0_l24
             # - the others have incorrect origin or are too small.
-            ROA(IP('192.0.2.0/24'), 'AS65546', '28', 'TEST TA'),
+            ROA(IP('192.0.2.0/24'), 65546, '28', 'TEST TA'),
             # Matches the origin of pk_route_v4_d128_l25,
             # but not max_length.
-            ROA(IP('192.0.2.0/24'), 'AS65547', '24', 'TEST TA'),
+            ROA(IP('192.0.2.0/24'), 65547, '24', 'TEST TA'),
             # Matches pk_route_v6, but not max_length.
-            ROA(IP('2001:db8::/30'), 'AS65547', '30', 'TEST TA'),
+            ROA(IP('2001:db8::/30'), 65547, '30', 'TEST TA'),
             # Matches pk_route_v6, but not on origin.
-            ROA(IP('2001:db8::/32'), 'AS65548', '32', 'TEST TA'),
+            ROA(IP('2001:db8::/32'), 65548, '32', 'TEST TA'),
             # Matches pk_route_v6
-            ROA(IP('2001:db8::/32'), 'AS65547', '64', 'TEST TA'),
+            ROA(IP('2001:db8::/32'), 65547, '64', 'TEST TA'),
             # Matches no routes, no effect
-            ROA(IP('203.0.113.0/32'), 'AS65547', '32', 'TEST TA'),
+            ROA(IP('203.0.113.0/32'), 65547, '32', 'TEST TA'),
             # AS0 can not match
-            ROA(IP('203.0.113.1/32'), 'AS0', '32', 'TEST TA'),
+            ROA(IP('203.0.113.1/32'), 0, '32', 'TEST TA'),
         ]
         result = BulkRouteROAValidator(mock_dh, roas).validate_all_routes(sources=['TEST1'])
         new_valid_objs, new_invalid_objs, new_unknown_objs = result
