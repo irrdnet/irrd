@@ -6,8 +6,11 @@ from ..validators import parse_as_number, ValidationError, RPSLChangeSubmission
 
 
 def test_validate_as_number():
+    assert parse_as_number('AS00') == ('AS0', 0)
     assert parse_as_number('AS012345') == ('AS12345', 12345)
     assert parse_as_number('as4294967290') == ('AS4294967290', 4294967290)
+    assert parse_as_number('012345', permit_plain=True) == ('AS12345', 12345)
+    assert parse_as_number(12345, permit_plain=True) == ('AS12345', 12345)
 
     with raises(ValidationError) as ve:
         parse_as_number('12345')
@@ -19,7 +22,7 @@ def test_validate_as_number():
 
     with raises(ValidationError) as ve:
         parse_as_number('AS429496729999')
-    assert 'maximum value is' in str(ve.value)
+    assert 'valid range is' in str(ve.value)
 
 
 def test_validate_rpsl_change_submission():

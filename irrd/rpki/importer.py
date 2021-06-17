@@ -39,9 +39,9 @@ class ROADataImporter:
     def __init__(self, rpki_json_str: str, slurm_json_str: Optional[str],
                  database_handler: DatabaseHandler):
         self.roa_objs: List[ROA] = []
-        self._filtered_asns: Set[str] = set()
+        self._filtered_asns: Set[int] = set()
         self._filtered_prefixes: IPSet = IPSet()
-        self._filtered_combined: Dict[str, IPSet] = defaultdict(IPSet)
+        self._filtered_combined: Dict[int, IPSet] = defaultdict(IPSet)
 
         self._load_roa_dicts(rpki_json_str)
         if slurm_json_str:
@@ -51,7 +51,7 @@ class ROADataImporter:
 
         for roa_dict in self._roa_dicts:
             try:
-                asn = roa_dict['asn']
+                _, asn = parse_as_number(roa_dict['asn'], permit_plain=True)
                 prefix = IP(roa_dict['prefix'])
                 ta = roa_dict['ta']
                 if ta != SLURM_TRUST_ANCHOR:
@@ -116,11 +116,11 @@ class ROADataImporter:
         filters = slurm.get('validationOutputFilters', {}).get('prefixFilters', [])
         for item in filters:
             if 'asn' in item and 'prefix' not in item:
-                self._filtered_asns.add('AS' + str(item['asn']))
+                self._filtered_asns.add(int(item['asn']))
             if 'asn' not in item and 'prefix' in item:
                 self._filtered_prefixes.add(IP(item['prefix']))
             if 'asn' in item and 'prefix' in item:
-                self._filtered_combined['AS' + str(item['asn'])].add(IP(item['prefix']))
+                self._filtered_combined[int(item['asn'])].add(IP(item['prefix']))
 
         assertions = slurm.get('locallyAddedAssertions', {}).get('prefixAssertions', [])
         for assertion in assertions:
@@ -142,11 +142,11 @@ class ROA:
     This is used when (re-)importing all ROAs, to save the data to the DB,
     and by the BulkRouteROAValidator when validating all existing routes.
     """
-    def __init__(self, prefix: IP, asn: str, max_length: str, trust_anchor: str):
+    def __init__(self, prefix: IP, asn: int, max_length: str, trust_anchor: str):
         try:
             self.prefix = prefix
             self.prefix_str = str(prefix)
-            _, self.asn = parse_as_number(asn)
+            self.asn = asn
             self.max_length = int(max_length)
             self.trust_anchor = trust_anchor
         except ValueError as ve:
