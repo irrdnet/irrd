@@ -1,0 +1,15 @@
+============================
+Release notes for IRRd 4.1.4
+============================
+
+IRRd 4.1.4 was released on June 18th, 2021, and extends the permitted
+format for the :doc:`RPKI ROA source </admins/rpki>` configured in
+``rpki.roa_source``.
+
+IRRd now allows the ASN in this JSON file to be encoded as an integer,
+in addition to the existing support for encoding it as a string prefixed
+with ``AS``.
+This newly supported integer encoding of AS numbers is used in the
+latest version of the JSON export of rpki-client_.
+
+.. _rpki-client: http://rpki-client.org/

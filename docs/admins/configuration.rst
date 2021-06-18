@@ -277,7 +277,8 @@ Access lists
 RPKI
 ~~~~
 * ``roa_source``: a URL to a JSON file with ROA exports, in the format
-  as produced by the RIPE NCC RPKI validator. When set, this enables the
+  as produced by the RIPE NCC RPKI validator or rpki-client with the
+  ``-j`` flag. When set, this enables the
   :doc:`RPKI-aware mode </admins/rpki>`. To disable RPKI-aware mode,
   set this to ``null``.
   Supports HTTP(s), FTP or local file URLs.
