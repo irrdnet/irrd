@@ -33,6 +33,10 @@ class BaseRPSLObjectDatabaseQuery:
         """Filter on an exact object PK (UUID)."""
         return self._filter(self.columns.pk == pk)
 
+    def pks(self, pks: List[str]):
+        """Filter on exact object PKs (UUID)."""
+        return self._filter(self.columns.pk.in_(pks))
+
     def rpsl_pk(self, rpsl_pk: str):
         """Filter on an exact RPSL PK (e.g. 192.0.2.0/24,AS65537)."""
         return self.rpsl_pks([rpsl_pk])

@@ -85,7 +85,7 @@ class BulkRouteROAValidator:
         validation result, are not included in the return value.
         """
         columns = ['pk', 'rpsl_pk', 'ip_first', 'prefix_length', 'asn_first', 'source',
-                   'object_class', 'object_text', 'rpki_status']
+                   'rpki_status']
         q = RPSLDatabaseQuery(column_names=columns, enable_ordering=False)
         q = q.object_classes(['route', 'route6'])
         if sources:
@@ -106,6 +106,15 @@ class BulkRouteROAValidator:
             if new_status != current_status:
                 result['rpki_status'] = new_status
                 objs_changed[new_status].append(result)
+
+        # Object text and class are only retrieved for objects with state changes
+        pks_to_enrich = [obj['pk'] for objs in objs_changed.values() for obj in objs]
+        query = RPSLDatabaseQuery(['pk', 'object_text', 'object_class'], enable_ordering=False).pks(pks_to_enrich)
+        rows_per_pk = {row['pk']: row for row in self.database_handler.execute_query(query)}
+
+        for rpsl_objs in objs_changed.values():
+            for rpsl_obj in rpsl_objs:
+                rpsl_obj.update(rows_per_pk[rpsl_obj['pk']])
 
         return objs_changed[RPKIStatus.valid], objs_changed[RPKIStatus.invalid], objs_changed[RPKIStatus.not_found]
 
