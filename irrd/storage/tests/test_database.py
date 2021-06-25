@@ -523,11 +523,13 @@ class TestRPSLDatabaseQueryLive:
         pk = result[0]['pk']
 
         self._assert_match(RPSLDatabaseQuery().pk(pk))
+        self._assert_match(RPSLDatabaseQuery().pks([pk]))
 
     def test_non_matching_filters(self, irrd_database, database_handler_with_route):
         self.dh = database_handler_with_route
         # None of these should match
         self._assert_no_match(RPSLDatabaseQuery().pk(str(uuid.uuid4())))
+        self._assert_no_match(RPSLDatabaseQuery().pks([str(uuid.uuid4())]))
         self._assert_no_match(RPSLDatabaseQuery().rpsl_pk('foo'))
         self._assert_no_match(RPSLDatabaseQuery().sources(['TEST3']))
         self._assert_no_match(RPSLDatabaseQuery().object_classes(['route6']))

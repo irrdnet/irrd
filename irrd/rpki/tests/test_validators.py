@@ -21,105 +21,163 @@ class TestBulkRouteROAValidator:
         monkeypatch.setattr('irrd.rpki.validators.RPSLDatabaseQuery',
                             lambda column_names, enable_ordering: mock_dq)
 
-        mock_query_result = [
-            {
-                'rpsl_pk': 'pk_route_v4_d0_l24',
-                'ip_version': 4,
-                'ip_first': '192.0.2.0',
-                'prefix_length': 24,
-                'asn_first': 65546,
-                'rpki_status': RPKIStatus.not_found,
-                'source': 'TEST1',
-            },
-            {
-                'rpsl_pk': 'pk_route_v4_d0_l25',
-                'ip_version': 4,
-                'ip_first': '192.0.2.0',
-                'prefix_length': 25,
-                'asn_first': 65546,
-                'rpki_status': RPKIStatus.not_found,
-                'source': 'TEST1',
-            },
-            {
-                # This route is valid, but as the state is already valid,
-                # it should not be included in the response.
-                'rpsl_pk': 'pk_route_v4_d0_l28',
-                'ip_version': 4,
-                'ip_first': '192.0.2.0',
-                'prefix_length': 27,
-                'asn_first': 65546,
-                'rpki_status': RPKIStatus.valid,
-                'source': 'TEST1',
-            },
-            {
-                'rpsl_pk': 'pk_route_v4_d64_l32',
-                'ip_version': 4,
-                'ip_first': '192.0.2.64',
-                'prefix_length': 32,
-                'asn_first': 65546,
-                'rpki_status': RPKIStatus.valid,
-                'source': 'TEST1',
-            },
-            {
-                'rpsl_pk': 'pk_route_v4_d128_l25',
-                'ip_version': 4,
-                'ip_first': '192.0.2.128',
-                'prefix_length': 25,
-                'asn_first': 65547,
-                'rpki_status': RPKIStatus.valid,
-                'source': 'TEST1',
-            },
-            {
-                # RPKI invalid, but should be ignored.
-                'rpsl_pk': 'pk_route_v4_d128_l26',
-                'ip_version': 4,
-                'ip_first': '192.0.2.128',
-                'prefix_length': 26,
-                'asn_first': 65547,
-                'rpki_status': RPKIStatus.invalid,
-                'source': RPKI_IRR_PSEUDO_SOURCE,
-            },
-            {
-                # RPKI invalid, but should be not_found because of source.
-                'rpsl_pk': 'pk_route_v4_d128_l26_excluded',
-                'ip_version': 4,
-                'ip_first': '192.0.2.128',
-                'prefix_length': 26,
-                'asn_first': 65547,
-                'rpki_status': RPKIStatus.valid,
-                'source': 'SOURCE-EXCLUDED',
-            },
-            {
-                'rpsl_pk': 'pk_route_v6',
-                'ip_version': 6,
-                'ip_first': '2001:db8::',
-                'prefix_length': 32,
-                'asn_first': 65547,
-                'rpki_status': RPKIStatus.invalid,
-                'source': 'TEST1',
-            },
-            {
-                # Should not match any ROA - ROAs for a subset
-                # exist, but those should not be included
-                'rpsl_pk': 'pk_route_v4_no_roa',
-                'ip_version': 4,
-                'ip_first': '192.0.2.0',
-                'prefix_length': 23,
-                'asn_first': 65549,
-                'rpki_status': RPKIStatus.valid,
-                'source': 'TEST1',
-            },
-            {
-                'rpsl_pk': 'pk_route_v4_roa_as0',
-                'ip_version': 4,
-                'ip_first': '203.0.113.1',
-                'prefix_length': 32,
-                'asn_first': 65547,
-                'rpki_status': RPKIStatus.not_found,
-                'source': 'TEST1',
-            },
-        ]
-        mock_dh.execute_query = lambda query: mock_query_result
+        mock_query_result = iter([
+            [
+                {
+                    'pk': 'pk_route_v4_d0_l24',
+                    'rpsl_pk': 'pk_route_v4_d0_l24',
+                    'ip_version': 4,
+                    'ip_first': '192.0.2.0',
+                    'prefix_length': 24,
+                    'asn_first': 65546,
+                    'rpki_status': RPKIStatus.not_found,
+                    'source': 'TEST1',
+                },
+                {
+                    'pk': 'pk_route_v4_d0_l25',
+                    'rpsl_pk': 'pk_route_v4_d0_l25',
+                    'ip_version': 4,
+                    'ip_first': '192.0.2.0',
+                    'prefix_length': 25,
+                    'asn_first': 65546,
+                    'rpki_status': RPKIStatus.not_found,
+                    'source': 'TEST1',
+                },
+                {
+                    # This route is valid, but as the state is already valid,
+                    # it should not be included in the response.
+                    'pk': 'pk_route_v4_d0_l28',
+                    'rpsl_pk': 'pk_route_v4_d0_l28',
+                    'ip_version': 4,
+                    'ip_first': '192.0.2.0',
+                    'prefix_length': 27,
+                    'asn_first': 65546,
+                    'rpki_status': RPKIStatus.valid,
+                    'source': 'TEST1',
+                },
+                {
+                    'pk': 'pk_route_v4_d64_l32',
+                    'rpsl_pk': 'pk_route_v4_d64_l32',
+                    'ip_version': 4,
+                    'ip_first': '192.0.2.64',
+                    'prefix_length': 32,
+                    'asn_first': 65546,
+                    'rpki_status': RPKIStatus.valid,
+                    'source': 'TEST1',
+                },
+                {
+                    'pk': 'pk_route_v4_d128_l25',
+                    'rpsl_pk': 'pk_route_v4_d128_l25',
+                    'ip_version': 4,
+                    'ip_first': '192.0.2.128',
+                    'prefix_length': 25,
+                    'asn_first': 65547,
+                    'rpki_status': RPKIStatus.valid,
+                    'source': 'TEST1',
+                },
+                {
+                    # RPKI invalid, but should be ignored.
+                    'pk': 'pk_route_v4_d128_l26_rpki',
+                    'rpsl_pk': 'pk_route_v4_d128_l26',
+                    'ip_version': 4,
+                    'ip_first': '192.0.2.128',
+                    'prefix_length': 26,
+                    'asn_first': 65547,
+                    'rpki_status': RPKIStatus.invalid,
+                    'source': RPKI_IRR_PSEUDO_SOURCE,
+                },
+                {
+                    # RPKI invalid, but should be not_found because of source.
+                    'pk': 'pk_route_v4_d128_l26_excluded',
+                    'rpsl_pk': 'pk_route_v4_d128_l26_excluded',
+                    'ip_version': 4,
+                    'ip_first': '192.0.2.128',
+                    'prefix_length': 26,
+                    'asn_first': 65547,
+                    'rpki_status': RPKIStatus.valid,
+                    'source': 'SOURCE-EXCLUDED',
+                },
+                {
+                    'pk': 'pk_route_v6',
+                    'rpsl_pk': 'pk_route_v6',
+                    'ip_version': 6,
+                    'ip_first': '2001:db8::',
+                    'prefix_length': 32,
+                    'asn_first': 65547,
+                    'rpki_status': RPKIStatus.invalid,
+                    'source': 'TEST1',
+                },
+                {
+                    # Should not match any ROA - ROAs for a subset
+                    # exist, but those should not be included
+                    'pk': 'pk_route_v4_no_roa',
+                    'rpsl_pk': 'pk_route_v4_no_roa',
+                    'ip_version': 4,
+                    'ip_first': '192.0.2.0',
+                    'prefix_length': 23,
+                    'asn_first': 65549,
+                    'rpki_status': RPKIStatus.valid,
+                    'source': 'TEST1',
+                },
+                {
+                    'pk': 'pk_route_v4_roa_as0',
+                    'rpsl_pk': 'pk_route_v4_roa_as0',
+                    'ip_version': 4,
+                    'ip_first': '203.0.113.1',
+                    'prefix_length': 32,
+                    'asn_first': 65547,
+                    'rpki_status': RPKIStatus.not_found,
+                    'source': 'TEST1',
+                },
+            ], [
+                {
+                    'pk': 'pk_route_v4_d0_l24',
+                    'object_text': 'object text',
+                    'object_class': 'route',
+                },
+                {
+                    'pk': 'pk_route_v4_d0_l25',
+                    'object_text': 'object text',
+                    'object_class': 'route',
+                },
+                {
+                    'pk': 'pk_route_v4_d64_l32',
+                    'object_text': 'object text',
+                    'object_class': 'route',
+                },
+                {
+                    'pk': 'pk_route_v4_d128_l25',
+                    'object_text': 'object text',
+                    'object_class': 'route',
+                },
+                {
+                    'pk': 'pk_route_v4_d128_l26_rpki',
+                    'object_text': 'object text',
+                    'object_class': 'route',
+                },
+                {
+                    'pk': 'pk_route_v4_d128_l26_excluded',
+                    'object_text': 'object text',
+                    'object_class': 'route',
+                },
+                {
+                    'pk': 'pk_route_v6',
+                    'object_text': 'object text',
+                    'object_class': 'route',
+                },
+                {
+                    'pk': 'pk_route_v4_no_roa',
+                    'object_text': 'object text',
+                    'object_class': 'route',
+                },
+                {
+                    'pk': 'pk_route_v4_roa_as0',
+                    'object_text': 'object text',
+                    'object_class': 'route',
+                },
+            ]
+        ])
+        mock_dh.execute_query = lambda query: next(mock_query_result)
 
         roas = [
             # Valid for pk_route_v4_d0_l25 and pk_route_v4_d0_l24
@@ -142,12 +200,15 @@ class TestBulkRouteROAValidator:
         result = BulkRouteROAValidator(mock_dh, roas).validate_all_routes(sources=['TEST1'])
         new_valid_objs, new_invalid_objs, new_unknown_objs = result
         assert {o['rpsl_pk'] for o in new_valid_objs} == {'pk_route_v6', 'pk_route_v4_d0_l25', 'pk_route_v4_d0_l24'}
+        assert [o['object_class'] for o in new_valid_objs] == ['route', 'route', 'route']
+        assert [o['object_text'] for o in new_valid_objs] == ['object text', 'object text', 'object text']
         assert {o['rpsl_pk'] for o in new_invalid_objs} == {'pk_route_v4_d64_l32', 'pk_route_v4_d128_l25', 'pk_route_v4_roa_as0'}
         assert {o['rpsl_pk'] for o in new_unknown_objs} == {'pk_route_v4_no_roa', 'pk_route_v4_d128_l26_excluded'}
 
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['route', 'route6'],), {}],
-            ['sources', (['TEST1'],), {}]
+            ['sources', (['TEST1'],), {}],
+            ['pks', (['pk_route_v4_d0_l24', 'pk_route_v4_d0_l25', 'pk_route_v6', 'pk_route_v4_d64_l32', 'pk_route_v4_d128_l25', 'pk_route_v4_roa_as0', 'pk_route_v4_d128_l26_excluded', 'pk_route_v4_no_roa'], ), {}],
         ]
 
     def test_validate_routes_with_roa_from_database(self, monkeypatch, config_override):
@@ -178,6 +239,7 @@ class TestBulkRouteROAValidator:
                 },
             ], [  # RPSL objects:
                 {
+                    'pk': 'pk1',
                     'rpsl_pk': 'pk_route_v4_d0_l25',
                     'ip_version': 4,
                     'ip_first': '192.0.2.0',
@@ -186,6 +248,12 @@ class TestBulkRouteROAValidator:
                     'rpki_status': RPKIStatus.not_found,
                     'source': 'TEST1',
                 },
+            ], [
+                {
+                    'pk': 'pk1',
+                    'object_class': 'route',
+                    'object_text': 'object text',
+                },
             ]
         ])
         mock_dh.execute_query = lambda query: next(mock_query_result)
@@ -193,12 +261,14 @@ class TestBulkRouteROAValidator:
         result = BulkRouteROAValidator(mock_dh).validate_all_routes(sources=['TEST1'])
         new_valid_pks, new_invalid_pks, new_unknown_pks = result
         assert {o['rpsl_pk'] for o in new_valid_pks} == {'pk_route_v4_d0_l25'}
+        assert {o['object_text'] for o in new_valid_pks} == {'object text'}
         assert new_invalid_pks == list()
         assert new_unknown_pks == list()
 
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['route', 'route6'],), {}],
-            ['sources', (['TEST1'],), {}]
+            ['sources', (['TEST1'],), {}],
+            ['pks', (['pk1'],), {}],
         ]
         assert flatten_mock_calls(mock_rq) == []  # No filters applied
 
