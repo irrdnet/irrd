@@ -152,8 +152,11 @@ class DatabaseHandler:
             else:
                 raise exc
 
-        for row in result.fetchall():
-            yield dict(row)
+        result_partition = result.fetchmany()
+        while result_partition:
+            for row in result_partition:
+                yield dict(row)
+            result_partition = result.fetchmany()
         result.close()
 
     def execute_statement(self, statement):
