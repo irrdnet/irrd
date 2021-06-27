@@ -380,9 +380,10 @@ class TestROAImportRunner:
         class MockRequestsSuccess:
             status_code = 200
 
-            def __init__(self, url, stream):
+            def __init__(self, url, stream, timeout):
                 assert url == 'https://host/roa.json'
                 assert stream
+                assert timeout
 
             def iter_content(self, size):
                 return iter([b'roa_', b'data'])
@@ -432,9 +433,10 @@ class TestROAImportRunner:
             status_code = 500
             content = 'expected-test-error'
 
-            def __init__(self, url, stream):
+            def __init__(self, url, stream, timeout):
                 assert url == 'https://host/roa.json'
                 assert stream
+                assert timeout
 
         mock_dh = Mock(spec=DatabaseHandler)
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseHandler', lambda: mock_dh)

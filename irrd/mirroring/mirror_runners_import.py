@@ -149,7 +149,7 @@ class FileImportRunnerBase:
             except URLError as error:
                 raise IOError(f'Failed to download {url}: {str(error)}')
         elif url_parsed.scheme in ['http', 'https']:
-            r = requests.get(url, stream=True)
+            r = requests.get(url, stream=True, timeout=10)
             if r.status_code == 200:
                 for chunk in r.iter_content(10240):
                     destination.write(chunk)
