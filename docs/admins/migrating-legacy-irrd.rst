@@ -20,8 +20,7 @@ dropped. The new format of the configuration file is
 :doc:`documented in detail </admins/configuration>`.
 
 The RPSL data is now stored in an SQL database. The migration path for data
-is covered in the
-``TODO: link to deployment guide``
+is covered in the :doc:`deployment guide </admins/deployment>`
 , but essentially comes down to performing
 a fresh import of all data, while initially configuring your authoritative
 databases as a simple mirror.
