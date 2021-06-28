@@ -56,7 +56,7 @@ setuptools.setup(
             'uvicorn[standard]==0.13.4',
         ],
         ':platform_python_implementation == "CPython"': [
-            'psycopg2-binary==2.8.6',
+            'psycopg2-binary==2.9.1',
         ],
         ':platform_python_implementation == "PyPy"': [
             'psycopg2cffi==2.9.0',
