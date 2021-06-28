@@ -41,7 +41,7 @@ setuptools.setup(
         'uvicorn==0.14.0',
         'starlette==0.14.2',
         'psutil==5.8.0',
-        'asgiref==3.3.4',
+        'asgiref==3.4.0',
         'pydantic==1.8.2',
         'SQLAlchemy==1.3.24',
         'alembic==1.6.5',
