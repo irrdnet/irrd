@@ -39,6 +39,7 @@ This documentation is mainly for administrators of IRRd deployments.
    admins/status_page
    admins/rpki
    admins/scopefilter
+   admins/faq
 
 Running queries
 ---------------
