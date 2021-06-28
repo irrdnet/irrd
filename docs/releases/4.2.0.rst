@@ -26,7 +26,9 @@ secure and authenticated transport. The deployment guide
 
 PyPy, an alternative to CPython, is now an officially supported deployment
 platform. It offers improved performance in the order of 10% for some queries,
-and even higher for some GraphQL queries. IRRd 4.2 was continuously tested
+and even higher for some GraphQL queries. CPython remains fully supported,
+and may be the easier option depending on your deployment platform.
+IRRd 4.2 was continuously tested
 against CPython 3.6 and 3.9, and PyPy 3.6 and 3.7.
 
 Other changes compared to 4.1.4
