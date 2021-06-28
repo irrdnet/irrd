@@ -9,6 +9,11 @@ Configuration
 IRRd reads its configuration from a YAML file in a specified location. Many
 configuration options can be changed without restarting IRRd, but not all.
 
+The IRRd configuration file has some hierarchy, which is dot-separated in
+this documentation and IRRd error messages. For example, when this
+documentation mentions a setting like ``rpki.roa_source``, this refers to
+a key ``roa_source`` under a key ``rpki``.
+
 .. contents::
    :backlinks: none
    :local:
@@ -311,7 +316,7 @@ Access lists
 
 RPKI
 ~~~~
-* ``roa_source``: a URL to a JSON file with ROA exports, in the format
+* ``rpki.roa_source``: a URL to a JSON file with ROA exports, in the format
   as produced by the RIPE NCC RPKI validator or rpki-client with the
   ``-j`` flag. When set, this enables the
   :doc:`RPKI-aware mode </admins/rpki>`. To disable RPKI-aware mode,
@@ -320,19 +325,19 @@ RPKI
   |br| **Default**: ``https://rpki.gin.ntt.net/api/export.json``
   |br| **Change takes effect**: after SIGHUP. The first RPKI ROA import may
   take several minutes, after which RPKI-aware mode is enabled.
-* ``roa_import_timer``: the time in seconds between two attempts to import
+* ``rpki.roa_import_timer``: the time in seconds between two attempts to import
   the ROA file from ``roa_source`` and update the RPKI status of all
   qualifying route(6) objects.
   |br| **Default**: ``3600``.
   |br| **Change takes effect**: after SIGHUP.
-* ``slurm_source``: a URL to a SLURM (`RFC8416`_) file. When set, the
+* ``rpki.slurm_source``: a URL to a SLURM (`RFC8416`_) file. When set, the
   ``prefixAssertions`` and ``prefixFilters`` entries in the SLURM file
   are used to filter/amend the data from ``roa_source``.
   See the :ref:`SLURM documentation <rpki-slurm>` for more details.
   Supports HTTP(s), FTP or local file URLs.
   |br| **Default**: undefined, optional
   |br| **Change takes effect**: after SIGHUP, upon next full ROA import.
-* ``pseudo_irr_remarks``: the contents of the remarks field for pseudo-IRR
+* ``rpki.pseudo_irr_remarks``: the contents of the remarks field for pseudo-IRR
   objects created for each ROA. This can have multiple lines. ``{asn}`` and
   ``{prefix}`` are replaced with the ROA's AS number and prefix, respectively.
   When adding this to the configuration, use the `|` style to preserve newlines, as
@@ -342,7 +347,7 @@ RPKI
   |br| `from the RPKI. This route object is the result of an automated`
   |br| `RPKI-to-IRR conversion process performed by IRRd.`
   |br| **Change takes effect**: after the next ROA import.
-* ``notify_invalid_enabled``: whether to send notifications to contacts
+* ``rpki.notify_invalid_enabled``: whether to send notifications to contacts
   of route(6) objects newly marked RPKI invalid in authoritative sources.
   Set to ``true`` or ``false``. This setting is required if ``rpki.roa_source``
   is set and one or more authoritative sources are configured.
@@ -355,18 +360,18 @@ RPKI
   |br| **Default**: undefined
   |br| **Change takes effect**: the next time an authoritative route(6)
   object is newly marked RPKI invalid.
-* ``notify_invalid_subject``: the subject of the email noted
+* ``rpki.notify_invalid_subject``: the subject of the email noted
   in ``notify_invalid_enabled``.
   The string ``{sources_str}`` will be replaced with the name
   of the source(s) (e.g. ``NTTCOM``) of the relevant objects, and
   {object_count} with the number of objects listed in the email.
   |br| **Default**: ``route(6) objects in {sources_str} marked RPKI invalid``
   |br| **Change takes effect**: after the next ROA import.
-* ``notify_invalid_header``: the header of the email noted in
+* ``rpki.notify_invalid_header``: the header of the email noted in
   ``notify_invalid_enabled``.
   The string ``{sources_str}`` will be replaced with the name
   of the source(s) (e.g. ``NTTCOM``) of the relevant objects, and
-  {object_count} with the number of objects listed in the email. When adding
+  ``{object_count}`` with the number of objects listed in the email. When adding
   this to the configuration, use the `|` style to preserve newlines, as
   shown in the example configuration file above.
   In the notification emails, this is only followed by a list of newly invalid
