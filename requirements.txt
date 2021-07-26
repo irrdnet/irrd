@@ -22,7 +22,7 @@ uvicorn==0.14.0        # ASGI server
 uvicorn[standard]==0.14.0; python_version > '3.7'  # ASGI server extras
 starlette==0.14.2 # pyup: <0.15      # ASGI framework - pinned to <0.15 for ariadne
 psutil==5.8.0          # Process management
-asgiref==3.4.0         # ASGI utilities
+asgiref==3.4.1         # ASGI utilities
 pydantic==1.8.2        # Input validation
 
 # Database connections and management
