@@ -458,7 +458,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         return isinstance(self, type(other)) and self.__key() == other.__key()
 
 
-class UnknownRPSLObjectClassException(Exception):
+class UnknownRPSLObjectClassException(Exception):  # noqa: N818
     def __init__(self, message: str, rpsl_object_class: str) -> None:
         self.message = message
         self.rpsl_object_class = rpsl_object_class

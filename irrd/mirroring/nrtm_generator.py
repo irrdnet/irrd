@@ -6,7 +6,7 @@ from irrd.storage.queries import RPSLDatabaseJournalQuery, DatabaseStatusQuery
 from irrd.utils.text import remove_auth_hashes
 
 
-class NRTMGeneratorException(Exception):
+class NRTMGeneratorException(Exception):  # noqa: N818
     pass
 
 
