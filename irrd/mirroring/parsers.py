@@ -292,7 +292,7 @@ class NRTMStreamParser(MirrorParser):
     """
     first_serial = -1
     last_serial = -1
-    nrtm_source = None
+    nrtm_source: Optional[str] = None
     _current_op_serial = -1
 
     def __init__(self, source: str, nrtm_data: str, database_handler: DatabaseHandler) -> None:

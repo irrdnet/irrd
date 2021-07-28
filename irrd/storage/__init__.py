@@ -6,7 +6,7 @@ import ujson
 
 from irrd.conf import get_setting
 
-engine = None
+engine: sa.engine.Engine = None
 
 
 def get_engine():

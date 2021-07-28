@@ -1,10 +1,21 @@
 .DS_Store
-.coverage
+
 .idea
+.vscode
+
 .mypy_cache
-.tmpdirs
 .pytest_cache
+.tmpdirs
+
 local_config.yaml
+
+.coverage
+cov.xml
+
+build
+dist
+gnupg
+irrd.egg-info
 
 syntax: glob
 __pycache__

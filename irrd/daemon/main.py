@@ -171,7 +171,7 @@ def run_irrd(mirror_frequency: int, config_file_path: str, uid: Optional[int], g
     logging.info(f'Main process exiting')
 
 
-def get_configured_owner() -> Tuple[int, int]:
+def get_configured_owner() -> Tuple[Optional[int], Optional[int]]:
     uid = gid = None
     user = get_setting('user')
     group = get_setting('group')
