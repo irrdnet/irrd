@@ -271,13 +271,14 @@ A sample nginx configuration could initially look as follows::
                 proxy_connect_timeout 900;
                 proxy_send_timeout 900;
                 proxy_buffering off;
-                proxy_pass http://127.0.0.1:8080;
+                proxy_pass http://127.0.0.1:8000;
                 add_header Server $upstream_http_server;
             }
         }
     }
 
-Based on this configuration, ``certbot --nginx`` can be used on most platforms
+This example is using plain HTTP for now, but you can subsequently run
+``certbot --nginx`` can be used on most platforms
 to generate the right certificates from LetsEncrypt and update the
 configuration to configure HTTPS.
 
