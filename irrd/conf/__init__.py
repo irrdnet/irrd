@@ -142,7 +142,7 @@ class ConfigurationError(ValueError):
 # testing_overrides can be set to a DottedDict, and is used
 # to override settings while testing, using the config_override
 # fixture.
-testing_overrides = None
+testing_overrides: Any = None
 
 
 class Configuration:
@@ -174,7 +174,7 @@ class Configuration:
             logfile_path = self.get_setting_live('log.logfile_path')
             if logging_config_path:
                 spec = importlib.util.spec_from_file_location("logging_config", logging_config_path)
-                config_module = importlib.util.module_from_spec(spec)
+                config_module = importlib.util.module_from_spec(spec)  # type: ignore
                 spec.loader.exec_module(config_module)  # type: ignore
                 self.logging_config = config_module.LOGGING  # type: ignore
                 logging.config.dictConfig(self.logging_config)
@@ -427,7 +427,7 @@ class Configuration:
         return config.get(key) is None or isinstance(config.get(key), str)
 
 
-configuration = None
+configuration: Optional[Configuration] = None
 
 
 def get_configuration() -> Optional[Configuration]:

@@ -8,7 +8,7 @@ import argparse
 import sys
 
 from pathlib import Path
-from typing import Set
+from typing import Optional, Set
 
 from irrd.storage.models import JournalEntryOrigin
 
@@ -26,7 +26,7 @@ class RPSLParse:
     obj_errors = 0
     obj_unknown = 0
     unknown_object_classes: Set[str] = set()
-    database_handler = None
+    database_handler: Optional[DatabaseHandler] = None
 
     def main(self, filename, strict_validation, database, show_info=True):
         self.show_info = show_info

@@ -85,7 +85,7 @@ Mypy and flake8
 In addition to the tests, this project uses `mypy` for type checking and `flake8`
 for style checking. To run these, run::
 
-    mypy irrd --ignore-missing-imports
+    mypy irrd
     flake8
 
 If all is well, neither command should provide output.
