@@ -567,14 +567,14 @@ class TestWhoisQueryParserIRRD:
         response = parser.handle_query('!J-*')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
-        assert response.result == '{\n    "dict": true\n}'
+        assert response.result.replace(' ', '') == '{\n"dict":true\n}'
         mock_query_resolver.database_status.assert_called_once_with(None)
         mock_query_resolver.database_status.reset_mock()
 
         response = parser.handle_query('!Jtest1,test-invalid')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
-        assert response.result == '{\n    "dict": true\n}'
+        assert response.result.replace(' ', '') == '{\n"dict":true\n}'
         mock_query_resolver.database_status.assert_called_once_with(['TEST1', 'TEST-INVALID'])
 
     def test_exact_key(self, prepare_parser):
