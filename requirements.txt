@@ -15,14 +15,14 @@ python-daemon==2.3.0   # daemonising the main process
 pid==3.0.4             # managing PID files
 redis==3.5.3           # preloaded data storage & sync through redis
 hiredis==2.0.0         # improved redis response parsing performance
-requests==2.25.1       # HTTP request handling
+requests==2.26.0       # HTTP request handling
 pytz==2021.1
 ariadne==0.13.0
 uvicorn==0.14.0        # ASGI server
 uvicorn[standard]==0.14.0; python_version > '3.7'  # ASGI server extras
 starlette==0.14.2 # pyup: <0.15      # ASGI framework - pinned to <0.15 for ariadne
 psutil==5.8.0          # Process management
-asgiref==3.4.0         # ASGI utilities
+asgiref==3.4.1         # ASGI utilities
 pydantic==1.8.2        # Input validation
 
 # Database connections and management
@@ -35,21 +35,21 @@ ujson==4.0.2
 # Testing and related packages
 pytest==6.2.4
 pytest-cov==2.12.1
-coverage==5.5
+coverage==6.0b1
 twisted==21.2.0    # Used for a mock email server in integration tests
 python-graphql-client==0.4.2
 
 # Documentation generation
-Sphinx==4.0.2
+Sphinx==4.1.1
 sphinxcontrib-spelling==7.2.1
-sphinx-material==0.0.32
+sphinx-material==0.0.34
 
 # Code style and type checks
 mypy==0.910; platform_python_implementation == "CPython"
 flake8==3.9.2
-pep8-naming==0.11.1
+pep8-naming==0.12.0
 
 # Creating python packages
-setuptools==57.0.0
+setuptools==57.4.0
 wheel==0.36.2  # also require for installing, #488
-twine==3.4.1
+twine==3.4.2
