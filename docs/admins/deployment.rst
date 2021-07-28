@@ -249,7 +249,8 @@ By default, the HTTP interface runs on ``127.0.0.1:8000``. It is strongly
 recommended to run a service like nginx in front of this, to support
 and default to TLS connections.
 
-A sample nginx configuration could initially look as follows::
+A sample nginx configuration could initially look as follows
+(plain HTTP to begin, HTTPS to follow)::
 
     http {
         include       mime.types;
@@ -277,14 +278,17 @@ A sample nginx configuration could initially look as follows::
         }
     }
 
-This example is using plain HTTP for now, but you can subsequently run
-``certbot --nginx`` can be used on most platforms
+Then, update this configuration to use HTTPS by running
+``certbot --nginx``, which is available on most platforms,
 to generate the right certificates from LetsEncrypt and update the
-configuration to configure HTTPS.
+configuration to enable HTTPS, including redirects from plain HTTP.
 
-You can also use other services or your own configuration. If your service
-runs on a different host, set ``server.http.forwarded_allow_ips`` to let
-IRRd trust the ``X-Forwarded-For`` header.
+You can also use other services or your own configuration. You will likely
+need to increase some timeouts for slower queries. Enabling GZIP compression
+for ``text/plain`` and ``application/json`` responses is recommended.
+If your service runs on a different host, set
+``server.http.forwarded_allow_ips`` to let IRRd trust the
+``X-Forwarded-For`` header.
 
 .. warning::
     While running the HTTP services over plain HTTP is possible, using
