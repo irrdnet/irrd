@@ -15,6 +15,7 @@ class ScopeFilterValidator:
     The scope filter validator validates whether prefixes, ASNs or RPSL
     objects fall within the configured scope filter.
     """
+
     def __init__(self):
         self.load_filters()
 
@@ -65,11 +66,10 @@ class ScopeFilterValidator:
                             asn_first: Optional[int]) -> Tuple[ScopeFilterStatus, str]:
         """
         Validate whether a particular set of RPSL data is in scope.
-        Depending on object_class, members and mp_members are also validated.
         Returns a ScopeFilterStatus.
         """
         out_of_scope = [ScopeFilterStatus.out_scope_prefix, ScopeFilterStatus.out_scope_as]
-        if object_class not in ['route', 'route6']:
+        if object_class not in ['route', 'route6', 'aut-num']:
             return ScopeFilterStatus.in_scope, ''
 
         if prefix:
@@ -118,14 +118,14 @@ class ScopeFilterValidator:
         objs_changed: Dict[ScopeFilterStatus, List[Dict[str, str]]] = defaultdict(list)
 
         q = RPSLDatabaseQuery(column_names=columns, enable_ordering=False)
-        q = q.object_classes(['route', 'route6'])
+        q = q.object_classes(['route', 'route6', 'aut-num'])
         results = database_handler.execute_query(q)
 
         for result in results:
             current_status = result['scopefilter_status']
             result['old_status'] = current_status
             prefix = None
-            if result['ip_first']:
+            if result.get('ip_first'):
                 prefix = IP(result['ip_first'] + '/' + str(result['prefix_length']))
             new_status, _ = self._validate_rpsl_data(
                 result['source'],
