@@ -45,6 +45,7 @@ class BulkRouteROAValidator:
     11000000000000000000001000, and therefore will (and should)
     not be included in the validation process.
     """
+
     def __init__(self, dh: DatabaseHandler, roas: Optional[List[ROA]] = None):
         """
         Create a validator object. Can use either a list of ROA objects,
@@ -85,7 +86,7 @@ class BulkRouteROAValidator:
         validation result, are not included in the return value.
         """
         columns = ['pk', 'rpsl_pk', 'ip_first', 'prefix_length', 'asn_first', 'source',
-                   'object_class', 'object_text', 'rpki_status']
+                   'object_class', 'object_text', 'rpki_status', 'scopefilter_status']
         q = RPSLDatabaseQuery(column_names=columns, enable_ordering=False)
         q = q.object_classes(['route', 'route6'])
         if sources:
