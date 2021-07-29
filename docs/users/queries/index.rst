@@ -68,7 +68,9 @@ Due to internal indexing considerations, prefix queries are much faster if
 they do not include `inetnum` objects. The speed improvement can be in the
 order of 100x.
 
-High performance prefix queries are used when you:
+High performance prefix queries are used when IRRd is sure that no
+`inetnum` objects might need to be included in the response. It can
+determine this when you:
 
 * use the ``-t`` parameter in RIPE queries; or
 * use type-specific queries like ``!r`` or ``-L``; or
@@ -92,4 +94,3 @@ Once the initial preload is complete, updates to the database do not cause
 delays in queries. However, they may cause queries to return responses
 based on slightly outdated data, typically 15-60 seconds.
 Data preloading and warm-up time
-

@@ -2,16 +2,14 @@
 Release notes for IRRd 4.2.0
 ============================
 
-New features
-------------
-
 IRRd 4.2.0 adds several major features:
 
 * A new :doc:`GraphQL </users/queries/graphql>` query interface.
-  This allows great flexibility in querying RPSL data, over HTTP.
+  This new interface supports much greater query flexibility than traditional
+  whois, with output in a structured JSON format, over a secure HTTPS connection.
 * A new :doc:`HTTPS API call for whois queries </users/queries/whois/>`.
   This supports the same whois queries as port 43, but using
-  standard HTTP instead of the more complex raw TCP sockets.
+  standard HTTPS instead of the more complex raw TCP sockets.
 * A new
   :doc:`HTTPS API call for submitting RPSL objects </users/database-changes>`.
   This allows submitting one or multiple objects, and returns a JSON response
@@ -24,14 +22,15 @@ The new HTTP interfaces are intended to be used with HTTPS, to provide
 secure and authenticated transport. The deployment guide
 :ref:`has been updated <deployment-https>` with an nginx example.
 
-PyPy, an alternative to CPython, is now an officially supported deployment
-platform. It offers improved performance in the order of 10% for some queries,
+PyPy is now an officially supported deployment platform. It is an alternative
+to CPython, the most commonly used Python interpreter.
+PyPy offers improved performance in the order of 10% for some queries,
 and even higher for some GraphQL queries. CPython remains fully supported,
 and may be the easier option depending on your deployment platform.
 IRRd 4.2 was continuously tested
 against CPython 3.6 and 3.9, and PyPy 3.6 and 3.7.
 
-Other changes compared to 4.1.4
+Other changes compared to 4.1.5
 -------------------------------
 * IRRd now rejects unknown settings in the config file, i.e. settings
   that are found in the file, but unknown to IRRd. This reduces unintentional
@@ -48,6 +47,8 @@ Other changes compared to 4.1.4
   by setting the ``user`` and ``group`` settings.
   This allows you to start IRRd as root, have it bind to port 43, and then
   drop privileges. This is now the recommended deployment method.
+* The periodic tasks to update the RPKI and scope filter status use
+  considerably less memory while running.
 
 .. _draft-ymbk-opsawg-finding-geofeeds-03: https://tools.ietf.org/html/draft-ymbk-opsawg-finding-geofeeds-03
 
@@ -71,7 +72,7 @@ Several configuration options have been added or changed:
   whois, each HTTP worker process uses up to 200MB of memory. Depending
   on available resources, a higher number of workers may be appropriate.
 * A new setting ``server.http.forwarded_allowed_ips`` was added. This
-  needs to be set when the proxy in front of IRRd is not running on
+  needs to be set when the HTTP proxy in front of IRRd is not running on
   the local host.
 * The new setting ``compatibility.inetnum_search_disabled`` allows IRRd
   to default to
