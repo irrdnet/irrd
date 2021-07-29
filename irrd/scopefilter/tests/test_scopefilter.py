@@ -111,62 +111,83 @@ class TestScopeFilterValidator:
             },
         })
 
-        mock_query_result = [
-            {
-                # Should become in_scope
-                'rpsl_pk': '192.0.2.128/25,AS65547',
-                'ip_first': '192.0.2.128',
-                'prefix_length': 25,
-                'asn_first': 65547,
-                'source': 'TEST',
-                'object_class': 'route',
-                'object_text': 'text',
-                'scopefilter_status': ScopeFilterStatus.out_scope_prefix,
-            },
-            {
-                # Should become out_scope_prefix
-                'rpsl_pk': '192.0.2.0/25,AS65547',
-                'ip_first': '192.0.2.0',
-                'prefix_length': 25,
-                'asn_first': 65547,
-                'source': 'TEST',
-                'object_class': 'route',
-                'object_text': 'text',
-                'scopefilter_status': ScopeFilterStatus.in_scope,
-            },
-            {
-                # Should become out_scope_as
-                'rpsl_pk': '192.0.2.128/25,AS65547',
-                'ip_first': '192.0.2.128',
-                'prefix_length': 25,
-                'asn_first': 23456,
-                'source': 'TEST',
-                'object_class': 'route',
-                'object_text': 'text',
-                'scopefilter_status': ScopeFilterStatus.out_scope_prefix,
-            },
-            {
-                # Should become out_scope_as
-                'rpsl_pk': 'AS65547',
-                'asn_first': 23456,
-                'source': 'TEST',
-                'object_class': 'aut-num',
-                'object_text': 'text',
-                'scopefilter_status': ScopeFilterStatus.in_scope,
-            },
-            {
-                # Should not change
-                'rpsl_pk': '192.0.2.128/25,AS65548',
-                'ip_first': '192.0.2.128',
-                'prefix_length': 25,
-                'asn_first': 65548,
-                'source': 'TEST',
-                'object_class': 'route',
-                'object_text': 'text',
-                'scopefilter_status': ScopeFilterStatus.in_scope,
-            },
-        ]
-        mock_dh.execute_query = lambda query: mock_query_result
+        mock_query_result = iter([
+            [
+                {
+                    # Should become in_scope
+                    'pk': '192.0.2.128/25,AS65547',
+                    'rpsl_pk': '192.0.2.128/25,AS65547',
+                    'ip_first': '192.0.2.128',
+                    'prefix_length': 25,
+                    'asn_first': 65547,
+                    'source': 'TEST',
+                    'object_class': 'route',
+                    'scopefilter_status': ScopeFilterStatus.out_scope_prefix,
+                },
+                {
+                    # Should become out_scope_prefix
+                    'pk': '192.0.2.0/25,AS65547',
+                    'rpsl_pk': '192.0.2.0/25,AS65547',
+                    'ip_first': '192.0.2.0',
+                    'prefix_length': 25,
+                    'asn_first': 65547,
+                    'source': 'TEST',
+                    'object_class': 'route',
+                    'scopefilter_status': ScopeFilterStatus.in_scope,
+                },
+                {
+                    # Should become out_scope_as
+                    'pk': '192.0.2.128/25,AS65547',
+                    'rpsl_pk': '192.0.2.128/25,AS65547',
+                    'ip_first': '192.0.2.128',
+                    'prefix_length': 25,
+                    'asn_first': 23456,
+                    'source': 'TEST',
+                    'object_class': 'route',
+                    'scopefilter_status': ScopeFilterStatus.out_scope_prefix,
+                },
+                {
+                    # Should become out_scope_as
+                    'pk': 'AS65547',
+                    'rpsl_pk': 'AS65547',
+                    'asn_first': 23456,
+                    'source': 'TEST',
+                    'object_class': 'aut-num',
+                    'object_text': 'text',
+                    'scopefilter_status': ScopeFilterStatus.in_scope,
+                },
+                {
+                    # Should not change
+                    'pk': '192.0.2.128/25,AS65548',
+                    'rpsl_pk': '192.0.2.128/25,AS65548',
+                    'ip_first': '192.0.2.128',
+                    'prefix_length': 25,
+                    'asn_first': 65548,
+                    'source': 'TEST',
+                    'object_class': 'route',
+                    'scopefilter_status': ScopeFilterStatus.in_scope,
+                },
+            ],
+            [
+                {
+                    'pk': '192.0.2.128/25,AS65547',
+                    'object_text': 'text-192.0.2.128/25,AS65547',
+                },
+                {
+                    'pk': '192.0.2.0/25,AS65547',
+                    'object_text': 'text-192.0.2.0/25,AS65547',
+                },
+                {
+                    'pk': '192.0.2.128/25,AS65547',
+                    'object_text': 'text-192.0.2.128/25,AS65547',
+                },
+                {
+                    'pk': 'AS65547',
+                    'object_text': 'text-AS65547',
+                },
+            ]
+        ])
+        mock_dh.execute_query = lambda query: next(mock_query_result)
 
         validator = ScopeFilterValidator()
         result = validator.validate_all_rpsl_objects(mock_dh)
@@ -178,15 +199,20 @@ class TestScopeFilterValidator:
 
         assert now_in_scope[0]['rpsl_pk'] == '192.0.2.128/25,AS65547'
         assert now_in_scope[0]['old_status'] == ScopeFilterStatus.out_scope_prefix
+        assert now_in_scope[0]['object_text'] == 'text-192.0.2.128/25,AS65547'
 
         assert now_out_scope_as[0]['rpsl_pk'] == '192.0.2.128/25,AS65547'
         assert now_out_scope_as[0]['old_status'] == ScopeFilterStatus.out_scope_prefix
+        assert now_out_scope_as[0]['object_text'] == 'text-192.0.2.128/25,AS65547'
         assert now_out_scope_as[1]['rpsl_pk'] == 'AS65547'
         assert now_out_scope_as[1]['old_status'] == ScopeFilterStatus.in_scope
+        assert now_out_scope_as[1]['object_text'] == 'text-AS65547'
 
         assert now_out_scope_prefix[0]['rpsl_pk'] == '192.0.2.0/25,AS65547'
         assert now_out_scope_prefix[0]['old_status'] == ScopeFilterStatus.in_scope
+        assert now_out_scope_prefix[0]['object_text'] == 'text-192.0.2.0/25,AS65547'
 
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['route', 'route6', 'aut-num'],), {}],
+            ['pks', (['192.0.2.128/25,AS65547', '192.0.2.0/25,AS65547', '192.0.2.128/25,AS65547', 'AS65547'],), {}],
         ]
