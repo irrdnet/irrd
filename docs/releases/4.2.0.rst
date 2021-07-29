@@ -58,6 +58,12 @@ IRRd 4.2 is a relatively small upgrade compared to 4.1. If you are upgrading
 from an older version, please make sure to also follow all steps in the
 :doc:`4.1 release notes </releases/4.1.0>`.
 
+.. tip::
+    Depending on the availability requirements of your IRRd deployment,
+    it may be smart to upgrade your own test setup first and verify
+    whether 4.2 works as expected for you. That also ensures you are familiar
+    with the exact upgrade steps in your deployment platform.
+
 Several configuration options have been added or changed:
 
 * The ``server.http.access_list`` setting is now called
