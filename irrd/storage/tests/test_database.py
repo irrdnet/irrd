@@ -82,6 +82,7 @@ class TestDatabaseHandlerLive:
     """
     This test covers mainly DatabaseHandler and DatabaseStatusTracker.
     """
+
     def test_object_writing_and_status_checking(self, monkeypatch, irrd_database, config_override):
         config_override({
             'sources': {
@@ -391,6 +392,7 @@ class TestDatabaseHandlerLive:
             'object_class': 'route',
             'object_text': 'object-text',
             'old_status': RPKIStatus.invalid,  # This always triggers a journal entry
+            'scopefilter_status': ScopeFilterStatus.in_scope,
         }]
 
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.invalid])))) == 1
@@ -430,6 +432,16 @@ class TestDatabaseHandlerLive:
         dh.update_rpki_status(rpsl_objs_now_valid=route_rpsl_objs)
         assert not list(dh.execute_query(RPSLDatabaseJournalQuery().serial_range(6, 6)))
 
+        # State change from invalid to valid should not create journal entry
+        # if scope filter is still out of scope
+        route_rpsl_objs[0].update({
+            'old_status': RPKIStatus.invalid,
+            'scopefilter_status': ScopeFilterStatus.out_scope_as,
+        })
+        dh.update_rpki_status(rpsl_objs_now_valid=route_rpsl_objs)
+        assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.valid])))) == 1
+        assert not list(dh.execute_query(RPSLDatabaseJournalQuery().serial_range(6, 6)))
+
     def test_scopefilter_status_storage(self, monkeypatch, irrd_database, database_handler_with_route):
         monkeypatch.setenv('IRRD_SOURCES_TEST_KEEP_JOURNAL', '1')
         dh = database_handler_with_route
@@ -438,7 +450,8 @@ class TestDatabaseHandlerLive:
             'source': 'TEST',
             'object_class': 'route',
             'object_text': 'object-text',
-            'old_status': ScopeFilterStatus.in_scope,  # This always triggers a journal entry
+            'old_status': ScopeFilterStatus.in_scope,
+            'rpki_status': RPKIStatus.valid,
         }]
 
         assert len(list(dh.execute_query(RPSLDatabaseQuery().scopefilter_status([ScopeFilterStatus.in_scope])))) == 1
@@ -461,6 +474,16 @@ class TestDatabaseHandlerLive:
         assert len(list(dh.execute_query(RPSLDatabaseQuery().scopefilter_status([ScopeFilterStatus.in_scope])))) == 1
         journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_range(2, 2)))
         assert journal_entry[0]['operation'] == DatabaseOperation.add_or_update
+
+        # Special case: updating the status from out to in scope while RPKI invalid,
+        # should change the status but not create a journal entry - see #524
+        route_rpsl_objs[0].update({
+            'old_status': ScopeFilterStatus.out_scope_as,
+            'rpki_status': RPKIStatus.invalid,
+        })
+        dh.update_scopefilter_status(rpsl_objs_now_in_scope=route_rpsl_objs)
+        assert len(list(dh.execute_query(RPSLDatabaseQuery().scopefilter_status([ScopeFilterStatus.in_scope])))) == 1
+        assert len(list(dh.execute_query(RPSLDatabaseJournalQuery()))) == 2  # no new entry since last test
 
     def _clean_result(self, results):
         variable_fields = ['pk', 'timestamp', 'created', 'updated', 'last_error_timestamp']

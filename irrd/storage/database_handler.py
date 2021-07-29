@@ -256,7 +256,10 @@ class DatabaseHandler:
             self.execute_statement(stmt)
 
         for rpsl_obj in rpsl_objs_now_valid + rpsl_objs_now_not_found:
-            if rpsl_obj['old_status'] == RPKIStatus.invalid:
+            if all([
+                rpsl_obj['old_status'] == RPKIStatus.invalid,
+                rpsl_obj['scopefilter_status'] == ScopeFilterStatus.in_scope
+            ]):
                 self.status_tracker.record_operation(
                     operation=DatabaseOperation.add_or_update,
                     rpsl_pk=rpsl_obj['rpsl_pk'],
@@ -305,16 +308,17 @@ class DatabaseHandler:
             self.execute_statement(stmt)
 
         for rpsl_obj in rpsl_objs_now_in_scope:
-            self.status_tracker.record_operation(
-                operation=DatabaseOperation.add_or_update,
-                rpsl_pk=rpsl_obj['rpsl_pk'],
-                source=rpsl_obj['source'],
-                object_class=rpsl_obj['object_class'],
-                object_text=rpsl_obj['object_text'],
-                origin=JournalEntryOrigin.scope_filter,
-                source_serial=None,
-            )
-            self._object_classes_modified.add(rpsl_obj['object_class'])
+            if rpsl_obj['rpki_status'] != RPKIStatus.invalid:
+                self.status_tracker.record_operation(
+                    operation=DatabaseOperation.add_or_update,
+                    rpsl_pk=rpsl_obj['rpsl_pk'],
+                    source=rpsl_obj['source'],
+                    object_class=rpsl_obj['object_class'],
+                    object_text=rpsl_obj['object_text'],
+                    origin=JournalEntryOrigin.scope_filter,
+                    source_serial=None,
+                )
+                self._object_classes_modified.add(rpsl_obj['object_class'])
 
         for rpsl_obj in rpsl_objs_now_out_scope_as + rpsl_objs_now_out_scope_prefix:
             if rpsl_obj['old_status'] == ScopeFilterStatus.in_scope:
