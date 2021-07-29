@@ -6,7 +6,7 @@ from IPy import IP
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseQuery
-from irrd.utils.rpsl_samples import SAMPLE_ROUTE, SAMPLE_INETNUM
+from irrd.utils.rpsl_samples import SAMPLE_AUT_NUM, SAMPLE_ROUTE, SAMPLE_INETNUM
 from irrd.utils.test_utils import flatten_mock_calls
 from ..status import ScopeFilterStatus
 from ..validators import ScopeFilterValidator
@@ -58,8 +58,10 @@ class TestScopeFilterValidator:
 
     def test_validate_rpsl_object(self, config_override):
         validator = ScopeFilterValidator()
-        obj = rpsl_object_from_text(SAMPLE_ROUTE)
-        assert validator.validate_rpsl_object(obj) == (ScopeFilterStatus.in_scope, '')
+        route_obj = rpsl_object_from_text(SAMPLE_ROUTE)
+        assert validator.validate_rpsl_object(route_obj) == (ScopeFilterStatus.in_scope, '')
+        autnum_obj = rpsl_object_from_text(SAMPLE_AUT_NUM)
+        assert validator.validate_rpsl_object(autnum_obj) == (ScopeFilterStatus.in_scope, '')
 
         config_override({
             'scopefilter': {
@@ -67,7 +69,9 @@ class TestScopeFilterValidator:
             },
         })
         validator.load_filters()
-        result = validator.validate_rpsl_object(obj)
+        result = validator.validate_rpsl_object(route_obj)
+        assert result == (ScopeFilterStatus.out_scope_as, 'ASN 65537 is out of scope')
+        result = validator.validate_rpsl_object(autnum_obj)
         assert result == (ScopeFilterStatus.out_scope_as, 'ASN 65537 is out of scope')
 
         config_override({
@@ -76,7 +80,7 @@ class TestScopeFilterValidator:
             },
         })
         validator.load_filters()
-        result = validator.validate_rpsl_object(obj)
+        result = validator.validate_rpsl_object(route_obj)
         assert result == (ScopeFilterStatus.out_scope_prefix, 'prefix 192.0.2.0/24 is out of scope')
 
         config_override({
@@ -85,6 +89,7 @@ class TestScopeFilterValidator:
             },
         })
         validator.load_filters()
+
         # Ignored object class
         result = validator.validate_rpsl_object(rpsl_object_from_text(SAMPLE_INETNUM))
         assert result == (ScopeFilterStatus.in_scope, '')
@@ -141,6 +146,15 @@ class TestScopeFilterValidator:
                 'scopefilter_status': ScopeFilterStatus.out_scope_prefix,
             },
             {
+                # Should become out_scope_as
+                'rpsl_pk': 'AS65547',
+                'asn_first': 23456,
+                'source': 'TEST',
+                'object_class': 'aut-num',
+                'object_text': 'text',
+                'scopefilter_status': ScopeFilterStatus.in_scope,
+            },
+            {
                 # Should not change
                 'rpsl_pk': '192.0.2.128/25,AS65548',
                 'ip_first': '192.0.2.128',
@@ -159,7 +173,7 @@ class TestScopeFilterValidator:
         now_in_scope, now_out_scope_as, now_out_scope_prefix = result
 
         assert len(now_in_scope) == 1
-        assert len(now_out_scope_as) == 1
+        assert len(now_out_scope_as) == 2
         assert len(now_out_scope_prefix) == 1
 
         assert now_in_scope[0]['rpsl_pk'] == '192.0.2.128/25,AS65547'
@@ -167,10 +181,12 @@ class TestScopeFilterValidator:
 
         assert now_out_scope_as[0]['rpsl_pk'] == '192.0.2.128/25,AS65547'
         assert now_out_scope_as[0]['old_status'] == ScopeFilterStatus.out_scope_prefix
+        assert now_out_scope_as[1]['rpsl_pk'] == 'AS65547'
+        assert now_out_scope_as[1]['old_status'] == ScopeFilterStatus.in_scope
 
         assert now_out_scope_prefix[0]['rpsl_pk'] == '192.0.2.0/25,AS65547'
         assert now_out_scope_prefix[0]['old_status'] == ScopeFilterStatus.in_scope
 
         assert flatten_mock_calls(mock_dq) == [
-            ['object_classes', (['route', 'route6'],), {}],
+            ['object_classes', (['route', 'route6', 'aut-num'],), {}],
         ]
