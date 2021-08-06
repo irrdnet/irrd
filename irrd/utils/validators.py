@@ -17,7 +17,7 @@ def parse_as_number(value: Union[str, int], permit_plain=False) -> Tuple[str, in
     else:
         value_int = value
 
-    if not 0 <= value_int < 4294967295:
+    if not 0 <= value_int <= 4294967295:
         raise ValidationError(f'Invalid AS number {value}: valid range is 0-4294967295')
 
     return 'AS' + str(value_int), value_int
