@@ -15,46 +15,8 @@ known changes are listed below.
 
 Migrating existing data
 -----------------------
-To migrate data from an existing IRR server, configure the new IRRd
-instance as a mirror first.
-
-If you intend to make your new IRRd instance
-authoritative at some point, you must enable
-``strict_import_keycert_object`` in IRRd 4's mirror configuration,
-to ensure PGP keys are loaded into the local key chain, allowing them
-to be used for authentication in the future.
-
-Mirrored sources use
-:doc:`less strict validation than authoritative data </admins/object-validation>`
-This means that IRRd will permit objects that are invalid under strict
-validation while running as a mirror. After making IRRd 4 authoritative,
-any future changes to objects need to meet strict validation rules.
-This allows graceful upgrades of slightly invalid objects.
-
-However, some objects may be too invalid for IRRd to be able to import them
-even in non-strict mode. These objects are logged. While running IRRd 4
-as a mirror, you should check the logs for any such objects - they will
-disappear when you make IRRd 4 your authoritative instance.
-
-Once the IRRd 4 mirror is running, you can use it to test queries.
-The general plan for switching over to a new IRRd v4 instance would be:
-
-* Block update emails.
-* Ensure an NRTM update has run so that the instances are in sync
-  (it may be worthwhile to lower ``import_timer``)
-* Remove the mirror configuration from the new IRRd 4 instance for
-  any authoritative sources.
-* Set the authoritative sources to ``authoritative: true`` in the config.
-* Redirect queries to the new instance.
-* Redirect update emails to the new instance.
-* Ensure published exports are now taken from the new instance.
-
-Depending on the time that the authoritative source has been mirrored
-prior to migrating, the migration may be fluent for others that
-mirror data from the new IRRd 4 instance. In other cases, they may
-need to do a new full import, similar to any other scenario where they
-have too much lag to use NRTM. This is because the new IRRd 4 instance
-only has journal entries for NRTM for the period it has been mirroring.
+To migrate data from a legacy IRRd instance, see option 1 documented in
+:doc:`mirroring </admins/availability-and-migration>`.
 
 
 Configuration and data storage
