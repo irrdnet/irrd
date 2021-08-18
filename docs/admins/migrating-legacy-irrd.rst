@@ -16,7 +16,7 @@ known changes are listed below.
 Migrating existing data
 -----------------------
 To migrate data from a legacy IRRd instance, see option 1 documented in
-:doc:`mirroring </admins/availability-and-migration>`.
+:doc:`availability and data migration </admins/availability-and-migration>`.
 
 
 Configuration and data storage

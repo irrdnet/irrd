@@ -39,7 +39,7 @@ This document mainly discusses three kinds of IRRd instances:
 * A **standby** instance mirrors from the active instance, and is intended to
   be promoted to the active instance as part of a migration or fallback.
   While in a standby role, it can be used for queries, as those are read-only.
-* A **read-only** instance mirrors from an active instance, and is never
+* A **query-only** instance mirrors from an active instance, and is never
   intended to be promoted to an active instance.
 
 .. warning::
@@ -61,13 +61,13 @@ and having standby's follow the active NRTM stream.
 If you are migrating from a legacy version of IRRd, this is most likely your
 only option.
 
-This all slightly different from "regular" mirroring, where the mirror
+This is a bit different from "regular" mirroring, where the mirror
 is never meant to be promoted to an active instance, and may be run by entirely
 different organisations for different reasons.
 There are a number of important special circumstances when using exports and
 NRTM for migrations or availability, which are detailed below.
 
-Note that an active instance for one IRR registry may simultaneously be a
+Note that an active IRRd instance for one IRR registry may simultaneously be a
 regular mirror for other sources.
 
 .. note::
@@ -98,8 +98,7 @@ GPG keychain imports
 ~~~~~~~~~~~~~~~~~~~~
 IRRd uses GnuPG to validate PGP signatures used to authenticate authoritative
 changes. This means that all `key-cert` objects need to be inserted into the
-GnuPG keychain. (Which is also how PGP keys are validated when users create
-`key-cert` objects.)
+GnuPG keychain before users can submit PGP signed updates.
 
 By default, IRRd only inserts public PGP keys from `key-cert` objects for
 authoritative sources - as there is no reason to do PGP signature validation
@@ -110,9 +109,13 @@ When enabled, `key-cert` objects always use the strict importer which includes
 importing into the key chain, which allows them to be used for authentication
 in the future.
 
-If your IRRd instance already has `key-cert` objects that were imported without
-``strict_import_keycert_objects``, you can insert them into the local keychain
-with the ``irrd_load_gpg_keys`` command.
+If your IRRd instance already has (or may have) `key-cert` objects that were
+imported without ``strict_import_keycert_objects``, you can insert them into the
+local keychain with the ``irrd_load_gpg_keys`` command.
+
+The ``irrd_load_gpg_keys`` command may fail to import certain keys if they use
+an unsupported format. It is safe to run multiple times, even if some or all
+keys are already in the keychain, and safe to run while IRRd is running.
 
 Password hashes
 ~~~~~~~~~~~~~~~
@@ -128,7 +131,8 @@ on the current active instance:
 * Set ``sources.{name}.export_destination_unfiltered`` to a path where IRRd
   will store exports that include full password hashes. Other than including
   full hashes, this works the same as ``sources.{name}.export_destination``.
-  Then, distribute those files to your standby instance.
+  Then, distribute those files to your standby instance, and point
+  ``import_source`` to their location.
 * Set ``sources.{name}.nrtm_access_list_unfiltered`` to an access list defined
   in the configuration file. Any IP on this access list will receive
   full password hashes when doing NRTM requests. Other than that, NRTM works
@@ -162,12 +166,13 @@ to the NRTM journal.
 
 IRRd retains invalid or out of scope objects, and they may become visible again
 if their status is changed by a configuration or ROA change.
-However, a standby instance using exports and NRTM will never see objects that
-are invalid or out of scope on the active instance, as they are not included in
-mirroring. Upon promoting a standby instance to an active instance, these
+However, a standby or query-only instance using exports and NRTM will never see
+objects that are invalid or out of scope on the active instance, as they are
+not included in mirroring.
+Upon promoting a standby instance to an active instance, these
 objects are lost permanently.
 
-For the same reasons, standby and read-only instances that receive their
+For the same reasons, standby and query-only instances that receive their
 data over NRTM can not be queried for RPKI invalid or out of scope objects,
 as they never see these objects.
 
@@ -186,6 +191,8 @@ an IRRDv4 instance would be:
 * Redirect queries to the new instance.
 * Redirect update emails to the new instance.
 * Ensure published exports are now taken from the new instance.
+* If you were not using synchronised serials, all instances mirroring from
+  your instance, must reload their local copy.
 
 If this is part of a planned migration from a previous version, it is
 recommended that you test existing tools and queries against the new IRRDv4
@@ -200,8 +207,7 @@ to be migrated or mirrored.
 
 You could run two IRRd instances, each on their own PostgreSQL instance, which
 use PostgreSQL replication as the synchronisation mechanism. In the standby
-IRRd, configure the source as not being authoritative to prevent local changes,
-but also do not configure an NRTM host or import source.
+IRRd, configure the source as ``database_readonly`` to prevent local changes.
 
 Using PostgreSQL replication solves most of the issues mentioned for other
 options, but may have other limitations or issues that are out of scope
