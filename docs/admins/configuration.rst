@@ -525,9 +525,9 @@ Sources
   |br| **Default**: not defined, all access denied except to clients in
   ``nrtm_access_list_unfiltered``.
   |br| **Change takes effect**: after SIGHUP, upon next request.
-* ``sources.{name}.nrtm_access_list``: a reference to an access list in the
-  configuration, where IPs in the access list are permitted unfiltered access
-  to the NRTM stream for this particular source (``-g`` queries).
+* ``sources.{name}.nrtm_access_list_unfiltered``: a reference to an access list
+  in the configuration, where IPs in the access list are permitted unfiltered
+  access to the NRTM stream for this particular source (``-g`` queries).
   Unfiltered means full password hashes are included.
   Sharing password hashes externally is a security risk, the unfiltered data
   is intended only to support
