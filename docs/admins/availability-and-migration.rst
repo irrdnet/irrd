@@ -111,9 +111,9 @@ in the future.
 
 If your IRRd instance already has (or may have) `key-cert` objects that were
 imported without ``strict_import_keycert_objects``, you can insert them into the
-local keychain with the ``irrd_load_gpg_keys`` command.
+local keychain with the ``irrd_load_pgp_keys`` command.
 
-The ``irrd_load_gpg_keys`` command may fail to import certain keys if they use
+The ``irrd_load_pgp_keys`` command may fail to import certain keys if they use
 an unsupported format. It is safe to run multiple times, even if some or all
 keys are already in the keychain, and safe to run while IRRd is running.
 
@@ -222,7 +222,7 @@ not happen for mirrors.
 
 When using PostgreSQL replication, IRRd is not aware of how the objects in the
 database are being changed. Therefore, you need to run the
-``irrd_load_gpg_keys`` command before making a standby instance the active
+``irrd_load_pgp_keys`` command before making a standby instance the active
 instance to make sure PGP authentication keeps working.
 
 
