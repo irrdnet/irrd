@@ -164,7 +164,7 @@ jobs:
           IRRD_REDIS_URL_INTEGRATION_2: 'redis://localhost/5'
           PYTHON_INTERPRETER: pypy3
           SUDO: ''
-          ENCHANT_PACKAGE: python-enchant
+          ENCHANT_PACKAGE: python3-enchant
 
       - image: circleci/postgres:9.6
         environment:
@@ -196,4 +196,3 @@ jobs:
           POSTGRES_HOST_AUTH_METHOD: trust
 
       - image: circleci/redis:5.0.4
-
