@@ -202,16 +202,22 @@ instance before promoting it to be active.
 Option 2: PostgreSQL replication
 -------------------------------------------
 Except for configuration, IRRd stores all its data in the PostgreSQL database.
-IRRd also uses Redis, but this is only for temporary storage which does not need
-to be migrated or mirrored.
+Redis is used for passing derived data and commands.
 
 You could run two IRRd instances, each on their own PostgreSQL instance, which
 use PostgreSQL replication as the synchronisation mechanism. In the standby
-IRRd, configure the source as ``database_readonly`` to prevent local changes.
+IRRd, configure the instance as ``database_readonly`` to prevent local changes.
+Note that this prevents the IRRd instance from making any changes of any kind
+to the local database.
+
+For Redis, you need to connect all instances to the same Redis instance,
+or use `Redis replication`_.
 
 Using PostgreSQL replication solves most of the issues mentioned for other
 options, but may have other limitations or issues that are out of scope
 for IRRd itself.
+
+.. _Redis replication: https://redis.io/topics/replication
 
 GPG keychain imports with PostgreSQL replication
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -68,6 +68,9 @@ class MirrorScheduler:
         self.previous_scopefilter_excluded = None
 
     def run(self) -> None:
+        if get_setting('database_readonly'):
+            return
+
         if get_setting('rpki.roa_source'):
             import_timer = int(get_setting('rpki.roa_import_timer'))
             self.run_if_relevant(RPKI_IRR_PSEUDO_SOURCE, ROAImportRunner, import_timer)

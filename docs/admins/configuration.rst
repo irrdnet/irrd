@@ -179,6 +179,15 @@ General settings
   for improved performance
   |br| **Default**: not defined, but required.
   |br| **Change takes effect**: after full IRRd restart.
+* ``database_readonly``: a boolean for whether this instance is
+  database read only, i.e. IRRd will never write any changes to the SQL database
+  in any circumstance. This can be used for
+  :doc:`availability with PostgreSQL replication </admins/availability-and-migration>`.
+  This setting means that this IRRd instance will never run the RPKI or scope
+  filter validators, and can not be used if any source has ``authoritative``,
+  ``import_source`` or ``nrtm_host`` set.
+  |br| **Default**: ``false``.
+  |br| **Change takes effect**: after full IRRd restart.
 * ``redis_url``: a URL to a Redis instance, e.g.
   ``unix:///var/run/redis.sock`` to connect through a unix socket, or
   ``redis://localhost`` to connect through TCP.
@@ -438,15 +447,6 @@ Sources
 * ``sources.{name}.authoritative``: a boolean for whether this source is
   authoritative, i.e. changes are allowed to be submitted to this IRRd instance
   through e.g. email updates.
-  |br| **Default**: ``false``.
-  |br| **Change takes effect**: after SIGHUP, for all subsequent requests.
-* ``sources.{name}.database_readonly``: a boolean for whether this source is
-  database read only, i.e. IRRd will never write any changes to the SQL database
-  for this source in any circumstance. This can be used for
-  :doc:`availability with PostgreSQL replication </admins/availability-and-migration>`.
-  This setting means that this IRRd instance will never run the RPKI or scope
-  filter validators, and can not be used on a source that has ``authoritative``,
-  ``import_source`` or ``nrtm_host`` set.
   |br| **Default**: ``false``.
   |br| **Change takes effect**: after SIGHUP, for all subsequent requests.
 * ``sources.{name}.keep_journal``: a boolean for whether a local journal is

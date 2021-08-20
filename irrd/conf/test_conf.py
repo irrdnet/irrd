@@ -88,7 +88,6 @@ class TestConfiguration:
                         'keep_journal': True,
                     },
                     'TESTDB3': {
-                        'database_readonly': True,
                         'export_destination_unfiltered': '/tmp',
                         'nrtm_access_list_unfiltered': 'valid-list',
                     },
@@ -222,6 +221,7 @@ class TestConfiguration:
     def test_load_invalid_config(self, save_yaml_config, tmpdir):
         config = {
             'irrd': {
+                'database_readonly': True,
                 'piddir': str(tmpdir + '/does-not-exist'),
                 'user': 'a',
                 'server': {
@@ -259,7 +259,6 @@ class TestConfiguration:
                         'export_timer': 'bar',
                         'nrtm_host': '192.0.2.1',
                         'unknown': True,
-                        'database_readonly': True,
                     },
                     'TESTDB2': {
                         'authoritative': True,
@@ -270,7 +269,6 @@ class TestConfiguration:
                     'TESTDB3': {
                         'authoritative': True,
                         'import_source': '192.0.2.1',
-                        'database_readonly': True,
                         'nrtm_access_list_unfiltered': 'invalid-list',
                     },
                     # Not permitted, rpki.roa_source is set
@@ -310,8 +308,8 @@ class TestConfiguration:
         assert 'Setting nrtm_host for source TESTDB can not be enabled without setting import_serial_source.' in str(ce.value)
         assert 'Setting authoritative for source TESTDB2 can not be enabled when either nrtm_host or import_source are set.' in str(ce.value)
         assert 'Setting authoritative for source TESTDB3 can not be enabled when either nrtm_host or import_source are set.' in str(ce.value)
-        assert 'Setting database_readonly for source TESTDB can not be enabled when authoritative, import_source or nrtm_host are set.' in str(ce.value)
-        assert 'Setting database_readonly for source TESTDB3 can not be enabled when authoritative, import_source or nrtm_host are set.' in str(ce.value)
+        assert 'Source TESTDB can not have authoritative, import_source or nrtm_host set when database_readonly is enabled.' in str(ce.value)
+        assert 'Source TESTDB3 can not have authoritative, import_source or nrtm_host set when database_readonly is enabled.' in str(ce.value)
         assert 'Setting nrtm_port for source TESTDB2 must be a number.' in str(ce.value)
         assert 'Setting rpki.roa_import_timer must be set to a number.' in str(ce.value)
         assert 'Setting rpki.notify_invalid_subject must be a string, if defined.' in str(ce.value)

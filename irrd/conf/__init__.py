@@ -24,6 +24,7 @@ RPKI_IRR_PSEUDO_SOURCE = 'RPKI'
 # and 'access_lists' is always permitted
 KNOWN_CONFIG_KEYS = DottedDict({
     'database_url': {},
+    'database_readonly': {},
     'redis_url': {},
     'piddir': {},
     'user': {},
@@ -83,7 +84,6 @@ KNOWN_CONFIG_KEYS = DottedDict({
 
 KNOWN_SOURCES_KEYS = {
     'authoritative',
-    'database_readonly',
     'keep_journal',
     'nrtm_host',
     'nrtm_port',
@@ -386,9 +386,9 @@ class Configuration:
                 errors.append(f'Setting authoritative for source {name} can not be enabled when either '
                               f'nrtm_host or import_source are set.')
 
-            if details.get('database_readonly') and (details.get('authoritative') or details.get('nrtm_host') or details.get('import_source')):
-                errors.append(f'Setting database_readonly for source {name} can not be enabled when '
-                              f'authoritative, import_source or nrtm_host are set.')
+            if config.get('database_readonly') and (details.get('authoritative') or details.get('nrtm_host') or details.get('import_source')):
+                errors.append(f'Source {name} can not have authoritative, import_source or nrtm_host set '
+                              f'when database_readonly is enabled.')
 
             if not str(details.get('nrtm_port', '43')).isnumeric():
                 errors.append(f'Setting nrtm_port for source {name} must be a number.')

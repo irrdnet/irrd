@@ -84,6 +84,39 @@ class TestDatabaseHandlerLive:
     This test covers mainly DatabaseHandler and DatabaseStatusTracker.
     """
 
+    def test_readonly(self, monkeypatch, irrd_database, config_override):
+        monkeypatch.setattr('irrd.storage.database_handler.MAX_RECORDS_BUFFER_BEFORE_INSERT', 1)
+
+        rpsl_object_route_v4 = Mock(
+            pk=lambda: '192.0.2.0/24,AS65537',
+            rpsl_object_class='route',
+            parsed_data={'mnt-by': 'MNT-WRONG', 'source': 'TEST'},
+            render_rpsl_text=lambda last_modified: 'object-text',
+            ip_version=lambda: 4,
+            ip_first=IP('192.0.2.0'),
+            ip_last=IP('192.0.2.255'),
+            prefix=IP('192.0.2.0/24'),
+            prefix_length=24,
+            asn_first=65537,
+            asn_last=65537,
+            rpki_status=RPKIStatus.not_found,
+            scopefilter_status=ScopeFilterStatus.in_scope,
+        )
+
+        self.dh = DatabaseHandler(readonly=True)
+        with pytest.raises(Exception) as ex:
+            self.dh.upsert_rpsl_object(rpsl_object_route_v4, JournalEntryOrigin.auth_change)
+        assert 'readonly' in str(ex)
+
+        config_override({
+            'database_readonly': True,
+        })
+
+        self.dh = DatabaseHandler()
+        with pytest.raises(Exception) as ex:
+            self.dh.upsert_rpsl_object(rpsl_object_route_v4, JournalEntryOrigin.auth_change)
+        assert 'readonly' in str(ex)
+
     def test_object_writing_and_status_checking(self, monkeypatch, irrd_database, config_override):
         config_override({
             'sources': {

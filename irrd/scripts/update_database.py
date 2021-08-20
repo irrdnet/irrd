@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 # flake8: noqa: E402
+from irrd.storage.database_handler import DatabaseHandler
+from irrd.mirroring.parsers import MirrorUpdateFileImportParser
+from irrd.conf import config_init, CONFIG_PATH_DEFAULT, get_setting
 import argparse
 import logging
 import sys
@@ -14,10 +17,6 @@ Update a database based on a RPSL file.
 
 logger = logging.getLogger(__name__)
 sys.path.append(str(Path(__file__).resolve().parents[2]))
-
-from irrd.conf import config_init, CONFIG_PATH_DEFAULT, get_setting
-from irrd.mirroring.parsers import MirrorUpdateFileImportParser
-from irrd.storage.database_handler import DatabaseHandler
 
 
 def update(source, filename) -> int:
@@ -58,6 +57,9 @@ def main():  # pragma: no cover
     args = parser.parse_args()
 
     config_init(args.config_file_path)
+    if get_setting('database_readonly'):
+        print('Unable to run, because database_readonly is set')
+        sys.exit(-1)
 
     sys.exit(update(args.source, args.input_file))
 

@@ -50,8 +50,12 @@ class DatabaseHandler:
 
         If readonly is True, this instance will expect read queries only.
         No transaction will be started, all queries will use autocommit.
+        Readonly is always true if database_readonly is set in the config.
         """
-        self.readonly = readonly
+        if get_setting('database_readonly'):
+            self.readonly = True
+        else:
+            self.readonly = readonly
         self.journaling_enabled = not readonly
         self._connection = get_engine().connect()
         if self.readonly:
@@ -103,6 +107,7 @@ class DatabaseHandler:
         """
         Commit any pending changes to the database and start a fresh transaction.
         """
+        self._check_write_permitted()
         self._flush_rpsl_object_writing_buffer()
         self._flush_roa_writing_buffer()
         self.status_tracker.finalise_transaction()
@@ -186,6 +191,7 @@ class DatabaseHandler:
         PK is unique in the database. This essentially only applies to inserting
         RPKI psuedo-IRR objects.
         """
+        self._check_write_permitted()
         if not rpsl_guaranteed_no_existing:
             self._rpsl_guaranteed_no_existing = False
         ip_first = str(rpsl_object.ip_first) if rpsl_object.ip_first else None
@@ -201,6 +207,7 @@ class DatabaseHandler:
         # seen before, the buffer must be flushed right away, or the two updates
         # will conflict.
         source = rpsl_object.parsed_data['source']
+
         rpsl_pk_source = rpsl_object.pk() + '-' + source
         if rpsl_pk_source in self._rpsl_pk_source_seen:
             self._flush_rpsl_object_writing_buffer()
@@ -241,6 +248,7 @@ class DatabaseHandler:
         as they use a single COPY command. This is possible because
         ROA objects are never updated, only inserted.
         """
+        self._check_write_permitted()
         self._roa_insert_buffer.append({
             'ip_version': ip_version,
             'prefix': prefix_str,
@@ -260,6 +268,7 @@ class DatabaseHandler:
         entry, so that mirrors follow the (in)visibility depending
         on RPKI status.
         """
+        self._check_write_permitted()
         table = RPSLDatabaseObject.__table__
         if rpsl_objs_now_valid:
             pks = {o['pk'] for o in rpsl_objs_now_valid}
@@ -312,6 +321,7 @@ class DatabaseHandler:
         entry, so that mirrors follow the (in)visibility depending
         on scopefilter status.
         """
+        self._check_write_permitted()
         table = RPSLDatabaseObject.__table__
         if rpsl_objs_now_in_scope:
             pks = {o['rpsl_pk'] for o in rpsl_objs_now_in_scope}
@@ -361,6 +371,7 @@ class DatabaseHandler:
         The origin indicates the origin of this change, see JournalEntryOrigin
         for the various options.
         """
+        self._check_write_permitted()
         self._flush_rpsl_object_writing_buffer()
         table = RPSLDatabaseObject.__table__
         if not source and rpsl_object:
@@ -407,6 +418,8 @@ class DatabaseHandler:
         """
         if not self._rpsl_upsert_buffer:
             return
+
+        self._check_write_permitted()
 
         rpsl_composite_key = ['rpsl_pk', 'source']
         stmt = pg.insert(RPSLDatabaseObject).values([x[0] for x in self._rpsl_upsert_buffer])
@@ -461,6 +474,8 @@ class DatabaseHandler:
         if not self._roa_insert_buffer:
             return
 
+        self._check_write_permitted()
+
         columns = list(self._roa_insert_buffer[0].keys())
         roa_rows = []
         for roa in self._roa_insert_buffer:
@@ -480,6 +495,7 @@ class DatabaseHandler:
         This is intended for cases where a full re-import is done.
         Note that no journal records are kept of this change itself.
         """
+        self._check_write_permitted()
         self._flush_rpsl_object_writing_buffer()
         table = RPSLDatabaseObject.__table__
         stmt = table.delete(table.c.source == source)
@@ -499,6 +515,7 @@ class DatabaseHandler:
         Delete all ROA objects from the database.
         ROAs are always imported in bulk.
         """
+        self._check_write_permitted()
         self._roa_insert_buffer = []
         stmt = ROADatabaseObject.__table__.delete()
         self._connection.execute(stmt)
@@ -509,6 +526,7 @@ class DatabaseHandler:
         Upon the next mirror update, all data for the source will be
         discarded and reloaded from the source.
         """
+        self._check_write_permitted()
         table = RPSLDatabaseStatus.__table__
         synchronised_serials = is_serial_synchronised(self, source, settings_only=True)
         stmt = table.update().where(table.c.source == source).values(
@@ -525,12 +543,14 @@ class DatabaseHandler:
         """
         Record that a mirror was updated to a certain serial.
         """
+        self._check_write_permitted()
         self.status_tracker.record_serial_newest_mirror(source, serial)
 
     def record_serial_seen(self, source: str, serial: int):
         """
         Record that a serial was seen for a source
         """
+        self._check_write_permitted()
         self.status_tracker.record_serial_seen(source, serial)
 
     def record_mirror_error(self, source: str, error: str) -> None:
@@ -538,16 +558,24 @@ class DatabaseHandler:
         Record an error seen in a mirrored database.
         Only the most recent error is stored in the DB status.
         """
+        self._check_write_permitted()
         self.status_tracker.record_mirror_error(source, error)
 
     def record_serial_exported(self, source: str, serial: int) -> None:
         """
         Record an export of a source at a particular serial.
         """
+        self._check_write_permitted()
         self.status_tracker.record_serial_exported(source, serial)
 
     def close(self) -> None:
         self._connection.close()
+
+    def _check_write_permitted(self):
+        if self.readonly:
+            msg = 'Attempted to write to SQL database from readonly database handler'
+            logger.critical(msg)
+            raise Exception(msg)
 
 
 class DatabaseStatusTracker:

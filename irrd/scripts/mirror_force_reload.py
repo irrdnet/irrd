@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # flake8: noqa: E402
+from irrd.storage.database_handler import DatabaseHandler
+from irrd.conf import config_init, CONFIG_PATH_DEFAULT, get_setting
 import argparse
 import logging
 import sys
@@ -12,9 +14,6 @@ Load an RPSL file into the database.
 
 logger = logging.getLogger(__name__)
 sys.path.append(str(Path(__file__).resolve().parents[2]))
-
-from irrd.conf import config_init, CONFIG_PATH_DEFAULT
-from irrd.storage.database_handler import DatabaseHandler
 
 
 def set_force_reload(source) -> None:
@@ -34,6 +33,9 @@ def main():  # pragma: no cover
     args = parser.parse_args()
 
     config_init(args.config_file_path)
+    if get_setting('database_readonly'):
+        print('Unable to run, because database_readonly is set')
+        sys.exit(-1)
 
     set_force_reload(args.source)
 
