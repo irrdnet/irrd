@@ -11,7 +11,7 @@ from irrd.rpki.status import RPKIStatus
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseQuery, DatabaseStatusQuery
-from irrd.utils.text import remove_auth_hashes
+from irrd.utils.text import remove_auth_hashes as remove_auth_hashes_func
 
 EXPORT_PERMISSIONS = 0o644
 
@@ -29,6 +29,7 @@ class SourceExportRunner:
     The contents of the source are first written to a temporary file, and
     then moved in place.
     """
+
     def __init__(self, source: str) -> None:
         self.source = source
 
@@ -36,8 +37,15 @@ class SourceExportRunner:
         self.database_handler = DatabaseHandler()
         try:
             export_destination = get_setting(f'sources.{self.source}.export_destination')
-            logger.info(f'Starting a source export for {self.source} to {export_destination}')
-            self._export(export_destination)
+            if export_destination:
+                logger.info(f'Starting a source export for {self.source} to {export_destination}')
+                self._export(export_destination)
+
+            export_destination_unfiltered = get_setting(f'sources.{self.source}.export_destination_unfiltered')
+            if export_destination_unfiltered:
+                logger.info(f'Starting an unfiltered source export for {self.source} '
+                            f'to {export_destination_unfiltered}')
+                self._export(export_destination_unfiltered, remove_auth_hashes=False)
 
             self.database_handler.commit()
         except Exception as exc:
@@ -46,7 +54,7 @@ class SourceExportRunner:
         finally:
             self.database_handler.close()
 
-    def _export(self, export_destination):
+    def _export(self, export_destination, remove_auth_hashes=True):
         filename_export = Path(export_destination) / f'{self.source.lower()}.db.gz'
         export_tmpfile = NamedTemporaryFile(delete=False)
         filename_serial = Path(export_destination) / f'{self.source.upper()}.CURRENTSERIAL'
@@ -63,7 +71,10 @@ class SourceExportRunner:
             query = query.rpki_status([RPKIStatus.not_found, RPKIStatus.valid])
             query = query.scopefilter_status([ScopeFilterStatus.in_scope])
             for obj in self.database_handler.execute_query(query):
-                object_bytes = remove_auth_hashes(obj['object_text']).encode('utf-8')
+                object_text = obj['object_text']
+                if remove_auth_hashes:
+                    object_text = remove_auth_hashes_func(object_text)
+                object_bytes = object_text.encode('utf-8')
                 fh.write(object_bytes + b'\n')
             fh.write(b'# EOF\n')
 
