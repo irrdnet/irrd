@@ -45,7 +45,7 @@ This document mainly discusses three kinds of IRRd instances:
 .. warning::
     It is important that there is only a single IRRd instance
     that processes authoritative changes, and is the single source of truth,
-    at the same time. IRRd does not support having multiple active instances.
+    at one point in time. IRRd does not support having multiple active instances.
 
 This document suggest three different approaches for configuring this,
 each with their own upsides and downsides.
