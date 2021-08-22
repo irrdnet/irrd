@@ -1,12 +1,5 @@
 #!/usr/bin/env python
 # flake8: noqa: E402
-from irrd.utils.process_support import ExceptionLoggingProcess
-from irrd.storage.preload import PreloadStoreManager
-from irrd.server.whois.server import start_whois_server
-from irrd.server.http.server import run_http_server
-from irrd.mirroring.scheduler import MirrorScheduler
-from irrd.conf import config_init, CONFIG_PATH_DEFAULT, get_setting, get_configuration
-from irrd import __version__, ENV_MAIN_PROCESS_PID
 import argparse
 import grp
 import logging
@@ -25,6 +18,14 @@ from pid import PidFile, PidFileError
 
 logger = logging.getLogger(__name__)
 sys.path.append(str(Path(__file__).resolve().parents[2]))
+
+from irrd.utils.process_support import ExceptionLoggingProcess
+from irrd.storage.preload import PreloadStoreManager
+from irrd.server.whois.server import start_whois_server
+from irrd.server.http.server import run_http_server
+from irrd.mirroring.scheduler import MirrorScheduler
+from irrd.conf import config_init, CONFIG_PATH_DEFAULT, get_setting, get_configuration
+from irrd import __version__, ENV_MAIN_PROCESS_PID
 
 
 # This file does not have a unit test, but is instead tested through
@@ -157,10 +158,9 @@ def run_irrd(mirror_frequency: int, config_file_path: str, uid: Optional[int], g
         sleeps += 1
 
     logging.debug(f'Main process waiting for child processes to terminate')
-    for child_process in whois_process, uvicorn_process:
-        child_process.join(timeout=3)
-    if preload_manager:
-        preload_manager.join(timeout=3)
+    for child_process in whois_process, uvicorn_process, preload_manager:
+        if child_process:
+            child_process.join(timeout=3)
 
     parent = psutil.Process(os.getpid())
     children = parent.children(recursive=True)

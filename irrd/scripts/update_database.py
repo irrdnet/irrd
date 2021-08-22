@@ -1,15 +1,11 @@
 #!/usr/bin/env python
 # flake8: noqa: E402
-from irrd.storage.database_handler import DatabaseHandler
-from irrd.mirroring.parsers import MirrorUpdateFileImportParser
-from irrd.conf import config_init, CONFIG_PATH_DEFAULT, get_setting
 import argparse
 import logging
 import sys
 
 from pathlib import Path
 
-from irrd.rpki.validators import BulkRouteROAValidator
 
 """
 Update a database based on a RPSL file.
@@ -18,6 +14,10 @@ Update a database based on a RPSL file.
 logger = logging.getLogger(__name__)
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
+from irrd.rpki.validators import BulkRouteROAValidator
+from irrd.storage.database_handler import DatabaseHandler
+from irrd.mirroring.parsers import MirrorUpdateFileImportParser
+from irrd.conf import config_init, CONFIG_PATH_DEFAULT, get_setting
 
 def update(source, filename) -> int:
     if any([

@@ -1,15 +1,11 @@
 #!/usr/bin/env python
 # flake8: noqa: E402
-from irrd.storage.database_handler import DatabaseHandler
-from irrd.mirroring.parsers import MirrorFileImportParser
-from irrd.conf import config_init, CONFIG_PATH_DEFAULT, get_setting
 import argparse
 import logging
 import sys
 
 from pathlib import Path
 
-from irrd.rpki.validators import BulkRouteROAValidator
 
 """
 Load an RPSL file into the database.
@@ -17,6 +13,11 @@ Load an RPSL file into the database.
 
 logger = logging.getLogger(__name__)
 sys.path.append(str(Path(__file__).resolve().parents[2]))
+
+from irrd.rpki.validators import BulkRouteROAValidator
+from irrd.storage.database_handler import DatabaseHandler
+from irrd.mirroring.parsers import MirrorFileImportParser
+from irrd.conf import config_init, CONFIG_PATH_DEFAULT, get_setting
 
 
 def load(source, filename, serial) -> int:

@@ -153,8 +153,8 @@ deployments to spread their query load over multiple read-only instances.
 For further details, see the
 :ref:`NRTM serial handling documentation <mirroring-nrtm-serials>`.
 Do note that without synchronised serials, NRTM users must not be switched
-(e.g. by DNS changes or load balancers) to different instances, as they
-will potentially silently lose updates unless they reload their local copy.
+(e.g. by DNS changes or load balancers) to different instances, without
+reloading their local copy. Otherwise they may silently lose updates.
 
 RPKI and scope filter
 ~~~~~~~~~~~~~~~~~~~~~
