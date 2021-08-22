@@ -6,7 +6,7 @@ This document explains approaches you can take to set up standby instances
 of IRRd, how you might switch between instances, and share load between multiple
 instances. This document only applies when you run an authoritative IRR
 registry. If you do not, availability is much simpler: run multiple instances
-that each mirrors from the original sources.
+that each mirror from the original sources.
 
 While this document explains this from the limited perspective
 of IRRd itself, always think carefully about your own availability requirements,
