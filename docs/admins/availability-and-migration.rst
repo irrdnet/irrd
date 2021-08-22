@@ -68,7 +68,7 @@ There are a number of important special circumstances when using exports and
 NRTM for migrations or availability, which are detailed below.
 
 Note that an active IRRd instance for one IRR registry may simultaneously be a
-regular mirror for other sources.
+regular mirror for other registries.
 
 .. note::
    If you are migrating from a legacy version of IRRd, also see the
