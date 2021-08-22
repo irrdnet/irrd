@@ -138,7 +138,7 @@ on the current active instance:
   full password hashes when doing NRTM requests. Other than that, NRTM works
   identical to filtered queries. Set this to the IPs of your standby instances.
 
-If you are migrating from a different IRR server, make sure that password
+If you are migrating from a different IRR server, check that password
 hashes are not filtered.
 
 Serials
