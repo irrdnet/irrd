@@ -62,7 +62,7 @@ If you are migrating from a legacy version of IRRd, this is most likely your
 only option.
 
 This is a bit different from "regular" mirroring, where the mirror
-is never meant to be promoted to an active instance, and may be run by entirely
+is never meant to be promoted to an active instance, and instances may be run by entirely
 different organisations for different reasons.
 There are a number of important special circumstances when using exports and
 NRTM for migrations or availability, which are detailed below.
