@@ -13,8 +13,8 @@ Load an RPSL file into the database.
 logger = logging.getLogger(__name__)
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
-from irrd.storage.database_handler import DatabaseHandler
 from irrd.conf import config_init, CONFIG_PATH_DEFAULT, get_setting
+from irrd.storage.database_handler import DatabaseHandler
 
 def set_force_reload(source) -> None:
     dh = DatabaseHandler()
