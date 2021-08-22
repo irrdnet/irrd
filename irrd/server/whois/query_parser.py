@@ -477,7 +477,7 @@ class WhoisQueryParser:
         try:
             return NRTMGenerator().generate(
                 source, version, serial_start, serial_end, self.database_handler,
-                remove_auth_hashes=in_unfiltered_access_list)
+                remove_auth_hashes=not in_unfiltered_access_list)
         except NRTMGeneratorException as nge:
             raise InvalidQueryException(str(nge))
 
