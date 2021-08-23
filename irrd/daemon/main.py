@@ -19,13 +19,13 @@ from pid import PidFile, PidFileError
 logger = logging.getLogger(__name__)
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
-from irrd import __version__, ENV_MAIN_PROCESS_PID
-from irrd.conf import config_init, CONFIG_PATH_DEFAULT, get_setting, get_configuration
-from irrd.mirroring.scheduler import MirrorScheduler
-from irrd.server.http.server import run_http_server
-from irrd.server.whois.server import start_whois_server
-from irrd.storage.preload import PreloadStoreManager
 from irrd.utils.process_support import ExceptionLoggingProcess
+from irrd.storage.preload import PreloadStoreManager
+from irrd.server.whois.server import start_whois_server
+from irrd.server.http.server import run_http_server
+from irrd.mirroring.scheduler import MirrorScheduler
+from irrd.conf import config_init, CONFIG_PATH_DEFAULT, get_setting, get_configuration
+from irrd import __version__, ENV_MAIN_PROCESS_PID
 
 
 # This file does not have a unit test, but is instead tested through
@@ -82,7 +82,7 @@ def main():
                          config_file_path=args.config_file_path if args.config_file_path else CONFIG_PATH_DEFAULT,
                          uid=uid,
                          gid=gid,
-                )
+                         )
         except PidFileError as pfe:
             logger.error(f'Failed to start IRRd, unable to lock PID file irrd.pid in {piddir}: {pfe}')
         except Exception as e:
@@ -105,8 +105,12 @@ def run_irrd(mirror_frequency: int, config_file_path: str, uid: Optional[int], g
         change_process_owner(uid=uid, gid=gid)
 
     mirror_scheduler = MirrorScheduler()
-    preload_manager = PreloadStoreManager(name='irrd-preload-store-manager')
-    preload_manager.start()
+
+    preload_manager = None
+    if not get_setting(f'database_readonly'):
+        preload_manager = PreloadStoreManager(name='irrd-preload-store-manager')
+        preload_manager.start()
+
     uvicorn_process = ExceptionLoggingProcess(target=run_http_server, name='irrd-http-server-listener', args=(config_file_path, ))
     uvicorn_process.start()
 
@@ -155,7 +159,8 @@ def run_irrd(mirror_frequency: int, config_file_path: str, uid: Optional[int], g
 
     logging.debug(f'Main process waiting for child processes to terminate')
     for child_process in whois_process, uvicorn_process, preload_manager:
-        child_process.join(timeout=3)
+        if child_process:
+            child_process.join(timeout=3)
 
     parent = psutil.Process(os.getpid())
     children = parent.children(recursive=True)

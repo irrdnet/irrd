@@ -8,6 +8,26 @@ thread_run_count = 0
 
 
 class TestMirrorScheduler:
+    def test_scheduler_database_readonly(self, monkeypatch, config_override):
+        monkeypatch.setattr('irrd.mirroring.scheduler.ScheduledTaskProcess', MockScheduledTaskProcess)
+        global thread_run_count
+        thread_run_count = 0
+
+        config_override({
+            'database_readonly': True,
+            'sources': {
+                'TEST': {
+                    'import_source': 'url',
+                    'import_timer': 0,
+                }
+            }
+        })
+
+        monkeypatch.setattr('irrd.mirroring.scheduler.RPSLMirrorImportUpdateRunner', MockRunner)
+        scheduler = MirrorScheduler()
+        scheduler.run()
+        assert thread_run_count == 0
+
     def test_scheduler_runs_rpsl_import(self, monkeypatch, config_override):
         monkeypatch.setattr('irrd.mirroring.scheduler.ScheduledTaskProcess', MockScheduledTaskProcess)
         global thread_run_count

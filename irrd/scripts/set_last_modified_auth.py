@@ -5,9 +5,6 @@ import logging
 import sys
 from pathlib import Path
 
-from irrd.rpsl.rpsl_objects import rpsl_object_from_text
-from irrd.storage.models import RPSLDatabaseObject
-from irrd.storage.queries import RPSLDatabaseQuery
 
 """
 Set last-modified attribute on all authoritative objects.
@@ -16,9 +13,11 @@ Set last-modified attribute on all authoritative objects.
 logger = logging.getLogger(__name__)
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
-from irrd.conf import config_init, CONFIG_PATH_DEFAULT, get_setting
 from irrd.storage.database_handler import DatabaseHandler
-
+from irrd.conf import config_init, CONFIG_PATH_DEFAULT, get_setting
+from irrd.rpsl.rpsl_objects import rpsl_object_from_text
+from irrd.storage.models import RPSLDatabaseObject
+from irrd.storage.queries import RPSLDatabaseQuery
 
 def set_last_modified():
     dh = DatabaseHandler()
@@ -51,6 +50,9 @@ def main():  # pragma: no cover
     args = parser.parse_args()
 
     config_init(args.config_file_path)
+    if get_setting('database_readonly'):
+        print('Unable to run, because database_readonly is set')
+        sys.exit(-1)
 
     sys.exit(set_last_modified())
 

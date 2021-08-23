@@ -179,6 +179,15 @@ General settings
   for improved performance
   |br| **Default**: not defined, but required.
   |br| **Change takes effect**: after full IRRd restart.
+* ``database_readonly``: a boolean for whether this instance is
+  database read only, i.e. IRRd will never write any changes to the SQL database
+  in any circumstance. This can be used for
+  :doc:`availability with PostgreSQL replication </admins/availability-and-migration>`.
+  This setting means that this IRRd instance will never run the RPKI or scope
+  filter validators, and can not be used if any source has ``authoritative``,
+  ``import_source`` or ``nrtm_host`` set.
+  |br| **Default**: ``false``.
+  |br| **Change takes effect**: after full IRRd restart.
 * ``redis_url``: a URL to a Redis instance, e.g.
   ``unix:///var/run/redis.sock`` to connect through a unix socket, or
   ``redis://localhost`` to connect through TCP.
@@ -493,17 +502,37 @@ Sources
   IRRd will not create it. File permissions are always set to ``644``.
   |br| **Default**: not defined, no exports made.
   |br| **Change takes effect**: after SIGHUP, at the next ``export_timer``.
+* ``sources.{name}.export_destination_unfiltered``: a path to save full exports,
+  including a serial file, of this source. This is identical to
+  ``export_destination``, except that the files saved here contain full unfiltered
+  password hashes from mntner objects.
+  Sharing password hashes externally is a security risk, the unfiltered data
+  is intended only to support
+  :doc:`availability and data migration </admins/availability-and-migration>`.
+  |br| **Default**: not defined, no exports made.
+  |br| **Change takes effect**: after SIGHUP, at the next ``export_timer``.
 * ``sources.{name}.export_timer``: the time between two full exports of all
   data for this source. The minimum effective time is 15 seconds, and this is
   also the granularity of the timer.
   |br| **Default**: ``3600``.
   |br| **Change takes effect**: after SIGHUP
 * ``sources.{name}.nrtm_access_list``: a reference to an access list in the
-  configuration, where only IPs in the access list are permitted access to the
-  NRTM stream for this particular source (``-g`` queries).
+  configuration, where only IPs in the access list are permitted filtered access
+  to the NRTM stream for this particular source (``-g`` queries).
+  Filtered means password hashes are not included.
   This same list is used to restrict access to
   :ref:`GraphQL journal queries <graphql-journal>`.
-  |br| **Default**: not defined, all access denied.
+  |br| **Default**: not defined, all access denied except to clients in
+  ``nrtm_access_list_unfiltered``.
+  |br| **Change takes effect**: after SIGHUP, upon next request.
+* ``sources.{name}.nrtm_access_list_unfiltered``: a reference to an access list
+  in the configuration, where IPs in the access list are permitted unfiltered
+  access to the NRTM stream for this particular source (``-g`` queries).
+  Unfiltered means full password hashes are included.
+  Sharing password hashes externally is a security risk, the unfiltered data
+  is intended only to support
+  |br| **Default**: not defined, all access denied. Clients in
+  ``nrtm_access_list``, if defined, have filtered access.
   |br| **Change takes effect**: after SIGHUP, upon next request.
 * ``sources.{name}.strict_import_keycert_objects``: a setting used when
   migrating authoritative data that may contain `key-cert` objects.

@@ -14,6 +14,7 @@ Starlette
 Systemd
 auth
 backend
+balancers
 boolean
 bugfix
 conf
