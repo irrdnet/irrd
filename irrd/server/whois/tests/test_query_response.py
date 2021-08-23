@@ -69,3 +69,10 @@ class TestWhoisQueryResponse:
         assert 'CRYPT-PW ' + PASSWORD_HASH_DUMMY_VALUE in response
         assert 'CRYPT-PW LEuuhsBJNFV0Q' not in response
         assert 'MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.' not in response
+
+        response = WhoisQueryResponse(mode=WhoisQueryResponseMode.RIPE,
+                                      response_type=WhoisQueryResponseType.ERROR,
+                                      result=SAMPLE_MNTNER,
+                                      remove_auth_hashes=False).generate_response()
+        assert 'CRYPT-PW LEuuhsBJNFV0Q' in response
+        assert 'MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.' in response

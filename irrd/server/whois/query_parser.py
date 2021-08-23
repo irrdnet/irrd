@@ -549,6 +549,7 @@ class WhoisQueryParser:
         components = full_query.strip().split(' ')
         result = None
         response_type = WhoisQueryResponseType.SUCCESS
+        remove_auth_hashes = True
 
         while len(components):
             component = components.pop(0)
@@ -582,6 +583,7 @@ class WhoisQueryParser:
                         self.handle_user_agent(components.pop(0))
                     elif command == 'g':
                         result = self.handle_nrtm_request(components.pop(0))
+                        remove_auth_hashes = False
                     elif command in ['F', 'r']:
                         continue  # These flags disable recursion, but IRRd never performs recursion anyways
                     else:
@@ -595,6 +597,7 @@ class WhoisQueryParser:
             response_type=response_type,
             mode=WhoisQueryResponseMode.RIPE,
             result=result,
+            remove_auth_hashes=remove_auth_hashes,
         )
 
     def handle_ripe_route_search(self, command: str, parameter: str) -> str:
@@ -679,11 +682,15 @@ class WhoisQueryParser:
         if source not in self.all_valid_sources:
             raise WhoisQueryParserException(f'Unknown source: {source}')
 
-        if not is_client_permitted(self.client_ip, f'sources.{source}.nrtm_access_list'):
+        in_access_list = is_client_permitted(self.client_ip, f'sources.{source}.nrtm_access_list')
+        in_unfiltered_access_list = is_client_permitted(self.client_ip, f'sources.{source}.nrtm_access_list_unfiltered')
+        if not in_access_list and not in_unfiltered_access_list:
             raise WhoisQueryParserException('Access denied')
 
         try:
-            return NRTMGenerator().generate(source, version, serial_start, serial_end, self.database_handler)
+            return NRTMGenerator().generate(
+                source, version, serial_start, serial_end, self.database_handler,
+                remove_auth_hashes=not in_unfiltered_access_list)
         except NRTMGeneratorException as nge:
             raise WhoisQueryParserException(str(nge))
 

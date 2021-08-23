@@ -38,13 +38,15 @@ class WhoisQueryResponse:
             response_type: WhoisQueryResponseType,
             mode: WhoisQueryResponseMode,
             result: Optional[str],
+            remove_auth_hashes=True,
     ) -> None:
         self.response_type = response_type
         self.mode = mode
         self.result = result
+        self.remove_auth_hashes = remove_auth_hashes
 
     def generate_response(self) -> str:
-        self.result = remove_auth_hashes(self.result)
+        self.clean_response()
 
         if self.mode == WhoisQueryResponseMode.IRRD:
             response = self._generate_response_irrd()
@@ -57,6 +59,10 @@ class WhoisQueryResponse:
                 return response
 
         raise RuntimeError(f'Unable to formulate response for {self.response_type} / {self.mode}: {self.result}')
+
+    def clean_response(self):
+        if self.remove_auth_hashes:
+            self.result = remove_auth_hashes(self.result)
 
     def _generate_response_irrd(self) -> Optional[str]:
         if self.response_type == WhoisQueryResponseType.SUCCESS:

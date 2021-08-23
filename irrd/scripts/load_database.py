@@ -6,7 +6,6 @@ import sys
 
 from pathlib import Path
 
-from irrd.rpki.validators import BulkRouteROAValidator
 
 """
 Load an RPSL file into the database.
@@ -15,9 +14,10 @@ Load an RPSL file into the database.
 logger = logging.getLogger(__name__)
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
-from irrd.conf import config_init, CONFIG_PATH_DEFAULT, get_setting
-from irrd.mirroring.parsers import MirrorFileImportParser
+from irrd.rpki.validators import BulkRouteROAValidator
 from irrd.storage.database_handler import DatabaseHandler
+from irrd.mirroring.parsers import MirrorFileImportParser
+from irrd.conf import config_init, CONFIG_PATH_DEFAULT, get_setting
 
 
 def load(source, filename, serial) -> int:
@@ -62,6 +62,9 @@ def main():  # pragma: no cover
     args = parser.parse_args()
 
     config_init(args.config_file_path)
+    if get_setting('database_readonly'):
+        print('Unable to run, because database_readonly is set')
+        sys.exit(-1)
 
     sys.exit(load(args.source, args.input_file, args.serial))
 

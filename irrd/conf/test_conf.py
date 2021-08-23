@@ -64,7 +64,7 @@ class TestConfiguration:
                     'prefixes': ['10/8'],
                     'asns': ['23456', '10-20']
                 },
-                'access-lists': {
+                'access_lists': {
                     'valid-list': {
                         '192/24',
                         '192.0.2.1',
@@ -86,6 +86,10 @@ class TestConfiguration:
                         'nrtm_port': 43,
                         'import_serial_source': 'ftp://example.com/serial',
                         'keep_journal': True,
+                    },
+                    'TESTDB3': {
+                        'export_destination_unfiltered': '/tmp',
+                        'nrtm_access_list_unfiltered': 'valid-list',
                     },
                     # RPKI source permitted, rpki.roa_source not set
                     'RPKI': {},
@@ -217,6 +221,7 @@ class TestConfiguration:
     def test_load_invalid_config(self, save_yaml_config, tmpdir):
         config = {
             'irrd': {
+                'database_readonly': True,
                 'piddir': str(tmpdir + '/does-not-exist'),
                 'server': {
                     'whois': {
@@ -257,10 +262,12 @@ class TestConfiguration:
                         'authoritative': True,
                         'nrtm_host': '192.0.2.1',
                         'nrtm_port': 'not a number',
+                        'nrtm_access_list': 'invalid-list',
                     },
                     'TESTDB3': {
                         'authoritative': True,
                         'import_source': '192.0.2.1',
+                        'nrtm_access_list_unfiltered': 'invalid-list',
                     },
                     # Not permitted, rpki.roa_source is set
                     'RPKI': {},
@@ -285,7 +292,7 @@ class TestConfiguration:
         assert 'Setting email.footer must be a string, if defined.' in str(ce.value)
         assert 'Setting email.recipient_override must be an email address if set.' in str(ce.value)
         assert 'Setting auth.gnupg_keyring is required.' in str(ce.value)
-        assert 'Access lists doesnotexist referenced in settings, but not defined.' in str(ce.value)
+        assert 'Access lists doesnotexist, invalid-list referenced in settings, but not defined.' in str(ce.value)
         assert 'Setting server.http.access_list must be a string, if defined.' in str(ce.value)
         assert 'Invalid item in access list bad-list: IPv4 Address with more than 4 bytes.' in str(ce.value)
         assert 'Invalid item in prefix scopefilter: invalid-prefix' in str(ce.value)
@@ -296,6 +303,8 @@ class TestConfiguration:
         assert 'Setting nrtm_host for source TESTDB can not be enabled without setting import_serial_source.' in str(ce.value)
         assert 'Setting authoritative for source TESTDB2 can not be enabled when either nrtm_host or import_source are set.' in str(ce.value)
         assert 'Setting authoritative for source TESTDB3 can not be enabled when either nrtm_host or import_source are set.' in str(ce.value)
+        assert 'Source TESTDB can not have authoritative, import_source or nrtm_host set when database_readonly is enabled.' in str(ce.value)
+        assert 'Source TESTDB3 can not have authoritative, import_source or nrtm_host set when database_readonly is enabled.' in str(ce.value)
         assert 'Setting nrtm_port for source TESTDB2 must be a number.' in str(ce.value)
         assert 'Setting rpki.roa_import_timer must be set to a number.' in str(ce.value)
         assert 'Setting rpki.notify_invalid_subject must be a string, if defined.' in str(ce.value)

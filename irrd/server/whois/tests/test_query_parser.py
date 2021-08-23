@@ -153,6 +153,7 @@ class TestWhoisQueryParserRIPE:
         assert response.response_type == WhoisQueryResponseType.KEY_NOT_FOUND
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert not response.result
+        assert response.remove_auth_hashes
 
     def test_route_search_less_specific_one_level(self, prepare_parser):
         mock_dq, mock_dh, mock_preloader, parser = prepare_parser
@@ -286,6 +287,7 @@ class TestWhoisQueryParserRIPE:
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert response.result == MOCK_ROUTE_COMBINED
+        assert response.remove_auth_hashes
         assert flatten_mock_calls(mock_dq) == [
             ['lookup_attr', ('mnt-by', 'MNT-TEST'), {}],
         ]
@@ -341,7 +343,7 @@ class TestWhoisQueryParserRIPE:
 
         mock_nrg = Mock()
         monkeypatch.setattr('irrd.server.whois.query_parser.NRTMGenerator', lambda: mock_nrg)
-        mock_nrg.generate = lambda source, version, serial_start, serial_end, dh: f'{source}/{version}/{serial_start}/{serial_end}'
+        mock_nrg.generate = lambda source, version, serial_start, serial_end, dh, remove_auth_hashes: f'{source}/{version}/{serial_start}/{serial_end}/{remove_auth_hashes}'
 
         response = parser.handle_query('-g TEST1:3:1-5')
         assert response.response_type == WhoisQueryResponseType.ERROR
@@ -361,12 +363,47 @@ class TestWhoisQueryParserRIPE:
         response = parser.handle_query('-g TEST1:3:1-5')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.RIPE
-        assert response.result == 'TEST1/3/1/5'
+        assert response.result == 'TEST1/3/1/5/True'
+        assert not response.remove_auth_hashes
 
         response = parser.handle_query('-g TEST1:3:1-LAST')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.RIPE
-        assert response.result == 'TEST1/3/1/None'
+        assert response.result == 'TEST1/3/1/None/True'
+        assert not response.remove_auth_hashes
+
+        config_override({
+            'sources': {
+                'TEST1': {'nrtm_access_list_unfiltered': 'nrtm_access'},
+            },
+            'access_lists': {
+                'nrtm_access': ['0/0', '0::/0'],
+            },
+            'sources_default': [],
+        })
+        response = parser.handle_query('-g TEST1:3:1-LAST')
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.RIPE
+        assert response.result == 'TEST1/3/1/None/False'
+        assert not response.remove_auth_hashes
+
+        config_override({
+            'sources': {
+                'TEST1': {
+                    'nrtm_access_list': 'nrtm_access',
+                    'nrtm_access_list_unfiltered': 'nrtm_access',
+                },
+            },
+            'access_lists': {
+                'nrtm_access': ['0/0', '0::/0'],
+            },
+            'sources_default': [],
+        })
+        response = parser.handle_query('-g TEST1:3:1-LAST')
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.RIPE
+        assert response.result == 'TEST1/3/1/None/False'
+        assert not response.remove_auth_hashes
 
         response = parser.handle_query('-g TEST1:9:1-LAST')
         assert response.response_type == WhoisQueryResponseType.ERROR
@@ -403,6 +440,7 @@ class TestWhoisQueryParserRIPE:
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert response.result == MOCK_ROUTE_COMBINED
+        assert response.remove_auth_hashes
         assert flatten_mock_calls(mock_dq) == [
             ['text_search', ('query',), {}],
         ]
@@ -957,6 +995,7 @@ class TestWhoisQueryParserIRRD:
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == MOCK_ROUTE_COMBINED
+        assert response.remove_auth_hashes
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['route'],), {}],
             ['rpsl_pk', ('192.0.2.0/25',), {}],
@@ -967,6 +1006,7 @@ class TestWhoisQueryParserIRRD:
         response = parser.handle_query('!mroute,192.0.2.0/25')
         assert response.response_type == WhoisQueryResponseType.KEY_NOT_FOUND
         assert response.mode == WhoisQueryResponseMode.IRRD
+        assert response.remove_auth_hashes
         assert not response.result
 
         response = parser.handle_query('!mfoo')
@@ -998,6 +1038,7 @@ class TestWhoisQueryParserIRRD:
         response = parser.handle_query('!mfoo')
         assert response.response_type == WhoisQueryResponseType.ERROR
         assert response.mode == WhoisQueryResponseMode.IRRD
+        assert response.remove_auth_hashes
         assert response.result == 'Invalid argument for object lookup: foo'
 
     def test_user_agent(self, prepare_parser):
@@ -1016,6 +1057,7 @@ class TestWhoisQueryParserIRRD:
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == MOCK_ROUTE_COMBINED
+        assert response.remove_auth_hashes
         assert flatten_mock_calls(mock_dq) == [
             ['lookup_attr', ('mnt-by', 'MNT-TEST'), {}],
         ]

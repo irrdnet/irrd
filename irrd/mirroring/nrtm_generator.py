@@ -3,7 +3,7 @@ from typing import Optional
 from irrd.conf import get_setting
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseJournalQuery, DatabaseStatusQuery
-from irrd.utils.text import remove_auth_hashes
+from irrd.utils.text import remove_auth_hashes as remove_auth_hashes_func
 
 
 class NRTMGeneratorException(Exception):
@@ -13,7 +13,7 @@ class NRTMGeneratorException(Exception):
 class NRTMGenerator:
     def generate(self, source: str, version: str,
                  serial_start_requested: int, serial_end_requested: Optional[int],
-                 database_handler: DatabaseHandler) -> str:
+                 database_handler: DatabaseHandler, remove_auth_hashes=True) -> str:
         """
         Generate an NRTM response for a particular source, serial range and
         NRTM version. Raises NRTMGeneratorException for various error conditions.
@@ -66,7 +66,10 @@ class NRTMGenerator:
             output += '\n' + operation['operation'].value
             if version == '3':
                 output += ' ' + str(operation['serial_nrtm'])
-            output += '\n\n' + remove_auth_hashes(operation['object_text'])
+            text = operation['object_text']
+            if remove_auth_hashes:
+                text = remove_auth_hashes_func(text)
+            output += '\n\n' + text
 
         output += f'\n%END {source}'
         return output
