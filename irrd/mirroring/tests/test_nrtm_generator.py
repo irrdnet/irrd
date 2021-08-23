@@ -56,14 +56,14 @@ class TestNRTMGenerator:
         %START Version: 3 TEST 110-190
 
         ADD 120
-        
+
         object 1 🦄
         auth: CRYPT-PW DummyValue  # Filtered for security
-        
+
         DEL 180
-        
+
         object 2 🌈
-        
+
         %END TEST""").strip()
 
     def test_generate_serial_range_v1(self, prepare_generator):
@@ -168,3 +168,21 @@ class TestNRTMGenerator:
         with pytest.raises(NRTMGeneratorException) as nge:
             generator.generate('TEST', '3', 110, 300, mock_dh)
         assert 'There are no journal entries for this source.' in str(nge.value)
+
+    def test_include_auth_hash(self, prepare_generator):
+        generator, mock_dh = prepare_generator
+        result = generator.generate('TEST', '3', 110, 190, mock_dh, False)
+
+        assert result == textwrap.dedent("""
+        %START Version: 3 TEST 110-190
+
+        ADD 120
+
+        object 1 🦄
+        auth: CRYPT-PW foobar
+
+        DEL 180
+
+        object 2 🌈
+
+        %END TEST""").strip()

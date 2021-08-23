@@ -230,11 +230,6 @@ class Configuration:
         if not self._check_is_str(config, 'auth.gnupg_keyring'):
             errors.append('Setting auth.gnupg_keyring is required.')
 
-        access_lists = set(config.get('access_lists', {}).keys())
-        unresolved_access_lists = {x for x in expected_access_lists.difference(access_lists) if x and isinstance(x, str)}
-        if unresolved_access_lists:
-            errors.append(f'Access lists {", ".join(unresolved_access_lists)} referenced in settings, but not defined.')
-
         for name, access_list in config.get('access_lists', {}).items():
             for item in access_list:
                 try:
@@ -282,12 +277,21 @@ class Configuration:
                 errors.append(f'Setting authoritative for source {name} can not be enabled when either '
                               f'nrtm_host or import_source are set.')
 
+            if config.get('database_readonly') and (details.get('authoritative') or details.get('nrtm_host') or details.get('import_source')):
+                errors.append(f'Source {name} can not have authoritative, import_source or nrtm_host set '
+                              f'when database_readonly is enabled.')
+
             if not str(details.get('nrtm_port', '43')).isnumeric():
                 errors.append(f'Setting nrtm_port for source {name} must be a number.')
             if not str(details.get('import_timer', '0')).isnumeric():
                 errors.append(f'Setting import_timer for source {name} must be a number.')
             if not str(details.get('export_timer', '0')).isnumeric():
                 errors.append(f'Setting export_timer for source {name} must be a number.')
+
+            if details.get('nrtm_access_list'):
+                expected_access_lists.add(details.get('nrtm_access_list'))
+            if details.get('nrtm_access_list_unfiltered'):
+                expected_access_lists.add(details.get('nrtm_access_list_unfiltered'))
 
         if config.get('rpki.roa_source', 'https://rpki.gin.ntt.net/api/export.json'):
             known_sources.add(RPKI_IRR_PSEUDO_SOURCE)
@@ -312,6 +316,12 @@ class Configuration:
         if config.get('log.logging_config_path') and (config.get('log.logfile_path') or config.get('log.level')):
             errors.append('Setting log.logging_config_path can not be combined with'
                           'log.logfile_path or log.level')
+
+        access_lists = set(config.get('access_lists', {}).keys())
+        unresolved_access_lists = [x for x in expected_access_lists.difference(access_lists) if x and isinstance(x, str)]
+        unresolved_access_lists.sort()
+        if unresolved_access_lists:
+            errors.append(f'Access lists {", ".join(unresolved_access_lists)} referenced in settings, but not defined.')
 
         return errors
 

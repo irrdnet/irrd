@@ -14,7 +14,7 @@ from irrd.storage.models import JournalEntryOrigin
 
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
-from irrd.conf import CONFIG_PATH_DEFAULT, config_init
+from irrd.conf import CONFIG_PATH_DEFAULT, config_init, get_setting
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.rpsl.parser import UnknownRPSLObjectClassException
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
@@ -96,6 +96,10 @@ def main():  # pragma: no cover
     args = parser.parse_args()
 
     config_init(args.config_file_path)
+    if get_setting('database_readonly'):
+        print('Unable to run, because database_readonly is set')
+        sys.exit(-1)
+        
     RPSLParse().main(args.input_file, args.strict_validation, args.database, not args.hide_info)
 
 

@@ -23,6 +23,12 @@ from irrd.server.http.server import start_http_server
 from irrd.server.whois.server import start_whois_server
 from irrd.storage.preload import PreloadStoreManager
 from irrd.utils.process_support import ExceptionLoggingProcess
+from irrd.storage.preload import PreloadStoreManager
+from irrd.server.whois.server import start_whois_server
+from irrd.server.http.server import start_http_server
+from irrd.mirroring.scheduler import MirrorScheduler
+from irrd.conf import config_init, CONFIG_PATH_DEFAULT, get_setting, get_configuration
+from irrd import __version__
 
 
 # This file does not have a unit test, but is instead tested through
@@ -74,8 +80,11 @@ def run_irrd(mirror_frequency: int):
     whois_process.start()
     http_process = ExceptionLoggingProcess(target=start_http_server, name='irrd-http-server-listener')
     http_process.start()
-    preload_manager = PreloadStoreManager(name='irrd-preload-store-manager')
-    preload_manager.start()
+
+    preload_manager = None
+    if not get_setting(f'database_readonly'):
+        preload_manager = PreloadStoreManager(name='irrd-preload-store-manager')
+        preload_manager.start()
 
     def sighup_handler(signum, frame):
         # On SIGHUP, check if the configuration is valid and reload in
@@ -123,7 +132,8 @@ def run_irrd(mirror_frequency: int):
     logging.debug(f'Main process waiting for child processes to terminate')
     whois_process.join()
     http_process.join()
-    preload_manager.join()
+    if preload_manager:
+        preload_manager.join()
     logging.info(f'Main process exiting')
 
 

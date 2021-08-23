@@ -10,7 +10,13 @@ different versions of documentation, and are not all consistent with each
 other or their own documentation.
 Therefore, there may be an unknown number of unknown inconsistencies
 between IRRd version 4 and a legacy version of IRRd. The significant
-known changes are listed below
+known changes are listed below.
+
+
+Migrating existing data
+-----------------------
+To migrate data from a legacy IRRd instance, see option 1 documented in
+:doc:`availability and data migration </admins/availability-and-migration>`.
 
 
 Configuration and data storage

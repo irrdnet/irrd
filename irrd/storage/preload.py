@@ -89,6 +89,11 @@ class Preloader:
                 daemon=True
             )
             self._pubsub_thread.start()
+            if get_setting('database_readonly'):  # pragma: no cover
+                # If this instance is readonly, another IRRd process will be updating
+                # the store, and likely has already done so, meaning we can try to load
+                # from Redis right away instead of waiting for a signal.
+                self._load_routes_into_memory()
 
     def signal_reload(self, object_classes_changed: Optional[Set[str]]=None) -> None:
         """
@@ -135,7 +140,7 @@ class Preloader:
 
         return prefix_sets
 
-    def _load_routes_into_memory(self, redis_message):
+    def _load_routes_into_memory(self, redis_message=None):
         """
         Update the in-memory store. This is called whenever a
         message is sent to REDIS_PRELOAD_COMPLETE_CHANNEL.
@@ -173,6 +178,7 @@ class PreloadStoreManager(ExceptionLoggingProcess):
     it is created and updated.
     There should only be one of these per IRRd instance.
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._target = self.main
@@ -293,6 +299,7 @@ class PreloadUpdater(threading.Thread):
     currently for prefixes per origin per address family.
     It is started by PreloadStoreManager.
     """
+
     def __init__(self, preloader, reload_lock, *args, **kwargs):
         self.preloader = preloader
         self.reload_lock = reload_lock

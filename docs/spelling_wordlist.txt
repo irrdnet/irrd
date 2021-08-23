@@ -1,6 +1,7 @@
 ASes
 auth
 backend
+balancers
 boolean
 bugfix
 conf
@@ -58,6 +59,7 @@ th
 unix
 utils
 validator
+validators
 virtualenv
 whois
 rc

@@ -72,6 +72,47 @@ class TestSourceExportRunner:
         assert 'Starting a source export for TEST' in caplog.text
         assert 'Export for TEST complete' in caplog.text
 
+    def test_export_unfiltered(self, tmpdir, config_override, monkeypatch, caplog):
+        config_override({
+            'sources': {
+                'TEST': {
+                    'export_destination_unfiltered': str(tmpdir),
+                }
+            }
+        })
+
+        mock_dh = Mock()
+        mock_dq = Mock()
+        mock_dsq = Mock()
+
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_export.DatabaseHandler', lambda: mock_dh)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_export.RPSLDatabaseQuery', lambda: mock_dq)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_export.DatabaseStatusQuery', lambda: mock_dsq)
+
+        responses = cycle([
+            repeat({'serial_newest_seen': '424242'}),
+            [
+                # The CRYPT-PW hash should appear in the output
+                {'object_text': 'object 1 🦄\nauth: CRYPT-PW foobar\n'},
+                {'object_text': 'object 2 🌈\n'},
+            ],
+        ])
+        mock_dh.execute_query = lambda q: next(responses)
+
+        runner = SourceExportRunner('TEST')
+        runner.run()
+
+        serial_filename = tmpdir + '/TEST.CURRENTSERIAL'
+        assert oct(os.lstat(serial_filename).st_mode)[-3:] == oct(EXPORT_PERMISSIONS)[-3:]
+        with open(serial_filename) as fh:
+            assert fh.read() == '424242'
+
+        export_filename = tmpdir + '/test.db.gz'
+        assert oct(os.lstat(export_filename).st_mode)[-3:] == oct(EXPORT_PERMISSIONS)[-3:]
+        with gzip.open(export_filename) as fh:
+            assert fh.read().decode('utf-8') == 'object 1 🦄\nauth: CRYPT-PW foobar\n\n' \
+                                                'object 2 🌈\n\n# EOF\n'
+
     def test_failure(self, tmpdir, config_override, monkeypatch, caplog):
         config_override({
             'sources': {
