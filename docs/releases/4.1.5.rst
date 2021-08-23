@@ -1,0 +1,26 @@
+============================
+Release notes for IRRd 4.1.5
+============================
+
+IRRd 4.1.5 was released on August 24th, 2021, with a number of fixes and
+improvements:
+
+* AS4294967295, the highest valid 32 bit AS number, is now accepted by IRRd.
+  Previously, the ASN validator would reject it. This affected ROA imports
+  in particular, as the entire ROA file is rejected when a single entry is
+  invalid.
+* A new guide for
+  :doc:`availability and data migration </admins/availability-and-migration>`
+  was added. This includes several new settings to support read-only IRRd
+  instances, exports and NRTM queries that include password hashes, and a new
+  command to load PGP keys from the SQL database into the GnuPG keyring.
+* The scope filter did not validate `aut-num` objects, always considering them
+  to be in scope. After updating to 4.1.5, the next scope filter run will
+  update the status of all `aut-num` objects correctly, if enabled.
+* Incorrect ADD entries could appear in the database journal. If an object was
+  RPKI invalid and out of scope, and became in scope but remained RPKI invalid
+  due to a configuration change, an ADD was added to the journal
+  (and NRTM output) incorrectly. The object should remain invisible to mirrors,
+  as it was still RPKI invalid. The same could occur when an out of scope and
+  RPKI invalid object would become RPKI valid or not found, while remaining
+  out of scope.
