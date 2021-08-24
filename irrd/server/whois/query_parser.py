@@ -469,8 +469,8 @@ class WhoisQueryParser:
         if source not in self.query_resolver.all_valid_sources:
             raise InvalidQueryException(f'Unknown source: {source}')
 
-        in_access_list = is_client_permitted(self.client_ip, f'sources.{source}.nrtm_access_list')
-        in_unfiltered_access_list = is_client_permitted(self.client_ip, f'sources.{source}.nrtm_access_list_unfiltered')
+        in_access_list = is_client_permitted(self.client_ip, f'sources.{source}.nrtm_access_list', log=False)
+        in_unfiltered_access_list = is_client_permitted(self.client_ip, f'sources.{source}.nrtm_access_list_unfiltered', log=False)
         if not in_access_list and not in_unfiltered_access_list:
             raise InvalidQueryException('Access denied')
 
