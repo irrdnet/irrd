@@ -96,6 +96,9 @@ disappear when you make IRRd 4 your authoritative instance.**
 
 GPG keychain imports
 ~~~~~~~~~~~~~~~~~~~~
+In short: standby instances should have ``strict_import_keycert_objects``
+enabled.
+
 IRRd uses GnuPG to validate PGP signatures used to authenticate authoritative
 changes. This means that all `key-cert` objects need to be inserted into the
 GnuPG keychain before users can submit PGP signed updates.
@@ -137,6 +140,11 @@ on the current active instance:
   in the configuration file. Any IP on this access list will receive
   full password hashes when doing NRTM requests. Other than that, NRTM works
   identical to filtered queries. Set this to the IPs of your standby instances.
+
+On the standby instance, you do not need any specific configuration.
+However, if you used previously imported `mntner` objects without full hashes
+on the standby, you need to do a full reload of the data on the standby to
+ensure it has full hashes for all objects.
 
 If you are migrating from a different IRR server, check that password
 hashes are not filtered.

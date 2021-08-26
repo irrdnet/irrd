@@ -30,7 +30,7 @@ IRRd requires:
   extensively tested.
 * At least 32GB RAM
 * At least 4 CPU cores
-* At least 100GB of disk space (SSD recommended)
+* At least 150GB of disk space (SSD recommended)
 
 Depending on your needs from IRRd, you may be able to run with
 fewer resources. This depends on how much data you intend to load,

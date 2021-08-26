@@ -54,9 +54,12 @@ Other changes compared to 4.1.5
 
 Changes needed to upgrade
 -------------------------
-IRRd 4.2 is a relatively small upgrade compared to 4.1. If you are upgrading
-from an older version, please make sure to also follow all steps in the
+IRRd 4.2 from 4.1 is a smaller upgrade than 4.1 from 4.0. If you are upgrading
+from a 4.0.x version, please make sure to also follow all steps in the
 :doc:`4.1 release notes </releases/4.1.0>`.
+
+If you are upgrading from an earlier version than 4.1.5, make sure to
+read the release notes for any intermediate releases as well.
 
 .. tip::
     Depending on the availability requirements of your IRRd deployment,
@@ -88,7 +91,7 @@ Several configuration options have been added or changed:
 
 As IRRd now rejects unknown settings, it is possible that there are other
 settings in your configuration file that were always unknown, but will now
-be rejected by IRRd 4.1.
+be rejected by IRRd 4.2.
 
 Other than the settings changes, IRRd 4.2 includes database migrations.
 There are two upgrade paths for this:

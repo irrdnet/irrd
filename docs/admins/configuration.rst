@@ -24,7 +24,8 @@ Example configuration file
 .. highlight:: yaml
     :linenothreshold: 5
 
-This sample shows most configuration options::
+This sample shows most configuration options. Note that this is an example
+of what a configuration looks like, and many of these settings are optional::
 
     irrd:
         database_url: 'postgresql:///irrd'
@@ -536,6 +537,8 @@ Sources
   |br| **Change takes effect**: after SIGHUP, upon next request.
 * ``sources.{name}.strict_import_keycert_objects``: a setting used when
   migrating authoritative data that may contain `key-cert` objects.
+  See the :doc:`data migration guide </admins/availability-and-migration>`
+  for more information.
   See the :doc:`deployment guide </admins/deployment>` for more information.
   |br| **Default**: false
   |br| **Change takes effect**: after SIGHUP, upon next request.
