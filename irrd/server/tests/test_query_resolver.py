@@ -450,7 +450,9 @@ class TestQueryResolver:
                 'pk': uuid.uuid4(),
                 'rpsl_pk': 'RS-SECONDLEVEL',
                 'parsed_data': {'as-set': 'RS-SECONDLEVEL',
-                                'members': ['AS-REFERRED', '192.0.2.0/25']},
+                                'members': [
+                                    'AS-REFERRED', '192.0.2.0/25', '192.0.2.0/26^32'
+                                ]},
                 'object_text': 'text',
                 'object_class': 'route-set',
                 'source': 'TEST1',
@@ -472,7 +474,7 @@ class TestQueryResolver:
         mock_preloader.routes_for_origins = Mock(return_value=['192.0.2.128/25'])
 
         result = resolver.members_for_set('RS-FIRSTLEVEL', recursive=True)
-        assert result == ['192.0.2.0/25', '192.0.2.128/25']
+        assert set(result) == {'192.0.2.0/26^32', '192.0.2.0/25', '192.0.2.128/25'}
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['as-set', 'route-set'],), {}],
             ['rpsl_pks', ({'RS-FIRSTLEVEL'},), {}],

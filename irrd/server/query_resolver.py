@@ -211,7 +211,7 @@ class QueryResolver:
         for sub_member in sub_members:
             if self._current_set_root_object_class is None or self._current_set_root_object_class == 'route-set':
                 try:
-                    IP(sub_member)
+                    IP(sub_member.split('^')[0])
                     set_members.add(sub_member)
                     continue
                 except ValueError:
