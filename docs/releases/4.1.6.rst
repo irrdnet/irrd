@@ -1,0 +1,9 @@
+============================
+Release notes for IRRd 4.1.6
+============================
+
+IRRd 4.1.6 was released on August 30th, 2021, and fixes an issue where responses
+to `!i` recursive set resolving queries `did not include prefix ranges`_
+(e.g. ``192.0.2.0/24^32``).
+
+.. _did not include prefix ranges: https://github.com/irrdnet/irrd/issues/543
