@@ -38,22 +38,22 @@ setuptools.setup(
         'requests==2.26.0',
         'pytz==2021.1',
         'ariadne==0.13.0',
-        'uvicorn==0.14.0',
+        'uvicorn==0.15.0',
         'starlette==0.14.2',
         'psutil==5.8.0',
         'asgiref==3.4.1',
         'pydantic==1.8.2',
         'SQLAlchemy==1.3.24',
         'alembic==1.6.5',
-        'ujson==4.0.2',
-        'wheel==0.36.2',
+        'ujson==4.1.0',
+        'wheel==0.37.0',
     ],
     extras_require={
         ':python_version < "3.7"': [
             'dataclasses==0.8',
         ],
         ':python_version > "3.7"': [
-            'uvicorn[standard]==0.13.4',
+            'uvicorn[standard]==0.15.0',
         ],
         ':platform_python_implementation == "CPython"': [
             'psycopg2-binary==2.9.1',
