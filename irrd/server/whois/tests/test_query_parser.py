@@ -734,7 +734,9 @@ class TestWhoisQueryParserIRRD:
             {
                 'pk': uuid.uuid4(),
                 'rpsl_pk': 'RS-SECONDLEVEL',
-                'parsed_data': {'as-set': 'RS-SECONDLEVEL', 'members': ['AS-REFERRED', '192.0.2.0/25']},
+                'parsed_data': {'as-set': 'RS-SECONDLEVEL', 'members': [
+                    'AS-REFERRED', '192.0.2.0/25', '192.0.2.0/26^32'
+                ]},
                 'object_text': 'text',
                 'object_class': 'route-set',
                 'source': 'TEST1',
@@ -758,7 +760,7 @@ class TestWhoisQueryParserIRRD:
         response = parser.handle_query('!iRS-FIRSTLEVEL,1')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
-        assert response.result == '192.0.2.0/25 192.0.2.128/25'
+        assert set(response.result.split(' ')) == {'192.0.2.0/25', '192.0.2.128/25', '192.0.2.0/26^32'}
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['as-set', 'route-set'],), {}], ['rpsl_pks', ({'RS-FIRSTLEVEL'},), {}],
             ['object_classes', (['as-set', 'route-set'],), {}],
