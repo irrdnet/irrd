@@ -25,7 +25,8 @@ Example configuration file
     :linenothreshold: 5
 
 This sample shows most configuration options. Note that this is an example
-of what a configuration looks like, and many of these settings are optional::
+of what a configuration looks like, and many of these settings are optional,
+or the value shown in this example is their default::
 
     irrd:
         database_url: 'postgresql:///irrd'
@@ -260,6 +261,9 @@ Servers
 Email
 ~~~~~
 * ``email.from``: the `From` email address used when sending emails.
+  Good choices for this are a noreply address, or a support inbox.
+  **Never set this to an address that is directed back to IRRd, as this may
+  cause e-mail loops.**
   |br| **Default**: not defined, but required.
   |br| **Change takes effect**: after SIGHUP, for all subsequent emails.
 * ``email.footer``: a footer to include in all emails.
