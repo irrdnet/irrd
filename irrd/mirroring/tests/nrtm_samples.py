@@ -32,6 +32,8 @@ DEL
 
 inetnum: 192.0.2.0 - 192.0.2.255
 source: TEST
+
+%END TEST
 """
 
 SAMPLE_NRTM_V1_TOO_MANY_ITEMS = """
@@ -49,6 +51,8 @@ DEL
 
 inetnum: 192.0.2.0 - 192.0.2.255
 source: TEST
+
+%END TEST
 """
 SAMPLE_NRTM_INVALID_VERSION = """%START Version: 99 TEST 11012700-11012700"""
 
@@ -101,6 +105,8 @@ ADD 11012701
 person: NRTM test
 address: NowhereLand
 source: TEST
+
+%END TEST
 """
 
 SAMPLE_NRTM_INVALID_NO_START_LINE = """
@@ -117,3 +123,5 @@ source: TEST
 
 %END TEST
 """
+
+SAMPLE_NRTM_V3_NO_END = """%START Version: 3 TEST 11012700-11012701"""
