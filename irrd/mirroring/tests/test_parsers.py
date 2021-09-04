@@ -15,7 +15,7 @@ from irrd.utils.rpsl_samples import (
     SAMPLE_ROLE, SAMPLE_RTR_SET)
 from irrd.utils.test_utils import flatten_mock_calls
 from .nrtm_samples import (SAMPLE_NRTM_V3, SAMPLE_NRTM_V1, SAMPLE_NRTM_V1_TOO_MANY_ITEMS,
-                           SAMPLE_NRTM_INVALID_VERSION,
+                           SAMPLE_NRTM_INVALID_VERSION, SAMPLE_NRTM_V3_NO_END,
                            SAMPLE_NRTM_V3_SERIAL_GAP, SAMPLE_NRTM_V3_INVALID_MULTIPLE_START_LINES,
                            SAMPLE_NRTM_INVALID_NO_START_LINE, SAMPLE_NRTM_V3_SERIAL_OUT_OF_ORDER)
 from ..parsers import NRTMStreamParser, MirrorFileImportParser, MirrorUpdateFileImportParser
@@ -366,6 +366,18 @@ class TestNRTMStreamParser:
             NRTMStreamParser('TEST', SAMPLE_NRTM_INVALID_NO_START_LINE, mock_dh)
 
         error_msg = 'Encountered operation before valid NRTM START line'
+        assert error_msg in str(ve.value)
+        assert len(mock_dh.mock_calls) == 1
+        assert mock_dh.mock_calls[0][0] == 'record_mirror_error'
+        assert mock_dh.mock_calls[0][1][0] == 'TEST'
+        assert error_msg in mock_dh.mock_calls[0][1][1]
+
+    def test_test_parse_nrtm_no_end(self):
+        mock_dh = Mock()
+        with pytest.raises(ValueError) as ve:
+            NRTMStreamParser('TEST', SAMPLE_NRTM_V3_NO_END, mock_dh)
+
+        error_msg = 'last paragraph expected to be'
         assert error_msg in str(ve.value)
         assert len(mock_dh.mock_calls) == 1
         assert mock_dh.mock_calls[0][0] == 'record_mirror_error'

@@ -306,14 +306,22 @@ class NRTMStreamParser(MirrorParser):
     def _split_stream(self, data: str) -> None:
         """Split a stream into individual operations."""
         paragraphs = split_paragraphs_rpsl(data, strip_comments=False)
+        last_comment_seen = ''
 
         for paragraph in paragraphs:
             if self._handle_possible_start_line(paragraph):
                 continue
             elif paragraph.startswith('%') or paragraph.startswith('#'):
-                continue  # pragma: no cover -- falsely detected as not run by coverage library
+                last_comment_seen = paragraph
             elif paragraph.startswith('ADD') or paragraph.startswith('DEL'):
                 self._handle_operation(paragraph, paragraphs)
+
+        if self.nrtm_source and last_comment_seen.upper().strip() != f'%END {self.source}':
+            msg = f'NRTM stream error for {self.source}: last paragraph expected to be ' \
+                  f'"%END {self.source}", but is actually {last_comment_seen.upper().strip()}'
+            logger.error(msg)
+            self.database_handler.record_mirror_error(self.source, msg)
+            raise ValueError(msg)
 
         if self._current_op_serial > self.last_serial and self.version != '3':
             msg = f'NRTM stream error for {self.source}: expected operations up to and including serial ' \
