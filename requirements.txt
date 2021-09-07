@@ -29,11 +29,11 @@ pydantic==1.8.2        # Input validation
 psycopg2-binary==2.9.1; platform_python_implementation == "CPython"
 psycopg2cffi==2.9.0; platform_python_implementation == "PyPy"
 SQLAlchemy==1.3.24 # pyup: <1.4  # https://github.com/irrdnet/irrd/issues/475
-alembic==1.6.5
+alembic==1.7.1
 ujson==4.1.0
 
 # Testing and related packages
-pytest==6.2.4
+pytest==6.2.5
 pytest-cov==2.12.1
 coverage==6.0b1
 twisted==21.7.0    # Used for a mock email server in integration tests
@@ -50,6 +50,6 @@ flake8==3.9.2
 pep8-naming==0.12.1
 
 # Creating python packages
-setuptools==57.4.0
+setuptools==58.0.0
 wheel==0.37.0  # also require for installing, #488
 twine==3.4.2
