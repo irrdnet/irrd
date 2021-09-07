@@ -377,7 +377,7 @@ class TestNRTMStreamParser:
         with pytest.raises(ValueError) as ve:
             NRTMStreamParser('TEST', SAMPLE_NRTM_V3_NO_END, mock_dh)
 
-        error_msg = 'last paragraph expected to be'
+        error_msg = 'last comment paragraph expected to be'
         assert error_msg in str(ve.value)
         assert len(mock_dh.mock_calls) == 1
         assert mock_dh.mock_calls[0][0] == 'record_mirror_error'
