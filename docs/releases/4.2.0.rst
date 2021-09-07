@@ -30,7 +30,7 @@ and may be the easier option depending on your deployment platform.
 IRRd 4.2 was continuously tested
 against CPython 3.6 and 3.9, and PyPy 3.6 and 3.7.
 
-Other changes compared to 4.1.6
+Other changes compared to 4.1.7
 -------------------------------
 * IRRd now rejects unknown settings in the config file, i.e. settings
   that are found in the file, but unknown to IRRd. This reduces unintentional
@@ -58,7 +58,7 @@ IRRd 4.2 from 4.1 is a smaller upgrade than 4.1 from 4.0. If you are upgrading
 from a 4.0.x version, please make sure to also follow all steps in the
 :doc:`4.1 release notes </releases/4.1.0>`.
 
-If you are upgrading from an earlier version than 4.1.6, make sure to
+If you are upgrading from an earlier version than 4.1.7, make sure to
 read the release notes for any intermediate releases as well.
 
 .. tip::
