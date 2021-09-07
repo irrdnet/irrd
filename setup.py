@@ -44,7 +44,7 @@ setuptools.setup(
         'asgiref==3.4.1',
         'pydantic==1.8.2',
         'SQLAlchemy==1.3.24',
-        'alembic==1.6.5',
+        'alembic==1.7.1',
         'ujson==4.1.0',
         'wheel==0.37.0',
     ],
