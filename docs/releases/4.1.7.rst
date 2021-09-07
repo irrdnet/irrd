@@ -1,0 +1,16 @@
+============================
+Release notes for IRRd 4.1.7
+============================
+
+IRRd 4.1.7 was released on September 7th, 2021, and fixes an issue where
+the NRTM parser `would accept partial content`_. In case of poor network
+connectivity, the TCP connection could break while receiving NRTM data.
+IRRd would then process the received part, potentially causing updates to be
+missed.
+
+In 4.1.7, IRRd will reject and log any NRTM response with a valid ``START`` line
+that does not end in ``%END <source name>``, as they are assumed to be
+incomplete. Upon the next NRTM import, IRRd will automatically retry retrieving
+the same updates - like with any other NRTM failure.
+
+.. _would accept partial content: https://github.com/irrdnet/irrd/issues/546
