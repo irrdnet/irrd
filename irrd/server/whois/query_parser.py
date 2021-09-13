@@ -277,6 +277,8 @@ class WhoisQueryParser:
         except ValueError:
             raise InvalidQueryException(f'Invalid argument for object lookup: {parameter}')
 
+        if object_class in ['route', 'route6']:
+            rpsl_pk = rpsl_pk.upper().replace(' ', '').replace('-', '')
         query = self.query_resolver.key_lookup(object_class, rpsl_pk)
         return self._flatten_query_output(query)
 
