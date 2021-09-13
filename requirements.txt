@@ -40,7 +40,7 @@ twisted==21.7.0    # Used for a mock email server in integration tests
 python-graphql-client==0.4.2
 
 # Documentation generation
-Sphinx==4.1.2
+Sphinx==4.2.0
 sphinxcontrib-spelling==7.2.1
 sphinx-material==0.0.34
 
@@ -50,6 +50,6 @@ flake8==3.9.2
 pep8-naming==0.12.1
 
 # Creating python packages
-setuptools==58.0.0
+setuptools==58.0.4
 wheel==0.37.0  # also require for installing, #488
 twine==3.4.2
