@@ -625,6 +625,26 @@ class TestWhoisQueryParserIRRD:
         assert response.result == MOCK_ROUTE_COMBINED
         assert response.remove_auth_hashes
         mock_query_resolver.key_lookup.assert_called_once_with('route', '192.0.2.0/25')
+        mock_query_resolver.key_lookup.reset_mock()
+
+        response = parser.handle_query('!mroute,192.0.2.0/25AS65530')
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert response.result == MOCK_ROUTE_COMBINED
+        assert response.remove_auth_hashes
+        mock_query_resolver.key_lookup.assert_called_once_with('route', '192.0.2.0/25AS65530')
+        mock_query_resolver.key_lookup.reset_mock()
+
+        # https://github.com/irrdnet/irrd/issues/551
+        response = parser.handle_query('!mroute,192.0.2.0/25 AS65530')
+        mock_query_resolver.key_lookup.assert_called_once_with('route', '192.0.2.0/25AS65530')
+        mock_query_resolver.key_lookup.reset_mock()
+        response = parser.handle_query('!mroute,192.0.2.0/25-As65530')
+        mock_query_resolver.key_lookup.assert_called_once_with('route', '192.0.2.0/25AS65530')
+        mock_query_resolver.key_lookup.reset_mock()
+        response = parser.handle_query('!mas-set,AS-FOO')
+        mock_query_resolver.key_lookup.assert_called_once_with('as-set', 'AS-FOO')
+        mock_query_resolver.key_lookup.reset_mock()
 
         mock_query_resolver.key_lookup = Mock(return_value=[])
         response = parser.handle_query('!mroute,192.0.2.0/25')

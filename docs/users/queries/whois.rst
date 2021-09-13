@@ -120,7 +120,10 @@ IRRd style queries
 * ``!m<object-class>,<primary-key>`` searches for objects exactly matching
   the primary key, of the specified RPSL object class. For example:
   ``!maut-num,AS23456``. Stops at the first object. The key is case
-  sensitive.
+  sensitive. If the object class is `route` or `route6`, any spaces or dashes
+  in the key are ignored for legacy IRRd compatibility in composite keys.
+  This allows querying for e.g. ``!mroute,192.0.2.0/24AS65530``, but also
+  the legacy options ``192.0.2.0/24 AS65530`` and ``!mroute,192.0.2.0/24-AS65530``
 * ``!o<mntner-name>`` searches for all objects with the specified maintainer
   in its `mnt-by` attribute.
 * ``!n<free-text>`` identifies the client querying IRRd. Optional, but may
