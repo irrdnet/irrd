@@ -147,7 +147,7 @@ class TestRPSLAsSet:
         # Field parsing will cause our object to look slightly different than the original, hence the replace()
         assert obj.render_rpsl_text() == rpsl_text.replace('AS65538, AS65539', 'AS65538,AS65539')
 
-    def test_invalid_clean_for_create(self):
+    def test_clean_for_create(self, config_override):
         rpsl_text = object_sample_mapping[RPSLAsSet().rpsl_object_class]
         rpsl_text = rpsl_text.replace('AS65537:AS-SETTEST', 'AS-SETTEST')
         obj = rpsl_object_from_text(rpsl_text)
@@ -155,6 +155,10 @@ class TestRPSLAsSet:
         assert not obj.messages.errors()
         assert not obj.clean_for_create()
         assert 'AS set names must be hierarchical and the first ' in obj.messages.errors()[0]
+
+        config_override({'compatibility': {'permit_non_hierarchical_as_set_name': True}})
+        obj = rpsl_object_from_text(rpsl_text)
+        assert obj.clean_for_create()
 
 
 class TestRPSLAutNum:

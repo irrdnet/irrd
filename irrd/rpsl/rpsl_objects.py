@@ -2,7 +2,7 @@ from collections import OrderedDict
 
 from typing import Set, List, Optional, Union
 
-from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
+from irrd.conf import PASSWORD_HASH_DUMMY_VALUE, get_setting
 from irrd.utils.pgp import get_gpg_instance
 from .config import PASSWORD_HASHERS
 from .fields import (RPSLTextField, RPSLIPv4PrefixField, RPSLIPv4PrefixesField, RPSLIPv6PrefixField,
@@ -61,6 +61,9 @@ class RPSLAsSet(RPSLObject):
     ])
 
     def clean_for_create(self) -> bool:
+        if get_setting('compatibility.permit_non_hierarchical_as_set_name'):
+            return True
+
         first_segment = self.pk().split(':')[0]
         try:
             parse_as_number(first_segment)

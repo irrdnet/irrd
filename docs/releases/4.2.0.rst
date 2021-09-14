@@ -42,7 +42,8 @@ Other changes compared to 4.1.7
   variable, if set.
 * New `as-set` objects created in authoritative databases are required
   to have a hierarchical name, like ``AS65540:AS-CUSTOMERS``. For example,
-  ``AS-CUSTOMERS`` is no longer allowed.
+  ``AS-CUSTOMERS`` is no longer allowed. This new behaviour can be disabled
+  with the ``compatibility.permit_non_hierarchical_as_set_name`` setting.
 * IRRd now supports dropping privileges after binding to the whois port,
   by setting the ``user`` and ``group`` settings.
   This allows you to start IRRd as root, have it bind to port 43, and then
