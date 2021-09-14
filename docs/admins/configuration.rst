@@ -745,18 +745,25 @@ Compatibility
   for all queries. However, if this is enabled and your IRRd instance does
   store `inetnum` objects, they may be missing from responses to queries.
   Therefore, only enable this when you do not process any `inetnum` objects.
-  |br| **Default**: ``false``, i.e. `inetnum` search is enabled
+  |br| **Default**: ``false``, i.e. `inetnum` search is enabled.
   |br| **Change takes effect**: after SIGHUP, for all subsequent queries.
 * ``compatibility.irrd42_migration_in_progress``: this setting is used
   when doing a minimum downtime upgrade from IRRd 4.1.x to IRRd 4.2.x.
   See the :doc:`4.2.0 release notes </releases/4.2.0>` for details.
-  |br| **Default**: ``false``, operating normally
+  |br| **Default**: ``false``, operating normally.
   |br| **Change takes effect**: after SIGHUP, for all subsequent queries.
+* ``compatibility.permit_non_hierarchical_as_set_name``: by default,
+  `as-set` objects created in authoritative databases are required to have a
+  hierarchical name, like ``AS65540:AS-CUSTOMERS``. For example,
+  ``AS-CUSTOMERS`` would not be allowed. If this setting is set to ``true``,
+  this name requirement does not apply, and ``AS-CUSTOMERS`` is permitted.
+  |br| **Default**: ``false``, hierarchical name required.
+  |br| **Change takes effect**: after SIGHUP, for all subsequent updates.
 * ``compatibility.ipv4_only_route_set_members``: if set to ``true``, ``!i``
   queries will not return IPv6 prefixes. This option can be used for limited
   compatibility with IRRd version 2. Enabling this setting may have a
   performance impact on very large responses.
-  |br| **Default**: ``false``, IPv6 members included
+  |br| **Default**: ``false``, IPv6 members included.
   |br| **Change takes effect**: after SIGHUP, for all subsequent queries.
 
 .. _RFC8416: https://tools.ietf.org/html/rfc8416
