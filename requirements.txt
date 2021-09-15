@@ -24,6 +24,7 @@ starlette==0.14.2 # pyup: <0.15      # ASGI framework - pinned to <0.15 for aria
 psutil==5.8.0          # Process management
 asgiref==3.4.1         # ASGI utilities
 pydantic==1.8.2        # Input validation
+six==1.13.0            # Used in vendored dotteddict
 
 # Database connections and management
 psycopg2-binary==2.9.1; platform_python_implementation == "CPython"
