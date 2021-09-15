@@ -160,9 +160,14 @@ IRRd can run a mirror in synchronised serial mode. This is used by some
 deployments to spread their query load over multiple read-only instances.
 For further details, see the
 :ref:`NRTM serial handling documentation <mirroring-nrtm-serials>`.
-Do note that without synchronised serials, NRTM users must not be switched
-(e.g. by DNS changes or load balancers) to different instances, without
-reloading their local copy. Otherwise they may silently lose updates.
+
+.. warning::
+   When not using synchronised serials, NRTM users must never be switched
+   (e.g. by DNS changes or load balancers) to different instances, without
+   reloading their local copy. Otherwise they may silently lose updates.
+
+   Without synchronised serials, the RPSL export, CURRENTSERIAL file, and NRTM
+   feed used by a mirror must all come from the same source instance.
 
 RPKI and scope filter
 ~~~~~~~~~~~~~~~~~~~~~
