@@ -68,7 +68,7 @@ class WhoisTCPServer(socketserver.TCPServer):  # pragma: no cover
         self.address_family = socket.AF_INET6 if IP(server_address[0]).version() == 6 else socket.AF_INET
         super().__init__(server_address, None, bind_and_activate)
         if uid and gid:
-            change_process_owner(uid=uid, gid=gid)
+            change_process_owner(uid=uid, gid=gid, initgroups=True)
 
         self.connection_queue = mp.Queue()
         self.workers = []
