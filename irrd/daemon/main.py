@@ -102,7 +102,7 @@ def run_irrd(mirror_frequency: int, config_file_path: str, uid: Optional[int], g
     )
     whois_process.start()
     if uid and gid:
-        change_process_owner(uid=uid, gid=gid)
+        change_process_owner(uid=uid, gid=gid, initgroups=True)
 
     mirror_scheduler = MirrorScheduler()
 
