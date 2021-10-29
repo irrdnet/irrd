@@ -15,6 +15,7 @@ from irrd.server.access_check import is_client_permitted
 from irrd.server.whois.query_parser import WhoisQueryParser
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.preload import Preloader
+from irrd.utils.process_support import memory_trim
 
 logger = logging.getLogger(__name__)
 mp.allow_connection_pickling()
@@ -145,6 +146,7 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
                 self.handle_connection()
                 self.finish()
                 self.close_request()
+                memory_trim()
             except Exception as e:
                 try:
                     self.close_request()
