@@ -887,6 +887,7 @@ class TestWhoisQueryParserIRRD:
     def test_database_status(self, monkeypatch, prepare_parser, config_override):
         config_override({
             'rpki': {'roa_source': 'http://example.com/'},
+            'scopefilter': {'prefixes': ['192.0.2.0/24']},
             'sources': {
                 'TEST1': {
                     'authoritative': True,
