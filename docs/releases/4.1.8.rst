@@ -1,0 +1,16 @@
+============================
+Release notes for IRRd 4.1.8
+============================
+
+IRRd 4.1.8 was released on October 29th, 2021, and fixes two issues that
+occurred in all previous 4.1 releases:
+
+* IRRd's whois worker processes `could use excessive memory`_.
+* The ``scopefilter_enabled`` value in the ``!J`` `was incorrect`_ in some cases.
+
+The memory issue occurred mainly when answering queries with large responses.
+Those cause high memory consumption in the workers, which is expected, but after
+answering the query, the workers did not always release the memory.
+
+.. _could use excessive memory: https://github.com/irrdnet/irrd/issues/571
+.. _was incorrect: https://github.com/irrdnet/irrd/issues/555

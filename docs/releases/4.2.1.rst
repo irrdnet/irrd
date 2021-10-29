@@ -1,0 +1,17 @@
+============================
+Release notes for IRRd 4.2.1
+============================
+
+IRRd 4.2.1 was released on October 29th, 2021, and fixes two issues that
+occurred in 4.2.0:
+
+* IRRd's whois worker processes `could use excessive memory`_.
+* When dropping privileges, IRRd did not correctly configure the user's groups,
+  `causing issues with typical Redis setups`_
+
+The memory issue occurred mainly when answering queries with large responses.
+Those cause high memory consumption in the workers, which is expected, but after
+answering the query, the workers did not always release the memory.
+
+.. _could use excessive memory: https://github.com/irrdnet/irrd/issues/571
+.. _causing issues with typical Redis setups: https://github.com/irrdnet/irrd/issues/567
