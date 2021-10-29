@@ -5,7 +5,9 @@ import signal
 from ariadne.asgi import GraphQL
 from setproctitle import setproctitle
 from starlette.applications import Starlette
+from starlette.middleware import Middleware
 from starlette.routing import Mount
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 # Relative imports are not allowed in this file
 from irrd import ENV_MAIN_PROCESS_PID
@@ -16,6 +18,8 @@ from irrd.server.graphql.schema_builder import build_executable_schema
 from irrd.server.http.endpoints import StatusEndpoint, WhoisQueryEndpoint, ObjectSubmissionEndpoint
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.preload import Preloader
+from irrd.utils.process_support import memory_trim
+
 
 logger = logging.getLogger(__name__)
 
@@ -72,9 +76,20 @@ routes = [
     Mount("/graphql", graphql),
 ]
 
+
+class MemoryTrimMiddleware:
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        await self.app(scope, receive, send)
+        memory_trim()
+
+
 app = Starlette(
     debug=False,
     routes=routes,
     on_startup=[startup],
     on_shutdown=[shutdown],
+    middleware=[Middleware(MemoryTrimMiddleware)],
 )
