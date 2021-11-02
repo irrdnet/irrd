@@ -146,11 +146,13 @@ class AuthValidator:
 
     def __init__(self, database_handler: DatabaseHandler, keycert_obj_pk=None) -> None:
         self.database_handler = database_handler
+        self.passwords = []
+        self.overrides = []
         self._mntner_db_cache: Set[RPSLMntner] = set()
         self._pre_approved: Set[str] = set()
         self.keycert_obj_pk = keycert_obj_pk
 
-    def pre_approve(self, results: List['ChangeRequest']) -> None:
+    def pre_approve(self, presumed_valid_new_mntners: List[RPSLMntner]) -> None:
         """
         Pre-approve certain maintainers that are part of this batch of updates.
         This is required for creating new maintainers along with other objects.
@@ -161,10 +163,7 @@ class AuthValidator:
         When the new mntner object's mnt-by is checked, there is an additional
         check to verify that it passes the newly submitted authentication.
         """
-        self._pre_approved = set()
-        for request in results:
-            if request.is_valid() and request.request_type == UpdateRequestType.CREATE and isinstance(request.rpsl_obj_new, RPSLMntner):
-                self._pre_approved.add(request.rpsl_obj_new.pk())
+        self._pre_approved = {obj.pk() for obj in presumed_valid_new_mntners}
 
     def process_auth(self, rpsl_obj_new: RPSLObject, rpsl_obj_current: Optional[RPSLObject]) -> ValidatorResult:
         """
@@ -252,7 +251,7 @@ class AuthValidator:
         Returns True if at least one of the mntners in mntner_list
         passes authentication, given self.passwords and
         self.keycert_obj_pk. Updates and checks self._mntner_db_cache
-        to prevent double checking of maintainers.
+        to prevent double retrieval of maintainers.
         """
         mntner_pk_set = set(mntner_pk_list)
         mntner_objs: List[RPSLMntner] = [
@@ -294,7 +293,8 @@ class AuthValidator:
     def _find_related_mntners(self, rpsl_obj_new: RPSLObject) -> Optional[Tuple[str, str, List[str]]]:
         """
         Find the maintainers of the related object to rpsl_obj_new, if any.
-        This is used to authorise creating objects.
+        This is used to authorise creating objects - authentication may be
+        required to pass for the related object as well.
 
         Returns a tuple of:
         - object class of the related object
@@ -302,35 +302,47 @@ class AuthValidator:
         - List of maintainers for the related object (at least one must pass)
         Returns None of no related objects were found that should be authenticated.
         """
-        if rpsl_obj_new.rpsl_object_class not in ['route', 'route6']:
-            return None
+        related_object = None
+        if rpsl_obj_new.rpsl_object_class in ['route', 'route6']:
+            related_object = self._find_related_object_route(rpsl_obj_new)
 
+        if related_object:
+            mntners = related_object.get('parsed_data', {}).get('mnt-by', [])
+            return related_object['object_class'], related_object['rpsl_pk'], mntners
+
+        return None
+
+    def _find_related_object_route(self, rpsl_obj_new: RPSLObject):
+        """
+        Find the related inetnum/route object to rpsl_obj_new, which must be a route(6).
+        Returns a dict as returned by the database handler.
+        """
         inetnum_class = {
             'route': 'inetnum',
             'route6': 'inet6num',
         }
 
-        def init_query(rpsl_object_class: str) -> RPSLDatabaseQuery:
-            query = RPSLDatabaseQuery().sources([rpsl_obj_new.source()])
-            query = query.object_classes([rpsl_object_class])
-            return query.first_only()
-
         object_class = inetnum_class[rpsl_obj_new.rpsl_object_class]
-        query = init_query(object_class).ip_exact(rpsl_obj_new.prefix)
+        query = _init_related_object_query(object_class, rpsl_obj_new).ip_exact(rpsl_obj_new.prefix)
         inetnums = list(self.database_handler.execute_query(query))
+
         if not inetnums:
-            query = init_query(object_class).ip_less_specific_one_level(rpsl_obj_new.prefix)
+            query = _init_related_object_query(object_class, rpsl_obj_new).ip_less_specific_one_level(rpsl_obj_new.prefix)
             inetnums = list(self.database_handler.execute_query(query))
 
         if inetnums:
-            mntners = inetnums[0].get('parsed_data', {}).get('mnt-by', [])
-            return inetnums[0]['object_class'], inetnums[0]['rpsl_pk'], mntners
+            return inetnums[0]
 
         object_class = rpsl_obj_new.rpsl_object_class
-        query = init_query(object_class).ip_less_specific_one_level(rpsl_obj_new.prefix)
+        query = _init_related_object_query(object_class, rpsl_obj_new).ip_less_specific_one_level(rpsl_obj_new.prefix)
         routes = list(self.database_handler.execute_query(query))
         if routes:
-            mntners = routes[0].get('parsed_data', {}).get('mnt-by', [])
-            return routes[0]['object_class'], routes[0]['rpsl_pk'], mntners
+            return routes[0]
 
         return None
+
+
+def _init_related_object_query(rpsl_object_class: str, rpsl_obj_new: RPSLObject) -> RPSLDatabaseQuery:
+    query = RPSLDatabaseQuery().sources([rpsl_obj_new.source()])
+    query = query.object_classes([rpsl_object_class])
+    return query.first_only()
