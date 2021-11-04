@@ -285,7 +285,7 @@ class AuthValidator:
                                   related_pk: Optional[str]=None) -> None:
         mntner_str = ', '.join(failed_mntner_list)
         msg = f'Authorisation for {rpsl_obj.rpsl_object_class} {rpsl_obj.pk()} failed: '
-        msg += f'must by authenticated by one of: {mntner_str}'
+        msg += f'must be authenticated by one of: {mntner_str}'
         if related_object_class and related_pk:
             msg += f' - from parent {related_object_class} {related_pk}'
         result.error_messages.add(msg)

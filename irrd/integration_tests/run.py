@@ -219,7 +219,7 @@ class TestIntegration:
         assert messages[0]['From'] == 'from@example.com'
         assert messages[0]['To'] == 'Sasha <sasha@example.com>'
         assert '\nModify FAILED: [person] PERSON-TEST\n' in mail_text
-        assert '\nERROR: Authorisation for person PERSON-TEST failed: must by authenticated by one of: TEST-MNT\n' in mail_text
+        assert '\nERROR: Authorisation for person PERSON-TEST failed: must be authenticated by one of: TEST-MNT\n' in mail_text
 
         mail_text = self._extract_message_body(messages[1])
         assert messages[1]['Subject'] == 'Notification of TEST database changes'
