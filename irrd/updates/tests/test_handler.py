@@ -756,7 +756,7 @@ class TestChangeSubmissionHandler:
             changed:        changed@example.com 20190701 # comment
             source:         TEST
             
-            ERROR: Authorisation for person PERSON-TEST failed: must by authenticated by one of: TEST-MNT
+            ERROR: Authorisation for person PERSON-TEST failed: must be authenticated by one of: TEST-MNT
             
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """)
@@ -893,7 +893,7 @@ class TestChangeSubmissionHandler:
         changed:        changed@example.com 20190701 # comment
         source:         TEST
         
-        ERROR: Authorisation for person PERSON-TEST failed: must by authenticated by one of: TEST-MNT
+        ERROR: Authorisation for person PERSON-TEST failed: must be authenticated by one of: TEST-MNT
         
         ---
         Modify FAILED: [mntner] TEST-MNT
@@ -907,8 +907,8 @@ class TestChangeSubmissionHandler:
         changed:        changed@example.com 20190701 # comment
         source:         TEST
         
-        ERROR: Authorisation for mntner TEST-MNT failed: must by authenticated by one of: TEST-MNT
-        ERROR: Authorisation for mntner TEST-MNT failed: must by authenticated by one of: TEST-MNT, OTHER1-MNT, OTHER2-MNT
+        ERROR: Authorisation for mntner TEST-MNT failed: must be authenticated by one of: TEST-MNT
+        ERROR: Authorisation for mntner TEST-MNT failed: must be authenticated by one of: TEST-MNT, OTHER1-MNT, OTHER2-MNT
         ERROR: Authorisation failed for the auth methods on this mntner object.
         
         ---
@@ -927,7 +927,7 @@ class TestChangeSubmissionHandler:
         source:         TEST
         remarks:        remark
         
-        ERROR: Authorisation for inetnum 80.16.151.184 - 80.16.151.191 failed: must by authenticated by one of: TEST-MNT
+        ERROR: Authorisation for inetnum 80.16.151.184 - 80.16.151.191 failed: must be authenticated by one of: TEST-MNT
         INFO: Address range 80.16.151.184 - 80.016.151.191 was reformatted as 80.16.151.184 - 80.16.151.191
 
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
