@@ -1,0 +1,5 @@
+============================
+Release notes for IRRd 4.3.0
+============================
+
+* removal of compatibility.permit_non_hierarchical_as_set_name

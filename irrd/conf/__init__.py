@@ -19,88 +19,7 @@ logger = logging.getLogger(__name__)
 PASSWORD_HASH_DUMMY_VALUE = 'DummyValue'
 SOURCE_NAME_RE = re.compile('^[A-Z][A-Z0-9-]*[A-Z0-9]$')
 RPKI_IRR_PSEUDO_SOURCE = 'RPKI'
-
-# Note that sources are checked separately,
-# and 'access_lists' is always permitted
-KNOWN_CONFIG_KEYS = DottedDict({
-    'database_url': {},
-    'database_readonly': {},
-    'redis_url': {},
-    'piddir': {},
-    'user': {},
-    'group': {},
-    'server': {
-        'http': {
-            'interface': {},
-            'port': {},
-            'status_access_list': {},
-            'workers': {},
-            'forwarded_allowed_ips': {},
-        },
-        'whois': {
-            'interface': {},
-            'port': {},
-            'access_list': {},
-            'max_connections': {},
-        },
-    },
-    'email': {
-        'from': {},
-        'footer': {},
-        'smtp': {},
-        'recipient_override': {},
-        'notification_header': {},
-    },
-    'auth': {
-        'override_password': {},
-        'authenticate_related_mntners': {},
-        'gnupg_keyring': {},
-    },
-    'rpki': {
-        'roa_source': {},
-        'roa_import_timer': {},
-        'slurm_source': {},
-        'pseudo_irr_remarks': {},
-        'notify_invalid_enabled': {},
-        'notify_invalid_subject': {},
-        'notify_invalid_header': {},
-    },
-    'scopefilter': {
-        'prefixes': {},
-        'asns': {},
-    },
-    'log': {
-        'logfile_path': {},
-        'level': {},
-        'logging_config_path': {},
-    },
-    'sources_default': {},
-    'compatibility': {
-        'inetnum_search_disabled': {},
-        'irrd42_migration_in_progress': {},
-        'permit_non_hierarchical_as_set_name': {},
-        'ipv4_only_route_set_members': {},
-    }
-})
-
-KNOWN_SOURCES_KEYS = {
-    'authoritative',
-    'keep_journal',
-    'nrtm_host',
-    'nrtm_port',
-    'import_source',
-    'import_serial_source',
-    'import_timer',
-    'object_class_filter',
-    'export_destination',
-    'export_destination_unfiltered',
-    'export_timer',
-    'nrtm_access_list',
-    'nrtm_access_list_unfiltered',
-    'strict_import_keycert_objects',
-    'rpki_excluded',
-    'scopefilter_excluded',
-}
+VALID_SET_AUTNUM_AUTHENTICATION = ['disabled', 'opportunistic', 'required']
 
 LOGGING = {
     'version': 1,
@@ -162,6 +81,9 @@ class Configuration:
         Load the default config and load and check the user provided config.
         If a logfile was specified, direct logs there.
         """
+        from .known_keys import KNOWN_CONFIG_KEYS, KNOWN_SOURCES_KEYS
+        self.known_config_keys = KNOWN_CONFIG_KEYS
+        self.known_sources_keys = KNOWN_SOURCES_KEYS
         self.user_config_path = user_config_path if user_config_path else CONFIG_PATH_DEFAULT
         default_config_path = str(Path(__file__).resolve().parents[0] / 'default_config.yaml')
         default_config_yaml = yaml.safe_load(open(default_config_path))
@@ -211,10 +133,10 @@ class Configuration:
         """
         if setting_name.startswith('sources'):
             components = setting_name.split('.')
-            if len(components) == 3 and components[2] not in KNOWN_SOURCES_KEYS:
+            if len(components) == 3 and components[2] not in self.known_sources_keys:
                 raise ValueError(f'Unknown setting {setting_name}')
         elif not setting_name.startswith('access_lists'):
-            if KNOWN_CONFIG_KEYS.get(setting_name) is None:
+            if self.known_config_keys.get(setting_name) is None:
                 raise ValueError(f'Unknown setting {setting_name}')
 
         env_key = 'IRRD_' + setting_name.upper().replace('.', '_')
@@ -289,18 +211,24 @@ class Configuration:
         errors = []
         config = self.user_config_staging
 
-        for key, value in config.items():
-            if key in ['sources', 'access_lists']:
-                continue
-            known = KNOWN_CONFIG_KEYS.get(key)
-            if known is None:
-                errors.append(f'Unknown setting key: {key}')
+        def _validate_subconfig(key, value):
             if hasattr(value, 'items'):
                 for key2, value2 in value.items():
                     subkey = key + '.' + key2
-                    known_sub = KNOWN_CONFIG_KEYS.get(subkey)
+                    known_sub = self.known_config_keys.get(subkey)
+
                     if known_sub is None:
                         errors.append(f'Unknown setting key: {subkey}')
+                    _validate_subconfig(subkey, value2)
+
+        for key, value in config.items():
+            if key in ['sources', 'access_lists']:
+                continue
+            known = self.known_config_keys.get(key)
+
+            if known is None:
+                errors.append(f'Unknown setting key: {key}')
+            _validate_subconfig(key, value)
 
         if not self._check_is_str(config, 'database_url'):
             errors.append('Setting database_url is required.')
@@ -337,6 +265,12 @@ class Configuration:
         if not self._check_is_str(config, 'auth.gnupg_keyring'):
             errors.append('Setting auth.gnupg_keyring is required.')
 
+        for set_name, params in config.get('auth.set_creation', {}).items():
+            if not isinstance(params.get('prefix_required', False), bool):
+                errors.append(f'Setting auth.set_creation.{set_name}.prefix_required must be a bool')
+            if params.get('autnum_authentication') and params['autnum_authentication'].lower() not in VALID_SET_AUTNUM_AUTHENTICATION:
+                errors.append(f'Setting auth.set_creation.{set_name}.autnum_authentication must be one of {VALID_SET_AUTNUM_AUTHENTICATION} if set')
+
         for name, access_list in config.get('access_lists', {}).items():
             for item in access_list:
                 try:
@@ -365,7 +299,7 @@ class Configuration:
 
         has_authoritative_sources = False
         for name, details in config.get('sources', {}).items():
-            unknown_keys = set(details.keys()) - KNOWN_SOURCES_KEYS
+            unknown_keys = set(details.keys()) - self.known_sources_keys
             if unknown_keys:
                 errors.append(f'Unknown key(s) under source {name}: {", ".join(unknown_keys)}')
             if details.get('authoritative'):

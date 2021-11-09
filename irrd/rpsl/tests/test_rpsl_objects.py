@@ -154,9 +154,13 @@ class TestRPSLAsSet:
         assert obj.__class__ == RPSLAsSet
         assert not obj.messages.errors()
         assert not obj.clean_for_create()
-        assert 'AS set names must be hierarchical and the first ' in obj.messages.errors()[0]
+        assert 'as-set names must be hierarchical and the first ' in obj.messages.errors()[0]
 
-        config_override({'compatibility': {'permit_non_hierarchical_as_set_name': True}})
+        config_override({'auth': {'set_creation': {'as-set': {'prefix_required': False}}}})
+        obj = rpsl_object_from_text(rpsl_text)
+        assert obj.clean_for_create()
+
+        config_override({'auth': {'set_creation': {'DEFAULT': {'prefix_required': False}}}})
         obj = rpsl_object_from_text(rpsl_text)
         assert obj.clean_for_create()
 

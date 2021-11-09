@@ -765,6 +765,21 @@ class TestIntegration:
                 'auth': {
                     'gnupg_keyring': None,
                     'override_password': '$1$J6KycItM$MbPaBU6iFSGFV299Rk7Di0',
+                    'set_creation': {
+                        'filter-set': {
+                            'prefix_required': False,
+                        },
+                        'peering-set': {
+                            'prefix_required': False,
+                        },
+                        'route-set': {
+                            'prefix_required': False,
+                        },
+                        'rtr-set': {
+                            'prefix_required': False,
+                        },
+                    },
+
                 },
 
                 'email': {
