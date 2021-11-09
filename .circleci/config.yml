@@ -39,9 +39,9 @@ jobs:
 
       - restore_cache:
           keys:
-          - v8-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}
+          - v9-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}
           # fallback to using the latest cache if no exact match is found
-          - v8-dependencies-{{ .Environment.CIRCLE_JOB }}
+          - v9-dependencies-{{ .Environment.CIRCLE_JOB }}
 
       - run:
           name: install dependencies
@@ -60,7 +60,7 @@ jobs:
       - save_cache:
           paths:
             - ./venv
-          key: v8-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}
+          key: v9-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}
 
       - run:
           name: apt update
