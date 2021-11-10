@@ -6,7 +6,7 @@ import pytest
 from pytest import raises
 
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
-from irrd.utils.rpsl_samples import (SAMPLE_MNTNER, SAMPLE_MNTNER_CRYPT,
+from irrd.utils.rpsl_samples import (SAMPLE_AS_SET, SAMPLE_FILTER_SET, SAMPLE_MNTNER, SAMPLE_MNTNER_CRYPT,
                                      SAMPLE_MNTNER_MD5, SAMPLE_PERSON,
                                      SAMPLE_ROUTE, SAMPLE_ROUTE6)
 from irrd.utils.test_utils import flatten_mock_calls
@@ -146,7 +146,6 @@ class TestAuthValidator:
         validator.passwords = [SAMPLE_MNTNER_MD5]
         result = validator.process_auth(person_new, person_old)
         assert not result.is_valid()
-        print(result.error_messages)
         assert result.error_messages == {'Authorisation for person PERSON-TEST failed: '
                                          'must be authenticated by one of: TEST-MNT, TEST-NEW-MNT'}
 
@@ -244,7 +243,7 @@ class TestAuthValidator:
         }
 
 
-class TestAuthValidatorRelatedObjects:
+class TestAuthValidatorRelatedRouteObjects:
     def test_related_route_exact_inetnum(self, prepare_mocks, config_override):
         validator, mock_dq, mock_dh = prepare_mocks
         route = rpsl_object_from_text(SAMPLE_ROUTE)
@@ -413,6 +412,7 @@ class TestAuthValidatorRelatedObjects:
         result = validator.process_auth(route, None)
         assert result.is_valid()
 
+        # TODO: this grouping is confusing re sources
         assert flatten_mock_calls(mock_dq, flatten_objects=True) == [
             ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
@@ -432,4 +432,144 @@ class TestAuthValidatorRelatedObjects:
             ['object_classes', (['route6'],), {}],
             ['first_only', (), {}],
             ['ip_less_specific_one_level', ('2001:db8::/48',), {}],
+        ]
+
+
+class TestAuthValidatorRelatedAutNumObjects:
+    def test_as_set_autnum_disabled(self, prepare_mocks, config_override):
+        config_override({'auth': {'set_creation': {'as-set': {'autnum_authentication': 'disabled'}}}})
+        validator, mock_dq, mock_dh = prepare_mocks
+        as_set = rpsl_object_from_text(SAMPLE_AS_SET)
+        assert as_set.clean_for_create()  # fill pk_first_segment
+        mock_dh.execute_query = lambda q: [
+            {'object_text': SAMPLE_MNTNER.replace('MD5', '')},  # mntner for object
+        ]
+
+        validator.passwords = [SAMPLE_MNTNER_MD5, SAMPLE_MNTNER_CRYPT]
+        result = validator.process_auth(as_set, None)
+        assert result.is_valid()
+        assert flatten_mock_calls(mock_dq, flatten_objects=True) == [
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', ({'TEST-MNT'},), {}],
+        ]
+
+    def test_as_set_autnum_opportunistic_exists(self, prepare_mocks, config_override):
+        config_override({'auth': {'set_creation': {'as-set': {'autnum_authentication': 'opportunistic'}}}})
+        validator, mock_dq, mock_dh = prepare_mocks
+        as_set = rpsl_object_from_text(SAMPLE_AS_SET)
+        assert as_set.clean_for_create()  # fill pk_first_segment
+        query_results = itertools.cycle([
+            [{'object_text': SAMPLE_MNTNER.replace('MD5', '')}],  # mntner for object
+            [{
+                # attempt to look for matching aut-num
+                'object_class': 'aut-num',
+                'rpsl_pk': 'AS655375',
+                'parsed_data': {'mnt-by': ['RELATED-MNT']}
+            }],
+            [{'object_text': SAMPLE_MNTNER.replace('CRYPT', '')}],  # related mntner retrieval
+        ])
+        mock_dh.execute_query = lambda q: next(query_results)
+
+        validator.passwords = [SAMPLE_MNTNER_MD5, SAMPLE_MNTNER_CRYPT]
+        result = validator.process_auth(as_set, None)
+        assert result.is_valid()
+        assert flatten_mock_calls(mock_dq, flatten_objects=True) == [
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', ({'TEST-MNT'},), {}],
+
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['aut-num'],), {}],
+            ['first_only', (), {}],
+            ['rpsl_pk', ('AS65537',), {}],
+
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', ({'RELATED-MNT'},), {}]
+        ]
+
+        validator = AuthValidator(mock_dh, None)
+        validator.passwords = [SAMPLE_MNTNER_CRYPT]  # related only has MD5, so this is invalid
+        result = validator.process_auth(as_set, None)
+        assert not result.is_valid()
+        assert result.error_messages == {
+            'Authorisation for as-set AS65537:AS-SETTEST failed: must be authenticated by one of: '
+            'RELATED-MNT - from parent aut-num AS655375'
+        }
+
+        result = validator.process_auth(as_set, as_set)
+        assert result.is_valid()
+
+        config_override({'auth': {'set_creation': {'as-set': {'autnum_authentication': 'disabled'}}}})
+        result = validator.process_auth(as_set, None)
+        assert result.is_valid()
+
+        # Default is disabled
+        config_override({})
+        result = validator.process_auth(as_set, None)
+        assert result.is_valid()
+
+    def test_as_set_autnum_opportunistic_does_not_exist(self, prepare_mocks, config_override):
+        config_override({'auth': {'set_creation': {'DEFAULT': {'autnum_authentication': 'opportunistic'}}}})
+        validator, mock_dq, mock_dh = prepare_mocks
+        as_set = rpsl_object_from_text(SAMPLE_AS_SET)
+        assert as_set.clean_for_create()  # fill pk_first_segment
+        query_results = itertools.cycle([
+            [{'object_text': SAMPLE_MNTNER.replace('MD5', '')}],  # mntner for object
+            [],  # attempt to look for matching aut-num
+        ])
+        mock_dh.execute_query = lambda q: next(query_results)
+
+        validator.passwords = [SAMPLE_MNTNER_MD5, SAMPLE_MNTNER_CRYPT]
+        result = validator.process_auth(as_set, None)
+        assert result.is_valid()
+        assert flatten_mock_calls(mock_dq, flatten_objects=True) == [
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', ({'TEST-MNT'},), {}],
+
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['aut-num'],), {}],
+            ['first_only', (), {}],
+            ['rpsl_pk', ('AS65537',), {}],
+        ]
+
+    def test_as_set_autnum_required_does_not_exist(self, prepare_mocks, config_override):
+        config_override({'auth': {'set_creation': {'DEFAULT': {'autnum_authentication': 'required'}}}})
+        validator, mock_dq, mock_dh = prepare_mocks
+        as_set = rpsl_object_from_text(SAMPLE_AS_SET)
+        assert as_set.clean_for_create()  # fill pk_first_segment
+        query_results = itertools.cycle([
+            [{'object_text': SAMPLE_MNTNER.replace('MD5', '')}],  # mntner for object
+            [],  # attempt to look for matching aut-num
+        ])
+        mock_dh.execute_query = lambda q: next(query_results)
+
+        validator.passwords = [SAMPLE_MNTNER_MD5, SAMPLE_MNTNER_CRYPT]
+        result = validator.process_auth(as_set, None)
+        assert not result.is_valid()
+        assert result.error_messages == {
+            'Creating this object requires an aut-num for AS65537 to exist.',
+        }
+
+    def test_filter_set_autnum_required_no_prefix(self, prepare_mocks, config_override):
+        config_override({'auth': {'set_creation': {'DEFAULT': {
+            'autnum_authentication': 'required',
+            'prefix_required': False,
+        }}}})
+        validator, mock_dq, mock_dh = prepare_mocks
+        filter_set = rpsl_object_from_text(SAMPLE_FILTER_SET)
+        assert filter_set.clean_for_create()
+        mock_dh.execute_query = lambda q: [
+            {'object_text': SAMPLE_MNTNER.replace('MD5', '')},  # mntner for object
+        ]
+
+        validator.passwords = [SAMPLE_MNTNER_MD5, SAMPLE_MNTNER_CRYPT]
+        result = validator.process_auth(filter_set, None)
+        assert result.is_valid()
+        assert flatten_mock_calls(mock_dq, flatten_objects=True) == [
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['rpsl_pks', ({'TEST-MNT'},), {}],
         ]

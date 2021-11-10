@@ -33,19 +33,21 @@ def rpsl_object_from_text(text, strict_validation=True, default_source: Optional
 
 class RPSLSet(RPSLObject):
     def clean_for_create(self) -> bool:
-        if get_setting(f'auth.set_creation.{self.rpsl_object_class}.prefix_required') is False:
-            return True
-        if get_setting('auth.set_creation.DEFAULT.prefix_required') is False:
-            return True
-
-        first_segment = self.pk().split(':')[0]
+        # TODO: validate this attribute in the tests
+        self.pk_first_segment = self.pk().split(':')[0]
         try:
-            parse_as_number(first_segment)
+            parse_as_number(self.pk_first_segment)
             return True
         except ValidationError as ve:
+            self.pk_first_segment = None
+            if get_setting(f'auth.set_creation.{self.rpsl_object_class}.prefix_required') is False:
+                return True
+            if get_setting('auth.set_creation.DEFAULT.prefix_required') is False:
+                return True
             self.messages.error(f'{self.rpsl_object_class} names must be hierarchical and the first '
-                                f'component must be an AS number, e.g. "AS65537:{first_segment}": {str(ve)}')
-        return False
+                                f'component must be an AS number, e.g. "AS65537:{self.pk_first_segment}": {str(ve)}')
+
+            return False
 
 
 class RPSLAsBlock(RPSLObject):

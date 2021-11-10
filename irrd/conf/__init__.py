@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 PASSWORD_HASH_DUMMY_VALUE = 'DummyValue'
 SOURCE_NAME_RE = re.compile('^[A-Z][A-Z0-9-]*[A-Z0-9]$')
 RPKI_IRR_PSEUDO_SOURCE = 'RPKI'
-VALID_SET_AUTNUM_AUTHENTICATION = ['disabled', 'opportunistic', 'required']
+
 
 LOGGING = {
     'version': 1,
@@ -265,11 +265,13 @@ class Configuration:
         if not self._check_is_str(config, 'auth.gnupg_keyring'):
             errors.append('Setting auth.gnupg_keyring is required.')
 
+        from irrd.updates.parser_state import RPSLSetAutnumAuthenticationMode
         for set_name, params in config.get('auth.set_creation', {}).items():
             if not isinstance(params.get('prefix_required', False), bool):
                 errors.append(f'Setting auth.set_creation.{set_name}.prefix_required must be a bool')
-            if params.get('autnum_authentication') and params['autnum_authentication'].lower() not in VALID_SET_AUTNUM_AUTHENTICATION:
-                errors.append(f'Setting auth.set_creation.{set_name}.autnum_authentication must be one of {VALID_SET_AUTNUM_AUTHENTICATION} if set')
+            valid_auth = [mode.value for mode in RPSLSetAutnumAuthenticationMode]
+            if params.get('autnum_authentication') and params['autnum_authentication'].lower() not in valid_auth:
+                errors.append(f'Setting auth.set_creation.{set_name}.autnum_authentication must be one of {valid_auth} if set')
 
         for name, access_list in config.get('access_lists', {}).items():
             for item in access_list:
