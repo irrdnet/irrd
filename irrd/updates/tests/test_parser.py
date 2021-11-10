@@ -700,7 +700,7 @@ class TestSingleChangeRequestHandling:
         assert 'Ignoring override password, auth.override_password not set.' in caplog.text
 
     def test_check_valid_related_mntners_disabled(self, prepare_mocks, config_override):
-        config_override({'auth': {'authenticate_related_mntners': False}})
+        config_override({'auth': {'authenticate_parents_route_creation': False}})
         mock_dq, mock_dh = prepare_mocks
 
         query_answers = [

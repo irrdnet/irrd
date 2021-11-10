@@ -34,7 +34,7 @@ KNOWN_CONFIG_KEYS = DottedDict({
     },
     'auth': {
         'override_password': {},
-        'authenticate_related_mntners': {},
+        'authenticate_parents_route_creation': {},
         'gnupg_keyring': {},
         'set_creation': {
             rpsl_object_class: {'prefix_required': {}, 'autnum_authentication': {}}

@@ -74,7 +74,7 @@ class TestConfiguration:
                 },
                 'auth': {
                     'gnupg_keyring': str(tmpdir),
-                    'authenticate_related_mntners': True,
+                    'authenticate_parents_route_creation': True,
                     'set_creation': {
                         'as-set': {
                             'prefix_required': True,

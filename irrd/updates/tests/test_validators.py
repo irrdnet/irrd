@@ -287,7 +287,7 @@ class TestAuthValidatorRelatedRouteObjects:
             'RELATED-MNT - from parent inetnum 192.0.2.0-192.0.2.255'
         }
 
-        config_override({'auth': {'authenticate_related_mntners': False}})
+        config_override({'auth': {'authenticate_parents_route_creation': False}})
         result = validator.process_auth(route, None)
         assert result.is_valid()
         config_override({})

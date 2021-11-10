@@ -212,17 +212,16 @@ class AuthValidator:
             result.mntners_notify = mntner_objs_current
         else:
             result.mntners_notify = mntner_objs_new
-            if get_setting('auth.authenticate_related_mntners'):
-                mntners_related = self._find_related_mntners(rpsl_obj_new, result)
-                if mntners_related:
-                    related_object_class, related_pk, related_mntner_list = mntners_related
-                    logger.debug(f'Checking auth for related object {related_object_class} / '
-                                 f'{related_pk} with mntners {related_mntner_list}')
-                    valid, mntner_objs_related = self._check_mntners(related_mntner_list, source)
-                    if not valid:
-                        self._generate_failure_message(result, related_mntner_list, rpsl_obj_new,
-                                                       related_object_class, related_pk)
-                        result.mntners_notify = mntner_objs_related
+            mntners_related = self._find_related_mntners(rpsl_obj_new, result)
+            if mntners_related:
+                related_object_class, related_pk, related_mntner_list = mntners_related
+                logger.debug(f'Checking auth for related object {related_object_class} / '
+                             f'{related_pk} with mntners {related_mntner_list}')
+                valid, mntner_objs_related = self._check_mntners(related_mntner_list, source)
+                if not valid:
+                    self._generate_failure_message(result, related_mntner_list, rpsl_obj_new,
+                                                   related_object_class, related_pk)
+                    result.mntners_notify = mntner_objs_related
 
         if isinstance(rpsl_obj_new, RPSLMntner):
             if not rpsl_obj_current:
@@ -322,6 +321,9 @@ class AuthValidator:
         Find the related inetnum/route object to rpsl_obj_new, which must be a route(6).
         Returns a dict as returned by the database handler.
         """
+        if not get_setting('auth.authenticate_parents_route_creation'):
+            return None
+
         inetnum_class = {
             'route': 'inetnum',
             'route6': 'inet6num',
