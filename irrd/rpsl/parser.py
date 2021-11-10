@@ -68,7 +68,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
     prefix_length: Optional[int] = None
     rpki_status: RPKIStatus = RPKIStatus.not_found
     scopefilter_status: ScopeFilterStatus = ScopeFilterStatus.in_scope
-    pk_first_segment: Optional[str] = None
+    pk_asn_segment: Optional[str] = None
     default_source: Optional[str] = None  # noqa: E704 (flake8 bug)
     # Whether this object has a relation to RPKI ROA data, and therefore RPKI
     # checks should be performed in certain scenarios. Enabled for route/route6.

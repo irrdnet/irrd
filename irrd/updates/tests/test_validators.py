@@ -138,6 +138,7 @@ class TestAuthValidator:
             ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
             ['rpsl_pks', ({'TEST-MNT', 'TEST-NEW-MNT'},), {}],
+
             ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
             ['rpsl_pks', ({'TEST-OLD-MNT'},), {}],  # TEST-MNT is cached
@@ -266,8 +267,8 @@ class TestAuthValidatorRelatedRouteObjects:
             ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
             ['rpsl_pks', ({'TEST-MNT'},), {}],
-            ['sources', (['TEST'],), {}],
 
+            ['sources', (['TEST'],), {}],
             ['object_classes', (['inetnum'],), {}],
             ['first_only', (), {}],
             ['ip_exact', ('192.0.2.0/24',), {}],
@@ -367,8 +368,8 @@ class TestAuthValidatorRelatedRouteObjects:
             ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
             ['rpsl_pks', ({'TEST-MNT'},), {}],
-            ['sources', (['TEST'],), {}],
 
+            ['sources', (['TEST'],), {}],
             ['object_classes', (['inetnum'],), {}],
             ['first_only', (), {}],
             ['ip_exact', ('192.0.2.0/24',), {}],
@@ -412,13 +413,12 @@ class TestAuthValidatorRelatedRouteObjects:
         result = validator.process_auth(route, None)
         assert result.is_valid()
 
-        # TODO: this grouping is confusing re sources
         assert flatten_mock_calls(mock_dq, flatten_objects=True) == [
             ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
             ['rpsl_pks', ({'TEST-MNT'},), {}],
-            ['sources', (['TEST'],), {}],
 
+            ['sources', (['TEST'],), {}],
             ['object_classes', (['inet6num'],), {}],
             ['first_only', (), {}],
             ['ip_exact', ('2001:db8::/48',), {}],
@@ -440,7 +440,7 @@ class TestAuthValidatorRelatedAutNumObjects:
         config_override({'auth': {'set_creation': {'as-set': {'autnum_authentication': 'disabled'}}}})
         validator, mock_dq, mock_dh = prepare_mocks
         as_set = rpsl_object_from_text(SAMPLE_AS_SET)
-        assert as_set.clean_for_create()  # fill pk_first_segment
+        assert as_set.clean_for_create()  # fill pk_asn_segment
         mock_dh.execute_query = lambda q: [
             {'object_text': SAMPLE_MNTNER.replace('MD5', '')},  # mntner for object
         ]
@@ -458,7 +458,7 @@ class TestAuthValidatorRelatedAutNumObjects:
         config_override({'auth': {'set_creation': {'as-set': {'autnum_authentication': 'opportunistic'}}}})
         validator, mock_dq, mock_dh = prepare_mocks
         as_set = rpsl_object_from_text(SAMPLE_AS_SET)
-        assert as_set.clean_for_create()  # fill pk_first_segment
+        assert as_set.clean_for_create()  # fill pk_asn_segment
         query_results = itertools.cycle([
             [{'object_text': SAMPLE_MNTNER.replace('MD5', '')}],  # mntner for object
             [{

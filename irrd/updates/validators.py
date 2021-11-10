@@ -354,12 +354,12 @@ class AuthValidator:
         """
         @functools.lru_cache(maxsize=50)
         def _find_in_db():
-            query = _init_related_object_query('aut-num', rpsl_obj_new).rpsl_pk(rpsl_obj_new.pk_first_segment)
+            query = _init_related_object_query('aut-num', rpsl_obj_new).rpsl_pk(rpsl_obj_new.pk_asn_segment)
             aut_nums = list(self.database_handler.execute_query(query))
             if aut_nums:
                 return aut_nums[0]
 
-        if not rpsl_obj_new.pk_first_segment:
+        if not rpsl_obj_new.pk_asn_segment:
             return None
 
         mode = RPSLSetAutnumAuthenticationMode.for_set_name(rpsl_obj_new.rpsl_object_class)
@@ -371,7 +371,7 @@ class AuthValidator:
             return aut_num
         elif mode == RPSLSetAutnumAuthenticationMode.REQUIRED:
             result.error_messages.add(
-                f'Creating this object requires an aut-num for {rpsl_obj_new.pk_first_segment} to exist.'
+                f'Creating this object requires an aut-num for {rpsl_obj_new.pk_asn_segment} to exist.'
             )
         return None
 

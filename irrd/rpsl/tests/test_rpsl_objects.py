@@ -142,6 +142,7 @@ class TestRPSLAsSet:
         ]
         assert obj.references_strong_inbound() == set()
         assert obj.source() == 'TEST'
+        assert obj.pk_asn_segment == 'AS65537'
 
         assert obj.parsed_data['members'] == ['AS65538', 'AS65539', 'AS65537', 'AS-OTHERSET']
         # Field parsing will cause our object to look slightly different than the original, hence the replace()
@@ -154,15 +155,18 @@ class TestRPSLAsSet:
         assert obj.__class__ == RPSLAsSet
         assert not obj.messages.errors()
         assert not obj.clean_for_create()
+        assert not obj.pk_asn_segment
         assert 'as-set names must be hierarchical and the first ' in obj.messages.errors()[0]
 
         config_override({'auth': {'set_creation': {'as-set': {'prefix_required': False}}}})
         obj = rpsl_object_from_text(rpsl_text)
         assert obj.clean_for_create()
+        assert not obj.pk_asn_segment
 
         config_override({'auth': {'set_creation': {'DEFAULT': {'prefix_required': False}}}})
         obj = rpsl_object_from_text(rpsl_text)
         assert obj.clean_for_create()
+        assert not obj.pk_asn_segment
 
 
 class TestRPSLAutNum:
