@@ -96,7 +96,7 @@ Other changes
   for further details.
 * When users create `route(6)` objects in authoritative databases, IRRd
   also verifies authorisation from
-  :ref:`related object maintainers <auth-related-mntners>`. This behaviour
+  :ref:`related object maintainers <auth-related-mntners-route>`. This behaviour
   is enabled by default, but can be disabled with the
   ``auth.authenticate_related_mntners`` setting.
 * The ``!j`` command has changed, and now is exclusively used to check

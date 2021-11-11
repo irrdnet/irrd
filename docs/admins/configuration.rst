@@ -17,6 +17,7 @@ a key ``roa_source`` under a key ``rpki``.
 .. contents::
    :backlinks: none
    :local:
+   :depth: 2
 
 Example configuration file
 --------------------------
@@ -294,21 +295,21 @@ Email
   |br| `parent of newly created object(s).`
 
 
-Authentication
-~~~~~~~~~~~~~~
+Authentication and validation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * ``auth.override_password``: a salted MD5 hash of the override password,
   which can be used to override any
   authorisation requirements for authoritative databases.
   |br| **Default**: not defined, no override password will be accepted.
   |br| **Change takes effect**: upon the next update attempt.
-* ``auth.authenticate_related_mntners``: whether to check for
-  :ref:`related object maintainers <auth-related-mntners>` when processing
-  updates.
-  |br| **Default**: true, check enabled
-  |br| **Change takes effect**: upon the next update attempt.
 * ``auth.gnupg_keyring``: the full path to the gnupg keyring.
   |br| **Default**: not defined, but required.
   |br| **Change takes effect**: after full IRRd restart.
+* ``auth.authenticate_parents_route_creation``: whether to check for
+  :ref:`related object maintainers <auth-related-mntners-route>` when users create
+  new `route(6)` objects.
+  |br| **Default**: true, check enabled
+  |br| **Change takes effect**: upon the next update attempt.
 
 .. danger::
 
@@ -316,6 +317,75 @@ Authentication
     imported. Their presence in the keyring is then used to validate requested
     changes. Therefore, the keyring referred to by ``auth.gnupg_keyring`` can
     not be simply reset, or PGP authentications may fail.
+
+.. _conf-auth-set-creation:
+
+auth.set_creation
+"""""""""""""""""
+The ``auth.set_creation`` setting configures the requirements when creating new
+RPSL set objects. These are `as-set`, `filter-set`, `peering-set`, `route-set`
+and `rtr-set`. It is highly customisable, but therefore also more complex
+than most other settings.
+
+There are two underlying settings:
+
+* ``prefix_required`` configures whether an ASN prefix is required in the name
+  of a set object. When enabled ``AS-EXAMPLE`` is invalid, while
+  ``AS65537:AS-EXAMPLE`` or ``AS65537:AS-EXAMPLE:AS-CUSTOMERS``
+  are valid.
+* ``autnum_authentication`` controls whether the user also needs to pass
+  authentication for the `aut-num` corresponding to the AS number used as the set
+  name prefix. For example, if the set name is ``AS65537:AS-EXAMPLE:AS-CUSTOMERS``,
+  this setting may require the creation to also pass authentication for the
+  `aut-num` AS65537.
+  The options are ``disabled``, ``opportunistic`` or ``required``.
+  When disabled, this check is skipped. For opportunistic, the check is used, but
+  passes if the aut-num does not exist. For required, the check is used and fails
+  if the aut-num does not exist.
+  
+Note that even when ``autnum_authentication`` is set to ``required``,
+if at the same time ``prefix_required`` is set to false, a set can be created
+without a prefix or with one, per ``prefix_required``.
+But if it has a prefix, there *must* be a corresponding
+aut-num object for which authentication *must* pass, per ``autnum_authentication``.
+
+You can configure one default for all set classes under the key ``DEFAULT``,
+and/or specific settings for specific classes using the class name as key.
+An example::
+
+    irrd:
+      auth:
+          set_creation:
+              DEFAULT:
+                  prefix_required: true
+                  autnum_authentication: opportunistic
+              as-set:
+                  prefix_required: true
+                  autnum_authentication: required
+              rtr-set:
+                  prefix_required: false
+                  autnum_authentication: disabled
+
+This example means:
+
+* New ``as-set`` objects must include an ASN prefix in their name, an `aut-num`
+  corresponding that AS number must exist, and the user must pass authentication
+  for that `aut-num` object.
+* New ``rtr-set`` objects are not required to include an ASN prefix in their
+  name, but this is permitted. The user never has to pass authentication for
+  the corresponding `aut-num` object, regardless of whether it exists.
+* All other new set objects must include an ASN prefix in their name
+  and the user must pass authentication for the corresponding `aut-num` object,
+  if it exists. If the `aut-num` does not exist, the check passes.
+
+All checks are only applied when users create new set objects in authoritative
+databases. Authoritative updates to existing objects, deletions, or objects from
+mirrors are never affected. When looking for corresponding `aut-num` objects,
+IRRd only looks in the same IRR source.
+
+|br| **Default**: TODO
+|br| **Change takes effect**: upon the next update attempt.
+
 
 
 Access lists
@@ -752,13 +822,6 @@ Compatibility
   See the :doc:`4.2.0 release notes </releases/4.2.0>` for details.
   |br| **Default**: ``false``, operating normally.
   |br| **Change takes effect**: after SIGHUP, for all subsequent queries.
-* ``compatibility.permit_non_hierarchical_as_set_name``: by default,
-  `as-set` objects created in authoritative databases are required to have a
-  hierarchical name, like ``AS65540:AS-CUSTOMERS``. For example,
-  ``AS-CUSTOMERS`` would not be allowed. If this setting is set to ``true``,
-  this name requirement does not apply, and ``AS-CUSTOMERS`` is permitted.
-  |br| **Default**: ``false``, hierarchical name required.
-  |br| **Change takes effect**: after SIGHUP, for all subsequent updates.
 * ``compatibility.ipv4_only_route_set_members``: if set to ``true``, ``!i``
   queries will not return IPv6 prefixes. This option can be used for limited
   compatibility with IRRd version 2. Enabling this setting may have a
