@@ -494,8 +494,6 @@ changed:        changed@example.com 20190701 # comment
 source:         TEST
 """
 
-SAMPLE_MNTNER_MD5 = 'md5-password'
-SAMPLE_MNTNER_CRYPT = 'crypt-password'
 SAMPLE_MNTNER = """mntner:         TEST-MNT
 admin-c:        PERSON-TEST
 notify:         notify@example.net

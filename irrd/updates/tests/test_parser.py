@@ -416,7 +416,7 @@ class TestSingleChangeRequestHandling:
 
         result_mntner = parse_change_requests(SAMPLE_MNTNER + 'override: override-password',
                                               mock_dh, auth_validator, reference_validator)[0]
-        auth_validator.pre_approve([result_mntner.rpsl_obj_new])
+        auth_validator.pre_approve([result_mntner])
 
         assert result_mntner._check_auth()
         assert not result_mntner.error_messages
@@ -437,7 +437,7 @@ class TestSingleChangeRequestHandling:
 
         result_mntner = parse_change_requests(SAMPLE_MNTNER + 'override: invalid-password',
                                               mock_dh, auth_validator, reference_validator)[0]
-        auth_validator.pre_approve([result_mntner.rpsl_obj_new])
+        auth_validator.pre_approve([result_mntner])
 
         assert not result_mntner._check_auth()
         assert result_mntner.error_messages == [
@@ -467,7 +467,7 @@ class TestSingleChangeRequestHandling:
         data = data.replace('$1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.', PASSWORD_HASH_DUMMY_VALUE)
         result_mntner = parse_change_requests(data + 'password: crypt-password',
                                               mock_dh, auth_validator, reference_validator)[0]
-        auth_validator.pre_approve([result_mntner.rpsl_obj_new])
+        auth_validator.pre_approve([result_mntner])
         assert result_mntner._check_auth()
         assert not result_mntner.error_messages
         assert result_mntner.info_messages == ['As you submitted dummy hash values, all password hashes on this object '
@@ -504,7 +504,7 @@ class TestSingleChangeRequestHandling:
         data = SAMPLE_MNTNER.replace('LEuuhsBJNFV0Q', PASSWORD_HASH_DUMMY_VALUE)
         result_mntner = parse_change_requests(data + 'password: md5-password',
                                               mock_dh, auth_validator, reference_validator)[0]
-        auth_validator.pre_approve([result_mntner.rpsl_obj_new])
+        auth_validator.pre_approve([result_mntner])
         assert not result_mntner.is_valid()
         assert result_mntner.error_messages == [
             'Either all password auth hashes in a submitted mntner must be dummy objects, or none.',
@@ -524,7 +524,7 @@ class TestSingleChangeRequestHandling:
         data = data.replace('$1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.', PASSWORD_HASH_DUMMY_VALUE)
         result_mntner = parse_change_requests(data + 'password: md5-password\npassword: other-password',
                                               mock_dh, auth_validator, reference_validator)[0]
-        auth_validator.pre_approve([result_mntner.rpsl_obj_new])
+        auth_validator.pre_approve([result_mntner])
         result_mntner._check_auth()
         assert not result_mntner.is_valid()
         assert result_mntner.error_messages == [
@@ -544,6 +544,7 @@ class TestSingleChangeRequestHandling:
         # This password is valid for the new object, but invalid for the current version in the DB
         result_mntner = parse_change_requests(SAMPLE_MNTNER + 'password: crypt-password',
                                               mock_dh, auth_validator, reference_validator)[0]
+        auth_validator.pre_approve([result_mntner])
         assert not result_mntner._check_auth()
         assert result_mntner.error_messages == [
             'Authorisation for mntner TEST-MNT failed: must be authenticated by one of: TEST-MNT, '

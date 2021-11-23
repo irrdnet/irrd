@@ -6,7 +6,6 @@ from typing import List, Optional, Dict, Any, Union
 from ordered_set import OrderedSet
 
 from irrd.conf import get_setting
-from irrd.rpsl.rpsl_objects import RPSLMntner
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseQuery
 from irrd.utils import email
@@ -81,8 +80,8 @@ class ChangeSubmissionHandler:
         return self
 
     def _handle_change_requests(self, change_requests: List[ChangeRequest],
-                                reference_validator: ReferenceValidator,
-                                auth_validator: AuthValidator) -> None:
+                             reference_validator: ReferenceValidator,
+                             auth_validator: AuthValidator) -> None:
 
         # When an object references another object, e.g. tech-c referring a person or mntner,
         # an add/update is only valid if those referred objects exist. To complicate matters,
@@ -102,12 +101,7 @@ class ChangeSubmissionHandler:
         while valid_changes != previous_valid_changes:
             previous_valid_changes = valid_changes
             reference_validator.preload(valid_changes)
-            valid_potential_new_mntners = [
-                r.rpsl_obj_new
-                for r in valid_changes
-                if r.request_type == UpdateRequestType.CREATE and isinstance(r.rpsl_obj_new, RPSLMntner)
-            ]
-            auth_validator.pre_approve(valid_potential_new_mntners)
+            auth_validator.pre_approve(valid_changes)
 
             for result in valid_changes:
                 result.validate()
@@ -267,3 +261,4 @@ class ChangeSubmissionHandler:
         if request_meta_str:
             request_meta_str = '\n' + request_meta_str + '\n\n'
         return request_meta_str
+
