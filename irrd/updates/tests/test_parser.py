@@ -547,7 +547,7 @@ class TestSingleChangeRequestHandling:
         auth_validator.pre_approve([result_mntner])
         assert not result_mntner._check_auth()
         assert result_mntner.error_messages == [
-            'Authorisation for mntner TEST-MNT failed: must be authenticated by one of: TEST-MNT, '
+            'Authorisation for mntner TEST-MNT failed: must by authenticated by one of: TEST-MNT, '
             'OTHER1-MNT, OTHER2-MNT'
         ]
         assert result_mntner.notification_targets() == {'notify@example.net', 'upd-to@example.net'}
@@ -654,7 +654,7 @@ class TestSingleChangeRequestHandling:
                                                mock_dh, auth_validator, reference_validator)[0]
         assert not result_inetnum._check_auth()
         assert result_inetnum.error_messages == [
-            'Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed: must be authenticated by one of: TEST-MNT',
+            'Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed: must by authenticated by one of: TEST-MNT',
         ]
         assert result_inetnum.notification_targets() == {'notify@example.com', 'upd-to@example.net'}
 
@@ -674,7 +674,7 @@ class TestSingleChangeRequestHandling:
                                                mock_dh, auth_validator, reference_validator)[0]
         assert not result_inetnum._check_auth()
         assert result_inetnum.error_messages == [
-            'Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed: must be authenticated by one of: TEST-MNT',
+            'Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed: must by authenticated by one of: TEST-MNT',
         ]
         assert result_inetnum.notification_targets() == {'notify@example.com', 'upd-to@example.net'}
         assert 'possible misconfigured hash' in caplog.text
@@ -695,7 +695,7 @@ class TestSingleChangeRequestHandling:
                                                mock_dh, auth_validator, reference_validator)[0]
         assert not result_inetnum._check_auth()
         assert result_inetnum.error_messages == [
-            'Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed: must be authenticated by one of: TEST-MNT',
+            'Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed: must by authenticated by one of: TEST-MNT',
         ]
         assert result_inetnum.notification_targets() == {'notify@example.com', 'upd-to@example.net'}
         assert 'Ignoring override password, auth.override_password not set.' in caplog.text
@@ -755,7 +755,7 @@ class TestSingleChangeRequestHandling:
                                              mock_dh, auth_validator, reference_validator)[0]
         assert not result_route._check_auth()
         assert result_route.error_messages[0] == (
-            'Authorisation for route 192.0.2.0/24AS65537 failed: must be authenticated by one of: '
+            'Authorisation for route 192.0.2.0/24AS65537 failed: must by authenticated by one of: '
             'RELATED-MNT - from parent route 192.0.2.0/24AS65537')
         assert result_route.notification_targets() == {'upd-to-related@example.net'}
 
