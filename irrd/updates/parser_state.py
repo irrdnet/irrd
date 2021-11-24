@@ -34,6 +34,4 @@ class RPSLSetAutnumAuthenticationMode(Enum):
         setting = get_setting(f'auth.set_creation.{set_name}.autnum_authentication')
         if not setting:
             setting = get_setting(f'auth.set_creation.{AUTH_SET_CREATION_COMMON_KEY}.autnum_authentication')
-        if not setting:
-            return RPSLSetAutnumAuthenticationMode.DISABLED
         return getattr(RPSLSetAutnumAuthenticationMode, setting.upper())

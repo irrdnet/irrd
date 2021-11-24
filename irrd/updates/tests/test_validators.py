@@ -455,8 +455,7 @@ class TestAuthValidatorRelatedAutNumObjects:
             ['rpsl_pks', ({'TEST-MNT'},), {}],
         ]
 
-    def test_as_set_autnum_opportunistic_exists(self, prepare_mocks, config_override):
-        config_override({'auth': {'set_creation': {'as-set': {'autnum_authentication': 'opportunistic'}}}})
+    def test_as_set_autnum_opportunistic_exists_default(self, prepare_mocks, config_override):
         validator, mock_dq, mock_dh = prepare_mocks
         as_set = rpsl_object_from_text(SAMPLE_AS_SET)
         assert as_set.clean_for_create()  # fill pk_asn_segment
@@ -503,11 +502,6 @@ class TestAuthValidatorRelatedAutNumObjects:
         assert result.is_valid()
 
         config_override({'auth': {'set_creation': {'as-set': {'autnum_authentication': 'disabled'}}}})
-        result = validator.process_auth(as_set, None)
-        assert result.is_valid()
-
-        # Default is disabled
-        config_override({})
         result = validator.process_auth(as_set, None)
         assert result.is_valid()
 
