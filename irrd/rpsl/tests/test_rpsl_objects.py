@@ -5,7 +5,7 @@ from IPy import IP
 from pytest import raises
 from pytz import timezone
 
-from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
+from irrd.conf import PASSWORD_HASH_DUMMY_VALUE, AUTH_SET_CREATION_COMMON_KEY
 from irrd.utils.rpsl_samples import (object_sample_mapping, SAMPLE_MALFORMED_EMPTY_LINE,
                                      SAMPLE_MALFORMED_ATTRIBUTE_NAME,
                                      SAMPLE_UNKNOWN_CLASS, SAMPLE_MISSING_MANDATORY_ATTRIBUTE,
@@ -163,7 +163,9 @@ class TestRPSLAsSet:
         assert obj.clean_for_create()
         assert not obj.pk_asn_segment
 
-        config_override({'auth': {'set_creation': {'DEFAULT': {'prefix_required': False}}}})
+        config_override({'auth': {'set_creation': {
+            AUTH_SET_CREATION_COMMON_KEY: {'prefix_required': False}
+        }}})
         obj = rpsl_object_from_text(rpsl_text)
         assert obj.clean_for_create()
         assert not obj.pk_asn_segment

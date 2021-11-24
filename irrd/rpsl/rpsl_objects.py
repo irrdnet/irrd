@@ -2,7 +2,7 @@ from collections import OrderedDict
 
 from typing import Set, List, Optional, Union
 
-from irrd.conf import PASSWORD_HASH_DUMMY_VALUE, get_setting
+from irrd.conf import AUTH_SET_CREATION_COMMON_KEY, PASSWORD_HASH_DUMMY_VALUE, get_setting
 from irrd.utils.pgp import get_gpg_instance
 from .config import PASSWORD_HASHERS
 from .fields import (RPSLTextField, RPSLIPv4PrefixField, RPSLIPv4PrefixesField, RPSLIPv6PrefixField,
@@ -41,7 +41,7 @@ class RPSLSet(RPSLObject):
             self.pk_asn_segment = None
             if get_setting(f'auth.set_creation.{self.rpsl_object_class}.prefix_required') is False:
                 return True
-            if get_setting('auth.set_creation.DEFAULT.prefix_required') is False:
+            if get_setting(f'auth.set_creation.{AUTH_SET_CREATION_COMMON_KEY}.prefix_required') is False:
                 return True
             self.messages.error(f'{self.rpsl_object_class} names must be hierarchical and the first '
                                 f'component must be an AS number, e.g. "AS65537:{self.pk_asn_segment}": {str(ve)}')

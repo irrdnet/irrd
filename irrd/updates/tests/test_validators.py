@@ -5,6 +5,7 @@ from unittest.mock import Mock
 import pytest
 from pytest import raises
 
+from irrd.conf import AUTH_SET_CREATION_COMMON_KEY
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.utils.rpsl_samples import (SAMPLE_AS_SET, SAMPLE_FILTER_SET, SAMPLE_MNTNER, SAMPLE_MNTNER_CRYPT,
                                      SAMPLE_MNTNER_MD5, SAMPLE_PERSON,
@@ -511,7 +512,9 @@ class TestAuthValidatorRelatedAutNumObjects:
         assert result.is_valid()
 
     def test_as_set_autnum_opportunistic_does_not_exist(self, prepare_mocks, config_override):
-        config_override({'auth': {'set_creation': {'DEFAULT': {'autnum_authentication': 'opportunistic'}}}})
+        config_override({'auth': {'set_creation': {
+            AUTH_SET_CREATION_COMMON_KEY: {'autnum_authentication': 'opportunistic'}
+        }}})
         validator, mock_dq, mock_dh = prepare_mocks
         as_set = rpsl_object_from_text(SAMPLE_AS_SET)
         assert as_set.clean_for_create()  # fill pk_first_segment
@@ -536,7 +539,9 @@ class TestAuthValidatorRelatedAutNumObjects:
         ]
 
     def test_as_set_autnum_required_does_not_exist(self, prepare_mocks, config_override):
-        config_override({'auth': {'set_creation': {'DEFAULT': {'autnum_authentication': 'required'}}}})
+        config_override({'auth': {'set_creation': {
+            AUTH_SET_CREATION_COMMON_KEY: {'autnum_authentication': 'required'}
+        }}})
         validator, mock_dq, mock_dh = prepare_mocks
         as_set = rpsl_object_from_text(SAMPLE_AS_SET)
         assert as_set.clean_for_create()  # fill pk_first_segment
@@ -554,10 +559,12 @@ class TestAuthValidatorRelatedAutNumObjects:
         }
 
     def test_filter_set_autnum_required_no_prefix(self, prepare_mocks, config_override):
-        config_override({'auth': {'set_creation': {'DEFAULT': {
-            'autnum_authentication': 'required',
-            'prefix_required': False,
-        }}}})
+        config_override({'auth': {'set_creation': {
+            AUTH_SET_CREATION_COMMON_KEY: {
+                'autnum_authentication': 'required',
+                'prefix_required': False,
+            }
+        }}})
         validator, mock_dq, mock_dh = prepare_mocks
         filter_set = rpsl_object_from_text(SAMPLE_FILTER_SET)
         assert filter_set.clean_for_create()

@@ -1,6 +1,6 @@
 from enum import unique, Enum
 
-from irrd.conf import get_setting
+from irrd.conf import get_setting, AUTH_SET_CREATION_COMMON_KEY
 
 
 @unique
@@ -33,7 +33,7 @@ class RPSLSetAutnumAuthenticationMode(Enum):
     def for_set_name(set_name: str):
         setting = get_setting(f'auth.set_creation.{set_name}.autnum_authentication')
         if not setting:
-            setting = get_setting('auth.set_creation.DEFAULT.autnum_authentication')
+            setting = get_setting(f'auth.set_creation.{AUTH_SET_CREATION_COMMON_KEY}.autnum_authentication')
         if not setting:
             return RPSLSetAutnumAuthenticationMode.DISABLED
         return getattr(RPSLSetAutnumAuthenticationMode, setting.upper())

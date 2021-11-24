@@ -1,3 +1,4 @@
+from irrd.conf import AUTH_SET_CREATION_COMMON_KEY
 from irrd.vendor.dotted.collection import DottedDict
 from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING, RPSLSet
 
@@ -42,7 +43,7 @@ KNOWN_CONFIG_KEYS = DottedDict({
                 set_object.rpsl_object_class
                 for set_object in OBJECT_CLASS_MAPPING.values()
                 if issubclass(set_object, RPSLSet)
-            ] + ['DEFAULT']
+            ] + [AUTH_SET_CREATION_COMMON_KEY]
         },
     },
     'rpki': {

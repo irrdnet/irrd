@@ -80,7 +80,7 @@ class TestConfiguration:
                             'prefix_required': True,
                             'autnum_authentication': 'opportunistic',
                         },
-                        'DEFAULT': {
+                        'COMMON': {
                             'prefix_required': True,
                             'autnum_authentication': 'required',
                         },
