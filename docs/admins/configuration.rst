@@ -349,41 +349,44 @@ without a prefix or with one, per ``prefix_required``.
 But if it has a prefix, there *must* be a corresponding
 aut-num object for which authentication *must* pass, per ``autnum_authentication``.
 
-You can configure one default for all set classes under the key ``DEFAULT``,
+You can configure one common for all set classes under the key ``COMMON``,
 and/or specific settings for specific classes using the class name as key.
 An example::
 
     irrd:
       auth:
           set_creation:
-              DEFAULT:
-                  prefix_required: true
-                  autnum_authentication: opportunistic
-              as-set:
+              COMMON:
                   prefix_required: true
                   autnum_authentication: required
+              as-set:
+                  prefix_required: true
+                  autnum_authentication: opportunistic
               rtr-set:
                   prefix_required: false
                   autnum_authentication: disabled
 
 This example means:
 
-* New ``as-set`` objects must include an ASN prefix in their name, an `aut-num`
-  corresponding that AS number must exist, and the user must pass authentication
-  for that `aut-num` object.
+* New `as-set` objects must include an ASN prefix in their name
+  and the user must pass authentication for the corresponding `aut-num` object,
+  if it exists. If the `aut-num` does not exist, the check passes.
 * New ``rtr-set`` objects are not required to include an ASN prefix in their
   name, but this is permitted. The user never has to pass authentication for
   the corresponding `aut-num` object, regardless of whether it exists.
-* All other new set objects must include an ASN prefix in their name
-  and the user must pass authentication for the corresponding `aut-num` object,
-  if it exists. If the `aut-num` does not exist, the check passes.
+* All other new set objects must include an ASN prefix in their name, an `aut-num`
+  corresponding that AS number must exist, and the user must pass authentication
+  for that `aut-num` object.
 
 All checks are only applied when users create new set objects in authoritative
 databases. Authoritative updates to existing objects, deletions, or objects from
 mirrors are never affected. When looking for corresponding `aut-num` objects,
 IRRd only looks in the same IRR source.
 
-|br| **Default**: TODO
+**Default**: ``prefix_required`` is enabled, ``autnum_authentication``
+set to ``opportunistic`` for all sets. Note that settings under the
+``COMMON`` key override these IRRd defaults, and settings under set-specific
+keys in turn override settings under the ``COMMON`` key.
 |br| **Change takes effect**: upon the next update attempt.
 
 
