@@ -390,7 +390,6 @@ keys in turn override settings under the ``COMMON`` key.
 |br| **Change takes effect**: upon the next update attempt.
 
 
-
 Access lists
 ~~~~~~~~~~~~
 * ``access_lists.{list_name}``: a list of permitted IPv4 and/or IPv6 addresses
