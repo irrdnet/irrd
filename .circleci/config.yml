@@ -23,6 +23,7 @@ jobs:
           PYTHON_INTERPRETER: python3
           SUDO: sudo
           ENCHANT_PACKAGE: python3-enchant
+          EXTRA_APT: rustc  # there is no wheel for cryptography
 
       - image: circleci/postgres:9.6-ram
         environment:
@@ -36,6 +37,17 @@ jobs:
 
     steps:
       - checkout
+
+      - run:
+          name: apt update
+          command: |
+            set +e
+            $SUDO apt update
+            echo
+
+      - run:
+          name: Installing psql client and enchant
+          command: $SUDO apt -y install postgresql-client netcat $ENCHANT_PACKAGE $EXTRA_APT
 
       - restore_cache:
           keys:
@@ -61,17 +73,6 @@ jobs:
           paths:
             - ./venv
           key: v10-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}
-
-      - run:
-          name: apt update
-          command: |
-            set +e
-            $SUDO apt update
-            echo
-
-      - run:
-          name: Installing psql client and enchant
-          command: $SUDO apt -y install postgresql-client netcat $ENCHANT_PACKAGE
 
       - run:
           name: Waiting for PostgreSQL to be ready
@@ -142,6 +143,7 @@ jobs:
           PYTHON_INTERPRETER: python3
           SUDO: sudo
           ENCHANT_PACKAGE: python3-enchant
+          EXTRA_APT: ''
 
       - image: circleci/postgres:9.6
         environment:
@@ -165,6 +167,7 @@ jobs:
           PYTHON_INTERPRETER: pypy3
           SUDO: ''
           ENCHANT_PACKAGE: python3-enchant
+          EXTRA_APT: ''
 
       - image: circleci/postgres:9.6
         environment:
@@ -188,6 +191,7 @@ jobs:
           PYTHON_INTERPRETER: pypy3
           SUDO: ''
           ENCHANT_PACKAGE: python-enchant
+          EXTRA_APT: rustc
 
       - image: circleci/postgres:9.6
         environment:
