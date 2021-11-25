@@ -18,6 +18,8 @@ from ..validators import AuthValidator
 VALID_PW = 'override-password'
 INVALID_PW = 'not-override-password'
 VALID_PW_HASH = '$1$J6KycItM$MbPaBU6iFSGFV299Rk7Di0'
+MNTNER_OBJ_CRYPT_PW = SAMPLE_MNTNER.replace('MD5', '')
+MNTNER_OBJ_MD5_PW = SAMPLE_MNTNER.replace('CRYPT', '')
 
 
 @pytest.fixture()
@@ -45,7 +47,7 @@ class TestAuthValidatorOverride:
         assert result.used_override
 
         person = rpsl_object_from_text(SAMPLE_PERSON)
-        result = validator.process_auth(person, person)
+        result = validator.process_auth(person, rpsl_obj_current=person)
         assert result.is_valid(), result.error_messages
         assert result.used_override
 
@@ -113,23 +115,23 @@ class TestAuthValidator:
             [
                 {
                     'object_class': 'mntner',
-                    'object_text': SAMPLE_MNTNER.replace('TEST-MNT', 'TEST-NEW-MNT').replace('MD5', 'nomd5')
+                    'object_text': MNTNER_OBJ_CRYPT_PW.replace('TEST-MNT', 'TEST-NEW-MNT')
                 }, {
                     'object_class': 'mntner',
-                    'object_text': SAMPLE_MNTNER.replace('MD5', 'nomd5').replace('CRYPT', 'nocrypt')
+                    'object_text': MNTNER_OBJ_MD5_PW.replace('MD5', 'nomd5')
                 },
             ],
             [
                 {
                     'object_class': 'mntner',
-                    'object_text': SAMPLE_MNTNER.replace('TEST-MNT', 'TEST-OLD-MNT').replace('CRYPT', 'nocrypt')
+                    'object_text': MNTNER_OBJ_MD5_PW.replace('TEST-MNT', 'TEST-OLD-MNT')
                 },
             ],
         ])
         mock_dh.execute_query = lambda q: next(query_results)
 
         validator.passwords = [SAMPLE_MNTNER_CRYPT, SAMPLE_MNTNER_MD5]
-        result = validator.process_auth(person_new, person_old)
+        result = validator.process_auth(person_new, rpsl_obj_current=person_old)
 
         assert result.is_valid(), result.error_messages
         assert not result.used_override
@@ -146,13 +148,13 @@ class TestAuthValidator:
         ]
 
         validator.passwords = [SAMPLE_MNTNER_MD5]
-        result = validator.process_auth(person_new, person_old)
+        result = validator.process_auth(person_new, rpsl_obj_current=person_old)
         assert not result.is_valid()
         assert result.error_messages == {'Authorisation for person PERSON-TEST failed: '
                                          'must be authenticated by one of: TEST-MNT, TEST-NEW-MNT'}
 
         validator.passwords = [SAMPLE_MNTNER_CRYPT]
-        result = validator.process_auth(person_new, person_old)
+        result = validator.process_auth(person_new, rpsl_obj_current=person_old)
         assert not result.is_valid()
         assert result.error_messages == {'Authorisation for person PERSON-TEST failed: '
                                          'must be authenticated by one of: TEST-MNT, TEST-OLD-MNT'}
@@ -213,7 +215,7 @@ class TestAuthValidator:
         assert not result.info_messages
 
         # This counts as submitting all new hashes, but not matching any password
-        new_mntner = rpsl_object_from_text(SAMPLE_MNTNER.replace('CRYPT', '').replace('MD5', ''))
+        new_mntner = rpsl_object_from_text(MNTNER_OBJ_CRYPT_PW.replace('CRYPT', ''))
         validator.passwords = [SAMPLE_MNTNER_MD5]
         result = validator.process_auth(new_mntner, mntner)
         assert not result.is_valid()
@@ -250,14 +252,14 @@ class TestAuthValidatorRelatedRouteObjects:
         validator, mock_dq, mock_dh = prepare_mocks
         route = rpsl_object_from_text(SAMPLE_ROUTE)
         query_results = itertools.cycle([
-            [{'object_text': SAMPLE_MNTNER.replace('MD5', '')}],  # mntner for object
+            [{'object_text': MNTNER_OBJ_CRYPT_PW}],  # mntner for object
             [{
                 # attempt to look for exact inetnum
                 'object_class': 'inetnum',
                 'rpsl_pk': '192.0.2.0-192.0.2.255',
                 'parsed_data': {'mnt-by': ['RELATED-MNT']}
             }],
-            [{'object_text': SAMPLE_MNTNER.replace('CRYPT', '')}],  # related mntner retrieval
+            [{'object_text': MNTNER_OBJ_MD5_PW}],  # related mntner retrieval
         ])
         mock_dh.execute_query = lambda q: next(query_results)
 
@@ -300,7 +302,7 @@ class TestAuthValidatorRelatedRouteObjects:
         validator, mock_dq, mock_dh = prepare_mocks
         route = rpsl_object_from_text(SAMPLE_ROUTE)
         query_results = itertools.cycle([
-            [{'object_text': SAMPLE_MNTNER.replace('MD5', '')}],  # mntner for object
+            [{'object_text': MNTNER_OBJ_CRYPT_PW}],  # mntner for object
             [],  # attempt to look for exact inetnum
             [{
                 # attempt to look for one level less specific inetnum
@@ -308,7 +310,7 @@ class TestAuthValidatorRelatedRouteObjects:
                 'rpsl_pk': '192.0.2.0-192.0.2.255',
                 'parsed_data': {'mnt-by': ['RELATED-MNT']}
             }],
-            [{'object_text': SAMPLE_MNTNER.replace('CRYPT', '')}],  # related mntner retrieval
+            [{'object_text': MNTNER_OBJ_MD5_PW}],  # related mntner retrieval
         ])
         mock_dh.execute_query = lambda q: next(query_results)
 
@@ -348,7 +350,7 @@ class TestAuthValidatorRelatedRouteObjects:
         validator, mock_dq, mock_dh = prepare_mocks
         route = rpsl_object_from_text(SAMPLE_ROUTE)
         query_results = itertools.cycle([
-            [{'object_text': SAMPLE_MNTNER.replace('MD5', '')}],  # mntner for object
+            [{'object_text': MNTNER_OBJ_CRYPT_PW}],  # mntner for object
             [],  # attempt to look for exact inetnum
             [],  # attempt to look for one level less specific inetnum
             [{
@@ -357,7 +359,7 @@ class TestAuthValidatorRelatedRouteObjects:
                 'rpsl_pk': '192.0.2.0/24AS65537',
                 'parsed_data': {'mnt-by': ['RELATED-MNT']}
             }],
-            [{'object_text': SAMPLE_MNTNER.replace('CRYPT', '')}],  # related mntner retrieval
+            [{'object_text': MNTNER_OBJ_MD5_PW}],  # related mntner retrieval
         ])
         mock_dh.execute_query = lambda q: next(query_results)
 
@@ -443,7 +445,7 @@ class TestAuthValidatorRelatedAutNumObjects:
         as_set = rpsl_object_from_text(SAMPLE_AS_SET)
         assert as_set.clean_for_create()  # fill pk_asn_segment
         mock_dh.execute_query = lambda q: [
-            {'object_text': SAMPLE_MNTNER.replace('MD5', '')},  # mntner for object
+            {'object_text': MNTNER_OBJ_CRYPT_PW},  # mntner for object
         ]
 
         validator.passwords = [SAMPLE_MNTNER_MD5, SAMPLE_MNTNER_CRYPT]
@@ -460,14 +462,14 @@ class TestAuthValidatorRelatedAutNumObjects:
         as_set = rpsl_object_from_text(SAMPLE_AS_SET)
         assert as_set.clean_for_create()  # fill pk_asn_segment
         query_results = itertools.cycle([
-            [{'object_text': SAMPLE_MNTNER.replace('MD5', '')}],  # mntner for object
+            [{'object_text': MNTNER_OBJ_CRYPT_PW}],  # mntner for object
             [{
                 # attempt to look for matching aut-num
                 'object_class': 'aut-num',
                 'rpsl_pk': 'AS655375',
                 'parsed_data': {'mnt-by': ['RELATED-MNT']}
             }],
-            [{'object_text': SAMPLE_MNTNER.replace('CRYPT', '')}],  # related mntner retrieval
+            [{'object_text': MNTNER_OBJ_MD5_PW}],  # related mntner retrieval
         ])
         mock_dh.execute_query = lambda q: next(query_results)
 
@@ -498,7 +500,7 @@ class TestAuthValidatorRelatedAutNumObjects:
             'RELATED-MNT - from parent aut-num AS655375'
         }
 
-        result = validator.process_auth(as_set, as_set)
+        result = validator.process_auth(as_set, rpsl_obj_current=as_set)
         assert result.is_valid()
 
         config_override({'auth': {'set_creation': {'as-set': {'autnum_authentication': 'disabled'}}}})
@@ -513,7 +515,7 @@ class TestAuthValidatorRelatedAutNumObjects:
         as_set = rpsl_object_from_text(SAMPLE_AS_SET)
         assert as_set.clean_for_create()  # fill pk_first_segment
         query_results = itertools.cycle([
-            [{'object_text': SAMPLE_MNTNER.replace('MD5', '')}],  # mntner for object
+            [{'object_text': MNTNER_OBJ_CRYPT_PW}],  # mntner for object
             [],  # attempt to look for matching aut-num
         ])
         mock_dh.execute_query = lambda q: next(query_results)
@@ -540,7 +542,7 @@ class TestAuthValidatorRelatedAutNumObjects:
         as_set = rpsl_object_from_text(SAMPLE_AS_SET)
         assert as_set.clean_for_create()  # fill pk_first_segment
         query_results = itertools.cycle([
-            [{'object_text': SAMPLE_MNTNER.replace('MD5', '')}],  # mntner for object
+            [{'object_text': MNTNER_OBJ_CRYPT_PW}],  # mntner for object
             [],  # attempt to look for matching aut-num
         ])
         mock_dh.execute_query = lambda q: next(query_results)
@@ -563,7 +565,7 @@ class TestAuthValidatorRelatedAutNumObjects:
         filter_set = rpsl_object_from_text(SAMPLE_FILTER_SET)
         assert filter_set.clean_for_create()
         mock_dh.execute_query = lambda q: [
-            {'object_text': SAMPLE_MNTNER.replace('MD5', '')},  # mntner for object
+            {'object_text': MNTNER_OBJ_CRYPT_PW},  # mntner for object
         ]
 
         validator.passwords = [SAMPLE_MNTNER_MD5, SAMPLE_MNTNER_CRYPT]

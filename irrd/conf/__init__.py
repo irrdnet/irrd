@@ -213,7 +213,7 @@ class Configuration:
         config = self.user_config_staging
 
         def _validate_subconfig(key, value):
-            if hasattr(value, 'items'):
+            if isinstance(value, (DottedDict, dict)):
                 for key2, value2 in value.items():
                     subkey = key + '.' + key2
                     known_sub = self.known_config_keys.get(subkey)
@@ -225,9 +225,7 @@ class Configuration:
         for key, value in config.items():
             if key in ['sources', 'access_lists']:
                 continue
-            known = self.known_config_keys.get(key)
-
-            if known is None:
+            if self.known_config_keys.get(key) is None:
                 errors.append(f'Unknown setting key: {key}')
             _validate_subconfig(key, value)
 
