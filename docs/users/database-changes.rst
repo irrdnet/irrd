@@ -303,9 +303,9 @@ include a requirement to:
 * Include an ASN prefix in the name of your set, e.g. ``AS65537:AS-EXAMPLE``
   being valid, but ``AS-EXAMPLE`` being invalid.
 * Pass authentication for the corresponding `aut-num`, e.g. AS65537 in the
-  last example, skipping this check if the `aut-num` does not exist.
+  example, skipping this check if the `aut-num` does not exist.
 * Pass authentication for the corresponding `aut-num`, e.g. AS65537 in the
-  last example, failing this check if the `aut-num` does not exist.
+  example, failing this check if the `aut-num` does not exist.
 
 These requirements do not apply when you change or delete existing objects.
 When looking for corresponding `aut-num` objects,

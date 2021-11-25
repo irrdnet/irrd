@@ -13,9 +13,9 @@ For all RPSL set objects, IRRd can now be configured to require:
 * Including an ASN prefix in the name of the set, e.g. ``AS65537:AS-EXAMPLE``
   being valid, but ``AS-EXAMPLE`` being invalid.
 * Passing authentication for the corresponding `aut-num`, e.g. AS65537 in the
-  last example, skipping this check if the `aut-num` does not exist.
+  example, skipping this check if the `aut-num` does not exist.
 * Passing authentication for the corresponding `aut-num`, e.g. AS65537 in the
-  last example, failing this check if the `aut-num` does not exist.
+  example, failing this check if the `aut-num` does not exist.
 
 The first two options, requiring a prefix with opportunistic `aut-num` authentication,
 is now the default for all set objects.

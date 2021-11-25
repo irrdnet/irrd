@@ -299,7 +299,7 @@ class AuthValidator:
         - object class of the related object
         - PK of the related object
         - List of maintainers for the related object (at least one must pass)
-        Returns None of no related objects were found that should be authenticated.
+        Returns None if no related objects were found that should be authenticated.
 
         Custom error messages may be added directly to the passed ValidatorResult.
         """
