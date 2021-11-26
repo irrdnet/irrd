@@ -13,7 +13,7 @@ datrie==0.8.2           # efficient route searching, used for RPKI
 setproctitle==1.2.2   # updating the process title for useful ps output
 python-daemon==2.3.0   # daemonising the main process
 pid==3.0.4             # managing PID files
-redis==3.5.3           # preloaded data storage & sync through redis
+redis==4.0.2           # preloaded data storage & sync through redis
 hiredis==2.0.0         # improved redis response parsing performance
 requests==2.26.0       # HTTP request handling
 pytz==2021.3
@@ -27,22 +27,22 @@ pydantic==1.8.2        # Input validation
 six==1.16.0            # Used in vendored dotteddict
 
 # Database connections and management
-psycopg2-binary==2.9.1; platform_python_implementation == "CPython"
+psycopg2-binary==2.9.2; platform_python_implementation == "CPython"
 psycopg2cffi==2.9.0; platform_python_implementation == "PyPy"
 SQLAlchemy==1.3.24 # pyup: <1.4  # https://github.com/irrdnet/irrd/issues/475
-alembic==1.7.4
-ujson==4.2.0
+alembic==1.7.5
+ujson==4.3.0
 
 # Testing and related packages
 pytest==6.2.5
 pytest-cov==3.0.0
 pytest-env==0.6.2
-coverage==6.1.1
+coverage==6.1.2
 twisted==21.7.0    # Used for a mock email server in integration tests
 python-graphql-client==0.4.2
 
 # Documentation generation
-Sphinx==4.2.0
+Sphinx==4.3.0
 sphinxcontrib-spelling==7.2.1
 sphinx-material==0.0.35
 
@@ -52,6 +52,6 @@ flake8==4.0.1
 pep8-naming==0.12.1
 
 # Creating python packages
-setuptools==58.4.0
+setuptools==59.2.0
 wheel==0.37.0  # also require for installing, #488
-twine==3.4.2
+twine==3.6.0
