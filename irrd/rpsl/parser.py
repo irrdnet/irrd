@@ -74,6 +74,9 @@ class RPSLObject(metaclass=RPSLObjectMeta):
     rpki_relevant = False
     # Fields whose values are discarded during parsing
     discarded_fields: List[str] = []
+    # Fields that are ignored in validation even
+    # for authoritative objects (see #587 for example).
+    ignored_validation_fields: List[str] = ['last-modified']
 
     _re_attr_name = re.compile(r'^[a-z0-9_-]+$')
 
@@ -300,6 +303,8 @@ class RPSLObject(metaclass=RPSLObjectMeta):
 
         if self.strict_validation:
             for attr_name, count in attrs_present.items():
+                if attr_name in self.ignored_validation_fields:
+                    continue
                 if attr_name not in self.attrs_allowed:
                     self.messages.error(f'Unrecognised attribute {attr_name} on object {self.rpsl_object_class}')
                 if count > 1 and attr_name not in self.attrs_multiple:

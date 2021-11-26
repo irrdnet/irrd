@@ -521,6 +521,7 @@ class TestLastModified:
         })
         rpsl_text = object_sample_mapping[RPSLRtrSet().rpsl_object_class]
         obj = rpsl_object_from_text(rpsl_text + 'last-modified: old-value\n')
+        assert not obj.messages.errors()
         last_modified = datetime.datetime(2020, 1, 1, tzinfo=timezone('UTC'))
         expected_text = rpsl_text + 'last-modified:  2020-01-01T00:00:00Z\n'
         assert obj.render_rpsl_text(last_modified=last_modified) == expected_text
@@ -528,6 +529,7 @@ class TestLastModified:
     def test_not_authoritative(self):
         rpsl_text = object_sample_mapping[RPSLRtrSet().rpsl_object_class]
         obj = rpsl_object_from_text(rpsl_text + 'last-modified: old-value\n')
+        assert not obj.messages.errors()
         last_modified = datetime.datetime(2020, 1, 1, tzinfo=timezone('UTC'))
         expected_text = rpsl_text + 'last-modified:  old-value\n'
         assert obj.render_rpsl_text(last_modified=last_modified) == expected_text
