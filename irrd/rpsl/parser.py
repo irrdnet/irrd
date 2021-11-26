@@ -74,7 +74,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
     rpki_relevant = False
     # Fields whose values are discarded during parsing
     discarded_fields: List[str] = []
-    # Fields that are ignored in validation even 
+    # Fields that are ignored in validation even
     # for authoritative objects (see #587 for example).
     ignored_validation_fields: List[str] = ['last-modified']
 
