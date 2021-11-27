@@ -166,6 +166,7 @@ class Configuration:
         default_config_path = str(Path(__file__).resolve().parents[0] / 'default_config.yaml')
         default_config_yaml = yaml.safe_load(open(default_config_path))
         self.default_config = DottedDict(default_config_yaml['irrd'])
+        self.logging_config = LOGGING
 
         errors = self._staging_reload_check(log_success=False)
         if errors:
@@ -190,7 +191,6 @@ class Configuration:
                 }
                 # noinspection PyTypeChecker
                 LOGGING['loggers']['']['handlers'] = ['file']   # type:ignore
-                self.logging_config = LOGGING
                 logging.config.dictConfig(LOGGING)
 
             # Re-commit to apply loglevel
