@@ -1,6 +1,7 @@
 import time
 from collections import defaultdict
 
+import gc
 import logging
 import multiprocessing
 
@@ -154,6 +155,7 @@ class MirrorScheduler:
 
     def update_process_state(self):
         multiprocessing.active_children()  # to reap zombies
+        gc_collect_needed = False
         for process_name, process in list(self.processes.items()):
             if process.is_alive():
                 continue
@@ -163,3 +165,7 @@ class MirrorScheduler:
                 logging.error(f'Failed to close {process_name} (pid {process.pid}), '
                               f'possible resource leak: {e}')
             del self.processes[process_name]
+            gc_collect_needed = True
+        if gc_collect_needed:
+            # prevents FIFO pipe leak, see #578
+            gc.collect()
