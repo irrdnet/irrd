@@ -321,6 +321,7 @@ class DatabaseHandler:
         entry, so that mirrors follow the (in)visibility depending
         on scopefilter status.
         """
+        # TODO: is this rpsl_pk selection an issue with uniqueness that we fixed for RPKI?
         self._check_write_permitted()
         table = RPSLDatabaseObject.__table__
         if rpsl_objs_now_in_scope:
@@ -421,7 +422,7 @@ class DatabaseHandler:
 
         self._check_write_permitted()
 
-        rpsl_composite_key = ['rpsl_pk', 'source']
+        rpsl_composite_key = ['rpsl_pk', 'source', 'object_class']
         stmt = pg.insert(RPSLDatabaseObject).values([x[0] for x in self._rpsl_upsert_buffer])
 
         if not self._rpsl_guaranteed_no_existing:
