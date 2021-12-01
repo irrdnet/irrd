@@ -321,7 +321,6 @@ class DatabaseHandler:
         entry, so that mirrors follow the (in)visibility depending
         on scopefilter status.
         """
-        # TODO: is this rpsl_pk selection an issue with uniqueness that we fixed for RPKI?
         self._check_write_permitted()
         table = RPSLDatabaseObject.__table__
         if rpsl_objs_now_in_scope:
