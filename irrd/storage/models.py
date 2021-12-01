@@ -73,7 +73,7 @@ class RPSLDatabaseObject(Base):  # type: ignore
     @declared_attr
     def __table_args__(cls):  # noqa
         args = [
-            sa.UniqueConstraint('rpsl_pk', 'source', name='rpsl_objects_rpsl_pk_source_unique'),
+            sa.UniqueConstraint('rpsl_pk', 'source', 'object_class', name='rpsl_objects_rpsl_pk_source_class_unique'),
             sa.Index('ix_rpsl_objects_ip_first_ip_last', 'ip_first', 'ip_last', ),
             sa.Index('ix_rpsl_objects_ip_last_ip_first', 'ip_last', 'ip_first'),
             sa.Index('ix_rpsl_objects_asn_first_asn_last', 'asn_first', 'asn_last'),

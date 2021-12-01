@@ -117,6 +117,52 @@ class TestDatabaseHandlerLive:
             self.dh.upsert_rpsl_object(rpsl_object_route_v4, JournalEntryOrigin.auth_change)
         assert 'readonly' in str(ex)
 
+    def test_duplicate_key_different_class(self, monkeypatch, irrd_database, config_override):
+        monkeypatch.setattr('irrd.storage.database_handler.MAX_RECORDS_BUFFER_BEFORE_INSERT', 1)
+        # tests for #560
+
+        rpsl_object_mntner = Mock(
+            pk=lambda: 'AS-TEST',
+            rpsl_object_class='mntner',
+            parsed_data={'mnt-by': 'MNT-TEST', 'source': 'TEST'},
+            render_rpsl_text=lambda last_modified: 'object-text',
+            ip_version=lambda: None,
+            ip_first=None,
+            ip_last=None,
+            prefix=None,
+            prefix_length=None,
+            asn_first=None,
+            asn_last=None,
+            rpki_status=RPKIStatus.not_found,
+            scopefilter_status=ScopeFilterStatus.in_scope,
+        )
+
+        self.dh = DatabaseHandler()
+        self.dh.upsert_rpsl_object(rpsl_object_mntner, JournalEntryOrigin.auth_change)
+
+        rpsl_object_as_set = Mock(
+            pk=lambda: 'AS-TEST',
+            rpsl_object_class='as-set',
+            parsed_data={'mnt-by': 'MNT-TEST', 'source': 'TEST'},
+            render_rpsl_text=lambda last_modified: 'object-text',
+            ip_version=lambda: None,
+            ip_first=None,
+            ip_last=None,
+            prefix=None,
+            prefix_length=None,
+            asn_first=None,
+            asn_last=None,
+            rpki_status=RPKIStatus.not_found,
+            scopefilter_status=ScopeFilterStatus.in_scope,
+        )
+        self.dh.upsert_rpsl_object(rpsl_object_as_set, JournalEntryOrigin.auth_change)
+
+        query = RPSLDatabaseQuery()
+        result = list(self.dh.execute_query(query))
+        assert len(result) == 2
+
+        self.dh.close()
+
     def test_object_writing_and_status_checking(self, monkeypatch, irrd_database, config_override):
         config_override({
             'sources': {
