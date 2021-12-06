@@ -9,27 +9,27 @@ from irrd.storage.queries import RPSLDatabaseQuery
 # TODO: rename method
 
 
-def objects_for_suspended_mntner(database_handler: DatabaseHandler, suspended_mntner: RPSLMntner) -> Generator[Dict[str, str], None, None]:
+def suspend_for_mntner(database_handler: DatabaseHandler, suspended_mntner: RPSLMntner) -> Generator[Dict[str, str], None, None]:
     source = suspended_mntner.source()
-    # if not get_setting(f'sources.{source}.authoritative'):
-    # raise ValueError(f'Not authoritative for source {source}')
+    if not get_setting(f'sources.{source}.authoritative'):
+        raise ValueError(f'Not authoritative for source {source}')
 
     @functools.lru_cache(maxsize=50)
     def mntner_active(rpsl_pk: str):
         q = RPSLDatabaseQuery(column_names=['pk']).sources([source]).rpsl_pk(rpsl_pk)
-        return bool(list(dh.execute_query(q.first_only())))
+        return bool(list(database_handler.execute_query(q.first_only())))
 
     suspended_mntner_rpsl_pk = suspended_mntner.pk()
     query = RPSLDatabaseQuery(column_names=['pk', 'rpsl_pk', 'parsed_data'])
     query = query.sources([source]).lookup_attr('mnt-by', suspended_mntner_rpsl_pk)
 
-    relevant_objects = list(dh.execute_query(query))
+    relevant_objects = list(database_handler.execute_query(query))
 
     for row in relevant_objects:
         mntners: Set[str] = set(row['parsed_data']['mnt-by'])
         mntners.remove(suspended_mntner_rpsl_pk)
         mntners_active = [m for m in mntners if mntner_active(m)]
-        if mntners_active:  # only count if they're active!
+        if mntners_active:
             print(f'skipping {row["rpsl_pk"]} due to other mntners')
             continue
 

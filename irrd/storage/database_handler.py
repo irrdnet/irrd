@@ -475,7 +475,6 @@ class DatabaseHandler:
         )
         results = self._connection.execute(stmt)
 
-        # TODO: detect key conflict
         for result in results.fetchall():
             rpsl_obj = rpsl_object_from_text(result['object_text'], strict_validation=False)
             self.upsert_rpsl_object(rpsl_obj, JournalEntryOrigin.suspension)

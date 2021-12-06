@@ -42,6 +42,7 @@ def upgrade():
             if 'DuplicateObject' not in str(pe):
                 raise pe
 
+
 def downgrade():
     op.drop_index(op.f('ix_rpsl_objects_suspended_source'), table_name='rpsl_objects_suspended')
     op.drop_index(op.f('ix_rpsl_objects_suspended_rpsl_pk'), table_name='rpsl_objects_suspended')
