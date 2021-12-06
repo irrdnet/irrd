@@ -11,12 +11,13 @@ from sqlalchemy.dialects import postgresql as pg
 from irrd.conf import get_setting
 from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.parser import RPSLObject
+from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.vendor import postgres_copy
 from . import get_engine
 from .models import RPSLDatabaseObject, RPSLDatabaseJournal, DatabaseOperation, RPSLDatabaseStatus, \
-    ROADatabaseObject, JournalEntryOrigin
+    ROADatabaseObject, JournalEntryOrigin, RPSLDatabaseObjectSuspended
 from .preload import Preloader
 from .queries import (BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery,
                       RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery)
@@ -407,6 +408,78 @@ class DatabaseHandler:
             source_serial=source_serial,
         )
         self._object_classes_modified.add(result['object_class'])
+
+    def suspend_rpsl_object(self, pk_uuid: str) -> None:
+        """
+        Suspend an RPSL object from the database.
+        """
+        self._check_write_permitted()
+        self._flush_rpsl_object_writing_buffer()
+
+        rpsl_table = RPSLDatabaseObject.__table__
+        stmt = rpsl_table.delete(rpsl_table.c.pk == pk_uuid).returning(
+            rpsl_table.c.pk, rpsl_table.c.rpsl_pk, rpsl_table.c.source, rpsl_table.c.object_class,
+            rpsl_table.c.object_text, rpsl_table.c.parsed_data, rpsl_table.c.created, rpsl_table.c.updated
+        )
+        results = self._connection.execute(stmt)
+
+        # TODO: extract this
+        if results.rowcount == 0:
+            logger.error(f'Attempted to remove object {pk_uuid}, but no database row matched')
+            return None
+        if results.rowcount > 1:  # pragma: no cover
+            # This should not be possible, as rpsl_pk/source are a composite unique value in the database scheme.
+            # Therefore, a query should not be able to affect more than one row - and we also can not test this
+            # scenario. Due to the possible harm of a bug in this area, we still check for it anyways.
+            affected_pks = ','.join([r[0] for r in results.fetchall()])
+            msg = f'Attempted to suspend object {pk_uuid}, but multiple objects were affected, '
+            msg += f'internal pks affected: {affected_pks}'
+            logger.critical(msg)
+            raise ValueError(msg)
+
+        result = results.fetchone()
+        self.execute_statement(RPSLDatabaseObjectSuspended.__table__.insert().values(
+            rpsl_pk=result['rpsl_pk'],
+            source=result['source'],
+            object_class=result['object_class'],
+            object_text=result['object_text'],
+            mntners=result['parsed_data']['mnt-by'],
+            original_created=result['created'],
+            original_updated=result['updated'],
+        ))
+
+        self.status_tracker.record_operation(
+            operation=DatabaseOperation.delete,
+            rpsl_pk=result['rpsl_pk'],
+            source=result['source'],
+            object_class=result['object_class'],
+            object_text=result['object_text'],
+            origin=JournalEntryOrigin.suspension,
+            source_serial=None,
+        )
+        self._object_classes_modified.add(result['object_class'])
+
+    # TODO: return objects
+    def reactivate_rpsl_objects(self, mntner_rpsl_pk: str, source: str) -> None:
+        """
+        Reactivate a previously suspended RPSL object from the database.
+        """
+        self._check_write_permitted()
+        self._flush_rpsl_object_writing_buffer()
+
+        suspended_table = RPSLDatabaseObjectSuspended.__table__
+        stmt = suspended_table.delete(
+            sa.and_(suspended_table.c.source == source, suspended_table.c.mntners.any(mntner_rpsl_pk))
+        ).returning(
+            suspended_table.c.object_text, suspended_table.c.original_created
+        )
+        results = self._connection.execute(stmt)
+
+        # TODO: detect key conflict
+        for result in results.fetchall():
+            rpsl_obj = rpsl_object_from_text(result['object_text'], strict_validation=False)
+            self.upsert_rpsl_object(rpsl_obj, JournalEntryOrigin.suspension)
+            print(rpsl_obj)
 
     def _flush_rpsl_object_writing_buffer(self) -> None:
         """

@@ -8,6 +8,7 @@ Create Date: 2021-12-02 14:34:10.566178
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+from sqlalchemy.exc import ProgrammingError
 
 # revision identifiers, used by Alembic.
 revision = '0548f1aa4f10'
@@ -34,6 +35,12 @@ def upgrade():
     op.create_index(op.f('ix_rpsl_objects_suspended_rpsl_pk'), 'rpsl_objects_suspended', ['rpsl_pk'], unique=False)
     op.create_index(op.f('ix_rpsl_objects_suspended_source'), 'rpsl_objects_suspended', ['source'], unique=False)
 
+    with op.get_context().autocommit_block():
+        try:
+            op.execute("ALTER TYPE journalentryorigin ADD VALUE 'suspension'")
+        except ProgrammingError as pe:
+            if 'DuplicateObject' not in str(pe):
+                raise pe
 
 def downgrade():
     op.drop_index(op.f('ix_rpsl_objects_suspended_source'), table_name='rpsl_objects_suspended')

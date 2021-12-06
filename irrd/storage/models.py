@@ -29,6 +29,8 @@ class JournalEntryOrigin(enum.Enum):
     rpki_status = 'RPKI_STATUS'
     # Journal entry caused by a change in the scope filter status
     scope_filter = 'SCOPE_FILTER'
+    # Journal entry caused by an object being suspended or reactivated
+    suspension = 'SUSPENSION'
 
 
 Base = declarative_base()
