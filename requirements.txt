@@ -37,7 +37,7 @@ ujson==4.3.0
 pytest==6.2.5
 pytest-cov==3.0.0
 pytest-env==0.6.2
-coverage==6.1.2
+coverage==6.2
 twisted==21.7.0    # Used for a mock email server in integration tests
 python-graphql-client==0.4.2
 
