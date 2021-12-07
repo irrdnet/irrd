@@ -46,8 +46,8 @@ def reactivate_for_mntner(database_handler: DatabaseHandler, reactivated_mntner:
     scopefilter_validator = ScopeFilterValidator()
     roa_validator = SingleRouteROAValidator(database_handler)
     
-    # if not get_setting(f'sources.{source}.authoritative'):
-    # raise ValueError(f'Not authoritative for source {source}')
+    if not get_setting(f'sources.{source}.authoritative'):
+        raise ValueError(f'Not authoritative for source {source}')
 
     reactivated_mntner_rpsl_pk = reactivated_mntner.pk()
     query = RPSLDatabaseSuspendedQuery()
