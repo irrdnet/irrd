@@ -45,7 +45,7 @@ def reactivate_for_mntner(database_handler: DatabaseHandler, reactivated_mntner:
     source = reactivated_mntner.source()
     scopefilter_validator = ScopeFilterValidator()
     roa_validator = SingleRouteROAValidator(database_handler)
-    
+
     if not get_setting(f'sources.{source}.authoritative'):
         raise ValueError(f'Not authoritative for source {source}')
 
@@ -65,7 +65,7 @@ def reactivate_for_mntner(database_handler: DatabaseHandler, reactivated_mntner:
         if list(database_handler.execute_query(existing_object_query)):
             info_messages.append(f"Skipping restore of object {rpsl_obj} - an object already exists with the same key")
             continue
-        
+
         rpsl_obj.scopefilter_status, _ = scopefilter_validator.validate_rpsl_object(rpsl_obj)
         if get_setting('rpki.roa_source') and rpsl_obj.rpki_relevant and rpsl_obj.asn_first:
             rpsl_obj.rpki_status = roa_validator.validate_route(rpsl_obj.prefix, rpsl_obj.asn_first, source)

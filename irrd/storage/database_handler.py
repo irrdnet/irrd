@@ -11,7 +11,6 @@ from sqlalchemy.dialects import postgresql as pg
 from irrd.conf import get_setting
 from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.parser import RPSLObject
-from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.vendor import postgres_copy
@@ -425,7 +424,7 @@ class DatabaseHandler:
 
         # TODO: extract this
         if results.rowcount == 0:
-            logger.error(f'Attempted to remove object {pk_uuid}, but no database row matched')
+            logger.error(f'Attempted to suspend object {pk_uuid}, but no database row matched')
             return None
         if results.rowcount > 1:  # pragma: no cover
             # This should not be possible, as rpsl_pk/source are a composite unique value in the database scheme.
