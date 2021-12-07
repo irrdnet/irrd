@@ -26,6 +26,7 @@ def upgrade():
         sa.Column('object_class', sa.String(), nullable=False),
         sa.Column('object_text', sa.Text(), nullable=False),
         sa.Column('mntners', postgresql.ARRAY(sa.Text()), nullable=False),
+        sa.Column('timestamp', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
         sa.Column('original_created', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
         sa.Column('original_updated', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
         sa.PrimaryKeyConstraint('pk')

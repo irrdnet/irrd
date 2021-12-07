@@ -11,7 +11,7 @@ from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import lookup_field_names
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.storage.models import (RPSLDatabaseObject, RPSLDatabaseJournal, RPSLDatabaseStatus,
-                                 ROADatabaseObject)
+                                 ROADatabaseObject, RPSLDatabaseObjectSuspended)
 from irrd.utils.validators import parse_as_number, ValidationError
 
 logger = logging.getLogger(__name__)
@@ -426,6 +426,39 @@ class RPSLDatabaseJournalQuery(BaseRPSLObjectDatabaseQuery):
 
     def __repr__(self):
         return f'RPSLDatabaseJournalQuery: {self.statement}\nPARAMS: {self.statement.compile().params}'
+
+
+class RPSLDatabaseSuspendedQuery(BaseRPSLObjectDatabaseQuery):
+    """
+    RPSL data query builder for retrieving suspended objects,
+    analogous to RPSLDatabaseQuery.
+    """
+    table = RPSLDatabaseObjectSuspended.__table__
+    columns = RPSLDatabaseObjectSuspended.__table__.c
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.statement = sa.select([
+            self.columns.pk,
+            self.columns.rpsl_pk,
+            self.columns.source,
+            self.columns.object_class,
+            self.columns.object_text,
+            self.columns.mntners,
+            self.columns.timestamp,
+            self.columns.original_created,
+            self.columns.original_updated,
+        ]).order_by(self.columns.timestamp.asc())
+
+    def mntner(self, mntner_rpsl_pk: str):
+        """
+        Filter for objects with a specific mntner.
+        """
+        fltr = self.columns.mntners.any(mntner_rpsl_pk)
+        return self._filter(fltr)
+
+    def __repr__(self):
+        return f'RPSLDatabaseSuspendedQuery: {self.statement}\nPARAMS: {self.statement.compile().params}'
 
 
 class DatabaseStatusQuery:

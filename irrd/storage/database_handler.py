@@ -459,26 +459,17 @@ class DatabaseHandler:
         )
         self._object_classes_modified.add(result['object_class'])
 
-    # TODO: return objects
-    def reactivate_rpsl_objects(self, mntner_rpsl_pk: str, source: str) -> None:
+    def delete_suspended_rpsl_objects(self, pk_uuids: Set[str]) -> None:
         """
-        Reactivate a previously suspended RPSL object from the database.
+        Remove suspended RPSL objects from the suspended store,
+        most likely after reactivation
         """
         self._check_write_permitted()
         self._flush_rpsl_object_writing_buffer()
 
         suspended_table = RPSLDatabaseObjectSuspended.__table__
-        stmt = suspended_table.delete(
-            sa.and_(suspended_table.c.source == source, suspended_table.c.mntners.any(mntner_rpsl_pk))
-        ).returning(
-            suspended_table.c.object_text, suspended_table.c.original_created
-        )
-        results = self._connection.execute(stmt)
-
-        for result in results.fetchall():
-            rpsl_obj = rpsl_object_from_text(result['object_text'], strict_validation=False)
-            self.upsert_rpsl_object(rpsl_obj, JournalEntryOrigin.suspension)
-            print(rpsl_obj)
+        stmt = suspended_table.delete(suspended_table.c.pk.in_(pk_uuids))
+        self._connection.execute(stmt)
 
     def _flush_rpsl_object_writing_buffer(self) -> None:
         """

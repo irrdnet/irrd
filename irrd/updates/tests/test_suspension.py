@@ -69,7 +69,10 @@ class TestSuspension:
         assert results[0]['pk'] == 'pk_suspend'
         assert results[1]['pk'] == 'pk_suspend2'
 
-        print(flatten_mock_calls(mock_database_query))
+        assert(flatten_mock_calls(mock_database_handler)) == [
+            ['suspend_rpsl_object', ('pk_suspend',), {}],
+            ['suspend_rpsl_object', ('pk_suspend2',), {}]
+        ]
         assert(flatten_mock_calls(mock_database_query)) == [
             ['', (), {'column_names': ['pk', 'rpsl_pk', 'parsed_data']}],
             ['sources', (['TEST'],), {}],
