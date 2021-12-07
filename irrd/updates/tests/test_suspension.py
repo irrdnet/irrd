@@ -22,6 +22,7 @@ class TestSuspension:
 
         mntner = RPSLMntner(SAMPLE_MNTNER)
         query_results = iter([
+            # First query for suspendable objects
             [
                 {
                     'pk': 'pk_suspend',
@@ -56,6 +57,17 @@ class TestSuspension:
                     'updated': 'updated',
                 },
             ],
+            # Second query for suspendable objects
+            [
+                {
+                    'pk': 'pk_suspend2',
+                    'rpsl_pk': 'rpsl_pk_suspend2',
+                    'parsed_data': {'mnt-by': [mntner.pk(), 'INACTIVE-MNT']},
+                    'object_text': 'text',
+                    'created': 'created',
+                    'updated': 'updated',
+                },
+            ],
             # query for OTHER-MNT:
             [{'pk': 'OTHER-MNT'}],
             # query for INACTIVE-MNT
@@ -81,13 +93,22 @@ class TestSuspension:
             ['', (), {'column_names': ['pk', 'rpsl_pk', 'parsed_data']}],
             ['sources', (['TEST'],), {}],
             ['lookup_attr', ('mnt-by', 'TEST-MNT'), {}],
+
+            ['', (), {'column_names': ['pk', 'rpsl_pk', 'parsed_data']}],
+            ['sources', (['TEST'],), {}],
+            ['rpsl_pk', ('TEST-MNT',), {}],
+            ['object_classes', (['mntner'],), {}],
+
             ['', (), {'column_names': ['pk']}],
             ['sources', (['TEST'],), {}],
             ['rpsl_pk', ('OTHER-MNT',), {}],
+            ['object_classes', (['mntner'],), {}],
             ['first_only', (), {}],
+
             ['', (), {'column_names': ['pk']}],
             ['sources', (['TEST'],), {}],
             ['rpsl_pk', ('INACTIVE-MNT',), {}],
+            ['object_classes', (['mntner'],), {}],
             ['first_only', (), {}],
         ]
 

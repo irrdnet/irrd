@@ -18,16 +18,25 @@ def suspend_for_mntner(database_handler: DatabaseHandler, suspended_mntner: RPSL
 
     @functools.lru_cache(maxsize=50)
     def mntner_active(rpsl_pk: str):
-        q = RPSLDatabaseQuery(column_names=['pk']).sources([source]).rpsl_pk(rpsl_pk)
+        q = RPSLDatabaseQuery(column_names=['pk']).sources([source]).rpsl_pk(rpsl_pk).object_classes(['mntner'])
         return bool(list(database_handler.execute_query(q.first_only())))
 
     suspended_mntner_rpsl_pk = suspended_mntner.pk()
-    query = RPSLDatabaseQuery(column_names=['pk', 'rpsl_pk', 'parsed_data'])
-    query = query.sources([source]).lookup_attr('mnt-by', suspended_mntner_rpsl_pk)
+    # This runs two queries, to account for the suspension of a mntner
+    # who is not an mnt-by for itself. In that case, query1 will not retrieve it,
+    # but query2 will.
+    query1 = RPSLDatabaseQuery(column_names=['pk', 'rpsl_pk', 'parsed_data'])
+    query1 = query1.sources([source]).lookup_attr('mnt-by', suspended_mntner_rpsl_pk)
+    query2 = RPSLDatabaseQuery(column_names=['pk', 'rpsl_pk', 'parsed_data'])
+    query2 = query2.sources([source]).rpsl_pk(suspended_mntner_rpsl_pk).object_classes(['mntner'])
 
+    suspendable_objects = list(database_handler.execute_query(query1)) + list(database_handler.execute_query(query2))
     suspended_objects = []
 
-    for row in list(database_handler.execute_query(query)):
+    for row in suspendable_objects:
+        if row in suspended_objects:
+            continue
+
         mntners: Set[str] = set(row['parsed_data']['mnt-by'])
         mntners.remove(suspended_mntner_rpsl_pk)
         mntners_active = [m for m in mntners if mntner_active(m)]
