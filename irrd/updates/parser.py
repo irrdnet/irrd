@@ -373,6 +373,7 @@ class SuspensionRequest:
 
         try:
             self.request_type = getattr(SuspensionRequestType, suspension_state.upper())
+            logger.info(f"got {suspension_state} at {self.request_type}")
         except AttributeError:
             self.rpsl_obj_new = None
             self.request_type = None
@@ -420,7 +421,7 @@ class SuspensionRequest:
             if self.request_type == SuspensionRequestType.SUSPEND:
                 logger.info(f'{id(self)}: Suspending mntner {self.rpsl_obj_new}')
                 suspended_objects = suspend_for_mntner(self.database_handler, mntner)
-                self.info_messages += [f"Reactivated {r['object_class']}/{r['rpsl_pk']}/{r['source']}" for r in suspended_objects]
+                self.info_messages += [f"Suspended {r['object_class']}/{r['rpsl_pk']}/{r['source']}" for r in suspended_objects]
             elif self.request_type == SuspensionRequestType.REACTIVATE:
                 logger.info(f'{id(self)}: Reactivating mntner {self.rpsl_obj_new}')
                 (restored, info_messages) = reactivate_for_mntner(self.database_handler, mntner)
