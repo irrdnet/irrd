@@ -1,3 +1,4 @@
+import logging
 from typing import List, Set, Dict, Tuple
 import functools
 
@@ -10,12 +11,15 @@ from irrd.rpsl.parser import RPSLObject
 from irrd.scopefilter.validators import ScopeFilterValidator
 from irrd.rpki.validators import SingleRouteROAValidator
 
+logger = logging.getLogger(__name__)
+
 
 def suspend_for_mntner(database_handler: DatabaseHandler, suspended_mntner: RPSLMntner) -> List[Dict[str, str]]:
     source = suspended_mntner.source()
     if not get_setting(f'sources.{source}.authoritative'):
         raise ValueError(f'Not authoritative for source {source}')
 
+    logger.info(f"{suspended_mntner.pk()}: Starting suspension for {suspended_mntner}")
     @functools.lru_cache(maxsize=50)
     def mntner_active(rpsl_pk: str):
         q = RPSLDatabaseQuery(column_names=['pk']).sources([source]).rpsl_pk(rpsl_pk).object_classes(['mntner'])
@@ -41,10 +45,10 @@ def suspend_for_mntner(database_handler: DatabaseHandler, suspended_mntner: RPSL
         mntners.remove(suspended_mntner_rpsl_pk)
         mntners_active = [m for m in mntners if mntner_active(m)]
         if mntners_active:
-            print(f'skipping {row["rpsl_pk"]} due to other mntners')
+            logger.info(f"{suspended_mntner.pk()}: Skipping suspension of {row['object_class']}/{row['rpsl_pk']} because of remaining active mntners {mntners}")
             continue
 
-        print(f'go ahead on {row["rpsl_pk"]}')
+        logger.info(f"{suspended_mntner.pk()}: Suspending {row['object_class']}/{row['rpsl_pk']}")
         database_handler.suspend_rpsl_object(row['pk'])
         suspended_objects.append(row)
     return suspended_objects
@@ -57,6 +61,8 @@ def reactivate_for_mntner(database_handler: DatabaseHandler, reactivated_mntner:
 
     if not get_setting(f'sources.{source}.authoritative'):
         raise ValueError(f'Not authoritative for source {source}')
+
+    logger.info(f"{reactivated_mntner.pk()}: Starting reactivation for for {reactivated_mntner}")
 
     reactivated_mntner_rpsl_pk = reactivated_mntner.pk()
     query = RPSLDatabaseSuspendedQuery()
@@ -72,19 +78,19 @@ def reactivate_for_mntner(database_handler: DatabaseHandler, reactivated_mntner:
         existing_object_query = RPSLDatabaseQuery(column_names=['pk']).sources([source])
         existing_object_query = existing_object_query.rpsl_pk(rpsl_obj.pk()).object_classes([rpsl_obj.rpsl_object_class])
         if list(database_handler.execute_query(existing_object_query)):
-            info_messages.append(f"Skipping restore of object {rpsl_obj} - an object already exists with the same key")
+            msg = f"Skipping restore of object {rpsl_obj} - an object already exists with the same key"
+            logger.info(f"{reactivated_mntner.pk()}: {msg}")
+            info_messages.append(msg)
             continue
 
         rpsl_obj.scopefilter_status, _ = scopefilter_validator.validate_rpsl_object(rpsl_obj)
         if get_setting('rpki.roa_source') and rpsl_obj.rpki_relevant and rpsl_obj.asn_first:
             rpsl_obj.rpki_status = roa_validator.validate_route(rpsl_obj.prefix, rpsl_obj.asn_first, source)
 
-        print(f"status {rpsl_obj} scope {rpsl_obj.scopefilter_status} rpki {rpsl_obj.rpki_status}")
-
         database_handler.upsert_rpsl_object(rpsl_obj, JournalEntryOrigin.suspension)
         restored_row_pk_uuids.add(result['pk'])
         restored_objects.append(rpsl_obj)
-        print(f"restoring {rpsl_obj}")
+        msg = f"{reactivated_mntner.pk()}: Restoring object {rpsl_obj}"
 
     database_handler.delete_suspended_rpsl_objects(restored_row_pk_uuids)
     return restored_objects, info_messages
