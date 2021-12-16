@@ -15,6 +15,7 @@ from irrd.storage.queries import RPSLDatabaseQuery
 from irrd.utils.text import splitline_unicodesafe
 from .parser_state import UpdateRequestType, UpdateRequestStatus, SuspensionRequestType
 from .validators import ReferenceValidator, AuthValidator
+from .suspension import suspend_for_mntner, reactivate_for_mntner
 
 logger = logging.getLogger(__name__)
 
@@ -407,14 +408,19 @@ class SuspensionRequest:
 
     def save(self, database_handler: DatabaseHandler) -> None:
         """Save the state change to the database."""
+        mntner: RPSLMntner = self.rpsl_obj_new  # type: ignore
         if self.status != UpdateRequestStatus.PROCESSING or not self.rpsl_obj_new:
-            raise ValueError('ChangeRequest can only be saved in status PROCESSING')
-        if self.request_type == UpdateRequestType.DELETE and self.rpsl_obj_current is not None:
-            logger.info(f'{id(self)}: Saving change for {self.rpsl_obj_new}: deleting current object')
-            database_handler.delete_rpsl_object(rpsl_object=self.rpsl_obj_current, origin=JournalEntryOrigin.auth_change)
-        else:
-            logger.info(f'{id(self)}: Saving change for {self.rpsl_obj_new}: inserting/updating current object')
-            database_handler.upsert_rpsl_object(self.rpsl_obj_new, JournalEntryOrigin.auth_change)
+            raise ValueError('SuspensionRequest can only be saved in status PROCESSING')
+        if self.request_type == SuspensionRequestType.SUSPEND:
+            logger.info(f'{id(self)}: Suspending mntner {self.rpsl_obj_new}')
+            suspended_objects = suspend_for_mntner(self.database_handler, mntner)
+            self.info_messages += [r['object_class'] + '/' + r['rpsl_pk'] + '/' + r['source'] for r in suspended_objects]
+        elif self.request_type == SuspensionRequestType.REACTIVATE:
+            logger.info(f'{id(self)}: Reactivating mntner {self.rpsl_obj_new}')
+            (restored, info_messages) = reactivate_for_mntner(self.database_handler, mntner)
+            self.info_messages += info_messages
+            self.info_messages += [str(r) for r in restored]
+
         self.status = UpdateRequestStatus.SAVED
 
     def is_valid(self) -> bool:

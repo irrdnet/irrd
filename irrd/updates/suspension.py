@@ -25,9 +25,9 @@ def suspend_for_mntner(database_handler: DatabaseHandler, suspended_mntner: RPSL
     # This runs two queries, to account for the suspension of a mntner
     # who is not an mnt-by for itself. In that case, query1 will not retrieve it,
     # but query2 will.
-    query1 = RPSLDatabaseQuery(column_names=['pk', 'rpsl_pk', 'parsed_data'])
+    query1 = RPSLDatabaseQuery(column_names=['pk', 'rpsl_pk', 'object_class', 'source', 'parsed_data'])
     query1 = query1.sources([source]).lookup_attr('mnt-by', suspended_mntner_rpsl_pk)
-    query2 = RPSLDatabaseQuery(column_names=['pk', 'rpsl_pk', 'parsed_data'])
+    query2 = RPSLDatabaseQuery(column_names=['pk', 'rpsl_pk', 'object_class', 'source', 'parsed_data'])
     query2 = query2.sources([source]).rpsl_pk(suspended_mntner_rpsl_pk).object_classes(['mntner'])
 
     suspendable_objects = list(database_handler.execute_query(query1)) + list(database_handler.execute_query(query2))
