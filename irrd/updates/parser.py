@@ -371,8 +371,9 @@ class SuspensionRequest:
         self.auth_validator = auth_validator
         self.rpsl_text_submitted = rpsl_text_submitted
 
-        self.request_type = getattr(SuspensionRequestType, suspension_state)
-        if not self.request_type:
+        try:
+            self.request_type = getattr(SuspensionRequestType, suspension_state.upper())
+        except AttributeError:
             self.error_messages = [f'Unknown suspension type: {suspension_state}']
             self.status = UpdateRequestStatus.ERROR_PARSING
 
@@ -470,7 +471,8 @@ class SuspensionRequest:
 
     def _check_auth(self) -> bool:
         if not self.auth_validator.check_override():
-            self.error_messages += "Invalid authentication: override password invalid or missing"
+            self.status = UpdateRequestStatus.ERROR_AUTH
+            self.error_messages.append("Invalid authentication: override password invalid or missing")
             logger.debug(f'{id(self)}: Authentication check failed: override did not pass')
             return False
         logger.debug(f'{id(self)}: Authentication check succeeded, override valid')
