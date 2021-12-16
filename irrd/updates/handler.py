@@ -10,7 +10,7 @@ from irrd.rpsl.rpsl_objects import RPSLMntner
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseQuery
 from irrd.utils import email
-from .parser import parse_change_requests, ChangeRequest
+from .parser import parse_change_requests, ChangeRequest, SuspensionRequest
 from .parser_state import UpdateRequestStatus, UpdateRequestType
 from .validators import ReferenceValidator, AuthValidator
 from ..utils.validators import RPSLChangeSubmission
@@ -47,7 +47,7 @@ class ChangeSubmissionHandler:
 
         reference_validator = ReferenceValidator(self.database_handler)
         auth_validator = AuthValidator(self.database_handler)
-        change_requests = []
+        change_requests: List[Union[ChangeRequest, SuspensionRequest]] = []
 
         delete_reason = None
         if delete:
@@ -80,7 +80,7 @@ class ChangeSubmissionHandler:
         self.database_handler.close()
         return self
 
-    def _handle_change_requests(self, change_requests: List[ChangeRequest],
+    def _handle_change_requests(self, change_requests: List[Union[ChangeRequest, SuspensionRequest]],
                                 reference_validator: ReferenceValidator,
                                 auth_validator: AuthValidator) -> None:
 
@@ -95,7 +95,7 @@ class ChangeSubmissionHandler:
         # will mark B invalid due to the reference to an invalid C, etc. This continues until
         # all references are resolved and repeated scans lead to the same conclusions.
         valid_changes = [r for r in change_requests if r.is_valid()]
-        previous_valid_changes: List[ChangeRequest] = []
+        previous_valid_changes: List[Union[ChangeRequest, SuspensionRequest]] = []
         loop_count = 0
         loop_max = len(change_requests) + 10
 

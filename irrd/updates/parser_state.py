@@ -10,6 +10,11 @@ class UpdateRequestType(Enum):
     DELETE = 'delete'
 
 
+class SuspensionRequestType(Enum):
+    SUSPEND = 'suspend'
+    REACTIVATE = 'reactivate'
+
+
 @unique
 class UpdateRequestStatus(Enum):
     SAVED = 'saved'
