@@ -20,6 +20,7 @@ def suspend_for_mntner(database_handler: DatabaseHandler, suspended_mntner: RPSL
         raise ValueError(f'Not authoritative for source {source}')
 
     logger.info(f"{suspended_mntner.pk()}: Starting suspension for {suspended_mntner}")
+
     @functools.lru_cache(maxsize=50)
     def mntner_active(rpsl_pk: str):
         q = RPSLDatabaseQuery(column_names=['pk']).sources([source]).rpsl_pk(rpsl_pk).object_classes(['mntner'])
@@ -31,13 +32,19 @@ def suspend_for_mntner(database_handler: DatabaseHandler, suspended_mntner: RPSL
     # but query2 will.
     query1 = RPSLDatabaseQuery(column_names=['pk', 'rpsl_pk', 'object_class', 'source', 'parsed_data'])
     query1 = query1.sources([source]).lookup_attr('mnt-by', suspended_mntner_rpsl_pk)
+    query1_result = list(database_handler.execute_query(query1))
     query2 = RPSLDatabaseQuery(column_names=['pk', 'rpsl_pk', 'object_class', 'source', 'parsed_data'])
     query2 = query2.sources([source]).rpsl_pk(suspended_mntner_rpsl_pk).object_classes(['mntner'])
+    query2_result = list(database_handler.execute_query(query2))
 
-    suspendable_objects = list(database_handler.execute_query(query1)) + list(database_handler.execute_query(query2))
+    if not query2_result:
+        msg = f"mntner {suspended_mntner.pk()} does not exit in {source}"
+        logger.info(f"{suspended_mntner.pk()}: error: {msg}")
+        raise ValueError(msg)
+
     suspended_objects = []
 
-    for row in suspendable_objects:
+    for row in query1_result + query2_result:
         if row in suspended_objects:
             continue
 
@@ -67,12 +74,18 @@ def reactivate_for_mntner(database_handler: DatabaseHandler, reactivated_mntner:
     reactivated_mntner_rpsl_pk = reactivated_mntner.pk()
     query = RPSLDatabaseSuspendedQuery()
     query = query.sources([source]).mntner(reactivated_mntner_rpsl_pk)
+    results = list(database_handler.execute_query(query))
 
     restored_row_pk_uuids = set()
     restored_objects = []
     info_messages: List[str] = []
 
-    for result in database_handler.execute_query(query):
+    if not results:
+        msg = f"mntner {reactivated_mntner.pk()} is not a mntner for any suspended objects in {source}"
+        logger.info(f"{reactivated_mntner.pk()}: error: {msg}")
+        raise ValueError(msg)
+
+    for result in results:
         rpsl_obj = rpsl_object_from_text(result['object_text'], strict_validation=False)
 
         existing_object_query = RPSLDatabaseQuery(column_names=['pk']).sources([source])

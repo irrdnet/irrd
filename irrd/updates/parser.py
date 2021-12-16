@@ -416,15 +416,18 @@ class SuspensionRequest:
         mntner: RPSLMntner = self.rpsl_obj_new  # type: ignore
         if self.status != UpdateRequestStatus.PROCESSING or not self.rpsl_obj_new:
             raise ValueError('SuspensionRequest can only be saved in status PROCESSING')
-        if self.request_type == SuspensionRequestType.SUSPEND:
-            logger.info(f'{id(self)}: Suspending mntner {self.rpsl_obj_new}')
-            suspended_objects = suspend_for_mntner(self.database_handler, mntner)
-            self.info_messages += [f"Reactivated {r['object_class']}/{r['rpsl_pk']}/{r['source']}" for r in suspended_objects]
-        elif self.request_type == SuspensionRequestType.REACTIVATE:
-            logger.info(f'{id(self)}: Reactivating mntner {self.rpsl_obj_new}')
-            (restored, info_messages) = reactivate_for_mntner(self.database_handler, mntner)
-            self.info_messages += info_messages
-            self.info_messages += [f"Restored {r}" for r in restored]
+        try:
+            if self.request_type == SuspensionRequestType.SUSPEND:
+                logger.info(f'{id(self)}: Suspending mntner {self.rpsl_obj_new}')
+                suspended_objects = suspend_for_mntner(self.database_handler, mntner)
+                self.info_messages += [f"Reactivated {r['object_class']}/{r['rpsl_pk']}/{r['source']}" for r in suspended_objects]
+            elif self.request_type == SuspensionRequestType.REACTIVATE:
+                logger.info(f'{id(self)}: Reactivating mntner {self.rpsl_obj_new}')
+                (restored, info_messages) = reactivate_for_mntner(self.database_handler, mntner)
+                self.info_messages += info_messages
+                self.info_messages += [f"Restored {r}" for r in restored]
+        except ValueError as ve:
+            self.error_messages.append(str(ve))
 
         self.status = UpdateRequestStatus.SAVED
 
