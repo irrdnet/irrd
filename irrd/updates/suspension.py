@@ -90,7 +90,7 @@ def reactivate_for_mntner(database_handler: DatabaseHandler, reactivated_mntner:
         database_handler.upsert_rpsl_object(rpsl_obj, JournalEntryOrigin.suspension)
         restored_row_pk_uuids.add(result['pk'])
         restored_objects.append(rpsl_obj)
-        msg = f"{reactivated_mntner.pk()}: Restoring object {rpsl_obj}"
+        logger.info(f"{reactivated_mntner.pk()}: Restoring object {rpsl_obj}")
 
     database_handler.delete_suspended_rpsl_objects(restored_row_pk_uuids)
     return restored_objects, info_messages
