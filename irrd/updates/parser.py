@@ -416,12 +416,12 @@ class SuspensionRequest:
         if self.request_type == SuspensionRequestType.SUSPEND:
             logger.info(f'{id(self)}: Suspending mntner {self.rpsl_obj_new}')
             suspended_objects = suspend_for_mntner(self.database_handler, mntner)
-            self.info_messages += [r['object_class'] + '/' + r['rpsl_pk'] + '/' + r['source'] for r in suspended_objects]
+            self.info_messages += [f"Reactivated {r['object_class']}/{r['rpsl_pk']}/{r['source']}" for r in suspended_objects]
         elif self.request_type == SuspensionRequestType.REACTIVATE:
             logger.info(f'{id(self)}: Reactivating mntner {self.rpsl_obj_new}')
             (restored, info_messages) = reactivate_for_mntner(self.database_handler, mntner)
             self.info_messages += info_messages
-            self.info_messages += [str(r) for r in restored]
+            self.info_messages += [f"Restored {r}" for r in restored]
 
         self.status = UpdateRequestStatus.SAVED
 
