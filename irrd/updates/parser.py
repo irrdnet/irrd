@@ -374,9 +374,11 @@ class SuspensionRequest:
         try:
             self.request_type = getattr(SuspensionRequestType, suspension_state.upper())
         except AttributeError:
-            self.error_messages = [f'Unknown suspension type: {suspension_state}']
-            self.status = UpdateRequestStatus.ERROR_PARSING
+            self.rpsl_obj_new = None
             self.request_type = None
+            self.status = UpdateRequestStatus.ERROR_PARSING
+            self.info_messages = []
+            self.error_messages = [f'Unknown suspension type: {suspension_state}']
             return
 
         try:
