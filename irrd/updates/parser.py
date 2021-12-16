@@ -377,6 +377,7 @@ class SuspensionRequest:
             self.error_messages = [f'Unknown suspension type: {suspension_state}']
             self.status = UpdateRequestStatus.ERROR_PARSING
             self.request_type = None
+            return
 
         try:
             self.rpsl_obj_new = rpsl_object_from_text(rpsl_text_submitted, strict_validation=False)
