@@ -90,11 +90,11 @@ class TestSuspension:
             ['suspend_rpsl_object', ('pk_suspend2',), {}]
         ]
         assert(flatten_mock_calls(mock_database_query)) == [
-            ['', (), {'column_names': ['pk', 'rpsl_pk', 'parsed_data']}],
+            ['', (), {'column_names': ['pk', 'rpsl_pk', 'object_class', 'source', 'parsed_data']}],
             ['sources', (['TEST'],), {}],
             ['lookup_attr', ('mnt-by', 'TEST-MNT'), {}],
 
-            ['', (), {'column_names': ['pk', 'rpsl_pk', 'parsed_data']}],
+            ['', (), {'column_names': ['pk', 'rpsl_pk', 'object_class', 'source', 'parsed_data']}],
             ['sources', (['TEST'],), {}],
             ['rpsl_pk', ('TEST-MNT',), {}],
             ['object_classes', (['mntner'],), {}],
