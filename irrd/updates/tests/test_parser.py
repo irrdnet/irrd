@@ -100,7 +100,7 @@ class TestSingleChangeRequestHandling:
             result_unknown.save()
         with raises(ValueError):
             result_invalid.save()
-        assert flatten_mock_calls() == [
+        assert flatten_mock_calls(mock_dh) == [
             ['delete_rpsl_object', (), {
                 'rpsl_object': result_inetnum.rpsl_obj_current, 'origin': JournalEntryOrigin.auth_change
             }],
