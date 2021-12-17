@@ -395,6 +395,7 @@ class SuspensionRequest:
             self.info_messages = []
             self.error_messages = [str(exc)]
 
+        self.validate()
         if not self.is_valid() or not self.rpsl_obj_new:
             return
 
@@ -458,6 +459,7 @@ class SuspensionRequest:
         }
 
     def notification_target_report(self):
+        # We never message notification targets
         raise NotImplementedError
 
     def request_type_str(self) -> str:
@@ -474,9 +476,6 @@ class SuspensionRequest:
         return set()
 
     def validate(self) -> bool:
-        return self._check_auth()
-
-    def _check_auth(self) -> bool:
         if not self.auth_validator.check_override():
             self.status = UpdateRequestStatus.ERROR_AUTH
             self.error_messages.append("Invalid authentication: override password invalid or missing")
