@@ -1351,8 +1351,8 @@ class TestSuspensionRequest:
 
         (r, *_) = parse_change_requests(self.default_request, mock_dh, mock_auth_validator, None)
 
+        assert not r.is_valid()
         assert r.status == UpdateRequestStatus.ERROR_AUTH
         assert r.error_messages == [
             'Invalid authentication: override password invalid or missing',
         ]
-        assert not r.is_valid()

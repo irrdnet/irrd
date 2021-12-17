@@ -392,6 +392,9 @@ class SuspensionRequest:
             self.error_messages = [str(exc)]
             return
 
+        if self.error_messages:
+            return
+
         source = self.rpsl_obj_new.source()
         if not get_setting(f'sources.{source}.authoritative'):
             logger.debug(f'{id(self)}: suspension is for non-authoritative source {source}, rejected')
@@ -474,7 +477,7 @@ class SuspensionRequest:
     def validate(self) -> bool:
         if not self.auth_validator.check_override():
             self.status = UpdateRequestStatus.ERROR_AUTH
-            self.error_messages.append("Invalid authentication: override password invalid or missing:")
+            self.error_messages.append("Invalid authentication: override password invalid or missing")
             logger.debug(f'{id(self)}: Authentication check failed: override did not pass')
             return False
         logger.debug(f'{id(self)}: Authentication check succeeded, override valid')
