@@ -351,7 +351,6 @@ class SuspensionRequest:
     """
     rpsl_text_submitted: str
     rpsl_obj_new: Optional[RPSLObject]
-    rpsl_obj_current: Optional[RPSLObject] = None
     status = UpdateRequestStatus.PROCESSING
 
     error_messages: List[str]
@@ -370,14 +369,14 @@ class SuspensionRequest:
         self.database_handler = database_handler
         self.auth_validator = auth_validator
         self.rpsl_text_submitted = rpsl_text_submitted
+        self.rpsl_obj_new = None
+        self.request_type = None
+        self.info_messages = []
 
         try:
             self.request_type = getattr(SuspensionRequestType, suspension_state.upper())
         except AttributeError:
-            self.rpsl_obj_new = None
-            self.request_type = None
             self.status = UpdateRequestStatus.ERROR_PARSING
-            self.info_messages = []
             self.error_messages = [f'Unknown suspension type: {suspension_state}']
             return
 
@@ -389,11 +388,9 @@ class SuspensionRequest:
             self.info_messages = self.rpsl_obj_new.messages.infos()
             logger.debug(f'{id(self)}: Processing new SuspensionRequest for object {self.rpsl_obj_new}: request {id(self)}')
         except UnknownRPSLObjectClassException as exc:
-            self.rpsl_obj_new = None
-            self.request_type = None
             self.status = UpdateRequestStatus.ERROR_UNKNOWN_CLASS
-            self.info_messages = []
             self.error_messages = [str(exc)]
+            return
 
         self.validate()
         if not self.is_valid() or not self.rpsl_obj_new:

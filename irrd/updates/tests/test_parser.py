@@ -1279,10 +1279,22 @@ class TestSuspensionRequest:
         mock_dq, mock_dh = prepare_mocks
         mock_auth_validator = Mock(spec=AuthValidator)
 
+        request = "suspension: suspend\nmntner: TEST"
+        (result_suspension, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None)
+
+        assert result_suspension.status == UpdateRequestStatus.ERROR_PARSING
+        assert result_suspension.error_messages == [
+            'Primary key attribute "source" on object mntner is missing',
+        ]
+        assert not result_suspension.is_valid()
+
+    def test_invalid_rpsl_object_class(self, prepare_mocks, monkeypatch):
+        mock_dq, mock_dh = prepare_mocks
+        mock_auth_validator = Mock(spec=AuthValidator)
+
         request = "suspension: suspend\nsource: TEST"
         (result_suspension, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None)
 
-        assert not result_suspension.request_type
         assert result_suspension.status == UpdateRequestStatus.ERROR_UNKNOWN_CLASS
         assert result_suspension.error_messages == [
             'unknown object class: source',
@@ -1299,5 +1311,18 @@ class TestSuspensionRequest:
         assert result_suspension.status == UpdateRequestStatus.ERROR_PARSING
         assert result_suspension.error_messages == [
             'Suspensions/reactivations can only be done on mntner objects',
+        ]
+        assert not result_suspension.is_valid()
+
+    def test_invalid_override_password(self, prepare_mocks, monkeypatch):
+        mock_dq, mock_dh = prepare_mocks
+        mock_auth_validator = Mock(spec=AuthValidator)
+        mock_auth_validator.check_override.return_value = False
+
+        (result_suspension, *_) = parse_change_requests(self.default_request, mock_dh, mock_auth_validator, None)
+
+        assert result_suspension.status == UpdateRequestStatus.ERROR_AUTH
+        assert result_suspension.error_messages == [
+            'Invalid authentication: override password invalid or missing',
         ]
         assert not result_suspension.is_valid()
