@@ -1272,6 +1272,7 @@ class TestSuspensionRequest:
         assert r.status == UpdateRequestStatus.ERROR_PARSING
         assert r.error_messages == ['failure']
         assert not r.info_messages
+        assert 'failure' in r.submitter_report_human()
 
     def test_not_authoritative(self, prepare_mocks, monkeypatch):
         mock_dq, mock_dh = prepare_mocks
