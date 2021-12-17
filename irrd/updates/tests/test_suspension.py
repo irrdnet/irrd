@@ -180,7 +180,7 @@ class TestSuspension:
         assert(flatten_mock_calls(mock_database_handler, flatten_objects=True)) == [
             ['upsert_rpsl_object', ('route/192.0.2.0/24AS65537/TEST', 'JournalEntryOrigin.suspension'), {'override_created': '2021-01-01'}],
             ['upsert_rpsl_object', ('person/PERSON-TEST/TEST', 'JournalEntryOrigin.suspension'), {'override_created': '2021-01-01'}],
-            ['delete_suspended_rpsl_objects', ({'pk_regular_restore_route', 'pk_regular_restore_person'},), {'override_created': '2021-01-01'}],
+            ['delete_suspended_rpsl_objects', ({'pk_regular_restore_route', 'pk_regular_restore_person'},), {}],
         ]
         assert(flatten_mock_calls(mock_database_query)) == [
             ['', (), {'column_names': ['pk']}],
