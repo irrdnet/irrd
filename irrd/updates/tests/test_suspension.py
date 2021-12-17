@@ -140,14 +140,17 @@ class TestSuspension:
                 {
                     'pk': 'pk_regular_restore_route',
                     'object_text': SAMPLE_ROUTE,
+                    'original_created': '2021-01-01',
                 },
                 {
                     'pk': 'pk_regular_restore_person',
                     'object_text': SAMPLE_PERSON,
+                    'original_created': '2021-01-01',
                 },
                 {
                     'pk': 'pk_key_exists_role',
                     'object_text': SAMPLE_ROLE,
+                    'original_created': '2021-01-01',
                 },
             ],
             # Check for PK conflict on route
@@ -175,9 +178,9 @@ class TestSuspension:
         ]
 
         assert(flatten_mock_calls(mock_database_handler, flatten_objects=True)) == [
-            ['upsert_rpsl_object', ('route/192.0.2.0/24AS65537/TEST', 'JournalEntryOrigin.suspension'), {}],
-            ['upsert_rpsl_object', ('person/PERSON-TEST/TEST', 'JournalEntryOrigin.suspension'), {}],
-            ['delete_suspended_rpsl_objects', ({'pk_regular_restore_route', 'pk_regular_restore_person'},), {}],
+            ['upsert_rpsl_object', ('route/192.0.2.0/24AS65537/TEST', 'JournalEntryOrigin.suspension'), {'override_created': '2021-01-01'}],
+            ['upsert_rpsl_object', ('person/PERSON-TEST/TEST', 'JournalEntryOrigin.suspension'), {'override_created': '2021-01-01'}],
+            ['delete_suspended_rpsl_objects', ({'pk_regular_restore_route', 'pk_regular_restore_person'},), {'override_created': '2021-01-01'}],
         ]
         assert(flatten_mock_calls(mock_database_query)) == [
             ['', (), {'column_names': ['pk']}],
