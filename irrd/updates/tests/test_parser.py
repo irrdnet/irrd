@@ -1188,6 +1188,7 @@ class TestSuspensionRequest:
         mock_auth_validator = Mock(spec=AuthValidator)
         mock_suspend_for_mntner = Mock(suspend_for_mntner)
         monkeypatch.setattr('irrd.updates.parser.suspend_for_mntner', mock_suspend_for_mntner)
+        mock_auth_validator.check_override.return_value = True
 
         (r, *_) = parse_change_requests(self.default_request, mock_dh, mock_auth_validator, None)
 
@@ -1199,7 +1200,6 @@ class TestSuspensionRequest:
         mock_suspend_for_mntner.return_value = [
             {'object_class': 'route', 'rpsl_pk': '192.0.2.0/24', 'source': 'TEST'},
         ]
-        mock_auth_validator.check_override.return_value = True
         r.save(mock_dh)
         assert r.status == UpdateRequestStatus.SAVED
         assert not r.error_messages
@@ -1232,6 +1232,7 @@ class TestSuspensionRequest:
         mock_auth_validator = Mock(spec=AuthValidator)
         mock_reactivate_for_mntner = Mock(reactivate_for_mntner)
         monkeypatch.setattr('irrd.updates.parser.reactivate_for_mntner', mock_reactivate_for_mntner)
+        mock_auth_validator.check_override.return_value = True
 
         request = self.default_request.replace('suspend', 'reactivate')
         (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None)
@@ -1244,7 +1245,6 @@ class TestSuspensionRequest:
         mock_reactivate_for_mntner.return_value = [
             ['route/192.0.2.0/24/TEST'], ['info msg'],
         ]
-        mock_auth_validator.check_override.return_value = True
         r.save(mock_dh)
         assert r.status == UpdateRequestStatus.SAVED
         assert not r.error_messages
@@ -1256,6 +1256,22 @@ class TestSuspensionRequest:
         assert mock_reactivate_for_mntner.call_count == 1
         assert mock_reactivate_for_mntner.call_args[0][1].pk() == 'MNT-SUSPEND'
         assert flatten_mock_calls(mock_auth_validator) == [['check_override', (), {}]]
+
+    def test_failed_reactivation(self, prepare_mocks, monkeypatch):
+        mock_dq, mock_dh = prepare_mocks
+        mock_auth_validator = Mock(spec=AuthValidator)
+        mock_reactivate_for_mntner = Mock(reactivate_for_mntner)
+        monkeypatch.setattr('irrd.updates.parser.reactivate_for_mntner', mock_reactivate_for_mntner)
+        mock_auth_validator.check_override.return_value = True
+
+        request = self.default_request.replace('suspend', 'reactivate')
+        (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None)
+
+        mock_reactivate_for_mntner.side_effect = ValueError('failure')
+        r.save(mock_dh)
+        assert r.status == UpdateRequestStatus.ERROR_PARSING
+        assert r.error_messages == ['failure']
+        assert not r.info_messages
 
     def test_not_authoritative(self, prepare_mocks, monkeypatch):
         mock_dq, mock_dh = prepare_mocks

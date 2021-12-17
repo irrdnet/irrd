@@ -425,7 +425,9 @@ class SuspensionRequest:
                 self.info_messages += info_messages
                 self.info_messages += [f"Restored {r}" for r in restored]
         except ValueError as ve:
+            self.status = UpdateRequestStatus.ERROR_PARSING
             self.error_messages.append(str(ve))
+            return
 
         self.status = UpdateRequestStatus.SAVED
 
