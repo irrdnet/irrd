@@ -100,7 +100,7 @@ def reactivate_for_mntner(database_handler: DatabaseHandler, reactivated_mntner:
         if get_setting('rpki.roa_source') and rpsl_obj.rpki_relevant and rpsl_obj.asn_first:
             rpsl_obj.rpki_status = roa_validator.validate_route(rpsl_obj.prefix, rpsl_obj.asn_first, source)
 
-        database_handler.upsert_rpsl_object(rpsl_obj, JournalEntryOrigin.suspension)
+        database_handler.upsert_rpsl_object(rpsl_obj, JournalEntryOrigin.suspension, override_created=result['original_created'])
         restored_row_pk_uuids.add(result['pk'])
         restored_objects.append(rpsl_obj)
         logger.info(f"{reactivated_mntner.pk()}: Restoring object {rpsl_obj}")

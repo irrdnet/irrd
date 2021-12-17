@@ -172,7 +172,8 @@ class DatabaseHandler:
                            rpsl_object: RPSLObject,
                            origin: JournalEntryOrigin,
                            rpsl_guaranteed_no_existing=False,
-                           source_serial: Optional[int]=None) -> None:
+                           source_serial: Optional[int]=None,
+                           override_created: Optional[str]=None) -> None:
         """
         Schedule an RPSLObject for insertion/updating.
 
@@ -231,6 +232,8 @@ class DatabaseHandler:
             'scopefilter_status': rpsl_object.scopefilter_status,
             'updated': update_time,
         }
+        if override_created:
+            object_dict['created'] = override_created
 
         self._rpsl_upsert_buffer.append((object_dict, origin, source_serial))
 
