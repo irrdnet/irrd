@@ -373,7 +373,6 @@ class SuspensionRequest:
 
         try:
             self.request_type = getattr(SuspensionRequestType, suspension_state.upper())
-            logger.info(f"got {suspension_state} at {self.request_type}")
         except AttributeError:
             self.rpsl_obj_new = None
             self.request_type = None

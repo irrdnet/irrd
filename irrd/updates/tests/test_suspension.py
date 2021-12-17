@@ -117,6 +117,11 @@ class TestSuspension:
             ['first_only', (), {}],
         ]
 
+        mock_database_handler.execute_query = lambda q: []
+        with pytest.raises(ValueError) as ve:
+            list(suspend_for_mntner(mock_database_handler, mntner))
+        assert 'does not exist' in str(ve)
+
     def test_reactivate_for_mntner(self, monkeypatch, config_override):
         mock_database_handler = Mock(spec=DatabaseHandler)
         mock_database_query = Mock(spec=RPSLDatabaseQuery)
@@ -189,3 +194,8 @@ class TestSuspension:
             ['sources', (['TEST'],), {}], ['rpsl_pk', ('ROLE-TEST',), {}],
             ['object_classes', (['role'],), {}],
         ]
+
+        mock_database_handler.execute_query = lambda q: []
+        with pytest.raises(ValueError) as ve:
+            list(reactivate_for_mntner(mock_database_handler, mntner))
+        assert 'is not a mntner for any suspended' in str(ve)

@@ -38,7 +38,7 @@ def suspend_for_mntner(database_handler: DatabaseHandler, suspended_mntner: RPSL
     query2_result = list(database_handler.execute_query(query2))
 
     if not query2_result:
-        msg = f"mntner {suspended_mntner.pk()} does not exit in {source}"
+        msg = f"mntner {suspended_mntner.pk()} does not exist in {source} (or may already be suspended)"
         logger.info(f"{suspended_mntner.pk()}: error: {msg}")
         raise ValueError(msg)
 
