@@ -122,7 +122,7 @@ class ChangeSubmissionHandler:
 
         for result in change_requests:
             if result.is_valid():
-                result.save(self.database_handler)
+                result.save()
 
         self.results = change_requests
 

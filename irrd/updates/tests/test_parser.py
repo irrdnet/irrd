@@ -93,14 +93,14 @@ class TestSingleChangeRequestHandling:
         assert auth_validator.overrides == ['override-pw']
 
         mock_dh.reset_mock()
-        result_inetnum.save(mock_dh)
-        result_as_set.save(mock_dh)
+        result_inetnum.save()
+        result_as_set.save()
 
         with raises(ValueError):
-            result_unknown.save(mock_dh)
+            result_unknown.save()
         with raises(ValueError):
-            result_invalid.save(mock_dh)
-        assert flatten_mock_calls(mock_dh) == [
+            result_invalid.save()
+        assert flatten_mock_calls() == [
             ['delete_rpsl_object', (), {
                 'rpsl_object': result_inetnum.rpsl_obj_current, 'origin': JournalEntryOrigin.auth_change
             }],
@@ -1200,7 +1200,7 @@ class TestSuspensionRequest:
         mock_suspend_for_mntner.return_value = [
             {'object_class': 'route', 'rpsl_pk': '192.0.2.0/24', 'source': 'TEST'},
         ]
-        r.save(mock_dh)
+        r.save()
         assert r.status == UpdateRequestStatus.SAVED
         assert not r.error_messages
         assert r.info_messages == ['Suspended route/192.0.2.0/24/TEST']
@@ -1245,7 +1245,7 @@ class TestSuspensionRequest:
         mock_reactivate_for_mntner.return_value = [
             ['route/192.0.2.0/24/TEST'], ['info msg'],
         ]
-        r.save(mock_dh)
+        r.save()
         assert r.status == UpdateRequestStatus.SAVED
         assert not r.error_messages
         assert r.info_messages == [
@@ -1268,7 +1268,7 @@ class TestSuspensionRequest:
         (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None)
 
         mock_reactivate_for_mntner.side_effect = ValueError('failure')
-        r.save(mock_dh)
+        r.save()
         assert r.status == UpdateRequestStatus.ERROR_PARSING
         assert r.error_messages == ['failure']
         assert not r.info_messages
@@ -1289,7 +1289,7 @@ class TestSuspensionRequest:
         assert not r.is_valid()
 
         with pytest.raises(ValueError):
-            r.save(mock_dh)
+            r.save()
 
     def test_unknown_suspension(self, prepare_mocks, monkeypatch):
         mock_dq, mock_dh = prepare_mocks

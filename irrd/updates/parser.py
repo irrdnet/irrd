@@ -126,16 +126,16 @@ class ChangeRequest:
             logger.error(msg)
             raise ValueError(msg)
 
-    def save(self, database_handler: DatabaseHandler) -> None:
+    def save(self) -> None:
         """Save the change to the database."""
         if self.status != UpdateRequestStatus.PROCESSING or not self.rpsl_obj_new:
             raise ValueError('ChangeRequest can only be saved in status PROCESSING')
         if self.request_type == UpdateRequestType.DELETE and self.rpsl_obj_current is not None:
             logger.info(f'{id(self)}: Saving change for {self.rpsl_obj_new}: deleting current object')
-            database_handler.delete_rpsl_object(rpsl_object=self.rpsl_obj_current, origin=JournalEntryOrigin.auth_change)
+            self.database_handler.delete_rpsl_object(rpsl_object=self.rpsl_obj_current, origin=JournalEntryOrigin.auth_change)
         else:
             logger.info(f'{id(self)}: Saving change for {self.rpsl_obj_new}: inserting/updating current object')
-            database_handler.upsert_rpsl_object(self.rpsl_obj_new, JournalEntryOrigin.auth_change)
+            self.database_handler.upsert_rpsl_object(self.rpsl_obj_new, JournalEntryOrigin.auth_change)
         self.status = UpdateRequestStatus.SAVED
 
     def is_valid(self) -> bool:
@@ -409,7 +409,7 @@ class SuspensionRequest:
             self.status = UpdateRequestStatus.ERROR_PARSING
             return
 
-    def save(self, database_handler: DatabaseHandler) -> None:
+    def save(self) -> None:
         """Save the state change to the database."""
         mntner: RPSLMntner = self.rpsl_obj_new  # type: ignore
         if self.status != UpdateRequestStatus.PROCESSING or not self.rpsl_obj_new:
