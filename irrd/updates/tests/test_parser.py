@@ -1260,3 +1260,44 @@ class TestSuspensionRequest:
 
         with pytest.raises(ValueError):
             result_suspension.save(mock_dh)
+
+    def test_unknown_suspension(self, prepare_mocks, monkeypatch):
+        mock_dq, mock_dh = prepare_mocks
+        mock_auth_validator = Mock(spec=AuthValidator)
+
+        request = self.default_request.replace('suspend', 'invalid')
+        (result_suspension, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None)
+
+        assert not result_suspension.request_type
+        assert result_suspension.status == UpdateRequestStatus.ERROR_PARSING
+        assert result_suspension.error_messages == [
+            'Unknown suspension type: invalid',
+        ]
+        assert not result_suspension.is_valid()
+
+    def test_invalid_rpsl_object(self, prepare_mocks, monkeypatch):
+        mock_dq, mock_dh = prepare_mocks
+        mock_auth_validator = Mock(spec=AuthValidator)
+
+        request = "suspension: suspend\nsource: TEST"
+        (result_suspension, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None)
+
+        assert not result_suspension.request_type
+        assert result_suspension.status == UpdateRequestStatus.ERROR_UNKNOWN_CLASS
+        assert result_suspension.error_messages == [
+            'unknown object class: source',
+        ]
+        assert not result_suspension.is_valid()
+
+    def test_incorrect_object_class(self, prepare_mocks, monkeypatch):
+        mock_dq, mock_dh = prepare_mocks
+        mock_auth_validator = Mock(spec=AuthValidator)
+
+        request = 'override: override-pw\n\nsuspension: suspend\n' + SAMPLE_INETNUM
+        (result_suspension, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None)
+
+        assert result_suspension.status == UpdateRequestStatus.ERROR_PARSING
+        assert result_suspension.error_messages == [
+            'Suspensions/reactivations can only be done on mntner objects',
+        ]
+        assert not result_suspension.is_valid()
