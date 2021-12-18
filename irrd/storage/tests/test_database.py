@@ -587,7 +587,7 @@ class TestDatabaseHandlerLive:
         dh = database_handler_with_route
         route_object = next(dh.execute_query(RPSLDatabaseQuery()))
         with pytest.raises(ValueError):
-            dh.suspend_rpsl_object(uuid.uuid4())
+            dh.suspend_rpsl_object(uuid.uuid4(), 'MNT-ORIGIN')
         dh.suspend_rpsl_object(route_object['pk'], 'MNT-ORIGIN')
 
         assert len(list(dh.execute_query(RPSLDatabaseQuery()))) == 0
