@@ -438,17 +438,7 @@ class RPSLDatabaseSuspendedQuery(BaseRPSLObjectDatabaseQuery):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.statement = sa.select([
-            self.columns.pk,
-            self.columns.rpsl_pk,
-            self.columns.source,
-            self.columns.object_class,
-            self.columns.object_text,
-            self.columns.mntners,
-            self.columns.timestamp,
-            self.columns.original_created,
-            self.columns.original_updated,
-        ]).order_by(self.columns.timestamp.asc())
+        self.statement = sa.select(self.columns).order_by(self.columns.timestamp.asc())
 
     def mntner(self, mntner_rpsl_pk: str):
         """
