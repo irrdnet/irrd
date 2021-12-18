@@ -73,7 +73,18 @@ class TestConfiguration:
                     }
                 },
                 'auth': {
-                    'gnupg_keyring': str(tmpdir)
+                    'gnupg_keyring': str(tmpdir),
+                    'authenticate_parents_route_creation': True,
+                    'set_creation': {
+                        'as-set': {
+                            'prefix_required': True,
+                            'autnum_authentication': 'opportunistic',
+                        },
+                        'COMMON': {
+                            'prefix_required': True,
+                            'autnum_authentication': 'required',
+                        },
+                    },
                 },
                 'sources_default': ['TESTDB2', 'TESTDB'],
                 'sources': {
@@ -188,7 +199,7 @@ class TestConfiguration:
                     }
                 },
                 'auth': {
-                    'gnupg_keyring': str(tmpdir)
+                    'gnupg_keyring': str(tmpdir),
                 },
                 'rpki': {
                     'roa_source': 'https://example.com/roa.json',
@@ -239,6 +250,17 @@ class TestConfiguration:
                 'access_lists': {
                     'bad-list': {
                         '192.0.2.2.1'
+                    },
+                },
+                'auth': {
+                    'set_creation': {
+                        'as-set': {
+                            'prefix_required': 'not-a-bool',
+                            'autnum_authentication': 'unknown-value',
+                        },
+                        'not-a-real-set': {
+                            'prefix_required': True,
+                        },
                     },
                 },
                 'rpki': {
@@ -297,6 +319,9 @@ class TestConfiguration:
         assert 'Setting email.recipient_override must be an email address if set.' in str(ce.value)
         assert 'Settings user and group must both be defined, or neither.' in str(ce.value)
         assert 'Setting auth.gnupg_keyring is required.' in str(ce.value)
+        assert 'Unknown setting key: auth.set_creation.not-a-real-set.prefix_required' in str(ce.value)
+        assert 'Setting auth.set_creation.as-set.prefix_required must be a bool' in str(ce.value)
+        assert 'Setting auth.set_creation.as-set.autnum_authentication must be one of' in str(ce.value)
         assert 'Access lists doesnotexist, invalid-list referenced in settings, but not defined.' in str(ce.value)
         assert 'Setting server.http.status_access_list must be a string, if defined.' in str(ce.value)
         assert 'Invalid item in access list bad-list: IPv4 Address with more than 4 bytes.' in str(ce.value)

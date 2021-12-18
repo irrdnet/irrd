@@ -5,7 +5,7 @@ from IPy import IP
 from pytest import raises
 from pytz import timezone
 
-from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
+from irrd.conf import PASSWORD_HASH_DUMMY_VALUE, AUTH_SET_CREATION_COMMON_KEY
 from irrd.utils.rpsl_samples import (object_sample_mapping, SAMPLE_MALFORMED_EMPTY_LINE,
                                      SAMPLE_MALFORMED_ATTRIBUTE_NAME,
                                      SAMPLE_UNKNOWN_CLASS, SAMPLE_MISSING_MANDATORY_ATTRIBUTE,
@@ -142,6 +142,7 @@ class TestRPSLAsSet:
         ]
         assert obj.references_strong_inbound() == set()
         assert obj.source() == 'TEST'
+        assert obj.pk_asn_segment == 'AS65537'
 
         assert obj.parsed_data['members'] == ['AS65538', 'AS65539', 'AS65537', 'AS-OTHERSET']
         # Field parsing will cause our object to look slightly different than the original, hence the replace()
@@ -154,11 +155,20 @@ class TestRPSLAsSet:
         assert obj.__class__ == RPSLAsSet
         assert not obj.messages.errors()
         assert not obj.clean_for_create()
-        assert 'AS set names must be hierarchical and the first ' in obj.messages.errors()[0]
+        assert not obj.pk_asn_segment
+        assert 'as-set names must be hierarchical and the first ' in obj.messages.errors()[0]
 
-        config_override({'compatibility': {'permit_non_hierarchical_as_set_name': True}})
+        config_override({'auth': {'set_creation': {'as-set': {'prefix_required': False}}}})
         obj = rpsl_object_from_text(rpsl_text)
         assert obj.clean_for_create()
+        assert not obj.pk_asn_segment
+
+        config_override({'auth': {'set_creation': {
+            AUTH_SET_CREATION_COMMON_KEY: {'prefix_required': False}
+        }}})
+        obj = rpsl_object_from_text(rpsl_text)
+        assert obj.clean_for_create()
+        assert not obj.pk_asn_segment
 
 
 class TestRPSLAutNum:

@@ -44,7 +44,12 @@ irrd:
             max_connections: 10
     auth:
         gnupg_keyring: null
-        authenticate_related_mntners: true
+        authenticate_parents_route_creation: true
+        set_creation:
+            COMMON:
+                prefix_required: true
+                autnum_authentication: opportunistic
+
     email:
         footer: ''
         notification_header: |

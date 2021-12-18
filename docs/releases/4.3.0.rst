@@ -1,0 +1,40 @@
+============================
+Release notes for IRRd 4.3.0
+============================
+
+Changes to related object authentication and settings
+-----------------------------------------------------
+In version 4.2, IRRd required newly created authoritative `as-set` objects
+to have a hierarchical name where the first element is an AS number.
+In 4.3, this feature has been significantly expanded.
+
+For all RPSL set objects, IRRd can now be configured to require:
+
+* Including an ASN prefix in the name of the set, e.g. ``AS65537:AS-EXAMPLE``
+  being valid, but ``AS-EXAMPLE`` being invalid.
+* Passing authentication for the corresponding `aut-num`, e.g. AS65537 in the
+  example, skipping this check if the `aut-num` does not exist.
+* Passing authentication for the corresponding `aut-num`, e.g. AS65537 in the
+  example, failing this check if the `aut-num` does not exist.
+
+The first two options, requiring a prefix with opportunistic `aut-num` authentication,
+is now the default for all set objects.
+You can :ref:`change the configuration <conf-auth-set-creation>` for specific
+RPSL set objects, or set your own common configuration that applies to all sets.
+
+The ``compatibility.permit_non_hierarchical_as_set_name`` setting has been
+removed, as it is now covered by the ``prefix_required`` setting.
+
+The ``auth.authenticate_related_mntners`` setting has been renamed to 
+``auth.authenticate_parents_route_creation``, as this setting exclusively
+relates to :ref:`authentication for route(6) objects <auth-related-mntners-route>`
+and needs to be distinct from the configuration for RPSL set objects.
+
+If you were using ``auth.authenticate_related_mntners`` or 
+``compatibility.permit_non_hierarchical_as_set_name``, you need to update
+your configuration.
+
+All checks are only applied when users create new set objects in authoritative
+databases. Authoritative updates to existing objects, deletions, or objects from
+mirrors are never affected. When looking for related objects,
+IRRd only looks in the same IRR source.

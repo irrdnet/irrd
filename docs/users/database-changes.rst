@@ -269,11 +269,13 @@ When you create a new `mntner`, a submission must pass authorisation for
 one of the auth methods of the new mntner. You can submit other objects
 that depend on the new `mntner` in the same submission.
 
-.. _auth-related-mntners:
+.. _auth-related-mntners-route:
 
+Related maintainers in route objects
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 When you create new `route(6)` objects, authentication also needs to pass
 for the parent object. IRRd searches for the parent object in the following
-order, only considering the first match:
+order, only considering the first match, only looking in the same IRR source:
 
 * An `inet(6)num` that is an exact match to the new `route(6)`.
 * The smallest `inet(6)num` that is a less specific of the new `route(6)`.
@@ -282,7 +284,32 @@ order, only considering the first match:
 If no objects match, there is no parent object, and there are no extra
 authentication requirements.
 This behaviour can be disabled by setting
-``auth.authenticate_related_mntners`` to false.
+``auth.authenticate_parents_route_creation`` to false.
+These requirements do not apply when you change or delete existing objects.
+
+.. _auth-related-mntners-set:
+
+Related maintainers in set objects
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+When you create new set objects, you may need to pass authentication for the
+parent `aut-num` object.
+RPSL set objects are `as-set`, `filter-set`, `peering-set`, `route-set` and
+`rtr-set`.
+
+The details of this behaviour and the strictness of the checks are
+:ref:`configured by the IRR operator <conf-auth-set-creation>`. This may
+include a requirement to:
+
+* Include an ASN prefix in the name of your set, e.g. ``AS65537:AS-EXAMPLE``
+  being valid, but ``AS-EXAMPLE`` being invalid.
+* Pass authentication for the corresponding `aut-num`, e.g. AS65537 in the
+  example, skipping this check if the `aut-num` does not exist.
+* Pass authentication for the corresponding `aut-num`, e.g. AS65537 in the
+  example, failing this check if the `aut-num` does not exist.
+
+These requirements do not apply when you change or delete existing objects.
+When looking for corresponding `aut-num` objects,
+IRRd only looks in the same IRR source.
 
 Object templates
 ----------------
@@ -323,12 +350,12 @@ This template shows:
 * The `member-of` attribute is a look-up key, meaning it can be used with
   ``-i`` queries.
 * The `member-of` attribute references to the `route-set` class. It is a
-  weak references, meaning the referred `route-set` does not have to exist,
+  weak reference, meaning the referred `route-set` does not have to exist,
   but is required to meet the syntax of a `route-set` name. The attribute
   is also optional, so it can be left out entirely.
 * The `admin-c` and `tech-c` attributes reference a `role` or `person`.
   This means they may refer to either object class, but must be a
-  reference to a valid, existing `person` or `role. This `person` or
+  reference to a valid, existing `person` or `role`. This `person` or
   `role` can be created as part of the same submission.
 
 

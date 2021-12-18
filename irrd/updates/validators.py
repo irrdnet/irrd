@@ -8,10 +8,10 @@ from passlib.hash import md5_crypt
 
 from irrd.conf import get_setting
 from irrd.rpsl.parser import RPSLObject
-from irrd.rpsl.rpsl_objects import RPSLMntner, rpsl_object_from_text
+from irrd.rpsl.rpsl_objects import RPSLMntner, rpsl_object_from_text, RPSLSet
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseQuery
-from .parser_state import UpdateRequestType
+from .parser_state import RPSLSetAutnumAuthenticationMode, UpdateRequestType
 
 if TYPE_CHECKING:  # pragma: no cover
     # http://mypy.readthedocs.io/en/latest/common_issues.html#import-cycles
@@ -43,6 +43,7 @@ class ReferenceValidator:
     in the same update message. To handle this, the validator can be preloaded
     with objects that should be considered valid.
     """
+
     def __init__(self, database_handler: DatabaseHandler) -> None:
         self.database_handler = database_handler
         self._cache: Set[Tuple[str, str, str]] = set()
@@ -211,17 +212,16 @@ class AuthValidator:
             result.mntners_notify = mntner_objs_current
         else:
             result.mntners_notify = mntner_objs_new
-            if get_setting('auth.authenticate_related_mntners'):
-                mntners_related = self._find_related_mntners(rpsl_obj_new)
-                if mntners_related:
-                    related_object_class, related_pk, related_mntner_list = mntners_related
-                    logger.debug(f'Checking auth for related object {related_object_class} / '
-                                 f'{related_pk} with mntners {related_mntner_list}')
-                    valid, mntner_objs_related = self._check_mntners(related_mntner_list, source)
-                    if not valid:
-                        self._generate_failure_message(result, related_mntner_list, rpsl_obj_new,
-                                                       related_object_class, related_pk)
-                        result.mntners_notify = mntner_objs_related
+            mntners_related = self._find_related_mntners(rpsl_obj_new, result)
+            if mntners_related:
+                related_object_class, related_pk, related_mntner_list = mntners_related
+                logger.debug(f'Checking auth for related object {related_object_class} / '
+                             f'{related_pk} with mntners {related_mntner_list}')
+                valid, mntner_objs_related = self._check_mntners(related_mntner_list, source)
+                if not valid:
+                    self._generate_failure_message(result, related_mntner_list, rpsl_obj_new,
+                                                   related_object_class, related_pk)
+                    result.mntners_notify = mntner_objs_related
 
         if isinstance(rpsl_obj_new, RPSLMntner):
             if not rpsl_obj_current:
@@ -289,8 +289,7 @@ class AuthValidator:
             msg += f' - from parent {related_object_class} {related_pk}'
         result.error_messages.add(msg)
 
-    @functools.lru_cache(maxsize=50)
-    def _find_related_mntners(self, rpsl_obj_new: RPSLObject) -> Optional[Tuple[str, str, List[str]]]:
+    def _find_related_mntners(self, rpsl_obj_new: RPSLObject, result: ValidatorResult) -> Optional[Tuple[str, str, List[str]]]:
         """
         Find the maintainers of the related object to rpsl_obj_new, if any.
         This is used to authorise creating objects - authentication may be
@@ -300,11 +299,15 @@ class AuthValidator:
         - object class of the related object
         - PK of the related object
         - List of maintainers for the related object (at least one must pass)
-        Returns None of no related objects were found that should be authenticated.
+        Returns None if no related objects were found that should be authenticated.
+
+        Custom error messages may be added directly to the passed ValidatorResult.
         """
         related_object = None
         if rpsl_obj_new.rpsl_object_class in ['route', 'route6']:
             related_object = self._find_related_object_route(rpsl_obj_new)
+        if issubclass(rpsl_obj_new.__class__, RPSLSet):
+            related_object = self._find_related_object_set(rpsl_obj_new, result)
 
         if related_object:
             mntners = related_object.get('parsed_data', {}).get('mnt-by', [])
@@ -312,11 +315,15 @@ class AuthValidator:
 
         return None
 
+    @functools.lru_cache(maxsize=50)
     def _find_related_object_route(self, rpsl_obj_new: RPSLObject):
         """
         Find the related inetnum/route object to rpsl_obj_new, which must be a route(6).
         Returns a dict as returned by the database handler.
         """
+        if not get_setting('auth.authenticate_parents_route_creation'):
+            return None
+
         inetnum_class = {
             'route': 'inetnum',
             'route6': 'inet6num',
@@ -339,6 +346,35 @@ class AuthValidator:
         if routes:
             return routes[0]
 
+        return None
+
+    def _find_related_object_set(self, rpsl_obj_new: RPSLObject, result: ValidatorResult):
+        """
+        Find the related aut-num object to rpsl_obj_new, which must be a set object,
+        depending on settings.
+        Returns a dict as returned by the database handler.
+        """
+        @functools.lru_cache(maxsize=50)
+        def _find_in_db():
+            query = _init_related_object_query('aut-num', rpsl_obj_new).rpsl_pk(rpsl_obj_new.pk_asn_segment)
+            aut_nums = list(self.database_handler.execute_query(query))
+            if aut_nums:
+                return aut_nums[0]
+
+        if not rpsl_obj_new.pk_asn_segment:
+            return None
+
+        mode = RPSLSetAutnumAuthenticationMode.for_set_name(rpsl_obj_new.rpsl_object_class)
+        if mode == RPSLSetAutnumAuthenticationMode.DISABLED:
+            return None
+
+        aut_num = _find_in_db()
+        if aut_num:
+            return aut_num
+        elif mode == RPSLSetAutnumAuthenticationMode.REQUIRED:
+            result.error_messages.add(
+                f'Creating this object requires an aut-num for {rpsl_obj_new.pk_asn_segment} to exist.'
+            )
         return None
 
 

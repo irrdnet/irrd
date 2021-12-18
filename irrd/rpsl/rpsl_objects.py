@@ -2,7 +2,7 @@ from collections import OrderedDict
 
 from typing import Set, List, Optional, Union
 
-from irrd.conf import PASSWORD_HASH_DUMMY_VALUE, get_setting
+from irrd.conf import AUTH_SET_CREATION_COMMON_KEY, PASSWORD_HASH_DUMMY_VALUE, get_setting
 from irrd.utils.pgp import get_gpg_instance
 from .config import PASSWORD_HASHERS
 from .fields import (RPSLTextField, RPSLIPv4PrefixField, RPSLIPv4PrefixesField, RPSLIPv6PrefixField,
@@ -31,6 +31,24 @@ def rpsl_object_from_text(text, strict_validation=True, default_source: Optional
     return klass(from_text=text, strict_validation=strict_validation, default_source=default_source)
 
 
+class RPSLSet(RPSLObject):
+    def clean_for_create(self) -> bool:
+        self.pk_asn_segment = self.pk().split(':')[0]
+        try:
+            parse_as_number(self.pk_asn_segment)
+            return True
+        except ValidationError as ve:
+            self.pk_asn_segment = None
+            if get_setting(f'auth.set_creation.{self.rpsl_object_class}.prefix_required') is False:
+                return True
+            if get_setting(f'auth.set_creation.{AUTH_SET_CREATION_COMMON_KEY}.prefix_required') is False:
+                return True
+            self.messages.error(f'{self.rpsl_object_class} names must be hierarchical and the first '
+                                f'component must be an AS number, e.g. "AS65537:{self.pk_asn_segment}": {str(ve)}')
+
+            return False
+
+
 class RPSLAsBlock(RPSLObject):
     fields = OrderedDict([
         ('as-block', RPSLASBlockField(primary_key=True, lookup_key=True)),
@@ -45,7 +63,7 @@ class RPSLAsBlock(RPSLObject):
     ])
 
 
-class RPSLAsSet(RPSLObject):
+class RPSLAsSet(RPSLSet):
     fields = OrderedDict([
         ('as-set', RPSLSetNameField(primary_key=True, lookup_key=True, prefix='AS')),
         ('descr', RPSLTextField(multiple=True, optional=True)),
@@ -59,19 +77,6 @@ class RPSLAsSet(RPSLObject):
         ('changed', RPSLChangedField(optional=True, multiple=True)),
         ('source', RPSLGenericNameField()),
     ])
-
-    def clean_for_create(self) -> bool:
-        if get_setting('compatibility.permit_non_hierarchical_as_set_name'):
-            return True
-
-        first_segment = self.pk().split(':')[0]
-        try:
-            parse_as_number(first_segment)
-            return True
-        except ValidationError as ve:
-            self.messages.error('AS set names must be hierarchical and the first component must '
-                                f'be an AS number, e.g. "AS65537:AS-EXAMPLE": {str(ve)}')
-        return False
 
 
 class RPSLAutNum(RPSLObject):
@@ -117,7 +122,7 @@ class RPSLDomain(RPSLObject):
     ])
 
 
-class RPSLFilterSet(RPSLObject):
+class RPSLFilterSet(RPSLSet):
     fields = OrderedDict([
         ('filter-set', RPSLSetNameField(primary_key=True, lookup_key=True, prefix='FLTR')),
         ('descr', RPSLTextField(multiple=True, optional=True)),
@@ -355,7 +360,7 @@ class RPSLMntner(RPSLObject):
         return [auth for auth in lines if ' ' not in auth]
 
 
-class RPSLPeeringSet(RPSLObject):
+class RPSLPeeringSet(RPSLSet):
     fields = OrderedDict([
         ('peering-set', RPSLSetNameField(primary_key=True, lookup_key=True, prefix='PRNG')),
         ('descr', RPSLTextField(multiple=True, optional=True)),
@@ -432,7 +437,7 @@ class RPSLRoute(RPSLObject):
     ])
 
 
-class RPSLRouteSet(RPSLObject):
+class RPSLRouteSet(RPSLSet):
     fields = OrderedDict([
         ('route-set', RPSLSetNameField(primary_key=True, lookup_key=True, prefix='RS')),
         ('members', RPSLRouteSetMembersField(ip_version=4, lookup_key=True, optional=True, multiple=True)),
@@ -475,7 +480,7 @@ class RPSLRoute6(RPSLObject):
     ])
 
 
-class RPSLRtrSet(RPSLObject):
+class RPSLRtrSet(RPSLSet):
     fields = OrderedDict([
         ('rtr-set', RPSLSetNameField(primary_key=True, lookup_key=True, prefix='RTRS')),
         ('descr', RPSLTextField(multiple=True, optional=True)),

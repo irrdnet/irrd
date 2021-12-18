@@ -1,5 +1,7 @@
 from enum import unique, Enum
 
+from irrd.conf import get_setting, AUTH_SET_CREATION_COMMON_KEY
+
 
 @unique
 class UpdateRequestType(Enum):
@@ -19,3 +21,17 @@ class UpdateRequestStatus(Enum):
     ERROR_ROA = 'error: conflict with existing ROA'
     ERROR_SCOPEFILTER = 'error: not in scope'
     ERROR_NON_AUTHORITIVE = 'error: attempt to update object in non-authoritive database'
+
+
+@unique
+class RPSLSetAutnumAuthenticationMode(Enum):
+    DISABLED = 'disabled'
+    OPPORTUNISTIC = 'opportunistic'
+    REQUIRED = 'required'
+
+    @staticmethod
+    def for_set_name(set_name: str):
+        setting = get_setting(f'auth.set_creation.{set_name}.autnum_authentication')
+        if not setting:
+            setting = get_setting(f'auth.set_creation.{AUTH_SET_CREATION_COMMON_KEY}.autnum_authentication')
+        return getattr(RPSLSetAutnumAuthenticationMode, setting.upper())

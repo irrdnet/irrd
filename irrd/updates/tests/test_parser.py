@@ -133,7 +133,7 @@ class TestSingleChangeRequestHandling:
         assert not result.validate()
         assert result.status == UpdateRequestStatus.ERROR_PARSING
         assert len(result.error_messages) == 1
-        assert 'AS set names must be hierarchical and the first' in result.error_messages[0]
+        assert 'as-set names must be hierarchical and the first' in result.error_messages[0]
 
         # Test again with an UPDATE (which then fails on auth to stop)
         mock_dh.execute_query = lambda query: [{'object_text': SAMPLE_AS_SET}]
@@ -700,7 +700,7 @@ class TestSingleChangeRequestHandling:
         assert 'Ignoring override password, auth.override_password not set.' in caplog.text
 
     def test_check_valid_related_mntners_disabled(self, prepare_mocks, config_override):
-        config_override({'auth': {'authenticate_related_mntners': False}})
+        config_override({'auth': {'authenticate_parents_route_creation': False}})
         mock_dq, mock_dh = prepare_mocks
 
         query_answers = [
