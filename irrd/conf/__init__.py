@@ -310,6 +310,10 @@ class Configuration:
             if not SOURCE_NAME_RE.match(name):
                 errors.append(f'Invalid source name: {name}')
 
+            if details.get('suspension_enabled') and not details.get('authoritative'):
+                errors.append(f'Setting suspension_enabled for source {name} can not be enabled without enabling '
+                              f'authoritative.')
+
             nrtm_mirror = details.get('nrtm_host') and details.get('import_serial_source')
             if details.get('keep_journal') and not (nrtm_mirror or details.get('authoritative')):
                 errors.append(f'Setting keep_journal for source {name} can not be enabled unless either authoritative '

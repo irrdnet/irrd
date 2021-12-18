@@ -91,6 +91,7 @@ class TestConfiguration:
                     'TESTDB': {
                         'authoritative': True,
                         'keep_journal': True,
+                        'suspension_enabled': True,
                     },
                     'TESTDB2': {
                         'nrtm_host': '192.0.2.1',
@@ -281,6 +282,7 @@ class TestConfiguration:
                         'export_timer': 'bar',
                         'nrtm_host': '192.0.2.1',
                         'unknown': True,
+                        'suspension_enabled': True,
                     },
                     'TESTDB2': {
                         'authoritative': True,
@@ -329,6 +331,7 @@ class TestConfiguration:
         assert 'Invalid item in asn scopefilter: invalid.' in str(ce.value)
         assert 'Invalid item in asn scopefilter: 10-invalid.' in str(ce.value)
         assert 'Setting sources contains reserved source name: RPKI' in str(ce.value)
+        assert 'Setting suspension_enabled for source TESTDB can not be enabled without enabling authoritative.' in str(ce.value)
         assert 'Setting keep_journal for source TESTDB can not be enabled unless either ' in str(ce.value)
         assert 'Setting nrtm_host for source TESTDB can not be enabled without setting import_serial_source.' in str(ce.value)
         assert 'Setting authoritative for source TESTDB2 can not be enabled when either nrtm_host or import_source are set.' in str(ce.value)
