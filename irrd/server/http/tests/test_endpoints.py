@@ -7,7 +7,7 @@ from starlette.testclient import TestClient
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.preload import Preloader
 from irrd.updates.handler import ChangeSubmissionHandler
-from irrd.utils.validators import RPSLChangeSubmission
+from irrd.utils.validators import RPSLChangeSubmission, RPSLSuspensionSubmission
 from ..app import app
 from ..endpoints import StatusEndpoint, WhoisQueryEndpoint
 from ..status_generator import StatusGenerator
@@ -189,3 +189,37 @@ class TestObjectSubmissionEndpoint:
         assert 'expect' in response_invalid_json.text.lower()
         mock_handler.load_change_submission.assert_not_called()
         mock_handler.send_notification_target_reports.assert_not_called()
+
+
+class TestSuspensionSubmissionEndpoint:
+    def test_endpoint(self, monkeypatch):
+        mock_handler = Mock(spec=ChangeSubmissionHandler)
+        monkeypatch.setattr('irrd.server.http.endpoints.ChangeSubmissionHandler',
+                            lambda: mock_handler)
+        mock_handler.submitter_report_json = lambda: {'response': True}
+
+        client = TestClient(app)
+        data = {
+            "objects": [
+                {"mntner": "DASHCARE-MNT", "source": "DASHCARE", "request_type": "reactivate"}
+            ],
+            "override": "<>",
+        }
+        expected_data = RPSLSuspensionSubmission.parse_obj(data)
+
+        response_post = client.post('/v1/suspension/', data=ujson.dumps(data))
+        assert response_post.status_code == 200
+        assert response_post.text == '{"response":true}'
+        mock_handler.load_suspension_submission.assert_called_once_with(
+            data=expected_data,
+            request_meta={'HTTP-client-IP': 'testclient', 'HTTP-User-Agent': 'testclient'},
+        )
+        mock_handler.reset_mock()
+
+        response_invalid_format = client.post('/v1/suspension/', data='{"invalid": true}')
+        assert response_invalid_format.status_code == 400
+        assert 'field required' in response_invalid_format.text
+
+        response_invalid_json = client.post('/v1/suspension/', data='invalid')
+        assert response_invalid_json.status_code == 400
+        assert 'expect' in response_invalid_json.text.lower()

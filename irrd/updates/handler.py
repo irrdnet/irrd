@@ -98,7 +98,7 @@ class ChangeSubmissionHandler:
                 object_text,
                 self.database_handler,
                 auth_validator,
-                str(rpsl_obj.request_type),
+                rpsl_obj.request_type.value,
             ))
 
         self._handle_change_requests(change_requests, reference_validator, auth_validator)

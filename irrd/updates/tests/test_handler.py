@@ -9,8 +9,10 @@ from irrd.scopefilter.validators import ScopeFilterValidator
 from irrd.storage.models import JournalEntryOrigin
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
 from irrd.utils.test_utils import flatten_mock_calls
+from irrd.updates.parser import parse_change_requests
 from ..handler import ChangeSubmissionHandler
-from ...utils.validators import RPSLChangeSubmission
+from ...utils.validators import RPSLChangeSubmission, RPSLSuspensionSubmission
+from ..parser_state import SuspensionRequestType
 
 
 @pytest.fixture()
@@ -988,3 +990,24 @@ class TestChangeSubmissionHandler:
  
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """)
+
+    def test_load_suspension_submission(self, prepare_mocks, monkeypatch):
+        mock_dq, mock_dh, mock_email = prepare_mocks
+        mock_handle_change_requests = Mock(ChangeSubmissionHandler._handle_change_requests)
+        monkeypatch.setattr('irrd.updates.handler.ChangeSubmissionHandler._handle_change_requests', mock_handle_change_requests)
+
+        data = {
+            "objects": [
+                {"mntner": "DASHCARE-MNT", "source": "DASHCARE", "request_type": "reactivate"}
+            ],
+            "override": "override-pw",
+        }
+        submission_object = RPSLSuspensionSubmission.parse_obj(data)
+
+        ChangeSubmissionHandler().load_suspension_submission(submission_object)
+        assert mock_handle_change_requests.assert_called_once
+        (requests, reference_validator, auth_validator) = mock_handle_change_requests.call_args[0]
+        assert len(requests) == 1
+        assert 'DASHCARE-MNT' in requests[0].rpsl_text_submitted
+        assert requests[0].request_type == SuspensionRequestType.REACTIVATE
+        assert auth_validator.overrides == ['override-pw']
