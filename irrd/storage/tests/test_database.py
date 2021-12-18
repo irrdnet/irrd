@@ -586,7 +586,8 @@ class TestDatabaseHandlerLive:
         monkeypatch.setenv('IRRD_SOURCES_TEST_KEEP_JOURNAL', '1')
         dh = database_handler_with_route
         route_object = next(dh.execute_query(RPSLDatabaseQuery()))
-        dh.suspend_rpsl_object(uuid.uuid4())
+        with pytest.raises(ValueError):
+            dh.suspend_rpsl_object(uuid.uuid4())
         dh.suspend_rpsl_object(route_object['pk'])
 
         assert len(list(dh.execute_query(RPSLDatabaseQuery()))) == 0
