@@ -464,7 +464,8 @@ class DatabaseHandler:
     def delete_suspended_rpsl_objects(self, pk_uuids: Set[str]) -> None:
         """
         Remove suspended RPSL objects from the suspended store,
-        most likely after reactivation
+        typically used after reactivation. An actual reactivation happens
+        outside this method, through upsert_rpsl_object.
         """
         self._check_write_permitted()
         self._flush_rpsl_object_writing_buffer()
