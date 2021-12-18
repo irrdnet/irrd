@@ -227,7 +227,7 @@ class TestDatabaseHandlerLive:
         assert len(result) == 2
         assert 'parsed_data' in result[0]
         assert 'object_text' in result[0]
-        
+
         query = RPSLDatabaseQuery(['parsed_data']).lookup_attr('mnt-by', 'MNT-CORRECT')
         result = list(self.dh.execute_query(query))
         assert len(result) == 2
