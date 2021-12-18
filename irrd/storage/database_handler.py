@@ -386,18 +386,7 @@ class DatabaseHandler:
         ).returning(table.c.pk, table.c.rpsl_pk, table.c.source, table.c.object_class, table.c.object_text)
         results = self._connection.execute(stmt)
 
-        if results.rowcount == 0:
-            logger.error(f'Attempted to remove object {rpsl_pk}/{source}, but no database row matched')
-            return None
-        if results.rowcount > 1:  # pragma: no cover
-            # This should not be possible, as rpsl_pk/source are a composite unique value in the database scheme.
-            # Therefore, a query should not be able to affect more than one row - and we also can not test this
-            # scenario. Due to the possible harm of a bug in this area, we still check for it anyways.
-            affected_pks = ','.join([r[0] for r in results.fetchall()])
-            msg = f'Attempted to remove object {rpsl_pk}/{source}, but multiple objects were affected, '
-            msg += f'internal pks affected: {affected_pks}'
-            logger.critical(msg)
-            raise ValueError(msg)
+        self._check_single_row_match(results, user_identifier=f"{rpsl_pk}/{source}")
 
         result = results.fetchone()
         self.status_tracker.record_operation(
@@ -428,19 +417,7 @@ class DatabaseHandler:
         )
         results = self._connection.execute(stmt)
 
-        # TODO: extract this
-        if results.rowcount == 0:
-            logger.error(f'Attempted to suspend object {pk_uuid}, but no database row matched')
-            return None
-        if results.rowcount > 1:  # pragma: no cover
-            # This should not be possible, as rpsl_pk/source are a composite unique value in the database scheme.
-            # Therefore, a query should not be able to affect more than one row - and we also can not test this
-            # scenario. Due to the possible harm of a bug in this area, we still check for it anyways.
-            affected_pks = ','.join([r[0] for r in results.fetchall()])
-            msg = f'Attempted to suspend object {pk_uuid}, but multiple objects were affected, '
-            msg += f'internal pks affected: {affected_pks}'
-            logger.critical(msg)
-            raise ValueError(msg)
+               self._check_single_row_match(results, user_identifier=pk_uuid)
 
         result = results.fetchone()
         self.execute_statement(RPSLDatabaseObjectSuspended.__table__.insert().values(
@@ -645,6 +622,24 @@ class DatabaseHandler:
             msg = 'Attempted to write to SQL database from readonly database handler'
             logger.critical(msg)
             raise Exception(msg)
+        
+    def _check_single_row_match(self, query_results, user_identifier: str):
+        """
+        Check that only a single row matched for remove/suspend.
+        It should not be possible for this to go wrong.
+        """
+        if query_results.rowcount == 0:
+            logger.error(f'Attempted to remove/suspend object {user_identifier}, but no database row matched')
+            return None
+        if query_results.rowcount > 1:  # pragma: no cover
+            # This should not be possible, as rpsl_pk/source are a composite unique value in the database scheme.
+            # Therefore, a query should not be able to affect more than one row - and we also can not test this
+            # scenario. Due to the possible harm of a bug in this area, we still check for it anyways.
+            affected_pks = ','.join([r[0] for r in query_results.fetchall()])
+            msg = f'Attempted to remove object {user_identifier}, but multiple objects were affected, '
+            msg += f'internal pks affected: {affected_pks}'
+            logger.critical(msg)
+            raise ValueError(msg)
 
 
 class DatabaseStatusTracker:
