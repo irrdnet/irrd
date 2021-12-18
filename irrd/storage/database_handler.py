@@ -624,7 +624,7 @@ class DatabaseHandler:
             msg = 'Attempted to write to SQL database from readonly database handler'
             logger.critical(msg)
             raise Exception(msg)
-        
+
     def _check_single_row_match(self, query_results, user_identifier: str) -> bool:
         """
         Check that only a single row matched for remove/suspend.
