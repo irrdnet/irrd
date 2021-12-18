@@ -36,6 +36,8 @@ def upgrade():
     op.create_index(op.f('ix_rpsl_objects_suspended_rpsl_pk'), 'rpsl_objects_suspended', ['rpsl_pk'], unique=False)
     op.create_index(op.f('ix_rpsl_objects_suspended_source'), 'rpsl_objects_suspended', ['source'], unique=False)
 
+    # downgrade() can't remove this entry from the enum, so if this migration
+    # is reverted and then re-applied, altering the enum will fail
     with op.get_context().autocommit_block():
         try:
             op.execute("ALTER TYPE journalentryorigin ADD VALUE 'suspension'")

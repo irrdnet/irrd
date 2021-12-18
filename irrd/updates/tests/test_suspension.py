@@ -51,15 +51,6 @@ class TestSuspension:
                     'created': 'created',
                     'updated': 'updated',
                 },
-                {
-                    'pk': 'pk_suspend2',
-                    'rpsl_pk': 'rpsl_pk_suspend2',
-                    'parsed_data': {'mnt-by': [mntner.pk(), 'INACTIVE-MNT']},
-                    'object_text': 'text',
-                    'object_class': 'mntner',
-                    'created': 'created',
-                    'updated': 'updated',
-                },
             ],
             # Second query for suspendable objects
             [
@@ -178,8 +169,8 @@ class TestSuspension:
         ]
 
         assert(flatten_mock_calls(mock_database_handler, flatten_objects=True)) == [
-            ['upsert_rpsl_object', ('route/192.0.2.0/24AS65537/TEST', 'JournalEntryOrigin.suspension'), {'override_created': '2021-01-01'}],
-            ['upsert_rpsl_object', ('person/PERSON-TEST/TEST', 'JournalEntryOrigin.suspension'), {'override_created': '2021-01-01'}],
+            ['upsert_rpsl_object', ('route/192.0.2.0/24AS65537/TEST', 'JournalEntryOrigin.suspension'), {'forced_created_value': '2021-01-01'}],
+            ['upsert_rpsl_object', ('person/PERSON-TEST/TEST', 'JournalEntryOrigin.suspension'), {'forced_created_value': '2021-01-01'}],
             ['delete_suspended_rpsl_objects', ({'pk_regular_restore_route', 'pk_regular_restore_person'},), {}],
         ]
         assert(flatten_mock_calls(mock_database_query)) == [

@@ -390,7 +390,6 @@ class SuspensionRequest:
         except UnknownRPSLObjectClassException as exc:
             self.status = UpdateRequestStatus.ERROR_UNKNOWN_CLASS
             self.error_messages = [str(exc)]
-            return
 
         if self.error_messages:
             return
