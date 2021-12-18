@@ -16,6 +16,19 @@ logger = logging.getLogger(__name__)
 
 
 def suspend_for_mntner(database_handler: DatabaseHandler, suspended_mntner: RPSLMntner) -> List[Dict[str, str]]:
+    """
+    Suspend all RPSL objects for a mntner and return details of suspended objects.
+    
+    This will move RPSL objects to the suspended table, where they are never
+    included in query responses. RPSL objects suspended are:
+    - The mntner with primary key and source of `suspended_mntner`
+    - Any object in the same source, that has `suspended_mntner` as its only
+      active mnt-by, i.e. there are no other entries in mnt-by or those mntners
+      do not currently exist.
+    
+    Throws a ValueError if not authoritative for this source or suspended_mntner
+    does not exist. Returns database rows for all suspended objects.
+    """
     log_prelude = f'suspension {suspended_mntner.pk()}'
     source = suspended_mntner.source()
     if not get_setting(f'sources.{source}.authoritative'):
@@ -65,6 +78,24 @@ def suspend_for_mntner(database_handler: DatabaseHandler, suspended_mntner: RPSL
 
 
 def reactivate_for_mntner(database_handler: DatabaseHandler, reactivated_mntner: RPSLMntner) -> Tuple[List[RPSLObject], List[str]]:
+    """
+    Reactivate previously suspended mntners and return the restored objects.
+    
+    Revives objects that were previously suspended with suspend_for_mntner.
+    All RPSL objects that had `reactivated_mntner` as one of their mnt-by's at
+    the time of suspension are restored. Note that this is potentially different
+    from "all objects that were suspended at the time `reactivated_mntner` was
+    suspended". Reactivated objects are removed from the suspended store.
+    
+    If an object is to be reactivated, but there is already another RPSL object
+    with the same class and primary key in the same source, the reactivation
+    is skipped. The object remains in the suspended store.
+    
+    Throws a ValueError if not authoritative for this source or reactivated_mntner
+    does not exist in the suspended store.
+    Returns a tuple of all reactivated RPSL objects and a list
+    of info messages about reactivated and skipped objects.
+    """
     log_prelude = f'reactivation {reactivated_mntner.pk()}'
     source = reactivated_mntner.source()
     scopefilter_validator = ScopeFilterValidator()

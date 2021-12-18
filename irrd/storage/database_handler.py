@@ -414,6 +414,9 @@ class DatabaseHandler:
     def suspend_rpsl_object(self, pk_uuid: str) -> None:
         """
         Suspend an RPSL object from the database.
+        Suspension is kind of an administrative reversible deletion, so the
+        object is moved to a different table which is never queried by regular
+        queries. NRTM DEL entries are written to the journal.
         """
         self._check_write_permitted()
         self._flush_rpsl_object_writing_buffer()

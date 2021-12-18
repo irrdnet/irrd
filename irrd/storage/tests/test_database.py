@@ -190,7 +190,7 @@ class TestDatabaseHandlerLive:
 
         self.dh = DatabaseHandler()
         self.dh.preloader.signal_reload = Mock(return_value=None)
-        self.dh.upsert_rpsl_object(rpsl_object_route_v4, JournalEntryOrigin.auth_change, override_created='2021-01-01')
+        self.dh.upsert_rpsl_object(rpsl_object_route_v4, JournalEntryOrigin.auth_change, forced_created_value='2021-01-01')
         assert len(self.dh._rpsl_upsert_buffer) == 1
 
         rpsl_object_route_v4.parsed_data = {'mnt-by': 'MNT-CORRECT', 'source': 'TEST'}
@@ -227,7 +227,7 @@ class TestDatabaseHandlerLive:
         assert len(result) == 2
         assert 'parsed_data' in result[0]
         assert 'object_text' in result[0]
-
+        
         query = RPSLDatabaseQuery(['parsed_data']).lookup_attr('mnt-by', 'MNT-CORRECT')
         result = list(self.dh.execute_query(query))
         assert len(result) == 2
