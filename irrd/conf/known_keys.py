@@ -89,4 +89,5 @@ KNOWN_SOURCES_KEYS = {
     'strict_import_keycert_objects',
     'rpki_excluded',
     'scopefilter_excluded',
+    'suspension_enabled',
 }

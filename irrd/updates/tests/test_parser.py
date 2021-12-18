@@ -1287,7 +1287,7 @@ class TestSuspensionRequest:
         assert r.request_type == SuspensionRequestType.SUSPEND
         assert r.status == UpdateRequestStatus.ERROR_NON_AUTHORITIVE
         assert r.error_messages == [
-            'This instance is not authoritative for source TEST-NOTAUTH',
+            'This instance is not authoritative for source TEST or suspension is not enabled',
         ]
         assert not r.is_valid()
 
