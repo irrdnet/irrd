@@ -417,7 +417,7 @@ class DatabaseHandler:
         )
         results = self._connection.execute(stmt)
 
-               self._check_single_row_match(results, user_identifier=pk_uuid)
+        self._check_single_row_match(results, user_identifier=pk_uuid)
 
         result = results.fetchone()
         self.execute_statement(RPSLDatabaseObjectSuspended.__table__.insert().values(
