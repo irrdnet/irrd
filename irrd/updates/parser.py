@@ -391,7 +391,7 @@ class SuspensionRequest:
             self.status = UpdateRequestStatus.ERROR_UNKNOWN_CLASS
             self.error_messages = [str(exc)]
 
-        if self.error_messages:
+        if self.error_messages or not self.rpsl_obj_new:
             return
 
         source = self.rpsl_obj_new.source()

@@ -51,6 +51,17 @@ class TestSuspension:
                     'created': 'created',
                     'updated': 'updated',
                 },
+                # Verify that repeated objects are only included once
+                {
+                    'pk': 'pk_suspend',
+                    'rpsl_pk': 'rpsl_pk_suspend',
+                    'parsed_data': {'mnt-by': [mntner.pk()]},
+                    'object_text': 'text',
+                    'object_class': 'mntner',
+                    'created': 'created',
+                    'updated': 'updated',
+                },
+
             ],
             # Second query for suspendable objects
             [
