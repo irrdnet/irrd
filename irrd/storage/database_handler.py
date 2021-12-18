@@ -386,7 +386,8 @@ class DatabaseHandler:
         ).returning(table.c.pk, table.c.rpsl_pk, table.c.source, table.c.object_class, table.c.object_text)
         results = self._connection.execute(stmt)
 
-        self._check_single_row_match(results, user_identifier=f"{rpsl_pk}/{source}")
+        if not self._check_single_row_match(results, user_identifier=f"{rpsl_pk}/{source}"):
+            return None
 
         result = results.fetchone()
         self.status_tracker.record_operation(
@@ -417,7 +418,8 @@ class DatabaseHandler:
         )
         results = self._connection.execute(stmt)
 
-        self._check_single_row_match(results, user_identifier=pk_uuid)
+        if not self._check_single_row_match(results, user_identifier=pk_uuid):
+            raise ValueError(f"Attempt to suspend obect with PK {pk_uuid} which does not exist")
 
         result = results.fetchone()
         self.execute_statement(RPSLDatabaseObjectSuspended.__table__.insert().values(
@@ -623,14 +625,15 @@ class DatabaseHandler:
             logger.critical(msg)
             raise Exception(msg)
         
-    def _check_single_row_match(self, query_results, user_identifier: str):
+    def _check_single_row_match(self, query_results, user_identifier: str) -> bool:
         """
         Check that only a single row matched for remove/suspend.
         It should not be possible for this to go wrong.
+        Returns whether check passed, i.e. True is good.
         """
         if query_results.rowcount == 0:
             logger.error(f'Attempted to remove/suspend object {user_identifier}, but no database row matched')
-            return None
+            return False
         if query_results.rowcount > 1:  # pragma: no cover
             # This should not be possible, as rpsl_pk/source are a composite unique value in the database scheme.
             # Therefore, a query should not be able to affect more than one row - and we also can not test this
@@ -640,6 +643,7 @@ class DatabaseHandler:
             msg += f'internal pks affected: {affected_pks}'
             logger.critical(msg)
             raise ValueError(msg)
+        return True
 
 
 class DatabaseStatusTracker:
