@@ -396,9 +396,9 @@ class SuspensionRequest:
             return
 
         source = self.rpsl_obj_new.source()
-        if not get_setting(f'sources.{source}.authoritative'):
-            logger.debug(f'{id(self)}: suspension is for non-authoritative source {source}, rejected')
-            self.error_messages.append(f'This instance is not authoritative for source {source}')
+        if not get_setting(f'sources.{source}.suspension_enabled'):
+            logger.debug(f'{id(self)}: source of suspension request is {source}, does not have suspension support enabled, request rejected')
+            self.error_messages.append(f'This instance is not authoritative for source {source} or suspension is not enabled')
             self.status = UpdateRequestStatus.ERROR_NON_AUTHORITIVE
             return
 
