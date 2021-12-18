@@ -401,12 +401,15 @@ class DatabaseHandler:
         )
         self._object_classes_modified.add(result['object_class'])
 
-    def suspend_rpsl_object(self, pk_uuid: str) -> None:
+    def suspend_rpsl_object(self, pk_uuid: str, suspended_mntner_rpsl_pk: str) -> None:
         """
         Suspend an RPSL object from the database.
         Suspension is kind of an administrative reversible deletion, so the
         object is moved to a different table which is never queried by regular
         queries. NRTM DEL entries are written to the journal.
+
+        pk_uuid is the UUID of the database row for this object, suspsneded_mntner_rpsl_pk
+        is the RPSL pk of the mntner that this suspension started from.
         """
         self._check_write_permitted()
         self._flush_rpsl_object_writing_buffer()
@@ -422,12 +425,20 @@ class DatabaseHandler:
             raise ValueError(f"Attempt to suspend obect with PK {pk_uuid} which does not exist")
 
         result = results.fetchone()
+
+        # Mntners is used to figure out which objects to restore when a certain mntner is reactivated,
+        # which must always includes the mntner that was the "root" of this suspension.
+        # Deviations can occur when a mntner is suspended that does not have itself in mnt-by.
+        mntners = result['parsed_data']['mnt-by']
+        if suspended_mntner_rpsl_pk not in mntners:
+            mntners.append(suspended_mntner_rpsl_pk)
+
         self.execute_statement(RPSLDatabaseObjectSuspended.__table__.insert().values(
             rpsl_pk=result['rpsl_pk'],
             source=result['source'],
             object_class=result['object_class'],
             object_text=result['object_text'],
-            mntners=result['parsed_data']['mnt-by'],
+            mntners=mntners,
             original_created=result['created'],
             original_updated=result['updated'],
         ))

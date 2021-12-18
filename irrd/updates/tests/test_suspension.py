@@ -68,7 +68,7 @@ class TestSuspension:
                 {
                     'pk': 'pk_suspend2',
                     'rpsl_pk': 'rpsl_pk_suspend2',
-                    'parsed_data': {'mnt-by': [mntner.pk(), 'INACTIVE-MNT']},
+                    'parsed_data': {'mnt-by': ['INACTIVE-MNT']},
                     'object_text': 'text',
                     'object_class': 'mntner',
                     'created': 'created',
@@ -93,8 +93,8 @@ class TestSuspension:
         assert results[1]['pk'] == 'pk_suspend2'
 
         assert(flatten_mock_calls(mock_database_handler)) == [
-            ['suspend_rpsl_object', ('pk_suspend',), {}],
-            ['suspend_rpsl_object', ('pk_suspend2',), {}]
+            ['suspend_rpsl_object', ('pk_suspend', mntner.pk()), {}],
+            ['suspend_rpsl_object', ('pk_suspend2', mntner.pk()), {}]
         ]
         assert(flatten_mock_calls(mock_database_query)) == [
             ['', (), {'column_names': ['pk', 'rpsl_pk', 'object_class', 'source', 'parsed_data']}],

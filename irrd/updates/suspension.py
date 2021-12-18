@@ -71,7 +71,7 @@ def suspend_for_mntner(database_handler: DatabaseHandler, suspended_mntner: RPSL
             continue
 
         logger.info(f"{log_prelude}: Suspending {row['object_class']}/{row['rpsl_pk']}")
-        database_handler.suspend_rpsl_object(row['pk'])
+        database_handler.suspend_rpsl_object(row['pk'], suspended_mntner.pk())
         suspended_objects.append(row)
     return suspended_objects
 

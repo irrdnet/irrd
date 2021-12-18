@@ -588,13 +588,13 @@ class TestDatabaseHandlerLive:
         route_object = next(dh.execute_query(RPSLDatabaseQuery()))
         with pytest.raises(ValueError):
             dh.suspend_rpsl_object(uuid.uuid4())
-        dh.suspend_rpsl_object(route_object['pk'])
+        dh.suspend_rpsl_object(route_object['pk'], 'MNT-ORIGIN')
 
         assert len(list(dh.execute_query(RPSLDatabaseQuery()))) == 0
         suspended_objs = list(dh.execute_query(RPSLDatabaseSuspendedQuery()))
         assert len(suspended_objs) == 1
         assert suspended_objs[0]['rpsl_pk'] == '192.0.2.0/24,AS65537'
-        assert suspended_objs[0]['mntners'] == ['MNT-TEST', 'MNT-TEST2']
+        assert set(suspended_objs[0]['mntners']) == {'MNT-TEST', 'MNT-TEST2', 'MNT-ORIGIN'}
 
         journal = list(dh.execute_query(RPSLDatabaseJournalQuery()))
         assert len(journal) == 1
