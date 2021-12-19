@@ -71,7 +71,7 @@ def suspend_for_mntner(database_handler: DatabaseHandler, suspended_mntner: RPSL
             continue
 
         logger.info(f"{log_prelude}: Suspending {row['object_class']}/{row['rpsl_pk']}")
-        database_handler.suspend_rpsl_object(row['pk'], suspended_mntner.pk())
+        database_handler.suspend_rpsl_object(row['pk'])
         suspended_objects.append(row)
     return suspended_objects
 
@@ -115,6 +115,8 @@ def reactivate_for_mntner(database_handler: DatabaseHandler, reactivated_mntner:
         logger.info(f"{log_prelude}: error: {msg}")
         raise ValueError(msg)
 
+    # This is both a check to make sure the mntner is actually suspended,
+    # but also to catch cases where a suspended mntner did not have itself as mnt-by.
     query = RPSLDatabaseSuspendedQuery().sources([source]).rpsl_pk(reactivated_mntner.pk()).object_classes(['mntner'])
     results = list(database_handler.execute_query(query))
 

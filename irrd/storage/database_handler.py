@@ -401,7 +401,7 @@ class DatabaseHandler:
         )
         self._object_classes_modified.add(result['object_class'])
 
-    def suspend_rpsl_object(self, pk_uuid: str, suspended_mntner_rpsl_pk: str) -> None:
+    def suspend_rpsl_object(self, pk_uuid: str) -> None:
         """
         Suspend an RPSL object from the database.
         Suspension is kind of an administrative reversible deletion, so the
@@ -426,19 +426,12 @@ class DatabaseHandler:
 
         result = results.fetchone()
 
-        # Mntners is used to figure out which objects to restore when a certain mntner is reactivated,
-        # which must always includes the mntner that was the "root" of this suspension.
-        # Deviations can occur when a mntner is suspended that does not have itself in mnt-by.
-        mntners = result['parsed_data']['mnt-by']
-        if suspended_mntner_rpsl_pk not in mntners:
-            mntners.append(suspended_mntner_rpsl_pk)
-
         self.execute_statement(RPSLDatabaseObjectSuspended.__table__.insert().values(
             rpsl_pk=result['rpsl_pk'],
             source=result['source'],
             object_class=result['object_class'],
             object_text=result['object_text'],
-            mntners=mntners,
+            mntners=result['parsed_data']['mnt-by'],
             original_created=result['created'],
             original_updated=result['updated'],
         ))
