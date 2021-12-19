@@ -126,7 +126,7 @@ def reactivate_for_mntner(database_handler: DatabaseHandler, reactivated_mntner:
         raise ValueError(msg)
 
     query = RPSLDatabaseSuspendedQuery().sources([source]).mntner(reactivated_mntner.pk())
-    results = list(database_handler.execute_query(query))
+    results += list(database_handler.execute_query(query))
 
     restored_row_pk_uuids = set()
     restored_objects = []
