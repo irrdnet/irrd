@@ -105,25 +105,38 @@ def reactivate_for_mntner(database_handler: DatabaseHandler, reactivated_mntner:
 
     logger.info(f"{log_prelude}: Starting reactivation for for {reactivated_mntner}")
 
-    query = RPSLDatabaseSuspendedQuery()
-    query = query.sources([source]).mntner(reactivated_mntner.pk())
+    def pk_exists(pk: str, rpsl_object_class: str) -> bool:
+        existing_object_query = RPSLDatabaseQuery(column_names=['pk']).sources([source])
+        existing_object_query = existing_object_query.rpsl_pk(pk).object_classes([rpsl_object_class])
+        return bool(list(database_handler.execute_query(existing_object_query)))
+
+    if pk_exists(reactivated_mntner.pk(), 'mntner'):
+        msg = f"source {source} has a currently active mntner {reactivated_mntner.pk()} - can not restore the suspended one"
+        logger.info(f"{log_prelude}: error: {msg}")
+        raise ValueError(msg)
+
+    query = RPSLDatabaseSuspendedQuery().sources([source]).rpsl_pk(reactivated_mntner.pk()).object_classes(['mntner'])
     results = list(database_handler.execute_query(query))
 
     if not results:
-        msg = f"mntner {reactivated_mntner.pk()} is not a mntner for any suspended objects in {source}"
+        msg = f"mntner {reactivated_mntner.pk()} not found in suspended store for source {source}"
         logger.info(f"{log_prelude}: error: {msg}")
         raise ValueError(msg)
+
+    query = RPSLDatabaseSuspendedQuery().sources([source]).mntner(reactivated_mntner.pk())
+    results = list(database_handler.execute_query(query))
 
     restored_row_pk_uuids = set()
     restored_objects = []
     info_messages: List[str] = []
 
     for result in results:
+        if result['pk'] in restored_row_pk_uuids:
+            continue
+
         reactivating_obj = rpsl_object_from_text(result['object_text'], strict_validation=False)
 
-        existing_object_query = RPSLDatabaseQuery(column_names=['pk']).sources([source])
-        existing_object_query = existing_object_query.rpsl_pk(reactivating_obj.pk()).object_classes([reactivating_obj.rpsl_object_class])
-        if list(database_handler.execute_query(existing_object_query)):
+        if pk_exists(reactivating_obj.pk(), reactivating_obj.rpsl_object_class):
             msg = f"Skipping restore of object {reactivating_obj} - an object already exists with the same key"
             logger.info(f"{log_prelude}: {msg}")
             info_messages.append(msg)

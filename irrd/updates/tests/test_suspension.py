@@ -3,7 +3,7 @@ from unittest.mock import Mock
 
 from irrd.rpsl.rpsl_objects import RPSLMntner
 from irrd.storage.database_handler import DatabaseHandler
-from irrd.storage.queries import RPSLDatabaseQuery
+from irrd.storage.queries import RPSLDatabaseQuery, RPSLDatabaseSuspendedQuery
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER, SAMPLE_PERSON, SAMPLE_ROLE, SAMPLE_ROUTE
 from irrd.utils.test_utils import flatten_mock_calls
 from irrd.scopefilter.validators import ScopeFilterValidator
@@ -112,7 +112,7 @@ class TestSuspension:
     def test_reactivate_for_mntner(self, monkeypatch, config_override):
         mock_database_handler = Mock(spec=DatabaseHandler)
         mock_database_query = Mock(spec=RPSLDatabaseQuery)
-        mock_database_suspended_query = Mock(spec=RPSLDatabaseQuery)
+        mock_database_suspended_query = Mock(spec=RPSLDatabaseSuspendedQuery)
         mock_scopefilter = Mock(spec=ScopeFilterValidator)
         mock_roa_valiator = Mock(spec=SingleRouteROAValidator)
         monkeypatch.setattr("irrd.updates.suspension.RPSLDatabaseQuery", mock_database_query)
@@ -122,8 +122,23 @@ class TestSuspension:
 
         mntner = RPSLMntner(SAMPLE_MNTNER)
         query_results = iter([
+            # Check for PK conflict with live object
+            [],
+            # Retrieve suspended mntner
+            [
+                {
+                    'pk': 'pk_regular_mntner',
+                    'object_text': SAMPLE_MNTNER,
+                    'original_created': '2021-01-01',
+                },
+            ],
             # The currently suspended objects
             [
+                {
+                    'pk': 'pk_regular_mntner',
+                    'object_text': SAMPLE_MNTNER,
+                    'original_created': '2021-01-01',
+                },
                 {
                     'pk': 'pk_regular_restore_route',
                     'object_text': SAMPLE_ROUTE,
@@ -140,11 +155,13 @@ class TestSuspension:
                     'original_created': '2021-01-01',
                 },
             ],
-            # Check for PK conflict on route
+            # Check for PK conflict with live object on mntner (again, yes)
             [],
-            # Check for PK conflict on person
+            # Check for PK conflict with live object on route
             [],
-            # Check for PK conflict on role
+            # Check for PK conflict with live object on person
+            [],
+            # Check for PK conflict with live object on role
             [{'pk': 'pk_regular_restore_person'}],
         ])
         mock_database_handler.execute_query = lambda q: next(query_results)
@@ -157,19 +174,31 @@ class TestSuspension:
 
         config_override({'sources': {'TEST': {'authoritative': True}}})
         reactivated_objects, info_messages = list(reactivate_for_mntner(mock_database_handler, mntner))
-        assert len(reactivated_objects) == 2
-        assert reactivated_objects[0].pk() == '192.0.2.0/24AS65537'
-        assert reactivated_objects[1].pk() == 'PERSON-TEST'
+        assert len(reactivated_objects) == 3
+        assert reactivated_objects[0].pk() == mntner.pk()
+        assert reactivated_objects[1].pk() == '192.0.2.0/24AS65537'
+        assert reactivated_objects[2].pk() == 'PERSON-TEST'
         assert info_messages == [
             'Skipping restore of object role/ROLE-TEST/TEST - an object already exists with the same key'
         ]
 
         assert(flatten_mock_calls(mock_database_handler, flatten_objects=True)) == [
+            ['upsert_rpsl_object', ('mntner/TEST-MNT/TEST', 'JournalEntryOrigin.suspension'), {'forced_created_value': '2021-01-01'}],
             ['upsert_rpsl_object', ('route/192.0.2.0/24AS65537/TEST', 'JournalEntryOrigin.suspension'), {'forced_created_value': '2021-01-01'}],
             ['upsert_rpsl_object', ('person/PERSON-TEST/TEST', 'JournalEntryOrigin.suspension'), {'forced_created_value': '2021-01-01'}],
-            ['delete_suspended_rpsl_objects', ({'pk_regular_restore_route', 'pk_regular_restore_person'},), {}],
+            ['delete_suspended_rpsl_objects', ({'pk_regular_mntner', 'pk_regular_restore_route', 'pk_regular_restore_person'},), {}],
         ]
         assert(flatten_mock_calls(mock_database_query)) == [
+            ['', (), {'column_names': ['pk']}],
+            ['sources', (['TEST'],), {}],
+            ['rpsl_pk', ('TEST-MNT',), {}],
+            ['object_classes', (['mntner'],), {}],
+
+            ['', (), {'column_names': ['pk']}],
+            ['sources', (['TEST'],), {}],
+            ['rpsl_pk', ('TEST-MNT',), {}],
+            ['object_classes', (['mntner'],), {}],
+
             ['', (), {'column_names': ['pk']}],
             ['sources', (['TEST'],), {}],
             ['rpsl_pk', ('192.0.2.0/24AS65537',), {}],
@@ -188,4 +217,11 @@ class TestSuspension:
         mock_database_handler.execute_query = lambda q: []
         with pytest.raises(ValueError) as ve:
             list(reactivate_for_mntner(mock_database_handler, mntner))
-        assert 'is not a mntner for any suspended' in str(ve)
+        assert 'not found in suspended store' in str(ve)
+
+        mock_database_handler.execute_query = lambda q: [{
+            'rpsl_pk': 'conflicting existing mntner'
+        }]
+        with pytest.raises(ValueError) as ve:
+            list(reactivate_for_mntner(mock_database_handler, mntner))
+        assert 'has a currently active mntner ' in str(ve)
