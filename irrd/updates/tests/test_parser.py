@@ -19,7 +19,7 @@ from irrd.utils.text import splitline_unicodesafe
 from irrd.updates.suspension import reactivate_for_mntner, suspend_for_mntner
 from ..parser import parse_change_requests
 from ..parser_state import SuspensionRequestType, UpdateRequestType, UpdateRequestStatus
-from ..validators import ReferenceValidator, AuthValidator, ValidatorResult
+from ..validators import ReferenceValidator, AuthValidator, RulesValidator, ValidatorResult
 
 
 @pytest.fixture()
@@ -35,6 +35,9 @@ def prepare_mocks(monkeypatch):
     monkeypatch.setattr('irrd.updates.parser.ScopeFilterValidator',
                         lambda: mock_scopefilter)
     mock_scopefilter.validate_rpsl_object = lambda obj: (ScopeFilterStatus.in_scope, '')
+    mock_rules_validator = Mock(spec=RulesValidator)
+    monkeypatch.setattr('irrd.updates.parser.RulesValidator', lambda dh: mock_rules_validator)
+    mock_rules_validator.validate.return_value = ValidatorResult()
     yield mock_dq, mock_dh
 
 
@@ -142,6 +145,26 @@ class TestSingleChangeRequestHandling:
         result = parse_change_requests(invalid_create_text, mock_dh, auth_validator, None)[0]
         assert not result.validate()
         assert result.error_messages == ['error catch']
+
+    def test_calls_rules_validator(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
+
+        mock_dh.execute_query = lambda query: []
+
+        auth_validator = Mock()
+        invalid_auth_result = ValidatorResult()
+        invalid_auth_result.error_messages.add('error catch')
+        auth_validator.process_auth = lambda new, cur: invalid_auth_result
+
+        result = parse_change_requests(SAMPLE_AS_SET, mock_dh, auth_validator, None)[0]
+        invalid_rules_result = ValidatorResult()
+        invalid_rules_result.error_messages.add('rules fault')
+        result.rules_validator.validate.return_value = invalid_rules_result
+
+        assert not result.validate()
+        assert result.status == UpdateRequestStatus.ERROR_RULES
+        assert len(result.error_messages) == 1
+        assert 'rules fault' in result.error_messages[0]
 
     def test_save_nonexistent_object(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks

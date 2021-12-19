@@ -7,13 +7,16 @@ from pytest import raises
 
 from irrd.conf import AUTH_SET_CREATION_COMMON_KEY
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
+from irrd.storage.database_handler import DatabaseHandler
 from irrd.utils.rpsl_samples import (SAMPLE_AS_SET, SAMPLE_FILTER_SET, SAMPLE_MNTNER, SAMPLE_MNTNER_CRYPT,
                                      SAMPLE_MNTNER_MD5, SAMPLE_PERSON,
                                      SAMPLE_ROUTE, SAMPLE_ROUTE6)
 from irrd.utils.test_utils import flatten_mock_calls
 from irrd.utils.text import remove_auth_hashes
 
-from ..validators import AuthValidator
+from irrd.storage.queries import RPSLDatabaseSuspendedQuery
+from irrd.updates.parser_state import UpdateRequestType
+from ..validators import AuthValidator, RulesValidator
 
 VALID_PW = 'override-password'
 INVALID_PW = 'not-override-password'
@@ -22,19 +25,17 @@ MNTNER_OBJ_CRYPT_PW = SAMPLE_MNTNER.replace('MD5', '')
 MNTNER_OBJ_MD5_PW = SAMPLE_MNTNER.replace('CRYPT', '')
 
 
-@pytest.fixture()
-def prepare_mocks(monkeypatch):
-    mock_dh = Mock()
-    mock_dq = Mock()
-    monkeypatch.setattr('irrd.updates.parser.RPSLDatabaseQuery', lambda: mock_dq)
-    monkeypatch.setattr('irrd.updates.validators.RPSLDatabaseQuery', lambda: mock_dq)
+class TestAuthValidator:
+    @pytest.fixture()
+    def prepare_mocks(self, monkeypatch):
+        mock_dh = Mock()
+        mock_dq = Mock()
+        monkeypatch.setattr('irrd.updates.validators.RPSLDatabaseQuery', lambda: mock_dq)
 
-    validator = AuthValidator(mock_dh, None)
-    yield validator, mock_dq, mock_dh
+        validator = AuthValidator(mock_dh, None)
+        yield validator, mock_dq, mock_dh
 
-
-class TestAuthValidatorOverride:
-    def test_valid_override(self, prepare_mocks, config_override):
+    def test_override_valid(self, prepare_mocks, config_override):
         config_override({
             'auth': {'override_password': VALID_PW_HASH},
         })
@@ -51,7 +52,7 @@ class TestAuthValidatorOverride:
         assert result.is_valid(), result.error_messages
         assert result.used_override
 
-    def test_invalid_or_missing_override(self, prepare_mocks, config_override):
+    def test_override_invalid_or_missing(self, prepare_mocks, config_override):
         # This test mostly ignores the regular process that happens
         # after override validation fails.
         validator, mock_dq, mock_dh = prepare_mocks
@@ -84,8 +85,6 @@ class TestAuthValidatorOverride:
         assert not result.is_valid()
         assert not result.used_override
 
-
-class TestAuthValidator:
     def test_valid_new_person(self, prepare_mocks):
         validator, mock_dq, mock_dh = prepare_mocks
         person = rpsl_object_from_text(SAMPLE_PERSON)
@@ -246,8 +245,6 @@ class TestAuthValidator:
             'submitted. Either submit only full hashes, or a single password.'
         }
 
-
-class TestAuthValidatorRelatedRouteObjects:
     def test_related_route_exact_inetnum(self, prepare_mocks, config_override):
         validator, mock_dq, mock_dh = prepare_mocks
         route = rpsl_object_from_text(SAMPLE_ROUTE)
@@ -437,8 +434,6 @@ class TestAuthValidatorRelatedRouteObjects:
             ['ip_less_specific_one_level', ('2001:db8::/48',), {}],
         ]
 
-
-class TestAuthValidatorRelatedAutNumObjects:
     def test_as_set_autnum_disabled(self, prepare_mocks, config_override):
         config_override({'auth': {'set_creation': {'as-set': {'autnum_authentication': 'disabled'}}}})
         validator, mock_dq, mock_dh = prepare_mocks
@@ -575,4 +570,54 @@ class TestAuthValidatorRelatedAutNumObjects:
             ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
             ['rpsl_pks', ({'TEST-MNT'},), {}],
+        ]
+
+
+class TestRulesValidator:
+    @pytest.fixture()
+    def prepare_mocks(self, monkeypatch):
+        mock_dh = Mock(spec=DatabaseHandler)
+        mock_dsq = Mock(spec=RPSLDatabaseSuspendedQuery)
+        monkeypatch.setattr('irrd.updates.validators.RPSLDatabaseSuspendedQuery', mock_dsq)
+
+        validator = RulesValidator(mock_dh)
+        yield validator, mock_dsq, mock_dh
+
+    def test_mntner_create(self, prepare_mocks):
+        validator, mock_dsq, mock_dh = prepare_mocks
+
+        person = rpsl_object_from_text(SAMPLE_PERSON)
+        mntner = rpsl_object_from_text(SAMPLE_MNTNER)
+
+        mock_dh.execute_query.return_value = []
+        assert validator.validate(person, UpdateRequestType.CREATE).is_valid()
+        assert validator.validate(mntner, UpdateRequestType.MODIFY).is_valid()
+        assert validator.validate(mntner, UpdateRequestType.DELETE).is_valid()
+        assert validator.validate(mntner, UpdateRequestType.CREATE).is_valid()
+
+        validator._check_suspended_mntner_with_same_pk.cache_clear()
+        mock_dh.execute_query.return_value = [{
+            'rpsl_pk': 'conflicting entry which is only counted, not used'
+        }]
+        assert validator.validate(person, UpdateRequestType.CREATE).is_valid()
+        assert validator.validate(mntner, UpdateRequestType.MODIFY).is_valid()
+        assert validator.validate(mntner, UpdateRequestType.DELETE).is_valid()
+        invalid = validator.validate(mntner, UpdateRequestType.CREATE)
+        assert not invalid.is_valid()
+        assert invalid.error_messages == {
+            'A suspended mntner with primary key TEST-MNT already exists for TEST'
+        }
+
+        assert flatten_mock_calls(mock_dsq, flatten_objects=True) == [
+            ['', (), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['pk', ('TEST-MNT',), {}],
+            ['sources', (['TEST'],), {}],
+            ['first_only', (), {}],
+
+            ['', (), {}],
+            ['object_classes', (['mntner'],), {}],
+            ['pk', ('TEST-MNT',), {}],
+            ['sources', (['TEST'],), {}],
+            ['first_only', (), {}]
         ]

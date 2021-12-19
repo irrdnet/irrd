@@ -10,7 +10,7 @@ from irrd.conf import get_setting
 from irrd.rpsl.parser import RPSLObject
 from irrd.rpsl.rpsl_objects import RPSLMntner, rpsl_object_from_text, RPSLSet
 from irrd.storage.database_handler import DatabaseHandler
-from irrd.storage.queries import RPSLDatabaseQuery
+from irrd.storage.queries import RPSLDatabaseQuery, RPSLDatabaseSuspendedQuery
 from .parser_state import RPSLSetAutnumAuthenticationMode, UpdateRequestType
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -387,3 +387,27 @@ def _init_related_object_query(rpsl_object_class: str, rpsl_obj_new: RPSLObject)
     query = RPSLDatabaseQuery().sources([rpsl_obj_new.source()])
     query = query.object_classes([rpsl_object_class])
     return query.first_only()
+
+
+class RulesValidator:
+    """
+    The RulesValidator validates any other rules for RPSL object changes.
+    This means: anything that is not authentication, references, RPKI or scope filter.
+    """
+
+    def __init__(self, database_handler: DatabaseHandler) -> None:
+        self.database_handler = database_handler
+
+    def validate(self, rpsl_obj: RPSLObject, request_type: UpdateRequestType) -> ValidatorResult:
+        result = ValidatorResult()
+        if request_type == UpdateRequestType.CREATE and rpsl_obj.rpsl_object_class == 'mntner' and \
+                self._check_suspended_mntner_with_same_pk(rpsl_obj.pk(), rpsl_obj.source()):
+            result.error_messages.add(
+                f'A suspended mntner with primary key {rpsl_obj.pk()} already exists for {rpsl_obj.source()}'
+            )
+        return result
+
+    @functools.lru_cache(maxsize=50)
+    def _check_suspended_mntner_with_same_pk(self, pk: str, source: str) -> bool:
+        q = RPSLDatabaseSuspendedQuery().object_classes(['mntner']).pk(pk).sources([source]).first_only()
+        return bool(list(self.database_handler.execute_query(q)))

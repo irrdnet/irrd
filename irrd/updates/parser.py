@@ -14,7 +14,7 @@ from irrd.storage.models import JournalEntryOrigin
 from irrd.storage.queries import RPSLDatabaseQuery
 from irrd.utils.text import splitline_unicodesafe
 from .parser_state import UpdateRequestType, UpdateRequestStatus, SuspensionRequestType
-from .validators import ReferenceValidator, AuthValidator
+from .validators import ReferenceValidator, AuthValidator, RulesValidator
 from .suspension import suspend_for_mntner, reactivate_for_mntner
 
 logger = logging.getLogger(__name__)
@@ -65,6 +65,7 @@ class ChangeRequest:
         self._cached_roa_validity: Optional[bool] = None
         self.roa_validator = SingleRouteROAValidator(database_handler)
         self.scopefilter_validator = ScopeFilterValidator()
+        self.rules_validator = RulesValidator(database_handler)
 
         try:
             self.rpsl_obj_new = rpsl_object_from_text(rpsl_text_submitted, strict_validation=True)
@@ -239,6 +240,15 @@ class ChangeRequest:
                 self.error_messages += self.rpsl_obj_new.messages.errors()
                 self.status = UpdateRequestStatus.ERROR_PARSING
                 return False
+        if self.rpsl_obj_new and self.request_type:
+            rules_result = self.rules_validator.validate(self.rpsl_obj_new, self.request_type)
+            self.info_messages += rules_result.info_messages
+            self.error_messages += rules_result.error_messages
+            if not rules_result.is_valid():
+                logger.debug(f'{id(self)}: Rules check failed: {rules_result.error_messages}')
+                self.status = UpdateRequestStatus.ERROR_RULES
+                return False
+
         auth_valid = self._check_auth()
         if not auth_valid:
             return False
