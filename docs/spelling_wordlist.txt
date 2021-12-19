@@ -62,6 +62,7 @@ pubsub
 py
 rc
 reStructuredText
+reactivations
 resolvers
 rpki
 rpki-ov-state
