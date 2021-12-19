@@ -409,5 +409,5 @@ class RulesValidator:
 
     @functools.lru_cache(maxsize=50)
     def _check_suspended_mntner_with_same_pk(self, pk: str, source: str) -> bool:
-        q = RPSLDatabaseSuspendedQuery().object_classes(['mntner']).pk(pk).sources([source]).first_only()
+        q = RPSLDatabaseSuspendedQuery().object_classes(['mntner']).rpsl_pk(pk).sources([source]).first_only()
         return bool(list(self.database_handler.execute_query(q)))
