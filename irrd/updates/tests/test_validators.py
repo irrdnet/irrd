@@ -611,13 +611,13 @@ class TestRulesValidator:
         assert flatten_mock_calls(mock_dsq, flatten_objects=True) == [
             ['', (), {}],
             ['object_classes', (['mntner'],), {}],
-            ['pk', ('TEST-MNT',), {}],
+            ['rpsl_pk', ('TEST-MNT',), {}],
             ['sources', (['TEST'],), {}],
             ['first_only', (), {}],
 
             ['', (), {}],
             ['object_classes', (['mntner'],), {}],
-            ['pk', ('TEST-MNT',), {}],
+            ['rpsl_pk', ('TEST-MNT',), {}],
             ['sources', (['TEST'],), {}],
             ['first_only', (), {}]
         ]
