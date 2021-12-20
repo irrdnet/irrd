@@ -66,7 +66,7 @@ def suspend_for_mntner(database_handler: DatabaseHandler, suspended_mntner: RPSL
             for m in set(row['parsed_data']['mnt-by'])
             if m != suspended_mntner.pk() and mntner_active(m)
         ]
-        if mntners_active:
+        if row['rpsl_pk'] != suspended_mntner.pk() and mntners_active:
             logger.info(f"{log_prelude}: Skipping suspension of {row['object_class']}/{row['rpsl_pk']} because of remaining active mntners {mntners_active}")
             continue
 

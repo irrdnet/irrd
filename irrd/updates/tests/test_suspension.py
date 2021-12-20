@@ -23,11 +23,14 @@ class TestSuspension:
         mntner = RPSLMntner(SAMPLE_MNTNER)
         query_results = iter([
             # First query for suspendable objects
+            # the mntner has another active mntner, but should
+            # be suspended anyways. Other objects are skipped if
+            # they have OTHER-MNT.
             [
                 {
                     'pk': 'pk_suspend',
                     'rpsl_pk': 'rpsl_pk_suspend',
-                    'parsed_data': {'mnt-by': [mntner.pk()]},
+                    'parsed_data': {'mnt-by': [mntner.pk(), 'OTHER-MNT']},
                     'object_class': 'mntner',
                 },
                 {
@@ -39,13 +42,13 @@ class TestSuspension:
                 {
                     'pk': 'pk_skip2',
                     'rpsl_pk': 'rpsl_pk_skip2',
-                    'parsed_data': {'mnt-by': [mntner.pk(), 'OTHER-MNT']},
+                    'parsed_data': {'mnt-by': [mntner.pk(), 'OTHER-MNT', 'INACTIVE-MNT']},
                     'object_class': 'mntner',
                 },
                 # Verify that repeated objects are only included once
                 {
                     'pk': 'pk_suspend',
-                    'rpsl_pk': 'rpsl_pk_suspend',
+                    'rpsl_pk': mntner.pk(),
                     'parsed_data': {'mnt-by': [mntner.pk()]},
                     'object_class': 'mntner',
                 },
