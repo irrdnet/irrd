@@ -48,11 +48,10 @@ class TestSuspension:
                 # Verify that repeated objects are only included once
                 {
                     'pk': 'pk_suspend',
-                    'rpsl_pk': mntner.pk(),
+                    'rpsl_pk': 'rpsl_pk_suspend',
                     'parsed_data': {'mnt-by': [mntner.pk()]},
                     'object_class': 'mntner',
                 },
-
             ],
             # Second query for suspendable objects
             [
