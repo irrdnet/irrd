@@ -16,9 +16,10 @@ from irrd.utils.rpsl_samples import SAMPLE_INETNUM, SAMPLE_AS_SET, SAMPLE_PERSON
     SAMPLE_ROUTE, SAMPLE_ROUTE6
 from irrd.utils.test_utils import flatten_mock_calls
 from irrd.utils.text import splitline_unicodesafe
+from irrd.updates.suspension import reactivate_for_mntner, suspend_for_mntner
 from ..parser import parse_change_requests
-from ..parser_state import UpdateRequestType, UpdateRequestStatus
-from ..validators import ReferenceValidator, AuthValidator, ValidatorResult
+from ..parser_state import SuspensionRequestType, UpdateRequestType, UpdateRequestStatus
+from ..validators import ReferenceValidator, AuthValidator, RulesValidator, ValidatorResult
 
 
 @pytest.fixture()
@@ -34,11 +35,15 @@ def prepare_mocks(monkeypatch):
     monkeypatch.setattr('irrd.updates.parser.ScopeFilterValidator',
                         lambda: mock_scopefilter)
     mock_scopefilter.validate_rpsl_object = lambda obj: (ScopeFilterStatus.in_scope, '')
+    mock_rules_validator = Mock(spec=RulesValidator)
+    monkeypatch.setattr('irrd.updates.parser.RulesValidator', lambda dh: mock_rules_validator)
+    mock_rules_validator.validate.return_value = ValidatorResult()
     yield mock_dq, mock_dh
 
 
 class TestSingleChangeRequestHandling:
-    # NOTE: the scope of this test includes ChangeRequest, ReferenceValidator and AuthValidator
+    # NOTE: the scope of this test includes ChangeRequest,
+    # ReferenceValidator and AuthValidator. See #412.
 
     def test_parse(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
@@ -91,13 +96,13 @@ class TestSingleChangeRequestHandling:
         assert auth_validator.overrides == ['override-pw']
 
         mock_dh.reset_mock()
-        result_inetnum.save(mock_dh)
-        result_as_set.save(mock_dh)
+        result_inetnum.save()
+        result_as_set.save()
 
         with raises(ValueError):
-            result_unknown.save(mock_dh)
+            result_unknown.save()
         with raises(ValueError):
-            result_invalid.save(mock_dh)
+            result_invalid.save()
         assert flatten_mock_calls(mock_dh) == [
             ['delete_rpsl_object', (), {
                 'rpsl_object': result_inetnum.rpsl_obj_current, 'origin': JournalEntryOrigin.auth_change
@@ -140,6 +145,26 @@ class TestSingleChangeRequestHandling:
         result = parse_change_requests(invalid_create_text, mock_dh, auth_validator, None)[0]
         assert not result.validate()
         assert result.error_messages == ['error catch']
+
+    def test_calls_rules_validator(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
+
+        mock_dh.execute_query = lambda query: []
+
+        auth_validator = Mock()
+        invalid_auth_result = ValidatorResult()
+        invalid_auth_result.error_messages.add('error catch')
+        auth_validator.process_auth = lambda new, cur: invalid_auth_result
+
+        result = parse_change_requests(SAMPLE_AS_SET, mock_dh, auth_validator, None)[0]
+        invalid_rules_result = ValidatorResult()
+        invalid_rules_result.error_messages.add('rules fault')
+        result.rules_validator.validate.return_value = invalid_rules_result
+
+        assert not result.validate()
+        assert result.status == UpdateRequestStatus.ERROR_RULES
+        assert len(result.error_messages) == 1
+        assert 'rules fault' in result.error_messages[0]
 
     def test_save_nonexistent_object(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
@@ -1170,3 +1195,182 @@ class TestSingleChangeRequestHandling:
         request_text += 'password: pw3\n' + unknown_class + '\r\n'
         request_text += invalid_object + '\noverride: override-pw'
         return request_text
+
+
+class TestSuspensionRequest:
+    @pytest.fixture
+    def prepare_suspension_request_test(self, prepare_mocks, monkeypatch, config_override):
+        config_override({'sources': {'TEST': {'suspension_enabled': True}}})
+        mock_dq, mock_dh = prepare_mocks
+        mock_auth_validator = Mock(spec=AuthValidator)
+        mock_suspend_for_mntner = Mock(suspend_for_mntner)
+        monkeypatch.setattr('irrd.updates.parser.suspend_for_mntner', mock_suspend_for_mntner)
+        mock_reactivate_for_mntner = Mock(suspend_for_mntner)
+        monkeypatch.setattr('irrd.updates.parser.reactivate_for_mntner', mock_reactivate_for_mntner)
+        mock_auth_validator.check_override.return_value = True
+        
+        default_request = textwrap.dedent("""
+            override: override-pw
+            
+            suspension: suspend
+            mntner: MNT-SUSPEND
+            source: TEST
+            """).strip() + '\n'
+        
+        return mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request
+
+    def test_valid_suspension(self, prepare_suspension_request_test):
+        mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request = prepare_suspension_request_test
+        
+        (r, *_) = parse_change_requests(default_request, mock_dh, mock_auth_validator, None)
+
+        assert r.request_type == SuspensionRequestType.SUSPEND
+        assert r.status == UpdateRequestStatus.PROCESSING, r.error_messages
+        assert r.is_valid()
+        assert mock_auth_validator.overrides == ['override-pw']
+
+        mock_suspend_for_mntner.return_value = [
+            {'object_class': 'route', 'rpsl_pk': '192.0.2.0/24', 'source': 'TEST'},
+        ]
+        r.save()
+        assert r.status == UpdateRequestStatus.SAVED
+        assert not r.error_messages
+        assert r.info_messages == ['Suspended route/192.0.2.0/24/TEST']
+
+        assert mock_suspend_for_mntner.call_count == 1
+        assert mock_suspend_for_mntner.call_args[0][1].pk() == 'MNT-SUSPEND'
+        assert flatten_mock_calls(mock_auth_validator) == [['check_override', (), {}]]
+
+        assert not r.notification_targets()
+        assert r.request_type_str() == 'suspend'
+        assert r.object_pk_str() == 'MNT-SUSPEND'
+        assert r.object_class_str() == 'mntner'
+
+        assert r.submitter_report_json() == {
+            'successful': True,
+            'type': 'suspend',
+            'object_class': 'mntner',
+            'rpsl_pk': 'MNT-SUSPEND',
+            'info_messages': ['Suspended route/192.0.2.0/24/TEST'],
+            'error_messages': []
+        }
+        assert r.submitter_report_human() == (
+            "Suspend succeeded: [mntner] MNT-SUSPEND\n"
+            "INFO: Suspended route/192.0.2.0/24/TEST\n"
+        )
+    
+    def test_valid_reactivation(self, prepare_suspension_request_test):
+        mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request = prepare_suspension_request_test
+
+        request = default_request.replace('suspend', 'reactivate')
+        (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None)
+
+        assert r.request_type == SuspensionRequestType.REACTIVATE
+        assert r.status == UpdateRequestStatus.PROCESSING, r.error_messages
+        assert r.is_valid()
+        assert mock_auth_validator.overrides == ['override-pw']
+
+        mock_reactivate_for_mntner.return_value = [
+            ['route/192.0.2.0/24/TEST'], ['info msg'],
+        ]
+        r.save()
+        assert r.status == UpdateRequestStatus.SAVED
+        assert not r.error_messages
+        assert r.info_messages == [
+            'info msg',
+            'Restored route/192.0.2.0/24/TEST'
+        ]
+
+        assert mock_reactivate_for_mntner.call_count == 1
+        assert mock_reactivate_for_mntner.call_args[0][1].pk() == 'MNT-SUSPEND'
+        assert flatten_mock_calls(mock_auth_validator) == [['check_override', (), {}]]
+
+    def test_failed_reactivation(self, prepare_suspension_request_test):
+        mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request = prepare_suspension_request_test
+
+        request = default_request.replace('suspend', 'reactivate')
+        (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None)
+
+        mock_reactivate_for_mntner.side_effect = ValueError('failure')
+        r.save()
+        assert r.status == UpdateRequestStatus.ERROR_PARSING
+        assert r.error_messages == ['failure']
+        assert not r.info_messages
+        assert 'failure' in r.submitter_report_human()
+
+    def test_not_authoritative(self, prepare_suspension_request_test, config_override):
+        mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request = prepare_suspension_request_test
+        config_override({'sources': {'TEST': {'suspension_enabled': False}}})
+
+        (r, *_) = parse_change_requests(default_request, mock_dh, mock_auth_validator, None)
+
+        assert r.request_type == SuspensionRequestType.SUSPEND
+        assert r.status == UpdateRequestStatus.ERROR_NON_AUTHORITIVE
+        assert r.error_messages == [
+            'This instance is not authoritative for source TEST or suspension is not enabled',
+        ]
+        assert not r.is_valid()
+
+        with pytest.raises(ValueError):
+            r.save()
+
+    def test_unknown_suspension(self, prepare_suspension_request_test):
+        mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request = prepare_suspension_request_test
+
+        request = default_request.replace('suspend', 'invalid')
+        (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None)
+
+        assert not r.request_type
+        assert r.status == UpdateRequestStatus.ERROR_PARSING
+        assert r.error_messages == [
+            'Unknown suspension type: invalid',
+        ]
+        assert not r.is_valid()
+
+    def test_invalid_rpsl_object(self, prepare_suspension_request_test):
+        mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request = prepare_suspension_request_test
+
+        request = "suspension: suspend\nmntner: TEST"
+        (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None)
+
+        assert r.status == UpdateRequestStatus.ERROR_PARSING
+        assert r.error_messages == [
+            'Primary key attribute "source" on object mntner is missing',
+        ]
+        assert not r.is_valid()
+
+    def test_invalid_rpsl_object_class(self, prepare_suspension_request_test):
+        mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request = prepare_suspension_request_test
+
+        request = "suspension: suspend\nsource: TEST"
+        (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None)
+
+        assert r.status == UpdateRequestStatus.ERROR_UNKNOWN_CLASS
+        assert r.error_messages == [
+            'unknown object class: source',
+        ]
+        assert not r.is_valid()
+
+    def test_incorrect_object_class(self, prepare_suspension_request_test):
+        mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request = prepare_suspension_request_test
+
+        request = 'override: override-pw\n\nsuspension: suspend\n' + SAMPLE_INETNUM
+        (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None)
+
+        assert r.status == UpdateRequestStatus.ERROR_PARSING
+        assert r.error_messages == [
+            'Suspensions/reactivations can only be done on mntner objects',
+        ]
+        assert not r.is_valid()
+
+    def test_invalid_override_password(self, prepare_suspension_request_test):
+        mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request = prepare_suspension_request_test
+        mock_auth_validator.check_override.return_value = False
+
+        (r, *_) = parse_change_requests(default_request, mock_dh, mock_auth_validator, None)
+
+        assert not r.is_valid()
+        assert r.status == UpdateRequestStatus.ERROR_AUTH
+        assert r.error_messages == [
+            'Invalid authentication: override password invalid or missing',
+        ]

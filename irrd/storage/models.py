@@ -29,6 +29,8 @@ class JournalEntryOrigin(enum.Enum):
     rpki_status = 'RPKI_STATUS'
     # Journal entry caused by a change in the scope filter status
     scope_filter = 'SCOPE_FILTER'
+    # Journal entry caused by an object being suspended or reactivated
+    suspension = 'SUSPENSION'
 
 
 Base = declarative_base()
@@ -120,6 +122,28 @@ class RPSLDatabaseJournal(Base):  # type: ignore
 
     def __repr__(self):
         return f'<{self.source}/{self.serial}/{self.operation}/{self.rpsl_pk}>'
+
+
+class RPSLDatabaseObjectSuspended(Base):  # type: ignore
+    """
+    SQLAlchemy ORM object for suspended RPSL objects (#577)
+    """
+    __tablename__ = 'rpsl_objects_suspended'
+
+    pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text('gen_random_uuid()'), primary_key=True)
+    rpsl_pk = sa.Column(sa.String, index=True, nullable=False)
+    source = sa.Column(sa.String, index=True, nullable=False)
+
+    object_class = sa.Column(sa.String, nullable=False, index=True)
+    object_text = sa.Column(sa.Text, nullable=False)
+    mntners = sa.Column(pg.ARRAY(sa.Text), nullable=False, index=True)
+
+    timestamp = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
+    original_created = sa.Column(sa.DateTime(timezone=True), nullable=False)
+    original_updated = sa.Column(sa.DateTime(timezone=True), nullable=False)
+
+    def __repr__(self):
+        return f'<{self.rpsl_pk}/{self.source}/{self.pk}>'
 
 
 class RPSLDatabaseStatus(Base):  # type: ignore

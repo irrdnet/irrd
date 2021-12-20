@@ -13,8 +13,9 @@ from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.models import JournalEntryOrigin
 from irrd.storage.queries import RPSLDatabaseQuery
 from irrd.utils.text import splitline_unicodesafe
-from .parser_state import UpdateRequestType, UpdateRequestStatus
-from .validators import ReferenceValidator, AuthValidator
+from .parser_state import UpdateRequestType, UpdateRequestStatus, SuspensionRequestType
+from .validators import ReferenceValidator, AuthValidator, RulesValidator
+from .suspension import suspend_for_mntner, reactivate_for_mntner
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +65,7 @@ class ChangeRequest:
         self._cached_roa_validity: Optional[bool] = None
         self.roa_validator = SingleRouteROAValidator(database_handler)
         self.scopefilter_validator = ScopeFilterValidator()
+        self.rules_validator = RulesValidator(database_handler)
 
         try:
             self.rpsl_obj_new = rpsl_object_from_text(rpsl_text_submitted, strict_validation=True)
@@ -125,16 +127,16 @@ class ChangeRequest:
             logger.error(msg)
             raise ValueError(msg)
 
-    def save(self, database_handler: DatabaseHandler) -> None:
+    def save(self) -> None:
         """Save the change to the database."""
         if self.status != UpdateRequestStatus.PROCESSING or not self.rpsl_obj_new:
             raise ValueError('ChangeRequest can only be saved in status PROCESSING')
         if self.request_type == UpdateRequestType.DELETE and self.rpsl_obj_current is not None:
             logger.info(f'{id(self)}: Saving change for {self.rpsl_obj_new}: deleting current object')
-            database_handler.delete_rpsl_object(rpsl_object=self.rpsl_obj_current, origin=JournalEntryOrigin.auth_change)
+            self.database_handler.delete_rpsl_object(rpsl_object=self.rpsl_obj_current, origin=JournalEntryOrigin.auth_change)
         else:
             logger.info(f'{id(self)}: Saving change for {self.rpsl_obj_new}: inserting/updating current object')
-            database_handler.upsert_rpsl_object(self.rpsl_obj_new, JournalEntryOrigin.auth_change)
+            self.database_handler.upsert_rpsl_object(self.rpsl_obj_new, JournalEntryOrigin.auth_change)
         self.status = UpdateRequestStatus.SAVED
 
     def is_valid(self) -> bool:
@@ -238,6 +240,15 @@ class ChangeRequest:
                 self.error_messages += self.rpsl_obj_new.messages.errors()
                 self.status = UpdateRequestStatus.ERROR_PARSING
                 return False
+        if self.rpsl_obj_new and self.request_type:
+            rules_result = self.rules_validator.validate(self.rpsl_obj_new, self.request_type)
+            self.info_messages += rules_result.info_messages
+            self.error_messages += rules_result.error_messages
+            if not rules_result.is_valid():
+                logger.debug(f'{id(self)}: Rules check failed: {rules_result.error_messages}')
+                self.status = UpdateRequestStatus.ERROR_RULES
+                return False
+
         auth_valid = self._check_auth()
         if not auth_valid:
             return False
@@ -341,11 +352,152 @@ class ChangeRequest:
         return True
 
 
+class SuspensionRequest:
+    """
+    A SuspensionRequest is a special variant of ChangeRequest that
+    deals with object suspension/reactivation. Its API matches
+    that of ChangeRequest so that ChangeSubmissionHandler
+    can use it.
+    """
+    rpsl_text_submitted: str
+    rpsl_obj_new: Optional[RPSLObject]
+    status = UpdateRequestStatus.PROCESSING
+
+    error_messages: List[str]
+    info_messages: List[str]
+
+    def __init__(self, rpsl_text_submitted: str, database_handler: DatabaseHandler, auth_validator: AuthValidator,
+                 suspension_state=Optional[str]) -> None:
+        """
+        Initialise a new suspension/reactivation request.
+
+        :param rpsl_text_submitted: the object text
+        :param database_handler: a DatabaseHandler instance
+        :param auth_validator: a AuthValidator instance, to resolve authentication requirements
+        :param suspension_state: the desired suspension state: suspend/reactivate
+        """
+        self.database_handler = database_handler
+        self.auth_validator = auth_validator
+        self.rpsl_text_submitted = rpsl_text_submitted
+        self.rpsl_obj_new = None
+        self.request_type = None
+        self.info_messages = []
+
+        try:
+            self.request_type = getattr(SuspensionRequestType, suspension_state.upper())
+        except AttributeError:
+            self.status = UpdateRequestStatus.ERROR_PARSING
+            self.error_messages = [f'Unknown suspension type: {suspension_state}']
+            return
+
+        try:
+            self.rpsl_obj_new = rpsl_object_from_text(rpsl_text_submitted, strict_validation=False)
+            if self.rpsl_obj_new.messages.errors():
+                self.status = UpdateRequestStatus.ERROR_PARSING
+            self.error_messages = self.rpsl_obj_new.messages.errors()
+            self.info_messages = self.rpsl_obj_new.messages.infos()
+            logger.debug(f'{id(self)}: Processing new SuspensionRequest for object {self.rpsl_obj_new}: request {id(self)}')
+        except UnknownRPSLObjectClassException as exc:
+            self.status = UpdateRequestStatus.ERROR_UNKNOWN_CLASS
+            self.error_messages = [str(exc)]
+
+        if self.error_messages or not self.rpsl_obj_new:
+            return
+
+        source = self.rpsl_obj_new.source()
+        if not get_setting(f'sources.{source}.suspension_enabled'):
+            logger.debug(f'{id(self)}: source of suspension request is {source}, does not have suspension support enabled, request rejected')
+            self.error_messages.append(f'This instance is not authoritative for source {source} or suspension is not enabled')
+            self.status = UpdateRequestStatus.ERROR_NON_AUTHORITIVE
+            return
+
+        if self.rpsl_obj_new.__class__ != RPSLMntner:
+            logger.debug(f'{id(self)}: suspension is for invalid object class, rejected')
+            self.error_messages.append('Suspensions/reactivations can only be done on mntner objects')
+            self.status = UpdateRequestStatus.ERROR_PARSING
+            return
+
+    def save(self) -> None:
+        """Save the state change to the database."""
+        mntner: RPSLMntner = self.rpsl_obj_new  # type: ignore
+        if self.status != UpdateRequestStatus.PROCESSING or not self.rpsl_obj_new:
+            raise ValueError('SuspensionRequest can only be saved in status PROCESSING')
+        try:
+            if self.request_type == SuspensionRequestType.SUSPEND:
+                logger.info(f'{id(self)}: Suspending mntner {self.rpsl_obj_new}')
+                suspended_objects = suspend_for_mntner(self.database_handler, mntner)
+                self.info_messages += [f"Suspended {r['object_class']}/{r['rpsl_pk']}/{r['source']}" for r in suspended_objects]
+            elif self.request_type == SuspensionRequestType.REACTIVATE:
+                logger.info(f'{id(self)}: Reactivating mntner {self.rpsl_obj_new}')
+                (restored, info_messages) = reactivate_for_mntner(self.database_handler, mntner)
+                self.info_messages += info_messages
+                self.info_messages += [f"Restored {r}" for r in restored]
+        except ValueError as ve:
+            self.status = UpdateRequestStatus.ERROR_PARSING
+            self.error_messages.append(str(ve))
+            return
+
+        self.status = UpdateRequestStatus.SAVED
+
+    def is_valid(self) -> bool:
+        self.validate()
+        return self.status in [UpdateRequestStatus.SAVED, UpdateRequestStatus.PROCESSING]
+
+    def submitter_report_human(self) -> str:
+        """Produce a string suitable for reporting back status and messages to the human submitter."""
+        status = 'succeeded' if self.is_valid() else 'FAILED'
+
+        report = f'{self.request_type_str().title()} {status}: [{self.object_class_str()}] {self.object_pk_str()}\n'
+        if self.info_messages or self.error_messages:
+            if self.error_messages:
+                report += '\n' + self.rpsl_text_submitted + '\n'
+            report += ''.join([f'ERROR: {e}\n' for e in self.error_messages])
+            report += ''.join([f'INFO: {e}\n' for e in self.info_messages])
+        return report
+
+    def submitter_report_json(self) -> Dict[str, Union[None, bool, str, List[str]]]:
+        """Produce a dict suitable for reporting back status and messages in JSON."""
+        return {
+            'successful': self.is_valid(),
+            'type': str(self.request_type.value) if self.request_type else None,
+            'object_class': self.object_class_str(),
+            'rpsl_pk': self.object_pk_str(),
+            'info_messages': self.info_messages,
+            'error_messages': self.error_messages,
+        }
+
+    def notification_target_report(self):
+        # We never message notification targets
+        raise NotImplementedError
+
+    def request_type_str(self) -> str:
+        return self.request_type.value if self.request_type else 'request'
+
+    def object_pk_str(self) -> str:
+        return self.rpsl_obj_new.pk() if self.rpsl_obj_new else '(unreadable object key)'
+
+    def object_class_str(self) -> str:
+        return self.rpsl_obj_new.rpsl_object_class if self.rpsl_obj_new else '(unreadable object class)'
+
+    def notification_targets(self) -> Set[str]:
+        # We never message notification targets
+        return set()
+
+    def validate(self) -> bool:
+        if not self.auth_validator.check_override():
+            self.status = UpdateRequestStatus.ERROR_AUTH
+            self.error_messages.append("Invalid authentication: override password invalid or missing")
+            logger.debug(f'{id(self)}: Authentication check failed: override did not pass')
+            return False
+        logger.debug(f'{id(self)}: Authentication check succeeded, override valid')
+        return True
+
+
 def parse_change_requests(requests_text: str,
                           database_handler: DatabaseHandler,
                           auth_validator: AuthValidator,
                           reference_validator: ReferenceValidator,
-                          ) -> List[ChangeRequest]:
+                          ) -> List[Union[ChangeRequest, SuspensionRequest]]:
     """
     Parse change requests, a text of RPSL objects along with metadata like
     passwords or deletion requests.
@@ -356,7 +508,7 @@ def parse_change_requests(requests_text: str,
     :param reference_validator: a ReferenceValidator instance
     :return: a list of ChangeRequest instances
     """
-    results = []
+    results: List[Union[ChangeRequest, SuspensionRequest]] = []
     passwords = []
     overrides = []
 
@@ -368,10 +520,12 @@ def parse_change_requests(requests_text: str,
 
         rpsl_text = ''
         delete_reason = None
+        suspension_state = None
 
-        # The attributes password/override/delete are meta attributes
+        # The attributes password/override/delete/suspension are meta attributes
         # and need to be extracted before parsing. Delete refers to a specific
         # object, password/override apply to all included objects.
+        # Suspension is a special case that does not use the regular ChangeRequest.
         for line in splitline_unicodesafe(object_text):
             if line.startswith('password:'):
                 password = line.split(':', maxsplit=1)[1].strip()
@@ -381,14 +535,20 @@ def parse_change_requests(requests_text: str,
                 overrides.append(override)
             elif line.startswith('delete:'):
                 delete_reason = line.split(':', maxsplit=1)[1].strip()
+            elif line.startswith('suspension:'):
+                suspension_state = line.split(':', maxsplit=1)[1].strip()
             else:
                 rpsl_text += line + '\n'
 
         if not rpsl_text:
             continue
 
-        results.append(ChangeRequest(rpsl_text, database_handler, auth_validator, reference_validator,
-                                     delete_reason=delete_reason))
+        if suspension_state:
+            results.append(SuspensionRequest(rpsl_text, database_handler, auth_validator,
+                                             suspension_state=suspension_state))
+        else:
+            results.append(ChangeRequest(rpsl_text, database_handler, auth_validator, reference_validator,
+                                         delete_reason=delete_reason))
 
     if auth_validator:
         auth_validator.passwords = passwords

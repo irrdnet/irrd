@@ -10,10 +10,10 @@ from irrd.rpsl.rpsl_objects import RPSLMntner
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseQuery
 from irrd.utils import email
-from .parser import parse_change_requests, ChangeRequest
-from .parser_state import UpdateRequestStatus, UpdateRequestType
+from .parser import parse_change_requests, ChangeRequest, SuspensionRequest
+from .parser_state import SuspensionRequestType, UpdateRequestStatus, UpdateRequestType
 from .validators import ReferenceValidator, AuthValidator
-from ..utils.validators import RPSLChangeSubmission
+from ..utils.validators import RPSLChangeSubmission, RPSLSuspensionSubmission
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ class ChangeSubmissionHandler:
 
         reference_validator = ReferenceValidator(self.database_handler)
         auth_validator = AuthValidator(self.database_handler)
-        change_requests = []
+        change_requests: List[Union[ChangeRequest, SuspensionRequest]] = []
 
         delete_reason = None
         if delete:
@@ -80,7 +80,33 @@ class ChangeSubmissionHandler:
         self.database_handler.close()
         return self
 
-    def _handle_change_requests(self, change_requests: List[ChangeRequest],
+    def load_suspension_submission(self, data: RPSLSuspensionSubmission, request_meta: Dict[str, Optional[str]]=None):
+        self.database_handler = DatabaseHandler()
+        self.request_meta = request_meta if request_meta else {}
+
+        reference_validator = ReferenceValidator(self.database_handler)
+        auth_validator = AuthValidator(self.database_handler)
+        change_requests: List[Union[ChangeRequest, SuspensionRequest]] = []
+
+        auth_validator.overrides = [data.override] if data.override else []
+
+        for rpsl_obj in data.objects:
+            # We don't have a neat way to process individual attribute pairs,
+            # so construct a pseudo-object by appending the text.
+            object_text = f"mntner: {rpsl_obj.mntner}\nsource: {rpsl_obj.source}\n"
+            change_requests.append(SuspensionRequest(
+                object_text,
+                self.database_handler,
+                auth_validator,
+                rpsl_obj.request_type.value,
+            ))
+
+        self._handle_change_requests(change_requests, reference_validator, auth_validator)
+        self.database_handler.commit()
+        self.database_handler.close()
+        return self
+
+    def _handle_change_requests(self, change_requests: List[Union[ChangeRequest, SuspensionRequest]],
                                 reference_validator: ReferenceValidator,
                                 auth_validator: AuthValidator) -> None:
 
@@ -95,7 +121,7 @@ class ChangeSubmissionHandler:
         # will mark B invalid due to the reference to an invalid C, etc. This continues until
         # all references are resolved and repeated scans lead to the same conclusions.
         valid_changes = [r for r in change_requests if r.is_valid()]
-        previous_valid_changes: List[ChangeRequest] = []
+        previous_valid_changes: List[Union[ChangeRequest, SuspensionRequest]] = []
         loop_count = 0
         loop_max = len(change_requests) + 10
 
@@ -122,7 +148,7 @@ class ChangeSubmissionHandler:
 
         for result in change_requests:
             if result.is_valid():
-                result.save(self.database_handler)
+                result.save()
 
         self.results = change_requests
 

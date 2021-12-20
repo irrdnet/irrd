@@ -14,7 +14,7 @@ from ..database_handler import DatabaseHandler
 from ..models import RPSLDatabaseObject, DatabaseOperation, JournalEntryOrigin
 from ..preload import Preloader
 from ..queries import (RPSLDatabaseQuery, RPSLDatabaseJournalQuery, DatabaseStatusQuery,
-                       RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery)
+                       RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery, RPSLDatabaseSuspendedQuery)
 
 """
 These tests for the database use a live PostgreSQL database,
@@ -190,7 +190,7 @@ class TestDatabaseHandlerLive:
 
         self.dh = DatabaseHandler()
         self.dh.preloader.signal_reload = Mock(return_value=None)
-        self.dh.upsert_rpsl_object(rpsl_object_route_v4, JournalEntryOrigin.auth_change)
+        self.dh.upsert_rpsl_object(rpsl_object_route_v4, JournalEntryOrigin.auth_change, forced_created_value='2021-01-01')
         assert len(self.dh._rpsl_upsert_buffer) == 1
 
         rpsl_object_route_v4.parsed_data = {'mnt-by': 'MNT-CORRECT', 'source': 'TEST'}
@@ -581,6 +581,32 @@ class TestDatabaseHandlerLive:
     def _clean_result(self, results):
         variable_fields = ['pk', 'timestamp', 'created', 'updated', 'last_error_timestamp']
         return [{k: v for k, v in result.items() if k not in variable_fields} for result in list(results)]
+
+    def test_suspension(self, monkeypatch, irrd_database, database_handler_with_route, config_override):
+        monkeypatch.setenv('IRRD_SOURCES_TEST_KEEP_JOURNAL', '1')
+        dh = database_handler_with_route
+        route_object = next(dh.execute_query(RPSLDatabaseQuery()))
+        with pytest.raises(ValueError):
+            dh.suspend_rpsl_object(uuid.uuid4())
+        dh.suspend_rpsl_object(route_object['pk'])
+
+        assert len(list(dh.execute_query(RPSLDatabaseQuery()))) == 0
+        suspended_objs = list(dh.execute_query(RPSLDatabaseSuspendedQuery()))
+        assert len(suspended_objs) == 1
+        assert suspended_objs[0]['rpsl_pk'] == '192.0.2.0/24,AS65537'
+        assert set(suspended_objs[0]['mntners']) == {'MNT-TEST', 'MNT-TEST2'}
+
+        journal = list(dh.execute_query(RPSLDatabaseJournalQuery()))
+        assert len(journal) == 1
+        assert journal[0]['rpsl_pk'] == '192.0.2.0/24,AS65537'
+        assert journal[0]['operation'] == DatabaseOperation.delete
+
+        assert len(list(dh.execute_query(RPSLDatabaseSuspendedQuery().mntner('MNT-TEST')))) == 1
+        assert len(list(dh.execute_query(RPSLDatabaseSuspendedQuery().mntner('MNT-TEST2')))) == 1
+        assert len(list(dh.execute_query(RPSLDatabaseSuspendedQuery().mntner('MNT-NO')))) == 0
+
+        dh.delete_suspended_rpsl_objects([suspended_objs[0]['pk']])
+        assert len(list(dh.execute_query(RPSLDatabaseSuspendedQuery()))) == 0
 
 
 # noinspection PyTypeChecker

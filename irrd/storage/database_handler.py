@@ -16,7 +16,7 @@ from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.vendor import postgres_copy
 from . import get_engine
 from .models import RPSLDatabaseObject, RPSLDatabaseJournal, DatabaseOperation, RPSLDatabaseStatus, \
-    ROADatabaseObject, JournalEntryOrigin
+    ROADatabaseObject, JournalEntryOrigin, RPSLDatabaseObjectSuspended
 from .preload import Preloader
 from .queries import (BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery,
                       RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery)
@@ -172,7 +172,8 @@ class DatabaseHandler:
                            rpsl_object: RPSLObject,
                            origin: JournalEntryOrigin,
                            rpsl_guaranteed_no_existing=False,
-                           source_serial: Optional[int]=None) -> None:
+                           source_serial: Optional[int]=None,
+                           forced_created_value: Optional[str]=None) -> None:
         """
         Schedule an RPSLObject for insertion/updating.
 
@@ -231,6 +232,8 @@ class DatabaseHandler:
             'scopefilter_status': rpsl_object.scopefilter_status,
             'updated': update_time,
         }
+        if forced_created_value:
+            object_dict['created'] = forced_created_value
 
         self._rpsl_upsert_buffer.append((object_dict, origin, source_serial))
 
@@ -383,18 +386,8 @@ class DatabaseHandler:
         ).returning(table.c.pk, table.c.rpsl_pk, table.c.source, table.c.object_class, table.c.object_text)
         results = self._connection.execute(stmt)
 
-        if results.rowcount == 0:
-            logger.error(f'Attempted to remove object {rpsl_pk}/{source}, but no database row matched')
+        if not self._check_single_row_match(results, user_identifier=f"{rpsl_pk}/{source}"):
             return None
-        if results.rowcount > 1:  # pragma: no cover
-            # This should not be possible, as rpsl_pk/source are a composite unique value in the database scheme.
-            # Therefore, a query should not be able to affect more than one row - and we also can not test this
-            # scenario. Due to the possible harm of a bug in this area, we still check for it anyways.
-            affected_pks = ','.join([r[0] for r in results.fetchall()])
-            msg = f'Attempted to remove object {rpsl_pk}/{source}, but multiple objects were affected, '
-            msg += f'internal pks affected: {affected_pks}'
-            logger.critical(msg)
-            raise ValueError(msg)
 
         result = results.fetchone()
         self.status_tracker.record_operation(
@@ -407,6 +400,65 @@ class DatabaseHandler:
             source_serial=source_serial,
         )
         self._object_classes_modified.add(result['object_class'])
+
+    def suspend_rpsl_object(self, pk_uuid: str) -> None:
+        """
+        Suspend an RPSL object from the database.
+        Suspension is kind of an administrative reversible deletion, so the
+        object is moved to a different table which is never queried by regular
+        queries. NRTM DEL entries are written to the journal.
+
+        pk_uuid is the UUID of the database row for this object, suspsneded_mntner_rpsl_pk
+        is the RPSL pk of the mntner that this suspension started from.
+        """
+        self._check_write_permitted()
+        self._flush_rpsl_object_writing_buffer()
+
+        rpsl_table = RPSLDatabaseObject.__table__
+        stmt = rpsl_table.delete(rpsl_table.c.pk == pk_uuid).returning(
+            rpsl_table.c.pk, rpsl_table.c.rpsl_pk, rpsl_table.c.source, rpsl_table.c.object_class,
+            rpsl_table.c.object_text, rpsl_table.c.parsed_data, rpsl_table.c.created, rpsl_table.c.updated
+        )
+        results = self._connection.execute(stmt)
+
+        if not self._check_single_row_match(results, user_identifier=pk_uuid):
+            raise ValueError(f"Attempt to suspend obect with PK {pk_uuid} which does not exist")
+
+        result = results.fetchone()
+
+        self.execute_statement(RPSLDatabaseObjectSuspended.__table__.insert().values(
+            rpsl_pk=result['rpsl_pk'],
+            source=result['source'],
+            object_class=result['object_class'],
+            object_text=result['object_text'],
+            mntners=result['parsed_data']['mnt-by'],
+            original_created=result['created'],
+            original_updated=result['updated'],
+        ))
+
+        self.status_tracker.record_operation(
+            operation=DatabaseOperation.delete,
+            rpsl_pk=result['rpsl_pk'],
+            source=result['source'],
+            object_class=result['object_class'],
+            object_text=result['object_text'],
+            origin=JournalEntryOrigin.suspension,
+            source_serial=None,
+        )
+        self._object_classes_modified.add(result['object_class'])
+
+    def delete_suspended_rpsl_objects(self, pk_uuids: Set[str]) -> None:
+        """
+        Remove suspended RPSL objects from the suspended store,
+        typically used after reactivation. An actual reactivation happens
+        outside this method, through upsert_rpsl_object.
+        """
+        self._check_write_permitted()
+        self._flush_rpsl_object_writing_buffer()
+
+        suspended_table = RPSLDatabaseObjectSuspended.__table__
+        stmt = suspended_table.delete(suspended_table.c.pk.in_(pk_uuids))
+        self._connection.execute(stmt)
 
     def _flush_rpsl_object_writing_buffer(self) -> None:
         """
@@ -576,6 +628,26 @@ class DatabaseHandler:
             msg = 'Attempted to write to SQL database from readonly database handler'
             logger.critical(msg)
             raise Exception(msg)
+
+    def _check_single_row_match(self, query_results, user_identifier: str) -> bool:
+        """
+        Check that only a single row matched for remove/suspend.
+        It should not be possible for this to go wrong.
+        Returns whether check passed, i.e. True is good.
+        """
+        if query_results.rowcount == 0:
+            logger.error(f'Attempted to remove/suspend object {user_identifier}, but no database row matched')
+            return False
+        if query_results.rowcount > 1:  # pragma: no cover
+            # This should not be possible, as rpsl_pk/source are a composite unique value in the database scheme.
+            # Therefore, a query should not be able to affect more than one row - and we also can not test this
+            # scenario. Due to the possible harm of a bug in this area, we still check for it anyways.
+            affected_pks = ','.join([r[0] for r in query_results.fetchall()])
+            msg = f'Attempted to remove object {user_identifier}, but multiple objects were affected, '
+            msg += f'internal pks affected: {affected_pks}'
+            logger.critical(msg)
+            raise ValueError(msg)
+        return True
 
 
 class DatabaseStatusTracker:

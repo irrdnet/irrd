@@ -1,6 +1,7 @@
 from typing import Tuple, List, Union, Optional
 
 import pydantic
+from irrd.updates.parser_state import SuspensionRequestType
 
 
 def parse_as_number(value: Union[str, int], permit_plain=False) -> Tuple[str, int]:
@@ -64,3 +65,19 @@ class RPSLChangeSubmission(pydantic.main.BaseModel):
     passwords: List[str] = []
     override: Optional[str]
     delete_reason: str = '(No reason provided)'
+
+
+class RPSLSuspensionSubmissionObject(pydantic.main.BaseModel):
+    """
+    Model for a single key/source pair for a suspension/
+    reactivation request
+    """
+    mntner: str
+    source: str
+    request_type: SuspensionRequestType
+
+
+class RPSLSuspensionSubmission(pydantic.main.BaseModel):
+    """Model for an RPSL suspension submission"""
+    objects: List[RPSLSuspensionSubmissionObject]
+    override: Optional[str]

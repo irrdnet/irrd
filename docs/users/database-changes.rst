@@ -80,6 +80,8 @@ the other specifies individual attributes::
         'passwords': ['password1', 'password2']
     }
 
+.. _database-changes-http-api-response:
+
 There are two possible responses:
 
 * If there is a syntax error in your JSON object, you will receive

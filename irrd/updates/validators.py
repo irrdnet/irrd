@@ -1,7 +1,7 @@
 import functools
 import logging
 from dataclasses import dataclass, field
-from typing import Set, Tuple, List, Optional, TYPE_CHECKING
+from typing import Set, Tuple, List, Optional, TYPE_CHECKING, Union
 
 from ordered_set import OrderedSet
 from passlib.hash import md5_crypt
@@ -10,12 +10,12 @@ from irrd.conf import get_setting
 from irrd.rpsl.parser import RPSLObject
 from irrd.rpsl.rpsl_objects import RPSLMntner, rpsl_object_from_text, RPSLSet
 from irrd.storage.database_handler import DatabaseHandler
-from irrd.storage.queries import RPSLDatabaseQuery
+from irrd.storage.queries import RPSLDatabaseQuery, RPSLDatabaseSuspendedQuery
 from .parser_state import RPSLSetAutnumAuthenticationMode, UpdateRequestType
 
 if TYPE_CHECKING:  # pragma: no cover
     # http://mypy.readthedocs.io/en/latest/common_issues.html#import-cycles
-    from .parser import ChangeRequest  # noqa: F401
+    from .parser import ChangeRequest, SuspensionRequest  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ class ReferenceValidator:
         self._preloaded_new: Set[Tuple[str, str, str]] = set()
         self._preloaded_deleted: Set[Tuple[str, str, str]] = set()
 
-    def preload(self, results: List['ChangeRequest']) -> None:
+    def preload(self, results: List[Union['ChangeRequest', 'SuspensionRequest']]) -> None:
         """Preload an iterable of ChangeRequest objects to be considered valid, or to be considered deleted."""
         self._preloaded_new = set()
         self._preloaded_deleted = set()
@@ -59,7 +59,7 @@ class ReferenceValidator:
             if request.request_type == UpdateRequestType.DELETE:
                 self._preloaded_deleted.add((request.rpsl_obj_new.rpsl_object_class, request.rpsl_obj_new.pk(),
                                              request.rpsl_obj_new.source()))
-            else:
+            elif request.request_type in [UpdateRequestType.CREATE, UpdateRequestType.MODIFY]:
                 self._preloaded_new.add((request.rpsl_obj_new.rpsl_object_class, request.rpsl_obj_new.pk(),
                                          request.rpsl_obj_new.source()))
 
@@ -180,20 +180,10 @@ class AuthValidator:
         source = rpsl_obj_new.source()
         result = ValidatorResult()
 
-        override_hash = get_setting('auth.override_password')
-        if override_hash:
-            for override in self.overrides:
-                try:
-                    if md5_crypt.verify(override, override_hash):
-                        result.used_override = True
-                        logger.debug('Found valid override password.')
-                        return result
-                    else:
-                        logger.info('Found invalid override password, ignoring.')
-                except ValueError as ve:
-                    logger.error(f'Exception occurred while checking override password: {ve} (possible misconfigured hash?)')
-        elif self.overrides:
-            logger.info('Ignoring override password, auth.override_password not set.')
+        if self.check_override():
+            result.used_override = True
+            logger.debug('Found valid override password.')
+            return result
 
         mntners_new = rpsl_obj_new.parsed_data['mnt-by']
         logger.debug(f'Checking auth for new object {rpsl_obj_new}, mntners in new object: {mntners_new}')
@@ -243,6 +233,21 @@ class AuthValidator:
                 result.error_messages.add('Authorisation failed for the auth methods on this mntner object.')
 
         return result
+
+    def check_override(self) -> bool:
+        override_hash = get_setting('auth.override_password')
+        if override_hash:
+            for override in self.overrides:
+                try:
+                    if md5_crypt.verify(override, override_hash):
+                        return True
+                    else:
+                        logger.info('Found invalid override password, ignoring.')
+                except ValueError as ve:
+                    logger.error(f'Exception occurred while checking override password: {ve} (possible misconfigured hash?)')
+        elif self.overrides:
+            logger.info('Ignoring override password, auth.override_password not set.')
+        return False
 
     def _check_mntners(self, mntner_pk_list: List[str], source: str) -> Tuple[bool, List[RPSLMntner]]:
         """
@@ -382,3 +387,27 @@ def _init_related_object_query(rpsl_object_class: str, rpsl_obj_new: RPSLObject)
     query = RPSLDatabaseQuery().sources([rpsl_obj_new.source()])
     query = query.object_classes([rpsl_object_class])
     return query.first_only()
+
+
+class RulesValidator:
+    """
+    The RulesValidator validates any other rules for RPSL object changes.
+    This means: anything that is not authentication, references, RPKI or scope filter.
+    """
+
+    def __init__(self, database_handler: DatabaseHandler) -> None:
+        self.database_handler = database_handler
+
+    def validate(self, rpsl_obj: RPSLObject, request_type: UpdateRequestType) -> ValidatorResult:
+        result = ValidatorResult()
+        if request_type == UpdateRequestType.CREATE and rpsl_obj.rpsl_object_class == 'mntner' and \
+                self._check_suspended_mntner_with_same_pk(rpsl_obj.pk(), rpsl_obj.source()):
+            result.error_messages.add(
+                f'A suspended mntner with primary key {rpsl_obj.pk()} already exists for {rpsl_obj.source()}'
+            )
+        return result
+
+    @functools.lru_cache(maxsize=50)
+    def _check_suspended_mntner_with_same_pk(self, pk: str, source: str) -> bool:
+        q = RPSLDatabaseSuspendedQuery().object_classes(['mntner']).rpsl_pk(pk).sources([source]).first_only()
+        return bool(list(self.database_handler.execute_query(q)))

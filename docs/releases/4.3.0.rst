@@ -38,3 +38,13 @@ All checks are only applied when users create new set objects in authoritative
 databases. Authoritative updates to existing objects, deletions, or objects from
 mirrors are never affected. When looking for related objects,
 IRRd only looks in the same IRR source.
+
+Support for maintainer suspension
+---------------------------------
+IRRD now supports
+:doc:`suspending a maintainer and all objects it maintains </admins/suspension>`.
+This feature is only accessible to admins using the override password, and only
+when enabled on an authoritative source with the ``suspension_enabled`` setting.
+
+Suspended objects act as if they have been deleted, but can be restored by an
+admin at a later time.

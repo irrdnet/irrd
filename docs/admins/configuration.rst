@@ -628,6 +628,11 @@ Sources
   for their scope filter status.
   |br| **Default**: false, scope filter validation enabled.
   |br| **Change takes effect**: after SIGHUP, within a few minutes
+* ``sources.{name}.suspension_enabled``: a boolean for whether this source
+  allows :doc:`suspension and reactivation of objects </admins/suspension>`.
+  Can only be enabled if `authoritative` is enabled.
+  |br| **Default**: ``false``.
+  |br| **Change takes effect**: after SIGHUP, for all subsequent changes.
 
 
 For more detail on mirroring other sources, and providing mirroring services
