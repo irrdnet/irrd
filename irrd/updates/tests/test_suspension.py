@@ -30,7 +30,7 @@ class TestSuspension:
                 {
                     'pk': 'pk_suspend',
                     'rpsl_pk': 'rpsl_pk_suspend',
-                    'parsed_data': {'mnt-by': [mntner.pk(), 'OTHER-MNT']},
+                    'parsed_data': {'mnt-by': [mntner.pk(), 'INACTIVE-MNT']},
                     'object_class': 'mntner',
                 },
                 {
@@ -49,7 +49,7 @@ class TestSuspension:
                 {
                     'pk': 'pk_suspend',
                     'rpsl_pk': 'rpsl_pk_suspend',
-                    'parsed_data': {'mnt-by': [mntner.pk(), 'OTHER-MNT']},
+                    'parsed_data': {'mnt-by': [mntner.pk(), 'INACTIVE-MNT']},
                     'object_class': 'mntner',
                 },
             ],
@@ -62,10 +62,10 @@ class TestSuspension:
                     'object_class': 'mntner',
                 },
             ],
-            # query for OTHER-MNT:
-            [{'pk': 'OTHER-MNT'}],
             # query for INACTIVE-MNT
             [],
+            # query for OTHER-MNT:
+            [{'pk': 'OTHER-MNT'}],
         ])
         mock_database_handler.execute_query = lambda q: next(query_results)
 
@@ -95,13 +95,13 @@ class TestSuspension:
 
             ['', (), {'column_names': ['pk']}],
             ['sources', (['TEST'],), {}],
-            ['rpsl_pk', ('OTHER-MNT',), {}],
+            ['rpsl_pk', ('INACTIVE-MNT',), {}],
             ['object_classes', (['mntner'],), {}],
             ['first_only', (), {}],
 
             ['', (), {'column_names': ['pk']}],
             ['sources', (['TEST'],), {}],
-            ['rpsl_pk', ('INACTIVE-MNT',), {}],
+            ['rpsl_pk', ('OTHER-MNT',), {}],
             ['object_classes', (['mntner'],), {}],
             ['first_only', (), {}],
         ]
