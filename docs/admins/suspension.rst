@@ -51,6 +51,8 @@ When you reactivate an object, the following happens:
 * For each object, IRRD checks whether there is a (newer) active object with
   the same primary key. If this exists, the object is not restored,
   but the IRRD will continue to restore the other objects.
+  Note that the `mntner` you are suspending will always be suspended,
+  regardless of its own ``mnt-by`` value.
 * IRRD writes NRTM add entries to the journal, causing the suspended objects
   to be reappear on mirrors.
 * The creation time of the reactivated objects is set to the original
