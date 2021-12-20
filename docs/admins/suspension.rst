@@ -37,6 +37,7 @@ A suspended object is similar to a regular deleted object:
 * It does not occur in any database export.
 * It can not be returned by any query.
 * It can not be referred to from any object.
+* It can not be used for authentication.
 
 Other than allowing reactivation, there is one situation where suspended
 objects have an impact: it is not permitted to create a `mntner` with the same
@@ -62,6 +63,11 @@ When you reactivate an object, the following happens:
   of the status and a list of all objects that were reactivated, and which
   were skipped due to a primary key conflict.
 * No other notifications of any kind are sent to anyone.
+
+.. tip::
+   As IRRD sends no notifications of any kind to users for suspensions and
+   reactivations, it is up to you to communicate this. To your user, the objects
+   have simply disappeared.
 
 Multiple maintainers
 --------------------
