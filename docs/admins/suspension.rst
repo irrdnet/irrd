@@ -8,6 +8,8 @@ deleted, with the exception that it can be reactivated. Suspension and
 reactivation have a shared or similar interface to
 :doc:`regular authoritative database changes </users/database-changes>`,
 are only accessible with the override password, and are opt-in.
+Suspension is intended to support admins who restrict access to their
+IRR database.
 
 Impact of suspension and reactivation
 -------------------------------------
@@ -19,7 +21,7 @@ following happens:
   their ``mnt-by``. If the `mntner` object does not exist (or is already suspended)
   IRRD rejects the request.
 * For each object, IRRD checks whether it has any other currently existing
-  (includes them not being suspended) `mntners`. If it does, the object
+  and non-suspended `mntners`. If it does have other maintainers, the object
   is left as is.
 * The `mntner` that is suspended and any object that has this maintainer as
   its only active `mnt-by`, is deleted from the active RPSL objects and stored
@@ -45,11 +47,12 @@ When you reactivate an object, the following happens:
 
 * IRRD finds the suspended `mntner` object and all objects that had this
   `mntner` in their ``mnt-by`` when they were suspended. If the `mntner` is
-  not found in the suspended objects, IRRD rejects the request.
+  not found in the suspended object store, IRRD rejects the request.
 * For each object, IRRD checks whether there is a (newer) active object with
-  the same primary key. If this exists, the object is not restored.
+  the same primary key. If this exists, the object is not restored,
+  but the IRRD will continue to restore the other objects.
 * IRRD writes NRTM add entries to the journal, causing the suspended objects
-  to be reappear from mirrors.
+  to be reappear on mirrors.
 * The creation time of the reactivated objects is set to the original
   creation time before suspension. The last updated time is updated upon
   reactivation.
@@ -61,10 +64,10 @@ When you reactivate an object, the following happens:
 Multiple maintainers
 --------------------
 When reactivating objects, it is important to note that IRRD restores all
-objects that at the time of that object's suspension, had the reactivated
+objects that **at the time of that object's suspension**, had the reactivated
 `mntner` in their ``mnt-by``, in the state they had at the time of their
 suspension. This is potentially different from: all
-objects that at the time of the `mntner`'s suspension, had the reactivated
+objects that **at the time of the mntner's suspension**, had the reactivated
 `mntner` in their ``mnt-by``, in the state they had at the time of that 
 maintainer's suspension. The distinction matters with multiple
 maintainer suspensions, which are rare but complex.
@@ -121,8 +124,8 @@ Here's an example::
               "source":"EXAMPLE",
               "request_type":"suspend"
           }
-      ]
-      "override":"mypassword",
+      ],
+      "override":"my-password"
   }
 
 The responses are the same as the
