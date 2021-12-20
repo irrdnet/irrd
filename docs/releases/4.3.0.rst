@@ -42,7 +42,7 @@ IRRd only looks in the same IRR source.
 Support for maintainer suspension
 ---------------------------------
 IRRD now supports
-:doc:`suspending a maintainer and all objects it maintains <admins/suspension>`.
+:doc:`suspending a maintainer and all objects it maintains </admins/suspension>`.
 This feature is only accessible to admins using the override password, and only
 when enabled on an authoritative source with the ``suspension_enabled`` setting.
 
