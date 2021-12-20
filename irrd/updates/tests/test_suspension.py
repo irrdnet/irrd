@@ -47,7 +47,7 @@ class TestSuspension:
                 },
                 # Verify that repeated objects are only included once
                 {
-                    'pk': 'pk_suspend2',
+                    'pk': 'pk_suspend',
                     'rpsl_pk': mntner.pk(),
                     'parsed_data': {'mnt-by': [mntner.pk()]},
                     'object_class': 'mntner',
@@ -77,13 +77,13 @@ class TestSuspension:
         config_override({'sources': {'TEST': {'authoritative': True}}})
         results = list(suspend_for_mntner(mock_database_handler, mntner))
         assert len(results) == 2
-        assert results[0]['pk'] == 'pk_suspend'
-        assert results[1]['pk'] == 'pk_suspend2'
+        assert {r['pk'] for r in results} == {'pk_suspend', 'pk_suspend2'}
 
-        assert(flatten_mock_calls(mock_database_handler)) == [
-            ['suspend_rpsl_object', ('pk_suspend',), {}],
-            ['suspend_rpsl_object', ('pk_suspend2',), {}]
-        ]
+        dh_calls = flatten_mock_calls(mock_database_handler)
+        assert len(dh_calls) == 2
+        assert ['suspend_rpsl_object', ('pk_suspend',), {}] in dh_calls
+        assert ['suspend_rpsl_object', ('pk_suspend2',), {}] in dh_calls
+
         assert(flatten_mock_calls(mock_database_query)) == [
             ['', (), {'column_names': ['pk', 'rpsl_pk', 'object_class', 'source', 'parsed_data']}],
             ['sources', (['TEST'],), {}],
