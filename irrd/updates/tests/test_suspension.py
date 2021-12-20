@@ -58,7 +58,7 @@ class TestSuspension:
             [
                 {
                     'pk': 'pk_suspend2',
-                    'rpsl_pk': 'rpsl_pk_suspend2',
+                    'rpsl_pk': mntner.pk(),
                     'parsed_data': {'mnt-by': ['INACTIVE-MNT']},
                     'object_class': 'mntner',
                 },
