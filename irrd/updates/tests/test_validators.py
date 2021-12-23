@@ -230,7 +230,7 @@ class TestAuthValidator:
         assert not new_mntner.has_dummy_auth_value()
         assert result.info_messages == {
             'As you submitted dummy hash values, all password hashes on this '
-            'object were replaced with a new MD5-PW hash of the password you '
+            'object were replaced with a new BCRYPT-PW hash of the password you '
             'provided for authentication.'
         }
 

@@ -1,10 +1,11 @@
 # flake8: noqa: W293
 import itertools
+import passlib.hash
 import textwrap
 from unittest.mock import Mock
 
 import pytest
-from passlib.handlers.md5_crypt import md5_crypt
+from passlib.hash import bcrypt
 from pytest import raises
 
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
@@ -490,19 +491,20 @@ class TestSingleChangeRequestHandling:
         # but a password attribute that is valid for the current DB object.
         data = SAMPLE_MNTNER.replace('LEuuhsBJNFV0Q', PASSWORD_HASH_DUMMY_VALUE)
         data = data.replace('$1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.', PASSWORD_HASH_DUMMY_VALUE)
+        data = data.replace('$2b$12$RMrlONJ0tasnpo.zHDF.yuYm/Gb1ARmIjP097ZoIWBn9YLIM2ao5W', PASSWORD_HASH_DUMMY_VALUE)
         result_mntner = parse_change_requests(data + 'password: crypt-password',
                                               mock_dh, auth_validator, reference_validator)[0]
         auth_validator.pre_approve([result_mntner.rpsl_obj_new])
         assert result_mntner._check_auth()
         assert not result_mntner.error_messages
         assert result_mntner.info_messages == ['As you submitted dummy hash values, all password hashes on this object '
-                                               'were replaced with a new MD5-PW hash of the password you provided for '
+                                               'were replaced with a new BCRYPT-PW hash of the password you provided for '
                                                'authentication.']
 
         auth_pgp, auth_hash = splitline_unicodesafe(result_mntner.rpsl_obj_new.parsed_data['auth'])
         assert auth_pgp == 'PGPKey-80F238C6'
-        assert auth_hash.startswith('MD5-PW ')
-        assert md5_crypt.verify('crypt-password', auth_hash[7:])
+        assert auth_hash.startswith('BCRYPT-PW ')
+        assert bcrypt.verify('crypt-password', auth_hash[10:])
         assert auth_hash in result_mntner.rpsl_obj_new.render_rpsl_text()
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}],
@@ -546,6 +548,7 @@ class TestSingleChangeRequestHandling:
         # Submit the mntner with dummy password values as would be returned by queries,
         # but multiple password attributes, which means we wouldn't know which password to set.
         data = SAMPLE_MNTNER.replace('LEuuhsBJNFV0Q', PASSWORD_HASH_DUMMY_VALUE)
+        data = data.replace('$2b$12$RMrlONJ0tasnpo.zHDF.yuYm/Gb1ARmIjP097ZoIWBn9YLIM2ao5W', PASSWORD_HASH_DUMMY_VALUE)
         data = data.replace('$1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.', PASSWORD_HASH_DUMMY_VALUE)
         result_mntner = parse_change_requests(data + 'password: md5-password\npassword: other-password',
                                               mock_dh, auth_validator, reference_validator)[0]

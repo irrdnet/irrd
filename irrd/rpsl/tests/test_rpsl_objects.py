@@ -367,6 +367,7 @@ class TestRPSLMntner:
 
         assert obj.verify_auth(['crypt-password'])
         assert obj.verify_auth(['md5-password'])
+        assert obj.verify_auth(['bcrypt-password'])
         assert obj.verify_auth(['md5-password'], 'PGPKey-80F238C6')
         assert not obj.verify_auth(['other-password'])
         assert not obj.verify_auth([KEY_CERT_SIGNED_MESSAGE_CORRUPT])

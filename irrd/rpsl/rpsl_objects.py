@@ -342,7 +342,7 @@ class RPSLMntner(RPSLObject):
         Overwrite all auth hashes with a single new hash for the provided password.
         Retains other methods, i.e. PGPKEY.
         """
-        hash = 'MD5-PW ' + PASSWORD_HASHERS['MD5-PW'].hash(password)
+        hash = 'BCRYPT-PW ' + PASSWORD_HASHERS['BCRYPT-PW'].hash(password)
         auths = self._auth_lines(password_hashes=False)
         auths.append(hash)
         self._update_attribute_value('auth', auths)
