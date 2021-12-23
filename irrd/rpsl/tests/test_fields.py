@@ -399,6 +399,7 @@ def test_rpsl_auth_field():
     messages = RPSLParserMessages()
     assert field.parse('CRYPT-PW hashhash', messages).value == 'CRYPT-PW hashhash'
     assert field.parse('MD5-pw hashhash', messages).value == 'MD5-pw hashhash'
+    assert field.parse('bcrypt-pw hashhash', messages).value == 'bcrypt-pw hashhash'
     assert field.parse('PGPKEY-AABB0011', messages).value == 'PGPKEY-AABB0011'
     assert not messages.errors()
 

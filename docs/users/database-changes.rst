@@ -13,11 +13,11 @@ Submission format
 -----------------
 There are two ways to submit changes:
 
-* By sending an e-mail with the RPSL objects. This method supports MD5-PW,
-  CRYPT-PW and PGPKEY authentication. You will receive a reply by e-mail
-  with the result.
-* Over HTTPS, through a REST API. This method supports MD5-PW and CRYPT-PW
-  authentication. You receive the results in the HTTP response.
+* By sending an e-mail with the RPSL objects. This method supports BCRYPT-PW,
+  MD5-PW, CRYPT-PW and PGPKEY authentication. You will receive a reply by
+  e-mail with the result.
+* Over HTTPS, through a REST API. This method supports BCRYPT-PW, MD5-PW and
+  CRYPT-PW authentication. You receive the results in the HTTP response.
 
 All objects submitted are validated for the presence, count and syntax,
 though the syntax validation is limited for some attributes.
@@ -140,7 +140,6 @@ of ``objects`` in your request.
 
 Submitting over e-mail
 ^^^^^^^^^^^^^^^^^^^^^^
-
 The e-mail destination is configured by the IRRd administrator.
 Both ``text/plain`` e-mails as well as MIME multipart messages with
 a ``text/plain`` part are accepted.
@@ -216,7 +215,7 @@ When querying for a `mntner` object, any lines with password hashes are
 masked for security reasons. For example::
 
     mntner: EXAMPLE-MNT
-    auth: CRYPT-PW DummyValue  # Filtered for security
+    auth: BCRYPT-PW DummyValue  # Filtered for security
     auth: MD5-PW DummyValue  # Filtered for security
     auth: PGPKEY-12345678
 
@@ -230,7 +229,7 @@ When you submit changes to an existing `mntner` object, there are two options:
 * Submit with exclusively dummy values (and optionally, PGP keys) and provide
   a single password in the entire submission. In this case, all password
   authentication hashes are deleted from the object, except for a single
-  MD5-PW that matches the password used to authenticate the change.
+  BCRYPT-PW that matches the password used to authenticate the change.
 
 Any other scenario, like submitting a mix of dummy and real hashes, or
 submitting dummy hashes along with multiple ``password`` attributes in

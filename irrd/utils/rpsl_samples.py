@@ -496,6 +496,7 @@ source:         TEST
 
 SAMPLE_MNTNER_MD5 = 'md5-password'
 SAMPLE_MNTNER_CRYPT = 'crypt-password'
+SAMPLE_MNTNER_BCRYPT = 'bcrypt-password'
 SAMPLE_MNTNER = """mntner:         TEST-MNT
 admin-c:        PERSON-TEST
 notify:         notify@example.net
@@ -505,6 +506,7 @@ mnt-nfy:        mnt-nfy2@example.net
 auth:           PGPKey-80F238C6
 auth:           CRYPT-PW LEuuhsBJNFV0Q  # crypt-password
 auth:           MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.  # md5-password
+auth:           bcrypt-pw $2b$12$RMrlONJ0tasnpo.zHDF.yuYm/Gb1ARmIjP097ZoIWBn9YLIM2ao5W # bcrypt-password
 mnt-by:         TEST-MNT
 mnt-by:         OTHER1-MNT,OTHER2-MNT
 changed:        changed@example.com 20190701 # comment

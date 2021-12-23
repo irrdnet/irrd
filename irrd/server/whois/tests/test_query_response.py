@@ -74,6 +74,7 @@ class TestWhoisQueryResponse:
         response = WhoisQueryResponse(mode=WhoisQueryResponseMode.RIPE,
                                       response_type=WhoisQueryResponseType.ERROR_USER,
                                       result=SAMPLE_MNTNER).generate_response()
+        assert 'bcrypt-pw ' + PASSWORD_HASH_DUMMY_VALUE in response
         assert 'CRYPT-PW ' + PASSWORD_HASH_DUMMY_VALUE in response
         assert 'CRYPT-PW LEuuhsBJNFV0Q' not in response
         assert 'MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.' not in response

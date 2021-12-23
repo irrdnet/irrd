@@ -10,12 +10,15 @@ def test_remove_auth_hashes():
     original_text = SAMPLE_MNTNER
     assert 'CRYPT-PW LEuuhsBJNFV0Q' in original_text
     assert 'MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.' in original_text
+    assert 'bcrypt-pw $2b$12$RMrlONJ0tasnpo.zHDF.yuYm/Gb1ARmIjP097ZoIWBn9YLIM2ao5W' in original_text
 
     result = remove_auth_hashes(original_text)
     assert 'CRYPT-PW ' + PASSWORD_HASH_DUMMY_VALUE in result
     assert 'CRYPT-PW LEuuhsBJNFV0Q' not in result
     assert 'MD5-pw ' + PASSWORD_HASH_DUMMY_VALUE in result
     assert 'MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.' not in result
+    assert 'bcrypt-pw ' + PASSWORD_HASH_DUMMY_VALUE in result
+    assert 'bcrypt-pw $2b$12$RMrlONJ0tasnpo.zHDF.yuYm/Gb1ARmIjP097ZoIWBn9YLIM2ao5W' not in result
     assert 'other_text' == remove_auth_hashes('other_text')
 
 

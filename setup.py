@@ -25,6 +25,7 @@ setuptools.setup(
         # or packages.
         'python-gnupg==0.4.7',
         'passlib==1.7.4',
+        'bcrypt==3.2.0',
         'IPy==1.01',
         'ordered-set==4.0.2',
         'beautifultable==0.8.0',

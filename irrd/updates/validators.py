@@ -224,7 +224,7 @@ class AuthValidator:
                                  f'replacing all hashes with currently supplied password.')
                     rpsl_obj_new.force_single_new_password(self.passwords[0])
                     result.info_messages.add('As you submitted dummy hash values, all password hashes on this object '
-                                             'were replaced with a new MD5-PW hash of the password you provided for '
+                                             'were replaced with a new BCRYPT-PW hash of the password you provided for '
                                              'authentication.')
                 else:
                     result.error_messages.add('Object submitted with dummy hash values, but multiple or no passwords '
