@@ -588,8 +588,8 @@ class DatabaseHandler:
             serial_newest_seen=None,
         )
         self._connection.execute(stmt)
-        logger.info(f'force_reload flag set for {source}, serial synchronisation based on '
-                    f'current settings: {synchronised_serials}')
+        logger.info(f'force_reload flag set for {source}, serial synchronisation will be {synchronised_serials} for '
+                    f'current settings, actual reload process wll take place in next scheduled importer run')
 
     def record_serial_newest_mirror(self, source: str, serial: int) -> None:
         """
