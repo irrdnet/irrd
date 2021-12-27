@@ -18,6 +18,10 @@ PASSWORD_HASHERS_ALL = {
 
 
 def get_password_hashers(permit_legacy=True):
+    """
+    Get the enabled password hashers, and if permit_legacy is True, also legacy ones.
+    Returned as a dict with keys being auth values, values being the hash functions.
+    """
     hashers = {}
     included_availabilities = {PasswordHasherAvailability.ENABLED}
     if permit_legacy:
