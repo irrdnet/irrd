@@ -8,8 +8,8 @@ with open('README.rst', 'r') as fh:
 setuptools.setup(
     name='irrd',
     version=__version__,
-    author='DashCare for NTT Ltd.',
-    author_email='irrd@dashcare.nl',
+    author='Reliably Coded for NTT Ltd. and others',
+    author_email='irrd@reliablycoded.nl',
     description='Internet Routing Registry daemon (IRRd)',
     long_description=long_description,
     long_description_content_type='text/x-rst',
@@ -83,6 +83,7 @@ setuptools.setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
         'Operating System :: OS Independent',
     ],
 )

@@ -27,16 +27,26 @@ Its main features are:
 * Mirroring other IRR databases using file imports and NRTM.
 * Offering NRTM mirroring and full export services to other databases.
 
-`Older versions`_ of IRRd are or were in use at NTT and RADB, amongst other
+This IRRd version 4 project was originally commissioned in 2018 by NTT_ and
+designed and developed by `Reliably Coded`_ (known as DashCare until 2021).
+Since then, `Reliably Coded`_ has been maintaining and extending IRRd significantly,
+for, or with support of, NTT_, ARIN_, Merit_, `RIPE NCC Community Projects Fund`_,
+LACNIC_, Netnod_ and Internetstiftelsen_. This has taken place in the form of
+development contracts, support contracts, or grants.
+
+`Older versions`_ of IRRd are or were in use at by various IRR operators.
 places. Difficulties with continued maintenance and extension of these
 older versions lead to the IRRd v4 project.
 
-This project was originally commissioned by NTT_ and designed and
-developed by DashCare_.
-
-Please see the documentation_ for more.
+Please see the extensive documentation_ for more on how to deploy and use IRRd.
 
 .. _NTT: https://www.gin.ntt.net
-.. _DashCare: https://www.dashcare.nl
+.. _Reliably Coded: https://www.reliablycoded.nl
+.. _ARIN: https://www.arin.net/
+.. _Merit: https://www.radb.net/
+.. _RIPE NCC Community Projects Fund: https://www.ripe.net/support/cpf
+.. _LACNIC: https://www.lacnic.net/
+.. _Netnod: https://www.netnod.se/
+.. _Internetstiftelsen: https://internetstiftelsen.se/
 .. _Older versions: https://github.com/irrdnet/irrd-legacy
 .. _documentation: http://irrd.readthedocs.io/en/stable/
