@@ -275,7 +275,7 @@ class Configuration:
         from irrd.rpsl.passwords import PasswordHasherAvailability
         valid_hasher_availability = [avl.value for avl in PasswordHasherAvailability]
         for hasher_name, setting in config.get('auth.password_hashers', {}).items():
-            if setting.lower() not in [a.value for a in PasswordHasherAvailability]:
+            if setting.lower() not in valid_hasher_availability:
                 errors.append(f'Setting auth.password_hashers.{hasher_name} must be one of {valid_hasher_availability}')
 
         for name, access_list in config.get('access_lists', {}).items():
