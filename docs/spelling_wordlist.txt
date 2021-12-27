@@ -27,6 +27,8 @@ dev
 enums
 gpg
 gzipped
+hasher
+hashers
 hostname
 http
 incrementing
