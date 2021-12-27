@@ -7,7 +7,7 @@ from IPy import IP
 
 from irrd.utils.text import clean_ip_value_error
 from irrd.utils.validators import parse_as_number, ValidationError
-from .config import PASSWORD_HASHERS
+from .passwords import get_password_hashers
 from .parser_state import RPSLParserMessages, RPSLFieldParseResult
 
 # The IPv4/IPv6 regexes are for initial screening - not full validators
@@ -507,13 +507,14 @@ class RPSLReferenceListField(RPSLFieldListMixin, RPSLReferenceField):
 class RPSLAuthField(RPSLTextField):
     """Field for the auth attribute of a mntner."""
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
-        valid_beginnings = [hasher + ' ' for hasher in PASSWORD_HASHERS.keys()]
+        hashers = get_password_hashers(permit_legacy=not strict_validation)
+        valid_beginnings = [hasher + ' ' for hasher in hashers.keys()]
         has_valid_beginning = any(value.upper().startswith(b) for b in valid_beginnings)
         is_valid_hash = has_valid_beginning and value.count(' ') == 1 and not value.count(',')
         if is_valid_hash or re_pgpkey.match(value.upper()):
             return RPSLFieldParseResult(value)
 
-        hashers = ', '.join(PASSWORD_HASHERS.keys())
+        hashers = ', '.join(hashers.keys())
         messages.error(f'Invalid auth attribute: {value}: supported options are {hashers} and PGPKEY-xxxxxxxx')
         return None
 

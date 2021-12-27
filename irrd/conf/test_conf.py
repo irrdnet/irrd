@@ -85,6 +85,9 @@ class TestConfiguration:
                             'autnum_authentication': 'required',
                         },
                     },
+                    'password_hashers': {
+                        'bcrypt-pw': 'legacy',
+                    },
                 },
                 'sources_default': ['TESTDB2', 'TESTDB'],
                 'sources': {
@@ -263,6 +266,10 @@ class TestConfiguration:
                             'prefix_required': True,
                         },
                     },
+                    'password_hashers': {
+                        'unknown-hasher': 'legacy',
+                        'crypt-pw': 'invalid-setting',
+                    },
                 },
                 'rpki': {
                     'roa_source': 'https://example.com/roa.json',
@@ -324,6 +331,8 @@ class TestConfiguration:
         assert 'Unknown setting key: auth.set_creation.not-a-real-set.prefix_required' in str(ce.value)
         assert 'Setting auth.set_creation.as-set.prefix_required must be a bool' in str(ce.value)
         assert 'Setting auth.set_creation.as-set.autnum_authentication must be one of' in str(ce.value)
+        assert 'Unknown setting key: auth.password_hashers.unknown-hash' in str(ce.value)
+        assert 'Setting auth.password_hashers.crypt-pw must be one of' in str(ce.value)
         assert 'Access lists doesnotexist, invalid-list referenced in settings, but not defined.' in str(ce.value)
         assert 'Setting server.http.status_access_list must be a string, if defined.' in str(ce.value)
         assert 'Invalid item in access list bad-list: IPv4 Address with more than 4 bytes.' in str(ce.value)
