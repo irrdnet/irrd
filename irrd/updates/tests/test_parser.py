@@ -24,7 +24,7 @@ from ..validators import ReferenceValidator, AuthValidator, RulesValidator, Vali
 
 
 @pytest.fixture()
-def prepare_mocks(monkeypatch):
+def prepare_mocks(monkeypatch, config_override):
     monkeypatch.setenv('IRRD_SOURCES_TEST_AUTHORITATIVE', '1')
     monkeypatch.setenv('IRRD_AUTH_OVERRIDE_PASSWORD', '$1$J6KycItM$MbPaBU6iFSGFV299Rk7Di0')
     mock_dh = Mock()
@@ -39,6 +39,12 @@ def prepare_mocks(monkeypatch):
     mock_rules_validator = Mock(spec=RulesValidator)
     monkeypatch.setattr('irrd.updates.parser.RulesValidator', lambda dh: mock_rules_validator)
     mock_rules_validator.validate.return_value = ValidatorResult()
+
+    config_override({
+        'auth': {
+            'password_hashers': {'crypt-pw': 'enabled'},
+        },
+    })
     yield mock_dq, mock_dh
 
 

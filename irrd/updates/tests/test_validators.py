@@ -27,10 +27,14 @@ MNTNER_OBJ_MD5_PW = SAMPLE_MNTNER.replace('CRYPT', '')
 
 class TestAuthValidator:
     @pytest.fixture()
-    def prepare_mocks(self, monkeypatch):
+    def prepare_mocks(self, monkeypatch, config_override):
         mock_dh = Mock()
         mock_dq = Mock()
         monkeypatch.setattr('irrd.updates.validators.RPSLDatabaseQuery', lambda: mock_dq)
+
+        config_override({
+            'auth': {'password_hashers': {'crypt-pw': 'enabled'}},
+        })
 
         validator = AuthValidator(mock_dh, None)
         yield validator, mock_dq, mock_dh
@@ -287,15 +291,18 @@ class TestAuthValidator:
             'RELATED-MNT - from parent inetnum 192.0.2.0-192.0.2.255'
         }
 
-        config_override({'auth': {'authenticate_parents_route_creation': False}})
+        config_override({'auth': {
+            'authenticate_parents_route_creation': False,
+            'password_hashers': {'crypt-pw': 'enabled'}
+        }})
         result = validator.process_auth(route, None)
         assert result.is_valid()
-        config_override({})
+        config_override({'auth': {'password_hashers': {'crypt-pw': 'enabled'}}})
 
         result = validator.process_auth(route, route)
         assert result.is_valid()
 
-    def test_related_route_less_specific_inetnum(self, prepare_mocks, config_override):
+    def test_related_route_less_specific_inetnum(self, prepare_mocks):
         validator, mock_dq, mock_dh = prepare_mocks
         route = rpsl_object_from_text(SAMPLE_ROUTE)
         query_results = itertools.cycle([
@@ -343,7 +350,7 @@ class TestAuthValidator:
             'RELATED-MNT - from parent inetnum 192.0.2.0-192.0.2.255'
         }
 
-    def test_related_route_less_specific_route(self, prepare_mocks, config_override):
+    def test_related_route_less_specific_route(self, prepare_mocks):
         validator, mock_dq, mock_dh = prepare_mocks
         route = rpsl_object_from_text(SAMPLE_ROUTE)
         query_results = itertools.cycle([
@@ -398,7 +405,7 @@ class TestAuthValidator:
             'RELATED-MNT - from parent route 192.0.2.0/24AS65537'
         }
 
-    def test_related_route_no_match_v6(self, prepare_mocks, config_override):
+    def test_related_route_no_match_v6(self, prepare_mocks):
         validator, mock_dq, mock_dh = prepare_mocks
         route = rpsl_object_from_text(SAMPLE_ROUTE6)
         query_results = itertools.cycle([
@@ -435,7 +442,12 @@ class TestAuthValidator:
         ]
 
     def test_as_set_autnum_disabled(self, prepare_mocks, config_override):
-        config_override({'auth': {'set_creation': {'as-set': {'autnum_authentication': 'disabled'}}}})
+        config_override({
+            'auth': {
+                'set_creation': {'as-set': {'autnum_authentication': 'disabled'}},
+                'password_hashers': {'crypt-pw': 'enabled'},
+            },
+        })
         validator, mock_dq, mock_dh = prepare_mocks
         as_set = rpsl_object_from_text(SAMPLE_AS_SET)
         assert as_set.clean_for_create()  # fill pk_asn_segment
@@ -453,6 +465,7 @@ class TestAuthValidator:
         ]
 
     def test_as_set_autnum_opportunistic_exists_default(self, prepare_mocks, config_override):
+        config_override({'auth': {'password_hashers': {'crypt-pw': 'enabled'}}})
         validator, mock_dq, mock_dh = prepare_mocks
         as_set = rpsl_object_from_text(SAMPLE_AS_SET)
         assert as_set.clean_for_create()  # fill pk_asn_segment
@@ -498,14 +511,22 @@ class TestAuthValidator:
         result = validator.process_auth(as_set, rpsl_obj_current=as_set)
         assert result.is_valid()
 
-        config_override({'auth': {'set_creation': {'as-set': {'autnum_authentication': 'disabled'}}}})
+        config_override({
+            'auth': {
+                'set_creation': {'as-set': {'autnum_authentication': 'disabled'}},
+                'password_hashers': {'crypt-pw': 'enabled'},
+            },
+        })
         result = validator.process_auth(as_set, None)
         assert result.is_valid()
 
     def test_as_set_autnum_opportunistic_does_not_exist(self, prepare_mocks, config_override):
-        config_override({'auth': {'set_creation': {
-            AUTH_SET_CREATION_COMMON_KEY: {'autnum_authentication': 'opportunistic'}
-        }}})
+        config_override({'auth': {
+            'set_creation': {
+                AUTH_SET_CREATION_COMMON_KEY: {'autnum_authentication': 'opportunistic'}
+            },
+            'password_hashers': {'crypt-pw': 'enabled'},
+        }})
         validator, mock_dq, mock_dh = prepare_mocks
         as_set = rpsl_object_from_text(SAMPLE_AS_SET)
         assert as_set.clean_for_create()  # fill pk_first_segment
@@ -530,9 +551,12 @@ class TestAuthValidator:
         ]
 
     def test_as_set_autnum_required_does_not_exist(self, prepare_mocks, config_override):
-        config_override({'auth': {'set_creation': {
-            AUTH_SET_CREATION_COMMON_KEY: {'autnum_authentication': 'required'}
-        }}})
+        config_override({'auth': {
+            'set_creation': {
+                AUTH_SET_CREATION_COMMON_KEY: {'autnum_authentication': 'required'}
+            },
+            'password_hashers': {'crypt-pw': 'enabled'},
+        }})
         validator, mock_dq, mock_dh = prepare_mocks
         as_set = rpsl_object_from_text(SAMPLE_AS_SET)
         assert as_set.clean_for_create()  # fill pk_first_segment
@@ -550,12 +574,15 @@ class TestAuthValidator:
         }
 
     def test_filter_set_autnum_required_no_prefix(self, prepare_mocks, config_override):
-        config_override({'auth': {'set_creation': {
-            AUTH_SET_CREATION_COMMON_KEY: {
-                'autnum_authentication': 'required',
-                'prefix_required': False,
-            }
-        }}})
+        config_override({'auth': {
+            'set_creation': {
+                AUTH_SET_CREATION_COMMON_KEY: {
+                    'autnum_authentication': 'required',
+                    'prefix_required': False,
+                }
+            },
+            'password_hashers': {'crypt-pw': 'enabled'},
+        }})
         validator, mock_dq, mock_dh = prepare_mocks
         filter_set = rpsl_object_from_text(SAMPLE_FILTER_SET)
         assert filter_set.clean_for_create()

@@ -265,12 +265,18 @@ class Configuration:
             errors.append('Setting auth.gnupg_keyring is required.')
 
         from irrd.updates.parser_state import RPSLSetAutnumAuthenticationMode
+        valid_auth = [mode.value for mode in RPSLSetAutnumAuthenticationMode]
         for set_name, params in config.get('auth.set_creation', {}).items():
             if not isinstance(params.get('prefix_required', False), bool):
                 errors.append(f'Setting auth.set_creation.{set_name}.prefix_required must be a bool')
-            valid_auth = [mode.value for mode in RPSLSetAutnumAuthenticationMode]
             if params.get('autnum_authentication') and params['autnum_authentication'].lower() not in valid_auth:
                 errors.append(f'Setting auth.set_creation.{set_name}.autnum_authentication must be one of {valid_auth} if set')
+
+        from irrd.rpsl.passwords import PasswordHasherAvailability
+        valid_hasher_availability = [avl.value for avl in PasswordHasherAvailability]
+        for hasher_name, setting in config.get('auth.password_hashers', {}).items():
+            if setting.lower() not in valid_hasher_availability:
+                errors.append(f'Setting auth.password_hashers.{hasher_name} must be one of {valid_hasher_availability}')
 
         for name, access_list in config.get('access_lists', {}).items():
             for item in access_list:

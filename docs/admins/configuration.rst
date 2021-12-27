@@ -25,9 +25,15 @@ Example configuration file
 .. highlight:: yaml
     :linenothreshold: 5
 
-This sample shows most configuration options. Note that this is an example
-of what a configuration looks like, and many of these settings are optional,
-or the value shown in this example is their default::
+This sample shows most configuration options
+
+.. note:: 
+  Note that this is an example of what a configuration file can look like.
+  Many of these settings are optional, or the value shown in this example is
+  their default. This is intended as an example of syntax, not as a template
+  for your own configuration.
+
+::
 
     irrd:
         database_url: 'postgresql:///irrd'
@@ -57,6 +63,8 @@ or the value shown in this example is their default::
         auth:
             gnupg_keyring: /home/irrd/gnupg-keyring/
             override_password: {hash}
+            password_hashers:
+                md5-pw: legacy
 
         email:
             footer: 'email footer'
@@ -305,6 +313,18 @@ Authentication and validation
 * ``auth.gnupg_keyring``: the full path to the gnupg keyring.
   |br| **Default**: not defined, but required.
   |br| **Change takes effect**: after full IRRd restart.
+* ``auth.password_hashers``: which password hashers to allow in mntner objects.
+  This is a dictionary with the hashers (``crypt-pw``, ``md5-pw``, ``bcrypt-pw``) as
+  possible keys, and ``enabled``, ``legacy``, or ``disabled`` as possible values.
+  Enabled means the hash is enabled for all cases. Disabled
+  means IRRd treats the hash as if it is unknown, rejecting authentication and
+  rejecting ``auth`` attributes using this hasher in new or updated authoritative
+  `mntner` objects. Legacy is in between: authentication with existing hashes is
+  permitted, ``auth`` attributes in new or modified authoritative objects
+  are not.
+  |br| **Default**: ``enabled`` for ``md5-pw`` and ``bcrypt-pw``,
+  ``legacy`` for ``crypt-pw``
+  |br| **Change takes effect**: upon the next update attempt.
 * ``auth.authenticate_parents_route_creation``: whether to check for
   :ref:`related object maintainers <auth-related-mntners-route>` when users create
   new `route(6)` objects.
@@ -317,6 +337,8 @@ Authentication and validation
     imported. Their presence in the keyring is then used to validate requested
     changes. Therefore, the keyring referred to by ``auth.gnupg_keyring`` can
     not be simply reset, or PGP authentications may fail.
+    However, you can use the ``irrd_load_pgp_keys`` command to refill the keyring
+    in ``auth.gnupg_keyring``.
 
 .. _conf-auth-set-creation:
 

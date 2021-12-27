@@ -2,9 +2,9 @@ import re
 from typing import Iterator, Union, TextIO, Optional, List, Set
 
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
-from irrd.rpsl.config import PASSWORD_HASHERS
+from irrd.rpsl.passwords import PASSWORD_HASHERS_ALL
 
-re_remove_passwords = re.compile(r'(%s)[^\n]+' % '|'.join(PASSWORD_HASHERS.keys()), flags=re.IGNORECASE)
+re_remove_passwords = re.compile(r'(%s)[^\n]+' % '|'.join(PASSWORD_HASHERS_ALL.keys()), flags=re.IGNORECASE)
 re_remove_last_modified = re.compile(r'^last-modified: [^\n]+\n', flags=re.MULTILINE)
 
 
@@ -12,7 +12,7 @@ def remove_auth_hashes(input: Optional[str]):
     if not input:
         return input
     # If there are no hashes, skip the RE for performance.
-    if not any([pw_hash in input for pw_hash in PASSWORD_HASHERS.keys()]):
+    if not any([pw_hash in input for pw_hash in PASSWORD_HASHERS_ALL.keys()]):
         return input
     return re_remove_passwords.sub(r'\1 %s  # Filtered for security' % PASSWORD_HASH_DUMMY_VALUE, input)
 

@@ -49,7 +49,11 @@ irrd:
             COMMON:
                 prefix_required: true
                 autnum_authentication: opportunistic
-
+        password_hashers:
+            crypt-pw: legacy
+            md5-pw: enabled
+            bcrypt-pw: enabled
+            
     email:
         footer: ''
         notification_header: |

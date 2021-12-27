@@ -2,6 +2,22 @@
 Release notes for IRRd 4.3.0
 ============================
 
+New password hasher and new password settings
+---------------------------------------------
+IRRd 4 has always supported CRYPT-PW and MD5-PW hashing for passwords in
+_mntner_ objects. This version adds support for BCRYPT-PW, using bcrypt,
+a secure and modern password hashing method.
+
+IRRd 4.3 has a new setting ``auth.password_hashers`` which lets you configure
+which password hashes are enabled. **The default is stricter than in
+older versions**: ``bcrypt-pw`` and ``md5-pw`` are fully enabled, 
+``crypt-pw`` is only enabled in legacy mode. The legacy mode means that IRRd
+will accept authentication through CRYPT-PW on `mntners` as before, but will
+not accept ``auth`` lines using CRYPT-PW on new or modified `mntner`
+objects in authoritative databases. This requires users to upgrade to
+a stronger hash when they next update their `mntner` object.
+
+
 Changes to related object authentication and settings
 -----------------------------------------------------
 In version 4.2, IRRd required newly created authoritative `as-set` objects
@@ -41,7 +57,7 @@ IRRd only looks in the same IRR source.
 
 Support for maintainer suspension
 ---------------------------------
-IRRD now supports
+IRRd now supports
 :doc:`suspending a maintainer and all objects it maintains </admins/suspension>`.
 This feature is only accessible to admins using the override password, and only
 when enabled on an authoritative source with the ``suspension_enabled`` setting.

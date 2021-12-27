@@ -26,7 +26,12 @@ def prepare_mocks(monkeypatch, config_override):
     monkeypatch.setattr('irrd.updates.validators.RPSLDatabaseQuery', lambda: mock_dq)
     mock_email = Mock()
     monkeypatch.setattr('irrd.utils.email.send_email', mock_email)
-    config_override({'auth': {'override_password': '$1$J6KycItM$MbPaBU6iFSGFV299Rk7Di0'}})
+    config_override({
+        'auth': {
+            'override_password': '$1$J6KycItM$MbPaBU6iFSGFV299Rk7Di0',
+            'password_hashers': {'crypt-pw': 'enabled'},
+        },
+    })
 
     mock_scopefilter = Mock(spec=ScopeFilterValidator)
     monkeypatch.setattr('irrd.updates.parser.ScopeFilterValidator',

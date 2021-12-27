@@ -779,6 +779,9 @@ class TestIntegration:
                             'prefix_required': False,
                         },
                     },
+                    'password_hashers': {
+                        'crypt-pw': 'enabled',
+                    }
 
                 },
 

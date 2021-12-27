@@ -4,7 +4,7 @@ from typing import Set, List, Optional, Union
 
 from irrd.conf import AUTH_SET_CREATION_COMMON_KEY, PASSWORD_HASH_DUMMY_VALUE, get_setting
 from irrd.utils.pgp import get_gpg_instance
-from .config import PASSWORD_HASHERS
+from .passwords import PASSWORD_REPLACEMENT_HASH, get_password_hashers
 from .fields import (RPSLTextField, RPSLIPv4PrefixField, RPSLIPv4PrefixesField, RPSLIPv6PrefixField,
                      RPSLIPv6PrefixesField, RPSLIPv4AddressRangeField, RPSLASNumberField,
                      RPSLASBlockField,
@@ -312,13 +312,14 @@ class RPSLMntner(RPSLObject):
         any of the auth hashes in this object, or match the
         keycert object PK.
         """
+        hashers = get_password_hashers(permit_legacy=True)
         for auth in self.parsed_data.get('auth', []):
             if keycert_obj_pk and auth.upper() == keycert_obj_pk.upper():
                 return True
             if ' ' not in auth:
                 continue
             scheme, hash = auth.split(' ', 1)
-            hasher = PASSWORD_HASHERS.get(scheme.upper())
+            hasher = hashers.get(scheme.upper())
             if hasher:
                 for password in passwords:
                     try:
@@ -342,7 +343,8 @@ class RPSLMntner(RPSLObject):
         Overwrite all auth hashes with a single new hash for the provided password.
         Retains other methods, i.e. PGPKEY.
         """
-        hash = 'BCRYPT-PW ' + PASSWORD_HASHERS['BCRYPT-PW'].hash(password)
+        hash_key, hash_function = PASSWORD_REPLACEMENT_HASH
+        hash = hash_key + ' ' + hash_function.hash(password)
         auths = self._auth_lines(password_hashes=False)
         auths.append(hash)
         self._update_attribute_value('auth', auths)

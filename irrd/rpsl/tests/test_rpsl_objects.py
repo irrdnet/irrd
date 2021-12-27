@@ -339,7 +339,8 @@ class TestRPSLMntner:
         obj = RPSLMntner()
         assert OBJECT_CLASS_MAPPING[obj.rpsl_object_class] == obj.__class__
 
-    def test_parse(self):
+    def test_parse(self, config_override):
+        config_override({'auth': {'password_hashers': {'crypt-pw': 'enabled'}}})
         rpsl_text = object_sample_mapping[RPSLMntner().rpsl_object_class]
         obj = rpsl_object_from_text(rpsl_text)
         assert obj.__class__ == RPSLMntner
@@ -350,7 +351,8 @@ class TestRPSLMntner:
         assert obj.render_rpsl_text() == rpsl_text
         assert obj.references_strong_inbound() == {'mnt-by'}
 
-    def test_parse_invalid_partial_dummy_hash(self):
+    def test_parse_invalid_partial_dummy_hash(self, config_override):
+        config_override({'auth': {'password_hashers': {'crypt-pw': 'enabled'}}})
         rpsl_text = object_sample_mapping[RPSLMntner().rpsl_object_class]
         rpsl_text = rpsl_text.replace('LEuuhsBJNFV0Q', PASSWORD_HASH_DUMMY_VALUE)
         obj = rpsl_object_from_text(rpsl_text)
@@ -363,7 +365,8 @@ class TestRPSLMntner:
     def test_verify(self, tmp_gpg_dir):
         rpsl_text = object_sample_mapping[RPSLMntner().rpsl_object_class]
         # Unknown hashes and invalid hashes should simply be ignored.
-        obj = rpsl_object_from_text(rpsl_text + 'auth: UNKNOWN_HASH foo\nauth: MD5-PW 💩')
+        # Strict validation set to False to allow legacy mode for CRYPT-PW
+        obj = rpsl_object_from_text(rpsl_text + 'auth: UNKNOWN_HASH foo\nauth: MD5-PW 💩', strict_validation=False)
 
         assert obj.verify_auth(['crypt-password'])
         assert obj.verify_auth(['md5-password'])

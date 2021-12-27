@@ -394,10 +394,9 @@ def test_rpsl_references_field():
     assert_validation_err('Invalid AS number', field.parse, 'AS1234, any')
 
 
-def test_rpsl_auth_field():
+def test_rpsl_auth_field(config_override):
     field = RPSLAuthField()
     messages = RPSLParserMessages()
-    assert field.parse('CRYPT-PW hashhash', messages).value == 'CRYPT-PW hashhash'
     assert field.parse('MD5-pw hashhash', messages).value == 'MD5-pw hashhash'
     assert field.parse('bcrypt-pw hashhash', messages).value == 'bcrypt-pw hashhash'
     assert field.parse('PGPKEY-AABB0011', messages).value == 'PGPKEY-AABB0011'
@@ -406,4 +405,13 @@ def test_rpsl_auth_field():
     assert_validation_err('Invalid auth attribute', field.parse, 'PGPKEY-XX')
     assert_validation_err('Invalid auth attribute', field.parse, 'PGPKEY-AABB00112233')
     assert_validation_err('Invalid auth attribute', field.parse, 'ARGON-PW hashhash')
-    assert_validation_err('Invalid auth attribute', field.parse, 'CRYPT-PWhashhash')
+    assert_validation_err('Invalid auth attribute', field.parse, 'BCRYPT-PWhashhash')
+
+    assert_validation_err('Invalid auth attribute', field.parse, 'CRYPT-PW hashhash')
+    assert field.parse('CRYPT-PW hashhash', messages, strict_validation=False).value == 'CRYPT-PW hashhash'
+
+    config_override({'auth': {'password_hashers': {'crypt-pw': 'enabled'}}})
+    assert field.parse('CRYPT-PW hashhash', messages).value == 'CRYPT-PW hashhash'
+
+    config_override({'auth': {'password_hashers': {'crypt-pw': 'disabled'}}})
+    assert field.parse('CRYPT-PW hashhash', messages, strict_validation=False) is None
