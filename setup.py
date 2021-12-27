@@ -34,7 +34,7 @@ setuptools.setup(
         'setproctitle==1.2.2',
         'python-daemon==2.3.0',
         'pid==3.0.4',
-        'redis==4.0.2',
+        'redis==4.1.0',
         'hiredis==2.0.0',
         'requests==2.26.0',
         'pytz==2021.3',
