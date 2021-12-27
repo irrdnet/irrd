@@ -23,7 +23,7 @@ setuptools.setup(
         # This list must be kept in sync with requirements.txt version-wise,
         # but should not include packages used for testing, generating docs
         # or packages.
-        'python-gnupg==0.4.7',
+        'python-gnupg==0.4.8',
         'passlib==1.7.4',
         'bcrypt==3.2.0',
         'IPy==1.01',
@@ -38,9 +38,9 @@ setuptools.setup(
         'hiredis==2.0.0',
         'requests==2.26.0',
         'pytz==2021.3',
-        'ariadne==0.13.0',
-        'uvicorn==0.15.0',
-        'starlette==0.14.2',
+        'ariadne==0.14.0',
+        'uvicorn==0.16.0',
+        'starlette==0.17.1',
         'psutil==5.8.0',
         'asgiref==3.4.1',
         'pydantic==1.8.2',
