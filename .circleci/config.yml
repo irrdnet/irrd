@@ -6,8 +6,8 @@ workflows:
   test:
     jobs:
       - cpython-3.6
-      - cpython-3.9
-      - pypy-3.7
+      - cpython-3.10
+      - pypy-3.8
       - pypy-3.6
 jobs:
   cpython-3.6: &test-template
@@ -129,10 +129,10 @@ jobs:
       - store_artifacts:
           path: /tmp/pytest-of-circleci/
 
-  cpython-3.9:
+  cpython-3.10:
     <<: *test-template
     docker:
-      - image: cimg/python:3.9
+      - image: cimg/python:3.10
         environment:
           IRRD_DATABASE_URL: 'postgresql://root@localhost/circle_test'
           IRRD_DATABASE_URL_INTEGRATION_1: 'postgresql://root@localhost/circle_test_integration_1'
@@ -153,10 +153,10 @@ jobs:
 
       - image: circleci/redis:5.0.4
 
-  pypy-3.7:
+  pypy-3.8:
     <<: *test-template
     docker:
-      - image: pypy:3.7
+      - image: pypy:3.8
         environment:
           IRRD_DATABASE_URL: 'postgresql://root@localhost/circle_test'
           IRRD_DATABASE_URL_INTEGRATION_1: 'postgresql://root@localhost/circle_test_integration_1'
