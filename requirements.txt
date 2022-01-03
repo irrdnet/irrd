@@ -44,7 +44,7 @@ python-graphql-client==0.4.2
 
 # Documentation generation
 Sphinx==4.3.2
-sphinxcontrib-spelling==7.3.0
+sphinxcontrib-spelling==7.3.2
 sphinx-material==0.0.35
 
 # Code style and type checks
