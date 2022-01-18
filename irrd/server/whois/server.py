@@ -12,7 +12,7 @@ from daemon.daemon import change_process_owner
 from setproctitle import setproctitle
 
 from irrd import ENV_MAIN_PROCESS_PID
-from irrd.conf import get_setting
+from irrd.conf import SOCKET_DEFAULT_TIMEOUT, get_setting
 from irrd.server.access_check import is_client_permitted
 from irrd.server.whois.query_parser import WhoisQueryParser
 from irrd.storage.database_handler import DatabaseHandler
@@ -140,6 +140,7 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
             try:
                 setproctitle('irrd-whois-worker')
                 self.request, self.client_address = self.connection_queue.get()
+                self.request.settimeout(SOCKET_DEFAULT_TIMEOUT)
                 self.setup()
                 self.handle_connection()
                 self.finish()
@@ -160,7 +161,7 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
         try:
             # explicitly shutdown.  socket.close() merely releases
             # the socket and waits for GC to perform the actual close.
-            self.request.shutdown(socket.SHUT_WR)
+            self.request.shutdown(socket.SHUT_RDWR)
         except OSError:  # pragma: no cover
             pass  # some platforms may raise ENOTCONN here
         self.request.close()
