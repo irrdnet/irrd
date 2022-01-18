@@ -156,8 +156,12 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
                 break
 
     def close_request(self):
-        # Close the connection in the same way normally done by TCPServer
-        self.request.settimeout(5)
+        # Close the connection in a similar way normally done by TCPServer
+        try:
+            # Try to set the timeout of the shutdown call (#607)
+            self.request.settimeout(5)
+        except OSError:  # pragma: no cover
+            pass
         try:
             # explicitly shutdown.  socket.close() merely releases
             # the socket and waits for GC to perform the actual close.
