@@ -7,7 +7,7 @@ from IPy import IP
 from ordered_set import OrderedSet
 
 from irrd import __version__
-from irrd.conf import get_setting, RPKI_IRR_PSEUDO_SOURCE
+from irrd.conf import get_setting, RPKI_IRR_PSEUDO_SOURCE, SOCKET_DEFAULT_TIMEOUT
 from irrd.mirroring.nrtm_generator import NRTMGenerator, NRTMGeneratorException
 from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import (OBJECT_CLASS_MAPPING, RPKI_RELEVANT_OBJECT_CLASSES)
@@ -38,7 +38,7 @@ class WhoisQueryParser:
     def __init__(self, client_ip: str, client_str: str, preloader: Preloader,
                  database_handler: DatabaseHandler) -> None:
         self.multiple_command_mode = False
-        self.timeout = 30
+        self.timeout = SOCKET_DEFAULT_TIMEOUT
         self.key_fields_only = False
         self.client_ip = client_ip
         self.client_str = client_str

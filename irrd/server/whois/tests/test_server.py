@@ -5,6 +5,7 @@ from queue import Queue
 from unittest.mock import Mock
 
 import pytest
+from irrd.conf import SOCKET_DEFAULT_TIMEOUT
 
 from irrd.storage.preload import Preloader
 from ..server import WhoisWorker
@@ -18,6 +19,7 @@ class MockSocket:
         self.wfile = BytesIO()
         self.shutdown_called = False
         self.close_called = False
+        self.timeout_set = None
 
     def makefile(self, mode, bufsize):
         return self.wfile if 'w' in mode else self.rfile
@@ -30,6 +32,9 @@ class MockSocket:
 
     def close(self):
         self.close_called = True
+
+    def settimeout(self, timeout):
+        self.timeout_set = timeout
 
 
 @pytest.fixture()
@@ -60,6 +65,7 @@ class TestWhoisWorker:
         assert b'IRRd -- version' in request.wfile.read()
         assert request.shutdown_called
         assert request.close_called
+        assert request.timeout_set == SOCKET_DEFAULT_TIMEOUT
 
     def test_whois_request_worker_exception(self, create_worker, monkeypatch, caplog):
         monkeypatch.setattr('irrd.server.whois.server.WhoisQueryParser',
