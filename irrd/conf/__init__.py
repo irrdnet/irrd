@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 PASSWORD_HASH_DUMMY_VALUE = 'DummyValue'
 SOURCE_NAME_RE = re.compile('^[A-Z][A-Z0-9-]*[A-Z0-9]$')
 RPKI_IRR_PSEUDO_SOURCE = 'RPKI'
+SOCKET_DEFAULT_TIMEOUT = 30
 
 # Note that sources are checked separately,
 # and 'access_lists' is always permitted
