@@ -19,16 +19,18 @@ This causes a bit of code duplication with other IRRD parts.
 """
 
 
-def run(url, debug=False, metadata=None):
-    requests_text = sys.stdin.read()
+def run(requests_text, url, debug=False, metadata=None):
     request_body = extract_request_body(requests_text)
+    if not request_body['objects']:
+        print("ERROR: received empty input text", file=sys.stderr)
+        return 3
     method = "DELETE" if request_body.get("delete_reason") else "POST"
     http_data = json.dumps(request_body).encode("utf-8")
     headers = {
         "User-Agent": "irr_rpsl_submit_v4",
     }
     if metadata:
-        headers["X-IRRD-Metadata"] = json.dumps(metadata)
+        headers["X-irrd-metadata"] = json.dumps(metadata)
     http_request = request.Request(
         url,
         data=http_data,
@@ -41,12 +43,12 @@ def run(url, debug=False, metadata=None):
             file=sys.stderr,
         )
     try:
-        with request.urlopen(http_request, timeout=10) as http_response:
-            response = json.loads(http_response.read().decode("utf-8"))
+        http_response = request.urlopen(http_request, timeout=10)
+        response = json.loads(http_response.read().decode("utf-8"))
     except HTTPError as he:
         message = he.read().decode("utf-8").replace("\n", ";")
         print(
-            f"INTERNAL ERROR: response {he} from server: {message}",
+            f"ERROR: response {he} from server: {message}",
             file=sys.stderr,
         )
         return 2
@@ -79,7 +81,7 @@ def extract_request_body(requests_text: str):
         # The attributes password/override/delete are meta attributes
         # and need to be extracted before parsing. Delete refers to a specific
         # object, password/override apply to all included objects.
-        for line in splitline_unicodesafe(object_text):
+        for line in object_text.strip("\n").split("\n"):
             if line.startswith("password:"):
                 password = line.split(":", maxsplit=1)[1].strip()
                 passwords.append(password)
@@ -101,20 +103,6 @@ def extract_request_body(requests_text: str):
         "delete_reason": delete_reason,
     }
     return result
-
-
-def splitline_unicodesafe(input: str) -> Iterator[str]:
-    """
-    Split an input string by newlines, and return an iterator of the lines.
-
-    This is a replacement for Python's built-in splitlines, which also splits
-    on characters such as unicode line separator (U+2028). In RPSL, that should
-    not be considered a line separator.
-    """
-    if not input:
-        return
-    for line in input.strip("\n").split("\n"):
-        yield line.strip("\r")
 
 
 def format_report(response):
@@ -183,7 +171,7 @@ def main():  # pragma: no cover
         "-m",
         dest="metadata",
         type=metadata,
-        help=f"metadata sent in X-IRRD-Metadata header, in key=value format, separated by comma",
+        help=f"metadata sent in X-irrd-metadata header, in key=value format, separated by comma",
     )
     parser.add_argument(
         "-u",
@@ -194,7 +182,7 @@ def main():  # pragma: no cover
     )
     args = parser.parse_args()
 
-    sys.exit(run(args.url, args.debug, args.metadata))
+    sys.exit(run(sys.stdin.read(), args.url, args.debug, args.metadata))
 
 
 if __name__ == "__main__":  # pragma: no cover
