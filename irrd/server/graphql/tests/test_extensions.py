@@ -32,13 +32,13 @@ def test_error_formatter():
     # Regular GraphQL error should always be passed
     error = GraphQLError(message='error')
     result = error_formatter(error)
-    assert result == {'message': 'error', 'locations': None, 'path': None}
+    assert result == {'message': 'error'}
 
     # If original_error is something else, hide except when in debug mode
     error = GraphQLError(message='error', original_error=ValueError())
     result = error_formatter(error)
-    assert result == {'message': 'Internal server error', 'locations': None, 'path': None}
+    assert result == {'message': 'Internal server error'}
 
     result = error_formatter(error, debug=True)
-    assert result == {'message': 'error', 'locations': None, 'path': None,
+    assert result == {'message': 'error',
                       'extensions': {'exception': None}}
