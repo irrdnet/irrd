@@ -1,0 +1,201 @@
+#!/usr/bin/env python
+# flake8: noqa: E402
+import argparse
+import json
+import sys
+import textwrap
+from typing import Iterator
+from urllib import request
+from urllib.error import HTTPError
+
+"""
+Read RPSL submissions from stdin, submit them to the
+IRRD HTTP API and return a response on stdout.
+
+This script is meant to be deployed on different hosts than
+those that run IRRD, and therefore intentionally only has
+no dependencies on other IRRD code or other dependencies.
+This causes a bit of code duplication with other IRRD parts.
+"""
+
+
+def run(url, debug=False, metadata=None):
+    requests_text = sys.stdin.read()
+    request_body = extract_request_body(requests_text)
+    method = "DELETE" if request_body.get("delete_reason") else "POST"
+    http_data = json.dumps(request_body).encode("utf-8")
+    headers = {
+        "User-Agent": "irr_rpsl_submit_v4",
+    }
+    if metadata:
+        headers["X-IRRD-Metadata"] = json.dumps(metadata)
+    http_request = request.Request(
+        url,
+        data=http_data,
+        method=method,
+        headers=headers,
+    )
+    if debug:
+        print(
+            f"Submitting to {url}; method {method}; headers {headers}; data {http_data}",
+            file=sys.stderr,
+        )
+    try:
+        with request.urlopen(http_request, timeout=10) as http_response:
+            response = json.loads(http_response.read().decode("utf-8"))
+    except HTTPError as he:
+        message = he.read().decode("utf-8").replace("\n", ";")
+        print(
+            f"INTERNAL ERROR: response {he} from server: {message}",
+            file=sys.stderr,
+        )
+        return 2
+
+    if debug:
+        print(f"response: {response}", file=sys.stderr)
+    print(format_report(response))
+    return 1 if response["summary"]["failed"] else 0
+
+
+def extract_request_body(requests_text: str):
+    """
+    Parse change requests, a text of RPSL objects along with metadata like
+    passwords or deletion requests.
+    Returns a dict suitable as a JSON HTTP POST payload.
+    """
+    passwords = []
+    overrides = []
+    rpsl_texts = []
+    delete_reason = ""
+
+    requests_text = requests_text.replace("\r", "")
+    for object_text in requests_text.split("\n\n"):
+        object_text = object_text.strip()
+        if not object_text:
+            continue
+
+        rpsl_text = ""
+
+        # The attributes password/override/delete are meta attributes
+        # and need to be extracted before parsing. Delete refers to a specific
+        # object, password/override apply to all included objects.
+        for line in splitline_unicodesafe(object_text):
+            if line.startswith("password:"):
+                password = line.split(":", maxsplit=1)[1].strip()
+                passwords.append(password)
+            elif line.startswith("override:"):
+                override = line.split(":", maxsplit=1)[1].strip()
+                overrides.append(override)
+            elif line.startswith("delete:"):
+                delete_reason = line.split(":", maxsplit=1)[1].strip()
+            else:
+                rpsl_text += line + "\n"
+
+        if rpsl_text:
+            rpsl_texts.append(rpsl_text)
+
+    result = {
+        "objects": [{"object_text": rpsl_text} for rpsl_text in rpsl_texts],
+        "passwords": passwords,
+        "overrides": overrides,
+        "delete_reason": delete_reason,
+    }
+    return result
+
+
+def splitline_unicodesafe(input: str) -> Iterator[str]:
+    """
+    Split an input string by newlines, and return an iterator of the lines.
+
+    This is a replacement for Python's built-in splitlines, which also splits
+    on characters such as unicode line separator (U+2028). In RPSL, that should
+    not be considered a line separator.
+    """
+    if not input:
+        return
+    for line in input.strip("\n").split("\n"):
+        yield line.strip("\r")
+
+
+def format_report(response):
+    """
+    Format an IRRD HTTP response into a human-friendly text.
+    """
+    s = response["summary"]
+    user_report = textwrap.dedent(
+        f"""
+    SUMMARY OF UPDATE:
+
+    Number of objects found:                  {s["objects_found"]:3}
+    Number of objects processed successfully: {s["successful"]:3}
+        Create:      {s["successful_create"]:3}
+        Modify:      {s["successful_modify"]:3}
+        Delete:      {s["successful_delete"]:3}
+    Number of objects processed with errors:  {s["failed"]:3}
+        Create:      {s["failed_create"]:3}
+        Modify:      {s["failed_modify"]:3}
+        Delete:      {s["failed_delete"]:3}
+
+    DETAILED EXPLANATION:
+
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+    )
+    for object_result in response["objects"]:
+        user_report += "---\n"
+        user_report += format_report_object(object_result)
+        user_report += "\n"
+    user_report += "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"
+    return user_report
+
+
+def format_report_object(r):
+    """
+    Format an IRRD HTTP response for a specific object into a human-friendly text.
+    """
+    status = "succeeded" if r["successful"] else "FAILED"
+
+    report = f'{r["type"]} {status}: [{r["object_class"]}] {r["rpsl_pk"]}\n'
+    if r["info_messages"] or r["error_messages"]:
+        if r["error_messages"]:
+            report += "\n" + r["submitted_object_text"] + "\n"
+        report += "".join([f"ERROR: {e}\n" for e in r["error_messages"]])
+        report += "".join([f"INFO: {e}\n" for e in r["info_messages"]])
+    return report
+
+
+def main():  # pragma: no cover
+    def metadata(input):
+        try:
+            return {item.split("=")[0]: item.split("=", 1)[1] for item in input.split(",")}
+        except IndexError:
+            raise ValueError()
+
+    description = """Read RPSL submissions from stdin and return a response on stdout."""
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument(
+        "-d",
+        dest="debug",
+        action="store_true",
+        help=f"print additional debug output for admins to stderr",
+    )
+    parser.add_argument(
+        "-m",
+        dest="metadata",
+        type=metadata,
+        help=f"metadata sent in X-IRRD-Metadata header, in key=value format, separated by comma",
+    )
+    parser.add_argument(
+        "-u",
+        dest="url",
+        type=str,
+        required=True,
+        help=f"IRRd submission API URL, e.g. https://rr.example.net/v1/submit/",
+    )
+    args = parser.parse_args()
+
+    sys.exit(run(args.url, args.debug, args.metadata))
+
+
+if __name__ == "__main__":  # pragma: no cover
+    main()
