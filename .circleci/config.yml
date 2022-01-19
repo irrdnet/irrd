@@ -51,9 +51,9 @@ jobs:
 
       - restore_cache:
           keys:
-          - v12-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}
+          - v13-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}
           # fallback to using the latest cache if no exact match is found
-          - v12-dependencies-{{ .Environment.CIRCLE_JOB }}
+          - v13-dependencies-{{ .Environment.CIRCLE_JOB }}
 
       - run:
           name: install dependencies
@@ -72,7 +72,7 @@ jobs:
       - save_cache:
           paths:
             - ./venv
-          key: v12-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}
+          key: v13-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}
 
       - run:
           name: Waiting for PostgreSQL to be ready
