@@ -159,7 +159,18 @@ def main():  # pragma: no cover
         except IndexError:
             raise ValueError()
 
-    description = """Read RPSL submissions from stdin and return a response on stdout."""
+    description = """
+        Read RPSL submissions from stdin and return a response on stdout.
+        Errors or debug info are printed to stderr.
+        
+        The input format must be plain RPSL objects, separated by double
+        newlines, as used in emails documented on
+        https://irrd.readthedocs.io/en/stable/users/database-changes/#submitting-over-e-mail .
+        
+        The exit code is 0 for success, 1 if at least some updates were
+        rejected (e.g. invalid RPSL syntax), 2 for an internal error,
+        3 for an empty input.
+    """
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument(
         "-d",

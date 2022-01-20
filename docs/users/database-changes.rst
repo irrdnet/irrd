@@ -11,7 +11,7 @@ Additionally, notifications may be sent on attempted or successful changes.
 
 Submission format
 -----------------
-There are two ways to submit changes:
+There are two included ways to submit changes:
 
 * By sending an e-mail with the RPSL objects. This method supports BCRYPT-PW,
   MD5-PW, CRYPT-PW and PGPKEY authentication. You will receive a reply by
@@ -172,6 +172,26 @@ for each authentication check.
 For PGP authentication, sign your message with a PGP/MIME signature
 or inline PGP. You can combine PGP signatures and passwords, and each method
 will be considered for each authentication check.
+
+Submission through irr_rpsl_submit
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+You can also use the ``irr_rpsl_submit`` command to submit changes to IRRd.
+It is similar to the submit tool from IRRD v3, and calls the HTTP API under
+the hood. Unlike IRRD v3's version, it does not perform any validation
+itself - it is mostly a wrapper around the HTTP API.
+
+The command reads database objects from stdin in the same format as used
+in emails and prints a report to stdout.
+You must provide a URL to the IRRd HTTP API, and may enable
+debug logging or pass extra metadata.
+
+This command is included in the IRRd distribution, but is also
+`usable as a separate Python script for Python 3.6 or newer <../_static/irr_rpsl_submit.py>`_.
+This script does not have
+any dependencies on IRRd or other Python libraries to make deployment
+on other hosts easier. You do not need a virtualenv, IRRd config file or
+SQL database on hosts that only run ``irr_rpsl_submit``.
+
 
 Override password
 -----------------
@@ -366,6 +386,11 @@ IRRd will always reply to a submission with a report on the requested
 changes. Depending on the request and its result, additional notifications
 may be sent. The overview below details all notifications that may be
 sent.
+
+IRRd collects some metadata for each request, which is included in
+notifications to maintainers and written to the server logs. This includes the
+from, date, subject and message ID for emails, and the source IP, user agent and
+x-irrd-metadata header content for HTTP requests.
 
 
 Authentication and notification overview

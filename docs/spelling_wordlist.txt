@@ -32,6 +32,7 @@ hashers
 hostname
 http
 incrementing
+irr
 irrd
 journaling
 keepalive
