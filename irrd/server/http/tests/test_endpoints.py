@@ -156,13 +156,13 @@ class TestObjectSubmissionEndpoint:
         }
         expected_data = RPSLChangeSubmission.parse_obj(data)
 
-        response_post = client.post('/v1/submit/', data=ujson.dumps(data))
+        response_post = client.post('/v1/submit/', data=ujson.dumps(data), headers={'X-irrd-metadata': '{"meta": 2}'})
         assert response_post.status_code == 200
         assert response_post.text == '{"response":true}'
         mock_handler.load_change_submission.assert_called_once_with(
             data=expected_data,
             delete=False,
-            request_meta={'HTTP-client-IP': 'testclient', 'HTTP-User-Agent': 'testclient'},
+            request_meta={'HTTP-client-IP': 'testclient', 'HTTP-User-Agent': 'testclient', 'meta': 2},
         )
         mock_handler.send_notification_target_reports.assert_called_once()
         mock_handler.reset_mock()

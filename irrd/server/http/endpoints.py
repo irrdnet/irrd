@@ -1,3 +1,4 @@
+import json
 import logging
 import time
 from json import JSONDecodeError
@@ -68,15 +69,20 @@ class ObjectSubmissionEndpoint(HTTPEndpoint):
 
     async def _handle_submission(self, request: Request, delete=False):
         try:
-            json = await request.json()
-            data = RPSLChangeSubmission.parse_obj(json)
+            request_json = await request.json()
+            data = RPSLChangeSubmission.parse_obj(request_json)
         except (JSONDecodeError, pydantic.ValidationError) as error:
             return PlainTextResponse(str(error), status_code=400)
 
-        request_meta = {
-            'HTTP-client-IP': request.client.host,
-            'HTTP-User-Agent': request.headers.get('User-Agent'),
-        }
+        try:
+            meta_json = request.headers['X-irrd-metadata']
+            request_meta = json.loads(meta_json)
+        except (JSONDecodeError, KeyError):
+            request_meta = {}
+
+        request_meta['HTTP-client-IP'] = request.client.host
+        request_meta['HTTP-User-Agent'] = request.headers.get('User-Agent')
+
         handler = ChangeSubmissionHandler()
         await sync_to_async(handler.load_change_submission)(
             data=data, delete=delete, request_meta=request_meta
