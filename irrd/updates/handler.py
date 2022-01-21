@@ -262,7 +262,7 @@ class ChangeSubmissionHandler:
         subject = f'Notification of {sources_str} database changes'
         header = get_setting('email.notification_header', '').format(sources_str=sources_str)
         header += '\nThis message is auto-generated.\n'
-        header += 'The request was made by email, with the following details:\n'
+        header += 'The request was made with the following details:\n'
         header_saved = textwrap.dedent("""
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Some objects in which you are referenced have been created,

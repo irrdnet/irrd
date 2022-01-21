@@ -241,7 +241,7 @@ class TestChangeSubmissionHandler:
             parent of newly created object(s).
             
             This message is auto-generated.
-            The request was made by email, with the following details:
+            The request was made with the following details:
             
             > Message-ID: test
             > From: example@example.com
@@ -450,7 +450,7 @@ class TestChangeSubmissionHandler:
             parent of newly created object(s).
             
             This message is auto-generated.
-            The request was made by email, with the following details:
+            The request was made with the following details:
             
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Some objects in which you are referenced have been created,
@@ -779,7 +779,7 @@ class TestChangeSubmissionHandler:
             parent of newly created object(s).
             
             This message is auto-generated.
-            The request was made by email, with the following details:
+            The request was made with the following details:
             
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Some objects in which you are referenced were requested
