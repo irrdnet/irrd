@@ -45,10 +45,10 @@ def run(requests_text, url, debug=False, metadata=None):
     try:
         http_response = request.urlopen(http_request, timeout=20)
         response = json.loads(http_response.read().decode("utf-8"))
-    except HTTPError as he:
-        message = he.read().decode("utf-8").replace("\n", ";")
+    except HTTPError as err:
+        message = err.read().decode("utf-8").replace("\n", ";")
         print(
-            f"ERROR: response {he} from server: {message}",
+            f"ERROR: response {err} from server: {message}",
             file=sys.stderr,
         )
         return 2
@@ -106,12 +106,9 @@ def extract_request_body(requests_text: str):
 
 
 def format_report(response):
-    """
-    Format an IRRD HTTP response into a human-friendly text.
-    """
+    """Format an IRRD HTTP response into a human-friendly text."""
     s = response["summary"]
-    user_report = textwrap.dedent(
-        f"""
+    user_report = textwrap.dedent(f"""
     SUMMARY OF UPDATE:
 
     Number of objects found:                  {s["objects_found"]:3}
@@ -138,9 +135,7 @@ def format_report(response):
 
 
 def format_report_object(r):
-    """
-    Format an IRRD HTTP response for a specific object into a human-friendly text.
-    """
+    """Format an IRRD HTTP response for a specific object into a human-friendly text."""
     status = "succeeded" if r["successful"] else "FAILED"
 
     report = f'{r["type"]} {status}: [{r["object_class"]}] {r["rpsl_pk"]}\n'

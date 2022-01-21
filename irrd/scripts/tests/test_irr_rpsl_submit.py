@@ -6,52 +6,51 @@ from urllib.error import HTTPError
 
 from ..irr_rpsl_submit import run
 
-MOCK_IRRD_API_RETURN_SUCCESS = {
-    "request_meta": {
-        "HTTP-client-IP": "127.0.0.1",
-    },
-    "summary": {
-        "objects_found": 2,
-        "successful": 1,
-        "successful_create": 0,
-        "successful_modify": 1,
-        "successful_delete": 0,
-        "failed": 1,
-        "failed_create": 1,
-        "failed_modify": 0,
-        "failed_delete": 0,
-    },
-    "objects": [
-        {
-            "successful": True,
-            "type": "modify",
-            "object_class": "mntner",
-            "rpsl_pk": "TEST-MNT",
-            "info_messages": [],
-            "error_messages": [],
-            "new_object_text": "[trimmed]",
-            "submitted_object_text": "[trimmed]",
-        },
-        {
-            "successful": False,
-            "type": "create",
-            "object_class": "person",
-            "rpsl_pk": "PERSON-TEST",
-            "info_messages": [],
-            "error_messages": ['Mandatory attribute "address" on object person is missing'],
-            "new_object_text": None,
-            "submitted_object_text": "[trimmed]",
-        },
-    ],
-}
-
 URL = "https://rr.example.net/v1/submit/"
 
 
 def test_call_success(capsys, monkeypatch):
     mock_urlopen = Mock()
     monkeypatch.setattr("irrd.scripts.irr_rpsl_submit.request.urlopen", mock_urlopen)
-    mock_urlopen.return_value = io.BytesIO(json.dumps(MOCK_IRRD_API_RETURN_SUCCESS).encode("utf-8"))
+    success_return = {
+        "request_meta": {
+            "HTTP-client-IP": "127.0.0.1",
+        },
+        "summary": {
+            "objects_found": 2,
+            "successful": 1,
+            "successful_create": 0,
+            "successful_modify": 1,
+            "successful_delete": 0,
+            "failed": 1,
+            "failed_create": 1,
+            "failed_modify": 0,
+            "failed_delete": 0,
+        },
+        "objects": [
+            {
+                "successful": True,
+                "type": "modify",
+                "object_class": "mntner",
+                "rpsl_pk": "TEST-MNT",
+                "info_messages": [],
+                "error_messages": [],
+                "new_object_text": "[trimmed]",
+                "submitted_object_text": "[trimmed]",
+            },
+            {
+                "successful": False,
+                "type": "create",
+                "object_class": "person",
+                "rpsl_pk": "PERSON-TEST",
+                "info_messages": [],
+                "error_messages": ['Mandatory attribute "address" on object person is missing'],
+                "new_object_text": None,
+                "submitted_object_text": "[trimmed]",
+            },
+        ],
+    }
+    mock_urlopen.return_value = io.BytesIO(json.dumps(success_return).encode("utf-8"))
 
     request = textwrap.dedent("""
         mntner: MNT-EXAMPLE

@@ -11,7 +11,7 @@ Additionally, notifications may be sent on attempted or successful changes.
 
 Submission format
 -----------------
-There are two included ways to submit changes:
+There are two ways to submit changes directly to IRRd:
 
 * By sending an e-mail with the RPSL objects. This method supports BCRYPT-PW,
   MD5-PW, CRYPT-PW and PGPKEY authentication. You will receive a reply by
@@ -190,7 +190,8 @@ This command is included in the IRRd distribution, but is also
 This script does not have
 any dependencies on IRRd or other Python libraries to make deployment
 on other hosts easier. You do not need a virtualenv, IRRd config file or
-SQL database on hosts that only run ``irr_rpsl_submit``.
+SQL database on hosts that only run ``irr_rpsl_submit``. You can run this
+script on its own with any supported Python interpreter.
 
 
 Override password
@@ -388,9 +389,10 @@ may be sent. The overview below details all notifications that may be
 sent.
 
 IRRd collects some metadata for each request, which is included in
-notifications to maintainers and written to the server logs. This includes the
-from, date, subject and message ID for emails, and the source IP, user agent and
-x-irrd-metadata header content for HTTP requests.
+notifications to maintainers and written to the server logs. For emails,
+this includes the from, date, subject and message ID headers
+For HTTP requests (including ``irr_rpsl_submit``) this includes the source IP,
+user agent and x-irrd-metadata header content.
 
 
 Authentication and notification overview
