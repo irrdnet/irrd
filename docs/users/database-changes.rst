@@ -176,8 +176,8 @@ will be considered for each authentication check.
 Submission through irr_rpsl_submit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 You can also use the ``irr_rpsl_submit`` command to submit changes to IRRd.
-It is similar to the submit tool from IRRD v3, and calls the HTTP API under
-the hood. Unlike IRRD v3's version, it does not perform any validation
+It is similar to the submit tool from IRRD v3, but calls the HTTP API under
+the hood. So unlike IRRD v3's version, it does not perform any validation
 itself - it is mostly a wrapper around the HTTP API.
 
 The command reads database objects from stdin in the same format as used

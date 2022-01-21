@@ -43,7 +43,7 @@ def run(requests_text, url, debug=False, metadata=None):
             file=sys.stderr,
         )
     try:
-        http_response = request.urlopen(http_request, timeout=10)
+        http_response = request.urlopen(http_request, timeout=20)
         response = json.loads(http_response.read().decode("utf-8"))
     except HTTPError as he:
         message = he.read().decode("utf-8").replace("\n", ";")
