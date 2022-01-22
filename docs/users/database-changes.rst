@@ -185,6 +185,12 @@ in emails and prints a report to stdout.
 You must provide a URL to the IRRd HTTP API, and may enable
 debug logging or pass extra metadata.
 
+.. warning::
+   The input should not include any email headers. It is not recommended
+   to use this script to handle incoming email changes - see the
+   `deployment guide </admins/deployment>`_ for the ``irrd_submit_email``
+   instead.
+
 This command is included in the IRRd distribution, but is also
 `usable as a separate Python script for Python 3.6 or newer <../_static/irr_rpsl_submit.py>`_.
 This script does not have

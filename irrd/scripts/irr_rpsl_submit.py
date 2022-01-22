@@ -21,10 +21,14 @@ This causes a bit of code duplication with other IRRD parts.
 
 def run(requests_text, url, debug=False, metadata=None):
     request_body = extract_request_body(requests_text)
+    is_delete = request_body.get("delete_reason")
     if not request_body['objects']:
         print("ERROR: received empty input text", file=sys.stderr)
-        return 3
-    method = "DELETE" if request_body.get("delete_reason") else "POST"
+        return 2
+    if is_delete and len(request_body['objects']) > 1:
+        print("ERROR: deletions can not be mixed with other submissions", file=sys.stderr)
+        return 2
+    method = "DELETE" if is_delete else "POST"
     http_data = json.dumps(request_body).encode("utf-8")
     headers = {
         "User-Agent": "irr_rpsl_submit_v4",
@@ -162,9 +166,9 @@ def main():  # pragma: no cover
         newlines, as used in emails documented on
         https://irrd.readthedocs.io/en/stable/users/database-changes/#submitting-over-e-mail .
         
-        The exit code is 0 for success, 1 if at least some updates were
-        rejected (e.g. invalid RPSL syntax), 2 for an internal error,
-        3 for an empty input.
+        The exit code is 0 for complete success, 1 if the change was
+        submitted but least some updates were rejected (e.g. invalid RPSL syntax),
+        2 for an execution error.
     """
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument(

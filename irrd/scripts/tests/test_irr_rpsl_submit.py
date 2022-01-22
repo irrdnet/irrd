@@ -128,6 +128,21 @@ def test_call_failed(capsys, monkeypatch):
     assert captured.err.strip() == "ERROR: response HTTP Error 400: message from server: server response"
 
 
+def test_input_mixed(capsys, monkeypatch):
+    mock_urlopen = Mock()
+    monkeypatch.setattr("irrd.scripts.irr_rpsl_submit.request.urlopen", mock_urlopen)
+    mock_urlopen.side_effect = Exception('should not be called')
+
+    return_value = run(
+        requests_text='mntner: a\ndelete: delete\n\nmntner: b',
+        url=URL,
+    )
+    assert return_value == 2
+    captured = capsys.readouterr()
+    assert not captured.out
+    assert captured.err.strip() == "ERROR: deletions can not be mixed with other submissions"
+
+
 def test_no_input(capsys, monkeypatch):
     mock_urlopen = Mock()
     monkeypatch.setattr("irrd.scripts.irr_rpsl_submit.request.urlopen", mock_urlopen)
@@ -137,7 +152,7 @@ def test_no_input(capsys, monkeypatch):
         requests_text='',
         url=URL,
     )
-    assert return_value == 3
+    assert return_value == 2
     captured = capsys.readouterr()
     assert not captured.out
     assert captured.err.strip() == "ERROR: received empty input text"
