@@ -34,6 +34,7 @@ http
 incrementing
 irr
 irrd
+integrations
 journaling
 keepalive
 keychain

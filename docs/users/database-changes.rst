@@ -173,12 +173,18 @@ For PGP authentication, sign your message with a PGP/MIME signature
 or inline PGP. You can combine PGP signatures and passwords, and each method
 will be considered for each authentication check.
 
+.. _database-changes-irr-rpsl-submit:
+
 Submission through irr_rpsl_submit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 You can also use the ``irr_rpsl_submit`` command to submit changes to IRRd.
 It is similar to the submit tool from IRRD v3, but calls the HTTP API under
 the hood. So unlike IRRD v3's version, it does not perform any validation
 itself - it is mostly a wrapper around the HTTP API.
+
+The main purpose of this script is to provide (limited) compatibility
+with existing integrations that called irr_rpsl_submit directly to submit
+to older IRRd versions.
 
 The command reads database objects from stdin in the same format as used
 in emails and prints a report to stdout.
