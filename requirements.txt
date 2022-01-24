@@ -23,7 +23,7 @@ uvicorn==0.17.0.post1        # ASGI server
 uvicorn[standard]==0.17.0.post1; python_version > '3.7'  # ASGI server extras
 starlette==0.18.0
 psutil==5.9.0          # Process management
-asgiref==3.4.1         # ASGI utilities
+asgiref==3.5.0         # ASGI utilities
 pydantic==1.9.0        # Input validation
 six==1.16.0            # Used in vendored dotteddict
 
