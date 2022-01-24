@@ -184,7 +184,7 @@ itself - it is mostly a wrapper around the HTTP API.
 
 The main purpose of this script is to provide (limited) compatibility
 with existing integrations that called irr_rpsl_submit directly to submit
-to older IRRd versions.
+to older IRRd versions. The IRRD v4 version does need different arguments.
 
 The command reads database objects from stdin in the same format as used
 in emails and prints a report to stdout.
