@@ -110,6 +110,11 @@ class ChangeSubmissionHandler:
                                 reference_validator: ReferenceValidator,
                                 auth_validator: AuthValidator) -> None:
 
+        objects = ', '.join([
+            f'{request.rpsl_obj_new} (request {id(request)})'
+            for request in change_requests
+        ])
+        logger.info(f'Processing change requests for {objects}, metadata is {self.request_meta}')
         # When an object references another object, e.g. tech-c referring a person or mntner,
         # an add/update is only valid if those referred objects exist. To complicate matters,
         # the object referred to may be part of this very same submission. For this reason, the
@@ -257,7 +262,7 @@ class ChangeSubmissionHandler:
         subject = f'Notification of {sources_str} database changes'
         header = get_setting('email.notification_header', '').format(sources_str=sources_str)
         header += '\nThis message is auto-generated.\n'
-        header += 'The request was made by email, with the following details:\n'
+        header += 'The request was made with the following details:\n'
         header_saved = textwrap.dedent("""
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Some objects in which you are referenced have been created,

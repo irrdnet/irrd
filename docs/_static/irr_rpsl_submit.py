@@ -1,0 +1,1 @@
+../../irrd/scripts/irr_rpsl_submit.py

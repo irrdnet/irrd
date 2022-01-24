@@ -52,8 +52,21 @@ your configuration.
 
 All checks are only applied when users create new set objects in authoritative
 databases. Authoritative updates to existing objects, deletions, or objects from
-mirrors are never affected. When looking for related objects,
+mirrors are never affected. When looking for related objects for authentication,
 IRRd only looks in the same IRR source.
+
+
+Replacement for irr_rpsl_submit
+-------------------------------
+IRRd now includes an :ref:`irr_rpsl_submit <database-changes-irr-rpsl-submit>`
+script, similar to the submit tool from IRRD v3.
+The main purpose of this script is to provide (limited) compatibility
+with existing integrations that called irr_rpsl_submit directly to submit
+to older IRRd versions. It is a light wrapper that calls the IRRd HTTP API.
+
+Note that this command is not intended to be used for handling incoming
+email changes - see the `deployment guide </admins/deployment>`_ for the
+``irrd_submit_email`` instead. This is unchanged from previous versions of IRRd.
 
 
 Support for maintainer suspension
