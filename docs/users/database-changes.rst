@@ -198,7 +198,7 @@ debug logging or pass extra metadata.
    instead.
 
 This command is included in the IRRd distribution, but is also
-`usable as a separate Python script for Python 3.6 or newer <../_static/irr_rpsl_submit.py>`_.
+`usable as a separate Python script for Python 3.6 or newer <../../_static/irr_rpsl_submit.py>`_.
 This script does not have
 any dependencies on IRRd or other Python libraries to make deployment
 on other hosts easier. You do not need a virtualenv, IRRd config file or
