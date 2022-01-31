@@ -43,7 +43,7 @@ twisted==21.7.0    # Used for a mock email server in integration tests
 python-graphql-client==0.4.2
 
 # Documentation generation
-Sphinx==4.3.2
+Sphinx==4.4.0
 sphinxcontrib-spelling==7.3.2
 sphinx-material==0.0.35
 
