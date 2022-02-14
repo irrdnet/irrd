@@ -20,7 +20,7 @@ requests==2.27.1       # HTTP request handling
 pytz==2021.3
 ariadne==0.14.1
 uvicorn==0.17.0        # ASGI server  # pyup: <0.17.1  # https://github.com/irrdnet/irrd/issues/604
-uvicorn[standard]==0.17.4; python_version > '3.7'  # ASGI server extras
+uvicorn[standard]==0.17.0; python_version > '3.7'  # pyup: <0.17.1  # ASGI server extras
 starlette==0.17.1      # pyup: <0.18  # ariadne conflict
 psutil==5.9.0          # Process management
 asgiref==3.4.1         # ASGI utilities  # pyup: <3.5  # https://github.com/irrdnet/irrd/issues/604
