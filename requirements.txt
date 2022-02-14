@@ -39,7 +39,7 @@ pytest==7.0.1
 pytest-cov==3.0.0
 pytest-env==0.6.2
 coverage==6.3.1
-twisted==21.7.0    # Used for a mock email server in integration tests
+twisted==22.1.0    # Used for a mock email server in integration tests
 python-graphql-client==0.4.2
 
 # Documentation generation
