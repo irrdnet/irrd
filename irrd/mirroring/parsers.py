@@ -222,10 +222,10 @@ class MirrorUpdateFileImportParser(MirrorFileImportParserBase):
         f.close()
 
         query = RPSLDatabaseQuery(ordered_by_sources=False, enable_ordering=False,
-                                  column_names=['rpsl_pk']).sources([self.source])
-        current_pks = {row['rpsl_pk'] for row in self.database_handler.execute_query(query)}
+                                  column_names=['rpsl_pk', 'object_class']).sources([self.source])
+        current_pks = {(row['rpsl_pk'], row['object_class']) for row in self.database_handler.execute_query(query)}
 
-        file_objs_by_pk = {obj.pk(): obj for obj in objs_from_file}
+        file_objs_by_pk = {(obj.pk(), obj.rpsl_object_class): obj for obj in objs_from_file}
         file_pks = set(file_objs_by_pk.keys())
         new_pks = file_pks - current_pks
         deleted_pks = current_pks - file_pks
@@ -235,21 +235,23 @@ class MirrorUpdateFileImportParser(MirrorFileImportParserBase):
         self.obj_deleted = len(deleted_pks)
         self.obj_retained = len(retained_pks)
 
-        for rpsl_pk, file_obj in filter(lambda i: i[0] in new_pks, file_objs_by_pk.items()):
+        for (rpsl_pk, object_class), file_obj in filter(lambda i: i[0] in new_pks, file_objs_by_pk.items()):
             self.database_handler.upsert_rpsl_object(file_obj, JournalEntryOrigin.synthetic_nrtm)
 
-        for rpsl_pk in deleted_pks:
-            self.database_handler.delete_rpsl_object(rpsl_pk=rpsl_pk, source=self.source,
-                                                     origin=JournalEntryOrigin.synthetic_nrtm)
+        for (rpsl_pk, object_class) in deleted_pks:
+            self.database_handler.delete_rpsl_object(
+                rpsl_pk=rpsl_pk, source=self.source, object_class=object_class,
+                origin=JournalEntryOrigin.synthetic_nrtm,
+            )
 
         # This query does not filter on retained_pks. The expectation is that most
         # objects are retained, and therefore it is much faster to query the entire source.
         query = RPSLDatabaseQuery(ordered_by_sources=False, enable_ordering=False,
-                                  column_names=['rpsl_pk', 'object_text'])
+                                  column_names=['rpsl_pk', 'object_class', 'object_text'])
         query = query.sources([self.source])
         for row in self.database_handler.execute_query(query):
             try:
-                file_obj = file_objs_by_pk[row['rpsl_pk']]
+                file_obj = file_objs_by_pk[(row['rpsl_pk'], row['object_class'])]
             except KeyError:
                 continue
             if file_obj.render_rpsl_text() != remove_last_modified(row['object_text']):
