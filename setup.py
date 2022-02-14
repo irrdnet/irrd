@@ -34,11 +34,11 @@ setuptools.setup(
         'setproctitle==1.2.2',
         'python-daemon==2.3.0',
         'pid==3.0.4',
-        'redis==4.1.0',
+        'redis==4.1.3',
         'hiredis==2.0.0',
         'requests==2.27.1',
         'pytz==2021.3',
-        'ariadne==0.14.0',
+        'ariadne==0.14.1',
         'uvicorn==0.16.0',
         'starlette==0.17.1',
         'psutil==5.9.0',
@@ -46,19 +46,19 @@ setuptools.setup(
         'pydantic==1.9.0',
         'six==1.16.0',
         'SQLAlchemy==1.3.24',
-        'alembic==1.7.5',
+        'alembic==1.7.6',
         'ujson==4.3.0',
-        'wheel==0.37.0',
+        'wheel==0.37.1',
     ],
     extras_require={
         ':python_version < "3.7"': [
             'dataclasses==0.8',
         ],
         ':python_version > "3.7"': [
-            'uvicorn[standard]==0.15.0',
+            'uvicorn[standard]==0.16.0',
         ],
         ':platform_python_implementation == "CPython"': [
-            'psycopg2-binary==2.9.2',
+            'psycopg2-binary==2.9.3',
         ],
         ':platform_python_implementation == "PyPy"': [
             'psycopg2cffi==2.9.0',
