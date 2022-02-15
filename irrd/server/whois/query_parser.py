@@ -54,6 +54,13 @@ class WhoisQueryParser:
         Not thread safe - only one call must be made to this method at the same time.
         """
         self.key_fields_only = False
+        
+        if chr(0) in query:
+                return WhoisQueryResponse(
+                    response_type=WhoisQueryResponseType.ERROR_USER,
+                    mode=WhoisQueryResponseMode.IRRD,
+                    result='Queries may not contain null bytes',
+                )
 
         if query.startswith('!'):
             try:
