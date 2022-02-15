@@ -201,16 +201,19 @@ class TestMirrorUpdateFileImportParser:
                 # Retained object (with format cleaning)
                 # includes a last-modified which should be ignored in the comparison
                 'rpsl_pk': '192.0.2.0/24AS65537',
+                'object_class': 'route',
                 'object_text': rpsl_object_from_text(route_with_last_modified).render_rpsl_text(),
             },
             {
                 # Modified object
                 'rpsl_pk': '2001:DB8::/48AS65537',
+                'object_class': 'route6',
                 'object_text': SAMPLE_ROUTE6.replace('test-MNT', 'existing-mnt'),
             },
             {
                 # Deleted object
                 'rpsl_pk': 'rtrs-settest',
+                'object_class': 'route-set',
                 'object_text': SAMPLE_RTR_SET,
             },
         ]
@@ -234,6 +237,7 @@ class TestMirrorUpdateFileImportParser:
         assert mock_dh.mock_calls[3][0] == 'delete_rpsl_object'
         assert mock_dh.mock_calls[3][2]['source'] == 'TEST'
         assert mock_dh.mock_calls[3][2]['rpsl_pk'] == 'rtrs-settest'
+        assert mock_dh.mock_calls[3][2]['object_class'] == 'route-set'
         assert mock_dh.mock_calls[3][2]['origin'] == JournalEntryOrigin.synthetic_nrtm
         assert mock_dh.mock_calls[4][0] == 'upsert_rpsl_object'
         assert mock_dh.mock_calls[4][1][0].pk() == '2001:DB8::/48AS65537'
