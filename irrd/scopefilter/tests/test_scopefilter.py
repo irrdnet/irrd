@@ -118,7 +118,6 @@ class TestScopeFilterValidator:
                     'pk': '192.0.2.128/25,AS65547',
                     'rpsl_pk': '192.0.2.128/25,AS65547',
                     'prefix': '192.0.2.128/25',
-                    'prefix_length': 25,
                     'asn_first': 65547,
                     'source': 'TEST',
                     'object_class': 'route',
