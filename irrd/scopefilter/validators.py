@@ -112,7 +112,7 @@ class ScopeFilterValidator:
         Objects where their current status in the DB matches the new
         validation result, are not included in the return value.
         """
-        columns = ['pk', 'rpsl_pk', 'ip_first', 'prefix_length', 'asn_first', 'source', 'object_class',
+        columns = ['pk', 'rpsl_pk', 'prefix', 'asn_first', 'source', 'object_class',
                    'scopefilter_status', 'rpki_status']
 
         objs_changed: Dict[ScopeFilterStatus, List[Dict[str, str]]] = defaultdict(list)
@@ -125,8 +125,8 @@ class ScopeFilterValidator:
             current_status = result['scopefilter_status']
             result['old_status'] = current_status
             prefix = None
-            if result.get('ip_first'):
-                prefix = IP(result['ip_first'] + '/' + str(result['prefix_length']))
+            if result.get('prefix'):
+                prefix = IP(result['prefix'])
             new_status, _ = self._validate_rpsl_data(
                 result['source'],
                 result['object_class'],

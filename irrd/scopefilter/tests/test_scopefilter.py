@@ -117,7 +117,7 @@ class TestScopeFilterValidator:
                     # Should become in_scope
                     'pk': '192.0.2.128/25,AS65547',
                     'rpsl_pk': '192.0.2.128/25,AS65547',
-                    'ip_first': '192.0.2.128',
+                    'prefix': '192.0.2.128/25',
                     'prefix_length': 25,
                     'asn_first': 65547,
                     'source': 'TEST',
@@ -128,8 +128,7 @@ class TestScopeFilterValidator:
                     # Should become out_scope_prefix
                     'pk': '192.0.2.0/25,AS65547',
                     'rpsl_pk': '192.0.2.0/25,AS65547',
-                    'ip_first': '192.0.2.0',
-                    'prefix_length': 25,
+                    'prefix': '192.0.2.0/25',
                     'asn_first': 65547,
                     'source': 'TEST',
                     'object_class': 'route',
@@ -139,8 +138,7 @@ class TestScopeFilterValidator:
                     # Should become out_scope_as
                     'pk': '192.0.2.128/25,AS65547',
                     'rpsl_pk': '192.0.2.128/25,AS65547',
-                    'ip_first': '192.0.2.128',
-                    'prefix_length': 25,
+                    'prefix': '192.0.2.128/25',
                     'asn_first': 23456,
                     'source': 'TEST',
                     'object_class': 'route',
@@ -160,8 +158,7 @@ class TestScopeFilterValidator:
                     # Should not change
                     'pk': '192.0.2.128/25,AS65548',
                     'rpsl_pk': '192.0.2.128/25,AS65548',
-                    'ip_first': '192.0.2.128',
-                    'prefix_length': 25,
+                    'prefix': '192.0.2.128/25',
                     'asn_first': 65548,
                     'source': 'TEST',
                     'object_class': 'route',
