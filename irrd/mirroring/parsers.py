@@ -223,9 +223,15 @@ class MirrorUpdateFileImportParser(MirrorFileImportParserBase):
 
         query = RPSLDatabaseQuery(ordered_by_sources=False, enable_ordering=False,
                                   column_names=['rpsl_pk', 'object_class']).sources([self.source])
-        current_pks = {(row['rpsl_pk'], row['object_class']) for row in self.database_handler.execute_query(query)}
+        current_pks = {
+            (row['rpsl_pk'], row['object_class'])
+            for row in self.database_handler.execute_query(query)
+        }
 
-        file_objs_by_pk = {(obj.pk(), obj.rpsl_object_class): obj for obj in objs_from_file}
+        file_objs_by_pk = {
+            (obj.pk(), obj.rpsl_object_class): obj
+            for obj in objs_from_file
+        }
         file_pks = set(file_objs_by_pk.keys())
         new_pks = file_pks - current_pks
         deleted_pks = current_pks - file_pks
