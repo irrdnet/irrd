@@ -110,6 +110,14 @@ class TestWhoisQueryParserRIPE:
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert response.result == 'Unrecognised flag/search: e'
 
+    def test_null_bytes(self, prepare_parser):  # #581
+        mock_query_resolver, mock_dh, parser = prepare_parser
+
+        response = parser.handle_query('\x00 foo')
+        assert response.response_type == WhoisQueryResponseType.ERROR_USER
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert response.result == 'Queries may not contain null bytes'
+
     def test_keepalive(self, prepare_parser):
         mock_query_resolver, mock_dh, parser = prepare_parser
 

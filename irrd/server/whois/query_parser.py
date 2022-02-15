@@ -55,6 +55,13 @@ class WhoisQueryParser:
         """
         self.key_fields_only = False
 
+        if chr(0) in query:
+            return WhoisQueryResponse(
+                response_type=WhoisQueryResponseType.ERROR_USER,
+                mode=WhoisQueryResponseMode.IRRD,
+                result='Queries may not contain null bytes',
+            )
+
         if query.startswith('!'):
             try:
                 return self.handle_irrd_command(query[1:])
