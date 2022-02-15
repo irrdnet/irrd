@@ -367,7 +367,7 @@ class DatabaseHandler:
 
     def delete_rpsl_object(self, origin: JournalEntryOrigin, rpsl_object: Optional[RPSLObject]=None,
                            source: Optional[str]=None, rpsl_pk: Optional[str]=None,
-                           source_serial: Optional[int]=None) -> None:
+                           object_class: Optional[str]=None, source_serial: Optional[int]=None) -> None:
         """
         Delete an RPSL object from the database.
 
@@ -381,8 +381,10 @@ class DatabaseHandler:
             source = rpsl_object.parsed_data['source']
         if not rpsl_pk and rpsl_object:
             rpsl_pk = rpsl_object.pk()
+        if not object_class and rpsl_object:
+            object_class = rpsl_object.rpsl_object_class
         stmt = table.delete(
-            sa.and_(table.c.rpsl_pk == rpsl_pk, table.c.source == source),
+            sa.and_(table.c.rpsl_pk == rpsl_pk, table.c.object_class == object_class, table.c.source == source),
         ).returning(table.c.pk, table.c.rpsl_pk, table.c.source, table.c.object_class, table.c.object_text)
         results = self._connection.execute(stmt)
 
