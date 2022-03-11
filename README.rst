@@ -34,9 +34,9 @@ for, or with support of, NTT_, ARIN_, Merit_, `RIPE NCC Community Projects Fund`
 LACNIC_, Netnod_ and Internetstiftelsen_. This has taken place in the form of
 development contracts, support contracts, or grants.
 
-`Older versions`_ of IRRd are or were in use at by various IRR operators.
-places. Difficulties with continued maintenance and extension of these
-older versions lead to the IRRd v4 project.
+`Older versions`_ of IRRd are or were in use by various IRR operators.
+Difficulties with continued maintenance and extension of these
+older versions led to the IRRd v4 project.
 
 Please see the extensive documentation_ for more on how to deploy and use IRRd.
 
