@@ -3,6 +3,7 @@
 import argparse
 import grp
 import logging
+import multiprocessing
 import os
 import pwd
 import signal
@@ -49,6 +50,10 @@ def main():
         daemon_kwargs['detach_process'] = False
         daemon_kwargs['stdout'] = sys.stdout
         daemon_kwargs['stderr'] = sys.stderr
+
+    # Since Python 3.8, the default method is spawn for MacOS,
+    # which creates several issues. For consistency, we force to fork.
+    multiprocessing.set_start_method('fork')
 
     # config_init with commit may only be called within DaemonContext,
     # but this call here causes fast failure for most misconfigurations
