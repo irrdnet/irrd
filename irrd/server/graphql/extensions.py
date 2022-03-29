@@ -39,7 +39,7 @@ class QueryMetadataExtension(Extension):
         return data
 
 
-def error_formatter(error: GraphQLError, debug: bool=False) -> dict:
+def error_formatter(error: GraphQLError, debug: bool=False):
     """
     Custom Ariadne error formatter. A generic text is used if the
     server is not in debug mode and the original error is a

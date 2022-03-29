@@ -501,7 +501,7 @@ upd-to:         upd-to@example.net
 mnt-nfy:        mnt-nfy@example.net
 mnt-nfy:        mnt-nfy2@example.net
 auth:           PGPKey-80F238C6
-auth:           CRYPT-PW LEuuhsBJNFV0Q  # crypt-password
+auth:           CRYPT-Pw LEuuhsBJNFV0Q  # crypt-password
 auth:           MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.  # md5-password
 mnt-by:         TEST-MNT
 mnt-by:         OTHER1-MNT,OTHER2-MNT
