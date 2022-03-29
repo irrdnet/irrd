@@ -12,7 +12,8 @@ def remove_auth_hashes(input: Optional[str]):
     if not input:
         return input
     # If there are no hashes, skip the RE for performance.
-    if not any([pw_hash in input for pw_hash in PASSWORD_HASHERS_ALL.keys()]):
+    input_lower = input.lower()
+    if not any([pw_hash.lower() in input_lower for pw_hash in PASSWORD_HASHERS_ALL.keys()]):
         return input
     return re_remove_passwords.sub(r'\1 %s  # Filtered for security' % PASSWORD_HASH_DUMMY_VALUE, input)
 
