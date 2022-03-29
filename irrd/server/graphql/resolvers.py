@@ -187,6 +187,8 @@ def resolve_rpsl_object_journal(rpsl_object, info: GraphQLResolveInfo):
         response['operation'] = response['operation'].name
         if response['origin']:
             response['origin'] = response['origin'].name
+        if response['objectText']:
+            response['objectText'] = remove_auth_hashes(response['objectText'])
         yield response
 
 
@@ -221,7 +223,7 @@ def _rpsl_db_query_to_graphql_out(query: RPSLDatabaseQuery, info: GraphQLResolve
         object_type = resolve_rpsl_object_type(row)
         for key, value in row.get('parsed_data', dict()).items():
             if key == 'auth':
-                value = remove_auth_hashes(value)
+                value = [remove_auth_hashes(v) for v in value]
             graphql_type = schema.graphql_types[object_type][key]
             if graphql_type == 'String' and isinstance(value, list):
                 value = '\n'.join(value)
