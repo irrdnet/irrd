@@ -570,7 +570,7 @@ class TestSingleChangeRequestHandling:
         mock_dq, mock_dh = prepare_mocks
 
         # Make the crypt password invalid in the version from the mock database
-        mock_dh.execute_query = lambda query: [{'object_text': SAMPLE_MNTNER.replace('CRYPT-PW', 'FAILED')}]
+        mock_dh.execute_query = lambda query: [{'object_text': SAMPLE_MNTNER.replace('CRYPT-Pw', 'FAILED')}]
 
         reference_validator = ReferenceValidator(mock_dh)
         auth_validator = AuthValidator(mock_dh)

@@ -2,19 +2,23 @@ from io import StringIO
 
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
+import pytest
 from ..text import (splitline_unicodesafe, split_paragraphs_rpsl, remove_auth_hashes,
                     remove_last_modified, snake_to_camel_case)
 
 
 def test_remove_auth_hashes():
+    with pytest.raises(ValueError):
+        remove_auth_hashes(['a', 'b'])
+
     original_text = SAMPLE_MNTNER
-    assert 'CRYPT-PW LEuuhsBJNFV0Q' in original_text
+    assert 'CRYPT-Pw LEuuhsBJNFV0Q' in original_text
     assert 'MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.' in original_text
     assert 'bcrypt-pw $2b$12$RMrlONJ0tasnpo.zHDF.yuYm/Gb1ARmIjP097ZoIWBn9YLIM2ao5W' in original_text
 
     result = remove_auth_hashes(original_text)
-    assert 'CRYPT-PW ' + PASSWORD_HASH_DUMMY_VALUE in result
-    assert 'CRYPT-PW LEuuhsBJNFV0Q' not in result
+    assert 'CRYPT-Pw ' + PASSWORD_HASH_DUMMY_VALUE in result
+    assert 'CRYPT-Pw LEuuhsBJNFV0Q' not in result
     assert 'MD5-pw ' + PASSWORD_HASH_DUMMY_VALUE in result
     assert 'MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.' not in result
     assert 'bcrypt-pw ' + PASSWORD_HASH_DUMMY_VALUE in result

@@ -160,7 +160,7 @@ class TestGraphQLResolvers:
         rpsl_db_mntner_result = [{
             'object_class': 'mntner',
             'parsed_data': {
-                'auth': 'CRYPT-PW LEuuhsBJNFV0Q',
+                'auth': ['CRYPT-Pw LEuuhsBJNFV0Q'],
             },
         }]
 
@@ -173,7 +173,7 @@ class TestGraphQLResolvers:
         ))
         assert result == [{
             'objectClass': 'mntner',
-            'auth': 'CRYPT-PW DummyValue  # Filtered for security',
+            'auth': ['CRYPT-Pw DummyValue  # Filtered for security'],
         }]
 
     def test_resolve_rpsl_object_mnt_by_objs(self, prepare_resolver):
@@ -319,6 +319,7 @@ class TestGraphQLResolvers:
         result = list(resolvers.resolve_rpsl_object_journal(mock_rpsl_object, info))
         assert len(result) == 1
         assert result[0]['origin'] == 'auth_change'
+        assert 'CRYPT-PW DummyValue  # Filtered for security' in result[0]['objectText']
         assert flatten_mock_calls(mock_journal_query) == [
             ['sources', (['source'],), {}], ['rpsl_pk', ('pk',), {}]
         ]
