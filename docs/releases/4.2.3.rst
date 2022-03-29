@@ -1,0 +1,96 @@
+============================
+Release notes for IRRd 4.2.3
+============================
+
+IRRd 4.2.3 was released on March 31st, 2022, and fixes a security
+issue with password hash filtering that occurred in all earlier 4.2
+releases. The 4.1.x series is not affected.
+
+Previous IRRd 4.2 versions did not always filter password hashes in `mntner`
+objects. This may have allowed adversaries to retrieve some of these hashes,
+perform a brute-force search for the clear-text passphrase, and use these
+to make unauthorised changes to affected IRR objects.
+
+This issue only affected instances that process password hashes, which means it
+is limited to IRRd instances that serve authoritative databases. IRRd instances
+operating solely as mirrors of other IRR databases are not affected.
+
+Details
+-------
+In the IRR, authentication for object modification can be done through
+passwords. Hashes are stored in `mntner` objects for this purpose. IRRd
+should filter these hashes from the output before returning results,
+and replace them with dummy values.
+
+Earlier versions of IRRd 4.2 did not fully filter password hashes when
+returning some `mntner` objects in responses to some queries and when creating
+database exports. This meant that these password hashes could be exposed to
+anyone with the ability queries or access to the exports.
+Hash removal was missing in two specific cases, detailed below.
+
+Typically this issue only affects instances that serve authoritative
+databases, as mirrors already generally do not have password hashes of their
+mirrored databases.
+
+This issue was initially revealed by a community member in a discussion in 
+the IRRd repository on March 23rd.
+
+Objects where all hash names are lower or mixed case
+----------------------------------------------------
+IRRd 4.2 would not remove the password hashes if all hash names (``MD5-PW``
+and/or ``CRYPT-PW``) in a specific object were lower or mixed case.
+This affected all cases where hashes were part of the response to any query
+using any method, and exports made with the ``export_destination`` setting.
+
+For example, in this object, hash removal would work correctly::
+
+    mntner:         TEST-MNT
+    auth:           CRYPT-PW <hash>
+    auth:           md5-pw <hash>
+    source:         TEST
+
+In this object, no hashes would be removed::
+
+    mntner:         TEST-MNT
+    auth:           CRYPT-Pw <hash>
+    auth:           md5-pw <hash>
+    source:         TEST
+
+In public well known IRR databases, this is a highly exceptional case,
+as virtually all `mntner` objects use hash names entirely in uppercase.
+To check whether any hashes may have been exposed, you could search your
+`mntner` objects for any that contain only lower or mixed case hash names.
+
+This was caused by a performance improvement `introduced in November 2020`_
+and included in all 4.2 versions.
+
+GrapQL queries for the auth attribute or journal entries
+--------------------------------------------------------
+GraphQL queries can query for specific attributes. Queries for the ``auth``
+attribute on a `mntner`, which contains the hashes, were not correctly passed
+through the password hash removal. The full hash was included in responses
+to these queries.
+
+The GraphQL interface also allows retrieving journal entries, including
+historical object texts through the ``objectText`` field in a ``journal``.
+This field was missing password hash removal. Queries for the journal were only
+allowed where the ``nrtm_access_list`` setting permitted them.
+
+Both of these only apply when the GraphQL interface was exposed. If you had
+this enabled, you can search your logs have any GraphQL queries for the ``auth``
+field, or the ``objectText`` field in a ``journal`` to determine whether any
+hashes may have been exposed.
+
+Long term improvements
+----------------------
+While these particular issues are resolved, the root cause is the mixing
+of public IRR objects with private authentication data. This has a long history
+in the IRR. In the long term, IRRd will be able to separate this data, reducing
+the risks of similar issues.
+
+The severity is increased due to IRRd still supporting ``CRYPT-PW`` and
+``MD5-PW`` for password hashes. The next release of IRRd will support
+newer hash methods and the option to disable older hashes.
+
+
+.. _introduced in November 2020: https://github.com/irrdnet/irrd/commit/59445a5eb68a37f0cff0d7bcb246cee3bc20d9e3
