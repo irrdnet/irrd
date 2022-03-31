@@ -35,7 +35,7 @@ alembic==1.7.7
 ujson==4.3.0 # pyup: <5  #604
 
 # Testing and related packages
-pytest==7.1.1
+pytest==7.0.1  # pyup: <7.1  #604
 pytest-cov==3.0.0
 pytest-env==0.6.2
 coverage==6.2  # pyup: <6.3  #604
