@@ -7,9 +7,6 @@ Internet Routing Registry Daemon (IRRd) Version 4
 .. image:: https://readthedocs.org/projects/irrd/badge/?version=stable
      :target: http://irrd.readthedocs.io/en/stable/?badge=stable
 
-.. image:: https://pyup.io/repos/github/irrdnet/irrd/shield.svg
-     :target: https://pyup.io/repos/github/irrdnet/irrd/
-
 ------------
 
 .. image:: https://irrd.readthedocs.io/en/latest/_static/logo.png
