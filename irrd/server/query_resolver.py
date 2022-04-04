@@ -371,7 +371,7 @@ class QueryResolver:
     def _prepare_query(self, column_names=None, ordered_by_sources=True) -> RPSLDatabaseQuery:
         """Prepare an RPSLDatabaseQuery by applying relevant sources/class filters."""
         query = RPSLDatabaseQuery(column_names, ordered_by_sources)
-        if self.sources and self.sources != self.all_valid_sources:
+        if self.sources:
             query.sources(self.sources)
         if self.object_class_filter:
             query.object_classes(self.object_class_filter)

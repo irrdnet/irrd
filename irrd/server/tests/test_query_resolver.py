@@ -129,6 +129,7 @@ class TestQueryResolver:
         result = resolver.rpsl_attribute_search('mnt-by', 'MNT-TEST')
         assert list(result) == mock_query_result
         assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['TEST1', 'TEST2'],), {}],
             ['object_classes', (['route'],), {}],
             ['lookup_attr', ('mnt-by', 'MNT-TEST'), {}],
         ]
@@ -138,6 +139,7 @@ class TestQueryResolver:
         result = resolver.rpsl_attribute_search('mnt-by', 'MNT-TEST')
         assert list(result) == mock_query_result
         assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['TEST1', 'TEST2'],), {}],
             ['lookup_attr', ('mnt-by', 'MNT-TEST'), {}],
         ]
 
@@ -147,6 +149,7 @@ class TestQueryResolver:
         result = resolver.key_lookup('route', '192.0.2.0/25')
         assert list(result) == mock_query_result
         assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['TEST1', 'TEST2'],), {}],
             ['object_classes', (['route'],), {}],
             ['rpsl_pk', ('192.0.2.0/25',), {}],
             ['first_only', (), {}],
@@ -181,6 +184,7 @@ class TestQueryResolver:
         result = resolver.rpsl_text_search('query')
         assert list(result) == mock_query_result
         assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['TEST1', 'TEST2'],), {}],
             ['text_search', ('query',), {}],
         ]
 
@@ -190,6 +194,7 @@ class TestQueryResolver:
         result = resolver.route_search(IP('192.0.2.0/25'), RouteLookupType.EXACT)
         assert list(result) == mock_query_result
         assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['TEST1', 'TEST2'],), {}],
             ['object_classes', (['route', 'route6'],), {}],
             ['ip_exact', (IP('192.0.2.0/25'),), {}]
         ]
@@ -201,6 +206,7 @@ class TestQueryResolver:
         result = resolver.route_search(IP('192.0.2.0/25'), RouteLookupType.LESS_SPECIFIC_ONE_LEVEL)
         assert list(result) == mock_query_result
         assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['TEST1', 'TEST2'],), {}],
             ['object_classes', (['route', 'route6'],), {}],
             ['ip_less_specific_one_level', (IP('192.0.2.0/25'),), {}]
         ]
@@ -211,6 +217,7 @@ class TestQueryResolver:
         result = resolver.route_search(IP('192.0.2.0/25'), RouteLookupType.LESS_SPECIFIC_WITH_EXACT)
         assert list(result) == mock_query_result
         assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['TEST1', 'TEST2'],), {}],
             ['object_classes', (['route', 'route6'],), {}],
             ['ip_less_specific', (IP('192.0.2.0/25'),), {}]
         ]
@@ -221,6 +228,7 @@ class TestQueryResolver:
         result = resolver.route_search(IP('192.0.2.0/25'), RouteLookupType.MORE_SPECIFIC_WITHOUT_EXACT)
         assert list(result) == mock_query_result
         assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['TEST1', 'TEST2'],), {}],
             ['object_classes', (['route', 'route6'],), {}],
             ['ip_more_specific', (IP('192.0.2.0/25'),), {}]
         ]
@@ -238,6 +246,7 @@ class TestQueryResolver:
         result = resolver.route_search(IP('192.0.2.0/25'), RouteLookupType.EXACT)
         assert list(result) == mock_query_result
         assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['TEST1', 'TEST2', 'RPKI'],), {}],
             ['rpki_status', ([RPKIStatus.not_found, RPKIStatus.valid],), {}],
             ['object_classes', (['route', 'route6'],), {}],
             ['ip_exact', (IP('192.0.2.0/25'),), {}]
@@ -248,6 +257,7 @@ class TestQueryResolver:
         result = resolver.route_search(IP('192.0.2.0/25'), RouteLookupType.EXACT)
         assert list(result) == mock_query_result
         assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['TEST1', 'TEST2', 'RPKI'],), {}],
             ['object_classes', (['route', 'route6'],), {}],
             ['ip_exact', (IP('192.0.2.0/25'),), {}]
         ]
@@ -263,6 +273,7 @@ class TestQueryResolver:
         result = resolver.route_search(IP('192.0.2.0/25'), RouteLookupType.EXACT)
         assert list(result) == mock_query_result
         assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['TEST1', 'TEST2'],), {}],
             ['scopefilter_status', ([ScopeFilterStatus.in_scope],), {}],
             ['object_classes', (['route', 'route6'],), {}],
             ['ip_exact', (IP('192.0.2.0/25'),), {}]
@@ -273,6 +284,7 @@ class TestQueryResolver:
         result = resolver.route_search(IP('192.0.2.0/25'), RouteLookupType.EXACT)
         assert list(result) == mock_query_result
         assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['TEST1', 'TEST2'],), {}],
             ['object_classes', (['route', 'route6'],), {}],
             ['ip_exact', (IP('192.0.2.0/25'),), {}]
         ]
@@ -284,6 +296,7 @@ class TestQueryResolver:
         result = resolver.rpsl_attribute_search('mnt-by', 'MNT-TEST')
         assert list(result) == mock_query_result
         assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['TEST1', 'TEST2'],), {}],
             ['lookup_attr', ('mnt-by', 'MNT-TEST'), {}],
         ]
 
@@ -385,6 +398,7 @@ class TestQueryResolver:
         result = resolver.members_for_set('AS-FIRSTLEVEL', recursive=False)
         assert result == ['AS-2nd-UNKNOWN', 'AS-SECONDLEVEL', 'AS65547']
         assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['TEST1', 'TEST2'],), {}],
             ['object_classes', (['as-set', 'route-set'],), {}],
             ['rpsl_pks', ({'AS-FIRSTLEVEL'},), {}],
         ]
@@ -398,12 +412,19 @@ class TestQueryResolver:
         result = resolver.members_for_set('AS-FIRSTLEVEL', recursive=True)
         assert result == ['AS65544', 'AS65545', 'AS65547']
         assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['TEST1', 'TEST2'],), {}],
             ['object_classes', (['as-set', 'route-set'],), {}],
             ['rpsl_pks', ({'AS-FIRSTLEVEL'},), {}],
+
+            ['sources', (['TEST1', 'TEST2'],), {}],
             ['object_classes', (['as-set'],), {}],
             ['rpsl_pks', ({'AS-2nd-UNKNOWN', 'AS-SECONDLEVEL'},), {}],
+
+            ['sources', (['TEST1', 'TEST2'],), {}],
             ['object_classes', (['as-set'],), {}],
             ['rpsl_pks', ({'AS-THIRDLEVEL'},), {}],
+
+            ['sources', (['TEST1', 'TEST2'],), {}],
             ['object_classes', (['as-set'],), {}],
             ['rpsl_pks', ({'AS-4th-UNKNOWN'},), {}],
         ]
@@ -417,6 +438,7 @@ class TestQueryResolver:
         result = resolver.members_for_set('AS-NOTEXIST', recursive=True)
         assert not result
         assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['TEST1', 'TEST2'],), {}],
             ['object_classes', (['as-set', 'route-set'],), {}],
             ['rpsl_pks', ({'AS-NOTEXIST'},), {}]
         ]
@@ -426,6 +448,7 @@ class TestQueryResolver:
         result = resolver.members_for_set('AS-NOTEXIST', recursive=True, root_source='ROOT')
         assert not result
         assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['TEST1', 'TEST2'],), {}],
             ['object_classes', (['as-set', 'route-set'],), {}],
             ['rpsl_pks', ({'AS-NOTEXIST'},), {}],
             ['sources', (['ROOT'],), {}],
@@ -476,10 +499,15 @@ class TestQueryResolver:
         result = resolver.members_for_set('RS-FIRSTLEVEL', recursive=True)
         assert set(result) == {'192.0.2.0/26^32', '192.0.2.0/25', '192.0.2.128/25'}
         assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['TEST1', 'TEST2'],), {}],
             ['object_classes', (['as-set', 'route-set'],), {}],
             ['rpsl_pks', ({'RS-FIRSTLEVEL'},), {}],
+
+            ['sources', (['TEST1', 'TEST2'],), {}],
             ['object_classes', (['as-set', 'route-set'],), {}],
             ['rpsl_pks', ({'RS-SECONDLEVEL', 'RS-2nd-UNKNOWN'},), {}],
+
+            ['sources', (['TEST1', 'TEST2'],), {}],
             ['object_classes', (['as-set', 'route-set'],), {}],
             ['rpsl_pks', ({'AS-REFERRED'},), {}],
         ]
@@ -516,8 +544,11 @@ class TestQueryResolver:
         result = resolver.members_for_set('RRS-TEST', recursive=True)
         assert result == ['192.0.2.0/24', '192.0.2.0/32', '2001:db8::/32']
         assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['TEST1', 'TEST2'],), {}],
             ['object_classes', (['as-set', 'route-set'],), {}],
             ['rpsl_pks', ({'RRS-TEST'},), {}],
+
+            ['sources', (['TEST1', 'TEST2'],), {}],
             ['object_classes', (['route', 'route6'],), {}],
             ['lookup_attrs_in', (['member-of'], ['RRS-TEST']), {}],
             ['lookup_attrs_in', (['mnt-by'], ['MNT-TEST']), {}],
@@ -530,8 +561,11 @@ class TestQueryResolver:
         result = resolver.members_for_set('RRS-TEST', recursive=True)
         assert result == ['192.0.2.0/24', '192.0.2.0/32', '2001:db8::/32']
         assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['TEST1', 'TEST2'],), {}],
             ['object_classes', (['as-set', 'route-set'],), {}],
             ['rpsl_pks', ({'RRS-TEST'},), {}],
+
+            ['sources', (['TEST1', 'TEST2'],), {}],
             ['object_classes', (['route', 'route6'],), {}],
             ['lookup_attrs_in', (['member-of'], ['RRS-TEST']), {}],
         ]
@@ -618,13 +652,20 @@ class TestQueryResolver:
         result = resolver.members_for_set_per_source('AS-TEST', recursive=True)
         assert result == {'TEST1': ['AS65547', 'AS65548'], 'TEST2': ['AS65549']}
         assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['TEST1', 'TEST2'],), {}],
             ['object_classes', (['as-set', 'route-set'],), {}],
             ['rpsl_pk', ('AS-TEST',), {}],
+
+            ['sources', (['TEST1', 'TEST2'],), {}],
             ['object_classes', (['as-set', 'route-set'],), {}],
             ['rpsl_pks', ({'AS-TEST'},), {}],
             ['sources', (['TEST1'],), {}],
+
+            ['sources', (['TEST1', 'TEST2'],), {}],
             ['object_classes', (['as-set'],), {}],
             ['rpsl_pks', ({'AS-SECONDLEVEL'},), {}],
+
+            ['sources', (['TEST1', 'TEST2'],), {}],
             ['object_classes', (['as-set', 'route-set'],), {}],
             ['rpsl_pks', ({'AS-TEST'},), {}],
             ['sources', (['TEST2'],), {}]
