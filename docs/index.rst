@@ -105,4 +105,5 @@ Other
    :maxdepth: 1
 
    releases/index.rst
+   security
    license
