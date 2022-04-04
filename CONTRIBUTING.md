@@ -10,6 +10,13 @@ the developers managing and developing this open source project. In return,
 they should reciprocate that respect in addressing your issue or assessing
 patches and features.
 
+## Reporting a Vulnerability
+
+If you have found an issue, strange behaviour, possible oversight,
+or anything else that may have security implications, please do not
+report it in the GitHub repository, but email irrd@reliablycoded.nl.
+See the [security policy](SECURITY.rst) for additional details.
+
 ## Using the issue tracker
 
 The [issue tracker](https://github.com/irrdnet/irrd/issues) is

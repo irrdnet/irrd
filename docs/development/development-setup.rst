@@ -122,19 +122,20 @@ Making a release
 To create a new packaged version of IRRD:
 
 * Create the new release notes and commit them in the main branch.
+* If this is a new minor release (x.y), update ``SECURITY.rst``.
 * If you are adding changes from main to an existing release branch,
   cherry-pick the changes from the main branch, at least including the release
   notes commit. Version updates of dependencies are not generally applied to
   the release branch, except in case of known important bugs or security issues.
 * Ensure the version is correct/updated in ``irrd/__init__.py``.
-* Commit the version change.
+* Commit the version change (in the existing release branch if there is one).
 * Tag the new release with git (`git tag v<version>`),
   and push the tag (`git push origin v<version>`).
 * Run ``./setup.py sdist bdist_wheel``
 * Your source archive and built distribution are now in ``dist/``
 * Create a new release on GitHub
 * If this is not a pre-release, upload to PyPI with ``twine upload dist/*``
-* If this is a new minor release (x.y), create a new branch for it.
+* If this was a new minor release (x.y), create a new branch for it.
 
 For more background, a good start is the `Python packaging tutorial`_.
 
