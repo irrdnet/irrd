@@ -44,10 +44,10 @@ Security process and disclosure
   as resolution as soon as reasonable. The time frame for this depends
   on the complexity, but will usually be in the order of
   a few days to a few weeks.
-* Once a fix for the issue is ready, parties on the advance notification
-  list will be provided with details, patches and pre-release packages.
-* One week later, the details will be publicly released
-  along with new IRRd releases.
+* Once a fix for the issue is ready, the maintainer will assess wither a
+  coordinated deployment plan is warranted. In that case, parties on the
+  advance notification list may receive details, patches and/or pre-releases,
+  typically one week before public release.
 * Reporters will be credited if desired.
 * This timeline may be accelerated or modified if details are published
   prematurely, or if further discussion or coordination with other parties
