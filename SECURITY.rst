@@ -44,24 +44,10 @@ Security process and disclosure
   as resolution as soon as reasonable. The time frame for this depends
   on the complexity, but will usually be in the order of
   a few days to a few weeks.
-* Once a fix for the issue is ready, the maintainer will assess wither a
-  coordinated deployment plan is warranted. In that case, parties on the
-  advance notification list may receive details, patches and/or pre-releases,
-  typically one week before public release.
+* Once a fix for the issue is ready, the maintainer will assess whether a
+  coordinated deployment plan is warranted. In that case, external stakeholders
+  may receive details, patches and/or pre-releases, before the public release.
 * Reporters will be credited if desired.
-* This timeline may be accelerated or modified if details are published
-  prematurely, or if further discussion or coordination with other parties
-  is needed.
-
-Advance notification list
--------------------------
-
-The advance notification list is a list of operators of registries of such
-size or importance that security issues may have significant operational
-impact, and operators with a support contract with Reliably Coded.
-
-The list is not public. If you believe you should be on this list,
-contact the address listed above.
 
 Security issues in IRRd deployments
 -----------------------------------
