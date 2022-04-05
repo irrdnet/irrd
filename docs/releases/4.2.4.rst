@@ -1,0 +1,18 @@
+============================
+Release notes for IRRd 4.2.4
+============================
+
+IRRd 4.2.4 was released on April 5th, 2022, and fixes
+`an issue where the source order was not correctly applied`_.
+
+This could affect the results of queries like ``!i`` and ``!m`` and their
+GraphQL counterparts, which only return or consider one object, while multiple
+objects with the same primary key may exist in different sources.
+Where these multiple objects did exist, the responses to the queries could
+prefer the object from a less preferred source. This behaviour was not
+always consistent.
+
+This affected both the source order set in the ``sources_default`` setting
+and an explicit source order set for a specific query.
+
+.. _an issue where the source order was not correctly applied: https://github.com/irrdnet/irrd/issues/635
