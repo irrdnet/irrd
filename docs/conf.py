@@ -96,7 +96,7 @@ html_sidebars = {
 # documentation.
 #
 html_theme_options = {
-    'nav_title': 'IRRd',
+    'nav_title': 'IRRd ' + version,
     'color_primary': 'indigo',
     'color_accent': 'light-blue',
     'repo_url': 'https://github.com/irrdnet/irrd/',
