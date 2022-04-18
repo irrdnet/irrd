@@ -18,7 +18,7 @@ redis==4.2.2           # preloaded data storage & sync through redis
 hiredis==2.0.0         # improved redis response parsing performance
 requests==2.27.1       # HTTP request handling
 pytz==2022.1
-ariadne==0.14.1
+ariadne==0.15.0
 uvicorn==0.16.0        # ASGI server  # pyup: <0.17  #604
 uvicorn[standard]==0.16.0; python_version > '3.7'  # pyup: <0.17  # ASGI server extras
 starlette==0.17.1      # pyup: <0.18  # ariadne conflict
