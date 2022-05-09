@@ -48,7 +48,7 @@ sphinxcontrib-spelling==7.3.3
 sphinx-material==0.0.35
 
 # Code style and type checks
-mypy==0.942; platform_python_implementation == "CPython"
+mypy==0.950; platform_python_implementation == "CPython"
 flake8==4.0.1
 pep8-naming==0.12.1
 
