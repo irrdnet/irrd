@@ -22,7 +22,7 @@ ariadne==0.15.1
 uvicorn==0.16.0        # ASGI server  # pyup: <0.17  #604
 uvicorn[standard]==0.16.0; python_version > '3.7'  # pyup: <0.17  # ASGI server extras
 starlette==0.17.1      # pyup: <0.18  # ariadne conflict
-psutil==5.9.0          # Process management
+psutil==5.9.1          # Process management
 asgiref==3.4.1         # ASGI utilities  # pyup: <3.5  #604
 pydantic==1.9.0        # Input validation
 six==1.16.0            # Used in vendored dotteddict
