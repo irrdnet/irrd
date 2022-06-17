@@ -78,3 +78,11 @@ when enabled on an authoritative source with the ``suspension_enabled`` setting.
 
 Suspended objects act as if they have been deleted, but can be restored by an
 admin at a later time.
+
+
+Minimum Python version
+----------------------
+The minimum Python version for IRRd is now 3.7. Python 3.6 is `end of life`_
+and therefore no longer supported.
+
+.. _end of life: https://endoflife.date/python

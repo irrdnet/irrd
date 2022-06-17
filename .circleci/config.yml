@@ -5,14 +5,14 @@ workflows:
   version: 2
   test:
     jobs:
-      - cpython-3.6
+      - cpython-3.7
       - cpython-3.10
       - pypy-3.8
-      - pypy-3.6
+      - pypy-3.7
 jobs:
-  cpython-3.6: &test-template
+  cpython-3.7: &test-template
     docker:
-      - image: cimg/python:3.6
+      - image: cimg/python:3.7
         environment:
           IRRD_DATABASE_URL: 'postgresql://root@localhost/circle_test'
           IRRD_DATABASE_URL_INTEGRATION_1: 'postgresql://root@localhost/circle_test_integration_1'
@@ -177,10 +177,10 @@ jobs:
 
       - image: circleci/redis:5.0.4
 
-  pypy-3.6:
+  pypy-3.7:
     <<: *test-template
     docker:
-      - image: pypy:3.6
+      - image: pypy:3.7
         environment:
           IRRD_DATABASE_URL: 'postgresql://root@localhost/circle_test'
           IRRD_DATABASE_URL_INTEGRATION_1: 'postgresql://root@localhost/circle_test_integration_1'
@@ -190,8 +190,8 @@ jobs:
           IRRD_REDIS_URL_INTEGRATION_2: 'redis://localhost/5'
           PYTHON_INTERPRETER: pypy3
           SUDO: ''
-          ENCHANT_PACKAGE: python-enchant
-          EXTRA_APT: rustc
+          ENCHANT_PACKAGE: python3-enchant
+          EXTRA_APT: ''
 
       - image: circleci/postgres:9.6
         environment:
