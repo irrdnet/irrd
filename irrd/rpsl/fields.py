@@ -421,8 +421,8 @@ class RPSLGenericNameField(RPSLTextField):
         if not strict_validation and self.non_strict_allow_any:
             return RPSLFieldParseResult(value)
 
-        upper_value = value.upper()
         if strict_validation:
+            upper_value = value.upper()
             if upper_value in reserved_words:
                 messages.error(f'Invalid name: {value}: this is a reserved word')
                 return None
@@ -432,7 +432,7 @@ class RPSLGenericNameField(RPSLTextField):
                     messages.error(f'Invalid name: {value}: {prefix} is a reserved prefix')
                     return None
 
-        if not re_generic_name.match(upper_value):
+        if not re_generic_name.match(value):
             messages.error(f'Invalid name: {value}: contains invalid characters, does not start with a letter, '
                            f'or does not end in a letter/digit')
             return None
