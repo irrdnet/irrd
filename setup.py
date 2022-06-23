@@ -73,6 +73,8 @@ setuptools.setup(
             'irrd_update_database = irrd.scripts.update_database:main',
             'irrd_set_last_modified_auth = irrd.scripts.set_last_modified_auth:main',
             'irrd_mirror_force_reload = irrd.scripts.mirror_force_reload:main',
+            'irr_rpsl_submit = irrd.scripts.irr_rpsl_submit:main',
+            'irrd_load_pgp_keys = irrd.scripts.load_pgp_keys:main',
         ],
     },
     classifiers=[
