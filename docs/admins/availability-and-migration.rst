@@ -214,6 +214,14 @@ instance before promoting it to be active.
 
 Option 2: PostgreSQL replication
 -------------------------------------------
+
+.. danger::
+   Since adding this section, an issue was discovered with using PostgreSQL
+   replication: the `local preload store may not be updated`_ causing
+   potential stale responses to queries.
+
+ .. _local preload store may not be updated: https://github.com/irrdnet/irrd/issues/656
+
 Except for configuration, IRRd stores all its data in the PostgreSQL database.
 Redis is used for passing derived data and commands.
 
@@ -226,7 +234,7 @@ to the local database.
 For Redis, you need to connect all instances to the same Redis instance,
 or use `Redis replication`_.
 
-Using PostgreSQL replication solves most of the issues mentioned for other
+Using PostgreSQL replication solves some of the issues mentioned for other
 options, but may have other limitations or issues that are out of scope
 for IRRd itself.
 
