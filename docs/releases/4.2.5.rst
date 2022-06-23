@@ -1,0 +1,23 @@
+============================
+Release notes for IRRd 4.2.5
+============================
+
+IRRd 4.2.4 was released on June 24th, 2022, and fixes several issues:
+
+* `Deletions could fail`_ for cases where the same RPSL primary key
+  was used in the same source for different objects with different
+  object classes. This could prevent NRTM updates from progressing.
+  Any mirroring processes that were stuck due to this bug will
+  recover after upgrading.
+* The irrd_load_pgp_keys_ command was missing from the distribution.
+* An obscure situation where a non-ASCII character
+  `could be permitted in RPSL primary keys`_ was corrected.
+* Added a warning that when using PostgreSQL replication, the
+  `local preload store may not be updated`_ causing
+  potential stale responses to queries.
+
+
+.. _Deletions could fail: https://github.com/irrdnet/irrd/issues/660
+.. _irrd_load_pgp_keys: https://github.com/irrdnet/irrd/issues/655
+.. _could be permitted in RPSL primary keys: https://github.com/irrdnet/irrd/issues/651
+.. _local preload store may not be updated: https://github.com/irrdnet/irrd/issues/656
