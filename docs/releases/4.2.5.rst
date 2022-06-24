@@ -2,7 +2,7 @@
 Release notes for IRRd 4.2.5
 ============================
 
-IRRd 4.2.4 was released on June 24th, 2022, and fixes several issues:
+IRRd 4.2.5 was released on June 24th, 2022, and fixes several issues:
 
 * `Deletions could fail`_ for cases where the same RPSL primary key
   was used in the same source for different objects with different
