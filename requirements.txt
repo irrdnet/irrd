@@ -2,57 +2,57 @@
 # should be kept in sync. The list in setup.py is shorter, as it only
 # includes packages needed for deployment.
 
-python-gnupg==0.4.8    # Integration with gpg for key-cert objects
+python-gnupg==0.4.9    # Integration with gpg for key-cert objects
 passlib==1.7.4         # Password hashing for CRYPT-PW and MD5-PW
-bcrypt==3.2.0          # bcrypt support
+bcrypt==3.2.2          # bcrypt support
 IPy==1.01              # IP address parsing
 dataclasses==0.8; python_version < '3.7'       # PEP 557 dataclasses for python<3.7
-ordered-set==4.0.2
+ordered-set==4.1.0
 beautifultable==0.8.0  # pyup: <1.0.0
 PyYAML==6.0          # parsing YAML config files
 datrie==0.8.2           # efficient route searching, used for RPKI
-setproctitle==1.2.2   # updating the process title for useful ps output
+setproctitle==1.2.3   # updating the process title for useful ps output
 python-daemon==2.3.0   # daemonising the main process
 pid==3.0.4             # managing PID files
-redis==4.2.0           # preloaded data storage & sync through redis
+redis==4.3.3           # preloaded data storage & sync through redis
 hiredis==2.0.0         # improved redis response parsing performance
-requests==2.27.1       # HTTP request handling
+requests==2.28.0       # HTTP request handling
 pytz==2022.1
-ariadne==0.14.1
-uvicorn==0.16.0        # ASGI server
-uvicorn[standard]==0.16.0; python_version > '3.7'  # pyup: <0.17  # ASGI server extras
+ariadne==0.15.1
+uvicorn==0.18.2        # ASGI server
+uvicorn[standard]==0.18.2; python_version > '3.7'  # pyup: <0.17  # ASGI server extras
 starlette==0.17.1      # pyup: <0.18  # ariadne conflict
-psutil==5.9.0          # Process management
-asgiref==3.4.1         # ASGI utilities
-pydantic==1.9.0        # Input validation
+psutil==5.9.1          # Process management
+asgiref==3.5.2         # ASGI utilities
+pydantic==1.9.1        # Input validation
 six==1.16.0            # Used in vendored dotteddict
 
 # Database connections and management
 psycopg2-binary==2.9.3; platform_python_implementation == "CPython"
 psycopg2cffi==2.9.0; platform_python_implementation == "PyPy"
 SQLAlchemy==1.3.24 # pyup: <1.4  #475
-alembic==1.7.7
-ujson==4.3.0
+alembic==1.8.0
+ujson==5.3.0
 
 # Testing and related packages
-pytest==7.0.1
+pytest==7.1.2
 pytest-cov==3.0.0
 pytest-env==0.6.2
-coverage==6.2
-twisted==22.2.0    # Used for a mock email server in integration tests
+coverage==6.4.1
+twisted==22.4.0    # Used for a mock email server in integration tests
 python-graphql-client==0.4.2
 
 # Documentation generation
-Sphinx==4.3.2
-sphinxcontrib-spelling==7.3.2
+Sphinx==4.3.2  # pyup: <5  # importlib-metadata conflict with flake8
+sphinxcontrib-spelling==7.6.0
 sphinx-material==0.0.35
 
 # Code style and type checks
-mypy==0.942; platform_python_implementation == "CPython"
+mypy==0.961; platform_python_implementation == "CPython"
 flake8==4.0.1
-pep8-naming==0.12.1
+pep8-naming==0.13.0
 
 # Creating python packages
-setuptools==59.6.0
+setuptools==62.6.0
 wheel==0.37.1  # also require for installing, #488
-twine==3.8.0
+twine==4.0.1
