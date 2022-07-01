@@ -23,15 +23,14 @@ jobs:
           PYTHON_INTERPRETER: python3
           SUDO: sudo
           ENCHANT_PACKAGE: python3-enchant
-          EXTRA_APT: rustc  # there is no wheel for cryptography
 
-      - image: circleci/postgres:9.6-ram
+      - image: cimg/postgres:10.17
         environment:
           POSTGRES_USER: root
           POSTGRES_DB: circle_test
           POSTGRES_HOST_AUTH_METHOD: trust
 
-      - image: circleci/redis:5.0.4
+      - image: cimg/redis:5.0
 
     working_directory: /mnt/ramdisk
 
@@ -47,16 +46,20 @@ jobs:
 
       - run:
           name: Installing psql client and enchant
-          command: $SUDO apt -y install postgresql-client netcat $ENCHANT_PACKAGE $EXTRA_APT
+          command: $SUDO apt -y install postgresql-client netcat $ENCHANT_PACKAGE
+
+      - run:
+          name: Install rust
+          command: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
       - restore_cache:
           keys:
-          - v7-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}
+          - v16-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}
           # fallback to using the latest cache if no exact match is found
-          - v7-dependencies-{{ .Environment.CIRCLE_JOB }}
+          - v16-dependencies-{{ .Environment.CIRCLE_JOB }}
 
       - run:
-          name: install dependencies
+          name: install latest pip
           command: |
             $PYTHON_INTERPRETER -m venv venv
             . venv/bin/activate
@@ -65,14 +68,15 @@ jobs:
       - run:
           name: install dependencies
           command: |
+            PATH=$PATH:/root/.cargo/bin/
             $PYTHON_INTERPRETER -m venv venv
             . venv/bin/activate
-            pip install -r requirements.txt
+            pip install -Ur requirements.txt
 
       - save_cache:
           paths:
             - ./venv
-          key: v6-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}
+          key: v16-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}
 
       - run:
           name: Waiting for PostgreSQL to be ready
@@ -140,18 +144,17 @@ jobs:
           IRRD_REDIS_URL: 'redis://localhost'
           IRRD_REDIS_URL_INTEGRATION_1: 'redis://localhost/4'
           IRRD_REDIS_URL_INTEGRATION_2: 'redis://localhost/5'
-          PYTHON_INTERPRETER: python3
+          PYTHON_INTERPRETER: python
           SUDO: sudo
           ENCHANT_PACKAGE: python3-enchant
-          EXTRA_APT: ''
 
-      - image: circleci/postgres:9.6
+      - image: cimg/postgres:10.17
         environment:
           POSTGRES_USER: root
           POSTGRES_DB: circle_test
           POSTGRES_HOST_AUTH_METHOD: trust
 
-      - image: circleci/redis:5.0.4
+      - image: cimg/redis:5.0
 
   pypy-3.7:
     <<: *test-template
@@ -167,15 +170,15 @@ jobs:
           PYTHON_INTERPRETER: pypy3
           SUDO: ''
           ENCHANT_PACKAGE: python3-enchant
-          EXTRA_APT: ''
 
-      - image: circleci/postgres:9.6
+      - image: cimg/postgres:10.17
         environment:
           POSTGRES_USER: root
           POSTGRES_DB: circle_test
           POSTGRES_HOST_AUTH_METHOD: trust
 
-      - image: circleci/redis:5.0.4
+      - image: cimg/redis:5.0
+
 
   pypy-3.6:
     <<: *test-template
@@ -193,10 +196,10 @@ jobs:
           ENCHANT_PACKAGE: python-enchant
           EXTRA_APT: rustc
 
-      - image: circleci/postgres:9.6
+      - image: cimg/postgres:10.17
         environment:
           POSTGRES_USER: root
           POSTGRES_DB: circle_test
           POSTGRES_HOST_AUTH_METHOD: trust
 
-      - image: circleci/redis:5.0.4
+      - image: cimg/redis:5.0
