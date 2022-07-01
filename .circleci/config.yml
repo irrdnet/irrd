@@ -7,7 +7,7 @@ workflows:
     jobs:
       - cpython-3.7
       - cpython-3.10
-      - pypy-3.8
+      - pypy-3.9
       - pypy-3.7
 jobs:
   cpython-3.7: &test-template
@@ -156,10 +156,10 @@ jobs:
 
       - image: cimg/redis:5.0
 
-  pypy-3.8:
+  pypy-3.9:
     <<: *test-template
     docker:
-      - image: pypy:3.8
+      - image: pypy:3.9
         environment:
           IRRD_DATABASE_URL: 'postgresql://root@localhost/circle_test'
           IRRD_DATABASE_URL_INTEGRATION_1: 'postgresql://root@localhost/circle_test_integration_1'
