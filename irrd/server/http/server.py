@@ -8,7 +8,7 @@ from pathlib import Path
 
 import uvicorn
 from setproctitle import setproctitle
-from uvicorn import subprocess
+from uvicorn import _subprocess
 
 sys.path.append(str(Path(__file__).resolve().parents[3]))
 
@@ -44,4 +44,4 @@ def subprocess_started(config, target, sockets, stdin_fileno):
     target(sockets=sockets)
 
 
-uvicorn.subprocess.subprocess_started = subprocess_started
+uvicorn._subprocess.subprocess_started = subprocess_started
