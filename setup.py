@@ -51,9 +51,6 @@ setuptools.setup(
         'wheel==0.37.1',
     ],
     extras_require={
-        ':python_version < "3.7"': [
-            'dataclasses==0.8',
-        ],
         ':python_version > "3.7"': [
             'uvicorn[standard]==0.18.2',
         ],
