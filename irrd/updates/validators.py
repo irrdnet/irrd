@@ -182,7 +182,7 @@ class AuthValidator:
 
         if self.check_override():
             result.used_override = True
-            logger.debug('Found valid override password.')
+            logger.info('Found valid override password.')
             return result
 
         mntners_new = rpsl_obj_new.parsed_data['mnt-by']
@@ -194,7 +194,7 @@ class AuthValidator:
         if rpsl_obj_current:
             mntners_current = rpsl_obj_current.parsed_data['mnt-by']
             logger.debug(f'Checking auth for current object {rpsl_obj_current}, '
-                         f'mntners in new object: {mntners_current}')
+                         f'mntners in current object: {mntners_current}')
             valid, mntner_objs_current = self._check_mntners(mntners_current, source)
             if not valid:
                 self._generate_failure_message(result, mntners_current, rpsl_obj_new)

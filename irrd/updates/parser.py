@@ -266,7 +266,7 @@ class ChangeRequest:
         if not auth_result.is_valid():
             self.status = UpdateRequestStatus.ERROR_AUTH
             self.error_messages += auth_result.error_messages
-            logger.debug(f'{id(self)}: Authentication check failed: {auth_result.error_messages}')
+            logger.debug(f'{id(self)}: Authentication check failed: {list(auth_result.error_messages)}')
             return False
 
         self.used_override = auth_result.used_override
@@ -292,7 +292,7 @@ class ChangeRequest:
 
         if not references_result.is_valid():
             self.error_messages += references_result.error_messages
-            logger.debug(f'{id(self)}: Reference check failed: {references_result.error_messages}')
+            logger.debug(f'{id(self)}: Reference check failed: {list(references_result.error_messages)}')
             if self.is_valid():  # Only change the status if this object was valid prior, so this is the first failure
                 self.status = UpdateRequestStatus.ERROR_REFERENCE
             return False
