@@ -742,6 +742,7 @@ class DatabaseStatusTracker:
                 object_text=object_text,
                 serial_nrtm=serial_nrtm,
                 origin=origin,
+                timestamp=datetime.now(timezone.utc),
             ).returning(self.c_journal.serial_nrtm)
 
             insert_result = self.database_handler.execute_statement(stmt)
