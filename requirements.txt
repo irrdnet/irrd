@@ -42,7 +42,7 @@ twisted==22.4.0    # Used for a mock email server in integration tests
 python-graphql-client==0.4.2
 
 # Documentation generation
-Sphinx==4.3.2  # pyup: <5  # importlib-metadata conflict with flake8
+Sphinx==4.5.0  # pyup: <5  # importlib-metadata conflict with flake8
 sphinxcontrib-spelling==7.6.0
 sphinx-material==0.0.35
 
