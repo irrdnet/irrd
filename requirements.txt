@@ -16,7 +16,7 @@ pid==3.0.4             # managing PID files
 redis==4.3.4           # preloaded data storage & sync through redis
 hiredis==2.0.0         # improved redis response parsing performance
 requests==2.28.1       # HTTP request handling
-pytz==2022.1
+pytz==2022.2.1
 ariadne==0.15.1
 uvicorn==0.18.2        # ASGI server
 uvicorn[standard]==0.18.2; python_version > '3.7'  # pyup: <0.17  # ASGI server extras
