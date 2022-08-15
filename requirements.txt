@@ -10,7 +10,7 @@ ordered-set==4.1.0
 beautifultable==0.8.0  # pyup: <1.0.0
 PyYAML==6.0          # parsing YAML config files
 datrie==0.8.2           # efficient route searching, used for RPKI
-setproctitle==1.2.3   # updating the process title for useful ps output
+setproctitle==1.3.2   # updating the process title for useful ps output
 python-daemon==2.3.0   # daemonising the main process
 pid==3.0.4             # managing PID files
 redis==4.3.3           # preloaded data storage & sync through redis
