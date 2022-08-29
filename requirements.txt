@@ -18,7 +18,7 @@ hiredis==2.0.0         # improved redis response parsing performance
 requests==2.28.1       # HTTP request handling
 pytz==2022.2.1
 ariadne==0.15.1
-uvicorn==0.18.2        # ASGI server
+uvicorn==0.18.3        # ASGI server
 uvicorn[standard]==0.18.2; python_version > '3.7'  # pyup: <0.17  # ASGI server extras
 starlette==0.17.1      # pyup: <0.18  # ariadne conflict
 psutil==5.9.1          # Process management
