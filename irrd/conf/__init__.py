@@ -45,6 +45,9 @@ LOGGING = {
         'gnupg': {
             'level': 'INFO',
         },
+        'uvicorn': {
+            'level': 'INFO',
+        },
         'sqlalchemy': {
             'level': 'WARNING',
         },

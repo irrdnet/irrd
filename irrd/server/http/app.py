@@ -16,7 +16,9 @@ from irrd.conf import config_init
 from irrd.server.graphql import ENV_UVICORN_WORKER_CONFIG_PATH
 from irrd.server.graphql.extensions import error_formatter, QueryMetadataExtension
 from irrd.server.graphql.schema_builder import build_executable_schema
-from irrd.server.http.endpoints import StatusEndpoint, SuspensionSubmissionEndpoint, WhoisQueryEndpoint, ObjectSubmissionEndpoint
+from irrd.server.http.endpoints import StatusEndpoint, SuspensionSubmissionEndpoint, \
+    WhoisQueryEndpoint, ObjectSubmissionEndpoint
+from irrd.server.http.event_stream import EventStreamEndpoint
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.preload import Preloader
 from irrd.utils.process_support import memory_trim
@@ -78,6 +80,7 @@ routes = [
     Mount("/v1/submit", ObjectSubmissionEndpoint),
     Mount("/v1/suspension", SuspensionSubmissionEndpoint),
     Mount("/graphql", graphql),
+    Mount("/event-stream", EventStreamEndpoint),
 ]
 
 

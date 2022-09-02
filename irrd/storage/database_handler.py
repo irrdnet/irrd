@@ -20,6 +20,7 @@ from .models import RPSLDatabaseObject, RPSLDatabaseJournal, DatabaseOperation, 
 from .preload import Preloader
 from .queries import (BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery,
                       RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery)
+from .event_stream import EventStreamPublisher
 
 logger = logging.getLogger(__name__)
 MAX_RECORDS_BUFFER_BEFORE_INSERT = 15000
@@ -678,6 +679,8 @@ class DatabaseStatusTracker:
     def __init__(self, database_handler: DatabaseHandler, journaling_enabled=True) -> None:
         self.database_handler = database_handler
         self.journaling_enabled = journaling_enabled
+        # TODO: will never be closed
+        self.event_stream_publisher = EventStreamPublisher()
         self.reset()
 
     def record_serial_newest_mirror(self, source: str, serial: int):
@@ -734,6 +737,7 @@ class DatabaseStatusTracker:
                 serial_nrtm = sa.select([sa.text('COALESCE(MAX(serial_nrtm), 0) + 1')])
                 serial_nrtm = serial_nrtm.where(RPSLDatabaseJournal.__table__.c.source == source)
                 serial_nrtm = serial_nrtm.as_scalar()
+            timestamp = datetime.now(timezone.utc)
             stmt = RPSLDatabaseJournal.__table__.insert().values(
                 rpsl_pk=rpsl_pk,
                 source=source,
@@ -742,11 +746,23 @@ class DatabaseStatusTracker:
                 object_text=object_text,
                 serial_nrtm=serial_nrtm,
                 origin=origin,
-                timestamp=datetime.now(timezone.utc),
+                timestamp=timestamp,
             ).returning(self.c_journal.serial_nrtm)
 
             insert_result = self.database_handler.execute_statement(stmt)
             inserted_serial = insert_result.fetchone()['serial_nrtm']
+
+            self.event_stream_publisher.publish_rpsl_journal(
+                rpsl_pk=rpsl_pk,
+                source=source,
+                operation=operation,
+                object_class=object_class,
+                object_text=object_text,
+                serial_nrtm=inserted_serial,
+                origin=origin,
+                timestamp=timestamp,
+            )
+
             self._new_serials_per_source[source].add(inserted_serial)
 
     def finalise_transaction(self):

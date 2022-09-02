@@ -31,6 +31,8 @@ def run_http_server(config_path: str):
         forwarded_allow_ips=get_setting('server.http.forwarded_allowed_ips'),
         headers=[['Server', f'IRRd {__version__}']],
         log_config=configuration.logging_config,
+        ws_ping_interval=60,
+        ws_ping_timeout=60,
     )
 
 
