@@ -2,7 +2,7 @@
 # should be kept in sync. The list in setup.py is shorter, as it only
 # includes packages needed for deployment.
 
-python-gnupg==0.4.9    # Integration with gpg for key-cert objects
+python-gnupg==0.5.0    # Integration with gpg for key-cert objects
 passlib==1.7.4         # Password hashing for CRYPT-PW and MD5-PW
 bcrypt==3.2.2          # bcrypt support
 IPy==1.01              # IP address parsing
