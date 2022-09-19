@@ -4,7 +4,7 @@
 
 python-gnupg==0.5.0    # Integration with gpg for key-cert objects
 passlib==1.7.4         # Password hashing for CRYPT-PW and MD5-PW
-bcrypt==3.2.2          # bcrypt support
+bcrypt==4.0.0          # bcrypt support
 IPy==1.01              # IP address parsing
 ordered-set==4.1.0
 beautifultable==0.8.0  # pyup: <1.0.0
