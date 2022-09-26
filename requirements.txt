@@ -49,7 +49,7 @@ sphinx-material==0.0.35
 # Code style and type checks
 mypy==0.971; platform_python_implementation == "CPython"
 flake8==5.0.4
-pep8-naming==0.13.0
+pep8-naming==0.13.2
 
 # Creating python packages
 setuptools==62.6.0
