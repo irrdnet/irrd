@@ -321,7 +321,7 @@ class TestRPSLKeyCert:
 
         errors = obj.messages.errors()
         assert len(errors) == 1, f'Unexpected multiple errors: {errors}'
-        assert 'Unable to read public PGP key: key corrupt or multiple keys provided: No valid data found' in errors[0]
+        assert 'Unable to read public PGP key: key corrupt or multiple keys provided' in errors[0]
 
     @pytest.mark.usefixtures('tmp_gpg_dir')  # noqa: F811
     def test_verify(self, tmp_gpg_dir):
