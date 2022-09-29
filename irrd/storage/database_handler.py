@@ -747,10 +747,8 @@ class DatabaseStatusTracker:
                 serial_nrtm=serial_nrtm,
                 origin=origin,
                 timestamp=timestamp,
-            ).returning(self.c_journal.serial_nrtm)
-
-            insert_result = self.database_handler.execute_statement(stmt)
-            inserted_serial = insert_result.fetchone()['serial_nrtm']
+            ).returning(self.c_journal.serial_nrtm, self.c_journal.serial_journal)
+            insert_result = self.database_handler.execute_statement(stmt).fetchone()
 
             self.event_stream_publisher.publish_rpsl_journal(
                 rpsl_pk=rpsl_pk,
@@ -758,12 +756,13 @@ class DatabaseStatusTracker:
                 operation=operation,
                 object_class=object_class,
                 object_text=object_text,
-                serial_nrtm=inserted_serial,
+                serial_journal=insert_result['serial_journal'],
+                serial_nrtm=insert_result['serial_nrtm'],
                 origin=origin,
                 timestamp=timestamp,
             )
 
-            self._new_serials_per_source[source].add(inserted_serial)
+            self._new_serials_per_source[source].add(insert_result['serial_nrtm'])
 
     def finalise_transaction(self):
         """

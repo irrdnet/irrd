@@ -101,6 +101,13 @@ class RPSLDatabaseJournal(Base):  # type: ignore
     # Requires extension pgcrypto
     # in alembic: op.execute('create EXTENSION if not EXISTS 'pgcrypto';')
     pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text('gen_random_uuid()'), primary_key=True)
+
+    # Serial_journal is intended to allow querying by insertion order.
+    # This could almost be met by the timestamp, except that fails in case
+    # of clock changes. Unique and in insertion order, but may have gaps.
+    serial_journal_seq = sa.Sequence("rpsl_database_journal_serial_journal_seq")
+    serial_journal = sa.Column(sa.BigInteger, serial_journal_seq, server_default=serial_journal_seq.next_value(), nullable=False, index=True, unique=True)
+
     rpsl_pk = sa.Column(sa.String, index=True, nullable=False)
     source = sa.Column(sa.String, index=True, nullable=False)
     origin = sa.Column(sa.Enum(JournalEntryOrigin), nullable=False, index=True, server_default=JournalEntryOrigin.unknown.name)
@@ -158,7 +165,7 @@ class RPSLDatabaseStatus(Base):  # type: ignore
     pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text('gen_random_uuid()'), primary_key=True)
     source = sa.Column(sa.String, index=True, nullable=False, unique=True)
 
-    # The oldest and newest serials seen, for any reason since the last import
+    # The oldest and newest serial_nrtm's seen, for any reason since the last import
     serial_oldest_seen = sa.Column(sa.Integer)
     serial_newest_seen = sa.Column(sa.Integer)
     # The oldest and newest serials in the current local journal

@@ -43,8 +43,8 @@ class EventStreamEndpoint(WebSocketEndpoint):
                 continue
             for entry in entries:
                 await websocket.send_text(ujson.encode({
-                    'message_type': 'rpsl',
-                    'event_id': entry.identifier,
+                    'message_type': 'event_rpsl',
+                    'rpsl_event_id': entry.identifier,
                     'event_data': entry.field_values,
                 }))
                 after_event_id = entry.identifier  # type: ignore
@@ -83,4 +83,3 @@ class EventStreamSubscriptionRequest(pydantic.main.BaseModel):
     after_event_id: str
 
 # {"message_type": "subscribe", "event_type": "rpsl", "after_event_id": "1-0"}
-

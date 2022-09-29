@@ -1,6 +1,6 @@
 import asyncio
 import datetime
-from typing import List
+from typing import Tuple
 
 import coredis
 import redis
@@ -11,7 +11,7 @@ from ..conf import get_setting
 from ..storage.models import JournalEntryOrigin, DatabaseOperation
 
 EVENT_STREAM_WS_CHUNK_SIZE = 1000
-REDIS_STREAM_RPSL = 'irrd-rpsl'
+REDIS_STREAM_RPSL = 'irrd-eventstream-rpsl'
 
 
 class AsyncEventStreamClient:
@@ -36,14 +36,14 @@ class AsyncEventStreamClient:
                 await asyncio.sleep(1)
         return stream_status
 
-    async def get_entries(self, after_event_id: str) -> List[StreamEntry]:
+    async def get_entries(self, after_event_id: str) -> Tuple[StreamEntry, ...]:
         entries = await self.redis_conn.xread(
             streams={REDIS_STREAM_RPSL: after_event_id},
             block=False,
             count=EVENT_STREAM_WS_CHUNK_SIZE,
         )
         if not entries or REDIS_STREAM_RPSL not in entries:
-            return []
+            return ()
         return entries[REDIS_STREAM_RPSL]
 
     async def close(self):
@@ -57,21 +57,22 @@ class EventStreamPublisher:
         self._redis_conn = redis.Redis.from_url(get_setting('redis_url'))
 
     def publish_rpsl_journal(self, rpsl_pk: str, source: str, operation: DatabaseOperation,
-                             object_class: str, object_text: str, serial_nrtm: int,
+                             object_class: str, object_text: str, serial_journal: int, serial_nrtm: int,
                              origin: JournalEntryOrigin, timestamp: datetime.datetime) -> None:
-        entry_id = f'{int(timestamp.timestamp()*1e6)}-{serial_nrtm}'
+        entry_id = f'{serial_journal}-{serial_nrtm}'
         self._redis_conn.xadd(
             name=REDIS_STREAM_RPSL,
             id=entry_id,
             # TODO: limit to maxlen
             fields={
-                'rpsl_pk': rpsl_pk,
+                'pk': rpsl_pk,
                 'source': source,
                 'operation': operation.name,
                 'object_class': object_class,
+                'serial_journal': serial_journal,
                 'serial_nrtm': serial_nrtm,
                 'origin': origin.name,
-                'timestamp': str(timestamp),
+                'timestamp': timestamp.isoformat(),
                 'object_text': remove_auth_hashes(object_text),
             }
         )
