@@ -21,6 +21,7 @@ from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import DatabaseStatusQuery
 from irrd.utils.whois_client import whois_query
 from .parsers import MirrorFileImportParser, NRTMStreamParser
+from ..storage.event_stream import EventStreamPublisher
 
 logger = logging.getLogger(__name__)
 
@@ -221,6 +222,10 @@ class RPSLMirrorFullImportRunner(FileImportRunnerBase):
                 os.unlink(import_filename)
         if import_serial:
             database_handler.record_serial_newest_mirror(self.source, import_serial)
+
+        event_stream_publisher = EventStreamPublisher()
+        event_stream_publisher.publish_rpsl_full_reload(self.source)
+        event_stream_publisher.close()
 
 
 class ROAImportRunner(FileImportRunnerBase):

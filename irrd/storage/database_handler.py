@@ -556,9 +556,8 @@ class DatabaseHandler:
         stmt = table.delete(table.c.source == source)
         self._connection.execute(stmt)
         if not journal_guaranteed_empty:
-            table = RPSLDatabaseJournal.__table__
             stmt = table.delete(table.c.source == source)
-        self._connection.execute(stmt)
+            self._connection.execute(stmt)
         table = RPSLDatabaseStatus.__table__
         stmt = table.delete(table.c.source == source)
         self._connection.execute(stmt)

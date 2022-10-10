@@ -8,7 +8,9 @@ from starlette.status import WS_1003_UNSUPPORTED_DATA
 from starlette.websockets import WebSocket
 
 from irrd.conf import get_setting
+from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.event_stream import AsyncEventStreamClient
+from irrd.storage.queries import DatabaseStatusQuery
 
 
 class EventStreamEndpoint(WebSocketEndpoint):
@@ -26,6 +28,14 @@ class EventStreamEndpoint(WebSocketEndpoint):
             for name, settings in get_setting('sources').items()
             if settings.get('keep_journal')
         ]
+        dh = DatabaseHandler(readonly=True)
+        query = DatabaseStatusQuery().sources(journaled_sources)
+        sources_created = {
+            row['source']: row['created'].isoformat()
+            for row in dh.execute_query(query)
+        }
+        dh.close()
+
         stream_status = await self.stream_client.stream_status()
 
         await websocket.send_json({
@@ -33,6 +43,7 @@ class EventStreamEndpoint(WebSocketEndpoint):
             'event_id_first': stream_status['first-entry'].identifier if stream_status['first-entry'] else None,
             'event_id_last': stream_status['last-entry'].identifier if stream_status['last-entry'] else None,
             'streamed_sources': journaled_sources,
+            'last_reload_times': sources_created,
         })
 
     async def _run_monitor(self, websocket: WebSocket, after_event_id: str):

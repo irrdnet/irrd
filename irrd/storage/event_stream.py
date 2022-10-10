@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import time
 from typing import Tuple
 
 import coredis
@@ -9,6 +10,10 @@ from coredis.response.types import StreamInfo, StreamEntry
 from irrd.utils.text import remove_auth_hashes
 from ..conf import get_setting
 from ..storage.models import JournalEntryOrigin, DatabaseOperation
+
+MAX_REDIS_XADD_ATTEMPTS = 500
+
+OPERATION_FULL_RELOAD = 'full_reload'
 
 EVENT_STREAM_WS_CHUNK_SIZE = 1000
 REDIS_STREAM_RPSL = 'irrd-eventstream-rpsl'
@@ -54,12 +59,15 @@ class AsyncEventStreamClient:
 
 class EventStreamPublisher:
     def __init__(self):
-        self._redis_conn = redis.Redis.from_url(get_setting('redis_url'))
+        self._redis_conn = redis.Redis.from_url(get_setting('redis_url'), decode_responses=True)
 
     def publish_rpsl_journal(self, rpsl_pk: str, source: str, operation: DatabaseOperation,
                              object_class: str, object_text: str, serial_journal: int, serial_nrtm: int,
                              origin: JournalEntryOrigin, timestamp: datetime.datetime) -> None:
-        entry_id = f'{serial_journal}-{serial_nrtm}'
+        if not serial_nrtm or not serial_journal:
+            entry_id = '*'
+        else:
+            entry_id = f'{serial_journal}-{serial_nrtm}'
         self._redis_conn.xadd(
             name=REDIS_STREAM_RPSL,
             id=entry_id,
@@ -76,6 +84,32 @@ class EventStreamPublisher:
                 'object_text': remove_auth_hashes(object_text),
             }
         )
+
+    def publish_rpsl_full_reload(self, source: str) -> None:
+        # TODO: super hacky, also does not handle a fresh database load, where no process
+        # will add database entries.
+        redis_error = None
+        for _ in range(MAX_REDIS_XADD_ATTEMPTS):
+            status = self._redis_conn.xinfo_stream(REDIS_STREAM_RPSL)
+            last_id, _ = status['last-entry']
+            last_id1, last_id2 = last_id.split('-')
+            entry_id = f'{last_id1}-{18446744073709551614}'
+            try:
+                self._redis_conn.xadd(
+                    name=REDIS_STREAM_RPSL,
+                    id=entry_id,
+                    # TODO: limit to maxlen
+                    fields={
+                        'source': source,
+                        'operation': OPERATION_FULL_RELOAD,
+                    }
+                )
+                return
+            except redis.exceptions.ResponseError as redis_error:
+                time.sleep(0.2)
+                continue
+        if redis_error:
+            raise redis_error
 
     def close(self):
         self._redis_conn.close()
