@@ -13,7 +13,7 @@ datrie==0.8.2           # efficient route searching, used for RPKI
 setproctitle==1.3.2   # updating the process title for useful ps output
 python-daemon==2.3.1   # daemonising the main process
 pid==3.0.4             # managing PID files
-redis==4.3.3           # preloaded data storage & sync through redis
+redis==4.3.4           # preloaded data storage & sync through redis
 hiredis==2.0.0         # improved redis response parsing performance
 requests==2.28.0       # HTTP request handling
 pytz==2022.1
