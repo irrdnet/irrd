@@ -19,7 +19,7 @@ requests==2.28.1       # HTTP request handling
 pytz==2022.4
 ariadne==0.16.1
 uvicorn==0.18.3        # ASGI server
-uvicorn[standard]==0.18.2; python_version > '3.7'  # pyup: <0.17  # ASGI server extras
+uvicorn[standard]==0.18.3; python_version > '3.7'  # ASGI server extras
 starlette==0.17.1      # pyup: <0.18  # ariadne conflict
 psutil==5.9.2          # Process management
 asgiref==3.5.2         # ASGI utilities
@@ -42,7 +42,7 @@ twisted==22.8.0    # Used for a mock email server in integration tests
 python-graphql-client==0.4.2
 
 # Documentation generation
-Sphinx==4.5.0  # pyup: <5  # importlib-metadata conflict with flake8
+Sphinx==4.4.0  # pyup: <4.5  # importlib-metadata conflict with flake8
 sphinxcontrib-spelling==7.6.1
 sphinx-material==0.0.35
 
