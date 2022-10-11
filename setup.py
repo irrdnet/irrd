@@ -40,7 +40,7 @@ setuptools.setup(
         'pytz==2022.4',
         'ariadne==0.16.1',
         'uvicorn==0.18.3',
-        'starlette==0.21.0',
+        'starlette==0.20.4',
         'psutil==5.9.2',
         'asgiref==3.5.2',
         'pydantic==1.10.2',
