@@ -3,6 +3,7 @@ import os
 import signal
 
 from ariadne.asgi import GraphQL
+from ariadne.asgi.handlers import GraphQLHTTPHandler
 from setproctitle import setproctitle
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
@@ -65,7 +66,9 @@ async def shutdown():
 graphql = GraphQL(
     build_executable_schema(),
     debug=False,
-    extensions=[QueryMetadataExtension],
+    http_handler=GraphQLHTTPHandler(
+        extensions=[QueryMetadataExtension],
+    ),
     error_formatter=error_formatter,
 )
 
