@@ -729,10 +729,11 @@ class DatabaseStatusTracker:
             serial_nrtm: Union[int, sa.sql.expression.Select]
             journal_tablename = RPSLDatabaseJournal.__tablename__
 
+            # Locking this table is one of the few ways to guarantee serial_journal in order
+            self.database_handler.execute_statement(f'LOCK TABLE {journal_tablename} IN EXCLUSIVE MODE')
             if self._is_serial_synchronised(source):
                 serial_nrtm = source_serial
             else:
-                self.database_handler.execute_statement(f'LOCK TABLE {journal_tablename} IN EXCLUSIVE MODE')
                 serial_nrtm = sa.select([sa.text('COALESCE(MAX(serial_nrtm), 0) + 1')])
                 serial_nrtm = serial_nrtm.where(RPSLDatabaseJournal.__table__.c.source == source)
                 serial_nrtm = serial_nrtm.as_scalar()
