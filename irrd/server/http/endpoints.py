@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 class StatusEndpoint(HTTPEndpoint):
     def get(self, request: Request) -> Response:
+        assert request.client
         if not is_client_permitted(request.client.host, 'server.http.status_access_list'):
             return PlainTextResponse('Access denied', status_code=403)
 
@@ -30,6 +31,7 @@ class StatusEndpoint(HTTPEndpoint):
 
 class WhoisQueryEndpoint(HTTPEndpoint):
     def get(self, request: Request) -> Response:
+        assert request.client
         start_time = time.perf_counter()
         if 'q' not in request.query_params:
             return PlainTextResponse('Missing required query parameter "q"', status_code=400)
@@ -68,6 +70,7 @@ class ObjectSubmissionEndpoint(HTTPEndpoint):
         return await self._handle_submission(request, delete=True)
 
     async def _handle_submission(self, request: Request, delete=False):
+        assert request.client
         try:
             request_json = await request.json()
             data = RPSLChangeSubmission.parse_obj(request_json)
@@ -93,6 +96,7 @@ class ObjectSubmissionEndpoint(HTTPEndpoint):
 
 class SuspensionSubmissionEndpoint(HTTPEndpoint):
     async def post(self, request: Request) -> Response:
+        assert request.client
         try:
             json = await request.json()
             data = RPSLSuspensionSubmission.parse_obj(json)

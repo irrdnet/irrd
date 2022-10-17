@@ -407,6 +407,7 @@ class RPSLDatabaseJournalQuery(BaseRPSLObjectDatabaseQuery):
             self.columns.rpsl_pk,
             self.columns.source,
             self.columns.serial_nrtm,
+            self.columns.serial_journal,
             self.columns.operation,
             self.columns.object_class,
             self.columns.object_text,
@@ -414,14 +415,24 @@ class RPSLDatabaseJournalQuery(BaseRPSLObjectDatabaseQuery):
             self.columns.timestamp,
         ]).order_by(self.columns.source.asc(), self.columns.serial_nrtm.asc())
 
+    # TODO: rename to serial_nrtm_range
     def serial_range(self, start: int, end: Optional[int]=None):
         """
-        Filter for a serials within a specific range, inclusive.
+        Filter for NRTM serials within a specific range, inclusive.
         """
+        return self._filter_range(self.columns.serial_nrtm, start, end)
+
+    def serial_journal_range(self, start: int, end: Optional[int]=None):
+        """
+        Filter for journal-wide serials within a specific range, inclusive.
+        """
+        return self._filter_range(self.columns.serial_journal, start, end)
+
+    def _filter_range(self, target: sa.Column, start: int, end: Optional[int]=None):
         if end is not None:
-            fltr = sa.and_(self.columns.serial_nrtm >= start, self.columns.serial_nrtm <= end)
+            fltr = sa.and_(target >= start, target <= end)
         else:
-            fltr = self.columns.serial_nrtm >= start
+            fltr = target >= start
         return self._filter(fltr)
 
     def __repr__(self):

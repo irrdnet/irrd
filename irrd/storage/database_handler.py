@@ -6,6 +6,7 @@ from io import StringIO
 from typing import List, Set, Dict, Any, Tuple, Iterator, Union, Optional
 
 import sqlalchemy as sa
+from asgiref.sync import sync_to_async
 from sqlalchemy.dialects import postgresql as pg
 
 from irrd.conf import get_setting
@@ -15,12 +16,17 @@ from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.vendor import postgres_copy
 from . import get_engine
+from .event_stream import EventStreamPublisher
 from .models import RPSLDatabaseObject, RPSLDatabaseJournal, DatabaseOperation, RPSLDatabaseStatus, \
     ROADatabaseObject, JournalEntryOrigin, RPSLDatabaseObjectSuspended
 from .preload import Preloader
 from .queries import (BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery,
                       RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery)
-from .event_stream import EventStreamPublisher
+
+QueryType = Union[
+    BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery,
+    RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery
+]
 
 logger = logging.getLogger(__name__)
 MAX_RECORDS_BUFFER_BEFORE_INSERT = 15000
@@ -64,6 +70,11 @@ class DatabaseHandler:
         else:
             self._start_transaction()
             self.preloader = Preloader(enable_queries=False)
+
+    @classmethod
+    @sync_to_async
+    def create_async(cls, readonly=False):
+        return cls(readonly=readonly)
 
     def refresh_connection(self) -> None:
         """
@@ -131,11 +142,11 @@ class DatabaseHandler:
         if start_transaction:
             self._start_transaction()
 
-    def execute_query(self,
-                      query: Union[BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery, RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery],
-                      flush_rpsl_buffer=True,
-                      refresh_on_error=False,
-                      ) -> RPSLDatabaseResponse:
+    @sync_to_async
+    def execute_query_async(self, query: QueryType, flush_rpsl_buffer=True, refresh_on_error=False) -> RPSLDatabaseResponse:
+        return self.execute_query(query, flush_rpsl_buffer, refresh_on_error)
+
+    def execute_query(self, query: QueryType, flush_rpsl_buffer=True, refresh_on_error=False) -> RPSLDatabaseResponse:
         """
         Execute an RPSLDatabaseQuery within the current transaction.
         If flush_rpsl_buffer is set, the RPSL object buffer is flushed first.
@@ -750,18 +761,6 @@ class DatabaseStatusTracker:
             ).returning(self.c_journal.serial_nrtm, self.c_journal.serial_journal)
             insert_result = self.database_handler.execute_statement(stmt).fetchone()
 
-            self.event_stream_publisher.publish_rpsl_journal(
-                rpsl_pk=rpsl_pk,
-                source=source,
-                operation=operation,
-                object_class=object_class,
-                object_text=object_text,
-                serial_journal=insert_result['serial_journal'],
-                serial_nrtm=insert_result['serial_nrtm'],
-                origin=origin,
-                timestamp=timestamp,
-            )
-
             self._new_serials_per_source[source].add(insert_result['serial_nrtm'])
 
     def finalise_transaction(self):
@@ -846,6 +845,11 @@ class DatabaseStatusTracker:
             )
             self.database_handler.execute_statement(stmt)
 
+        # may trigger for serial update too TODO
+        logger.critical(f'About to store sources update for {self._new_serials_per_source.keys()}')
+        for source in self._new_serials_per_source.keys():
+            self.event_stream_publisher.publish_update(source=source)
+        # logger.critical('completed!')
         self.reset()
 
     @lru_cache(maxsize=100)

@@ -1,22 +1,18 @@
 import asyncio
-import datetime
-import time
 from typing import Tuple
 
 import coredis
 import redis
 from coredis.response.types import StreamInfo, StreamEntry
 
-from irrd.utils.text import remove_auth_hashes
 from ..conf import get_setting
-from ..storage.models import JournalEntryOrigin, DatabaseOperation
-
-MAX_REDIS_XADD_ATTEMPTS = 500
 
 OPERATION_FULL_RELOAD = 'full_reload'
+OPERATION_JOURNAL_EXTENDED = 'journal_extended'
 
 EVENT_STREAM_WS_CHUNK_SIZE = 1000
-REDIS_STREAM_RPSL = 'irrd-eventstream-rpsl'
+REDIS_STREAM_RPSL = 'irrd-eventstream-rpsl-stream'
+REDIS_STREAM_MAX_LEN = 1000
 
 
 class AsyncEventStreamClient:
@@ -32,7 +28,7 @@ class AsyncEventStreamClient:
     def __init__(self, redis_conn: coredis.Redis):
         self.redis_conn = redis_conn
 
-    async def stream_status(self) -> StreamInfo:
+    async def journal_status(self) -> StreamInfo:
         stream_status = None
         while not stream_status:
             try:
@@ -61,55 +57,26 @@ class EventStreamPublisher:
     def __init__(self):
         self._redis_conn = redis.Redis.from_url(get_setting('redis_url'), decode_responses=True)
 
-    def publish_rpsl_journal(self, rpsl_pk: str, source: str, operation: DatabaseOperation,
-                             object_class: str, object_text: str, serial_journal: int, serial_nrtm: int,
-                             origin: JournalEntryOrigin, timestamp: datetime.datetime) -> None:
-        if not serial_nrtm or not serial_journal:
-            entry_id = '*'
-        else:
-            entry_id = f'{serial_journal}-{serial_nrtm}'
+    def publish_update(self, source) -> None:
         self._redis_conn.xadd(
             name=REDIS_STREAM_RPSL,
-            id=entry_id,
-            # TODO: limit to maxlen
+            maxlen=REDIS_STREAM_MAX_LEN,
             fields={
-                'pk': rpsl_pk,
                 'source': source,
-                'operation': operation.name,
-                'object_class': object_class,
-                'serial_journal': serial_journal,
-                'serial_nrtm': serial_nrtm,
-                'origin': origin.name,
-                'timestamp': timestamp.isoformat(),
-                'object_text': remove_auth_hashes(object_text),
+                'operation': OPERATION_JOURNAL_EXTENDED,
             }
         )
 
     def publish_rpsl_full_reload(self, source: str) -> None:
-        # TODO: super hacky, also does not handle a fresh database load, where no process
-        # will add database entries.
-        redis_error = None
-        for _ in range(MAX_REDIS_XADD_ATTEMPTS):
-            status = self._redis_conn.xinfo_stream(REDIS_STREAM_RPSL)
-            last_id, _ = status['last-entry']
-            last_id1, last_id2 = last_id.split('-')
-            entry_id = f'{last_id1}-{18446744073709551614}'
-            try:
-                self._redis_conn.xadd(
-                    name=REDIS_STREAM_RPSL,
-                    id=entry_id,
-                    # TODO: limit to maxlen
-                    fields={
-                        'source': source,
-                        'operation': OPERATION_FULL_RELOAD,
-                    }
-                )
-                return
-            except redis.exceptions.ResponseError as redis_error:
-                time.sleep(0.2)
-                continue
-        if redis_error:
-            raise redis_error
+        self._redis_conn.xadd(
+            name=REDIS_STREAM_RPSL,
+            maxlen=REDIS_STREAM_MAX_LEN,
+            fields={
+                'source': source,
+                'operation': OPERATION_FULL_RELOAD,
+            }
+        )
+        return
 
     def close(self):
         self._redis_conn.close()
