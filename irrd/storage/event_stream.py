@@ -7,6 +7,8 @@ from coredis.response.types import StreamInfo, StreamEntry
 
 from ..conf import get_setting
 
+EVENT_STREAM_MAX_WAIT_MS = 60000
+
 OPERATION_FULL_RELOAD = 'full_reload'
 OPERATION_JOURNAL_EXTENDED = 'journal_extended'
 
@@ -40,7 +42,7 @@ class AsyncEventStreamClient:
     async def get_entries(self, after_event_id: str) -> Tuple[StreamEntry, ...]:
         entries = await self.redis_conn.xread(
             streams={REDIS_STREAM_RPSL: after_event_id},
-            block=False,
+            block=EVENT_STREAM_MAX_WAIT_MS,
             count=EVENT_STREAM_WS_CHUNK_SIZE,
         )
         if not entries or REDIS_STREAM_RPSL not in entries:

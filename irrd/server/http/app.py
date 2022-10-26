@@ -7,7 +7,7 @@ from ariadne.asgi.handlers import GraphQLHTTPHandler
 from setproctitle import setproctitle
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
-from starlette.routing import Mount
+from starlette.routing import Mount, Route
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 # Relative imports are not allowed in this file
@@ -18,7 +18,7 @@ from irrd.server.graphql.extensions import error_formatter, QueryMetadataExtensi
 from irrd.server.graphql.schema_builder import build_executable_schema
 from irrd.server.http.endpoints import StatusEndpoint, SuspensionSubmissionEndpoint, \
     WhoisQueryEndpoint, ObjectSubmissionEndpoint
-from irrd.server.http.event_stream import EventStreamEndpoint
+from irrd.server.http.event_stream import EventStreamEndpoint, EventStreamInitialDownloadEndpoint
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.preload import Preloader
 from irrd.utils.process_support import memory_trim
@@ -80,7 +80,8 @@ routes = [
     Mount("/v1/submit", ObjectSubmissionEndpoint),
     Mount("/v1/suspension", SuspensionSubmissionEndpoint),
     Mount("/graphql", graphql),
-    Mount("/event-stream", EventStreamEndpoint),
+    Route("/event-stream", EventStreamEndpoint),
+    Route("/event-stream/initial/", EventStreamInitialDownloadEndpoint),
 ]
 
 

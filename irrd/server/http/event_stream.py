@@ -1,20 +1,78 @@
 import asyncio
+import datetime
 import logging
-from typing import Literal, Any
+import socket
+from typing import Literal, Any, List
 
 import pydantic
 import ujson
-from starlette.endpoints import WebSocketEndpoint
+from starlette.endpoints import WebSocketEndpoint, HTTPEndpoint
+from starlette.requests import Request
+from starlette.responses import Response, StreamingResponse
 from starlette.status import WS_1003_UNSUPPORTED_DATA
 from starlette.websockets import WebSocket
 
 from irrd.conf import get_setting
+from irrd.rpki.status import RPKIStatus
+from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.storage.database_handler import DatabaseHandler
-from irrd.storage.event_stream import AsyncEventStreamClient, OPERATION_JOURNAL_EXTENDED
-from irrd.storage.queries import DatabaseStatusQuery, RPSLDatabaseJournalQuery
+from irrd.storage.event_stream import AsyncEventStreamClient
+from irrd.storage.queries import DatabaseStatusQuery, RPSLDatabaseJournalQuery, RPSLDatabaseQuery, \
+    RPSLDatabaseJournalStatisticsQuery
 from irrd.utils.text import remove_auth_hashes
 
 logger = logging.getLogger(__name__)
+
+
+class EventStreamInitialDownloadEndpoint(HTTPEndpoint):
+    async def get(self, request: Request) -> Response:
+        sources = request.query_params.get('sources')
+        object_classes = request.query_params.get('object_classes')
+        return StreamingResponse(
+            self.stream_response(
+                sources.split(',') if sources else [],
+                object_classes.split(',') if object_classes else [],
+            ),
+            media_type='application/jsonl+json'
+        )
+
+    async def stream_response(self, sources: List[str], object_classes: List[str]):
+        # This database handler is intentionally not read-only,
+        # to make sure our queries run in a single transaction.
+        dh = await DatabaseHandler.create_async()
+
+        journal_stats = next(dh.execute_query(RPSLDatabaseJournalStatisticsQuery()))
+        yield ujson.encode({
+            'data_type': 'irrd_event_stream_initial_download',
+            'sources_filter': sources,
+            'object_classes_filter': object_classes,
+            'max_serial_journal': journal_stats['max_serial_journal'],
+            'last_change_timestamp': journal_stats['max_timestamp'].isoformat(),
+            'generated_at': datetime.datetime.utcnow().isoformat(),
+            'generated_on': socket.gethostname(),
+        }) + '\n'
+
+        query = RPSLDatabaseQuery(column_names=[
+            'rpsl_pk', 'object_class', 'object_text', 'source', 'updated',
+        ]).rpki_status(
+            [RPKIStatus.not_found, RPKIStatus.valid]
+        ).scopefilter_status(
+            [ScopeFilterStatus.in_scope]
+        )
+        if sources:
+            query = query.sources(sources)
+        if object_classes:
+            query = query.object_classes(object_classes)
+
+        for row in await dh.execute_query_async(query):
+            yield ujson.encode({
+                'pk': row['rpsl_pk'],
+                'object_class': row['object_class'],
+                'object_text': remove_auth_hashes(row['object_text']),
+                'source': row['source'],
+                'updated': row['updated'].isoformat(),
+            }) + '\n'
+        dh.close()
 
 
 class EventStreamEndpoint(WebSocketEndpoint):
@@ -50,17 +108,9 @@ class EventStreamEndpoint(WebSocketEndpoint):
     async def _run_monitor(self, websocket: WebSocket, after_journal_serial: int) -> None:
         assert self.stream_client
         after_event_id = '$'
-        logging.debug(f'ws {websocket} starting run after serial {after_journal_serial} after event {after_event_id} about to send initial')
         after_journal_serial = await self._send_new_journal_entries(websocket, after_journal_serial)
         while True:
-            # TODO: timeout to periodically catch straggling entries?
-            logging.debug(
-                f'ws {websocket} waiting run after serial {after_journal_serial} after event {after_event_id}')
             entries = await self.stream_client.get_entries(after_event_id)
-            if not entries:
-                continue
-            logging.debug(
-                f'ws {websocket} received entries')
 
             for entry in entries:
                 await websocket.send_text(ujson.encode({
@@ -69,14 +119,9 @@ class EventStreamEndpoint(WebSocketEndpoint):
                     'event_data': entry.field_values,
                 }))
                 after_event_id = entry.identifier  # type: ignore
-            if any([
-                entry.field_values['operation'] == OPERATION_JOURNAL_EXTENDED
-                for entry in entries
-            ]):
-                logging.debug(
-                    f'ws {websocket} match journal extend, starting run after serial {after_journal_serial}')
-
-                after_journal_serial = await self._send_new_journal_entries(websocket, after_journal_serial)
+            # get_entries() times out every EVENT_STREAM_MAX_WAIT_MS,
+            # to allow us to catch any incidentally missed journal entries
+            after_journal_serial = await self._send_new_journal_entries(websocket, after_journal_serial)
 
     async def _send_new_journal_entries(self, websocket: WebSocket, after_journal_serial: int) -> int:
         assert self.database_handler

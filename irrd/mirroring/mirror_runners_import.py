@@ -48,13 +48,20 @@ class RPSLMirrorImportUpdateRunner:
             nrtm_enabled = bool(get_setting(f'sources.{self.source}.nrtm_host'))
             logger.debug(f'Most recent mirrored serial for {self.source}: {serial_newest_mirror}, '
                          f'force_reload: {force_reload}, nrtm enabled: {nrtm_enabled}')
-            if force_reload or not serial_newest_mirror or not nrtm_enabled:
+            full_reload = force_reload or not serial_newest_mirror or not nrtm_enabled
+            if full_reload:
                 self.full_import_runner.run(database_handler=self.database_handler,
                                             serial_newest_mirror=serial_newest_mirror, force_reload=force_reload)
             else:
+                assert serial_newest_mirror
                 self.update_stream_runner.run(serial_newest_mirror, database_handler=self.database_handler)
 
             self.database_handler.commit()
+            if full_reload:
+                event_stream_publisher = EventStreamPublisher()
+                event_stream_publisher.publish_rpsl_full_reload(self.source)
+                event_stream_publisher.close()
+
         except OSError as ose:
             # I/O errors can occur and should not log a full traceback (#177)
             logger.error(f'An error occurred while attempting a mirror update or initial import '
@@ -222,10 +229,6 @@ class RPSLMirrorFullImportRunner(FileImportRunnerBase):
                 os.unlink(import_filename)
         if import_serial:
             database_handler.record_serial_newest_mirror(self.source, import_serial)
-
-        event_stream_publisher = EventStreamPublisher()
-        event_stream_publisher.publish_rpsl_full_reload(self.source)
-        event_stream_publisher.close()
 
 
 class ROAImportRunner(FileImportRunnerBase):

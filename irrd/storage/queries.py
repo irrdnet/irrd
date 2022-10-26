@@ -439,6 +439,26 @@ class RPSLDatabaseJournalQuery(BaseRPSLObjectDatabaseQuery):
         return f'RPSLDatabaseJournalQuery: {self.statement}\nPARAMS: {self.statement.compile().params}'
 
 
+class RPSLDatabaseJournalStatisticsQuery:
+    """
+    Special journal statistics query.
+    """
+    table = RPSLDatabaseJournal.__table__
+    columns = RPSLDatabaseJournal.__table__.c
+
+    def __init__(self):
+        self.statement = sa.select([
+            sa.func.max(self.columns.serial_journal).label('max_serial_journal'),
+            sa.func.max(self.columns.timestamp).label('max_timestamp'),
+        ])
+
+    def finalise_statement(self):
+        return self.statement
+
+    def __repr__(self):
+        return f'RPSLDatabaseJournalStatisticsQuery: {self.statement}\nPARAMS: {self.statement.compile().params}'
+
+
 class RPSLDatabaseSuspendedQuery(BaseRPSLObjectDatabaseQuery):
     """
     RPSL data query builder for retrieving suspended objects,
