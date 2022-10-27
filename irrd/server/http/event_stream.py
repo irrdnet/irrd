@@ -1,7 +1,10 @@
 import asyncio
+import csv
 import datetime
 import logging
 import socket
+import sys
+import tempfile
 from typing import Literal, Any, List
 
 import pydantic
@@ -20,6 +23,7 @@ from irrd.storage.event_stream import AsyncEventStreamClient
 from irrd.storage.queries import DatabaseStatusQuery, RPSLDatabaseJournalQuery, RPSLDatabaseQuery, \
     RPSLDatabaseJournalStatisticsQuery
 from irrd.utils.text import remove_auth_hashes
+from irrd.vendor import postgres_copy
 
 logger = logging.getLogger(__name__)
 
@@ -55,23 +59,34 @@ class EventStreamInitialDownloadEndpoint(HTTPEndpoint):
         query = RPSLDatabaseQuery(column_names=[
             'rpsl_pk', 'object_class', 'object_text', 'source', 'updated',
         ]).rpki_status(
-            [RPKIStatus.not_found, RPKIStatus.valid]
+            [RPKIStatus.not_found.name, RPKIStatus.valid.name]
         ).scopefilter_status(
-            [ScopeFilterStatus.in_scope]
+            [ScopeFilterStatus.in_scope.name]
         )
         if sources:
             query = query.sources(sources)
         if object_classes:
             query = query.object_classes(object_classes)
 
-        for row in await dh.execute_query_async(query):
-            yield ujson.encode({
-                'pk': row['rpsl_pk'],
-                'object_class': row['object_class'],
-                'object_text': remove_auth_hashes(row['object_text']),
-                'source': row['source'],
-                'updated': row['updated'].isoformat(),
-            }) + '\n'
+        with tempfile.TemporaryFile(mode='w+') as fp:
+            logger.info(f'Writing to {fp} rows from copy query {query}')
+            postgres_copy.copy_to(
+                query.finalise_statement(),
+                fp,
+                dh._connection,
+                format='csv'
+            )
+            logger.info('Wrote rows, now reading')
+            fp.seek(0)
+            csv.field_size_limit(sys.maxsize)
+            for row in csv.reader(fp):
+                yield ujson.encode({
+                    'pk': row[0],
+                    'object_class': row[1],
+                    'object_text': remove_auth_hashes(row[2]),
+                    'source': row[3],
+                    'updated': row[4],
+                }) + '\n'
         dh.close()
 
 

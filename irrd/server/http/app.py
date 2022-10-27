@@ -7,7 +7,7 @@ from ariadne.asgi.handlers import GraphQLHTTPHandler
 from setproctitle import setproctitle
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
-from starlette.routing import Mount, Route
+from starlette.routing import Mount, Route, WebSocketRoute
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 # Relative imports are not allowed in this file
@@ -80,7 +80,7 @@ routes = [
     Mount("/v1/submit", ObjectSubmissionEndpoint),
     Mount("/v1/suspension", SuspensionSubmissionEndpoint),
     Mount("/graphql", graphql),
-    Route("/event-stream", EventStreamEndpoint),
+    WebSocketRoute("/event-stream/", EventStreamEndpoint),
     Route("/event-stream/initial/", EventStreamInitialDownloadEndpoint),
 ]
 
