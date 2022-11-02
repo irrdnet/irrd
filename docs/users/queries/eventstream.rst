@@ -119,7 +119,9 @@ Subscription
 ^^^^^^^^^^^^
 To receive updates, the client must send a ``subscribe`` message, with
 ``event_type`` set to ``rpsl`` and ``after_journal_serial`` set to the
-journal-wide serial that the stream should start after.
+journal-wide serial last seen by the client. The client will receive
+any journal entries after this serial. If the ``after_journal_serial``
+field is omitted, any changes newer than the subscription time are sent.
 
 Example::
 

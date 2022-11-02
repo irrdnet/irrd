@@ -5,7 +5,7 @@ import logging
 import socket
 import sys
 import tempfile
-from typing import Literal, Any, List
+from typing import Literal, Any, List, Optional
 
 import pydantic
 import ujson
@@ -182,7 +182,22 @@ class EventStreamEndpoint(WebSocketEndpoint):
             return
 
         self.database_handler = await DatabaseHandler.create_async(readonly=True)
-        self.streaming_task = asyncio.create_task(self._run_monitor(websocket, request.after_journal_serial))
+        journal_stats = next(self.database_handler.execute_query(RPSLDatabaseJournalStatisticsQuery()))
+        max_serial_journal = journal_stats['max_serial_journal']
+        if request.after_journal_serial:
+            if request.after_journal_serial > max_serial_journal:
+                await websocket.send_json({
+                    'message_type': 'invalid_request',
+                    'errors': [{'msg': f'The maximum known serial is {max_serial_journal}'}],
+                })
+                self.database_handler.close()
+                return
+
+            after_journal_serial = request.after_journal_serial
+        else:
+            after_journal_serial = max_serial_journal
+
+        self.streaming_task = asyncio.create_task(self._run_monitor(websocket, after_journal_serial))
 
     async def on_disconnect(self, websocket: WebSocket, close_code: int) -> None:
         if self.streaming_task:
@@ -197,6 +212,6 @@ class EventStreamEndpoint(WebSocketEndpoint):
 class EventStreamSubscriptionRequest(pydantic.main.BaseModel):
     message_type: Literal['subscribe']
     event_type: Literal['rpsl']
-    after_journal_serial: int
+    after_journal_serial: Optional[int]
 
 # {"message_type": "subscribe", "event_type": "rpsl", "after_event_id": "1-0"}
