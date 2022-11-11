@@ -70,7 +70,7 @@ class MetricsGenerator:
                 f"""{stat['count']}"""
             )
 
-        return textwrap.dedent(f"""
+        return textwrap.dedent("""
         # HELP irrd_object_class Number of objects per class per source
         # TYPE irrd_object_class gauge
         """).lstrip() + '\n'.join(lines) + '\n'
@@ -87,7 +87,7 @@ class MetricsGenerator:
             diff = now - stat['updated']
             lines.append(f"""irrd_seconds_since_last_update{{source="{stat['source']}"}} {diff.total_seconds()}""")
 
-        return textwrap.dedent(f"""
+        return textwrap.dedent("""
         # HELP irrd_seconds_since_last_update Seconds since the last update
         # TYPE irrd_seconds_since_last_update gauge
         """).lstrip() + '\n'.join(lines) + '\n'
@@ -102,7 +102,7 @@ class MetricsGenerator:
                 continue
             lines.append(f"""irrd_serial_newest_mirror{{source="{stat['source']}"}} {stat['serial_newest_mirror']}""")
 
-        return textwrap.dedent(f"""
+        return textwrap.dedent("""
         # HELP irrd_serial_newest_mirror Newest serial number mirrored from upstream
         # TYPE irrd_serial_newest_mirror gauge
         """).lstrip() + '\n'.join(lines) + '\n'
@@ -117,7 +117,7 @@ class MetricsGenerator:
                 continue
             lines.append(f"""irrd_serial_last_export{{source="{stat['source']}"}} {stat['serial_last_export']}""")
 
-        return textwrap.dedent(f"""
+        return textwrap.dedent("""
         # HELP irrd_serial_last_export Last serial number exported
         # TYPE irrd_serial_last_export gauge
         """).lstrip() + '\n'.join(lines) + '\n'
@@ -132,7 +132,7 @@ class MetricsGenerator:
                 continue
             lines.append(f"""irrd_serial_oldest_journal{{source="{stat['source']}"}} {stat['serial_oldest_journal']}""")
 
-        return textwrap.dedent(f"""
+        return textwrap.dedent("""
         # HELP irrd_serial_oldest_journal Oldest serial in the journal
         # TYPE irrd_serial_oldest_journal gauge
         """).lstrip() + '\n'.join(lines) + '\n'
@@ -147,7 +147,7 @@ class MetricsGenerator:
                 continue
             lines.append(f"""irrd_serial_newest_journal{{source="{stat['source']}"}} {stat['serial_newest_journal']}""")
 
-        return textwrap.dedent(f"""
+        return textwrap.dedent("""
         # HELP irrd_serial_newest_journal Newest serial in the journal
         # TYPE irrd_serial_newest_journal gauge
         """).lstrip() + '\n'.join(lines) + '\n'
