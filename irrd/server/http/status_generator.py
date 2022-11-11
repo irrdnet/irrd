@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class StatusGenerator:
-    def generate_status(self) -> str:
+    def generate(self) -> str:
         """
         Generate a human-readable overview of database status.
         """
