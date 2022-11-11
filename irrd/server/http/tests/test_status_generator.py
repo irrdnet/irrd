@@ -158,7 +158,7 @@ class TestStatusGenerator:
         )
         mock_database_handler.execute_query = lambda query, flush_rpsl_buffer=True: next(mock_query_result)
 
-        status_report = StatusGenerator().generate_status()
+        status_report = StatusGenerator().generate()
         expected_report = textwrap.dedent(f"""
             IRRD version {__version__}
             Listening on ::0 port {get_setting('server.whois.port')}

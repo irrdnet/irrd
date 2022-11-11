@@ -18,11 +18,12 @@ from ...whois.query_response import (
     WhoisQueryResponseType,
 )
 from ..app import app
-from ..endpoints_api import StatusEndpoint, WhoisQueryEndpoint
+from ..endpoints_api import MetricsEndpoint, StatusEndpoint, WhoisQueryEndpoint
+from ..metrics_generator import MetricsGenerator
 from ..status_generator import StatusGenerator
 
 
-class TestStatusEndpoint:
+class StatusAccessListEndpointBase:
     def setup_method(self):
         self.mock_request = HTTPConnection(
             {
@@ -30,7 +31,7 @@ class TestStatusEndpoint:
                 "client": ("127.0.0.1", "8000"),
             }
         )
-        self.endpoint = StatusEndpoint(scope=self.mock_request, receive=None, send=None)
+        self.endpoint = self.endpoint_class(scope=self.mock_request, receive=None, send=None)
 
     def test_status_no_access_list(self):
         response = self.endpoint.get(self.mock_request)
@@ -53,11 +54,11 @@ class TestStatusEndpoint:
             }
         )
 
-        mock_database_status_generator = Mock(spec=StatusGenerator)
+        mock_generator = Mock(spec=self.generator_class)
         monkeypatch.setattr(
-            "irrd.server.http.endpoints_api.StatusGenerator", lambda: mock_database_status_generator
+            f"irrd.server.http.endpoints_api.{self.generator_class.__name__}", lambda: mock_generator
         )
-        mock_database_status_generator.generate_status = lambda: "status"
+        mock_generator.generate = lambda: "status"
 
         response = self.endpoint.get(self.mock_request)
         assert response.status_code == 200
@@ -81,6 +82,16 @@ class TestStatusEndpoint:
         response = self.endpoint.get(self.mock_request)
         assert response.status_code == 403
         assert response.body == b"Access denied"
+
+
+class TestStatusEndpoint(StatusAccessListEndpointBase):
+    endpoint_class = StatusEndpoint
+    generator_class = StatusGenerator
+
+
+class TestMetricsEndpoint(StatusAccessListEndpointBase):
+    endpoint_class = MetricsEndpoint
+    generator_class = MetricsGenerator
 
 
 class TestWhoisQueryEndpoint:

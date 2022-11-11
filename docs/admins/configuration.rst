@@ -248,7 +248,8 @@ Servers
   |br| **Change takes effect**: after SIGHUP.
 * ``server.http.status_access_list``: a reference to an access list in the
   configuration, where only IPs in the access list are permitted access to the
-  :doc:`HTTP status page </admins/status_page>`. If not defined, all access is denied.
+  :doc:`HTTP status page </admins/status_page>` and
+  :doc:`Prometheus metrics </admins/prometheus-metrics>`. If not defined, all access is denied.
   |br| **Default**: not defined, all access denied for HTTP status page
   |br| **Change takes effect**: after SIGHUP.
 * ``server.http.event_stream_access_list``: a reference to an access list in the
