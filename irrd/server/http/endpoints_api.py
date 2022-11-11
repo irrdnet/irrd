@@ -19,6 +19,7 @@ from ...storage.models import AuthoritativeChangeOrigin
 from ..whois.query_parser import WhoisQueryParser
 from ..whois.query_response import WhoisQueryResponseType
 from .status_generator import StatusGenerator
+from .metrics_generator import MetricsGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,15 @@ class StatusEndpoint(HTTPEndpoint):
             return PlainTextResponse("Access denied", status_code=403)
 
         response = StatusGenerator().generate_status()
+        return PlainTextResponse(response)
+
+
+class MetricsEndpoint(HTTPEndpoint):
+    def get(self, request: Request) -> Response:
+        if not is_client_permitted(request.client.host, 'server.http.status_access_list'):
+            return PlainTextResponse('Access denied', status_code=403)
+
+        response = MetricsGenerator().generate_metrics()
         return PlainTextResponse(response)
 
 

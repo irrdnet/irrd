@@ -26,6 +26,7 @@ from irrd.server.graphql.schema_builder import build_executable_schema
 from irrd.server.http.endpoints_api import (
     ObjectSubmissionEndpoint,
     StatusEndpoint,
+    MetricsEndpoint,
     SuspensionSubmissionEndpoint,
     WhoisQueryEndpoint,
 )
@@ -118,6 +119,7 @@ routes = [
     Mount("/graphql", graphql),
     Mount("/ui", name="ui", routes=UI_ROUTES),
     Mount("/static", name="static", app=StaticFiles(directory=STATIC_DIR)),
+    Mount("/metrics", MetricsEndpoint),
     WebSocketRoute("/v1/event-stream/", EventStreamEndpoint),
     Route("/v1/event-stream/initial/", EventStreamInitialDownloadEndpoint),
 ]
