@@ -43,7 +43,7 @@ python-graphql-client==0.4.2
 
 # Documentation generation
 Sphinx==4.3.2  # pyup: <4.4  # importlib-metadata conflict with flake8
-sphinxcontrib-spelling==7.6.1
+sphinxcontrib-spelling==7.7.0
 sphinx-material==0.0.35
 
 # Code style and type checks
