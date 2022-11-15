@@ -44,7 +44,6 @@ class MetricsGenerator:
             self._generate_serial_last_export(status),
             self._generate_serial_oldest_journal(status),
             self._generate_serial_newest_journal(status),
-            pprint.pformat(status),
         ]
         database_handler.close()
         return '\n'.join(results) + '\n'
