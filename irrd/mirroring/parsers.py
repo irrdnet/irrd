@@ -326,7 +326,9 @@ class NRTMStreamParser(MirrorParser):
 
         if self.nrtm_source and last_comment_seen.upper().strip() != f'%END {self.source}':
             msg = f'NRTM stream error for {self.source}: last comment paragraph expected to be ' \
-                  f'"%END {self.source}", but is actually {last_comment_seen.upper().strip()}'
+                  f'"%END {self.source}", but is actually "{last_comment_seen.upper().strip()}" - ' \
+                  'could be caused by TCP disconnection during NRTM query or mirror server ' \
+                  'returning an error or an otherwise incomplete or invalid response'
             logger.error(msg)
             self.database_handler.record_mirror_error(self.source, msg)
             raise ValueError(msg)
