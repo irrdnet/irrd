@@ -148,7 +148,6 @@ class EventStreamEndpoint(WebSocketEndpoint):
         assert self.database_handler
         query = RPSLDatabaseJournalQuery().serial_journal_range(after_journal_serial + 1)
         journal_entries = await self.database_handler.execute_query_async(query)
-        new_highest_serial_journal = 0
 
         for entry in journal_entries:
             object_text = remove_auth_hashes(entry['object_text'])
@@ -168,9 +167,9 @@ class EventStreamEndpoint(WebSocketEndpoint):
                     'parsed_data': rpsl_obj.parsed_data,
                 }
             }))
-            new_highest_serial_journal = max([entry['serial_journal'], new_highest_serial_journal])
+            after_journal_serial = max([entry['serial_journal'], after_journal_serial])
 
-        return new_highest_serial_journal
+        return after_journal_serial
 
     async def on_receive(self, websocket: WebSocket, data: Any) -> None:
         try:
