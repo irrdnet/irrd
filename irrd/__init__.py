@@ -1,2 +1,2 @@
-__version__ = '4.2.5'
+__version__ = '4.2.6'
 ENV_MAIN_PROCESS_PID = 'IRRD_MAIN_PROCESS_PID'
