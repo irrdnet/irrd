@@ -1,0 +1,14 @@
+============================
+Release notes for IRRd 4.2.6
+============================
+
+IRRd 4.2.6 was released on November 18th, 2022, and fixes two issues:
+
+* IRRD whois connections could `stay stuck in FIN_WAIT2`_ state,
+  which may also have lead to `workers to stop responding`_ to
+  queries in some cases. This was addressed by adding a missing
+  timeout to read calls on these connections.
+* A few small changes were made to improve unclear log messages.
+
+.. _stay stuck in FIN_WAIT2: https://github.com/irrdnet/irrd/issues/607
+.. _workers to stop responding: https://github.com/irrdnet/irrd/issues/693
