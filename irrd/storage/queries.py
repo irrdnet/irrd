@@ -447,7 +447,7 @@ class RPSLDatabaseJournalStatisticsQuery:
 
     def __init__(self):
         self.statement = sa.select([
-            sa.func.max(self.columns.serial_global).label('max_serial_journal'),
+            sa.func.max(self.columns.serial_global).label('max_serial_global'),
             sa.func.max(self.columns.timestamp).label('max_timestamp'),
         ])
 

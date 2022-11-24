@@ -88,7 +88,7 @@ class DatabaseHandler:
         except Exception:  # pragma: no cover
             pass
         try:
-            self._connection.close()
+            self.close()
         except Exception:  # pragma: no cover
             pass
         self._connection = get_engine().connect()
@@ -634,7 +634,8 @@ class DatabaseHandler:
         self.status_tracker.record_serial_exported(source, serial)
 
     def close(self) -> None:
-        self.status_tracker.close()
+        if not self.readonly:
+            self.status_tracker.close()
         self._connection.close()
 
     def _check_write_permitted(self):

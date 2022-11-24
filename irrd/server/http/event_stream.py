@@ -11,7 +11,7 @@ import pydantic
 import ujson
 from starlette.endpoints import WebSocketEndpoint, HTTPEndpoint
 from starlette.requests import Request
-from starlette.responses import Response, StreamingResponse
+from starlette.responses import Response, StreamingResponse, PlainTextResponse
 from starlette.status import WS_1003_UNSUPPORTED_DATA
 from starlette.websockets import WebSocket
 
@@ -33,6 +33,12 @@ class EventStreamInitialDownloadEndpoint(HTTPEndpoint):
     async def get(self, request: Request) -> Response:
         sources = request.query_params.get('sources')
         object_classes = request.query_params.get('object_classes')
+        unknown_get_parameters = set(request.query_params.keys()) - {'sources', 'object_classes'}
+        if unknown_get_parameters:
+            return PlainTextResponse(
+                status_code=400,
+                content=f"Unknown GET parameters: {', '.join(unknown_get_parameters)}"
+            )
         return StreamingResponse(
             self.stream_response(
                 sources.split(',') if sources else [],
