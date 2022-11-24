@@ -88,7 +88,7 @@ class DatabaseHandler:
         except Exception:  # pragma: no cover
             pass
         try:
-            self.close()
+            self._connection.close()
         except Exception:  # pragma: no cover
             pass
         self._connection = get_engine().connect()
@@ -634,6 +634,7 @@ class DatabaseHandler:
         self.status_tracker.record_serial_exported(source, serial)
 
     def close(self) -> None:
+        self.status_tracker.close()
         self._connection.close()
 
     def _check_write_permitted(self):
@@ -689,7 +690,6 @@ class DatabaseStatusTracker:
     def __init__(self, database_handler: DatabaseHandler, journaling_enabled=True) -> None:
         self.database_handler = database_handler
         self.journaling_enabled = journaling_enabled
-        # TODO: will never be closed
         self.event_stream_publisher = EventStreamPublisher()
         self.reset()
 
@@ -758,7 +758,7 @@ class DatabaseStatusTracker:
                 serial_nrtm=serial_nrtm,
                 origin=origin,
                 timestamp=timestamp,
-            ).returning(self.c_journal.serial_nrtm, self.c_journal.serial_journal)
+            ).returning(self.c_journal.serial_nrtm)
             insert_result = self.database_handler.execute_statement(stmt).fetchone()
 
             self._new_serials_per_source[source].add(insert_result['serial_nrtm'])
@@ -845,17 +845,17 @@ class DatabaseStatusTracker:
             )
             self.database_handler.execute_statement(stmt)
 
-        # may trigger for serial update too TODO
-        logger.critical(f'About to store sources update for {self._new_serials_per_source.keys()}')
         for source in self._new_serials_per_source.keys():
             self.event_stream_publisher.publish_update(source=source)
-        # logger.critical('completed!')
         self.reset()
 
     @lru_cache(maxsize=100)
     def _is_serial_synchronised(self, source: str) -> bool:
         # Cached wrapper method
         return is_serial_synchronised(self.database_handler, source)
+
+    def close(self):
+        self.event_stream_publisher.close()
 
     def reset(self):
         self._new_serials_per_source = defaultdict(set)

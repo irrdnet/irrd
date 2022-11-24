@@ -17,26 +17,26 @@ depends_on = None
 
 def upgrade():
     from sqlalchemy.schema import Sequence, CreateSequence
-    op.execute(CreateSequence(Sequence('rpsl_database_journal_serial_journal_seq')))
-    op.add_column('rpsl_database_journal', sa.Column('serial_journal', sa.BigInteger(), nullable=True))
+    op.execute(CreateSequence(Sequence('rpsl_database_journal_serial_global_seq')))
+    op.add_column('rpsl_database_journal', sa.Column('serial_global', sa.BigInteger(), nullable=True))
 
     op.execute("""UPDATE rpsl_database_journal SET
-        serial_journal = rpsl_database_journal_new.serial_journal_new
+        serial_global = rpsl_database_journal_new.serial_global_new
         FROM rpsl_database_journal AS rpsl_database_journal_old
         LEFT JOIN (
-            SELECT *, nextval('rpsl_database_journal_serial_journal_seq') AS serial_journal_new
+            SELECT *, nextval('rpsl_database_journal_serial_global_seq') AS serial_global_new
             FROM rpsl_database_journal
             ORDER BY timestamp,source, serial_nrtm
         ) AS rpsl_database_journal_new USING (pk)
         WHERE rpsl_database_journal.pk = rpsl_database_journal_old.pk
     """)
 
-    op.alter_column('rpsl_database_journal', 'serial_journal', server_default=sa.text("nextval('rpsl_database_journal_serial_journal_seq')"), nullable=False)
-    op.create_index(op.f('ix_rpsl_database_journal_serial_journal'), 'rpsl_database_journal', ['serial_journal'], unique=True)
+    op.alter_column('rpsl_database_journal', 'serial_global', server_default=sa.text("nextval('rpsl_database_journal_serial_global_seq')"), nullable=False)
+    op.create_index(op.f('ix_rpsl_database_journal_serial_global'), 'rpsl_database_journal', ['serial_global'], unique=True)
 
 
 def downgrade():
     from sqlalchemy.schema import Sequence, DropSequence
-    op.drop_index(op.f('ix_rpsl_database_journal_serial_journal'), table_name='rpsl_database_journal')
-    op.drop_column('rpsl_database_journal', 'serial_journal')
-    op.execute(DropSequence(Sequence('rpsl_database_journal_serial_journal_seq')))
+    op.drop_index(op.f('ix_rpsl_database_journal_serial_global'), table_name='rpsl_database_journal')
+    op.drop_column('rpsl_database_journal', 'serial_global')
+    op.execute(DropSequence(Sequence('rpsl_database_journal_serial_global_seq')))

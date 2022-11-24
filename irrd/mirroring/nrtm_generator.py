@@ -57,7 +57,7 @@ class NRTMGenerator:
 
         serial_end_display = serial_end_available if serial_end_requested is None else serial_end_requested
 
-        q = RPSLDatabaseJournalQuery().sources([source]).serial_range(serial_start_requested, serial_end_requested)
+        q = RPSLDatabaseJournalQuery().sources([source]).serial_nrtm_range(serial_start_requested, serial_end_requested)
         operations = list(database_handler.execute_query(q))
 
         output = f'%START Version: {version} {source} {serial_start_requested}-{serial_end_display}\n'

@@ -105,9 +105,8 @@ class RPSLDatabaseJournal(Base):  # type: ignore
     # Serial_journal is intended to allow querying by insertion order.
     # This could almost be met by the timestamp, except that fails in case
     # of clock changes. Unique and in insertion order, but may have gaps.
-    # TODO: we really need to rename this for conflict with serial_oldest_journal
-    serial_journal_seq = sa.Sequence("rpsl_database_journal_serial_journal_seq")
-    serial_journal = sa.Column(sa.BigInteger, serial_journal_seq, server_default=serial_journal_seq.next_value(), nullable=False, index=True, unique=True)
+    serial_global_seq = sa.Sequence("rpsl_database_journal_serial_global_seq")
+    serial_global = sa.Column(sa.BigInteger, serial_global_seq, server_default=serial_global_seq.next_value(), nullable=False, index=True, unique=True)
 
     rpsl_pk = sa.Column(sa.String, index=True, nullable=False)
     source = sa.Column(sa.String, index=True, nullable=False)

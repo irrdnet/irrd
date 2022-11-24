@@ -51,7 +51,7 @@ class EventStreamInitialDownloadEndpoint(HTTPEndpoint):
             'data_type': 'irrd_event_stream_initial_download',
             'sources_filter': sources,
             'object_classes_filter': object_classes,
-            'max_serial_journal': journal_stats['max_serial_journal'],
+            'max_serial_global': journal_stats['max_serial_global'],
             'last_change_timestamp': journal_stats['max_timestamp'].isoformat(),
             'generated_at': datetime.datetime.utcnow().isoformat(),
             'generated_on': socket.gethostname(),
@@ -146,7 +146,7 @@ class EventStreamEndpoint(WebSocketEndpoint):
 
     async def _send_new_journal_entries(self, websocket: WebSocket, after_journal_serial: int) -> int:
         assert self.database_handler
-        query = RPSLDatabaseJournalQuery().serial_journal_range(after_journal_serial + 1)
+        query = RPSLDatabaseJournalQuery().serial_global_range(after_journal_serial + 1)
         journal_entries = await self.database_handler.execute_query_async(query)
 
         for entry in journal_entries:
@@ -159,7 +159,7 @@ class EventStreamEndpoint(WebSocketEndpoint):
                     'source': entry['source'],
                     'operation': entry['operation'].name,
                     'object_class': entry['object_class'],
-                    'serial_journal': entry['serial_journal'],
+                    'serial_global': entry['serial_global'],
                     'serial_nrtm': entry['serial_nrtm'],
                     'origin': entry['origin'].name,
                     'timestamp': entry['timestamp'].isoformat(),
@@ -167,7 +167,7 @@ class EventStreamEndpoint(WebSocketEndpoint):
                     'parsed_data': rpsl_obj.parsed_data,
                 }
             }))
-            after_journal_serial = max([entry['serial_journal'], after_journal_serial])
+            after_journal_serial = max([entry['serial_global'], after_journal_serial])
 
         return after_journal_serial
 
@@ -191,19 +191,19 @@ class EventStreamEndpoint(WebSocketEndpoint):
 
         self.database_handler = await DatabaseHandler.create_async(readonly=True)
         journal_stats = next(self.database_handler.execute_query(RPSLDatabaseJournalStatisticsQuery()))
-        max_serial_journal = journal_stats['max_serial_journal']
+        max_serial_global = journal_stats['max_serial_global']
         if request.after_journal_serial:
-            if request.after_journal_serial > max_serial_journal:
+            if request.after_journal_serial > max_serial_global:
                 await websocket.send_json({
                     'message_type': 'invalid_request',
-                    'errors': [{'msg': f'The maximum known serial is {max_serial_journal}'}],
+                    'errors': [{'msg': f'The maximum known serial is {max_serial_global}'}],
                 })
                 self.database_handler.close()
                 return
 
             after_journal_serial = request.after_journal_serial
         else:
-            after_journal_serial = max_serial_journal
+            after_journal_serial = max_serial_global
 
         self.streaming_task = asyncio.create_task(self._run_monitor(websocket, after_journal_serial))
 

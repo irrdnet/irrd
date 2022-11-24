@@ -407,7 +407,7 @@ class RPSLDatabaseJournalQuery(BaseRPSLObjectDatabaseQuery):
             self.columns.rpsl_pk,
             self.columns.source,
             self.columns.serial_nrtm,
-            self.columns.serial_journal,
+            self.columns.serial_global,
             self.columns.operation,
             self.columns.object_class,
             self.columns.object_text,
@@ -415,18 +415,17 @@ class RPSLDatabaseJournalQuery(BaseRPSLObjectDatabaseQuery):
             self.columns.timestamp,
         ]).order_by(self.columns.source.asc(), self.columns.serial_nrtm.asc())
 
-    # TODO: rename to serial_nrtm_range
-    def serial_range(self, start: int, end: Optional[int]=None):
+    def serial_nrtm_range(self, start: int, end: Optional[int]=None):
         """
         Filter for NRTM serials within a specific range, inclusive.
         """
         return self._filter_range(self.columns.serial_nrtm, start, end)
 
-    def serial_journal_range(self, start: int, end: Optional[int]=None):
+    def serial_global_range(self, start: int, end: Optional[int]=None):
         """
         Filter for journal-wide serials within a specific range, inclusive.
         """
-        return self._filter_range(self.columns.serial_journal, start, end)
+        return self._filter_range(self.columns.serial_global, start, end)
 
     def _filter_range(self, target: sa.Column, start: int, end: Optional[int]=None):
         if end is not None:
@@ -448,7 +447,7 @@ class RPSLDatabaseJournalStatisticsQuery:
 
     def __init__(self):
         self.statement = sa.select([
-            sa.func.max(self.columns.serial_journal).label('max_serial_journal'),
+            sa.func.max(self.columns.serial_global).label('max_serial_journal'),
             sa.func.max(self.columns.timestamp).label('max_timestamp'),
         ])
 
