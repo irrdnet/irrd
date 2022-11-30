@@ -59,6 +59,7 @@ class DatabaseHandler:
         No transaction will be started, all queries will use autocommit.
         Readonly is always true if database_readonly is set in the config.
         """
+        self.status_tracker = None
         if get_setting('database_readonly'):
             self.readonly = True
         else:
@@ -73,7 +74,7 @@ class DatabaseHandler:
 
     @classmethod
     @sync_to_async
-    def create_async(cls, readonly=False):
+    def create_async(cls, readonly=False) -> 'DatabaseHandler':
         return cls(readonly=readonly)
 
     def refresh_connection(self) -> None:
@@ -105,6 +106,8 @@ class DatabaseHandler:
         self._roa_insert_buffer = []
         self._object_classes_modified: Set[str] = set()
         self._rpsl_guaranteed_no_existing = True
+        if self.status_tracker:
+            self.status_tracker.close()
         self.status_tracker = DatabaseStatusTracker(self, journaling_enabled=self.journaling_enabled)
 
     def disable_journaling(self):
@@ -567,6 +570,7 @@ class DatabaseHandler:
         stmt = table.delete(table.c.source == source)
         self._connection.execute(stmt)
         if not journal_guaranteed_empty:
+            table = RPSLDatabaseJournal.__table__
             stmt = table.delete(table.c.source == source)
             self._connection.execute(stmt)
         table = RPSLDatabaseStatus.__table__
@@ -636,6 +640,7 @@ class DatabaseHandler:
     def close(self) -> None:
         if not self.readonly:
             self.status_tracker.close()
+            self.status_tracker = None
         self._connection.close()
 
     def _check_write_permitted(self):

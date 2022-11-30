@@ -18,10 +18,10 @@ from irrd.rpki.notifications import notify_rpki_invalid_owners
 from irrd.rpki.validators import BulkRouteROAValidator
 from irrd.scopefilter.validators import ScopeFilterValidator
 from irrd.storage.database_handler import DatabaseHandler
+from irrd.storage.event_stream import EventStreamPublisher
 from irrd.storage.queries import DatabaseStatusQuery
 from irrd.utils.whois_client import whois_query
 from .parsers import MirrorFileImportParser, NRTMStreamParser
-from ..storage.event_stream import EventStreamPublisher
 
 logger = logging.getLogger(__name__)
 

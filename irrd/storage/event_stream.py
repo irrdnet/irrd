@@ -1,11 +1,12 @@
 import asyncio
+import logging
 from typing import Tuple
 
 import coredis
 import redis
 from coredis.response.types import StreamInfo, StreamEntry
 
-from ..conf import get_setting
+from irrd.conf import get_setting
 
 EVENT_STREAM_MAX_WAIT_MS = 60000
 
@@ -17,7 +18,7 @@ REDIS_STREAM_RPSL = 'irrd-eventstream-rpsl-stream'
 REDIS_STREAM_MAX_LEN = 1000
 
 
-class AsyncEventStreamClient:
+class AsyncEventStreamRedisClient:
     @classmethod
     async def create(cls):
         redis_conn = await coredis.Redis(
