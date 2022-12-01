@@ -4,7 +4,7 @@ Event Stream
 
 .. danger::
     This is early documentation on a feature in development.
-    Details and particularly all naming is subject to finetuning.
+    Details and particularly all naming is subject to fine tuning.
 
 IRRd can provide an WebSocket event stream of push messages for all changes
 to IRR objects. In the future, this may contain other events in IRRd.

@@ -9,7 +9,7 @@ def flatten_mock_calls(mock, flatten_objects=False):
     result = []
     retained_classes = (int, list, tuple, set, bytes, bytearray)
 
-    for call in mock.mock_calls:
+    for call in mock if isinstance(mock, list) else mock.mock_calls:
         call = list(call)
         call_name = call[0]
         if '.' in str(call_name):

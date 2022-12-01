@@ -17,7 +17,26 @@ from irrd.utils.validators import parse_as_number, ValidationError
 logger = logging.getLogger(__name__)
 
 
-class BaseRPSLObjectDatabaseQuery:
+class BaseDatabaseQuery:
+
+    def __init__(self):  # pragma: no cover
+        self.statement = sa.select([1])
+
+    def __eq__(self, other):
+        return all([
+            str(self.statement) == str(other.statement),
+            self.statement.compile().params == other.statement.compile().params,
+            getattr(self, "_query_frozen", False) is getattr(other, "_query_frozen", False)
+        ])
+
+    def finalise_statement(self):
+        return self.statement
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}: {self.statement}\nPARAMS: {self.statement.compile().params}'
+
+
+class BaseRPSLObjectDatabaseQuery(BaseDatabaseQuery):
     statement: Select
     table: sa.Table
     columns: ColumnCollection
@@ -388,9 +407,6 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
             or (self._set_object_classes and 'inetnum' not in self._set_object_classes)
         ) and not get_setting('compatibility.irrd42_migration_in_progress')
 
-    def __repr__(self):
-        return f'{self.statement}\nPARAMS: {self.statement.compile().params}'
-
 
 class RPSLDatabaseJournalQuery(BaseRPSLObjectDatabaseQuery):
     """
@@ -434,11 +450,8 @@ class RPSLDatabaseJournalQuery(BaseRPSLObjectDatabaseQuery):
             fltr = target >= start
         return self._filter(fltr)
 
-    def __repr__(self):
-        return f'RPSLDatabaseJournalQuery: {self.statement}\nPARAMS: {self.statement.compile().params}'
 
-
-class RPSLDatabaseJournalStatisticsQuery:
+class RPSLDatabaseJournalStatisticsQuery(BaseDatabaseQuery):
     """
     Special journal statistics query.
     """
@@ -450,12 +463,6 @@ class RPSLDatabaseJournalStatisticsQuery:
             sa.func.max(self.columns.serial_global).label('max_serial_global'),
             sa.func.max(self.columns.timestamp).label('max_timestamp'),
         ])
-
-    def finalise_statement(self):
-        return self.statement
-
-    def __repr__(self):
-        return f'RPSLDatabaseJournalStatisticsQuery: {self.statement}\nPARAMS: {self.statement.compile().params}'
 
 
 class RPSLDatabaseSuspendedQuery(BaseRPSLObjectDatabaseQuery):
@@ -477,11 +484,8 @@ class RPSLDatabaseSuspendedQuery(BaseRPSLObjectDatabaseQuery):
         fltr = self.columns.mntners.any(mntner_rpsl_pk)
         return self._filter(fltr)
 
-    def __repr__(self):
-        return f'RPSLDatabaseSuspendedQuery: {self.statement}\nPARAMS: {self.statement.compile().params}'
 
-
-class DatabaseStatusQuery:
+class DatabaseStatusQuery(BaseDatabaseQuery):
     table = RPSLDatabaseStatus.__table__
     columns = RPSLDatabaseStatus.__table__.c
 
@@ -534,11 +538,8 @@ class DatabaseStatusQuery:
         self.statement = self.statement.where(fltr)
         return self
 
-    def __repr__(self):
-        return f'DatabaseStatusQuery: {self.statement}\nPARAMS: {self.statement.compile().params}'
 
-
-class RPSLDatabaseObjectStatisticsQuery:
+class RPSLDatabaseObjectStatisticsQuery(BaseDatabaseQuery):
     """
     Special statistics query, calculating the number of
     objects per object class per source.
@@ -553,14 +554,8 @@ class RPSLDatabaseObjectStatisticsQuery:
             sa.func.count(self.columns.pk).label('count'),
         ]).group_by(self.columns.source, self.columns.object_class)
 
-    def finalise_statement(self):
-        return self.statement
 
-    def __repr__(self):
-        return f'RPSLDatabaseObjectStatisticsQuery: {self.statement}\nPARAMS: {self.statement.compile().params}'
-
-
-class ROADatabaseObjectQuery:
+class ROADatabaseObjectQuery(BaseDatabaseQuery):
     """
     Query builder for ROA objects.
     """
@@ -568,7 +563,6 @@ class ROADatabaseObjectQuery:
     columns = ROADatabaseObject.__table__.c
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self.statement = sa.select([
             self.columns.pk,
             self.columns.prefix,
@@ -585,9 +579,3 @@ class ROADatabaseObjectQuery:
         )
         self.statement = self.statement.where(fltr)
         return self
-
-    def finalise_statement(self):
-        return self.statement
-
-    def __repr__(self):
-        return f'ROADatabaseObjectQuery: {self.statement}\nPARAMS: {self.statement.compile().params}'

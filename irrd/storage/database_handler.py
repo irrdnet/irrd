@@ -75,7 +75,7 @@ class DatabaseHandler:
     @classmethod
     @sync_to_async
     def create_async(cls, readonly=False) -> 'DatabaseHandler':
-        return cls(readonly=readonly)
+        return cls(readonly=readonly)  # pragma: no cover
 
     def refresh_connection(self) -> None:
         """
@@ -147,7 +147,7 @@ class DatabaseHandler:
 
     @sync_to_async
     def execute_query_async(self, query: QueryType, flush_rpsl_buffer=True, refresh_on_error=False) -> RPSLDatabaseResponse:
-        return self.execute_query(query, flush_rpsl_buffer, refresh_on_error)
+        return self.execute_query(query, flush_rpsl_buffer, refresh_on_error)  # pragma: no cover
 
     def execute_query(self, query: QueryType, flush_rpsl_buffer=True, refresh_on_error=False) -> RPSLDatabaseResponse:
         """
@@ -638,7 +638,7 @@ class DatabaseHandler:
         self.status_tracker.record_serial_exported(source, serial)
 
     def close(self) -> None:
-        if not self.readonly:
+        if self.status_tracker:
             self.status_tracker.close()
             self.status_tracker = None
         self._connection.close()
