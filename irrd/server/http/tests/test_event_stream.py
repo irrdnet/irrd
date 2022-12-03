@@ -4,28 +4,25 @@ import json
 import unittest
 from collections import OrderedDict
 from datetime import datetime
-from typing import Tuple, List, Union
+from typing import Tuple, Union
 from unittest.mock import create_autospec
 
 import pytest
 from coredis.response.types import StreamEntry
-from freezegun import freeze_time
 from starlette.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
 from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.scopefilter.status import ScopeFilterStatus
-from irrd.storage.database_handler import QueryType, RPSLDatabaseResponse
 from irrd.storage.event_stream import OPERATION_JOURNAL_EXTENDED
-from irrd.storage.models import DatabaseOperation, JournalEntryOrigin
 from irrd.storage.queries import (
     RPSLDatabaseJournalStatisticsQuery,
     RPSLDatabaseJournalQuery,
-    DatabaseStatusQuery,
     RPSLDatabaseQuery,
 )
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
+from irrd.utils.test_utils import MockDatabaseHandler
 from irrd.vendor import postgres_copy
 from ..app import app
 from ..event_stream import AsyncEventStreamFollower
@@ -35,73 +32,14 @@ def create_autospec_async_compat(spec):  # pragma: no cover
     if hasattr(unittest.mock, "AsyncMock"):
         return create_autospec(spec)
     else:
+        # AsyncMock is not available in 3.7
         import asyncmock
 
         return asyncmock.AsyncMock(spec)
 
 
-class MockDatabaseHandler:
-    instances: List["MockDatabaseHandler"] = []
-
-    @classmethod
-    def reset(cls):
-        cls.instances = []
-
-    @classmethod
-    async def create_async(cls, readonly=False):
-        return cls(readonly=readonly)
-
-    def __init__(self, readonly=False):
-        self._connection = None
-        self.closed = False
-        self.readonly = readonly
-        self.queries = []
-        self.serial_global = 0
-        self.serial_nrtm = 0
-        self.__class__.instances.append(self)
-
-    async def execute_query_async(
-        self, query: QueryType, flush_rpsl_buffer=True, refresh_on_error=False
-    ) -> RPSLDatabaseResponse:
-        return self.execute_query(query, flush_rpsl_buffer, refresh_on_error)
-
-    def execute_query(self, query: QueryType, flush_rpsl_buffer=True, refresh_on_error=False) -> RPSLDatabaseResponse:
-        self.serial_nrtm += 1
-        self.serial_global += 2
-        self.queries.append(query)
-
-        if type(query) == RPSLDatabaseJournalStatisticsQuery:
-            yield {
-                "max_timestamp": datetime.utcnow(),
-                "max_serial_global": 42,
-            }
-        elif type(query) == RPSLDatabaseJournalQuery:
-            yield {
-                "rpsl_pk": "TEST-MNT",
-                "source": "TEST",
-                "operation": DatabaseOperation.add_or_update,
-                "object_class": "mntner",
-                "serial_global": self.serial_global,
-                "serial_nrtm": self.serial_nrtm,
-                "origin": JournalEntryOrigin.auth_change,
-                "timestamp": datetime.utcnow(),  # freezegun
-                "object_text": SAMPLE_MNTNER,
-            }
-        elif type(query) == DatabaseStatusQuery:
-            yield {
-                "source": "TEST",
-                "created": datetime.utcnow(),
-            }
-
-        else:  # pragma: no cover
-            raise ValueError(f"Unknown query in MockDatabaseHandler: {query}")
-
-    def close(self):
-        self.closed = True
-
-
 class TestEventStreamInitialDownloadEndpoint:
-    @freeze_time("2022-03-14 12:34:56")
+    @pytest.mark.freeze_time("2022-03-14 12:34:56")
     async def test_endpoint_success(self, monkeypatch, config_override):
         config_override(
             {
@@ -109,7 +47,7 @@ class TestEventStreamInitialDownloadEndpoint:
                     "TEST": {"keep_journal": True},
                     "IGNORED": {},
                 },
-                "server": {'http': {'event_stream_access_list': 'access_list'}},
+                "server": {"http": {"event_stream_access_list": "access_list"}},
                 "access_lists": {"access_list": "testclient"},
             }
         )
@@ -135,25 +73,25 @@ class TestEventStreamInitialDownloadEndpoint:
         monkeypatch.setattr("irrd.server.http.event_stream.postgres_copy.copy_to", mock_copy_to)
 
         client = TestClient(app)
-        response = client.get("/event-stream/initial/", params={"sources": "TEST", "object_classes": "mntner"})
+        response = client.get("/v1/event-stream/initial/", params={"sources": "TEST", "object_classes": "mntner"})
         assert response.status_code == 200
-        lines = [json.loads(line) for line in response.text.splitlines()]
+        header, rpsl_obj = [json.loads(line) for line in response.text.splitlines()]
 
-        assert lines[0]["data_type"] == "irrd_event_stream_initial_download"
-        assert lines[0]["sources_filter"] == ["TEST"]
-        assert lines[0]["object_classes_filter"] == ["mntner"]
-        assert lines[0]["max_serial_global"] == 42
-        assert lines[0]["last_change_timestamp"] == "2022-03-14T12:34:56"
-        assert lines[0]["generated_at"] == "2022-03-14T12:34:56"
-        assert lines[1]["pk"] == "TEST-MNT"
+        assert header["data_type"] == "irrd_event_stream_initial_download"
+        assert header["sources_filter"] == ["TEST"]
+        assert header["object_classes_filter"] == ["mntner"]
+        assert header["max_serial_global"] == 42
+        assert header["last_change_timestamp"] == "2022-03-14T12:34:56"
+        assert header["generated_at"] == "2022-03-14T12:34:56"
 
-        assert lines[1]["parsed_data"]["auth"] == [
+        assert rpsl_obj["pk"] == "TEST-MNT"
+        assert rpsl_obj["parsed_data"]["auth"] == [
             "PGPKey-80F238C6",
             "CRYPT-Pw DummyValue  # Filtered for security",
             "MD5-pw DummyValue  # Filtered for security",
             "bcrypt-pw DummyValue  # Filtered for security",
         ]
-        assert "DummyValue" in lines[1]["object_text"]
+        assert "DummyValue" in rpsl_obj["object_text"]
 
         db_query = mock_copy_to.mock_calls[0][2]["source"]
         expected_statement = (
@@ -178,23 +116,23 @@ class TestEventStreamInitialDownloadEndpoint:
     async def test_endpoint_unknown_get(self, monkeypatch, config_override):
         config_override(
             {
-                "server": {'http': {'event_stream_access_list': 'access_list'}},
+                "server": {"http": {"event_stream_access_list": "access_list"}},
                 "access_lists": {"access_list": "testclient"},
             }
         )
         client = TestClient(app)
-        response = client.get("/event-stream/initial/", params={"unknown param": 2})
+        response = client.get("/v1/event-stream/initial/", params={"unknown param": 2})
         assert response.status_code == 400
         assert response.text == "Unknown GET parameters: unknown param"
 
     async def test_endpoint_access_denied(self, monkeypatch, config_override):
         client = TestClient(app)
-        response = client.get("/event-stream/initial/", params={"unknown param": 2})
+        response = client.get("/v1/event-stream/initial/", params={"unknown param": 2})
         assert response.status_code == 403
 
 
 class TestEventStreamEndpoint:
-    @freeze_time("2022-03-14 12:34:56")
+    @pytest.mark.freeze_time("2022-03-14 12:34:56")
     async def test_endpoint(self, monkeypatch, config_override):
         config_override(
             {
@@ -202,7 +140,7 @@ class TestEventStreamEndpoint:
                     "TEST": {"keep_journal": True},
                     "IGNORED": {},
                 },
-                "server": {'http': {'event_stream_access_list': 'access_list'}},
+                "server": {"http": {"event_stream_access_list": "access_list"}},
                 "access_lists": {"access_list": "testclient"},
             }
         )
@@ -213,15 +151,15 @@ class TestEventStreamEndpoint:
         monkeypatch.setattr("irrd.server.http.event_stream.AsyncEventStreamFollower", mock_event_stream_follower)
 
         client = TestClient(app)
-        with client.websocket_connect("/event-stream/") as websocket:
+        with client.websocket_connect("/v1/event-stream/") as websocket:
             header = websocket.receive_json()
             assert header == {
                 "message_type": "stream_status",
                 "streamed_sources": ["TEST"],
                 "last_reload_times": {"TEST": "2022-03-14T12:34:56"},
             }
-            websocket.send_json({"message_type": "subscribe", "event_type": "rpsl"})
-            websocket.send_json({"message_type": "subscribe", "event_type": "rpsl"})
+            websocket.send_json({"message_type": "subscribe"})
+            websocket.send_json({"message_type": "subscribe"})
             error = websocket.receive_json()
             assert error == {
                 "message_type": "invalid_request",
@@ -229,7 +167,7 @@ class TestEventStreamEndpoint:
             }
             websocket.close()
 
-        with client.websocket_connect("/event-stream/") as websocket:
+        with client.websocket_connect("/v1/event-stream/") as websocket:
             websocket.receive_json()  # discard header
             websocket.send_json({"message_type": "invalid"})
             error = websocket.receive_json()
@@ -238,7 +176,7 @@ class TestEventStreamEndpoint:
 
     async def test_endpoint_access_denied(self, monkeypatch, config_override):
         client = TestClient(app)
-        with client.websocket_connect("/event-stream/") as websocket:
+        with client.websocket_connect("/v1/event-stream/") as websocket:
             with pytest.raises(WebSocketDisconnect):
                 websocket.receive_text()
 
@@ -266,8 +204,8 @@ class MockAsyncEventStreamRedisClient:
 
 
 class TestAsyncEventStreamFollower:
-    @pytest.mark.parametrize("after_journal_serial,expected_serial_starts", [(None, [43, 43]), (0, [1, 5])])
-    async def test_follower_success(self, monkeypatch, after_journal_serial, expected_serial_starts):
+    @pytest.mark.parametrize("after_global_serial,expected_serial_starts", [(None, [43, 43]), (0, [1, 5])])
+    async def test_follower_success(self, monkeypatch, after_global_serial, expected_serial_starts):
         MockDatabaseHandler.reset()
         monkeypatch.setattr("irrd.server.http.event_stream.DatabaseHandler", MockDatabaseHandler)
         monkeypatch.setattr(
@@ -280,10 +218,9 @@ class TestAsyncEventStreamFollower:
         async def message_callback(message):
             messages.append(message)
 
-        follower = await AsyncEventStreamFollower.create("127.0.0.1", after_journal_serial, message_callback)
+        follower = await AsyncEventStreamFollower.create("127.0.0.1", after_global_serial, message_callback)
         await asyncio.sleep(1)
         await follower.close()
-
         assert follower.stream_client.closed
 
         assert len(MockDatabaseHandler.instances) == 1
@@ -293,32 +230,36 @@ class TestAsyncEventStreamFollower:
         assert mock_dh.queries[0] == RPSLDatabaseJournalStatisticsQuery()
         assert mock_dh.queries[1] == RPSLDatabaseJournalQuery().serial_global_range(expected_serial_starts.pop(0))
         assert mock_dh.queries[2] == RPSLDatabaseJournalQuery().serial_global_range(expected_serial_starts.pop(0))
-        assert messages[0]["message_type"] == "rpsl_journal"
-        assert messages[0]["event_data"]["pk"] == "TEST-MNT"
-        assert messages[0]["event_data"]["serial_global"] == 4
-        assert messages[0]["event_data"]["parsed_data"]["auth"] == [
+
+        msg_journal1, event_journal_extended, msg_journal2 = messages
+
+        assert msg_journal1["message_type"] == "rpsl_journal"
+        assert msg_journal1["event_data"]["pk"] == "TEST-MNT"
+        assert msg_journal1["event_data"]["serial_global"] == 4
+        assert msg_journal1["event_data"]["parsed_data"]["auth"] == [
             "PGPKey-80F238C6",
             "CRYPT-Pw DummyValue",
             "MD5-pw DummyValue",
             "bcrypt-pw DummyValue",
         ]
-        assert "DummyValue" in messages[0]["event_data"]["object_text"]
+        assert "DummyValue" in msg_journal1["event_data"]["object_text"]
 
-        assert messages[1] == {
-            "message_type": "event_rpsl",
-            "rpsl_event_id": "$",
+        assert event_journal_extended == {
+            "message_type": "event",
+            "event_id": "$",
             "event_data": {"source": "TEST", "operation": "journal_extended"},
         }
-        assert messages[2]["message_type"] == "rpsl_journal"
-        assert messages[2]["event_data"]["pk"] == "TEST-MNT"
-        assert messages[2]["event_data"]["serial_global"] == 6
-        assert messages[2]["event_data"]["parsed_data"]["auth"] == [
+
+        assert msg_journal2["message_type"] == "rpsl_journal"
+        assert msg_journal2["event_data"]["pk"] == "TEST-MNT"
+        assert msg_journal2["event_data"]["serial_global"] == 6
+        assert msg_journal2["event_data"]["parsed_data"]["auth"] == [
             "PGPKey-80F238C6",
             "CRYPT-Pw DummyValue",
             "MD5-pw DummyValue",
             "bcrypt-pw DummyValue",
         ]
-        assert "DummyValue" in messages[2]["event_data"]["object_text"]
+        assert "DummyValue" in msg_journal2["event_data"]["object_text"]
 
     async def test_follower_invalid_serial(self, monkeypatch, event_loop):
         MockDatabaseHandler.reset()

@@ -17,12 +17,13 @@ class TestRedisEventStream:
         publisher.publish_rpsl_full_reload("TEST")
 
         assert await client.get_entries(REDIS_STREAM_END_IDENTIFIER) == ()
-        entries = await client.get_entries("0-0")
-        assert entries[0].field_values == {
+        journal_extended_entry, full_reload_entry = await client.get_entries("0-0")
+
+        assert journal_extended_entry.field_values == {
             "source": "TEST",
             "operation": "journal_extended",
         }
-        assert entries[1].field_values == {
+        assert full_reload_entry.field_values == {
             "source": "TEST",
             "operation": "full_reload",
         }

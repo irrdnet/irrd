@@ -18,7 +18,7 @@ def is_client_permitted(ip: str, access_list_setting: str, default_deny=True, lo
 
     IPv6-mapped IPv4 addresses are unmapped to regular IPv4 addresses before processing.
     """
-    bypass_auth = ip == STARLETTE_TEST_CLIENT_HOST and sys._called_from_test  # type: ignore
+    bypass_auth = ip == STARLETTE_TEST_CLIENT_HOST and getattr(sys, "_called_from_test")  # type: ignore
 
     client_ip = None
     if not bypass_auth:

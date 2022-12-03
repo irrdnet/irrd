@@ -245,7 +245,7 @@ Servers
   |br| **Change takes effect**: after SIGHUP.
 * ``server.http.event_stream_access_list``: a reference to an access list in the
   configuration, where only IPs in the access list are permitted access to the
-  :doc:`event stream </users/query/event-stream>` initial download and websocket
+  :doc:`event stream </users/queries/event-stream>` initial download and WebSocket
   stream. If not defined, all access is denied.
   |br| **Default**: not defined, all access denied for event stream.
   |br| **Change takes effect**: after SIGHUP.

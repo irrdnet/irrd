@@ -1,4 +1,4 @@
-"""add_journal_serial
+"""add_global_serial
 
 Revision ID: 8b8357acd333
 Revises: 0548f1aa4f10

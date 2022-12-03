@@ -21,11 +21,13 @@ from .models import RPSLDatabaseObject, RPSLDatabaseJournal, DatabaseOperation, 
     ROADatabaseObject, JournalEntryOrigin, RPSLDatabaseObjectSuspended
 from .preload import Preloader
 from .queries import (BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery,
-                      RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery)
+                      RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery,
+                      RPSLDatabaseJournalStatisticsQuery)
 
 QueryType = Union[
     BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery,
-    RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery
+    RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery,
+    RPSLDatabaseJournalStatisticsQuery
 ]
 
 logger = logging.getLogger(__name__)
@@ -746,7 +748,7 @@ class DatabaseStatusTracker:
             serial_nrtm: Union[int, sa.sql.expression.Select]
             journal_tablename = RPSLDatabaseJournal.__tablename__
 
-            # Locking this table is one of the few ways to guarantee serial_journal in order
+            # Locking this table is one of the few ways to guarantee serial_global in order (#685)
             self.database_handler.execute_statement(f'LOCK TABLE {journal_tablename} IN EXCLUSIVE MODE')
             if self._is_serial_synchronised(source):
                 serial_nrtm = source_serial

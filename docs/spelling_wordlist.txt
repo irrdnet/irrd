@@ -89,5 +89,4 @@ utils
 validator
 validators
 virtualenv
-websocket
 whois

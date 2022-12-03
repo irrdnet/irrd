@@ -44,6 +44,7 @@ twisted==22.8.0    # Used for a mock email server in integration tests
 python-graphql-client==0.4.2
 pytest-asyncio==0.20.2
 freezegun==1.2.2
+pytest-freezegun==0.4.2
 asyncmock==0.4.2; python_version < '3.8'
 
 # Documentation generation

@@ -37,9 +37,9 @@ logger = logging.getLogger(__name__)
 
 class EventStreamInitialDownloadEndpoint(HTTPEndpoint):
     async def get(self, request: Request) -> Response:
-        host = request.client.host if request.client else "[unknown client]"
-        if not is_client_permitted(host, 'server.http.event_stream_access_list'):
-            return PlainTextResponse('Access denied', status_code=403)
+        assert request.client
+        if not is_client_permitted(request.client.host, "server.http.event_stream_access_list"):
+            return PlainTextResponse("Access denied", status_code=403)
 
         sources = request.query_params.get("sources")
         object_classes = request.query_params.get("object_classes")
@@ -50,7 +50,7 @@ class EventStreamInitialDownloadEndpoint(HTTPEndpoint):
             )
         return StreamingResponse(
             EventStreamInitialDownloadGenerator(
-                request.client.host if request.client else "[unknown client]",
+                request.client.host,
                 sources.split(",") if sources else [],
                 object_classes.split(",") if object_classes else [],
             ).stream_response(),
@@ -59,7 +59,7 @@ class EventStreamInitialDownloadEndpoint(HTTPEndpoint):
 
 
 class EventStreamInitialDownloadGenerator:
-    def __init__(self, host, sources: List[str], object_classes: List[str]):
+    def __init__(self, host: str, sources: List[str], object_classes: List[str]):
         self.host = host
         self.sources = sources
         self.object_classes = object_classes
@@ -79,12 +79,15 @@ class EventStreamInitialDownloadGenerator:
         query = await self.generate_sql_query()
 
         with tempfile.TemporaryFile(mode="w+") as temp_csv:
-            logger.info(
+            logger.debug(
                 f"event stream {self.host}: received request for initial download, "
                 f"copying data to temporary file {temp_csv.name}"
             )
             postgres_copy.copy_to(
-                source=query.finalise_statement(), dest=temp_csv, engine_or_conn=self.dh._connection, format="csv"
+                source=query.finalise_statement(),
+                dest=temp_csv,
+                engine_or_conn=self.dh._connection,
+                format="csv",
             )
 
             temp_csv.seek(0)
@@ -136,16 +139,16 @@ class EventStreamEndpoint(WebSocketEndpoint):
     websocket = None
 
     async def on_connect(self, websocket: WebSocket) -> None:
+        assert websocket.client
         await websocket.accept()
-        host = websocket.client.host if websocket.client else "[unknown client]"
-        if not is_client_permitted(host, 'server.http.event_stream_access_list'):
+        if not is_client_permitted(websocket.client.host, "server.http.event_stream_access_list"):
             await websocket.close(code=WS_1008_POLICY_VIOLATION)
             return
 
         self.websocket = websocket
         await self.send_header()
 
-    async def send_header(self):
+    async def send_header(self) -> None:
         journaled_sources = [name for name, settings in get_setting("sources").items() if settings.get("keep_journal")]
         dh = DatabaseHandler(readonly=True)
         query = DatabaseStatusQuery().sources(journaled_sources)
@@ -160,13 +163,13 @@ class EventStreamEndpoint(WebSocketEndpoint):
             }
         )
 
-    async def message_callback(self, message: Any):
+    async def message_callback(self, message: Any) -> None:
         assert self.websocket
         await self.websocket.send_text(ujson.encode(message))
 
     async def on_receive(self, websocket: WebSocket, data: Any) -> None:
-        host = websocket.client.host if websocket.client else "[unknown client]"
-        logger.debug(f"event stream {host}: received {data}")
+        assert websocket.client
+        logger.debug(f"event stream {websocket.client.host}: received {data}")
         try:
             request = EventStreamSubscriptionRequest.parse_raw(data)
         except pydantic.ValidationError as exc:
@@ -189,7 +192,7 @@ class EventStreamEndpoint(WebSocketEndpoint):
             return
 
         self.stream_follower = await AsyncEventStreamFollower.create(
-            host, request.after_journal_serial, self.message_callback
+            websocket.client.host, request.after_global_serial, self.message_callback
         )
 
     async def on_disconnect(self, websocket: WebSocket, close_code: int) -> None:
@@ -200,14 +203,13 @@ class EventStreamEndpoint(WebSocketEndpoint):
 
 class EventStreamSubscriptionRequest(pydantic.main.BaseModel):
     message_type: Literal["subscribe"]
-    event_type: Literal["rpsl"]
-    after_journal_serial: Optional[int]
+    after_global_serial: Optional[int]
 
 
 class AsyncEventStreamFollower:
     @classmethod
     async def create(
-        cls, host: str, after_journal_serial: Optional[int], callback: Callable
+        cls, host: str, after_global_serial: Optional[int], callback: Callable
     ) -> Optional["AsyncEventStreamFollower"]:
         database_handler = await DatabaseHandler.create_async(readonly=True)
         stream_client = await AsyncEventStreamRedisClient.create()
@@ -215,8 +217,10 @@ class AsyncEventStreamFollower:
 
         journal_stats = next(self.database_handler.execute_query(RPSLDatabaseJournalStatisticsQuery()))
         max_serial_global = journal_stats["max_serial_global"]
-        if after_journal_serial is not None:
-            if after_journal_serial > max_serial_global:
+
+        if after_global_serial is not None:
+            self.after_global_serial = after_global_serial
+            if after_global_serial > max_serial_global:
                 await self.callback(
                     {
                         "message_type": "invalid_request",
@@ -225,15 +229,19 @@ class AsyncEventStreamFollower:
                 )
                 self.database_handler.close()
                 return None
-
-            self.after_journal_serial = after_journal_serial
         else:
-            self.after_journal_serial = max_serial_global
+            self.after_global_serial = max_serial_global
 
         self.streaming_task = asyncio.create_task(self._run_monitor())
         return self
 
-    def __init__(self, host: str, database_handler, stream_client, callback: Callable):
+    def __init__(
+        self,
+        host: str,
+        database_handler: DatabaseHandler,
+        stream_client: AsyncEventStreamRedisClient,
+        callback: Callable,
+    ):
         self.streaming_task: Optional[asyncio.Task] = None
         self.host = host
         self.database_handler = database_handler
@@ -242,7 +250,7 @@ class AsyncEventStreamFollower:
 
     async def _run_monitor(self) -> None:
         after_redis_event_id = REDIS_STREAM_END_IDENTIFIER
-        logger.info(f"event stream {self.host}: sending entries from global serial {self.after_journal_serial}")
+        logger.info(f"event stream {self.host}: sending entries from global serial {self.after_global_serial}")
         await self._send_new_journal_entries()
         logger.debug(f"event stream {self.host}: initial send complete, waiting for new events")
         while True:
@@ -251,8 +259,8 @@ class AsyncEventStreamFollower:
             for entry in entries:
                 await self.callback(
                     {
-                        "message_type": "event_rpsl",
-                        "rpsl_event_id": entry.identifier,
+                        "message_type": "event",
+                        "event_id": entry.identifier,
                         "event_data": entry.field_values,
                     }
                 )
@@ -262,11 +270,13 @@ class AsyncEventStreamFollower:
             await self._send_new_journal_entries()
 
     async def _send_new_journal_entries(self):
-        query = RPSLDatabaseJournalQuery().serial_global_range(self.after_journal_serial + 1)
+        query = RPSLDatabaseJournalQuery().serial_global_range(self.after_global_serial + 1)
         journal_entries = await self.database_handler.execute_query_async(query)
 
         for entry in journal_entries:
             object_text = remove_auth_hashes(entry["object_text"])
+            # The message should include parsed_data (#685), but that info is not available
+            # in the journal. Therefore, we reparse the object at the cost of some overhead.
             rpsl_obj = rpsl_object_from_text(object_text, strict_validation=False)
             await self.callback(
                 {
@@ -285,9 +295,9 @@ class AsyncEventStreamFollower:
                     },
                 }
             )
-            self.after_journal_serial = max([entry["serial_global"], self.after_journal_serial])
+            self.after_global_serial = max([entry["serial_global"], self.after_global_serial])
 
-        logger.debug(f"event stream {self.host}: sent new changes up to global serial {self.after_journal_serial}")
+        logger.debug(f"event stream {self.host}: sent new changes up to global serial {self.after_global_serial}")
 
     async def close(self):
         if self.streaming_task.done():
