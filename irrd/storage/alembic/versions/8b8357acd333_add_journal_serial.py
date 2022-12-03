@@ -17,21 +17,26 @@ depends_on = None
 
 def upgrade():
     from sqlalchemy.schema import Sequence, CreateSequence
-    op.execute(CreateSequence(Sequence('rpsl_database_journal_serial_global_seq')))
+    op.execute(CreateSequence(Sequence('rpsl_database_journal_serial_global_seq', start=1000000)))
     op.add_column('rpsl_database_journal', sa.Column('serial_global', sa.BigInteger(), nullable=True))
 
-    op.execute("""UPDATE rpsl_database_journal SET
+    op.execute("""
+    UPDATE rpsl_database_journal SET
         serial_global = rpsl_database_journal_new.serial_global_new
         FROM rpsl_database_journal AS rpsl_database_journal_old
-        LEFT JOIN (
+        RIGHT JOIN (
             SELECT *, nextval('rpsl_database_journal_serial_global_seq') AS serial_global_new
             FROM rpsl_database_journal
-            ORDER BY timestamp,source, serial_nrtm
+            WHERE timestamp IN (
+                SELECT MAX(timestamp)
+                FROM rpsl_database_journal
+                GROUP BY source
+            ) ORDER BY timestamp
         ) AS rpsl_database_journal_new USING (pk)
         WHERE rpsl_database_journal.pk = rpsl_database_journal_old.pk
     """)
 
-    op.alter_column('rpsl_database_journal', 'serial_global', server_default=sa.text("nextval('rpsl_database_journal_serial_global_seq')"), nullable=False)
+    op.alter_column('rpsl_database_journal', 'serial_global', server_default=sa.text("nextval('rpsl_database_journal_serial_global_seq')"))
     op.create_index(op.f('ix_rpsl_database_journal_serial_global'), 'rpsl_database_journal', ['serial_global'], unique=True)
 
 
