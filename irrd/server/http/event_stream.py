@@ -12,7 +12,7 @@ import ujson
 from starlette.endpoints import WebSocketEndpoint, HTTPEndpoint
 from starlette.requests import Request
 from starlette.responses import Response, StreamingResponse, PlainTextResponse
-from starlette.status import WS_1003_UNSUPPORTED_DATA
+from starlette.status import WS_1003_UNSUPPORTED_DATA, WS_1008_POLICY_VIOLATION
 from starlette.websockets import WebSocket
 from typing_extensions import Literal
 
@@ -20,6 +20,7 @@ from irrd.conf import get_setting
 from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.scopefilter.status import ScopeFilterStatus
+from irrd.server.access_check import is_client_permitted
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.event_stream import AsyncEventStreamRedisClient, REDIS_STREAM_END_IDENTIFIER
 from irrd.storage.queries import (
@@ -36,6 +37,10 @@ logger = logging.getLogger(__name__)
 
 class EventStreamInitialDownloadEndpoint(HTTPEndpoint):
     async def get(self, request: Request) -> Response:
+        host = request.client.host if request.client else "[unknown client]"
+        if not is_client_permitted(host, 'server.http.event_stream_access_list'):
+            return PlainTextResponse('Access denied', status_code=403)
+
         sources = request.query_params.get("sources")
         object_classes = request.query_params.get("object_classes")
         unknown_get_parameters = set(request.query_params.keys()) - {"sources", "object_classes"}
@@ -132,6 +137,11 @@ class EventStreamEndpoint(WebSocketEndpoint):
 
     async def on_connect(self, websocket: WebSocket) -> None:
         await websocket.accept()
+        host = websocket.client.host if websocket.client else "[unknown client]"
+        if not is_client_permitted(host, 'server.http.event_stream_access_list'):
+            await websocket.close(code=WS_1008_POLICY_VIOLATION)
+            return
+
         self.websocket = websocket
         await self.send_header()
 

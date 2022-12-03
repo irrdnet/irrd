@@ -11,6 +11,7 @@ import pytest
 from coredis.response.types import StreamEntry
 from freezegun import freeze_time
 from starlette.testclient import TestClient
+from starlette.websockets import WebSocketDisconnect
 
 from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
@@ -107,7 +108,9 @@ class TestEventStreamInitialDownloadEndpoint:
                 "sources": {
                     "TEST": {"keep_journal": True},
                     "IGNORED": {},
-                }
+                },
+                "server": {'http': {'event_stream_access_list': 'access_list'}},
+                "access_lists": {"access_list": "testclient"},
             }
         )
 
@@ -173,10 +176,21 @@ class TestEventStreamInitialDownloadEndpoint:
         assert mock_dh.queries[0] == RPSLDatabaseJournalStatisticsQuery()
 
     async def test_endpoint_unknown_get(self, monkeypatch, config_override):
+        config_override(
+            {
+                "server": {'http': {'event_stream_access_list': 'access_list'}},
+                "access_lists": {"access_list": "testclient"},
+            }
+        )
         client = TestClient(app)
         response = client.get("/event-stream/initial/", params={"unknown param": 2})
         assert response.status_code == 400
         assert response.text == "Unknown GET parameters: unknown param"
+
+    async def test_endpoint_access_denied(self, monkeypatch, config_override):
+        client = TestClient(app)
+        response = client.get("/event-stream/initial/", params={"unknown param": 2})
+        assert response.status_code == 403
 
 
 class TestEventStreamEndpoint:
@@ -187,7 +201,9 @@ class TestEventStreamEndpoint:
                 "sources": {
                     "TEST": {"keep_journal": True},
                     "IGNORED": {},
-                }
+                },
+                "server": {'http': {'event_stream_access_list': 'access_list'}},
+                "access_lists": {"access_list": "testclient"},
             }
         )
 
@@ -219,6 +235,12 @@ class TestEventStreamEndpoint:
             error = websocket.receive_json()
             # insert_assert(error)
             assert error["message_type"] == "invalid_request"
+
+    async def test_endpoint_access_denied(self, monkeypatch, config_override):
+        client = TestClient(app)
+        with client.websocket_connect("/event-stream/") as websocket:
+            with pytest.raises(WebSocketDisconnect):
+                websocket.receive_text()
 
 
 class MockAsyncEventStreamRedisClient:

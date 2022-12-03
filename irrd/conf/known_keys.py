@@ -17,6 +17,7 @@ KNOWN_CONFIG_KEYS = DottedDict({
             'interface': {},
             'port': {},
             'status_access_list': {},
+            'event_stream_access_list': {},
             'workers': {},
             'forwarded_allowed_ips': {},
         },

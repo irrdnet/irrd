@@ -243,6 +243,12 @@ Servers
   :doc:`HTTP status page </admins/status_page>`. If not defined, all access is denied.
   |br| **Default**: not defined, all access denied for HTTP status page
   |br| **Change takes effect**: after SIGHUP.
+* ``server.http.event_stream_access_list``: a reference to an access list in the
+  configuration, where only IPs in the access list are permitted access to the
+  :doc:`event stream </users/query/event_stream>` initial download and websocket
+  stream. If not defined, all access is denied.
+  |br| **Default**: not defined, all access denied for event stream.
+  |br| **Change takes effect**: after SIGHUP.
 * ``server.whois.max_connections``: the maximum number of simultaneous whois
   connections permitted. Note that each permitted connection will result in
   one IRRd whois worker to be started, each of which use about 200 MB memory.
