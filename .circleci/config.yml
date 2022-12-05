@@ -9,35 +9,37 @@ parameters:
 
 workflows:
   test-regular:
-    when: not << pipeline.parameters.build_extensive >>
+    when:
+      condition:
+        - not: << pipeline.parameters.build_extensive >>
     jobs:
       - unit_tests_cpython:
           name: unit-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
           matrix:
             parameters:
               python_version: ["3.7", "3.11"]
-              postgres_version: ["9.6", "15.0"]
+              postgres_version: ["15.0"]
               redis_version: ["5.0"]
       - unit_tests_pypy:
           name: unit-tests-pypy<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
           matrix:
             parameters:
               python_version: ["3.7", "3.9"]
-              postgres_version: ["9.6", "15.0"]
+              postgres_version: ["15.0"]
               redis_version: ["5.0"]
       - integration_tests_cpython:
           name: integration-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
           matrix:
             parameters:
               python_version: ["3.7", "3.11"]
-              postgres_version: ["9.6", "15.0"]
+              postgres_version: ["15.0"]
               redis_version: ["5.0"]
       - integration_tests_pypy:
           name: integration-tests-pypy<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
           matrix:
             parameters:
               python_version: ["3.7", "3.9"]
-              postgres_version: ["9.6", "15.0"]
+              postgres_version: ["15.0"]
               redis_version: ["5.0"]
       - lint:
           name: lint-cpython-3-10
@@ -47,6 +49,7 @@ workflows:
           docker_image: cimg/python:3.10
 
   test-extensive:
+    # This job is about 10K credits
     when: << pipeline.parameters.build_extensive >>
     jobs:
       - unit_tests_cpython:
