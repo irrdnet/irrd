@@ -15,7 +15,7 @@ def get_engine():
         return engine
     engine = sa.create_engine(
         translate_url(get_setting('database_url')),
-        pool_size=2,
+        pool_size=50,
         json_deserializer=ujson.loads,
     )
 

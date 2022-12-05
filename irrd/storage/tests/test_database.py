@@ -288,35 +288,43 @@ class TestDatabaseHandlerLive:
         assert journal == [
             {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 1,
              'operation': DatabaseOperation.add_or_update, 'object_class': 'route',
-             'object_text': 'object-text', 'origin': JournalEntryOrigin.auth_change},
+             'object_text': 'object-text', 'origin': JournalEntryOrigin.auth_change,
+             'serial_global': 1},
             {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 2,
              'operation': DatabaseOperation.add_or_update, 'object_class': 'route',
-             'object_text': 'object-text', 'origin': JournalEntryOrigin.auth_change},
+             'object_text': 'object-text', 'origin': JournalEntryOrigin.auth_change,
+             'serial_global': 2},
             {'rpsl_pk': '2001:db8::/64,AS65537', 'source': 'TEST2', 'serial_nrtm': 42,
              'operation': DatabaseOperation.add_or_update, 'object_class': 'route',
-             'object_text': 'object-text', 'origin': JournalEntryOrigin.auth_change},
+             'object_text': 'object-text', 'origin': JournalEntryOrigin.auth_change,
+             'serial_global': 3},
             {'rpsl_pk': '2001:db8::/64,AS65537', 'source': 'TEST2', 'serial_nrtm': 43,
              'operation': DatabaseOperation.add_or_update, 'object_class': 'route',
-             'object_text': 'object-text', 'origin': JournalEntryOrigin.auth_change},
+             'object_text': 'object-text', 'origin': JournalEntryOrigin.auth_change,
+             'serial_global': 4},
             {'rpsl_pk': '2001:db8::/64,AS65537', 'source': 'TEST2', 'serial_nrtm': 44,
              'operation': DatabaseOperation.delete, 'object_class': 'route',
-             'object_text': 'object-text', 'origin': JournalEntryOrigin.auth_change},
+             'object_text': 'object-text', 'origin': JournalEntryOrigin.auth_change,
+             'serial_global': 7},
         ]
 
-        partial_journal = self._clean_result(self.dh.execute_query(RPSLDatabaseJournalQuery().sources(['TEST']).serial_range(1, 1)))
+        partial_journal = self._clean_result(self.dh.execute_query(RPSLDatabaseJournalQuery().sources(['TEST']).serial_nrtm_range(1, 1)))
         assert partial_journal == [
             {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 1,
              'operation': DatabaseOperation.add_or_update, 'object_class': 'route',
-             'object_text': 'object-text', 'origin': JournalEntryOrigin.auth_change},
+             'object_text': 'object-text', 'origin': JournalEntryOrigin.auth_change,
+             'serial_global': 1},
         ]
-        partial_journal = self._clean_result(self.dh.execute_query(RPSLDatabaseJournalQuery().sources(['TEST']).serial_range(1)))
+        partial_journal = self._clean_result(self.dh.execute_query(RPSLDatabaseJournalQuery().sources(['TEST']).serial_nrtm_range(1)))
         assert partial_journal == [
             {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 1,
              'operation': DatabaseOperation.add_or_update, 'object_class': 'route',
-             'object_text': 'object-text', 'origin': JournalEntryOrigin.auth_change},
+             'object_text': 'object-text', 'origin': JournalEntryOrigin.auth_change,
+             'serial_global': 1},
             {'rpsl_pk': '192.0.2.0/24,AS65537', 'source': 'TEST', 'serial_nrtm': 2,
              'operation': DatabaseOperation.add_or_update, 'object_class': 'route',
-             'object_text': 'object-text', 'origin': JournalEntryOrigin.auth_change},
+             'object_text': 'object-text', 'origin': JournalEntryOrigin.auth_change,
+             'serial_global': 2},
         ]
 
         # Override the config to enable synchronised serials for TEST
@@ -493,7 +501,7 @@ class TestDatabaseHandlerLive:
 
         dh.update_rpki_status(rpsl_objs_now_not_found=route_rpsl_objs)
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.not_found])))) == 2
-        journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_range(1, 1)))
+        journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_nrtm_range(1, 1)))
         assert journal_entry[0]['operation'] == DatabaseOperation.add_or_update
 
         dh.update_rpki_status()
@@ -502,28 +510,28 @@ class TestDatabaseHandlerLive:
 
         dh.update_rpki_status(rpsl_objs_now_invalid=route_rpsl_objs)
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.invalid])))) == 1
-        journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_range(2, 2)))
+        journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_nrtm_range(2, 2)))
         assert journal_entry[0]['operation'] == DatabaseOperation.delete
 
         dh.update_rpki_status(rpsl_objs_now_invalid=route_rpsl_objs)
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.invalid])))) == 1
-        journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_range(3, 3)))
+        journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_nrtm_range(3, 3)))
         assert journal_entry[0]['operation'] == DatabaseOperation.delete
 
         dh.update_rpki_status(rpsl_objs_now_not_found=route_rpsl_objs)
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.not_found])))) == 2
-        journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_range(4, 4)))
+        journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_nrtm_range(4, 4)))
         assert journal_entry[0]['operation'] == DatabaseOperation.add_or_update
 
         dh.update_rpki_status(rpsl_objs_now_valid=route_rpsl_objs)
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.valid])))) == 1
-        journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_range(5, 5)))
+        journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_nrtm_range(5, 5)))
         assert journal_entry[0]['operation'] == DatabaseOperation.add_or_update
 
         # A state change from valid to not_found should not trigger a journal entry
         route_rpsl_objs[0]['old_status'] = RPKIStatus.valid
         dh.update_rpki_status(rpsl_objs_now_valid=route_rpsl_objs)
-        assert not list(dh.execute_query(RPSLDatabaseJournalQuery().serial_range(6, 6)))
+        assert not list(dh.execute_query(RPSLDatabaseJournalQuery().serial_nrtm_range(6, 6)))
 
         # State change from invalid to valid should not create journal entry
         # if scope filter is still out of scope
@@ -533,7 +541,7 @@ class TestDatabaseHandlerLive:
         })
         dh.update_rpki_status(rpsl_objs_now_valid=route_rpsl_objs)
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.valid])))) == 1
-        assert not list(dh.execute_query(RPSLDatabaseJournalQuery().serial_range(6, 6)))
+        assert not list(dh.execute_query(RPSLDatabaseJournalQuery().serial_nrtm_range(6, 6)))
 
     def test_scopefilter_status_storage(self, monkeypatch, irrd_database, database_handler_with_route):
         monkeypatch.setenv('IRRD_SOURCES_TEST_KEEP_JOURNAL', '1')
@@ -551,7 +559,7 @@ class TestDatabaseHandlerLive:
 
         dh.update_scopefilter_status(rpsl_objs_now_out_scope_prefix=route_rpsl_objs)
         assert len(list(dh.execute_query(RPSLDatabaseQuery().scopefilter_status([ScopeFilterStatus.out_scope_prefix])))) == 1
-        journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_range(1, 1)))
+        journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_nrtm_range(1, 1)))
         assert journal_entry[0]['operation'] == DatabaseOperation.delete
 
         dh.update_scopefilter_status()
@@ -565,7 +573,7 @@ class TestDatabaseHandlerLive:
 
         dh.update_scopefilter_status(rpsl_objs_now_in_scope=route_rpsl_objs)
         assert len(list(dh.execute_query(RPSLDatabaseQuery().scopefilter_status([ScopeFilterStatus.in_scope])))) == 1
-        journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_range(2, 2)))
+        journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_nrtm_range(2, 2)))
         assert journal_entry[0]['operation'] == DatabaseOperation.add_or_update
 
         # Special case: updating the status from out to in scope while RPKI invalid,

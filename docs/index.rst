@@ -70,6 +70,7 @@ Running queries
    users/queries/index
    users/queries/graphql
    users/queries/whois
+   users/queries/event-stream
 
 For end users
 -------------

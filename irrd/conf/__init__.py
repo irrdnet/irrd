@@ -45,6 +45,14 @@ LOGGING = {
         'gnupg': {
             'level': 'INFO',
         },
+        'uvicorn': {
+            'level': 'INFO',
+        },
+        # Must be specified explicitly to disable tracing middleware,
+        # which adds substantial overhead
+        'uvicorn.error': {
+            'level': 'INFO',
+        },
         'sqlalchemy': {
             'level': 'WARNING',
         },

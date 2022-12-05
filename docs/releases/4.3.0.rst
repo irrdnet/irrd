@@ -80,6 +80,18 @@ Suspended objects act as if they have been deleted, but can be restored by an
 admin at a later time.
 
 
+Support for event stream
+------------------------
+IRRd now offers a :doc:`WebSocket-based event stream </users/queries/event-stream>`.
+All changes to IRR objects are published on this endpoint. There is
+also a new initial download endpoint that publishes all IRR data, with
+optional filtering, in JSONL format.
+
+In their current design, these features are not optimised for high volume
+use. Access is controlled by the new ``server.http.event_stream_access_list``
+setting, and by default all access is denied.
+
+
 Minimum Python version
 ----------------------
 The minimum Python version for IRRd is now 3.7. Python 3.6 is `end of life`_

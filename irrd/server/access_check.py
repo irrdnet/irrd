@@ -1,7 +1,11 @@
 import logging
+import sys
+
 from IPy import IP
 
 from irrd.conf import get_setting
+
+STARLETTE_TEST_CLIENT_HOST = "testclient"
 
 logger = logging.getLogger(__name__)
 
@@ -14,15 +18,19 @@ def is_client_permitted(ip: str, access_list_setting: str, default_deny=True, lo
 
     IPv6-mapped IPv4 addresses are unmapped to regular IPv4 addresses before processing.
     """
-    try:
-        client_ip = IP(ip)
-    except (ValueError, AttributeError) as e:
-        if log:
-            logger.error(f'Rejecting request as client IP could not be read from '
-                         f'{ip}: {e}')
-        return False
+    bypass_auth = ip == STARLETTE_TEST_CLIENT_HOST and getattr(sys, "_called_from_test")  # type: ignore
 
-    if client_ip.version() == 6:
+    client_ip = None
+    if not bypass_auth:
+        try:
+            client_ip = IP(ip)
+        except (ValueError, AttributeError) as e:
+            if log:
+                logger.error(f'Rejecting request as client IP could not be read from '
+                             f'{ip}: {e}')
+            return False
+
+    if client_ip and client_ip.version() == 6:
         try:
             client_ip = client_ip.v46map()
         except ValueError:
@@ -39,7 +47,7 @@ def is_client_permitted(ip: str, access_list_setting: str, default_deny=True, lo
         else:
             return True
 
-    allowed = any([client_ip in IP(allowed) for allowed in access_list])
+    allowed = bypass_auth or any([client_ip in IP(allowed) for allowed in access_list])
     if not allowed and log:
         logger.info(f'Rejecting request, IP not in access list {access_list_name}: {client_ip}')
     return allowed

@@ -7,7 +7,7 @@ from ariadne.asgi.handlers import GraphQLHTTPHandler
 from setproctitle import setproctitle
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
-from starlette.routing import Mount
+from starlette.routing import Mount, Route, WebSocketRoute
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 # Relative imports are not allowed in this file
@@ -16,7 +16,13 @@ from irrd.conf import config_init
 from irrd.server.graphql import ENV_UVICORN_WORKER_CONFIG_PATH
 from irrd.server.graphql.extensions import error_formatter, QueryMetadataExtension
 from irrd.server.graphql.schema_builder import build_executable_schema
-from irrd.server.http.endpoints import StatusEndpoint, SuspensionSubmissionEndpoint, WhoisQueryEndpoint, ObjectSubmissionEndpoint
+from irrd.server.http.endpoints import (
+    StatusEndpoint,
+    SuspensionSubmissionEndpoint,
+    WhoisQueryEndpoint,
+    ObjectSubmissionEndpoint,
+)
+from irrd.server.http.event_stream import EventStreamEndpoint, EventStreamInitialDownloadEndpoint
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.preload import Preloader
 from irrd.utils.process_support import memory_trim
@@ -39,7 +45,7 @@ async def startup():
     As these are run in a separate process, the config file
     is read from the environment.
     """
-    setproctitle('irrd-http-server-listener')
+    setproctitle("irrd-http-server-listener")
     global app
     config_path = os.getenv(ENV_UVICORN_WORKER_CONFIG_PATH)
     config_init(config_path)
@@ -47,13 +53,16 @@ async def startup():
         app.state.database_handler = DatabaseHandler(readonly=True)
         app.state.preloader = Preloader(enable_queries=True)
     except Exception as e:
-        logger.critical(f'HTTP worker failed to initialise preloader or database, '
-                        f'unable to start, terminating IRRd, traceback follows: {e}', exc_info=e)
+        logger.critical(
+            "HTTP worker failed to initialise preloader or database, "
+            f"unable to start, terminating IRRd, traceback follows: {e}",
+            exc_info=e,
+        )
         main_pid = os.getenv(ENV_MAIN_PROCESS_PID)
         if main_pid:
             os.kill(int(main_pid), signal.SIGTERM)
         else:
-            logger.error('Failed to terminate IRRd, unable to find main process PID')
+            logger.error("Failed to terminate IRRd, unable to find main process PID")
         return
 
 
@@ -78,6 +87,8 @@ routes = [
     Mount("/v1/submit", ObjectSubmissionEndpoint),
     Mount("/v1/suspension", SuspensionSubmissionEndpoint),
     Mount("/graphql", graphql),
+    WebSocketRoute("/v1/event-stream/", EventStreamEndpoint),
+    Route("/v1/event-stream/initial/", EventStreamInitialDownloadEndpoint),
 ]
 
 

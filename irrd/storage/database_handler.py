@@ -6,6 +6,7 @@ from io import StringIO
 from typing import List, Set, Dict, Any, Tuple, Iterator, Union, Optional
 
 import sqlalchemy as sa
+from asgiref.sync import sync_to_async
 from sqlalchemy.dialects import postgresql as pg
 
 from irrd.conf import get_setting
@@ -15,11 +16,19 @@ from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.vendor import postgres_copy
 from . import get_engine
+from .event_stream import EventStreamPublisher
 from .models import RPSLDatabaseObject, RPSLDatabaseJournal, DatabaseOperation, RPSLDatabaseStatus, \
     ROADatabaseObject, JournalEntryOrigin, RPSLDatabaseObjectSuspended
 from .preload import Preloader
 from .queries import (BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery,
-                      RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery)
+                      RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery,
+                      RPSLDatabaseJournalStatisticsQuery)
+
+QueryType = Union[
+    BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery,
+    RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery,
+    RPSLDatabaseJournalStatisticsQuery
+]
 
 logger = logging.getLogger(__name__)
 MAX_RECORDS_BUFFER_BEFORE_INSERT = 15000
@@ -52,6 +61,7 @@ class DatabaseHandler:
         No transaction will be started, all queries will use autocommit.
         Readonly is always true if database_readonly is set in the config.
         """
+        self.status_tracker = None
         if get_setting('database_readonly'):
             self.readonly = True
         else:
@@ -63,6 +73,11 @@ class DatabaseHandler:
         else:
             self._start_transaction()
             self.preloader = Preloader(enable_queries=False)
+
+    @classmethod
+    @sync_to_async
+    def create_async(cls, readonly=False) -> 'DatabaseHandler':
+        return cls(readonly=readonly)  # pragma: no cover
 
     def refresh_connection(self) -> None:
         """
@@ -93,6 +108,8 @@ class DatabaseHandler:
         self._roa_insert_buffer = []
         self._object_classes_modified: Set[str] = set()
         self._rpsl_guaranteed_no_existing = True
+        if self.status_tracker:
+            self.status_tracker.close()
         self.status_tracker = DatabaseStatusTracker(self, journaling_enabled=self.journaling_enabled)
 
     def disable_journaling(self):
@@ -130,11 +147,11 @@ class DatabaseHandler:
         if start_transaction:
             self._start_transaction()
 
-    def execute_query(self,
-                      query: Union[BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery, RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery],
-                      flush_rpsl_buffer=True,
-                      refresh_on_error=False,
-                      ) -> RPSLDatabaseResponse:
+    @sync_to_async
+    def execute_query_async(self, query: QueryType, flush_rpsl_buffer=True, refresh_on_error=False) -> RPSLDatabaseResponse:
+        return self.execute_query(query, flush_rpsl_buffer, refresh_on_error)  # pragma: no cover
+
+    def execute_query(self, query: QueryType, flush_rpsl_buffer=True, refresh_on_error=False) -> RPSLDatabaseResponse:
         """
         Execute an RPSLDatabaseQuery within the current transaction.
         If flush_rpsl_buffer is set, the RPSL object buffer is flushed first.
@@ -557,7 +574,7 @@ class DatabaseHandler:
         if not journal_guaranteed_empty:
             table = RPSLDatabaseJournal.__table__
             stmt = table.delete(table.c.source == source)
-        self._connection.execute(stmt)
+            self._connection.execute(stmt)
         table = RPSLDatabaseStatus.__table__
         stmt = table.delete(table.c.source == source)
         self._connection.execute(stmt)
@@ -623,6 +640,9 @@ class DatabaseHandler:
         self.status_tracker.record_serial_exported(source, serial)
 
     def close(self) -> None:
+        if self.status_tracker:
+            self.status_tracker.close()
+            self.status_tracker = None
         self._connection.close()
 
     def _check_write_permitted(self):
@@ -678,6 +698,7 @@ class DatabaseStatusTracker:
     def __init__(self, database_handler: DatabaseHandler, journaling_enabled=True) -> None:
         self.database_handler = database_handler
         self.journaling_enabled = journaling_enabled
+        self.event_stream_publisher = EventStreamPublisher()
         self.reset()
 
     def record_serial_newest_mirror(self, source: str, serial: int):
@@ -727,13 +748,15 @@ class DatabaseStatusTracker:
             serial_nrtm: Union[int, sa.sql.expression.Select]
             journal_tablename = RPSLDatabaseJournal.__tablename__
 
+            # Locking this table is one of the few ways to guarantee serial_global in order (#685)
+            self.database_handler.execute_statement(f'LOCK TABLE {journal_tablename} IN EXCLUSIVE MODE')
             if self._is_serial_synchronised(source):
                 serial_nrtm = source_serial
             else:
-                self.database_handler.execute_statement(f'LOCK TABLE {journal_tablename} IN EXCLUSIVE MODE')
                 serial_nrtm = sa.select([sa.text('COALESCE(MAX(serial_nrtm), 0) + 1')])
                 serial_nrtm = serial_nrtm.where(RPSLDatabaseJournal.__table__.c.source == source)
                 serial_nrtm = serial_nrtm.as_scalar()
+            timestamp = datetime.now(timezone.utc)
             stmt = RPSLDatabaseJournal.__table__.insert().values(
                 rpsl_pk=rpsl_pk,
                 source=source,
@@ -742,11 +765,11 @@ class DatabaseStatusTracker:
                 object_text=object_text,
                 serial_nrtm=serial_nrtm,
                 origin=origin,
+                timestamp=timestamp,
             ).returning(self.c_journal.serial_nrtm)
+            insert_result = self.database_handler.execute_statement(stmt).fetchone()
 
-            insert_result = self.database_handler.execute_statement(stmt)
-            inserted_serial = insert_result.fetchone()['serial_nrtm']
-            self._new_serials_per_source[source].add(inserted_serial)
+            self._new_serials_per_source[source].add(insert_result['serial_nrtm'])
 
     def finalise_transaction(self):
         """
@@ -830,12 +853,17 @@ class DatabaseStatusTracker:
             )
             self.database_handler.execute_statement(stmt)
 
+        for source in self._new_serials_per_source.keys():
+            self.event_stream_publisher.publish_update(source=source)
         self.reset()
 
     @lru_cache(maxsize=100)
     def _is_serial_synchronised(self, source: str) -> bool:
         # Cached wrapper method
         return is_serial_synchronised(self.database_handler, source)
+
+    def close(self):
+        self.event_stream_publisher.close()
 
     def reset(self):
         self._new_serials_per_source = defaultdict(set)
