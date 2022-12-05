@@ -104,6 +104,7 @@ recovered after being expired.
 Minimum Python version
 ----------------------
 The minimum Python version for IRRd is now 3.7. Python 3.6 is `end of life`_
-and therefore no longer supported.
+and therefore no longer supported. In turn, IRRd 4.3.0 will be the last
+version to support Python 3.8.
 
 .. _end of life: https://endoflife.date/python

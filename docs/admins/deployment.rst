@@ -20,14 +20,14 @@ Requirements
 IRRd requires:
 
 * Linux, OpenBSD or MacOS. Other platforms are untested, but may work.
-* PyPy or CPython 3.7 through 3.10 with `pip` and `virtualenv` installed.
+* PyPy or CPython 3.7 through 3.11 with `pip` and `virtualenv` installed.
   PyPy is slightly recommended over CPython (the "default" Python interpreter),
   due to improved performance, in the order of 10% for some queries,
   and even higher for some GraphQL queries. However, CPython remains fully
   supported, and CPython may be the better option for you if it is easier to
   install on your deployment platform.
-* A recent version of PostgreSQL. Versions 9.6 and 10.5 have been
-  extensively tested.
+* A recent version of PostgreSQL. Version 10 has been most extensively
+  tested, but 9.6, 11.16, 13.7, 15.0 are all tested before release.
 * At least 32GB RAM
 * At least 4 CPU cores
 * At least 150GB of disk space (SSD recommended)
@@ -76,10 +76,12 @@ You need to change a few PostgreSQL settings from their default:
   will be one open connection for:
   * Each permitted whois connection
   * Each HTTP worker
-  * Each running mirror import and export process
+  * Each running mirror import or export process
   * Each RPKI update process
   * Each run of ``irrd_load_database``
   * Each run of ``irrd_submit_email``
+  * Each open WebSocket connection for the :doc:`event stream </users/queries/event-stream>`
+
 * ``log_min_duration_statement`` can be useful to set to ``0`` initially,
   to log all SQL queries to aid in debugging any issues.
   Note that initial imports of data produce significant logs if all queries
@@ -88,8 +90,8 @@ You need to change a few PostgreSQL settings from their default:
 The transaction isolation level should be set to "Read committed". This is
 the default in PostgreSQL.
 
-The database will be in the order of three times as large as the size of
-the RPSL text imported.
+The initial database will be in the order of three times as large as the
+size of the RPSL text imported.
 
 .. important::
 
@@ -103,7 +105,7 @@ the RPSL text imported.
 Redis configuration
 -------------------
 Redis is required for communication and persistence between IRRd's processes.
-IRRd has been tested on Redis 3 and 4.
+IRRd releases are tested on Redis 5, 6 and 7.
 Beyond a default Redis installation, it is recommended to:
 
 * Increase ``maxmemory`` to 1GB (no limit is also fine). This is a hard
@@ -288,7 +290,9 @@ configuration to enable HTTPS, including redirects from plain HTTP.
 
 You can also use other services or your own configuration. You will likely
 need to increase some timeouts for slower queries. Enabling GZIP compression
-for ``text/plain`` and ``application/json`` responses is recommended.
+for ``text/plain``, ``application/json`` and
+``application/jsonl+json`` responses is recommended, for other responses
+compression should be disabled.
 If your service runs on a different host, set
 ``server.http.forwarded_allow_ips`` to let IRRd trust the
 ``X-Forwarded-For`` header.
