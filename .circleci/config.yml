@@ -9,6 +9,7 @@ parameters:
 
 workflows:
   test-regular:
+    # This workflow is about 400 credits
     when:
       condition:
         - not: << pipeline.parameters.build_extensive >>
@@ -49,7 +50,7 @@ workflows:
           docker_image: cimg/python:3.10
 
   test-extensive:
-    # This job is about 10K credits
+    # This workflow is about 10K credits
     when: << pipeline.parameters.build_extensive >>
     jobs:
       - unit_tests_cpython:
@@ -207,7 +208,7 @@ jobs:
           POSTGRES_HOST_AUTH_METHOD: trust
 
       - image: cimg/redis:<< parameters.redis_version >>
-      - image: cimg/rust:1.65.0
+      - image: cimg/rust:1.65
 
     steps:
       - checkout
@@ -243,7 +244,7 @@ jobs:
           POSTGRES_HOST_AUTH_METHOD: trust
 
       - image: cimg/redis:<< parameters.redis_version >>
-      - image: cimg/rust:1.65.0
+      - image: cimg/rust:1.65
 
     steps:
       - checkout
@@ -281,7 +282,7 @@ jobs:
           POSTGRES_HOST_AUTH_METHOD: trust
 
       - image: cimg/redis:<< parameters.redis_version >>
-      - image: cimg/rust:1.65.0
+      - image: cimg/rust:1.65
 
     steps:
       - checkout
@@ -320,7 +321,7 @@ jobs:
           POSTGRES_HOST_AUTH_METHOD: trust
 
       - image: cimg/redis:<< parameters.redis_version >>
-      - image: cimg/rust:1.65.0
+      - image: cimg/rust:1.65
 
     steps:
       - checkout
@@ -342,7 +343,7 @@ jobs:
         environment:
           PYTHON_INTERPRETER: python3
           SUDO: sudo
-      - image: cimg/rust:1.65.0
+      - image: cimg/rust:1.65
 
     steps:
       - checkout
@@ -373,7 +374,7 @@ jobs:
         environment:
           PYTHON_INTERPRETER: python3
           SUDO: sudo
-      - image: cimg/rust:1.65.0
+      - image: cimg/rust:1.65
 
     steps:
       - checkout
