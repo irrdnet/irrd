@@ -1,8 +1,15 @@
 # Check https://circleci.com/docs/2.0/language-python/ for more details
 #
 version: 2.1
+
+parameters:
+  build_extensive:
+    type: boolean
+    default: false
+
 workflows:
   test-regular:
+    when: not << pipeline.parameters.build_extensive >>
     jobs:
       - unit_tests_cpython:
           name: unit-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
@@ -38,43 +45,44 @@ workflows:
       - build_docs:
           name: build-docs-cpython-3-10
           docker_image: cimg/python:3.10
-#
-#  test-extensive:
-#    jobs:
-#      - unit_tests_cpython:
-#          name: unit-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
-#          matrix:
-#            parameters:
-#              python_version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
-#              postgres_version: ["9.6", "11.16", "13.7", "15.0"]
-#              redis_version: ["5.0", "6.2", "7.0"]
-#      - unit_tests_pypy:
-#          name: unit-tests-pypy<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
-#          matrix:
-#            parameters:
-#              python_version: ["3.7", "3.8", "3.9"]
-#              postgres_version: ["9.6", "11.16", "13.7", "15.0"]
-#              redis_version: ["5.0", "6.2", "7.0"]
-#      - integration_tests_cpython:
-#          name: integration-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
-#          matrix:
-#            parameters:
-#              python_version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
-#              postgres_version: ["9.6", "11.16", "13.7", "15.0"]
-#              redis_version: ["5.0", "6.2", "7.0"]
-#      - integration_tests_pypy:
-#          name: integration-tests-pypy<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
-#          matrix:
-#            parameters:
-#              python_version: ["3.7", "3.8", "3.9"]
-#              postgres_version: ["9.6", "11.16", "13.7", "15.0"]
-#              redis_version: ["5.0", "6.2", "7.0"]
-#      - lint:
-#          name: lint-cpython-3-10
-#          docker_image: cimg/python:3.10
-#      - build_docs:
-#          name: build-docs-cpython-3-10
-#          docker_image: cimg/python:3.10
+
+  test-extensive:
+    when: << pipeline.parameters.build_extensive >>
+    jobs:
+      - unit_tests_cpython:
+          name: unit-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
+          matrix:
+            parameters:
+              python_version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+              postgres_version: ["9.6", "11.16", "13.7", "15.0"]
+              redis_version: ["5.0", "6.2", "7.0"]
+      - unit_tests_pypy:
+          name: unit-tests-pypy<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
+          matrix:
+            parameters:
+              python_version: ["3.7", "3.8", "3.9"]
+              postgres_version: ["9.6", "11.16", "13.7", "15.0"]
+              redis_version: ["5.0", "6.2", "7.0"]
+      - integration_tests_cpython:
+          name: integration-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
+          matrix:
+            parameters:
+              python_version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+              postgres_version: ["9.6", "11.16", "13.7", "15.0"]
+              redis_version: ["5.0", "6.2", "7.0"]
+      - integration_tests_pypy:
+          name: integration-tests-pypy<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
+          matrix:
+            parameters:
+              python_version: ["3.7", "3.8", "3.9"]
+              postgres_version: ["9.6", "11.16", "13.7", "15.0"]
+              redis_version: ["5.0", "6.2", "7.0"]
+      - lint:
+          name: lint-cpython-3-10
+          docker_image: cimg/python:3.10
+      - build_docs:
+          name: build-docs-cpython-3-10
+          docker_image: cimg/python:3.10
 
 commands:
   install_dependencies:
