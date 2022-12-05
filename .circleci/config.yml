@@ -1,16 +1,15 @@
 # Check https://circleci.com/docs/2.0/language-python/ for more details
 #
-version: 2
+version: 2.1
 workflows:
-  version: 2
   test:
     jobs:
-      - cpython-3.7
-      - cpython-3.10
-      - pypy-3.9
-      - pypy-3.7
+      - cpython-3-7
+      - cpython-3-10
+      - pypy-3-9
+      - pypy-3-7
 jobs:
-  cpython-3.7:
+  cpython-3-7:
     &test-template
     resource_class: large
     docker:
@@ -139,7 +138,7 @@ jobs:
       - store_artifacts:
           path: /tmp/pytest-of-circleci/
 
-  cpython-3.10:
+  cpython-3-10:
     <<: *test-template
     docker:
       - image: cimg/python:3.10
@@ -162,7 +161,7 @@ jobs:
 
       - image: cimg/redis:5.0
 
-  pypy-3.9:
+  pypy-3-9:
     <<: *test-template
     docker:
       - image: pypy:3.9
@@ -174,7 +173,7 @@ jobs:
           IRRD_REDIS_URL_INTEGRATION_1: 'redis://localhost/4'
           IRRD_REDIS_URL_INTEGRATION_2: 'redis://localhost/5'
           PYTHON_INTERPRETER: pypy3
-          SUDO: ''
+          SUDO: sudo
           ENCHANT_PACKAGE: python3-enchant
 
       - image: cimg/postgres:10.17
@@ -185,7 +184,7 @@ jobs:
 
       - image: cimg/redis:5.0
 
-  pypy-3.7:
+  pypy-3-7:
     <<: *test-template
     docker:
       - image: pypy:3.7
@@ -197,7 +196,7 @@ jobs:
           IRRD_REDIS_URL_INTEGRATION_1: 'redis://localhost/4'
           IRRD_REDIS_URL_INTEGRATION_2: 'redis://localhost/5'
           PYTHON_INTERPRETER: pypy3
-          SUDO: ''
+          SUDO: sudo
           ENCHANT_PACKAGE: python3-enchant
 
       - image: cimg/postgres:10.17
