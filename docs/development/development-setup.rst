@@ -89,6 +89,7 @@ for style checking. To run these, run::
     flake8
 
 If all is well, neither command should provide output.
+The versions of these tools may only work on newer CPython versions.
 
 Exclusions from checks
 ----------------------
