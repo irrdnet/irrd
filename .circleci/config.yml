@@ -12,6 +12,7 @@ workflows:
 jobs:
   cpython-3.7:
     &test-template
+    resource_class: large
     docker:
       - image: cimg/python:3.7
         environment:
@@ -160,8 +161,6 @@ jobs:
           POSTGRES_HOST_AUTH_METHOD: trust
 
       - image: cimg/redis:5.0
-    # The resource_class feature allows configuring CPU and RAM resources for each job. Different resource classes are available for different executors. https://circleci.com/docs/2.0/configuration-reference/#resourceclass
-    resource_class: large
 
   pypy-3.9:
     <<: *test-template
