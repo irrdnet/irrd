@@ -39,6 +39,9 @@ and your query load.
 A number of other Python packages are required. However, those are
 automatically installed in the installation process.
 
+You may need to install other packages on your OS to build IRRd's
+dependencies. That includes developer packages for Python, Redis
+and PostgreSQL. You will also need a Rust compiler.
 
 PostgreSQL configuration
 ------------------------
