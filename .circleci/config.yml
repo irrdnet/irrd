@@ -101,16 +101,12 @@ commands:
           name: Installing psql client and enchant
           command: $SUDO apt -y install postgresql-client netcat python3-enchant
 
-      - run:
-          name: Install rust
-          command: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-
       - restore_cache:
           keys:
             - v16-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
               "requirements.txt" }}
             # fallback to using the latest cache if no exact match is found
-            - v16-dependencies-{{ .Environment.CIRCLE_JOB }}
+            - v17-dependencies-{{ .Environment.CIRCLE_JOB }}
 
       - run:
           name: install latest pip
@@ -130,7 +126,7 @@ commands:
       - save_cache:
           paths:
             - ./venv
-          key: v16-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
+          key: v17-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
             "requirements.txt" }}
 
   wait_for_postgres:
@@ -211,6 +207,7 @@ jobs:
           POSTGRES_HOST_AUTH_METHOD: trust
 
       - image: cimg/redis:<< parameters.redis_version >>
+      - image: cimg/rust:1.65.0
 
     steps:
       - checkout
@@ -246,6 +243,7 @@ jobs:
           POSTGRES_HOST_AUTH_METHOD: trust
 
       - image: cimg/redis:<< parameters.redis_version >>
+      - image: cimg/rust:1.65.0
 
     steps:
       - checkout
@@ -283,6 +281,7 @@ jobs:
           POSTGRES_HOST_AUTH_METHOD: trust
 
       - image: cimg/redis:<< parameters.redis_version >>
+      - image: cimg/rust:1.65.0
 
     steps:
       - checkout
@@ -321,6 +320,7 @@ jobs:
           POSTGRES_HOST_AUTH_METHOD: trust
 
       - image: cimg/redis:<< parameters.redis_version >>
+      - image: cimg/rust:1.65.0
 
     steps:
       - checkout
@@ -342,6 +342,7 @@ jobs:
         environment:
           PYTHON_INTERPRETER: python3
           SUDO: sudo
+      - image: cimg/rust:1.65.0
 
     steps:
       - checkout
@@ -372,6 +373,7 @@ jobs:
         environment:
           PYTHON_INTERPRETER: python3
           SUDO: sudo
+      - image: cimg/rust:1.65.0
 
     steps:
       - checkout
