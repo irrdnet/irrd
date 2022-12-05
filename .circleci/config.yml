@@ -44,40 +44,9 @@ workflows:
           docker_image: cimg/python:3.10
 
 
-jobs:
-  unit_tests:
-    parameters:
-      docker_image:
-        type: string
-      python_interpreter:
-        type: string
-        default: python3
-      sudo_command:
-        type: string
-        default: sudo
-
-    resource_class: large
-    docker:
-      - image: << parameters.docker_image >>
-        environment:
-          IRRD_DATABASE_URL: 'postgresql://root@localhost/circle_test'
-          IRRD_REDIS_URL: 'redis://localhost'
-          PYTHON_INTERPRETER: << parameters.python_interpreter >>
-          SUDO: << parameters.sudo_command >>
-
-      - image: cimg/postgres:10.17
-        environment:
-          POSTGRES_USER: root
-          POSTGRES_DB: circle_test
-          POSTGRES_HOST_AUTH_METHOD: trust
-
-      - image: cimg/redis:5.0
-
-    working_directory: /mnt/ramdisk
-
+commands:
+  install_dependencies:
     steps:
-      - checkout
-
       - run:
           name: apt update
           command: |
@@ -120,6 +89,50 @@ jobs:
             - ./venv
           key: v16-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
             "requirements.txt" }}
+
+  store_results:
+    steps:
+      - store_test_results:
+          path: test-reports
+
+      - store_artifacts:
+          path: /tmp/pytest-of-circleci/
+
+
+
+jobs:
+  unit_tests:
+    parameters:
+      docker_image:
+        type: string
+      python_interpreter:
+        type: string
+        default: python3
+      sudo_command:
+        type: string
+        default: sudo
+
+    resource_class: large
+    working_directory: /mnt/ramdisk
+    docker:
+      - image: << parameters.docker_image >>
+        environment:
+          IRRD_DATABASE_URL: 'postgresql://root@localhost/circle_test'
+          IRRD_REDIS_URL: 'redis://localhost'
+          PYTHON_INTERPRETER: << parameters.python_interpreter >>
+          SUDO: << parameters.sudo_command >>
+
+      - image: cimg/postgres:10.17
+        environment:
+          POSTGRES_USER: root
+          POSTGRES_DB: circle_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+
+      - image: cimg/redis:5.0
+
+    steps:
+      - checkout
+      - install_dependencies
 
       - run:
           name: Waiting for PostgreSQL to be ready
@@ -138,11 +151,7 @@ jobs:
             . venv/bin/activate
             py.test -s -vvvv --cov=irrd irrd --junitxml=test-reports/junit.xml --cov-fail-under=100 --cov-report term-missing:skip-covered
 
-      - store_test_results:
-          path: test-reports
-
-      - store_artifacts:
-          path: /tmp/pytest-of-circleci/
+      - store_results
 
 
   integration_tests:
@@ -157,6 +166,7 @@ jobs:
         default: sudo
 
     resource_class: large
+    working_directory: /mnt/ramdisk
     docker:
       - image: << parameters.docker_image >>
         environment:
@@ -175,53 +185,9 @@ jobs:
 
       - image: cimg/redis:5.0
 
-    working_directory: /mnt/ramdisk
-
     steps:
       - checkout
-
-      - run:
-          name: apt update
-          command: |
-            set +e
-            $SUDO apt update
-            echo
-
-      - run:
-          name: Installing psql client and enchant
-          command: $SUDO apt -y install postgresql-client netcat python3-enchant
-
-      - run:
-          name: Install rust
-          command: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-
-      - restore_cache:
-          keys:
-            - v16-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
-              "requirements.txt" }}
-            # fallback to using the latest cache if no exact match is found
-            - v16-dependencies-{{ .Environment.CIRCLE_JOB }}
-
-      - run:
-          name: install latest pip
-          command: |
-            $PYTHON_INTERPRETER -m venv venv
-            . venv/bin/activate
-            pip install -U pip
-
-      - run:
-          name: install dependencies
-          command: |
-            PATH=$PATH:/root/.cargo/bin/
-            $PYTHON_INTERPRETER -m venv venv
-            . venv/bin/activate
-            pip install -Ur requirements.txt
-
-      - save_cache:
-          paths:
-            - ./venv
-          key: v16-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
-            "requirements.txt" }}
+      - install_dependencies
 
       - run:
           name: Waiting for PostgreSQL to be ready
@@ -250,8 +216,7 @@ jobs:
             . venv/bin/activate
             py.test irrd/integration_tests/run.py -s
 
-      - store_artifacts:
-          path: /tmp/pytest-of-circleci/
+      - store_results
 
 
   lint:
@@ -266,55 +231,17 @@ jobs:
         default: sudo
 
     resource_class: large
+    working_directory: /mnt/ramdisk
     docker:
       - image: << parameters.docker_image >>
         environment:
           PYTHON_INTERPRETER: << parameters.python_interpreter >>
           SUDO: << parameters.sudo_command >>
 
-    working_directory: /mnt/ramdisk
 
     steps:
       - checkout
-
-      - run:
-          name: apt update
-          command: |
-            set +e
-            $SUDO apt update
-            echo
-
-      - run:
-          name: Install rust
-          command: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-
-      - restore_cache:
-          keys:
-            - v16-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
-              "requirements.txt" }}
-            # fallback to using the latest cache if no exact match is found
-            - v16-dependencies-{{ .Environment.CIRCLE_JOB }}
-
-      - run:
-          name: install latest pip
-          command: |
-            $PYTHON_INTERPRETER -m venv venv
-            . venv/bin/activate
-            pip install -U pip
-
-      - run:
-          name: install dependencies
-          command: |
-            PATH=$PATH:/root/.cargo/bin/
-            $PYTHON_INTERPRETER -m venv venv
-            . venv/bin/activate
-            pip install -Ur requirements.txt
-
-      - save_cache:
-          paths:
-            - ./venv
-          key: v16-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
-            "requirements.txt" }}
+      - install_dependencies
 
       - run:
           name: run flake8
@@ -341,49 +268,16 @@ jobs:
         default: sudo
 
     resource_class: large
+    working_directory: /mnt/ramdisk
     docker:
       - image: << parameters.docker_image >>
         environment:
           PYTHON_INTERPRETER: << parameters.python_interpreter >>
           SUDO: << parameters.sudo_command >>
 
-    working_directory: /mnt/ramdisk
-
     steps:
       - checkout
-
-      - run:
-          name: apt update
-          command: |
-            set +e
-            $SUDO apt update
-            echo
-
-      - run:
-          name: Installing and enchant
-          command: $SUDO apt -y install python3-enchant
-
-      - restore_cache:
-          keys:
-            - v16-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
-              "requirements.txt" }}
-            # fallback to using the latest cache if no exact match is found
-            - v16-dependencies-{{ .Environment.CIRCLE_JOB }}
-
-      - run:
-          name: install latest pip
-          command: |
-            $PYTHON_INTERPRETER -m venv venv
-            . venv/bin/activate
-            pip install -U pip
-
-      - run:
-          name: install dependencies
-          command: |
-            PATH=$PATH:/root/.cargo/bin/
-            $PYTHON_INTERPRETER -m venv venv
-            . venv/bin/activate
-            pip install -Ur requirements.txt
+      - install_dependencies
 
       - save_cache:
           paths:
