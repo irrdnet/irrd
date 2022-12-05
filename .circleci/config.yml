@@ -4,22 +4,20 @@ version: 2.1
 workflows:
   test:
     jobs:
-      - unit_tests:
-          name: unit-tests-cpython-3-7
-          docker_image: cimg/python:3.7
-      - unit_tests:
-          name: unit-tests-cpython-3-10
-          docker_image: cimg/python:3.10
-      - unit_tests:
-          name: unit-tests-pypy-3-7
-          python_interpreter: pypy3
-          docker_image: pypy:3.7
-          sudo_command: ''
-      - unit_tests:
-          name: unit-tests-pypy-3.9
-          docker_image: pypy:3.7
-          python_interpreter: pypy3
-          sudo_command: ''
+      - unit_tests_cpython:
+          name: unit-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>
+          matrix:
+            parameters:
+              python_version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+              postgres_version: ["9.6", "11.16", "13.7", "15.0"]
+              redis_version: ["5.0", "6.2", "7.0"]
+      - unit_tests_pypy:
+          name: unit-tests-pypy<< matrix.python_version >>-pg<< matrix.postgres_version >>
+          matrix:
+            parameters:
+              python_version: ["3.7", "3.8", "3.9"]
+              postgres_version: ["9.6", "11.16", "13.7", "15.0"]
+              redis_version: ["5.0", "6.2", "7.0"]
       - integration_tests:
           name: integration-tests-cpython-3-7
           docker_image: cimg/python:3.7
@@ -90,50 +88,8 @@ commands:
           key: v16-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
             "requirements.txt" }}
 
-  store_results:
+  wait_for_postgres:
     steps:
-      - store_test_results:
-          path: test-reports
-
-      - store_artifacts:
-          path: /tmp/pytest-of-circleci/
-
-
-
-jobs:
-  unit_tests:
-    parameters:
-      docker_image:
-        type: string
-      python_interpreter:
-        type: string
-        default: python3
-      sudo_command:
-        type: string
-        default: sudo
-
-    resource_class: large
-    working_directory: /mnt/ramdisk
-    docker:
-      - image: << parameters.docker_image >>
-        environment:
-          IRRD_DATABASE_URL: 'postgresql://root@localhost/circle_test'
-          IRRD_REDIS_URL: 'redis://localhost'
-          PYTHON_INTERPRETER: << parameters.python_interpreter >>
-          SUDO: << parameters.sudo_command >>
-
-      - image: cimg/postgres:10.17
-        environment:
-          POSTGRES_USER: root
-          POSTGRES_DB: circle_test
-          POSTGRES_HOST_AUTH_METHOD: trust
-
-      - image: cimg/redis:5.0
-
-    steps:
-      - checkout
-      - install_dependencies
-
       - run:
           name: Waiting for PostgreSQL to be ready
           command: |
@@ -145,12 +101,108 @@ jobs:
             done
             echo Failed waiting for PostgreSQL && exit 1
 
+  run_unit_tests:
+    steps:
       - run:
           name: run regular tests
           command: |
             . venv/bin/activate
             py.test -s -vvvv --cov=irrd irrd --junitxml=test-reports/junit.xml --cov-fail-under=100 --cov-report term-missing:skip-covered
 
+  create_integration_test_db:
+    steps:
+      - run:
+          name: Creating additional database 1
+          command: |
+            psql -U root -h localhost -d circle_test -c "CREATE DATABASE
+            circle_test_integration_1; CREATE DATABASE circle_test_integration_2;"
+
+  run_integration_tests:
+    steps:
+      - run:
+          name: run integration tests
+          command: |
+            . venv/bin/activate
+            py.test irrd/integration_tests/run.py -s
+
+  store_results:
+    steps:
+      - store_test_results:
+          path: test-reports
+
+      - store_artifacts:
+          path: /tmp/pytest-of-circleci/
+
+
+
+jobs:
+  unit_tests_cpython:
+    parameters:
+      python_version:
+        type: string
+      postgres_version:
+        type: string
+      redis_version:
+        type: string
+
+    resource_class: large
+    working_directory: /mnt/ramdisk
+    docker:
+      - image: cimg/python:<< parameters.python_version >>
+        environment:
+          IRRD_DATABASE_URL: 'postgresql://root@localhost/circle_test'
+          IRRD_REDIS_URL: 'redis://localhost'
+          PYTHON_INTERPRETER: python3
+          SUDO: sudo
+
+      - image: cimg/postgres:<< parameters.postgres_version >>
+        environment:
+          POSTGRES_USER: root
+          POSTGRES_DB: circle_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+
+      - image: cimg/redis:<< parameters.redis_version >>
+
+    steps:
+      - checkout
+      - install_dependencies
+      - wait_for_postgres
+      - run_unit_tests
+      - store_results
+
+
+  unit_tests_pypy:
+    parameters:
+      python_version:
+        type: string
+      postgres_version:
+        type: string
+      redis_version:
+        type: string
+
+    resource_class: large
+    working_directory: /mnt/ramdisk
+    docker:
+      - image: pypy:<< parameters.python_version >>
+        environment:
+          IRRD_DATABASE_URL: 'postgresql://root@localhost/circle_test'
+          IRRD_REDIS_URL: 'redis://localhost'
+          PYTHON_INTERPRETER: pypy3
+          SUDO: ''
+
+      - image: cimg/postgres:<< parameters.postgres_version >>
+        environment:
+          POSTGRES_USER: root
+          POSTGRES_DB: circle_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+
+      - image: cimg/redis:<< parameters.redis_version >>
+
+    steps:
+      - checkout
+      - install_dependencies
+      - wait_for_postgres
+      - run_unit_tests
       - store_results
 
 
@@ -188,34 +240,9 @@ jobs:
     steps:
       - checkout
       - install_dependencies
-
-      - run:
-          name: Waiting for PostgreSQL to be ready
-          command: |
-            for i in `seq 1 10`;
-            do
-              nc -z localhost 5432 && echo Success && exit 0
-              echo -n .
-              sleep 1
-            done
-            echo Failed waiting for PostgreSQL && exit 1
-
-      - run:
-          name: Creating additional database 1
-          command: psql -U root -h localhost -d circle_test -c "CREATE DATABASE
-            circle_test_integration_1;"
-
-      - run:
-          name: Creating additional database 2
-          command: psql -U root -h localhost -d circle_test -c "CREATE DATABASE
-            circle_test_integration_2;"
-
-      - run:
-          name: run integration tests
-          command: |
-            . venv/bin/activate
-            py.test irrd/integration_tests/run.py -s
-
+      - wait_for_postgres
+      - create_integration_test_db
+      - run_integration_tests
       - store_results
 
 
