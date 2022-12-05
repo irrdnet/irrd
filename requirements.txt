@@ -26,7 +26,7 @@ psutil==5.9.4          # Process management
 asgiref==3.5.2         # ASGI utilities
 pydantic==1.10.2        # Input validation
 six==1.16.0            # Used in vendored dotteddict
-typing-extensions==4.3.0
+typing-extensions==4.4.0
 
 # Database connections and management
 psycopg2-binary==2.9.4; platform_python_implementation == "CPython"
