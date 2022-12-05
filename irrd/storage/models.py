@@ -119,7 +119,7 @@ class RPSLDatabaseJournal(Base):  # type: ignore
     object_text = sa.Column(sa.Text, nullable=False)
 
     # These objects are not mutable, so creation time is sufficient.
-    timestamp = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
+    timestamp = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), index=True, nullable=False)
 
     @declared_attr
     def __table_args__(cls):  # noqa

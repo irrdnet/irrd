@@ -38,10 +38,12 @@ def upgrade():
 
     op.alter_column('rpsl_database_journal', 'serial_global', server_default=sa.text("nextval('rpsl_database_journal_serial_global_seq')"))
     op.create_index(op.f('ix_rpsl_database_journal_serial_global'), 'rpsl_database_journal', ['serial_global'], unique=True)
+    op.create_index(op.f('ix_rpsl_database_journal_timestamp'), 'rpsl_database_journal', ['timestamp'], unique=False)
 
 
 def downgrade():
     from sqlalchemy.schema import Sequence, DropSequence
+    op.drop_index(op.f('ix_rpsl_database_journal_timestamp'), table_name='rpsl_database_journal')
     op.drop_index(op.f('ix_rpsl_database_journal_serial_global'), table_name='rpsl_database_journal')
     op.drop_column('rpsl_database_journal', 'serial_global')
     op.execute(DropSequence(Sequence('rpsl_database_journal_serial_global_seq')))
