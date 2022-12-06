@@ -359,7 +359,7 @@ jobs:
           name: run mypy
           command: |
             . venv/bin/activate
-            if command -v COMMAND &> /dev/null; then mypy irrd --ignore-missing-imports; fi
+            mypy irrd
 
 
   build_docs:
