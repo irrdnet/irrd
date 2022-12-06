@@ -4,7 +4,8 @@ import re
 from tempfile import NamedTemporaryFile
 from typing import Optional, Tuple
 
-import gnupg
+# Mypy struggles to see gnupg.GPG
+import gnupg  # type: ignore
 
 from irrd.conf import get_setting
 
@@ -13,11 +14,11 @@ pgp_inline_re = re.compile(r'-----BEGIN PGP SIGNED MESSAGE-----(\n.+)?\n\n((?s:.
                            flags=re.MULTILINE)
 
 
-def get_gpg_instance() -> gnupg.GPG:
+def get_gpg_instance() -> gnupg.GPG:  # type: ignore
     keyring = get_setting('auth.gnupg_keyring')
     if not os.path.exists(keyring):
         os.mkdir(keyring)
-    return gnupg.GPG(gnupghome=keyring)
+    return gnupg.GPG(gnupghome=keyring)  # type: ignore
 
 
 def validate_pgp_signature(message: str, detached_signature: Optional[str]=None) -> Tuple[Optional[str], Optional[str]]:
