@@ -96,7 +96,8 @@ class Configuration:
         self.known_sources_keys = KNOWN_SOURCES_KEYS
         self.user_config_path = user_config_path if user_config_path else CONFIG_PATH_DEFAULT
         default_config_path = str(Path(__file__).resolve().parents[0] / 'default_config.yaml')
-        default_config_yaml = yaml.safe_load(open(default_config_path))
+        with open(default_config_path) as default_config:
+            default_config_yaml = yaml.safe_load(default_config)
         self.default_config = DottedDict(default_config_yaml['irrd'])
         self.logging_config = LOGGING
 
