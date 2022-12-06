@@ -559,6 +559,16 @@ class DatabaseHandler:
         postgres_copy.copy_from(roa_csv, ROADatabaseObject, self._connection, columns=columns, format='csv')
         self._roa_insert_buffer = []
 
+    def delete_journal_entries_before_date(self, timestamp: datetime, source: str):
+        """
+        Expire journal entries older than a certain timestamp.
+        """
+        self._check_write_permitted()
+        self._flush_rpsl_object_writing_buffer()
+        table = RPSLDatabaseJournal.__table__
+        stmt = table.delete(sa.and_(table.c.source == source, table.c.timestamp < timestamp))
+        self._connection.execute(stmt)
+
     def delete_all_rpsl_objects_with_journal(self, source, journal_guaranteed_empty=False):
         """
         Delete all RPSL objects for a source from the database,

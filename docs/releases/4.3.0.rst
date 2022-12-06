@@ -92,6 +92,15 @@ use. Access is controlled by the new ``server.http.event_stream_access_list``
 setting, and by default all access is denied.
 
 
+New journal expiry command
+--------------------------
+IRRD includes a new command: ``irrd_expire_journal``. You can call this to
+remove journal entries older than a given date, in both
+authoritative and mirrored sources. Do use caution, as the journal is the
+only place where IRRd keeps a change history. Journal entries can not be
+recovered after being expired.
+
+
 Minimum Python version
 ----------------------
 The minimum Python version for IRRd is now 3.7. Python 3.6 is `end of life`_

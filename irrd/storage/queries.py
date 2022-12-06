@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from typing import List, Optional
 
 import sqlalchemy as sa
@@ -416,20 +417,32 @@ class RPSLDatabaseJournalQuery(BaseRPSLObjectDatabaseQuery):
     table = RPSLDatabaseJournal.__table__
     columns = RPSLDatabaseJournal.__table__.c
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, column_names=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.statement = sa.select([
-            self.columns.pk,
-            self.columns.rpsl_pk,
-            self.columns.source,
-            self.columns.serial_nrtm,
-            self.columns.serial_global,
-            self.columns.operation,
-            self.columns.object_class,
-            self.columns.object_text,
-            self.columns.origin,
-            self.columns.timestamp,
-        ]).order_by(self.columns.source.asc(), self.columns.serial_nrtm.asc())
+        if column_names is None:
+            columns = [
+                self.columns.pk,
+                self.columns.rpsl_pk,
+                self.columns.source,
+                self.columns.serial_nrtm,
+                self.columns.serial_global,
+                self.columns.operation,
+                self.columns.object_class,
+                self.columns.object_text,
+                self.columns.origin,
+                self.columns.timestamp,
+            ]
+        else:
+            columns = [self.columns.get(name) for name in column_names]
+        self.statement = sa.select(columns).order_by(
+            self.columns.source.asc(), self.columns.serial_nrtm.asc()
+        )
+
+    def entries_before_date(self, timestamp: datetime):
+        """
+        Filter for journal entries before a given date. Used in expiry.
+        """
+        return self._filter(self.columns.timestamp < timestamp)
 
     def serial_nrtm_range(self, start: int, end: Optional[int]=None):
         """
