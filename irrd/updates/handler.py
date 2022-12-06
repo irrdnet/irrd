@@ -26,7 +26,7 @@ class ChangeSubmissionHandler:
     those part of the same message, and checking authentication.
     """
 
-    def load_text_blob(self, object_texts_blob: str, pgp_fingerprint: str=None, request_meta: Dict[str, Optional[str]]=None):
+    def load_text_blob(self, object_texts_blob: str, pgp_fingerprint: Optional[str]=None, request_meta: Optional[Dict[str, Optional[str]]]=None):
         self.database_handler = DatabaseHandler()
         self.request_meta = request_meta if request_meta else {}
         self._pgp_key_id = self._resolve_pgp_key_id(pgp_fingerprint) if pgp_fingerprint else None
@@ -41,7 +41,7 @@ class ChangeSubmissionHandler:
         self.database_handler.close()
         return self
 
-    def load_change_submission(self, data: RPSLChangeSubmission, delete=False, request_meta: Dict[str, Optional[str]]=None):
+    def load_change_submission(self, data: RPSLChangeSubmission, delete=False, request_meta: Optional[Dict[str, Optional[str]]]=None):
         self.database_handler = DatabaseHandler()
         self.request_meta = request_meta if request_meta else {}
 
@@ -80,7 +80,7 @@ class ChangeSubmissionHandler:
         self.database_handler.close()
         return self
 
-    def load_suspension_submission(self, data: RPSLSuspensionSubmission, request_meta: Dict[str, Optional[str]]=None):
+    def load_suspension_submission(self, data: RPSLSuspensionSubmission, request_meta: Optional[Dict[str, Optional[str]]]=None):
         self.database_handler = DatabaseHandler()
         self.request_meta = request_meta if request_meta else {}
 

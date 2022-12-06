@@ -69,7 +69,7 @@ class BulkRouteROAValidator:
         else:
             self._build_roa_tree_from_roa_objs(roas)
 
-    def validate_all_routes(self, sources: List[str]=None) -> \
+    def validate_all_routes(self, sources: Optional[List[str]]=None) -> \
             Tuple[List[Dict[str, str]], List[Dict[str, str]], List[Dict[str, str]]]:
         """
         Validate all RPSL route/route6 objects.

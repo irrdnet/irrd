@@ -128,7 +128,7 @@ class Configuration:
             # Re-commit to apply loglevel
             self._commit_staging()
 
-    def get_setting_live(self, setting_name: str, default: Any=None) -> Any:
+    def get_setting_live(self, setting_name: str, default: Optional[Any]=None) -> Any:
         """
         Get a setting from the live config.
         In order, this will look in:
@@ -424,7 +424,7 @@ def is_config_initialised() -> bool:
     return configuration is not None
 
 
-def get_setting(setting_name: str, default: Any=None) -> Any:
+def get_setting(setting_name: str, default: Optional[Any]=None) -> Any:
     """
     Convenience wrapper to get the value of a setting.
     """

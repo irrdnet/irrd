@@ -1,4 +1,4 @@
-from typing import TypeVar, List
+from typing import Optional, TypeVar, List
 
 from IPy import IP
 
@@ -38,8 +38,8 @@ class RPSLParserMessages:
 
 
 class RPSLFieldParseResult:
-    def __init__(self, value: str, values_list: List[str]=None, ip_first: IP=None, ip_last: IP=None,
-                 prefix: IP=None, prefix_length: int=None, asn_first: int=None, asn_last: int=None) -> None:
+    def __init__(self, value: str, values_list: Optional[List[str]]=None, ip_first: Optional[IP]=None, ip_last: Optional[IP]=None,
+                 prefix: Optional[IP]=None, prefix_length: Optional[int]=None, asn_first: Optional[int]=None, asn_last: Optional[int]=None) -> None:
         self.value = value
         self.values_list = values_list
         self.ip_first = ip_first

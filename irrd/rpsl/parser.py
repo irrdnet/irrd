@@ -165,7 +165,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                     result.add(field_name)
         return result
 
-    def render_rpsl_text(self, last_modified: datetime.datetime=None) -> str:
+    def render_rpsl_text(self, last_modified: Optional[datetime.datetime]=None) -> str:
         """
         Render the RPSL object as an RPSL string.
         If last_modified is provided, removes existing last-modified:
