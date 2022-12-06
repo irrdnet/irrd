@@ -9,7 +9,7 @@ class WhoisQueryError(ValueError):
     pass
 
 
-def whois_query(host: str, port: int, query: str, end_markings: List[str]=None) -> str:
+def whois_query(host: str, port: int, query: str, end_markings: Optional[List[str]]=None) -> str:
     """
     Perform a query on a whois server, connecting to the specified host and port.
 

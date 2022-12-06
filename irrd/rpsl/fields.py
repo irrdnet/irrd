@@ -409,7 +409,7 @@ class RPSLGenericNameField(RPSLTextField):
     """
     keep_case = False
 
-    def __init__(self, allowed_prefixes: List[str]=None, non_strict_allow_any=False, *args, **kwargs) -> None:
+    def __init__(self, allowed_prefixes: Optional[List[str]]=None, non_strict_allow_any=False, *args, **kwargs) -> None:
         self.non_strict_allow_any = non_strict_allow_any
         if allowed_prefixes:
             self.allowed_prefixes = [prefix.upper() + '-' for prefix in allowed_prefixes]

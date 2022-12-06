@@ -118,7 +118,7 @@ class QueryResolver:
         prefixes = self.preloader.routes_for_origins([origin], self.sources, ip_version=ip_version)
         return prefixes
 
-    def routes_for_as_set(self, set_name: str, ip_version: Optional[int]=None, exclude_sets: Set[str]=None) -> Set[str]:
+    def routes_for_as_set(self, set_name: str, ip_version: Optional[int]=None, exclude_sets: Optional[Set[str]]=None) -> Set[str]:
         """
         Find all originating prefixes for all members of an AS-set. May be restricted
         to IPv4 or IPv6. Returns a set of all prefixes.
@@ -129,7 +129,7 @@ class QueryResolver:
         members = self._recursive_set_resolve({set_name})
         return self.preloader.routes_for_origins(members, self.sources, ip_version=ip_version)
 
-    def members_for_set_per_source(self, parameter: str, exclude_sets: Set[str]=None, depth=0, recursive=False) -> Dict[str, List[str]]:
+    def members_for_set_per_source(self, parameter: str, exclude_sets: Optional[Set[str]]=None, depth=0, recursive=False) -> Dict[str, List[str]]:
         """
         Find all members of an as-set or route-set, possibly recursively, distinguishing
         between multiple root objects in different sources with the same name.
@@ -152,7 +152,7 @@ class QueryResolver:
             for source in set_sources
         }
 
-    def members_for_set(self, parameter: str, exclude_sets: Set[str]=None, depth=0, recursive=False, root_source: Optional[str]=None) -> List[str]:
+    def members_for_set(self, parameter: str, exclude_sets: Optional[Set[str]]=None, depth=0, recursive=False, root_source: Optional[str]=None) -> List[str]:
         """
         Find all members of an as-set or route-set, possibly recursively.
         Returns a list of all members, including leaf members.
