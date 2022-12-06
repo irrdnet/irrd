@@ -1,10 +1,9 @@
 from datetime import datetime
-from typing import List
+from typing import Any, Dict
 
 from irrd.storage.database_handler import QueryType, RPSLDatabaseResponse
 from irrd.storage.models import DatabaseOperation, JournalEntryOrigin
-from irrd.storage.queries import RPSLDatabaseJournalStatisticsQuery, RPSLDatabaseJournalQuery, \
-    DatabaseStatusQuery
+from irrd.storage.queries import RPSLDatabaseJournalStatisticsQuery, RPSLDatabaseJournalQuery, DatabaseStatusQuery
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
 
 
@@ -22,8 +21,8 @@ def flatten_mock_calls(mock, flatten_objects=False):
     for call in mock.mock_calls:
         call = list(call)
         call_name = call[0]
-        if '.' in str(call_name):
-            call_name = str(call_name).split('.')[-1]
+        if "." in str(call_name):
+            call_name = str(call_name).split(".")[-1]
         if flatten_objects:
             args = tuple([str(a) if not isinstance(a, retained_classes) else a for a in call[1]])
         else:
@@ -33,18 +32,42 @@ def flatten_mock_calls(mock, flatten_objects=False):
     return result
 
 
-class MockDatabaseHandler:
+class Singleton(type):
+    _instances: Dict[Any, Any] = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        cls._instances[cls].__init__(*args, **kwargs)
+        return cls._instances[cls]
+
+
+class MockDatabaseHandler(metaclass=Singleton):
     """
     This mock is a new approach to handle database mocking in unit tests
     and is currently only used in the HTTP event stream tests.
     If extended, it has a lot of potential to improve other tests
     in clarity and debugging - perhaps combined with factoryboy.
     """
-    instances: List["MockDatabaseHandler"] = []
 
-    @classmethod
-    def reset(cls):
-        cls.instances = []
+    def _default_rpsl_database_journal_query_iterator(self):
+        while True:
+            yield {
+                "rpsl_pk": "TEST-MNT",
+                "source": "TEST",
+                "operation": DatabaseOperation.add_or_update,
+                "object_class": "mntner",
+                "serial_global": self.serial_global,
+                "serial_nrtm": self.serial_nrtm,
+                "origin": JournalEntryOrigin.auth_change,
+                "timestamp": datetime.utcnow(),
+                "object_text": SAMPLE_MNTNER,
+            }
+
+    def reset_mock(self):
+        self.query_responses = {RPSLDatabaseJournalQuery: self._default_rpsl_database_journal_query_iterator()}
+        self.queries = []
+        self.other_calls = []
 
     @classmethod
     async def create_async(cls, readonly=False):
@@ -54,10 +77,8 @@ class MockDatabaseHandler:
         self._connection = None
         self.closed = False
         self.readonly = readonly
-        self.queries = []
         self.serial_global = 0
         self.serial_nrtm = 0
-        self.__class__.instances.append(self)
 
     async def execute_query_async(
         self, query: QueryType, flush_rpsl_buffer=True, refresh_on_error=False
@@ -75,17 +96,11 @@ class MockDatabaseHandler:
                 "max_serial_global": 42,
             }
         elif type(query) == RPSLDatabaseJournalQuery:
-            yield {
-                "rpsl_pk": "TEST-MNT",
-                "source": "TEST",
-                "operation": DatabaseOperation.add_or_update,
-                "object_class": "mntner",
-                "serial_global": self.serial_global,
-                "serial_nrtm": self.serial_nrtm,
-                "origin": JournalEntryOrigin.auth_change,
-                "timestamp": datetime.utcnow(),
-                "object_text": SAMPLE_MNTNER,
-            }
+            try:
+                yield next(self.query_responses[RPSLDatabaseJournalQuery])
+            except StopIteration:
+                return None
+
         elif type(query) == DatabaseStatusQuery:
             yield {
                 "source": "TEST",
@@ -93,6 +108,17 @@ class MockDatabaseHandler:
             }
         else:  # pragma: no cover
             raise ValueError(f"Unknown query in MockDatabaseHandler: {query}")
+
+    def delete_journal_entries_before_date(self, timestamp: datetime, source: str):
+        self.other_calls.append(
+            (
+                "delete_journal_entries_before_date",
+                {"timestamp": timestamp, "source": source},
+            )
+        )
+
+    def commit(self):
+        self.other_calls.append(("commit", {}))
 
     def close(self):
         self.closed = True

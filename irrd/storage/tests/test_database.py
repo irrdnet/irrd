@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from unittest.mock import Mock
 
 import pytest
@@ -542,6 +543,9 @@ class TestDatabaseHandlerLive:
         dh.update_rpki_status(rpsl_objs_now_valid=route_rpsl_objs)
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.valid])))) == 1
         assert not list(dh.execute_query(RPSLDatabaseJournalQuery().serial_nrtm_range(6, 6)))
+
+        dh.delete_journal_entries_before_date(datetime.utcnow(), 'TEST')
+        assert not list(dh.execute_query(RPSLDatabaseJournalQuery()))
 
     def test_scopefilter_status_storage(self, monkeypatch, irrd_database, database_handler_with_route):
         monkeypatch.setenv('IRRD_SOURCES_TEST_KEEP_JOURNAL', '1')

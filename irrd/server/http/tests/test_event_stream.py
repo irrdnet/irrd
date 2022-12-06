@@ -68,7 +68,8 @@ class TestEventStreamInitialDownloadEndpoint:
 
         mock_copy_to = create_autospec(postgres_copy.copy_to)
         mock_copy_to.side_effect = mock_copy_to_side_effect
-        MockDatabaseHandler.reset()
+        mock_dh = MockDatabaseHandler()
+        mock_dh.reset_mock()
         monkeypatch.setattr("irrd.server.http.event_stream.DatabaseHandler", MockDatabaseHandler)
         monkeypatch.setattr("irrd.server.http.event_stream.postgres_copy.copy_to", mock_copy_to)
 
@@ -107,8 +108,6 @@ class TestEventStreamInitialDownloadEndpoint:
         assert str(db_query) == str(expected_statement)
         assert db_query.compile().params == expected_statement.compile().params
 
-        assert len(MockDatabaseHandler.instances) == 1
-        mock_dh = MockDatabaseHandler.instances[0]
         assert not mock_dh.readonly
         assert mock_dh.closed
         assert mock_dh.queries[0] == RPSLDatabaseJournalStatisticsQuery()
@@ -146,7 +145,8 @@ class TestEventStreamEndpoint:
         )
 
         mock_event_stream_follower = create_autospec_async_compat(AsyncEventStreamFollower)
-        MockDatabaseHandler.reset()
+        mock_dh = MockDatabaseHandler()
+        mock_dh.reset_mock()
         monkeypatch.setattr("irrd.server.http.event_stream.DatabaseHandler", MockDatabaseHandler)
         monkeypatch.setattr("irrd.server.http.event_stream.AsyncEventStreamFollower", mock_event_stream_follower)
 
@@ -206,7 +206,8 @@ class MockAsyncEventStreamRedisClient:
 class TestAsyncEventStreamFollower:
     @pytest.mark.parametrize("after_global_serial,expected_serial_starts", [(None, [43, 43]), (0, [1, 5])])
     async def test_follower_success(self, monkeypatch, after_global_serial, expected_serial_starts):
-        MockDatabaseHandler.reset()
+        mock_dh = MockDatabaseHandler()
+        mock_dh.reset_mock()
         monkeypatch.setattr("irrd.server.http.event_stream.DatabaseHandler", MockDatabaseHandler)
         monkeypatch.setattr(
             "irrd.server.http.event_stream.AsyncEventStreamRedisClient",
@@ -223,8 +224,6 @@ class TestAsyncEventStreamFollower:
         await follower.close()
         assert follower.stream_client.closed
 
-        assert len(MockDatabaseHandler.instances) == 1
-        mock_dh = MockDatabaseHandler.instances[0]
         assert mock_dh.readonly
         assert mock_dh.closed
         assert mock_dh.queries[0] == RPSLDatabaseJournalStatisticsQuery()
@@ -262,7 +261,8 @@ class TestAsyncEventStreamFollower:
         assert "DummyValue" in msg_journal2["event_data"]["object_text"]
 
     async def test_follower_invalid_serial(self, monkeypatch, event_loop):
-        MockDatabaseHandler.reset()
+        mock_dh = MockDatabaseHandler()
+        mock_dh.reset_mock()
         monkeypatch.setattr("irrd.server.http.event_stream.DatabaseHandler", MockDatabaseHandler)
 
         messages = []
