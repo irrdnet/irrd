@@ -132,6 +132,8 @@ class DatabaseHandler:
             self._transaction.commit()
             if self._object_classes_modified:
                 self.preloader.signal_reload(self._object_classes_modified)
+            self.status_tracker.publish_event_stream()
+            self.status_tracker.reset()
             self._start_transaction()
         except Exception as exc:  # pragma: no cover
             self._transaction.rollback()
@@ -686,7 +688,8 @@ class DatabaseStatusTracker:
     """
     Keep track of the status of sources, and their journal, if enabled.
     Changes to the database should always call record_operation() on this object,
-    and finalise_transaction() before committing.
+    and finalise_transaction() before committing, publish_event_stream() and
+    reset() after committing.
 
     If journaling is enabled, a new entry in the journal will be made.
     If a journal entry was made, a record is kept in
@@ -863,9 +866,14 @@ class DatabaseStatusTracker:
             )
             self.database_handler.execute_statement(stmt)
 
+    def publish_event_stream(self):
+        """
+        Publish the changed sources to the event stream.
+        This should happen right after commit, so that a listener querying
+        the journal immediately after receiving will see the new journal entries.
+        """
         for source in self._new_serials_per_source.keys():
             self.event_stream_publisher.publish_update(source=source)
-        self.reset()
 
     @lru_cache(maxsize=100)
     def _is_serial_synchronised(self, source: str) -> bool:
