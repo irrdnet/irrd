@@ -42,7 +42,7 @@ pytest-env==0.8.1
 coverage==6.5.0
 twisted==22.10.0    # Used for a mock email server in integration tests
 python-graphql-client==0.4.2
-pytest-asyncio==0.20.2
+pytest-asyncio==0.20.3
 freezegun==1.2.2
 pytest-freezegun==0.4.2
 asyncmock==0.4.2; python_version < '3.8'
