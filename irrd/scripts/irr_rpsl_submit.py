@@ -170,7 +170,7 @@ class XTooManyObjects(XInput):
     def __init__(self):
         self.message = "There was more than one RPSL object. A delete must have exactly one object."
 
-def main(options):  # pragma: no cover
+def run(options):  # pragma: no cover
     """
     The entry point for irr_rpsl_submit
     """
@@ -716,4 +716,4 @@ def setup_argparse():
     return parser
 
 if __name__ == "__main__":  # pragma: no cover
-    main(sys.argv[1:])
+    run(sys.argv[1:])
