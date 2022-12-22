@@ -8,6 +8,9 @@ This script is meant to be deployed on different hosts than
 those that run IRRD, and therefore intentionally only has
 no dependencies on other IRRD code or other dependencies.
 This causes a bit of code duplication with other IRRD parts.
+
+This code was contributed by MERIT (https://www.merit.edu) for
+use with RADb.
 """
 
 import argparse
@@ -94,14 +97,15 @@ class XArgumentProcessing(Exception):
 
 class XHelp(argparse.ArgumentError):
     """
-    Raised for argparse's help, which uses a non-zero exit
+    Raised for argparse's help, which uses a non-zero exit. If we
+    asked for a help message and got one, that's successful.
     """
     def __init__(self):
         self.message = "display help message"
 
 class XNetwork(Exception):
     """
-    General exception type for network problems
+    General exception type for network problems.
     """
     def __init__(self, url):
         self.message = f"{self.prefix()}: {url}"
@@ -119,7 +123,7 @@ class XNetwork(Exception):
 
 class XHTTPConnectionFailed(XNetwork):
     """
-    Raised when urllib cannot connect
+    Raised when urllib cannot connect to the URL.
 
     This is a refinement of HTTPError, which is not granular enough
     to provide useful information to consumers.
@@ -129,7 +133,7 @@ class XHTTPConnectionFailed(XNetwork):
 
 class XHTTPNotFound(XNetwork):
     """
-    Raised when the response returns 404
+    Raised when the response returns 404.
 
     This is a refinement of HTTPError, which is not granular enough
     to provide useful information to consumers.
@@ -139,7 +143,7 @@ class XHTTPNotFound(XNetwork):
 
 class XNameResolutionFailed(XNetwork):
     """
-    Raised when urllib cannot resolve the URL host
+    Raised when urllib cannot resolve the URL host.
 
     This is a refinement of HTTPError, which is not granular enough
     to provide useful information to consumers.
@@ -148,6 +152,10 @@ class XNameResolutionFailed(XNetwork):
         return "Could not resolve host"
 
 class XInput(Exception):
+	"""
+    General exception type for problems related to the RPSL input.
+
+	"""
     def exit_value(self):
         return SysExitValues.InputError()
 
@@ -158,21 +166,27 @@ class XInput(Exception):
 
 class XNoObjects(XInput):
     """
-    Raised when there are no RPSL objects
+    Raised when there are no RPSL objects. There must be at least
+    one object in the input.
     """
     def __init__(self):
         self.message = "There were no RPSL objects in the input"
 
 class XTooManyObjects(XInput):
     """
-    Raised when there a delete operation gets more than one RPSL object
+    Raised when there a delete operation gets more than one RPSL object.
+    IRRdv4 requires that any delete operation have exactly one object
+    in the request.
     """
     def __init__(self):
         self.message = "There was more than one RPSL object. A delete must have exactly one object."
 
 def run(options):  # pragma: no cover
     """
-    The entry point for irr_rpsl_submit
+    The entry point for irr_rpsl_submit. It takes the command line
+    options for the program and reads the RPSL input. It makes the
+    request and translates the result to the right output and exit
+    status.
     """
     try:
         args = process_args(options)
@@ -206,6 +220,8 @@ def run(options):  # pragma: no cover
     try:
         result = send_request(rpsl, args)
     except (XInput, XNetwork) as error:
+    	# we might discover input errors when we build the request,
+    	# so we catch those here too.
         error.warn_and_exit()
     except (HTTPError, URLError) as error:
         print(error);
@@ -215,8 +231,8 @@ def run(options):  # pragma: no cover
         logger.critical("HTTP problem: %s = %s", reason)
         sys.exit(SysExitValues.NetworkError())
     except JSONDecodeError as error:
-        # turns out testing with example.com returns a real response
-        # that's not the JSON we want
+        # turns out testing with www.example.com returns a real response
+        # that's not the JSON we were expecting.
         sys.stderr.write(f"HTTP response error decoding JSON: {error}\n")
         logger.critical("Request returned invalid JSON")
         sys.exit(SysExitValues.NetworkError())
@@ -254,7 +270,9 @@ def run(options):  # pragma: no cover
 
 def add_irrdv3_options(parser):
     """
-    Add the legacy options for irrdv3 so argparse can ignore them
+    Add the legacy options for irrdv3 so argparse can process them.
+    Some options will be ignored, and others will be translated to
+    the right values the requests need.
     """
     prefix='(IRRdv3 no-op)'
 
@@ -392,7 +410,7 @@ def adjust_args(args):
 
 def at_least_one_change_was_rejected(result):
     """
-    Return True if at least one RPSL object was rejected, and False otherwise
+    Return True if at least one RPSL object was rejected, and False otherwise.
     """
     return result['summary']['failed'] > 0
 
@@ -425,6 +443,7 @@ def create_request_body(requests_text: str):
     """
     Parse change requests, a text of RPSL objects along with metadata like
     passwords or deletion requests.
+
     Returns a dict suitable as a JSON HTTP POST payload.
     """
     passwords     = []
@@ -471,7 +490,7 @@ def create_request_body(requests_text: str):
 
 def format_as_default(response):
     """
-    Format that raw response as whatever we decide the default is
+    Format that raw response as whatever we decide the default is.
     """
     return format_as_text(response)
 
@@ -513,7 +532,9 @@ def format_as_text(response):
     return user_report
 
 def format_report_object(report):
-    """Format an IRRD HTTP response for a specific object into a human-friendly text."""
+    """
+    Format an IRRD HTTP response for a specific object into a human-friendly text.
+    """
     status = "succeeded" if report["successful"] else "FAILED"
 
     formatted_report = f'{report["type"]} {status}: "'\
@@ -536,8 +557,7 @@ def get_input():
 
 def preprocess_args(options):
     """
-    Fix up the command-line options before argparse gets in there
-
+    Fix up the command-line options before argparse gets in there.
     Some environment variables push values onto the options at this
     point.
     """
@@ -554,15 +574,15 @@ def preprocess_args(options):
 
 def process_args(options):
     """
-    Perform the command-line argument processing
+    Perform the command-line argument processing.
     """
     try:
         options = preprocess_args(options)
         args = setup_argparse().parse_args(options)
     except (argparse.ArgumentError, SystemExit) as error:
         # Python 3.9 allows us to turn off exit_on_error, but
-        # were not there everywhere. And, the --help feature
-        # want to exit with an error, so stop that.
+        # we're not there everywhere. And, the --help feature
+        # wants to exit with an error, so stop that.
         if '--help' in options:
             raise XHelp()
         else:
@@ -579,7 +599,7 @@ def process_args(options):
 
 def send_request(requests_text, args):
     """
-    Send the RPSL payload to the IRRdv4 server
+    Send the RPSL payload to the IRRdv4 server.
     """
     metadata = args.metadata
     url = args.url
@@ -654,12 +674,14 @@ def setup_argparse():
 
             IRR_RPSL_SUBMIT_DEBUG - turn on debugging
             IRR_RPSL_SUBMIT_URL   - used if both -u and -h are unspecified
+            IRR_RPSL_SUBMIT_HOST  - used if both -u and -h are unspecified
+                                    and IRR_RPSL_SUBMIT_URL is not set
 
         The input format must be plain RPSL objects, separated by double
         newlines, as used in emails documented on
         https://irrd.readthedocs.io/en/stable/users/database-changes/#submitting-over-e-mail .
 
-        The exit code is
+        The exit code is tells you what happened:
 
              0 - complete success
              1 - at least one change was rejected
