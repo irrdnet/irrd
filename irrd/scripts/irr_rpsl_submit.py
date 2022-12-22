@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # flake8: noqa: E402
 """
 Read RPSL submissions from stdin, submit them to the
