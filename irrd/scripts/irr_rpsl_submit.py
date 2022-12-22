@@ -184,6 +184,9 @@ class XInput(Exception):
     """
     General exception type for problems related to the RPSL input.
     """
+    def __init__(self, message):
+        self.message = message
+
     def exit_value(self):
         """
         Return the exit value for this type of error.
@@ -205,7 +208,7 @@ class XNoObjects(XInput):
     one object in the input.
     """
     def __init__(self):
-        self.message = "There were no RPSL objects in the input"
+        super().__init__("There were no RPSL objects in the input")
 
 class XTooManyObjects(XInput):
     """
@@ -214,7 +217,10 @@ class XTooManyObjects(XInput):
     in the request.
     """
     def __init__(self):
-        self.message = "There was more than one RPSL object. A delete must have exactly one object."
+        super().__init__(
+        	"There was more than one RPSL object. " +
+        	"A delete must have exactly one object."
+        )
 
 def run(options):  # pragma: no cover
     """
@@ -236,9 +242,8 @@ def get_arguments(options):
     try:
         args = process_args(options)
         logger.debug("Args are: %s", args)
-    except XHelp as error:
+    except XHelp:
         # argparse's help option exits with non-zero, but don't do that.
-        print("Catching XHelp")
         sys.exit(SysExitValues.Success())
     except XArgumentError as error:
         error.warn_and_exit()
@@ -324,9 +329,8 @@ def handle_output(args, result):
             exit_code = SysExitValues.ChangeRejected()
     except Exception as error: # pylint: disable=W0703
         logger.critical(
-            "Some other error with response (%s): %s",
-            type(error).__name__,
-            error.message
+            "Some other error with response (%s)",
+            type(error).__name__
         )
         sys.exit(SysExitValues.GeneralError())
 
@@ -650,9 +654,8 @@ def process_args(options):
         # we're not there everywhere. And, the --help feature
         # wants to exit with an error, so stop that.
         if '--help' in options:
-            raise XHelp()
-        else:
-            raise XArgumentError(error)
+            raise XHelp() from error
+        raise XArgumentError(error) from error
 
     if args.debug:
         logger.setLevel(logging.DEBUG)
@@ -703,15 +706,13 @@ def send_request(requests_text, args):
     except URLError as error:
         reason = error.reason
         if isinstance(reason, socket.gaierror):
-            raise XNameResolutionFailed(url)
-        elif isinstance(reason, socket.timeout) or isinstance(reason, ConnectionRefusedError):
-            raise XHTTPConnectionFailed(url)
-        elif reason == 'Not Found':
-            raise XHTTPNotFound(url)
-        else:
-            raise error
+            raise XNameResolutionFailed(url) from error
+        if isinstance(reason, (socket.timeout, ConnectionRefusedError) ):
+            raise XHTTPConnectionFailed(url) from error
+        if reason == 'Not Found':
+            raise XHTTPNotFound(url) from error
+        raise error
     except Exception as error:
-        print("General exception")
         raise error
 
     response = json.loads(http_response.read().decode("utf-8"))
