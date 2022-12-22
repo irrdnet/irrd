@@ -176,6 +176,7 @@ class Test_900_Command(unittest.TestCase):
         self.assertRegex( result.stderr, re.compile( f"{host}:{dash_p_port}" ), f"-h with port and -p prefers -p" )
 
     def test_020_dash_o_noop(self):
+    	# -O in irrdv3 was used to note the original host making the request
         # If we get an error, it should be from the -h, not the -O
         result = Runner.run( ['-h', UNREACHABLE_HOST, '-O', BAD_RESPONSE_HOST], ENV_EMPTY, RPSL_MINIMAL )
         self.assertEqual( result.returncode, EXIT_NETWORK_ERROR, f"using both -h and -O exits with value appropriate to -h value" )
