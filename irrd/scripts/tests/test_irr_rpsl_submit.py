@@ -83,8 +83,6 @@ class Runner():
     @classmethod
     def run(cls, args, env=None, rpsl=""):
         command = cls.program_args(args)
-        print( "command:" )
-        print( command )
         raw_result = subprocess.run(
             command,
             capture_output=True,
