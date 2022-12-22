@@ -58,7 +58,21 @@ class Runner():
     """
     @classmethod
     def program(cls):
-        return 'irrd/scripts/irr_rpsl_submit.py'
+    	"""
+    	Return the absolute path to the program so we can call it
+    	no matter what the actual working directory is.
+    	"""
+        repo_root = subprocess.run(
+            [ 'git', 'rev-parse', '--show-toplevel' ],
+            capture_output=True,
+        ).stdout.decode(sys.stdout.encoding).strip()
+
+
+        program_location = os.path.join(
+            repo_root,
+            'irrd/scripts/irr_rpsl_submit.py'
+        )
+        return program_location
 
     @classmethod
     def program_args(cls, args):
