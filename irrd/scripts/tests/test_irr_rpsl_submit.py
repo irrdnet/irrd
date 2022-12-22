@@ -30,7 +30,7 @@ REGEX_TOO_MANY      = re.compile("There was more than one RPSL object")
 REGEX_ONE_OF        = re.compile("one of the arguments -h -u is required")
 REGEX_NO_H_WITH_U   = re.compile("argument -h: not allowed with argument -u")
 REGEX_UNRESOLVABLE  = re.compile("Could not resolve")
-REGEX_UNREACHABLE   = re.compile("Connection refused")
+REGEX_UNREACHABLE   = re.compile("Connection refused|Cannot assign requested address")
 REGEX_BAD_RESPONSE  = re.compile("decoding JSON")
 REGEX_NOT_FOUND     = re.compile("Not found")
 
