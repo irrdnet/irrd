@@ -121,12 +121,22 @@ class XNetwork(Exception):
         self.message = f"{self.prefix()}: {url}"
 
     def exit_value(self):
+        """
+        Return the exit value for this type of error.
+        """
         return SysExitValues.NetworkError()
 
     def prefix(self):
+        """
+        Returns the prefix to attach to the start of each logged message.
+        """
         return "Network error"
 
     def warn_and_exit(self):
+        """
+        Output an error message the exit the program with the
+        right exit value.
+        """
         sys.stderr.write(f"{self.message}\n")
         logger.critical(self.message)
         sys.exit(self.exit_value())
@@ -139,6 +149,9 @@ class XHTTPConnectionFailed(XNetwork):
     to provide useful information to consumers.
     """
     def prefix(self):
+        """
+        Returns the prefix to attach to the start of each logged message.
+        """
         return "Connection refused"
 
 class XHTTPNotFound(XNetwork):
@@ -149,6 +162,9 @@ class XHTTPNotFound(XNetwork):
     to provide useful information to consumers.
     """
     def prefix(self):
+        """
+        Returns the prefix to attach to the start of each logged message.
+        """
         return "Not found"
 
 class XNameResolutionFailed(XNetwork):
@@ -159,17 +175,26 @@ class XNameResolutionFailed(XNetwork):
     to provide useful information to consumers.
     """
     def prefix(self):
+        """
+        Returns the prefix to attach to the start of each logged message.
+        """
         return "Could not resolve host"
 
 class XInput(Exception):
-	"""
+    """
     General exception type for problems related to the RPSL input.
-
-	"""
+    """
     def exit_value(self):
+        """
+        Return the exit value for this type of error.
+        """
         return SysExitValues.InputError()
 
     def warn_and_exit(self):
+        """
+        Output an error message the exit the program with the
+        right exit value.
+        """
         sys.stderr.write(f"{self.message}\n")
         logger.critical(self.message)
         sys.exit(self.exit_value())
@@ -198,11 +223,22 @@ def run(options):  # pragma: no cover
     request and translates the result to the right output and exit
     status.
     """
+    args   = get_arguments(options)
+    rpsl   = get_rpsl()
+    result = make_request(rpsl, args)
+
+    handle_output(args, result)
+
+def get_arguments(options):
+    """
+    Process the program options and return them.
+    """
     try:
         args = process_args(options)
         logger.debug("Args are: %s", args)
     except XHelp as error:
         # argparse's help option exits with non-zero, but don't do that.
+        print("Catching XHelp")
         sys.exit(SysExitValues.Success())
     except XArgumentError as error:
         error.warn_and_exit()
@@ -214,6 +250,12 @@ def run(options):  # pragma: no cover
         )
         sys.exit(SysExitValues.GeneralError())
 
+    return args
+
+def get_rpsl():
+    """
+    Get the RPSL.
+    """
     try:
         rpsl = get_input()
         logger.debug("Input: ===\n%s\n===\n", rpsl)
@@ -227,18 +269,24 @@ def run(options):  # pragma: no cover
         )
         sys.exit(SysExitValues.GeneralError())
 
+    return rpsl
+
+def make_request(rpsl, args):
+    """
+    Talk to the server.
+    """
     try:
         result = send_request(rpsl, args)
     except (XInput, XNetwork) as error:
-    	# we might discover input errors when we build the request,
-    	# so we catch those here too.
+        # we might discover input errors when we build the request,
+        # so we catch those here too.
         error.warn_and_exit()
     except (HTTPError, URLError) as error:
-        print(error);
+        print(error)
         logger.debug("HTTP problem: %s = %s", args.url, error.reason)
         reason = re.sub( r'^.*?\]\s*', '', f"{error.reason}" )
         sys.stderr.write(f"HTTP problem: {args.url} = {reason}\n")
-        logger.critical("HTTP problem: %s = %s", reason)
+        logger.critical("HTTP problem: %s = %s", args.url, reason)
         sys.exit(SysExitValues.NetworkError())
     except JSONDecodeError as error:
         # turns out testing with www.example.com returns a real response
@@ -255,6 +303,12 @@ def run(options):  # pragma: no cover
         )
         sys.exit(SysExitValues.GeneralError())
 
+    return result
+
+def handle_output(args, result):
+    """
+    Turn the server's response to user output.
+    """
     if args.output_json:
         formatted_output = format_as_json(result)
     elif args.output_text:
@@ -355,7 +409,7 @@ def add_irrdv3_options(parser):
         dest="port",
         metavar="PORT",
         type=str,
-        help=f"IRRd port",
+        help="IRRd port",
     )
     irr3_legacy_group.add_argument(
         "-r",
@@ -447,7 +501,9 @@ def choose_url (args):
 
         args.url = f"{scheme}://{hostport}/v1/submit/"
     elif not args.url:
-        raise XArgumentProcessing("choose_url did not get a host or url in the command-line arguments")
+        raise XArgumentProcessing(
+            "choose_url did not get a host or url in the command-line arguments"
+        )
 
 def create_request_body(requests_text: str):
     """
@@ -478,7 +534,7 @@ def create_request_body(requests_text: str):
                 passwords.append(password)
             elif line.startswith("override:"):
                 password = line.split(":", maxsplit=1)[1].strip()
-                logger.debug(f"override password is {password}")
+                logger.debug("override password is %s", password)
                 if override is not None and password != override:
                     raise Exception("override encountered twice with different values")
                 override = password
@@ -643,7 +699,7 @@ def send_request(requests_text, args):
     )
 
     try:
-       http_response = request.urlopen(http_request, timeout=20) # pylint: disable=consider-using-with
+        http_response = request.urlopen(http_request, timeout=20) # pylint: disable=consider-using-with
     except URLError as error:
         reason = error.reason
         if isinstance(reason, socket.gaierror):
@@ -655,7 +711,7 @@ def send_request(requests_text, args):
         else:
             raise error
     except Exception as error:
-        print("General exception");
+        print("General exception")
         raise error
 
     response = json.loads(http_response.read().decode("utf-8"))
@@ -740,7 +796,7 @@ def setup_argparse():
         "-u",
         dest="url",
         type=str,
-        help="IRRd submission API URL, e.g. https://rr.example.net/v1/submit/ (also set by IRR_RPSL_SUBMIT_URL)",
+        help="IRRd submission API URL, e.g. https://rr.example.net/v1/submit/ (also set by IRR_RPSL_SUBMIT_URL)", # pylint: disable=C0301
     )
 
     add_irrdv3_options(parser)
