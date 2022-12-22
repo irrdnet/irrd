@@ -69,21 +69,27 @@ class SysExitValues():
     def NetworkError   (): return  8
     def GeneralError   (): return 16
 
-class XArgumentError(argparse.ArgumentError):
+class XArgumentError(Exception):
     """
-    Stand in for the various exceptions raised in argparser
+    Stand in for the various exceptions raised in argparser.
 
     Mostly to lump in SystemExit with ArgumentError because we
     might be on a version earlier than Python 3.9 where we can
     turn off argparse's exit_on_error
     """
     def __init__(self, arg):
-        self.message = "Error parsing command-line options"
+        self.message = f"Error parsing command-line options: {arg}"
 
     def exit_value(self):
+        """
+        Return the exit value for this type of error.
+        """
         return SysExitValues.ArgumentMisuse()
 
     def warn_and_exit(self):
+        """
+        Exit the program with the right exit value
+        """
         # argparse already takes care of the warning
         sys.exit(self.exit_value())
 
@@ -95,13 +101,17 @@ class XArgumentProcessing(Exception):
     def __init__(self, message):
         self.message = message
 
-class XHelp(argparse.ArgumentError):
+class XHelp(Exception):
     """
     Raised for argparse's help, which uses a non-zero exit. If we
     asked for a help message and got one, that's successful.
     """
-    def __init__(self):
-        self.message = "display help message"
+    def exit_value(self):
+        """
+        Return the exit value for this type of error.
+        """
+        return SysExitValues.Success()
+
 
 class XNetwork(Exception):
     """
