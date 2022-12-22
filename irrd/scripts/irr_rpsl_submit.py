@@ -205,7 +205,7 @@ def run(options):  # pragma: no cover
 
     try:
         result = send_request(rpsl, args)
-    except (XNetwork) as error:
+    except (XInput, XNetwork) as error:
         error.warn_and_exit()
     except (HTTPError, URLError) as error:
         print(error);
