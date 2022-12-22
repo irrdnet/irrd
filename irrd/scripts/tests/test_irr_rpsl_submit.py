@@ -26,6 +26,7 @@ ENV_URL   = {"IRR_RPSL_SUBMIT_URL": IRRD_URL}
 ENV_HOST  = {"IRR_RPSL_SUBMIT_HOST": IRRD_HOST}
 
 REGEX_NO_OBJECTS    = re.compile("There were no RPSL objects in the input")
+REGEX_TOO_MANY      = re.compile("There was more than one RPSL object")
 REGEX_ONE_OF        = re.compile("one of the arguments -h -u is required")
 REGEX_NO_H_WITH_U   = re.compile("argument -h: not allowed with argument -u")
 REGEX_UNRESOLVABLE  = re.compile("Could not resolve")
@@ -39,9 +40,16 @@ EXIT_INPUT_ERROR    =  4
 EXIT_NETWORK_ERROR  =  8
 EXIT_OTHER_ERROR    = 16
 
+"""
+irr_rpsl_submit does not RPSL checking. There are a few checks for
+known invalid requests, but everything else is left to the server
+to respond with an error. As such, these string need only look like
+RPSL without conforming to the rules for particular objects.
+"""
 RPSL_EMPTY      = ""
 RPSL_WHITESPACE = "\n\n\n    \t\t\n"
 RPSL_MINIMAL    = "route: 1.2.3.4\norigin: AS65414\n"
+RPSL_DELETE_WITH_TWO_OBJECTS = "person: Biff Badger\n\nrole: Badgers\ndelete: some reason"
 
 
 class Runner():
@@ -181,6 +189,11 @@ class Test_900_Command(unittest.TestCase):
         result = Runner.run( ['-u', IRRD_URL], ENV_EMPTY, RPSL_WHITESPACE )
         self.assertEqual( result.returncode, EXIT_INPUT_ERROR, f"whitespace only input exits with {EXIT_INPUT_ERROR}" )
         self.assertRegex( result.stderr, REGEX_NO_OBJECTS )
+
+    def test_030_multiple_object_delete(self):
+        result = Runner.run( ['-u', IRRD_URL], ENV_EMPTY, RPSL_DELETE_WITH_TWO_OBJECTS )
+        self.assertEqual( result.returncode, EXIT_INPUT_ERROR, f"RPSL delete with multiple objects exits with {EXIT_INPUT_ERROR}" )
+        self.assertRegex( result.stderr, REGEX_TOO_MANY )
 
     def test_040_unresovlable_host(self):
         table = [
