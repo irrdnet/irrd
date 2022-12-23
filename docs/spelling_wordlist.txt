@@ -23,6 +23,7 @@ conf
 config
 cron
 daemonised
+desynchronise
 dev
 enums
 gpg

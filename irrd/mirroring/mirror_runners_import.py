@@ -16,6 +16,7 @@ from irrd.conf.defaults import DEFAULT_SOURCE_NRTM_PORT
 from irrd.rpki.importer import ROADataImporter, ROAParserException
 from irrd.rpki.notifications import notify_rpki_invalid_owners
 from irrd.rpki.validators import BulkRouteROAValidator
+from irrd.routepref.routepref import update_route_preference_status
 from irrd.scopefilter.validators import ScopeFilterValidator
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.event_stream import EventStreamPublisher
@@ -333,6 +334,29 @@ class ScopeFilterUpdateRunner:
             logger.error(f'An exception occurred while attempting a scopefilter status update: {exc}', exc_info=exc)
         finally:
             self.database_handler.close()
+
+
+class RoutePreferenceUpdateRunner:
+    """
+    Update the route preference filter status for all objects.
+    This runner does not actually import anything external, all
+    data is already in our database.
+    """
+    # API consistency with other importers, source is actually ignored
+    def __init__(self, source=None):
+        pass
+
+    def run(self):
+        database_handler = DatabaseHandler()
+
+        try:
+            update_route_preference_status(database_handler)
+            database_handler.commit()
+            logger.info('route preference update commit complete')
+        except Exception as exc:
+            logger.error(f'An exception occurred while attempting a route preference status update: {exc}', exc_info=exc)
+        finally:
+            database_handler.close()
 
 
 class NRTMImportUpdateStreamRunner:

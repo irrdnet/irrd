@@ -8,11 +8,14 @@ import pytest
 
 from irrd.rpki.importer import ROAParserException
 from irrd.rpki.validators import BulkRouteROAValidator
+from irrd.routepref.routepref import update_route_preference_status
 from irrd.storage.database_handler import DatabaseHandler
+from irrd.scopefilter.validators import ScopeFilterValidator
 from irrd.utils.test_utils import flatten_mock_calls
-from ..mirror_runners_import import RPSLMirrorImportUpdateRunner, RPSLMirrorFullImportRunner, \
-    NRTMImportUpdateStreamRunner, ROAImportRunner, ScopeFilterUpdateRunner
-from ...scopefilter.validators import ScopeFilterValidator
+from ..mirror_runners_import import (
+    RPSLMirrorImportUpdateRunner, RPSLMirrorFullImportRunner, NRTMImportUpdateStreamRunner,
+    ROAImportRunner, ScopeFilterUpdateRunner, RoutePreferenceUpdateRunner
+)
 
 
 class TestRPSLMirrorImportUpdateRunner:
@@ -537,6 +540,34 @@ class TestScopeFilterUpdateRunner:
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.ScopeFilterValidator', mock_scopefilter)
 
         ScopeFilterUpdateRunner().run()
+
+        assert flatten_mock_calls(mock_dh) == [
+            ['close', (), {}]
+        ]
+        assert 'expected-test-error' in caplog.text
+
+
+class TestRoutePreferenceUpdateRunner:
+    def test_run(self, monkeypatch, config_override, tmpdir, caplog):
+        mock_dh = Mock(spec=DatabaseHandler)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseHandler', lambda: mock_dh)
+        mock_update_function = Mock(spec=update_route_preference_status)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.update_route_preference_status', mock_update_function)
+
+        RoutePreferenceUpdateRunner().run()
+
+        assert flatten_mock_calls(mock_dh) == [
+            ['commit', (), {}],
+            ['close', (), {}]
+        ]
+
+    def test_exception_handling(self, monkeypatch, config_override, tmpdir, caplog):
+        mock_dh = Mock(spec=DatabaseHandler)
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.DatabaseHandler', lambda: mock_dh)
+        mock_update_function = Mock(side_effect=ValueError('expected-test-error'))
+        monkeypatch.setattr('irrd.mirroring.mirror_runners_import.update_route_preference_status', mock_update_function)
+
+        RoutePreferenceUpdateRunner().run()
 
         assert flatten_mock_calls(mock_dh) == [
             ['close', (), {}]

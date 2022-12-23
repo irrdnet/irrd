@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any, Dict, Iterable
 
 from irrd.storage.database_handler import QueryType, RPSLDatabaseResponse
 from irrd.storage.models import DatabaseOperation, JournalEntryOrigin
@@ -51,18 +51,17 @@ class MockDatabaseHandler(metaclass=Singleton):
     """
 
     def _default_rpsl_database_journal_query_iterator(self):
-        while True:
-            yield {
-                "rpsl_pk": "TEST-MNT",
-                "source": "TEST",
-                "operation": DatabaseOperation.add_or_update,
-                "object_class": "mntner",
-                "serial_global": self.serial_global,
-                "serial_nrtm": self.serial_nrtm,
-                "origin": JournalEntryOrigin.auth_change,
-                "timestamp": datetime.utcnow(),
-                "object_text": SAMPLE_MNTNER,
-            }
+        yield {
+            "rpsl_pk": "TEST-MNT",
+            "source": "TEST",
+            "operation": DatabaseOperation.add_or_update,
+            "object_class": "mntner",
+            "serial_global": self.serial_global,
+            "serial_nrtm": self.serial_nrtm,
+            "origin": JournalEntryOrigin.auth_change,
+            "timestamp": datetime.utcnow(),
+            "object_text": SAMPLE_MNTNER,
+        }
 
     def reset_mock(self):
         self.query_responses = {RPSLDatabaseJournalQuery: self._default_rpsl_database_journal_query_iterator()}
@@ -91,23 +90,34 @@ class MockDatabaseHandler(metaclass=Singleton):
         self.queries.append(query)
 
         if type(query) == RPSLDatabaseJournalStatisticsQuery:
-            yield {
+            return iter([{
                 "max_timestamp": datetime.utcnow(),
                 "max_serial_global": 42,
-            }
-        elif type(query) == RPSLDatabaseJournalQuery:
-            try:
-                yield next(self.query_responses[RPSLDatabaseJournalQuery])
-            except StopIteration:
-                return None
-
+            }])
         elif type(query) == DatabaseStatusQuery:
-            yield {
+            return iter([{
                 "source": "TEST",
                 "created": datetime.utcnow(),
-            }
-        else:  # pragma: no cover
-            raise ValueError(f"Unknown query in MockDatabaseHandler: {query}")
+            }])
+        else:
+            try:
+                return self.query_responses[type(query)]
+            except KeyError:  # pragma: no cover
+                raise ValueError(f"Unknown query in MockDatabaseHandler: {query}")
+
+    def update_route_preference_status(
+            self,
+            rpsl_objs_now_visible: Iterable[Dict[str, Any]]=[],
+            rpsl_objs_now_suppressed: Iterable[Dict[str, Any]]=[]) -> None:
+        self.other_calls.append(
+            (
+                "update_route_preference_status",
+                {
+                    "rpsl_objs_now_visible": list(rpsl_objs_now_visible),
+                    "rpsl_objs_now_suppressed": list(rpsl_objs_now_suppressed),
+                },
+            )
+        )
 
     def delete_journal_entries_before_date(self, timestamp: datetime, source: str):
         self.other_calls.append(

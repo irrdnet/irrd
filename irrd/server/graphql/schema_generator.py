@@ -3,6 +3,7 @@ from typing import Optional, Dict, Tuple, List
 
 import ariadne
 
+from irrd.routepref.status import RoutePreferenceStatus
 from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.fields import RPSLFieldListMixin, RPSLTextField, RPSLReferenceField
 from irrd.rpsl.rpsl_objects import (lookup_field_names, OBJECT_CLASS_MAPPING, RPSLAutNum,
@@ -60,6 +61,7 @@ class SchemaGenerator:
                 objectClassFilter: [String!]
                 rpkiRovFilter: Boolean!
                 scopefilterEnabled: Boolean!
+                routePreference: Int
                 localJournalKept: Boolean!
                 serialOldestJournal: Int
                 serialNewestJournal: Int
@@ -119,6 +121,7 @@ class SchemaGenerator:
         self.object_types.append(ariadne.ObjectType("SetMembers"))
         self.object_types.append(ariadne.EnumType("RPKIStatus", RPKIStatus))
         self.object_types.append(ariadne.EnumType("ScopeFilterStatus", ScopeFilterStatus))
+        self.object_types.append(ariadne.EnumType("RoutePreferenceStatus", RoutePreferenceStatus))
 
     def _set_rpsl_query_fields(self):
         """
@@ -137,6 +140,7 @@ class SchemaGenerator:
             'asn: [ASN!]',
             'rpkiStatus: [RPKIStatus!]',
             'scopeFilterStatus: [ScopeFilterStatus!]',
+            'routePreferenceStatus: [RoutePreferenceStatus!]',
             'textSearch: String',
             'recordLimit: Int',
             'sqlTrace: Boolean',
@@ -145,10 +149,10 @@ class SchemaGenerator:
 
     def _set_enums(self):
         """
-        Create the schema for enums, current RPKI and scope filter status.
+        Create the schema for enums of RPKI, scope filter and route preference..
         """
         self.enums = ''
-        for enum in [RPKIStatus, ScopeFilterStatus]:
+        for enum in [RPKIStatus, ScopeFilterStatus, RoutePreferenceStatus]:
             self.enums += f'enum {enum.__name__} {{\n'
             for value in enum:
                 self.enums += f'    {value.name}\n'
@@ -236,10 +240,11 @@ class SchemaGenerator:
                 else:
                     graphql_type = 'String'
                 graphql_fields[snake_to_camel_case(field_name)] = graphql_type
-            if klass.rpki_relevant:
+            if klass.is_route:
                 graphql_fields['rpkiStatus'] = 'RPKIStatus'
                 graphql_fields['rpkiMaxLength'] = 'Int'
                 self.graphql_types[object_name]['rpki_max_length'] = 'Int'
+                graphql_fields['routePreferenceStatus'] = 'RoutePreferenceStatus'
             implements = 'RPSLContact & RPSLObject' if klass in [RPSLPerson, RPSLRole] else 'RPSLObject'
             schema = self._generate_schema_str(object_name, 'type', graphql_fields, implements)
             schemas[object_name] = schema

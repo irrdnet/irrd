@@ -19,6 +19,7 @@ from typing_extensions import Literal
 from irrd.conf import get_setting
 from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
+from irrd.routepref.status import RoutePreferenceStatus
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.server.access_check import is_client_permitted
 from irrd.storage.database_handler import DatabaseHandler
@@ -113,6 +114,7 @@ class EventStreamInitialDownloadGenerator:
             )
             .rpki_status([RPKIStatus.not_found.name, RPKIStatus.valid.name])
             .scopefilter_status([ScopeFilterStatus.in_scope.name])
+            .route_preference_status([RoutePreferenceStatus.visible.name])
         )
         if self.sources:
             query = query.sources(self.sources)

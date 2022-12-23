@@ -28,6 +28,7 @@ KNOWN_CONFIG_KEYS = DottedDict({
             'max_connections': {},
         },
     },
+    'route_object_preference': {'update_timer': {}},
     'email': {
         'from': {},
         'footer': {},
@@ -95,4 +96,5 @@ KNOWN_SOURCES_KEYS = {
     'rpki_excluded',
     'scopefilter_excluded',
     'suspension_enabled',
+    'route_object_preference',
 }

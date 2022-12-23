@@ -80,6 +80,14 @@ Suspended objects act as if they have been deleted, but can be restored by an
 admin at a later time.
 
 
+Support for route object preference
+-----------------------------------
+IRRd can now use
+:doc:`route object preference </admins/route-object-preference>`
+to suppress overlapping `route(6)` objects from different sources,
+based on a configured priority for each source.
+
+
 Support for event stream
 ------------------------
 IRRd now offers a :doc:`WebSocket-based event stream </users/queries/event-stream>`.

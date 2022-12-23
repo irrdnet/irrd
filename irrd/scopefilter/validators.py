@@ -113,7 +113,7 @@ class ScopeFilterValidator:
         validation result, are not included in the return value.
         """
         columns = ['pk', 'rpsl_pk', 'prefix', 'asn_first', 'source', 'object_class',
-                   'scopefilter_status', 'rpki_status']
+                   'scopefilter_status']
 
         objs_changed: Dict[ScopeFilterStatus, List[Dict[str, str]]] = defaultdict(list)
 
@@ -139,7 +139,7 @@ class ScopeFilterValidator:
 
         # Object text is only retrieved for objects with state changes
         pks_to_enrich = [obj['pk'] for objs in objs_changed.values() for obj in objs]
-        query = RPSLDatabaseQuery(['pk', 'object_text'], enable_ordering=False).pks(pks_to_enrich)
+        query = RPSLDatabaseQuery(['pk', 'object_text', 'rpki_status', 'route_preference_status'], enable_ordering=False).pks(pks_to_enrich)
         rows_per_pk = {row['pk']: row for row in database_handler.execute_query(query)}
 
         for rpsl_objs in objs_changed.values():

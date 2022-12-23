@@ -206,9 +206,7 @@ Filtering
 ---------
 Password hashes from `mntner` objects are removed in all output.
 
-When a server is in :doc:`RPKI-aware mode </admins/rpki>` or has
-the :doc:`scopefilter </admins/scopefilter>` enabled, IRR objects
-that are out of scope or RPKI invalid are omitted in the initial
-retrieval. Objects that become RPKI invalid or out of scope
-are included in the WebSocket stream as a deletion, with the
+:doc:`Suppressed objects </admins/object-suppression>` are omitted
+in the initial retrieval. Objects that change suppression status
+are included in the WebSocket stream as an add/delete, with the
 ``origin`` indicating this reason.

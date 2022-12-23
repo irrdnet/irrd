@@ -145,7 +145,7 @@ def reactivate_for_mntner(database_handler: DatabaseHandler, reactivated_mntner:
             continue
 
         reactivating_obj.scopefilter_status, _ = scopefilter_validator.validate_rpsl_object(reactivating_obj)
-        if get_setting('rpki.roa_source') and reactivating_obj.rpki_relevant and reactivating_obj.asn_first:
+        if get_setting('rpki.roa_source') and reactivating_obj.is_route and reactivating_obj.asn_first:
             reactivating_obj.rpki_status = roa_validator.validate_route(reactivating_obj.prefix, reactivating_obj.asn_first, source)
 
         database_handler.upsert_rpsl_object(reactivating_obj, JournalEntryOrigin.suspension, forced_created_value=result['original_created'])

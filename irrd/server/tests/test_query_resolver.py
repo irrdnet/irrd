@@ -1,5 +1,6 @@
 import datetime
 import uuid
+from collections import OrderedDict
 from unittest.mock import Mock
 
 import pytest
@@ -7,6 +8,7 @@ from IPy import IP
 from pytz import timezone
 
 from irrd.rpki.status import RPKIStatus
+from irrd.routepref.status import RoutePreferenceStatus
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.storage.preload import Preloader
 from irrd.utils.test_utils import flatten_mock_calls
@@ -55,6 +57,7 @@ def prepare_resolver(monkeypatch, config_override):
 
     resolver = QueryResolver(mock_preloader, mock_database_handler)
     resolver.out_scope_filter_enabled = False
+    resolver.route_preference_filter_enabled = False
 
     mock_query_result = [
         {
@@ -242,6 +245,7 @@ class TestQueryResolver:
         })
         resolver = QueryResolver(mock_preloader, mock_dh)
         resolver.out_scope_filter_enabled = False
+        resolver.route_preference_filter_enabled = False
 
         result = resolver.route_search(IP('192.0.2.0/25'), RouteLookupType.EXACT)
         assert list(result) == mock_query_result
@@ -281,6 +285,30 @@ class TestQueryResolver:
         mock_dq.reset_mock()
 
         resolver.disable_out_of_scope_filter()
+        result = resolver.route_search(IP('192.0.2.0/25'), RouteLookupType.EXACT)
+        assert list(result) == mock_query_result
+        assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['TEST1', 'TEST2'],), {}],
+            ['object_classes', (['route', 'route6'],), {}],
+            ['ip_exact', (IP('192.0.2.0/25'),), {}]
+        ]
+        mock_dq.reset_mock()
+
+    def test_route_search_exact_with_route_preference_filter(self, prepare_resolver, config_override):
+        mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
+        resolver.route_preference_filter_enabled = True
+
+        result = resolver.route_search(IP('192.0.2.0/25'), RouteLookupType.EXACT)
+        assert list(result) == mock_query_result
+        assert flatten_mock_calls(mock_dq) == [
+            ['sources', (['TEST1', 'TEST2'],), {}],
+            ['route_preference_status', ([RoutePreferenceStatus.visible],), {}],
+            ['object_classes', (['route', 'route6'],), {}],
+            ['ip_exact', (IP('192.0.2.0/25'),), {}]
+        ]
+        mock_dq.reset_mock()
+
+        resolver.disable_route_preference_filter()
         result = resolver.route_search(IP('192.0.2.0/25'), RouteLookupType.EXACT)
         assert list(result) == mock_query_result
         assert flatten_mock_calls(mock_dq) == [
@@ -680,7 +708,8 @@ class TestQueryResolver:
                 'TEST1': {
                     'authoritative': True,
                     'object_class_filter': ['route'],
-                    'scopefilter_excluded': True
+                    'scopefilter_excluded': True,
+                    'route_preference': 200,
                 },
                 'TEST2': {'rpki_excluded': True, 'keep_journal': True}
             },
@@ -713,36 +742,49 @@ class TestQueryResolver:
         mock_dh.execute_query = lambda query, refresh_on_error=False: mock_query_result
 
         result = resolver.database_status()
-        assert result == {
-            "TEST1": {
-                "authoritative": True,
-                "object_class_filter": [
-                    "route"
-                ],
-                "rpki_rov_filter": True,
-                "scopefilter_enabled": False,
-                "local_journal_kept": False,
-                "serial_oldest_journal": 10,
-                "serial_newest_journal": 10,
-                "serial_last_export": 10,
-                "serial_newest_mirror": 500,
-                "last_update": "2020-01-01T00:00:00+00:00",
-                "synchronised_serials": False
-            },
-            "TEST2": {
-                "authoritative": False,
-                "object_class_filter": None,
-                "rpki_rov_filter": False,
-                "scopefilter_enabled": True,
-                "local_journal_kept": True,
-                "serial_oldest_journal": None,
-                "serial_newest_journal": None,
-                "serial_last_export": None,
-                "serial_newest_mirror": 20,
-                "last_update": "2020-01-01T00:00:00+00:00",
-                "synchronised_serials": False
-            }
-        }
+        expected_test1_result = (
+            "TEST1",
+            OrderedDict(
+                [
+                    ("authoritative", True),
+                    ("object_class_filter", ["route"]),
+                    ("rpki_rov_filter", True),
+                    ("scopefilter_enabled", False),
+                    ("route_preference", None),
+                    ("local_journal_kept", False),
+                    ("serial_oldest_journal", 10),
+                    ("serial_newest_journal", 10),
+                    ("serial_last_export", 10),
+                    ("serial_newest_mirror", 500),
+                    ("last_update", "2020-01-01T00:00:00+00:00"),
+                    ("synchronised_serials", False),
+                ]
+            ),
+        )
+        assert result == OrderedDict(
+            [
+                expected_test1_result,
+                (
+                    "TEST2",
+                    OrderedDict(
+                        [
+                            ("authoritative", False),
+                            ("object_class_filter", None),
+                            ("rpki_rov_filter", False),
+                            ("scopefilter_enabled", True),
+                            ("route_preference", None),
+                            ("local_journal_kept", True),
+                            ("serial_oldest_journal", None),
+                            ("serial_newest_journal", None),
+                            ("serial_last_export", None),
+                            ("serial_newest_mirror", 20),
+                            ("last_update", "2020-01-01T00:00:00+00:00"),
+                            ("synchronised_serials", False),
+                        ]
+                    ),
+                ),
+            ]
+        )
         assert flatten_mock_calls(mock_dsq) == [
             ['sources', (['TEST1', 'TEST2'],), {}]
         ]
@@ -750,26 +792,12 @@ class TestQueryResolver:
 
         mock_query_result = mock_query_result[:1]
         result = resolver.database_status(['TEST1', 'TEST-INVALID'])
-        assert result == {
-            "TEST1": {
-                "authoritative": True,
-                "object_class_filter": [
-                    "route"
-                ],
-                "rpki_rov_filter": True,
-                "scopefilter_enabled": False,
-                "local_journal_kept": False,
-                "serial_oldest_journal": 10,
-                "serial_newest_journal": 10,
-                "serial_last_export": 10,
-                "serial_newest_mirror": 500,
-                "last_update": "2020-01-01T00:00:00+00:00",
-                "synchronised_serials": False
-            },
-            "TEST-INVALID": {
-                "error": "Unknown source"
-            }
-        }
+        assert result == OrderedDict(
+            [
+                expected_test1_result,
+                ("TEST-INVALID", OrderedDict([("error", "Unknown source")])),
+            ]
+        )
         assert flatten_mock_calls(mock_dsq) == [
             ['sources', (['TEST1', 'TEST-INVALID'],), {}]
         ]

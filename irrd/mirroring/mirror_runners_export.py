@@ -7,6 +7,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 from irrd.conf import get_setting
+from irrd.routepref.status import RoutePreferenceStatus
 from irrd.rpki.status import RPKIStatus
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.storage.database_handler import DatabaseHandler
@@ -70,6 +71,7 @@ class SourceExportRunner:
             query = RPSLDatabaseQuery().sources([self.source])
             query = query.rpki_status([RPKIStatus.not_found, RPKIStatus.valid])
             query = query.scopefilter_status([ScopeFilterStatus.in_scope])
+            query = query.route_preference_status([RoutePreferenceStatus.visible])
             for obj in self.database_handler.execute_query(query):
                 object_text = obj['object_text']
                 if remove_auth_hashes:

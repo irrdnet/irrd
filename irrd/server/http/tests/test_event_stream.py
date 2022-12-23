@@ -12,6 +12,7 @@ from coredis.response.types import StreamEntry
 from starlette.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
+from irrd.routepref.status import RoutePreferenceStatus
 from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.scopefilter.status import ScopeFilterStatus
@@ -101,6 +102,7 @@ class TestEventStreamInitialDownloadEndpoint:
             )
             .rpki_status([RPKIStatus.not_found.name, RPKIStatus.valid.name])
             .scopefilter_status([ScopeFilterStatus.in_scope.name])
+            .route_preference_status([RoutePreferenceStatus.visible.name])
             .sources(["TEST"])
             .object_classes(["mntner"])
             .finalise_statement()
@@ -230,7 +232,7 @@ class TestAsyncEventStreamFollower:
         assert mock_dh.queries[1] == RPSLDatabaseJournalQuery().serial_global_range(expected_serial_starts.pop(0))
         assert mock_dh.queries[2] == RPSLDatabaseJournalQuery().serial_global_range(expected_serial_starts.pop(0))
 
-        msg_journal1, event_journal_extended, msg_journal2 = messages
+        msg_journal1, event_journal_extended = messages
 
         assert msg_journal1["message_type"] == "rpsl_journal"
         assert msg_journal1["event_data"]["pk"] == "TEST-MNT"
@@ -248,17 +250,6 @@ class TestAsyncEventStreamFollower:
             "event_id": "$",
             "event_data": {"source": "TEST", "operation": "journal_extended"},
         }
-
-        assert msg_journal2["message_type"] == "rpsl_journal"
-        assert msg_journal2["event_data"]["pk"] == "TEST-MNT"
-        assert msg_journal2["event_data"]["serial_global"] == 6
-        assert msg_journal2["event_data"]["parsed_data"]["auth"] == [
-            "PGPKey-80F238C6",
-            "CRYPT-Pw DummyValue",
-            "MD5-pw DummyValue",
-            "bcrypt-pw DummyValue",
-        ]
-        assert "DummyValue" in msg_journal2["event_data"]["object_text"]
 
     async def test_follower_invalid_serial(self, monkeypatch, event_loop):
         mock_dh = MockDatabaseHandler()

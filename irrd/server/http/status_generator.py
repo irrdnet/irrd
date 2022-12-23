@@ -108,6 +108,7 @@ class StatusGenerator:
             scopefilter_enabled = get_setting('scopefilter') and not get_setting(f'sources.{source}.scopefilter_excluded')
             scopefilter_enabled_str = 'Yes' if scopefilter_enabled else 'No'
             synchronised_serials_str = 'Yes' if is_serial_synchronised(database_handler, source) else 'No'
+            route_object_preference = get_setting(f'sources.{source}.route_object_preference')
 
             nrtm_host = get_setting(f'sources.{source}.nrtm_host')
             nrtm_port = int(get_setting(f'sources.{source}.nrtm_port', DEFAULT_SOURCE_NRTM_PORT))
@@ -133,6 +134,7 @@ class StatusGenerator:
                 Last import error occurred at: {status_result['last_error_timestamp']}
                 RPKI validation enabled: {rpki_enabled_str}
                 Scope filter enabled: {scopefilter_enabled_str}
+                Route object preference: {route_object_preference}
 
             Remote information:{remote_information}
             """)

@@ -8,6 +8,7 @@ from pytest import raises
 from sqlalchemy.exc import ProgrammingError
 
 from irrd.rpki.status import RPKIStatus
+from irrd.routepref.status import RoutePreferenceStatus
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.utils.test_utils import flatten_mock_calls
 from .. import get_engine
@@ -70,6 +71,7 @@ def database_handler_with_route():
         asn_last=65537,
         rpki_status=RPKIStatus.invalid,
         scopefilter_status=ScopeFilterStatus.in_scope,
+        route_preference_status=RoutePreferenceStatus.visible,
     )
 
     dh = DatabaseHandler()
@@ -102,6 +104,7 @@ class TestDatabaseHandlerLive:
             asn_last=65537,
             rpki_status=RPKIStatus.not_found,
             scopefilter_status=ScopeFilterStatus.in_scope,
+            route_preference_status=RoutePreferenceStatus.visible,
         )
 
         self.dh = DatabaseHandler(readonly=True)
@@ -136,6 +139,7 @@ class TestDatabaseHandlerLive:
             asn_last=None,
             rpki_status=RPKIStatus.not_found,
             scopefilter_status=ScopeFilterStatus.in_scope,
+            route_preference_status=RoutePreferenceStatus.visible,
         )
 
         self.dh = DatabaseHandler()
@@ -155,6 +159,7 @@ class TestDatabaseHandlerLive:
             asn_last=None,
             rpki_status=RPKIStatus.not_found,
             scopefilter_status=ScopeFilterStatus.in_scope,
+            route_preference_status=RoutePreferenceStatus.visible,
         )
         self.dh.upsert_rpsl_object(rpsl_object_as_set, JournalEntryOrigin.auth_change)
 
@@ -187,10 +192,11 @@ class TestDatabaseHandlerLive:
             asn_last=65537,
             rpki_status=RPKIStatus.not_found,
             scopefilter_status=ScopeFilterStatus.in_scope,
+            route_preference_status=RoutePreferenceStatus.visible,
         )
 
         self.dh = DatabaseHandler()
-        self.dh.preloader.signal_reload = Mock(return_value=None)
+        self.dh.changed_objects_tracker.preloader.signal_reload = Mock(return_value=None)
         self.dh.upsert_rpsl_object(rpsl_object_route_v4, JournalEntryOrigin.auth_change, forced_created_value='2021-01-01')
         assert len(self.dh._rpsl_upsert_buffer) == 1
 
@@ -212,6 +218,7 @@ class TestDatabaseHandlerLive:
             asn_last=65537,
             rpki_status=RPKIStatus.not_found,
             scopefilter_status=ScopeFilterStatus.in_scope,
+            route_preference_status=RoutePreferenceStatus.visible,
         )
         self.dh.upsert_rpsl_object(rpsl_object_route_v6, JournalEntryOrigin.auth_change,
                                    source_serial=42)
@@ -250,6 +257,7 @@ class TestDatabaseHandlerLive:
             asn_last=65537,
             rpki_status=RPKIStatus.not_found,
             scopefilter_status=ScopeFilterStatus.in_scope,
+            route_preference_status=RoutePreferenceStatus.visible,
         )
         self.dh.upsert_rpsl_object(rpsl_obj_ignored, JournalEntryOrigin.auth_change)
         assert len(self.dh._rpsl_upsert_buffer) == 1
@@ -379,7 +387,7 @@ class TestDatabaseHandlerLive:
 
         self.dh.close()
 
-        assert flatten_mock_calls(self.dh.preloader.signal_reload) == [
+        assert flatten_mock_calls(self.dh.changed_objects_tracker.preloader.signal_reload) == [
             ['', ({'route'},), {}],
             ['', ({'route'},), {}],
         ]
@@ -402,6 +410,7 @@ class TestDatabaseHandlerLive:
             asn_last=65537,
             rpki_status=RPKIStatus.not_found,
             scopefilter_status=ScopeFilterStatus.in_scope,
+            route_preference_status=RoutePreferenceStatus.visible,
         )
 
         self.dh = DatabaseHandler()
@@ -483,6 +492,7 @@ class TestDatabaseHandlerLive:
             asn_last=65537,
             rpki_status=RPKIStatus.not_found,
             scopefilter_status=ScopeFilterStatus.in_scope,
+            route_preference_status=RoutePreferenceStatus.visible,
         )
         dh.upsert_rpsl_object(second_route_obj, JournalEntryOrigin.auth_change)
 
@@ -495,11 +505,13 @@ class TestDatabaseHandlerLive:
             'object_text': 'object-text',
             'old_status': RPKIStatus.invalid,  # This always triggers a journal entry
             'scopefilter_status': ScopeFilterStatus.in_scope,
+            'route_preference_status': RoutePreferenceStatus.visible,
         }]
 
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.invalid])))) == 1
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.not_found])))) == 1
 
+        route_rpsl_objs[0]['rpki_status'] = RPKIStatus.not_found
         dh.update_rpki_status(rpsl_objs_now_not_found=route_rpsl_objs)
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.not_found])))) == 2
         journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_nrtm_range(1, 1)))
@@ -509,6 +521,8 @@ class TestDatabaseHandlerLive:
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.not_found])))) == 2
         assert len(list(dh.execute_query(RPSLDatabaseJournalQuery()))) == 1  # no new entry
 
+        route_rpsl_objs[0]['old_status'] = RPKIStatus.valid
+        route_rpsl_objs[0]['rpki_status'] = RPKIStatus.invalid
         dh.update_rpki_status(rpsl_objs_now_invalid=route_rpsl_objs)
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.invalid])))) == 1
         journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_nrtm_range(2, 2)))
@@ -519,11 +533,14 @@ class TestDatabaseHandlerLive:
         journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_nrtm_range(3, 3)))
         assert journal_entry[0]['operation'] == DatabaseOperation.delete
 
+        route_rpsl_objs[0]['old_status'] = RPKIStatus.invalid
+        route_rpsl_objs[0]['rpki_status'] = RPKIStatus.not_found
         dh.update_rpki_status(rpsl_objs_now_not_found=route_rpsl_objs)
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.not_found])))) == 2
         journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_nrtm_range(4, 4)))
         assert journal_entry[0]['operation'] == DatabaseOperation.add_or_update
 
+        route_rpsl_objs[0]['rpki_status'] = RPKIStatus.valid
         dh.update_rpki_status(rpsl_objs_now_valid=route_rpsl_objs)
         assert len(list(dh.execute_query(RPSLDatabaseQuery().rpki_status([RPKIStatus.valid])))) == 1
         journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_nrtm_range(5, 5)))
@@ -531,13 +548,15 @@ class TestDatabaseHandlerLive:
 
         # A state change from valid to not_found should not trigger a journal entry
         route_rpsl_objs[0]['old_status'] = RPKIStatus.valid
-        dh.update_rpki_status(rpsl_objs_now_valid=route_rpsl_objs)
+        route_rpsl_objs[0]['rpki_status'] = RPKIStatus.not_found
+        dh.update_rpki_status(rpsl_objs_now_not_found=route_rpsl_objs)
         assert not list(dh.execute_query(RPSLDatabaseJournalQuery().serial_nrtm_range(6, 6)))
 
         # State change from invalid to valid should not create journal entry
         # if scope filter is still out of scope
         route_rpsl_objs[0].update({
             'old_status': RPKIStatus.invalid,
+            'rpki_status': RPKIStatus.valid,
             'scopefilter_status': ScopeFilterStatus.out_scope_as,
         })
         dh.update_rpki_status(rpsl_objs_now_valid=route_rpsl_objs)
@@ -557,10 +576,12 @@ class TestDatabaseHandlerLive:
             'object_text': 'object-text',
             'old_status': ScopeFilterStatus.in_scope,
             'rpki_status': RPKIStatus.valid,
+            'route_preference_status': RoutePreferenceStatus.visible,
         }]
 
         assert len(list(dh.execute_query(RPSLDatabaseQuery().scopefilter_status([ScopeFilterStatus.in_scope])))) == 1
 
+        route_rpsl_objs[0]['scopefilter_status'] = ScopeFilterStatus.out_scope_prefix
         dh.update_scopefilter_status(rpsl_objs_now_out_scope_prefix=route_rpsl_objs)
         assert len(list(dh.execute_query(RPSLDatabaseQuery().scopefilter_status([ScopeFilterStatus.out_scope_prefix])))) == 1
         journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_nrtm_range(1, 1)))
@@ -571,10 +592,12 @@ class TestDatabaseHandlerLive:
         assert len(list(dh.execute_query(RPSLDatabaseJournalQuery()))) == 1  # no new entry
 
         route_rpsl_objs[0]['old_status'] = ScopeFilterStatus.out_scope_prefix
+        route_rpsl_objs[0]['scopefilter_status'] = ScopeFilterStatus.out_scope_prefix
         dh.update_scopefilter_status(rpsl_objs_now_out_scope_as=route_rpsl_objs)
         assert len(list(dh.execute_query(RPSLDatabaseQuery().scopefilter_status([ScopeFilterStatus.out_scope_as])))) == 1
         assert len(list(dh.execute_query(RPSLDatabaseJournalQuery()))) == 1  # no new entry
 
+        route_rpsl_objs[0]['scopefilter_status'] = ScopeFilterStatus.in_scope
         dh.update_scopefilter_status(rpsl_objs_now_in_scope=route_rpsl_objs)
         assert len(list(dh.execute_query(RPSLDatabaseQuery().scopefilter_status([ScopeFilterStatus.in_scope])))) == 1
         journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_nrtm_range(2, 2)))
@@ -584,10 +607,50 @@ class TestDatabaseHandlerLive:
         # should change the status but not create a journal entry - see #524
         route_rpsl_objs[0].update({
             'old_status': ScopeFilterStatus.out_scope_as,
+            'scopefilter_status': ScopeFilterStatus.in_scope,
             'rpki_status': RPKIStatus.invalid,
         })
         dh.update_scopefilter_status(rpsl_objs_now_in_scope=route_rpsl_objs)
         assert len(list(dh.execute_query(RPSLDatabaseQuery().scopefilter_status([ScopeFilterStatus.in_scope])))) == 1
+        assert len(list(dh.execute_query(RPSLDatabaseJournalQuery()))) == 2  # no new entry since last test
+
+    def test_route_preference_status_storage(self, monkeypatch, irrd_database, database_handler_with_route):
+        monkeypatch.setenv('IRRD_SOURCES_TEST_KEEP_JOURNAL', '1')
+        dh = database_handler_with_route
+        existing_pk = list(dh.execute_query(RPSLDatabaseQuery()))[0]['pk']
+        route_rpsl_objs = [{
+            'pk': existing_pk,
+            'rpsl_pk': '192.0.2.0/24,AS65537',
+            'source': 'TEST',
+            'object_class': 'route',
+            'object_text': 'object-text',
+            'rpki_status': RPKIStatus.valid,
+            'scopefilter_status': ScopeFilterStatus.in_scope,
+        }]
+
+        assert len(list(dh.execute_query(RPSLDatabaseQuery().route_preference_status([RoutePreferenceStatus.visible])))) == 1
+
+        dh.update_route_preference_status(rpsl_objs_now_suppressed=route_rpsl_objs)
+        assert len(list(dh.execute_query(RPSLDatabaseQuery().route_preference_status([RoutePreferenceStatus.suppressed])))) == 1
+        journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_nrtm_range(1, 1)))
+        assert journal_entry[0]['operation'] == DatabaseOperation.delete
+
+        dh.update_scopefilter_status()
+        assert len(list(dh.execute_query(RPSLDatabaseQuery().route_preference_status([RoutePreferenceStatus.suppressed])))) == 1
+        assert len(list(dh.execute_query(RPSLDatabaseJournalQuery()))) == 1  # no new entry
+
+        dh.update_route_preference_status(rpsl_objs_now_visible=route_rpsl_objs)
+        assert len(list(dh.execute_query(RPSLDatabaseQuery().route_preference_status([RoutePreferenceStatus.visible])))) == 1
+        journal_entry = list(dh.execute_query(RPSLDatabaseJournalQuery().serial_nrtm_range(2, 2)))
+        assert journal_entry[0]['operation'] == DatabaseOperation.add_or_update
+
+        # Special case: updating the status while RPKI invalid,
+        # should change the status but not create a journal entry - see #524
+        route_rpsl_objs[0]['rpki_status'] = RPKIStatus.invalid
+        dh.update_route_preference_status(rpsl_objs_now_suppressed=route_rpsl_objs)
+        assert len(list(dh.execute_query(RPSLDatabaseQuery().route_preference_status([RoutePreferenceStatus.suppressed])))) == 1
+        dh.update_route_preference_status(rpsl_objs_now_visible=route_rpsl_objs)
+        assert len(list(dh.execute_query(RPSLDatabaseQuery().route_preference_status([RoutePreferenceStatus.visible])))) == 1
         assert len(list(dh.execute_query(RPSLDatabaseJournalQuery()))) == 2  # no new entry since last test
 
     def _clean_result(self, results):
@@ -648,6 +711,7 @@ class TestRPSLDatabaseQueryLive:
         self._assert_match(RPSLDatabaseQuery().text_search('192.0.2.0/24,As65537'))
         self._assert_match(RPSLDatabaseQuery().rpki_status([RPKIStatus.invalid]))
         self._assert_match(RPSLDatabaseQuery().scopefilter_status([ScopeFilterStatus.in_scope]))
+        self._assert_match(RPSLDatabaseQuery().route_preference_status([RoutePreferenceStatus.visible]))
 
     def test_chained_filters(self, irrd_database, database_handler_with_route):
         self.dh = database_handler_with_route
@@ -686,6 +750,7 @@ class TestRPSLDatabaseQueryLive:
         self._assert_no_match(RPSLDatabaseQuery().text_search('65537'))
         self._assert_no_match(RPSLDatabaseQuery().rpki_status([RPKIStatus.valid]))
         self._assert_no_match(RPSLDatabaseQuery().scopefilter_status([ScopeFilterStatus.out_scope_as]))
+        self._assert_no_match(RPSLDatabaseQuery().route_preference_status([RoutePreferenceStatus.suppressed]))
 
     def test_ordering_sources(self, irrd_database, database_handler_with_route):
         self.dh = database_handler_with_route
@@ -703,6 +768,7 @@ class TestRPSLDatabaseQueryLive:
             asn_last=65537,
             rpki_status=RPKIStatus.not_found,
             scopefilter_status=ScopeFilterStatus.in_scope,
+            route_preference_status=RoutePreferenceStatus.visible,
         )
         rpsl_object_3 = Mock(
             pk=lambda: '192.0.2.2/32,AS65537',
@@ -718,6 +784,7 @@ class TestRPSLDatabaseQueryLive:
             asn_last=65537,
             rpki_status=RPKIStatus.not_found,
             scopefilter_status=ScopeFilterStatus.in_scope,
+            route_preference_status=RoutePreferenceStatus.visible,
         )
         self.dh.upsert_rpsl_object(rpsl_object_2, JournalEntryOrigin.auth_change)
         self.dh.upsert_rpsl_object(rpsl_object_3, JournalEntryOrigin.auth_change)
@@ -757,6 +824,7 @@ class TestRPSLDatabaseQueryLive:
             asn_last=None,
             rpki_status=RPKIStatus.not_found,
             scopefilter_status=ScopeFilterStatus.in_scope,
+            route_preference_status=RoutePreferenceStatus.visible,
         )
         rpsl_object_role = Mock(
             pk=lambda: 'ROLE',
@@ -772,6 +840,7 @@ class TestRPSLDatabaseQueryLive:
             asn_last=None,
             rpki_status=RPKIStatus.not_found,
             scopefilter_status=ScopeFilterStatus.in_scope,
+            route_preference_status=RoutePreferenceStatus.visible,
         )
         self.dh = DatabaseHandler()
         self.dh.upsert_rpsl_object(rpsl_object_person, JournalEntryOrigin.auth_change)
@@ -798,6 +867,7 @@ class TestRPSLDatabaseQueryLive:
             asn_last=65537,
             rpki_status=RPKIStatus.not_found,
             scopefilter_status=ScopeFilterStatus.in_scope,
+            route_preference_status=RoutePreferenceStatus.visible,
         )
         rpsl_route_more_specific_25_2 = Mock(
             pk=lambda: '192.0.2.128/25,AS65537',
@@ -813,6 +883,7 @@ class TestRPSLDatabaseQueryLive:
             asn_last=65537,
             rpki_status=RPKIStatus.not_found,
             scopefilter_status=ScopeFilterStatus.in_scope,
+            route_preference_status=RoutePreferenceStatus.visible,
         )
         rpsl_route_more_specific_26 = Mock(
             pk=lambda: '192.0.2.0/26,AS65537',
@@ -828,6 +899,7 @@ class TestRPSLDatabaseQueryLive:
             asn_last=65537,
             rpki_status=RPKIStatus.not_found,
             scopefilter_status=ScopeFilterStatus.in_scope,
+            route_preference_status=RoutePreferenceStatus.visible,
         )
         self.dh.upsert_rpsl_object(rpsl_route_more_specific_25_1, JournalEntryOrigin.auth_change)
         self.dh.upsert_rpsl_object(rpsl_route_more_specific_25_2, JournalEntryOrigin.auth_change)

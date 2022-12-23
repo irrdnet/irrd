@@ -7,6 +7,7 @@ from IPy import IP
 from pytz import timezone
 
 from irrd.conf import get_setting, RPKI_IRR_PSEUDO_SOURCE
+from irrd.routepref.status import RoutePreferenceStatus
 from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import (OBJECT_CLASS_MAPPING, lookup_field_names)
 from irrd.scopefilter.status import ScopeFilterStatus
@@ -51,6 +52,7 @@ class QueryResolver:
         self.rpki_aware = bool(get_setting('rpki.roa_source'))
         self.rpki_invalid_filter_enabled = self.rpki_aware
         self.out_scope_filter_enabled = True
+        self.route_preference_filter_enabled = True
         self.user_agent: Optional[str] = None
         self.preloader = preloader
         self.database_handler = database_handler
@@ -70,6 +72,9 @@ class QueryResolver:
 
     def disable_out_of_scope_filter(self) -> None:
         self.out_scope_filter_enabled = False
+
+    def disable_route_preference_filter(self) -> None:
+        self.route_preference_filter_enabled = False
 
     def set_object_class_filter_next_query(self, object_classes: List[str]) -> None:
         """Restrict object classes for the next query, comma-seperated"""
@@ -340,6 +345,7 @@ class QueryResolver:
             results[source]['object_class_filter'] = list(object_class_filter) if object_class_filter else None
             results[source]['rpki_rov_filter'] = bool(get_setting('rpki.roa_source') and not get_setting(f'sources.{source}.rpki_excluded'))
             results[source]['scopefilter_enabled'] = bool(get_setting('scopefilter')) and not get_setting(f'sources.{source}.scopefilter_excluded')
+            results[source]['route_preference'] = get_setting(f'sources.{source}.route_object_preference')
             results[source]['local_journal_kept'] = get_setting(f'sources.{source}.keep_journal', False)
             results[source]['serial_oldest_journal'] = query_result['serial_oldest_journal']
             results[source]['serial_newest_journal'] = query_result['serial_newest_journal']
@@ -379,6 +385,8 @@ class QueryResolver:
             query.rpki_status([RPKIStatus.not_found, RPKIStatus.valid])
         if self.out_scope_filter_enabled:
             query.scopefilter_status([ScopeFilterStatus.in_scope])
+        if self.route_preference_filter_enabled:
+            query.route_preference_status([RoutePreferenceStatus.visible])
         self.object_class_filter = []
         return query
 

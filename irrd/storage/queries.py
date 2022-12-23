@@ -9,6 +9,7 @@ import sqlalchemy.dialects.postgresql as pg
 
 from irrd.conf import get_setting
 from irrd.rpki.status import RPKIStatus
+from irrd.routepref.status import RoutePreferenceStatus
 from irrd.rpsl.rpsl_objects import lookup_field_names
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.storage.models import (RPSLDatabaseObject, RPSLDatabaseJournal, RPSLDatabaseStatus,
@@ -354,6 +355,13 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         Filter for RPSL objects with a specific scope filter status.
         """
         fltr = self.columns.scopefilter_status.in_(status)
+        return self._filter(fltr)
+
+    def route_preference_status(self, status: List[RoutePreferenceStatus]):
+        """
+        Filter for RPSL objects with a specific route preference filter status.
+        """
+        fltr = self.columns.route_preference_status.in_(status)
         return self._filter(fltr)
 
     def text_search(self, value: str, extract_asn_ip=True):

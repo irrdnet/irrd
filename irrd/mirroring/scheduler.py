@@ -13,7 +13,7 @@ from irrd.conf import get_setting, RPKI_IRR_PSEUDO_SOURCE
 from irrd.conf.defaults import DEFAULT_SOURCE_IMPORT_TIMER, DEFAULT_SOURCE_EXPORT_TIMER
 from .mirror_runners_export import SourceExportRunner
 from .mirror_runners_import import RPSLMirrorImportUpdateRunner, ROAImportRunner, \
-    ScopeFilterUpdateRunner
+    ScopeFilterUpdateRunner, RoutePreferenceUpdateRunner
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +76,13 @@ class MirrorScheduler:
             import_timer = int(get_setting('rpki.roa_import_timer'))
             self.run_if_relevant(RPKI_IRR_PSEUDO_SOURCE, ROAImportRunner, import_timer)
 
+        if get_setting("sources") and any([
+            source_settings.get("route_object_preference")
+            for source_settings in get_setting("sources").values()
+        ]):
+            import_timer = int(get_setting('route_object_preference.update_timer'))
+            self.run_if_relevant('routepref', RoutePreferenceUpdateRunner, import_timer)
+
         if self._check_scopefilter_change():
             self.run_if_relevant('scopefilter', ScopeFilterUpdateRunner, 0)
 
@@ -129,8 +136,7 @@ class MirrorScheduler:
         return False
 
     def run_if_relevant(self, source: str, runner_class, timer: int) -> bool:
-        process_name = f'{runner_class.__name__}-{source}'
-
+        process_name = f"{runner_class.__name__}-{source}"
         current_time = time.time()
         has_expired = (self.last_started_time[process_name] + timer) < current_time
         if not has_expired or process_name in self.processes:

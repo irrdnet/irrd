@@ -53,12 +53,20 @@ This documentation is mainly for administrators of IRRd deployments.
    admins/configuration
    admins/availability-and-migration
    admins/migrating-legacy-irrd
-   admins/object-validation
    admins/status_page
+   admins/faq
+
+
+.. toctree::
+   :caption: Validation, suppression and suspension
+   :maxdepth: 1
+
+   admins/object-validation
+   admins/object-suppression
    admins/rpki
    admins/scopefilter
+   admins/route-object-preference
    admins/suspension
-   admins/faq
 
 Running queries
 ---------------

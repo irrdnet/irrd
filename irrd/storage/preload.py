@@ -11,6 +11,7 @@ from setproctitle import setproctitle
 
 from irrd.conf import get_setting
 from irrd.rpki.status import RPKIStatus
+from irrd.routepref.status import RoutePreferenceStatus
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.utils.process_support import ExceptionLoggingProcess
 from .queries import RPSLDatabaseQuery
@@ -35,6 +36,11 @@ large data sets, this can improve performance.
 
 
 class PersistentPubSubWorkerThread(redis.client.PubSubWorkerThread):  # type: ignore
+    """
+    This is a variation of PubSubWorkerThread which persists after an error.
+    Rather than terminate, the thread will attempt to reconnect periodically
+    until the connection is re-established.
+    """
     def __init__(self, callback, *args, **kwargs):
         self.callback = callback
         self.should_resubscribe = True
@@ -349,6 +355,7 @@ class PreloadUpdater(threading.Thread):
         q = RPSLDatabaseQuery(column_names=['ip_version', 'ip_first', 'prefix_length', 'asn_first', 'source'], enable_ordering=False)
         q = q.object_classes(['route', 'route6']).rpki_status([RPKIStatus.not_found, RPKIStatus.valid])
         q = q.scopefilter_status([ScopeFilterStatus.in_scope])
+        q = q.route_preference_status([RoutePreferenceStatus.visible])
 
         for result in dh.execute_query(q):
             prefix = result['ip_first']
