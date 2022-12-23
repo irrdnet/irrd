@@ -5,6 +5,7 @@ from unittest.mock import Mock
 import pytest
 
 from irrd.rpki.status import RPKIStatus
+from irrd.routepref.status import RoutePreferenceStatus
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.utils.test_utils import flatten_mock_calls
 from ..database_handler import DatabaseHandler
@@ -170,6 +171,7 @@ class TestPreloadUpdater:
             ['object_classes', (['route', 'route6'],), {}],
             ['rpki_status', ([RPKIStatus.not_found, RPKIStatus.valid],), {}],
             ['scopefilter_status', ([ScopeFilterStatus.in_scope],), {}],
+            ['route_preference_status', ([RoutePreferenceStatus.visible],), {}],
         ]
 
         assert flatten_mock_calls(mock_preload_obj) == [

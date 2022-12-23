@@ -5,6 +5,7 @@ from IPy import IP
 from graphql import GraphQLError
 from starlette.requests import HTTPConnection
 
+from irrd.routepref.status import RoutePreferenceStatus
 from irrd.rpki.status import RPKIStatus
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.server.query_resolver import QueryResolver
@@ -22,6 +23,7 @@ EXPECTED_RPSL_GRAPHQL_OUTPUT = [{
     'operation': DatabaseOperation.add_or_update,
     'rpkiStatus': RPKIStatus.not_found,
     'scopefilterStatus': ScopeFilterStatus.out_scope_as,
+    'routePreferenceStatus': RoutePreferenceStatus.suppressed,
     'source': 'TEST1',
     'route': '192.0.2.0/25',
     'origin': 'AS65547',
@@ -51,6 +53,7 @@ MOCK_RPSL_DB_RESULT = [{
     'object_text': 'object text\nauth: CRYPT-PW LEuuhsBJNFV0Q',
     'rpki_status': RPKIStatus.not_found,
     'scopefilter_status': ScopeFilterStatus.out_scope_as,
+    'route_preference_status': RoutePreferenceStatus.suppressed,
     'source': 'TEST1',
     # only used in journal test
     'operation': DatabaseOperation.add_or_update,
@@ -116,6 +119,7 @@ class TestGraphQLResolvers:
             text_search='text',
             rpki_status=[RPKIStatus.invalid],
             scope_filter_status=[ScopeFilterStatus.out_scope_as],
+            route_preference_status=[RoutePreferenceStatus.suppressed],
             ip_exact='192.0.2.1',
             sources=['TEST1'],
             mntBy='mnt-by',
@@ -132,6 +136,7 @@ class TestGraphQLResolvers:
             ['text_search', ('text',), {}],
             ['rpki_status', ([RPKIStatus.invalid],), {}],
             ['scopefilter_status', ([ScopeFilterStatus.out_scope_as],), {}],
+            ['route_preference_status', ([RoutePreferenceStatus.suppressed],), {}],
             ['sources', (['TEST1'],), {}],
             ['lookup_attrs_in', (['mnt-by'], 'mnt-by'), {}],
             ['ip_exact', (IP('192.0.2.1'),), {}],
@@ -151,6 +156,7 @@ class TestGraphQLResolvers:
             ['rpsl_pks', ('pk',), {}],
             ['rpki_status', ([RPKIStatus.not_found, RPKIStatus.valid],), {}],
             ['scopefilter_status', ([ScopeFilterStatus.in_scope],), {}],
+            ['route_preference_status', ([RoutePreferenceStatus.visible],), {}],
             ['sources', (['TEST1'],), {}],
         ]
 

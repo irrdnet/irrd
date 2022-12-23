@@ -4,6 +4,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql as pg
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 
+from irrd.routepref.status import RoutePreferenceStatus
 from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import lookup_field_names
 from irrd.scopefilter.status import ScopeFilterStatus
@@ -31,6 +32,8 @@ class JournalEntryOrigin(enum.Enum):
     scope_filter = 'SCOPE_FILTER'
     # Journal entry caused by an object being suspended or reactivated
     suspension = 'SUSPENSION'
+    # Journal entry caused by an object's route preference changing between suppressed and visible
+    route_preference = 'ROUTE_PREFERENCE'
 
 
 Base = declarative_base()
@@ -68,6 +71,7 @@ class RPSLDatabaseObject(Base):  # type: ignore
 
     rpki_status = sa.Column(sa.Enum(RPKIStatus), nullable=False, index=True, server_default=RPKIStatus.not_found.name)
     scopefilter_status = sa.Column(sa.Enum(ScopeFilterStatus), nullable=False, index=True, server_default=ScopeFilterStatus.in_scope.name)
+    route_preference_status = sa.Column(sa.Enum(RoutePreferenceStatus), nullable=False, index=True, server_default=RoutePreferenceStatus.visible.name)
 
     created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
     updated = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)

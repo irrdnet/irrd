@@ -466,6 +466,7 @@ The query is defined as follows::
         asn: [ASN!]
         rpkiStatus: [RPKIStatus!]
         scopeFilterStatus: [ScopeFilterStatus!]
+        routePreferenceStatus: [RoutePreferenceStatus!]
         textSearch: String
         recordLimit: Int
         sqlTrace: Boolean
@@ -494,6 +495,10 @@ The other possible arguments for the query are:
   statuses in the database. If omitted, the default is to filter on
   in_scope objects. Valid values are defined in the ``ScopeFilterStatus``
   enum in the schema.
+* ``routePreferenceStatus``: filter on objects that have one of these
+  route preference statuses in the database.
+  If omitted, the default is to filter on visible objects. Valid values are
+  defined in the ``RoutePreferenceStatus`` enum in the schema.
 * ``recordLimit``: limits the query to return this many results. Related
   object query results (explained in detail later) do not count towards
   this limit.
@@ -862,8 +867,8 @@ IRRd has a few custom types for specific purposes:
   sufficient.
 * The ``IP`` scalar. This is presented as a string. When used in query
   arguments, the value is validated to be a valid IP address or prefix.
-* The enums ``RPKIStatus`` and ``ScopeFilterStatus`` for querying and
-  returning these statuses on RPSL objects.
+* The enums ``RPKIStatus``, ``ScopeFilterStatus``, and ``RoutePreferenceStatus``
+  for querying and returning these statuses on RPSL objects.
 
 Tips
 ----

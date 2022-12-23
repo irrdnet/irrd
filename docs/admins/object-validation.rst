@@ -7,8 +7,8 @@ However, most current IRR databases violate these RFCs in some
 ways, meaning some flexibility is needed.
 
 In addition to the validations as described below, IRRd supports
-an :doc:`RPKI-aware mode </admins/rpki>` where objects are also
-validated against ROAs.
+:doc:`object suppression </admins/object-suppression>` where objects are also
+filtered or validated against ROAs, a scope filter, or other route objects.
 
 
 General requirements
@@ -19,13 +19,13 @@ The general requirements for validation are:
 * Any objects submitted to IRRd directly (i.e. not from mirrors)
   should always be entirely valid. If they are not, the end user
   can fix their object and continue from there.
-* The NTTCOM database has some legacy objects which require more
+* Many databases have some legacy objects which require more
   leniency with an initial import, but we aim to be as restrictive
   as reasonably possible. It should not be possible to update invalid
-  objects without correcting their issues.
+  authoritative objects without correcting their issues.
 * Mirrors contain wildly variant objects, so IRRd performs the minimal
   level of validation needed to correctly index and query them.
-* Under no condition may IRRd provide responses to any query, which
+* IRRd must never provide responses to any query, which
   are missing certain objects because indexed data could not be extracted
   from them, without logging errors about failing to import these objects.
 * If objects are received from mirrors that can not be accepted, e.g.
@@ -100,6 +100,7 @@ The ``rpki-ov-state`` attribute, which is used to indicate the
 :doc:`RPKI validation status </admins/rpki>`, is always discarded from all
 incoming objects. Where relevant, it is added to the output of queries.
 This applies to authoritative and non-authoritative sources.
+This attribute is not visible over NRTM and in exports.
 
 key-cert objects
 ^^^^^^^^^^^^^^^^
@@ -114,7 +115,7 @@ last-modified
 ^^^^^^^^^^^^^
 For authoritative objects, the ``last-modified`` attribute is set when
 the object is created or updated. Any existing ``last-modified`` values are
-discarded. This timestamp is not updated for changes in RPKI validation
+discarded. This timestamp is not updated for changes in object suppression
 status. This attribute is visible over NRTM and in exports.
 
 By default, this attribute is only added when an object is changed or

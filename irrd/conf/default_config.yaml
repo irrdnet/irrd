@@ -2,6 +2,8 @@
 # in conf/defaults.py.
 irrd:
     database_url: null
+    route_object_preference:
+        update_timer: 3600
     rpki:
         roa_source: https://rpki.gin.ntt.net/api/export.json
         roa_import_timer: 3600

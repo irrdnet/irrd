@@ -414,7 +414,7 @@ class RPSLRole(RPSLObject):
 
 
 class RPSLRoute(RPSLObject):
-    rpki_relevant = True
+    is_route = True
     discarded_fields = ['rpki-ov-state']
     fields = OrderedDict([
         ('route', RPSLIPv4PrefixField(primary_key=True, lookup_key=True)),
@@ -457,7 +457,7 @@ class RPSLRouteSet(RPSLSet):
 
 
 class RPSLRoute6(RPSLObject):
-    rpki_relevant = True
+    is_route = True
     discarded_fields = ['rpki-ov-state']
     fields = OrderedDict([
         ('route6', RPSLIPv6PrefixField(primary_key=True, lookup_key=True)),
@@ -522,7 +522,7 @@ OBJECT_CLASS_MAPPING = {
 RPKI_RELEVANT_OBJECT_CLASSES = [
     rpsl_object.rpsl_object_class
     for rpsl_object in OBJECT_CLASS_MAPPING.values()
-    if rpsl_object.rpki_relevant
+    if rpsl_object.is_route
 ]
 
 

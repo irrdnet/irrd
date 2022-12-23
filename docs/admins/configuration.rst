@@ -533,6 +533,21 @@ Scope filter
   |br| **Change takes effect**: after SIGHUP. Updating the status of
   existing objects may take 10-15 minutes.
 
+Route object preference
+~~~~~~~~~~~~~~~~~~~~~~~
+* ``route_object_preference.update_timer``: the time in seconds between
+  full updates of the
+  :doc:`route object preference </admins/route-object-preference>` status
+  for all objects in the database. Note that the status is already updated
+  on changes to objects as they are processed - this periodic process sets
+  the initial state and resolver small inconsistencies. This setting
+  has no effect unless at least one source has
+  ``sources.{name}.route_object_preference`` set.
+  |br| **Default**: 3600 (1 hour)
+  |br| **Change takes effect**: after SIGHUP.
+
+In addition to this, the route object preference of each source can be set
+in ``sources.{name}.route_object_preference``, documented below.
 
 Sources
 ~~~~~~~
@@ -665,7 +680,12 @@ Sources
   this source. If set to ``true``, all objects will be considered in scope
   for their scope filter status.
   |br| **Default**: false, scope filter validation enabled.
-  |br| **Change takes effect**: after SIGHUP, within a few minutes
+  |br| **Change takes effect**: after SIGHUP, within a few minutes.
+* ``sources.{name}.route_object_preference``: the
+  :doc:`route object preference </admins/route-object-preference>` for
+  this source. Higher number is a higher preference.
+  |br| **Default**: unset, not considered for route object preference.
+  |br| **Change takes effect**: after SIGHUP, after next periodic update.
 * ``sources.{name}.suspension_enabled``: a boolean for whether this source
   allows :doc:`suspension and reactivation of objects </admins/suspension>`.
   Can only be enabled if `authoritative` is enabled.

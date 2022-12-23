@@ -8,6 +8,7 @@ from graphql import GraphQLResolveInfo, GraphQLError
 
 from irrd.conf import get_setting, RPKI_IRR_PSEUDO_SOURCE
 from irrd.rpki.status import RPKIStatus
+from irrd.routepref.status import RoutePreferenceStatus
 from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING, lookup_field_names
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.server.access_check import is_client_permitted
@@ -43,7 +44,8 @@ def resolve_rpsl_objects(_, info: GraphQLResolveInfo, **kwargs):
     database query.
     """
     low_specificity_kwargs = {
-        'object_class', 'rpki_status', 'scope_filter_status', 'sources', 'sql_trace'
+        'object_class', 'rpki_status', 'scope_filter_status', 'route_preference_status',
+        'sources', 'sql_trace'
     }
     # A query is sufficiently specific if it has other fields than listed above,
     # except that rpki_status is sufficient if it is exclusively selecting on
@@ -82,6 +84,10 @@ def resolve_rpsl_objects(_, info: GraphQLResolveInfo, **kwargs):
         query.scopefilter_status(kwargs['scope_filter_status'])
     else:
         query.scopefilter_status([ScopeFilterStatus.in_scope])
+    if 'route_preference_status' in kwargs:
+        query.route_preference_status(kwargs['route_preference_status'])
+    else:
+        query.route_preference_status([RoutePreferenceStatus.visible])
 
     all_valid_sources = set(get_setting('sources', {}).keys())
     if get_setting('rpki.roa_source'):
@@ -213,8 +219,6 @@ def _rpsl_db_query_to_graphql_out(query: RPSLDatabaseQuery, info: GraphQLResolve
         graphql_result = {snake_to_camel_case(k): v for k, v in row.items() if k != 'parsed_data'}
         if 'object_text' in row:
             graphql_result['objectText'] = remove_auth_hashes(row['object_text'])
-        if 'rpki_status' in row:
-            graphql_result['rpkiStatus'] = row['rpki_status']
         if row.get('ip_first') is not None and row.get('prefix_length'):
             graphql_result['prefix'] = row['ip_first'] + '/' + str(row['prefix_length'])
         if row.get('asn_first') is not None and row.get('asn_first') == row.get('asn_last'):

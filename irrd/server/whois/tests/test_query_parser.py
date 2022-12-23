@@ -828,6 +828,13 @@ class TestWhoisQueryParserIRRD:
         assert response.result.startswith('Filtering out out-of-scope')
         mock_query_resolver.disable_out_of_scope_filter.assert_called_once_with()
 
+        mock_query_resolver.disable_route_preference_filter = Mock()
+        response = parser.handle_query('!fno-route-preference-filter')
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert response.result.startswith('Filtering out objects suppressed due to route')
+        mock_query_resolver.disable_route_preference_filter.assert_called_once_with()
+
     def test_exception_handling(self, prepare_parser, caplog):
         mock_query_resolver, mock_dh, parser = prepare_parser
         mock_query_resolver.members_for_set = Mock(side_effect=Exception('test-error'))

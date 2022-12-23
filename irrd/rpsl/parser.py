@@ -8,6 +8,7 @@ from typing import Dict, List, Optional, Tuple, Any, Set
 from IPy import IP
 
 from irrd.rpki.status import RPKIStatus
+from irrd.routepref.status import RoutePreferenceStatus
 from irrd.rpsl.parser_state import RPSLParserMessages
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.utils.text import splitline_unicodesafe
@@ -68,11 +69,12 @@ class RPSLObject(metaclass=RPSLObjectMeta):
     prefix_length: Optional[int] = None
     rpki_status: RPKIStatus = RPKIStatus.not_found
     scopefilter_status: ScopeFilterStatus = ScopeFilterStatus.in_scope
+    route_preference_status: RoutePreferenceStatus = RoutePreferenceStatus.visible
     pk_asn_segment: Optional[str] = None
     default_source: Optional[str] = None  # noqa: E704 (flake8 bug)
-    # Whether this object has a relation to RPKI ROA data, and therefore RPKI
-    # checks should be performed in certain scenarios. Enabled for route/route6.
-    rpki_relevant = False
+    # Shortcut for whether this object is a route-like object, and therefore
+    # should be included in RPKI and route preference status. Enabled for route/route6.
+    is_route = False
     # Fields whose values are discarded during parsing
     discarded_fields: List[str] = []
     # Fields that are ignored in validation even

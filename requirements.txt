@@ -26,6 +26,7 @@ psutil==5.9.4          # Process management
 asgiref==3.6.0         # ASGI utilities
 pydantic==1.10.4        # Input validation
 typing-extensions==4.4.0
+py-radix-sr==1.0.0post1
 
 # Database connections and management
 psycopg2-binary==2.9.5; platform_python_implementation == "CPython"

@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 PASSWORD_HASH_DUMMY_VALUE = 'DummyValue'
 SOURCE_NAME_RE = re.compile('^[A-Z][A-Z0-9-]*[A-Z0-9]$')
 RPKI_IRR_PSEUDO_SOURCE = 'RPKI'
+ROUTEPREF_IMPORT_TIME = 3600
 AUTH_SET_CREATION_COMMON_KEY = 'COMMON'
 SOCKET_DEFAULT_TIMEOUT = 30
 
@@ -248,6 +249,9 @@ class Configuration:
         if not self._check_is_str(config, 'piddir') or not os.path.isdir(config['piddir']):
             errors.append('Setting piddir is required and must point to an existing directory.')
 
+        if not str(config.get('route_object_preference.update_timer', '0')).isnumeric():
+            errors.append('Setting route_object_preference.update_timer must be a number.')
+
         expected_access_lists = {
             config.get('server.whois.access_list'),
             config.get('server.http.status_access_list'),
@@ -346,14 +350,13 @@ class Configuration:
                 errors.append(f'Source {name} can not have authoritative, import_source or nrtm_host set '
                               f'when database_readonly is enabled.')
 
-            if not str(details.get('nrtm_port', '43')).isnumeric():
-                errors.append(f'Setting nrtm_port for source {name} must be a number.')
-            if not str(details.get('import_timer', '0')).isnumeric():
-                errors.append(f'Setting import_timer for source {name} must be a number.')
-            if not str(details.get('export_timer', '0')).isnumeric():
-                errors.append(f'Setting export_timer for source {name} must be a number.')
-            if not str(details.get('nrtm_query_serial_range_limit', '0')).isnumeric():
-                errors.append(f'Setting nrtm_query_serial_range_limit for source {name} must be a number.')
+            number_fields = [
+                'nrtm_port', 'import_timer', 'export_timer',
+                'route_object_preference', 'nrtm_query_serial_range_limit',
+            ]
+            for field_name in number_fields:
+                if not str(details.get(field_name, 0)).isnumeric():
+                    errors.append(f'Setting {field_name} for source {name} must be a number.')
 
             if details.get('nrtm_access_list'):
                 expected_access_lists.add(details.get('nrtm_access_list'))

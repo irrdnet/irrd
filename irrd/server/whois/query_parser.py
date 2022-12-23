@@ -123,6 +123,10 @@ class WhoisQueryParser:
             self.query_resolver.disable_out_of_scope_filter()
             result = 'Filtering out out-of-scope objects is disabled for !r and RIPE style ' \
                      'queries for the rest of this connection.'
+        elif full_command.upper() == 'FNO-ROUTE-PREFERENCE-FILTER':
+            self.query_resolver.disable_route_preference_filter()
+            result = 'Filtering out objects suppressed due to route preference is disabled for ' \
+                     '!r and RIPE style queries for the rest of this connection.'
         elif command == 'v':
             result = self.handle_irrd_version()
         elif command == 't':

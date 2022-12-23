@@ -57,6 +57,9 @@ class TestConfiguration:
                     'from': 'example@example.com',
                     'smtp': '192.0.2.1'
                 },
+                'route_object_preference': {
+                    'update_timer': 10,
+                },
                 'rpki': {
                     'roa_source': None,
                 },
@@ -102,6 +105,7 @@ class TestConfiguration:
                         'nrtm_port': 43,
                         'import_serial_source': 'ftp://example.com/serial',
                         'keep_journal': True,
+                        'route_object_preference': 200,
                     },
                     'TESTDB3': {
                         'export_destination_unfiltered': '/tmp',
@@ -272,6 +276,9 @@ class TestConfiguration:
                         'crypt-pw': 'invalid-setting',
                     },
                 },
+                'route_object_preference': {
+                    'update_timer': 'not-a-number',
+                },
                 'rpki': {
                     'roa_source': 'https://example.com/roa.json',
                     'roa_import_timer': 'foo',
@@ -303,6 +310,7 @@ class TestConfiguration:
                         'authoritative': True,
                         'import_source': '192.0.2.1',
                         'nrtm_access_list_unfiltered': 'invalid-list',
+                        'route_object_preference': 'not-a-number',
                     },
                     # Not permitted, rpki.roa_source is set
                     'RPKI': {},
@@ -355,6 +363,8 @@ class TestConfiguration:
         assert 'Setting rpki.notify_invalid_header must be a string, if defined.' in str(ce.value)
         assert 'Setting import_timer for source TESTDB must be a number.' in str(ce.value)
         assert 'Setting export_timer for source TESTDB must be a number.' in str(ce.value)
+        assert 'Setting route_object_preference for source TESTDB3 must be a number.' in str(ce.value)
+        assert 'Setting route_object_preference.update_timer must be a number.' in str(ce.value)
         assert 'Setting nrtm_query_serial_range_limit for source TESTDB must be a number.' in str(ce.value)
         assert 'Invalid source name: lowercase' in str(ce.value)
         assert 'Invalid source name: invalid char' in str(ce.value)

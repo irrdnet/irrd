@@ -70,7 +70,7 @@ class NRTMOperation:
             return False
 
         if self.operation == DatabaseOperation.add_or_update:
-            if self.rpki_aware and obj.rpki_relevant and obj.prefix and obj.asn_first:
+            if self.rpki_aware and obj.is_route and obj.prefix and obj.asn_first:
                 roa_validator = SingleRouteROAValidator(database_handler)
                 obj.rpki_status = roa_validator.validate_route(obj.prefix, obj.asn_first, obj.source())
             scope_validator = ScopeFilterValidator()
@@ -82,7 +82,7 @@ class NRTMOperation:
                                                 source_serial=self.serial)
 
         log = f'Completed NRTM operation {str(self)}/{obj.rpsl_object_class}/{obj.pk()}'
-        if self.rpki_aware and obj.rpki_relevant:
+        if self.rpki_aware and obj.is_route:
             log += f', RPKI status {obj.rpki_status.value}'
         logger.info(log)
         return True

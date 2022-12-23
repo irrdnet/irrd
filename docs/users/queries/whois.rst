@@ -98,6 +98,10 @@ IRRd style queries
   * ``object_class_filter``: may be a list of object classes that are
     ignored by this IRRd instance, when mirroring from a remote source.
   * ``rpki_rov_filter``: whether RPKI validation is enabled for this source.
+  * ``scopefilter_enabled``: whether the scope filter is enabled on this instance,
+    and is also enabled for this source.
+  * ``route_preference``: the route order preference setting for this source,
+    if any is set.
   * ``local_journal_kept``: whether this IRRd instance keeps a local journal
     of the changes in this source, allowing it to be mirrored over NRTM.
   * ``serial_oldest_journal`` / ``serial_newest_journal``: the oldest and
@@ -145,12 +149,10 @@ IRRd style queries
   comma-separated, e.g. ``!sRIPE,NTTCOM``. In addition, ``!s-lc`` returns the
   sources currently selected. This persists across queries.
 * ``!v`` returns the current version of IRRd
-* ``!fno-rpki-filter`` disables filtering RPKI invalid routes. If
-  :doc:`RPKI-aware mode is enabled </admins/rpki>`, `route(6)` objects that
-  are RPKI invalid are not included in the output of any query by default.
-  After using ``!fno-rpki-filter``, this filter is disabled for the remainder of
-  the connection. Disabling the filter only applies to ``!r`` queries and
-  all RIPE style queries. This is only intended as a debugging aid.
+* ``!fno-rpki-filter``, ``!fno-scope-filter``, and ``!fno-route-preference-filter``
+  disables the filtering of :doc:`suppressed objects </admins/object-suppression>`
+  for the remainder of the connection. Disabling the filter only applies to ``!r``
+  queries and all RIPE style queries. This is only intended as a debugging aid.
 * ``!fno-scope-filter`` disables filtering out-of-scope objects. If
   the scope filter is enabled, objects that are
   :doc:`out of scope </admins/scopefilter>` are not included in the output of any query by default.

@@ -48,6 +48,7 @@ class TestStatusGenerator:
                     'nrtm_port': 43,
                     'object_class_filter': 'object-class-filter',
                     'rpki_excluded': True,
+                    'route_object_preference': 200,
                 },
                 'TEST2': {
                     'authoritative': True,
@@ -157,6 +158,7 @@ class TestStatusGenerator:
                 Last import error occurred at: 2018-01-01 00:00:00+00:00
                 RPKI validation enabled: No
                 Scope filter enabled: No
+                Route object preference: 200
             
             Remote information:
                 NRTM host: nrtm1.example.com port 43
@@ -183,7 +185,8 @@ class TestStatusGenerator:
                 Last import error occurred at: 2019-01-01 00:00:00+00:00
                 RPKI validation enabled: Yes
                 Scope filter enabled: No
-            
+                Route object preference: None
+
             Remote information:
                 NRTM host: nrtm2.example.com port 44
                 Remote status query unsupported or query failed
@@ -206,6 +209,7 @@ class TestStatusGenerator:
                 Last import error occurred at: None
                 RPKI validation enabled: Yes
                 Scope filter enabled: No
+                Route object preference: None
             
             Remote information:
                 NRTM host: nrtm3.example.com port 45
@@ -229,6 +233,7 @@ class TestStatusGenerator:
                 Last import error occurred at: None
                 RPKI validation enabled: Yes
                 Scope filter enabled: No
+                Route object preference: None
             
             Remote information:
                 No NRTM host configured.\n\n""").lstrip()

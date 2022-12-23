@@ -19,6 +19,11 @@ enum ScopeFilterStatus {
     out_scope_prefix
 }
 
+enum RoutePreferenceStatus {
+    visible
+    suppressed
+}
+
 
             scalar ASN
             scalar IP
@@ -28,7 +33,7 @@ enum ScopeFilterStatus {
             }
 
             type Query {
-              rpslObjects(adminC: [String!], mbrsByRef: [String!], memberOf: [String!], members: [String!], mntBy: [String!], mpMembers: [String!], objectClass: [String!], origin: [String!], person: [String!], role: [String!], rpslPk: [String!], sources: [String!], techC: [String!], zoneC: [String!], ipExact: IP, ipLessSpecific: IP, ipLessSpecificOneLevel: IP, ipMoreSpecific: IP, ipAny: IP, asn: [ASN!], rpkiStatus: [RPKIStatus!], scopeFilterStatus: [ScopeFilterStatus!], textSearch: String, recordLimit: Int, sqlTrace: Boolean): [RPSLObject!]
+              rpslObjects(adminC: [String!], mbrsByRef: [String!], memberOf: [String!], members: [String!], mntBy: [String!], mpMembers: [String!], objectClass: [String!], origin: [String!], person: [String!], role: [String!], rpslPk: [String!], sources: [String!], techC: [String!], zoneC: [String!], ipExact: IP, ipLessSpecific: IP, ipLessSpecificOneLevel: IP, ipMoreSpecific: IP, ipAny: IP, asn: [ASN!], rpkiStatus: [RPKIStatus!], scopeFilterStatus: [ScopeFilterStatus!], routePreferenceStatus: [RoutePreferenceStatus!], textSearch: String, recordLimit: Int, sqlTrace: Boolean): [RPSLObject!]
               databaseStatus(sources: [String!]): [DatabaseStatus]
               asnPrefixes(asns: [ASN!]!, ipVersion: Int, sources: [String!]): [ASNPrefixes!]
               asSetPrefixes(setNames: [String!]!, ipVersion: Int, sources: [String!], excludeSets: [String!], sqlTrace: Boolean): [AsSetPrefixes!]
@@ -41,6 +46,7 @@ enum ScopeFilterStatus {
                 objectClassFilter: [String!]
                 rpkiRovFilter: Boolean!
                 scopefilterEnabled: Boolean!
+                routePreference: Int
                 localJournalKept: Boolean!
                 serialOldestJournal: Int
                 serialNewestJournal: Int
@@ -469,6 +475,7 @@ type RPSLRoute implements RPSLObject {
   asn: ASN
   rpkiStatus: RPKIStatus
   rpkiMaxLength: Int
+  routePreferenceStatus: RoutePreferenceStatus
 }
 
 type RPSLRouteSet implements RPSLObject {
@@ -531,6 +538,7 @@ type RPSLRoute6 implements RPSLObject {
   asn: ASN
   rpkiStatus: RPKIStatus
   rpkiMaxLength: Int
+  routePreferenceStatus: RoutePreferenceStatus
 }
 
 type RPSLRtrSet implements RPSLObject {

@@ -310,7 +310,7 @@ class ChangeRequest:
         assert self.rpsl_obj_new
         if self._cached_roa_validity is not None:
             return self._cached_roa_validity
-        if not get_setting('rpki.roa_source') or not self.rpsl_obj_new.rpki_relevant:
+        if not get_setting('rpki.roa_source') or not self.rpsl_obj_new.is_route:
             return True
         # Deletes are permitted for RPKI-invalids, other operations are not
         if self.request_type == UpdateRequestType.DELETE:
