@@ -737,7 +737,7 @@ def setup_argparse():
         the arguments for irrdv3's version of irr_rpsl_submit but ignores
         most of them.
 
-        You can also set two environment variables:
+        You can also set three environment variables:
 
             IRR_RPSL_SUBMIT_DEBUG - turn on debugging
             IRR_RPSL_SUBMIT_URL   - used if both -u and -h are unspecified
