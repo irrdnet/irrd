@@ -1,6 +1,8 @@
+import io
 import os
 import pytest
 import re
+import shlex
 import subprocess
 import sys
 import unittest
@@ -46,11 +48,21 @@ known invalid requests, but everything else is left to the server
 to respond with an error. As such, these string need only look like
 RPSL without conforming to the rules for particular objects.
 """
+OVERRIDE = 'asdffh'
+DELETE_REASON = 'some fine pig'
+PASSWORD1='qwerty'
+PASSWORD2='mnbvc'
 RPSL_EMPTY      = ""
 RPSL_WHITESPACE = "\n\n\n    \t\t\n"
 RPSL_MINIMAL    = "route: 1.2.3.4\norigin: AS65414\n"
-RPSL_DELETE_WITH_TWO_OBJECTS = "person: Biff Badger\n\nrole: Badgers\ndelete: some reason"
+RPSL_DELETE = f"role: Badgers\ndelete: {DELETE_REASON}"
+RPSL_DELETE_WITH_TWO_OBJECTS = f"person: Biff Badger\n\nrole: Badgers\ndelete: {DELETE_REASON}"
+RPSL_WITH_OVERRIDE = f"mnter: Biff\noverride: {OVERRIDE}"
+RPSL_WITH_TWO_DIFF_OVERRIDES = f"{RPSL_MINIMAL}override: {PASSWORD1}\n\n{RPSL_MINIMAL}override: {PASSWORD2}"
+RPSL_WITH_ONE_PASSWORD = f"{RPSL_MINIMAL}password: {PASSWORD1}\n"
+RPSL_WITH_TWO_PASSWORD = f"{RPSL_MINIMAL}password: {PASSWORD1}\n\n{RPSL_MINIMAL}password: {PASSWORD2}"
 
+REQEUST_BODY_KEYS = [ 'delete_reason', 'objects', 'override', 'passwords' ]
 
 class Runner():
     """
@@ -103,7 +115,12 @@ class ArgsParseMock(object):
             setattr(self, key, dictionary[key])
 
 class Test_100_Units(unittest.TestCase):
+    @pytest.fixture(autouse=True)
+    def capfd(self, capfd):
+        self.capfd = capfd
+
     def setUp(self):
+        sys.stdin = sys.__stdin__
         irr_env_names = [ 'IRR_RPSL_SUBMIT_DEBUG', 'IRR_RPSL_SUBMIT_HOST', 'IRR_RPSL_SUBMIT_URL' ]
         for name in irr_env_names:
             os.unsetenv(name)
@@ -134,7 +151,154 @@ class Test_100_Units(unittest.TestCase):
         with pytest.raises(irr_rpsl_submit.XArgumentProcessing) as e:
             irr_rpsl_submit.choose_url(args)
 
+    def test_help_message(self):
+        options = ['--help'];
+        with pytest.raises(SystemExit) as pytest_wrapped_e:
+            irr_rpsl_submit.get_arguments(options)
+        out, err = self.capfd.readouterr()
+        self.assertEqual(pytest_wrapped_e.type, SystemExit)
+        self.assertEqual(pytest_wrapped_e.value.code, 0)
+        self.assertRegex(out, re.compile('irrdv3'))
+
+    def test_bad_option(self):
+        options = ['-Z'];
+        with pytest.raises(SystemExit) as pytest_wrapped_e:
+            irr_rpsl_submit.get_arguments(options)
+        self.assertEqual(pytest_wrapped_e.type, SystemExit)
+        self.assertEqual(pytest_wrapped_e.value.code, EXIT_ARGUMENT_ERROR)
+
+    def test_metadata(self):
+        options = shlex.split('-u http://example.com -m foo=bar');
+        args = irr_rpsl_submit.get_arguments(options)
+        self.assertEqual(args.metadata, { 'foo': 'bar' })
+
+    def test_metadata_without_value(self):
+        options = shlex.split('-u http://example.com -m foo');
+        with pytest.raises(SystemExit) as pytest_wrapped_e:
+            args = irr_rpsl_submit.get_arguments(options)
+        self.assertEqual(pytest_wrapped_e.type, SystemExit)
+        self.assertEqual(pytest_wrapped_e.value.code, EXIT_ARGUMENT_ERROR)
+
+    def test_debug(self):
+        options = shlex.split('-u http://example.com -d');
+        args = irr_rpsl_submit.get_arguments(options)
+        self.assertEqual(args.debug, True)
+
+    def test_u_from_env(self):
+        name='IRR_RPSL_SUBMIT_URL'
+        value=UNRESOVABLE_URL
+        os.environ[name] = value
+        args = irr_rpsl_submit.get_arguments([])
+        self.assertEqual(args.url, UNRESOVABLE_URL)
+
+    def test_h_from_env(self):
+        name='IRR_RPSL_SUBMIT_HOST'
+        value=UNRESOVABLE_HOST
+        os.environ[name] = value
+        args = irr_rpsl_submit.get_arguments([])
+        self.assertEqual(args.url, f"{UNRESOVABLE_URL}/v1/submit/")
+
+    def test_d_from_env(self):
+        name='IRR_RPSL_SUBMIT_DEBUG'
+        value="1"
+        os.environ[name] = value
+        args = irr_rpsl_submit.get_arguments(['-u', UNRESOVABLE_URL])
+        self.assertEqual(args.debug, True)
+
+    def test_u_and_h(self):
+        options = shlex.split('-u http://example.com -h fake.example.com');
+        with pytest.raises(SystemExit) as pytest_wrapped_e:
+            irr_rpsl_submit.run(options)
+        self.assertEqual(pytest_wrapped_e.type, SystemExit)
+        self.assertEqual(pytest_wrapped_e.value.code, EXIT_ARGUMENT_ERROR)
+
+    def test_no_objects(self):
+        options = shlex.split('-u http://abc.xyz.example.com');
+        sys.stdin = io.StringIO("")
+        with pytest.raises(SystemExit) as pytest_wrapped_e:
+            irr_rpsl_submit.run(options)
+        self.assertEqual(pytest_wrapped_e.type, SystemExit)
+        self.assertEqual(pytest_wrapped_e.value.code, EXIT_INPUT_ERROR)
+
+    def test_delete_with_extra_objects(self):
+        options = shlex.split('-u http://abc.xyz.example.com');
+        sys.stdin = io.StringIO(RPSL_DELETE_WITH_TWO_OBJECTS)
+        with pytest.raises(SystemExit) as pytest_wrapped_e:
+            irr_rpsl_submit.run(options)
+        self.assertEqual(pytest_wrapped_e.type, SystemExit)
+        self.assertEqual(pytest_wrapped_e.value.code, EXIT_INPUT_ERROR)
+
+    def test_no_network(self):
+        options = shlex.split('-u http://abc.xyz.example.com');
+        sys.stdin = io.StringIO("route: 1.2.3.4\n\n")
+        with pytest.raises(SystemExit) as pytest_wrapped_e:
+            irr_rpsl_submit.run(options)
+        self.assertEqual(pytest_wrapped_e.type, SystemExit)
+        self.assertEqual(pytest_wrapped_e.value.code, EXIT_NETWORK_ERROR)
+
+    def test_create_request_body_minimal(self):
+        request_body = irr_rpsl_submit.create_request_body(RPSL_MINIMAL)
+        for key in REQEUST_BODY_KEYS:
+            self.assertTrue(key in request_body)
+        self.assertEqual(request_body['override'], None);
+        self.assertEqual(request_body['passwords'], []);
+        self.assertEqual(request_body['delete_reason'], '');
+
+    def test_create_request_body_delete(self):
+        request_body = irr_rpsl_submit.create_request_body(RPSL_DELETE)
+        for key in REQEUST_BODY_KEYS:
+            self.assertTrue(key in request_body)
+        self.assertEqual(request_body['override'], None);
+        self.assertEqual(request_body['passwords'], []);
+        self.assertEqual(request_body['delete_reason'], DELETE_REASON);
+        self.assertEqual(len(request_body['objects']), 1);
+
+    def test_create_request_body_override(self):
+        request_body = irr_rpsl_submit.create_request_body(RPSL_WITH_OVERRIDE)
+        for key in REQEUST_BODY_KEYS:
+            self.assertTrue(key in request_body)
+        self.assertEqual(request_body['override'], OVERRIDE);
+        self.assertEqual(request_body['passwords'], []);
+        self.assertEqual(request_body['delete_reason'], '');
+        self.assertEqual(len(request_body['objects']), 1);
+
+    def test_create_request_body_password(self):
+        request_body = irr_rpsl_submit.create_request_body(RPSL_WITH_ONE_PASSWORD)
+        for key in REQEUST_BODY_KEYS:
+            self.assertTrue(key in request_body)
+        self.assertEqual(request_body['override'], None);
+        self.assertEqual(request_body['passwords'], [PASSWORD1]);
+        self.assertEqual(request_body['delete_reason'], '');
+        self.assertEqual(len(request_body['objects']), 1);
+
+    def test_create_request_body_two_passwords(self):
+        request_body = irr_rpsl_submit.create_request_body(RPSL_WITH_TWO_PASSWORD)
+        for key in REQEUST_BODY_KEYS:
+            self.assertTrue(key in request_body)
+        self.assertEqual(request_body['override'], None);
+        self.assertEqual(request_body['passwords'], [PASSWORD1, PASSWORD2]);
+        self.assertEqual(request_body['delete_reason'], '');
+        self.assertEqual(len(request_body['objects']), 2);
+
+    def test_create_request_body_two_objects_delete(self):
+        request_body = irr_rpsl_submit.create_request_body(RPSL_DELETE_WITH_TWO_OBJECTS)
+        for key in REQEUST_BODY_KEYS:
+            self.assertTrue(key in request_body)
+        self.assertEqual(request_body['override'], None);
+        self.assertEqual(request_body['passwords'], []);
+        self.assertEqual(request_body['delete_reason'], DELETE_REASON);
+        self.assertEqual(len(request_body['objects']), 2);
+
+    def test_create_request_body_two_objects_delete(self):
+        with pytest.raises(irr_rpsl_submit.XInput) as e:
+            request_body = irr_rpsl_submit.create_request_body(RPSL_WITH_TWO_DIFF_OVERRIDES)
+
 class Test_900_Command(unittest.TestCase):
+    """
+    These tests run irr_rpsl_submit.py as a program. As such, none
+    of these tests contribute to coverage since the work is done in
+    a separate process.
+    """
     def setUp(self):
         irr_env_names = [ 'IRR_RPSL_SUBMIT_DEBUG', 'IRR_RPSL_SUBMIT_HOST', 'IRR_RPSL_SUBMIT_URL' ]
         for name in irr_env_names:
@@ -157,6 +321,7 @@ class Test_900_Command(unittest.TestCase):
     def test_020_help(self):
         result = Runner.run( ['--help'], ENV_EMPTY, RPSL_EMPTY )
         self.assertEqual( result.returncode, EXIT_SUCCESS, '--help exits successfully' )
+        self.assertRegex( result.stdout, re.compile("irrdv3"), '--help exits successfully' )
 
     def test_020_u_and_h(self):
         result = Runner.run( ['-u', IRRD_URL, '-h', 'host'], ENV_EMPTY, RPSL_EMPTY )
@@ -240,3 +405,16 @@ class Test_900_Command(unittest.TestCase):
             self.assertEqual( result.returncode, EXIT_NETWORK_ERROR, f"Bad response URL {row[1]} exits with {EXIT_NETWORK_ERROR}" )
             self.assertRegex( result.stderr, REGEX_BAD_RESPONSE )
 
+class Test_990_Command(unittest.TestCase):
+    """
+    These tests run irr_rpsl_submit.py as a program. As such, none
+    of these tests contribute to coverage since the work is done in
+    a separate process.
+    """
+    def setUp(self):
+        irr_env_names = [ 'IRR_RPSL_SUBMIT_DEBUG', 'IRR_RPSL_SUBMIT_HOST', 'IRR_RPSL_SUBMIT_URL' ]
+        for name in irr_env_names:
+            os.unsetenv(name)
+
+    def tearDown(self):
+        pass

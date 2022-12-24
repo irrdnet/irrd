@@ -44,6 +44,7 @@ class BlankLinesHelpFormatter(argparse.HelpFormatter):
     # textwrap doesn't understand multiple paragraphs, so
     # we split on paras then wrap each individually
     def _fill_text(self, text, width, indent):
+        print("Running _fill_text");
         paras = text.split("\n\n")
 
         for i, para in enumerate(paras):
@@ -112,6 +113,11 @@ class XHelp(Exception):
         """
         return SysExitValues.Success()
 
+    def warn_and_exit(self):
+        """
+        Exit the program with the right exit value
+        """
+        sys.exit(self.exit_value())
 
 class XNetwork(Exception):
     """
@@ -218,11 +224,11 @@ class XTooManyObjects(XInput):
     """
     def __init__(self):
         super().__init__(
-        	"There was more than one RPSL object. " +
-        	"A delete must have exactly one object."
+            "There was more than one RPSL object. " +
+            "A delete must have exactly one object."
         )
 
-def run(options):  # pragma: no cover
+def run(options):
     """
     The entry point for irr_rpsl_submit. It takes the command line
     options for the program and reads the RPSL input. It makes the
@@ -242,12 +248,9 @@ def get_arguments(options):
     try:
         args = process_args(options)
         logger.debug("Args are: %s", args)
-    except XHelp:
-        # argparse's help option exits with non-zero, but don't do that.
-        sys.exit(SysExitValues.Success())
-    except XArgumentError as error:
+    except (XHelp, XArgumentError) as error:
         error.warn_and_exit()
-    except Exception as error: # pylint: disable=W0703
+    except Exception as error: # pylint: disable=W0703 # pragma: no cover
         logger.critical(
             "Some other error with command arguments (%s): %s",
             type(error).__name__,
@@ -266,7 +269,7 @@ def get_rpsl():
         logger.debug("Input: ===\n%s\n===\n", rpsl)
     except (XInput) as error:
         error.warn_and_exit()
-    except Exception as error: # pylint: disable=W0703
+    except Exception as error: # pylint: disable=W0703 # pragma: no cover
         logger.fatal(
             "Some other error with input (%s): %s",
             type(error).__name__,
@@ -509,7 +512,7 @@ def choose_url (args):
             "choose_url did not get a host or url in the command-line arguments"
         )
 
-def create_request_body(requests_text: str):
+def create_request_body(rpsl: str):
     """
     Parse change requests, a text of RPSL objects along with metadata like
     passwords or deletion requests.
@@ -521,8 +524,8 @@ def create_request_body(requests_text: str):
     rpsl_texts    = []
     delete_reason = ""
 
-    requests_text = requests_text.replace("\r", "")
-    for object_text in requests_text.split("\n\n"):
+    rpsl = rpsl.replace("\r", "")
+    for object_text in rpsl.split("\n\n"):
         object_text = object_text.strip()
         if not object_text:
             continue
@@ -540,7 +543,7 @@ def create_request_body(requests_text: str):
                 password = line.split(":", maxsplit=1)[1].strip()
                 logger.debug("override password is %s", password)
                 if override is not None and password != override:
-                    raise Exception("override encountered twice with different values")
+                    raise XInput("override encountered twice with different values")
                 override = password
             elif line.startswith("delete:"):
                 delete_reason = line.split(":", maxsplit=1)[1].strip()
@@ -804,5 +807,5 @@ def setup_argparse():
 
     return parser
 
-if __name__ == "__main__":  # pragma: no cover
+if __name__ == "__main__": # pragma: no cover
     run(sys.argv[1:])
