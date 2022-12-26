@@ -15,7 +15,7 @@ python-daemon==2.3.2   # daemonising the main process
 pid==3.0.4             # managing PID files
 redis==4.4.0           # preloaded data storage & sync through redis
 hiredis==2.1.0         # improved redis response parsing performance
-coredis==4.10.1         # async redis
+coredis==4.10.2         # async redis
 requests==2.28.1       # HTTP request handling
 pytz==2022.6
 ariadne==0.16.1
