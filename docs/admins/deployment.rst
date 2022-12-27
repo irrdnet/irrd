@@ -26,8 +26,9 @@ IRRd requires:
   and even higher for some GraphQL queries. However, CPython remains fully
   supported, and CPython may be the better option for you if it is easier to
   install on your deployment platform.
-* A recent version of PostgreSQL. Version 10 has been most extensively
-  tested, but 9.6, 11.16, 13.7, 15.0 are all tested before release.
+* A recent version of PostgreSQL. Versions 9.6, 11.16, 13.7, 15.0 are all
+  tested before release. 11 or higher is strongly recommended, due to faster
+  database migrations during upgrades.
 * At least 32GB RAM
 * At least 4 CPU cores
 * At least 150GB of disk space (SSD recommended)
