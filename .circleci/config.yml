@@ -104,10 +104,10 @@ commands:
 
       - restore_cache:
           keys:
-            - v19-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
+            - v20-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
               "requirements.txt" }}
             # fallback to using the latest cache if no exact match is found
-            - v19-dependencies-{{ .Environment.CIRCLE_JOB }}
+            - v20-dependencies-{{ .Environment.CIRCLE_JOB }}
 
       - run:
           name: install latest pip
@@ -127,7 +127,7 @@ commands:
       - save_cache:
           paths:
             - ./venv
-          key: v19-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
+          key: v20-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
             "requirements.txt" }}
 
   wait_for_postgres:
@@ -331,6 +331,7 @@ jobs:
       - run_integration_tests
       - store_results
 
+
   lint:
     parameters:
       docker_image:
@@ -379,12 +380,6 @@ jobs:
     steps:
       - checkout
       - install_dependencies
-
-      - save_cache:
-          paths:
-            - ./venv
-          key: v16-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
-            "requirements.txt" }}
 
       - run:
           name: build docs
