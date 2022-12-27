@@ -78,7 +78,7 @@ You need to change a few PostgreSQL settings from their default:
   * Each permitted whois connection
   * Each HTTP worker
   * Each running mirror import or export process
-  * Each RPKI update process
+  * Each RPKI or scope filter update process
   * Each run of ``irrd_load_database``
   * Each run of ``irrd_submit_email``
   * Each open WebSocket connection for the :doc:`event stream </users/queries/event-stream>`
