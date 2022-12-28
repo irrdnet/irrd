@@ -27,7 +27,7 @@ ENV_EMPTY = None
 ENV_URL   = {"IRR_RPSL_SUBMIT_URL": IRRD_URL}
 ENV_HOST  = {"IRR_RPSL_SUBMIT_HOST": IRRD_HOST}
 
-REGEX_NO_OBJECTS    = re.compile("There were no RPSL objects in the input")
+REGEX_NO_OBJECTS    = re.compile("Empty input! Specify at least on RPSL object")
 REGEX_TOO_MANY      = re.compile("There was more than one RPSL object")
 REGEX_ONE_OF        = re.compile("one of the arguments -h -u is required")
 REGEX_NO_H_WITH_U   = re.compile("argument -h: not allowed with argument -u")
@@ -40,7 +40,8 @@ EXIT_SUCCESS        =  0
 EXIT_ARGUMENT_ERROR =  2
 EXIT_INPUT_ERROR    =  4
 EXIT_NETWORK_ERROR  =  8
-EXIT_OTHER_ERROR    = 16
+EXIT_RESPONSE_ERROR = 16
+EXIT_OTHER_ERROR    = 32
 
 """
 irr_rpsl_submit does not RPSL checking. There are a few checks for
@@ -153,19 +154,17 @@ class Test_100_Units(unittest.TestCase):
 
     def test_help_message(self):
         options = ['--help'];
-        with pytest.raises(SystemExit) as pytest_wrapped_e:
+        with pytest.raises(irr_rpsl_submit.XHelp) as pytest_wrapped_e:
             irr_rpsl_submit.get_arguments(options)
         out, err = self.capfd.readouterr()
-        self.assertEqual(pytest_wrapped_e.type, SystemExit)
-        self.assertEqual(pytest_wrapped_e.value.code, 0)
+        self.assertEqual(pytest_wrapped_e.type, irr_rpsl_submit.XHelp)
         self.assertRegex(out, re.compile('irrdv3'))
 
     def test_bad_option(self):
         options = ['-Z'];
-        with pytest.raises(SystemExit) as pytest_wrapped_e:
+        with pytest.raises(irr_rpsl_submit.XArgumentError) as pytest_wrapped_e:
             irr_rpsl_submit.get_arguments(options)
-        self.assertEqual(pytest_wrapped_e.type, SystemExit)
-        self.assertEqual(pytest_wrapped_e.value.code, EXIT_ARGUMENT_ERROR)
+        self.assertEqual(pytest_wrapped_e.type, irr_rpsl_submit.XArgumentError)
 
     def test_metadata(self):
         options = shlex.split('-u http://example.com -m foo=bar');
@@ -174,10 +173,9 @@ class Test_100_Units(unittest.TestCase):
 
     def test_metadata_without_value(self):
         options = shlex.split('-u http://example.com -m foo');
-        with pytest.raises(SystemExit) as pytest_wrapped_e:
+        with pytest.raises(irr_rpsl_submit.XArgumentError) as pytest_wrapped_e:
             args = irr_rpsl_submit.get_arguments(options)
-        self.assertEqual(pytest_wrapped_e.type, SystemExit)
-        self.assertEqual(pytest_wrapped_e.value.code, EXIT_ARGUMENT_ERROR)
+        self.assertEqual(pytest_wrapped_e.type, irr_rpsl_submit.XArgumentError)
 
     def test_debug(self):
         options = shlex.split('-u http://example.com -d');
@@ -236,6 +234,7 @@ class Test_100_Units(unittest.TestCase):
         self.assertEqual(pytest_wrapped_e.type, SystemExit)
         self.assertEqual(pytest_wrapped_e.value.code, EXIT_NETWORK_ERROR)
 
+class Test_200_Create_Request(unittest.TestCase):
     def test_create_request_body_minimal(self):
         request_body = irr_rpsl_submit.create_request_body(RPSL_MINIMAL)
         for key in REQEUST_BODY_KEYS:
@@ -292,6 +291,25 @@ class Test_100_Units(unittest.TestCase):
     def test_create_request_body_two_objects_delete(self):
         with pytest.raises(irr_rpsl_submit.XInput) as e:
             request_body = irr_rpsl_submit.create_request_body(RPSL_WITH_TWO_DIFF_OVERRIDES)
+
+class URLError(Exception):
+    pass
+
+class HTTPError(Exception):
+    pass
+
+class JSONDecodeError(Exception):
+    pass
+
+
+class Test_300_Requests(unittest.TestCase):
+    original_send_request = irr_rpsl_submit.send_request
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        irr_rpsl_submit.send_request = original_send_request
+
 
 class Test_900_Command(unittest.TestCase):
     """
@@ -402,7 +420,7 @@ class Test_900_Command(unittest.TestCase):
         ];
         for row in table:
             result = Runner.run( row, ENV_EMPTY, RPSL_MINIMAL )
-            self.assertEqual( result.returncode, EXIT_NETWORK_ERROR, f"Bad response URL {row[1]} exits with {EXIT_NETWORK_ERROR}" )
+            self.assertEqual( result.returncode, EXIT_RESPONSE_ERROR, f"Bad response URL {row[1]} exits with {EXIT_NETWORK_ERROR}" )
             self.assertRegex( result.stderr, REGEX_BAD_RESPONSE )
 
 class Test_990_Command(unittest.TestCase):

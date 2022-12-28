@@ -44,7 +44,6 @@ class BlankLinesHelpFormatter(argparse.HelpFormatter):
     # textwrap doesn't understand multiple paragraphs, so
     # we split on paras then wrap each individually
     def _fill_text(self, text, width, indent):
-        print("Running _fill_text");
         paras = text.split("\n\n")
 
         for i, para in enumerate(paras):
@@ -68,9 +67,46 @@ class SysExitValues():
     def ArgumentMisuse (): return  2
     def InputError     (): return  4
     def NetworkError   (): return  8
-    def GeneralError   (): return 16
+    def ResponseError  (): return 16
+    def GeneralError   (): return 32
 
-class XArgumentError(Exception):
+class XBasic(Exception):
+    def __init__(self, message=''):
+        self.message = message
+
+    def exit_value(self):
+        """
+        Returns the exit value for a general error. This usually means
+        that a derived class did not specify an exit value.
+        """
+        logger.debug("Calling XBasic.exit_value because {self.__class__.__name__} did not define its own")
+        SysExitValues.GeneralError()
+
+    def log(self):
+        """
+        Handle logging. Derived classes can decide how to log if
+        they want to do something different or not log at all.
+        """
+        logger.critical(self.message)
+
+    def report(self):
+        """
+        Handle user reporting on standard error. Derived classes can
+        decide how to report if they want to do something different or
+        not report at all.
+        """
+        sys.stderr.write(f"{self.message}\n")
+
+    def warn_and_exit(self):
+        """
+        Output an error message the exit the program with the
+        right exit value.
+        """
+        self.log();
+        self.report();
+        sys.exit(self.exit_value())
+
+class XArgumentError(XBasic):
     """
     Stand in for the various exceptions raised in argparser.
 
@@ -78,31 +114,20 @@ class XArgumentError(Exception):
     might be on a version earlier than Python 3.9 where we can
     turn off argparse's exit_on_error
     """
-    def __init__(self, arg):
-        self.message = f"Error parsing command-line options: {arg}"
-
     def exit_value(self):
         """
         Return the exit value for this type of error.
         """
         return SysExitValues.ArgumentMisuse()
 
-    def warn_and_exit(self):
-        """
-        Exit the program with the right exit value
-        """
-        # argparse already takes care of the warning
-        sys.exit(self.exit_value())
-
-class XArgumentProcessing(Exception):
+class XArgumentProcessing(XBasic):
     """
-    Raised when the program encounters a situation that should not
-    occur because something should have previously resolved it.
+    Used for errors related to the semantic meaning of arguments after
+    they have been parsed
     """
-    def __init__(self, message):
-        self.message = message
+    pass
 
-class XHelp(Exception):
+class XHelp(XBasic):
     """
     Raised for argparse's help, which uses a non-zero exit. If we
     asked for a help message and got one, that's successful.
@@ -113,18 +138,29 @@ class XHelp(Exception):
         """
         return SysExitValues.Success()
 
-    def warn_and_exit(self):
-        """
-        Exit the program with the right exit value
-        """
-        sys.exit(self.exit_value())
+    def log(self):
+        pass
 
-class XNetwork(Exception):
+    def report(self):
+        pass
+
+class XInput(XBasic):
+    """
+    General exception type for problems related to the RPSL input.
+    """
+    def exit_value(self):
+        """
+        Return the exit value for this type of error.
+        """
+        return SysExitValues.InputError()
+
+class XNetwork(XBasic):
     """
     General exception type for network problems.
     """
-    def __init__(self, url):
-        self.message = f"{self.prefix()}: {url}"
+    def __init__(self, message, extra=''):
+        self.message = f"{self.prefix()}: {message}"
+        self.extra = extra
 
     def exit_value(self):
         """
@@ -138,15 +174,9 @@ class XNetwork(Exception):
         """
         return "Network error"
 
-    def warn_and_exit(self):
-        """
-        Output an error message the exit the program with the
-        right exit value.
-        """
-        sys.stderr.write(f"{self.message}\n")
-        logger.critical(self.message)
-        sys.exit(self.exit_value())
-
+# Don't alphabetize these classes because the base class has to
+# appear before any class that uses it. Done that twice already
+# forgetting that.
 class XHTTPConnectionFailed(XNetwork):
     """
     Raised when urllib cannot connect to the URL.
@@ -186,35 +216,29 @@ class XNameResolutionFailed(XNetwork):
         """
         return "Could not resolve host"
 
-class XInput(Exception):
-    """
-    General exception type for problems related to the RPSL input.
-    """
-    def __init__(self, message):
-        self.message = message
-
-    def exit_value(self):
-        """
-        Return the exit value for this type of error.
-        """
-        return SysExitValues.InputError()
-
-    def warn_and_exit(self):
-        """
-        Output an error message the exit the program with the
-        right exit value.
-        """
-        sys.stderr.write(f"{self.message}\n")
-        logger.critical(self.message)
-        sys.exit(self.exit_value())
-
 class XNoObjects(XInput):
     """
     Raised when there are no RPSL objects. There must be at least
     one object in the input.
     """
-    def __init__(self):
-        super().__init__("There were no RPSL objects in the input")
+    pass
+
+class XResponse(XBasic):
+    def __init__(self, message, extra):
+        self.message = f"{self.prefix()}: {message}"
+        self.extra = extra
+
+    def exit_value(self):
+        """
+        Return the exit value for this type of error.
+        """
+        return SysExitValues.ResponseError()
+
+    def prefix(self):
+        """
+        Returns the prefix to attach to the start of each logged message.
+        """
+        return "Response error"
 
 class XTooManyObjects(XInput):
     """
@@ -235,41 +259,16 @@ def run(options):
     request and translates the result to the right output and exit
     status.
     """
-    args   = get_arguments(options)
-    rpsl   = get_rpsl()
-    result = make_request(rpsl, args)
 
-    handle_output(args, result)
-
-def get_arguments(options):
-    """
-    Process the program options and return them.
-    """
     try:
-        args = process_args(options)
-        logger.debug("Args are: %s", args)
-    except (XHelp, XArgumentError) as error:
+        args   = get_arguments(options)
+        rpsl   = get_rpsl()
+        result = make_request(rpsl, args)
+        handle_output(args, result)
+    except XBasic as error:
         error.warn_and_exit()
-    except Exception as error: # pylint: disable=W0703 # pragma: no cover
-        logger.critical(
-            "Some other error with command arguments (%s): %s",
-            type(error).__name__,
-            error
-        )
-        sys.exit(SysExitValues.GeneralError())
-
-    return args
-
-def get_rpsl():
-    """
-    Get the RPSL.
-    """
-    try:
-        rpsl = get_input()
-        logger.debug("Input: ===\n%s\n===\n", rpsl)
-    except (XInput) as error:
-        error.warn_and_exit()
-    except Exception as error: # pylint: disable=W0703 # pragma: no cover
+    except Exception as error:
+        sys.stderr.write(f"Some other error: {type(error).__name__} • {error}\n")
         logger.fatal(
             "Some other error with input (%s): %s",
             type(error).__name__,
@@ -277,6 +276,25 @@ def get_rpsl():
         )
         sys.exit(SysExitValues.GeneralError())
 
+    exit_code = SysExitValues.Success()
+    if at_least_one_change_was_rejected(result):
+        exit_code = SysExitValues.ChangeRejected()
+    sys.exit(exit_code)
+
+def get_arguments(options):
+    """
+    Process the program options and return them.
+    """
+    args = process_args(options)
+    logger.debug("Args are: %s", args)
+    return args
+
+def get_rpsl():
+    """
+    Get the RPSL.
+    """
+    rpsl = get_input()
+    logger.debug("Input: ===\n%s\n===\n", rpsl)
     return rpsl
 
 def make_request(rpsl, args):
@@ -285,31 +303,16 @@ def make_request(rpsl, args):
     """
     try:
         result = send_request(rpsl, args)
-    except (XInput, XNetwork) as error:
-        # we might discover input errors when we build the request,
-        # so we catch those here too.
-        error.warn_and_exit()
     except (HTTPError, URLError) as error:
-        print(error)
         logger.debug("HTTP problem: %s = %s", args.url, error.reason)
         reason = re.sub( r'^.*?\]\s*', '', f"{error.reason}" )
-        sys.stderr.write(f"HTTP problem: {args.url} = {reason}\n")
-        logger.critical("HTTP problem: %s = %s", args.url, reason)
-        sys.exit(SysExitValues.NetworkError())
+        message = f"{args.url} = {reason}"
+        raise XNetwork(message, [rpsl, args]) from error
     except JSONDecodeError as error:
         # turns out testing with www.example.com returns a real response
         # that's not the JSON we were expecting.
-        sys.stderr.write(f"HTTP response error decoding JSON: {error}\n")
-        logger.critical("Request returned invalid JSON")
-        sys.exit(SysExitValues.NetworkError())
-    except Exception as error: # pylint: disable=W0703
-        sys.stderr.write(f"Some other error: {type(error).__name__} • {error}\n")
-        logger.critical(
-            "Some other error with request (%s): %s",
-            type(error).__name__,
-            error
-        )
-        sys.exit(SysExitValues.GeneralError())
+        message = f"HTTP response error decoding JSON: {error}"
+        raise XResponse(message, [rpsl, args]) from error
 
     return result
 
@@ -325,19 +328,6 @@ def handle_output(args, result):
         formatted_output = format_as_default(result)
 
     print(formatted_output)
-
-    exit_code = SysExitValues.Success()
-    try:
-        if at_least_one_change_was_rejected(result):
-            exit_code = SysExitValues.ChangeRejected()
-    except Exception as error: # pylint: disable=W0703
-        logger.critical(
-            "Some other error with response (%s)",
-            type(error).__name__
-        )
-        sys.exit(SysExitValues.GeneralError())
-
-    sys.exit(exit_code)
 
 def add_irrdv3_options(parser):
     """
@@ -625,7 +615,7 @@ def get_input():
     """
     rpsl = sys.stdin.read().strip()
     if not rpsl:
-        raise XNoObjects()
+        raise XNoObjects("Empty input! Specify at least on RPSL object.")
     return rpsl
 
 def preprocess_args(options):
@@ -655,10 +645,12 @@ def process_args(options):
     except (argparse.ArgumentError, SystemExit) as error:
         # Python 3.9 allows us to turn off exit_on_error, but
         # we're not there everywhere. And, the --help feature
-        # wants to exit with an error, so stop that.
+        # wants to exit with an error, so stop that. We don't
+        # need a message for XHelp because argparse has already
+        # output something.
         if '--help' in options:
-            raise XHelp() from error
-        raise XArgumentError(error) from error
+            raise XHelp('') from error
+        raise XArgumentError("Error processing command-line arguments: {error.message}") from error
 
     if args.debug:
         logger.setLevel(logging.DEBUG)
@@ -681,7 +673,7 @@ def send_request(requests_text, args):
     is_delete = request_body.get("delete_reason")
 
     if not request_body['objects']:
-        raise XNoObjects()
+        raise XNoObjects("No RPSL objects were found after processing input.")
     if is_delete and len(request_body['objects']) > 1:
         raise XTooManyObjects()
 
@@ -709,16 +701,18 @@ def send_request(requests_text, args):
     except URLError as error:
         reason = error.reason
         if isinstance(reason, socket.gaierror):
-            raise XNameResolutionFailed(url) from error
+            raise XNameResolutionFailed(url, reason) from error
         if isinstance(reason, (socket.timeout, ConnectionRefusedError) ):
-            raise XHTTPConnectionFailed(url) from error
+            raise XHTTPConnectionFailed(url, http_request) from error
         if reason == 'Not Found':
-            raise XHTTPNotFound(url) from error
+            raise XHTTPNotFound(url, http_request) from error
         raise error
     except Exception as error:
         raise error
 
-    response = json.loads(http_response.read().decode("utf-8"))
+    response_body = http_response.read().decode("utf-8")
+    logger.debug("====START RESPONSE BODY====:\n%s\n====ENE RESPONSE BODY====\n", response_body)
+    response = json.loads(response_body)
     return response
 
 def setup_argparse():
@@ -758,7 +752,8 @@ def setup_argparse():
              2 - usage error
              4 - input error
              8 - network error
-            16 - some other error
+            16 - unexpected response
+            32 - an unidentified error
 
     """
     )
