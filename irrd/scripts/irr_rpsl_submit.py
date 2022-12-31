@@ -68,13 +68,13 @@ class SysExitValues():
     def InputError     (): return  4
     def NetworkError   (): return  8
     def ResponseError  (): return 16
-    def GeneralError   (): return 32
+    def GeneralError   (): return 32 # pragma: no cover
 
 class XBasic(Exception):
     def __init__(self, message=''):
         self.message = message
 
-    def exit_value(self):
+    def exit_value(self): # pragma: no cover
         """
         Returns the exit value for a general error. This usually means
         that a derived class did not specify an exit value.
@@ -264,10 +264,11 @@ def run(options):
         args   = get_arguments(options)
         rpsl   = get_rpsl()
         result = make_request(rpsl, args)
-        handle_output(args, result)
+        output = handle_output(args, result)
+        print(output)
     except XBasic as error:
         error.warn_and_exit()
-    except Exception as error:
+    except Exception as error:  # pragma: no cover
         sys.stderr.write(f"Some other error: {type(error).__name__} • {error}\n")
         logger.fatal(
             "Some other error with input (%s): %s",
@@ -308,7 +309,7 @@ def make_request(rpsl, args):
         reason = re.sub( r'^.*?\]\s*', '', f"{error.reason}" )
         message = f"{args.url} = {reason}"
         raise XNetwork(message, [rpsl, args]) from error
-    except JSONDecodeError as error:
+    except json.decoder.JSONDecodeError as error:
         # turns out testing with www.example.com returns a real response
         # that's not the JSON we were expecting.
         message = f"HTTP response error decoding JSON: {error}"
@@ -327,7 +328,7 @@ def handle_output(args, result):
     else:
         formatted_output = format_as_default(result)
 
-    print(formatted_output)
+    return formatted_output
 
 def add_irrdv3_options(parser):
     """
@@ -438,7 +439,7 @@ def add_irrdv3_options(parser):
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
         "-j",
-        default=True,
+        default=False,
         dest="output_json",
         action="store_true",
         help="output JSON summary of operation (default)",
@@ -463,9 +464,6 @@ def adjust_args(args):
     choose_url(args)
 
     logger.debug("URL is %s", args.url)
-    if not args.output_text:
-        args.output_json = True
-
 
     return args
 
@@ -707,7 +705,7 @@ def send_request(requests_text, args):
         if reason == 'Not Found':
             raise XHTTPNotFound(url, http_request) from error
         raise error
-    except Exception as error:
+    except Exception as error:  # pragma: no cover
         raise error
 
     response_body = http_response.read().decode("utf-8")
