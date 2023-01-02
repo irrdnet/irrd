@@ -34,9 +34,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 logger.disabled = True
 
-sys.stdout.reconfigure(encoding="utf-8")
-sys.stderr.reconfigure(encoding="utf-8")
-
 
 class BlankLinesHelpFormatter(argparse.HelpFormatter):
     """
