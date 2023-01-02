@@ -59,25 +59,32 @@ class SysExitValues:
     """
 
     # pylint: disable=C0103,C0116,C0321,E0211
-    def Success():
+    @classmethod
+    def Success(cls):
         return 0
 
-    def ChangeRejected():
+    @classmethod
+    def ChangeRejected(cls):
         return 1
 
-    def ArgumentMisuse():
+    @classmethod
+    def ArgumentMisuse(cls):
         return 2
 
-    def InputError():
+    @classmethod
+    def InputError(cls):
         return 4
 
-    def NetworkError():
+    @classmethod
+    def NetworkError(cls):
         return 8
 
-    def ResponseError():
+    @classmethod
+    def ResponseError(cls):
         return 16
 
-    def GeneralError():
+    @classmethod
+    def GeneralError(cls):
         return 32
 
 
