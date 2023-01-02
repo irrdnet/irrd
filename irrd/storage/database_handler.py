@@ -766,9 +766,12 @@ class DatabaseStatusTracker:
             if self._is_serial_synchronised(source):
                 serial_nrtm = source_serial
             else:
-                serial_nrtm = sa.select([sa.text('COALESCE(MAX(serial_nrtm), 0) + 1')])
-                serial_nrtm = serial_nrtm.where(RPSLDatabaseJournal.__table__.c.source == source)
-                serial_nrtm = serial_nrtm.as_scalar()
+                if source in self._new_serials_per_source and self._new_serials_per_source[source]:
+                    serial_nrtm = max(self._new_serials_per_source[source]) + 1
+                else:
+                    serial_nrtm = sa.select([sa.text('COALESCE(MAX(serial_nrtm), 0) + 1')])
+                    serial_nrtm = serial_nrtm.where(RPSLDatabaseJournal.__table__.c.source == source)
+                    serial_nrtm = serial_nrtm.as_scalar()
             timestamp = datetime.now(timezone.utc)
             stmt = RPSLDatabaseJournal.__table__.insert().values(
                 rpsl_pk=rpsl_pk,
