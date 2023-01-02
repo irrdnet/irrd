@@ -94,7 +94,7 @@ class APIResultObject:
         self.obj["type"] = "create"
         return self
 
-    def delete(self):  # pragma: no cover
+    def delete(self):
         self.obj["type"] = "delete"
         return self
 
@@ -249,7 +249,7 @@ class Test100GetArguments(MyBase):
     def test_metadata_without_value(self):
         options = ["-u", "http://example.com", "-m", "foo"]
         with pytest.raises(irr_rpsl_submit.XArgumentError) as pytest_wrapped_e:
-            args = irr_rpsl_submit.get_arguments(options)  # pylint: disable=F841
+            irr_rpsl_submit.get_arguments(options)
         self.assertEqual(pytest_wrapped_e.type, irr_rpsl_submit.XArgumentError)
 
     def test_debug(self):
@@ -362,7 +362,7 @@ class Test200CreateRequestBody(MyBase):
     def test_create_request_body_two_overrides(self):
         passed = False
         try:
-            request_body = irr_rpsl_submit.create_request_body(RPSL_WITH_TWO_DIFF_OVERRIDES)  # pylint: disable=F841
+            irr_rpsl_submit.create_request_body(RPSL_WITH_TWO_DIFF_OVERRIDES)
         except irr_rpsl_submit.XInput:
             passed = True
 
@@ -390,7 +390,7 @@ class Test200CreateRequesty(MyBase):
     def test_create_http_request_no_objects(self):
         args = irr_rpsl_submit.get_arguments(["-h", UNRESOVABLE_HOST, "-m", "Biff=Badger"])
         with pytest.raises(irr_rpsl_submit.XNoObjects) as pytest_wrapped_e:
-            request = irr_rpsl_submit.create_http_request(RPSL_EMPTY, args)  # pylint: disable=F841
+            irr_rpsl_submit.create_http_request(RPSL_EMPTY, args)
         self.assertEqual(pytest_wrapped_e.type, irr_rpsl_submit.XNoObjects)
 
 
@@ -492,7 +492,7 @@ class Test310HandleResult(MyBase):
         self.assertRegex(output, re.compile("successfully:\\s+1"))
         self.assertRegex(output, re.compile("with errors:\\s+0"))
 
-        result = APIResult([APIResultObject().create().fail()]).to_dict()
+        result = APIResult([APIResultObject().delete().fail()]).to_dict()
         self.assertTrue(irr_rpsl_submit.at_least_one_change_was_rejected(result))
         output = irr_rpsl_submit.handle_output(args, result)
         self.assertRegex(output, re.compile("SUMMARY OF UPDATE"))
@@ -788,7 +788,6 @@ class Test900Command(MyBase):
     def test_050_non_json_response(self):
         table = [
             ["-u", "http://www.example.com"],
-            # [ '-h', BAD_RESPONSE_HOST ], # turns into the right path, which ends up as not found
         ]
         for row in table:
             result = Runner.run(row, ENV_EMPTY, RPSL_MINIMAL)
