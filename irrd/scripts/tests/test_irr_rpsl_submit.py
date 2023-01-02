@@ -94,7 +94,7 @@ class APIResultObject:
         self.obj["type"] = "create"
         return self
 
-    def delete(self):
+    def delete(self):  # pragma: no cover
         self.obj["type"] = "delete"
         return self
 
