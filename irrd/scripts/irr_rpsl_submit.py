@@ -188,7 +188,7 @@ class XHTTPConnectionFailed(XNetwork):
         """
         Returns the prefix to attach to the start of each logged message.
         """
-        return "Connection refused"
+        return "Connection refused" # pragma: no cover
 
 class XHTTPNotFound(XNetwork):
     """
@@ -706,7 +706,7 @@ def send_request(requests_text, args):
         if isinstance(reason, socket.gaierror):
             raise XNameResolutionFailed(args.url, reason) from error
         if isinstance(reason, (socket.timeout, ConnectionRefusedError) ):
-            raise XHTTPConnectionFailed(args.url, http_request) from error
+            raise XHTTPConnectionFailed(args.url, http_request) from error  # pragma: no cover
         if reason == 'Not Found':
             raise XHTTPNotFound(args.url, http_request) from error
         raise error

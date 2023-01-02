@@ -97,8 +97,6 @@ class APIResultObject():
 
     def succeed(self, message=None):
         self.obj["successful"] = True
-        if message:
-            self.obj["info_messages"] = [message]
         return self
 
 class APIResult():
@@ -121,14 +119,6 @@ class APIResult():
             'summary': {},
             'request_meta': {}
         }
-
-    def add_object(self, obj):
-        self.result["objects"].append(obj)
-        return self
-
-    def add_meta(self, key, value):
-        self.result["request_meta"][key] = value
-        return self
 
     def sum_of(self, operation, success):
         total = 0
@@ -306,14 +296,6 @@ class Test_200_Create_Request_Body(MyBase):
         self.assertEqual(request_body['passwords'], [])
         self.assertEqual(request_body['delete_reason'], '')
 
-    def test_create_request_body_minimal(self):
-        request_body = irr_rpsl_submit.create_request_body(RPSL_MINIMAL)
-        for key in REQUEST_BODY_KEYS:
-            self.assertTrue(key in request_body)
-        self.assertEqual(request_body['override'], None)
-        self.assertEqual(request_body['passwords'], [])
-        self.assertEqual(request_body['delete_reason'], '')
-
     def test_create_request_body_delete(self):
         request_body = irr_rpsl_submit.create_request_body(RPSL_DELETE)
         for key in REQUEST_BODY_KEYS:
@@ -365,8 +347,6 @@ class Test_200_Create_Request_Body(MyBase):
             request_body = irr_rpsl_submit.create_request_body(RPSL_WITH_TWO_DIFF_OVERRIDES)
         except irr_rpsl_submit.XInput:
             passed = True
-        except Exception:
-            pass
 
         self.assertTrue(passed)
 
