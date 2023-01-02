@@ -68,7 +68,7 @@ class SysExitValues():
     def InputError     (): return  4
     def NetworkError   (): return  8
     def ResponseError  (): return 16
-    def GeneralError   (): return 32 # pragma: no cover
+    def GeneralError   (): return 32
 
 class XBasic(Exception):
     def __init__(self, message=''):
@@ -268,7 +268,7 @@ def run(options):
         print(output)
     except XBasic as error:
         error.warn_and_exit()
-    except Exception as error:  # pragma: no cover
+    except Exception as error:
         sys.stderr.write(f"Some other error: {type(error).__name__} • {error}\n")
         logger.fatal(
             "Some other error with input (%s): %s",
@@ -500,6 +500,40 @@ def choose_url (args):
             "choose_url did not get a host or url in the command-line arguments"
         )
 
+def create_http_request(requests_text, args):
+    metadata = args.metadata
+    url = args.url
+
+    logger.debug("url: %s", url)
+    request_body = create_request_body(requests_text)
+    is_delete = request_body.get("delete_reason")
+
+    if not request_body['objects']:
+        raise XNoObjects("No RPSL objects were found after processing input.")
+    if is_delete and len(request_body['objects']) > 1:
+        raise XTooManyObjects()
+
+    method = "DELETE" if is_delete else "POST"
+    http_data = json.dumps(request_body).encode("utf-8")
+    headers = {
+        "User-Agent": "irr_rpsl_submit_v4",
+    }
+    if metadata:
+        headers["X-irrd-metadata"] = json.dumps(metadata)
+
+    http_request = request.Request(
+        url,
+        data=http_data,
+        method=method,
+        headers=headers,
+    )
+    logger.debug(
+        "Submitting to %s; method %s}; headers %s; data %s",
+        url, method, headers, http_data
+    )
+
+    return http_request
+
 def create_request_body(rpsl: str):
     """
     Parse change requests, a text of RPSL objects along with metadata like
@@ -663,49 +697,20 @@ def send_request(requests_text, args):
     """
     Send the RPSL payload to the IRRdv4 server.
     """
-    metadata = args.metadata
-    url = args.url
-
-    logger.debug("url: %s", url)
-    request_body = create_request_body(requests_text)
-    is_delete = request_body.get("delete_reason")
-
-    if not request_body['objects']:
-        raise XNoObjects("No RPSL objects were found after processing input.")
-    if is_delete and len(request_body['objects']) > 1:
-        raise XTooManyObjects()
-
-    method = "DELETE" if is_delete else "POST"
-    http_data = json.dumps(request_body).encode("utf-8")
-    headers = {
-        "User-Agent": "irr_rpsl_submit_v4",
-    }
-    if metadata:
-        headers["X-irrd-metadata"] = json.dumps(metadata)
-
-    http_request = request.Request(
-        url,
-        data=http_data,
-        method=method,
-        headers=headers,
-    )
-    logger.debug(
-        "Submitting to %s; method %s}; headers %s; data %s",
-        url, method, headers, http_data
-    )
+    http_request = create_http_request(requests_text, args)
 
     try:
         http_response = request.urlopen(http_request, timeout=20) # pylint: disable=consider-using-with
     except URLError as error:
         reason = error.reason
         if isinstance(reason, socket.gaierror):
-            raise XNameResolutionFailed(url, reason) from error
+            raise XNameResolutionFailed(args.url, reason) from error
         if isinstance(reason, (socket.timeout, ConnectionRefusedError) ):
-            raise XHTTPConnectionFailed(url, http_request) from error
+            raise XHTTPConnectionFailed(args.url, http_request) from error
         if reason == 'Not Found':
-            raise XHTTPNotFound(url, http_request) from error
+            raise XHTTPNotFound(args.url, http_request) from error
         raise error
-    except Exception as error:  # pragma: no cover
+    except Exception as error:
         raise error
 
     response_body = http_response.read().decode("utf-8")

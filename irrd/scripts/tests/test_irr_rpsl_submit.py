@@ -4,6 +4,7 @@ import logging
 import os
 import pytest
 import re
+from urllib import request
 import subprocess
 import sys
 import unittest
@@ -39,6 +40,7 @@ REGEX_BAD_RESPONSE  = re.compile("decoding JSON")
 REGEX_NOT_FOUND     = re.compile("Not found")
 
 EXIT_SUCCESS        =  0
+EXIT_CHANGE_FAILED  =  1
 EXIT_ARGUMENT_ERROR =  2
 EXIT_INPUT_ERROR    =  4
 EXIT_NETWORK_ERROR  =  8
@@ -55,9 +57,10 @@ OVERRIDE = 'asdffh'
 DELETE_REASON = 'some fine pig'
 PASSWORD1='qwerty'
 PASSWORD2='mnbvc'
-RPSL_EMPTY      = ""
+RPSL_EMPTY = ""
 RPSL_WHITESPACE = "\n\n\n    \t\t\n"
-RPSL_MINIMAL    = "route: 1.2.3.4\norigin: AS65414\n"
+RPSL_MINIMAL = "route: 1.2.3.4\norigin: AS65414\n"
+RPSL_EXTRA_WHITESPACE = "\n\nroute: 1.2.3.4\norigin: AS65414\n\n\n\nroute: 5.6.8.9\norigin: AS65414\n\n\n\n\n\n"
 RPSL_DELETE = f"role: Badgers\ndelete: {DELETE_REASON}"
 RPSL_DELETE_WITH_TWO_OBJECTS = f"person: Biff Badger\n\nrole: Badgers\ndelete: {DELETE_REASON}"
 RPSL_WITH_OVERRIDE = f"mnter: Biff\noverride: {OVERRIDE}"
@@ -147,6 +150,17 @@ class APIResult():
     def to_dict(self):
         self.summary()
         return self.result
+
+    def to_json(self):
+        return json.dumps(self.to_dict()).encode('utf-8')
+
+    def read(self):
+        """Stand in for http.client.HTTPResponse.read()"""
+        return self.to_json()
+
+class APIBadResponse():
+    def read(self):
+        return "This is not JSON".encode('utf-8')
 
 class Runner():
     """
@@ -283,7 +297,15 @@ class Test_110_Choose_URL(MyBase):
             args.url  = None # unset it to trigger next error
             irr_rpsl_submit.choose_url(args)
 
-class Test_200_Create_Request(MyBase):
+class Test_200_Create_Request_Body(MyBase):
+    def test_create_request_body_minimal(self):
+        request_body = irr_rpsl_submit.create_request_body(RPSL_MINIMAL)
+        for key in REQUEST_BODY_KEYS:
+            self.assertTrue(key in request_body)
+        self.assertEqual(request_body['override'], None)
+        self.assertEqual(request_body['passwords'], [])
+        self.assertEqual(request_body['delete_reason'], '')
+
     def test_create_request_body_minimal(self):
         request_body = irr_rpsl_submit.create_request_body(RPSL_MINIMAL)
         for key in REQUEST_BODY_KEYS:
@@ -347,6 +369,30 @@ class Test_200_Create_Request(MyBase):
             pass
 
         self.assertTrue(passed)
+
+    def test_create_request_extra_whitespace(self):
+        """
+        This test checks that we parse correctly when there are lots
+        of extra newlines before, between, or after objects.
+        """
+        request_body = irr_rpsl_submit.create_request_body(RPSL_EXTRA_WHITESPACE)
+        for key in REQUEST_BODY_KEYS:
+            self.assertTrue(key in request_body)
+        self.assertEqual(request_body['override'], None)
+        self.assertEqual(request_body['passwords'], [])
+        self.assertEqual(len(request_body['objects']), 2)
+
+class Test_200_Create_Requesty(MyBase):
+    def test_create_http_request_metadata(self):
+        args = irr_rpsl_submit.get_arguments(['-h', UNRESOVABLE_HOST, '-m', 'Biff=Badger'])
+        request = irr_rpsl_submit.create_http_request(RPSL_MINIMAL, args)
+        self.assertEqual( request.headers["X-irrd-metadata"], '{"Biff": "Badger"}' )
+
+    def test_create_http_request_no_objects(self):
+        args = irr_rpsl_submit.get_arguments(['-h', UNRESOVABLE_HOST, '-m', 'Biff=Badger'])
+        with pytest.raises(irr_rpsl_submit.XNoObjects) as pytest_wrapped_e:
+            request = irr_rpsl_submit.create_http_request(RPSL_EMPTY, args)
+        self.assertEqual(pytest_wrapped_e.type, irr_rpsl_submit.XNoObjects)
 
 def my_raise(ex):
     # because lambdas are limited
@@ -473,7 +519,7 @@ class Test_310_Handle_Result(MyBase):
         output = irr_rpsl_submit.handle_output(args, result)
         self.assertRegex(output, re.compile('SUMMARY OF UPDATE'))
 
-class Test_400_Run(MyBase):
+class Test_400_Run_No_Network(MyBase):
     def test_help_message(self):
         options = ['--help'];
         with pytest.raises(SystemExit) as error:
@@ -505,6 +551,127 @@ class Test_400_Run(MyBase):
         self.assertEqual(pytest_wrapped_e.type, SystemExit)
         self.assertEqual(pytest_wrapped_e.value.code, EXIT_INPUT_ERROR)
 
+class Test_405_Run_Mock_Response(MyBase):
+    original = irr_rpsl_submit.__dict__["make_request"]
+
+    @classmethod
+    def tearDown(self):
+        super().tearDown()
+        irr_rpsl_submit.make_request = self.original
+
+    def test_good_response(self):
+        response = APIResult([
+            APIResultObject().create().succeed(),
+            APIResultObject().modify().succeed(),
+        ]).to_dict()
+        irr_rpsl_submit.make_request = lambda rpsl, args: response
+
+        options = ['-u', 'http://abc.xyz.example.com']
+        sys.stdin = io.StringIO(RPSL_MINIMAL)
+        with pytest.raises(SystemExit) as pytest_wrapped_e:
+            irr_rpsl_submit.run(options)
+        out, err = self.capfd.readouterr()
+        self.assertEqual(pytest_wrapped_e.type, SystemExit)
+        self.assertEqual(pytest_wrapped_e.value.code, EXIT_SUCCESS)
+
+    def test_change_failed(self):
+        response = APIResult([
+            APIResultObject().create().succeed(),
+            APIResultObject().modify().fail(),
+        ]).to_dict()
+        irr_rpsl_submit.make_request = lambda rpsl, args: response
+
+        options = ['-u', 'http://abc.xyz.example.com']
+        sys.stdin = io.StringIO(RPSL_MINIMAL)
+        with pytest.raises(SystemExit) as pytest_wrapped_e:
+            irr_rpsl_submit.run(options)
+        out, err = self.capfd.readouterr()
+        self.assertEqual(pytest_wrapped_e.type, SystemExit)
+        self.assertEqual(pytest_wrapped_e.value.code, EXIT_CHANGE_FAILED)
+
+#     response_body = http_response.read().decode("utf-8")
+
+class Test_405_Run_Mock_Urlopen(MyBase):
+    original_urlopen = request.__dict__["urlopen"]
+
+    @classmethod
+    def tearDown(self):
+        super().tearDown()
+        request.urlopen = self.original_urlopen
+
+    def test_all_objects_succeed(self):
+        options = ['-u', 'http://abc.xyz.example.com']
+        sys.stdin = io.StringIO(RPSL_MINIMAL)
+        response = APIResult([
+            APIResultObject().create().succeed(),
+            APIResultObject().modify().succeed(),
+        ])
+
+        request.urlopen = lambda url, **kwargs: response
+
+        with pytest.raises(SystemExit) as pytest_wrapped_e:
+            irr_rpsl_submit.run(options)
+        out, err = self.capfd.readouterr()
+        self.assertEqual(pytest_wrapped_e.type, SystemExit)
+        self.assertEqual(pytest_wrapped_e.value.code, EXIT_SUCCESS)
+
+    def test_some_objects_fail(self):
+        options = ['-u', 'http://abc.xyz.example.com']
+        sys.stdin = io.StringIO(RPSL_MINIMAL)
+        response = APIResult([
+            APIResultObject().create().succeed(),
+            APIResultObject().modify().fail(),
+        ])
+
+        request.urlopen = lambda url, **kwargs: response
+
+        with pytest.raises(SystemExit) as pytest_wrapped_e:
+            irr_rpsl_submit.run(options)
+        out, err = self.capfd.readouterr()
+        self.assertEqual(pytest_wrapped_e.type, SystemExit)
+        self.assertEqual(pytest_wrapped_e.value.code, EXIT_CHANGE_FAILED)
+
+    def test_bad_response(self):
+        options = ['-u', 'http://abc.xyz.example.com']
+        response = APIBadResponse()
+        request.urlopen = lambda url, **kwargs: response
+        sys.stdin = io.StringIO(RPSL_MINIMAL)
+        with pytest.raises(SystemExit) as pytest_wrapped_e:
+            irr_rpsl_submit.run(options)
+        out, err = self.capfd.readouterr()
+        self.assertEqual(pytest_wrapped_e.type, SystemExit)
+        self.assertEqual(pytest_wrapped_e.value.code, EXIT_RESPONSE_ERROR)
+
+
+    def test_general_exception(self):
+        options = ['-u', 'http://abc.xyz.example.com']
+        sys.stdin = io.StringIO(RPSL_MINIMAL)
+        response = APIResult([
+            APIResultObject().create().succeed(),
+            APIResultObject().modify().fail(),
+        ])
+
+        request.urlopen = lambda url, **kwargs: my_raise(Exception("Random exception"))
+
+        with pytest.raises(SystemExit) as pytest_wrapped_e:
+            irr_rpsl_submit.run(options)
+        out, err = self.capfd.readouterr()
+        self.assertEqual(pytest_wrapped_e.type, SystemExit)
+        self.assertEqual(pytest_wrapped_e.value.code, EXIT_OTHER_ERROR)
+
+#    def test_not_found(self):
+#        options = ['-u', 'http://abc.xyz.example.com']
+#        sys.stdin = io.StringIO(RPSL_MINIMAL)
+#
+#        request.urlopen = lambda url, **kwargs: raise
+#
+#        with pytest.raises(SystemExit) as pytest_wrapped_e:
+#            irr_rpsl_submit.run(options)
+#        out, err = self.capfd.readouterr()
+#        self.assertEqual(pytest_wrapped_e.type, SystemExit)
+#        self.assertEqual(pytest_wrapped_e.value.code, EXIT_SUCCESS)
+
+class Test_410_Run_Live_Network(MyBase):
     def test_no_network(self):
         options = ['-u', 'http://abc.xyz.example.com']
         sys.stdin = io.StringIO("route: 1.2.3.4\n\n")
