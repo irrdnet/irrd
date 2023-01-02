@@ -1,6 +1,5 @@
 import json
 import io
-import logging
 import os
 import pytest
 import re
@@ -8,7 +7,7 @@ from urllib import request
 import subprocess
 import sys
 import unittest
-from urllib.error import HTTPError, URLError
+from urllib.error import HTTPError
 
 from .. import irr_rpsl_submit
 
@@ -91,17 +90,17 @@ class APIResultObject:
             "submitted_object_text": "[trimmed]",
         }
 
-    def create(s):
-        s.obj["type"] = "create"
-        return s
+    def create(self):
+        self.obj["type"] = "create"
+        return self
 
-    def delete(s):
-        s.obj["type"] = "delete"
-        return s
+    def delete(self):
+        self.obj["type"] = "delete"
+        return self
 
-    def modify(s):
-        s.obj["type"] = "modify"
-        return s
+    def modify(self):
+        self.obj["type"] = "modify"
+        return self
 
     def fail(self, message="some failure"):
         self.obj["successful"] = False
@@ -227,7 +226,7 @@ class MyBase(unittest.TestCase):
         pass
 
 
-class Test_100_Get_Arguments(MyBase):
+class Test100GetArguments(MyBase):
     def test_help_message(self):
         options = ["--help"]
         with pytest.raises(irr_rpsl_submit.XHelp) as error:
@@ -250,7 +249,7 @@ class Test_100_Get_Arguments(MyBase):
     def test_metadata_without_value(self):
         options = ["-u", "http://example.com", "-m", "foo"]
         with pytest.raises(irr_rpsl_submit.XArgumentError) as pytest_wrapped_e:
-            args = irr_rpsl_submit.get_arguments(options)
+            args = irr_rpsl_submit.get_arguments(options)  # pylint: disable=F841
         self.assertEqual(pytest_wrapped_e.type, irr_rpsl_submit.XArgumentError)
 
     def test_debug(self):
@@ -292,13 +291,13 @@ class Test_100_Get_Arguments(MyBase):
             args = irr_rpsl_submit.get_arguments(d["args"].copy())
             # choose_url modifies args
             irr_rpsl_submit.choose_url(args)
-            self.assertEqual(args.url, d["expected"], f"choose_url sets args.url to the expected URL")
+            self.assertEqual(args.url, d["expected"], "choose_url sets args.url to the expected URL")
 
 
-class Test_110_Choose_URL(MyBase):
+class Test110ChooseURL(MyBase):
     def test_choose_url_exception(self):
         options = []
-        with pytest.raises(irr_rpsl_submit.XArgumentProcessing) as e:
+        with pytest.raises(irr_rpsl_submit.XArgumentProcessing):
             options = ["-h", "localhost"]
             args = irr_rpsl_submit.get_arguments(options)
             args.host = None  # unset it to trigger next error
@@ -306,7 +305,7 @@ class Test_110_Choose_URL(MyBase):
             irr_rpsl_submit.choose_url(args)
 
 
-class Test_200_Create_Request_Body(MyBase):
+class Test200CreateRequestBody(MyBase):
     def test_create_request_body_minimal(self):
         request_body = irr_rpsl_submit.create_request_body(RPSL_MINIMAL)
         for key in REQUEST_BODY_KEYS:
@@ -363,7 +362,7 @@ class Test_200_Create_Request_Body(MyBase):
     def test_create_request_body_two_overrides(self):
         passed = False
         try:
-            request_body = irr_rpsl_submit.create_request_body(RPSL_WITH_TWO_DIFF_OVERRIDES)
+            request_body = irr_rpsl_submit.create_request_body(RPSL_WITH_TWO_DIFF_OVERRIDES)  # pylint: disable=F841
         except irr_rpsl_submit.XInput:
             passed = True
 
@@ -382,7 +381,7 @@ class Test_200_Create_Request_Body(MyBase):
         self.assertEqual(len(request_body["objects"]), 2)
 
 
-class Test_200_Create_Requesty(MyBase):
+class Test200CreateRequesty(MyBase):
     def test_create_http_request_metadata(self):
         args = irr_rpsl_submit.get_arguments(["-h", UNRESOVABLE_HOST, "-m", "Biff=Badger"])
         request = irr_rpsl_submit.create_http_request(RPSL_MINIMAL, args)
@@ -391,7 +390,7 @@ class Test_200_Create_Requesty(MyBase):
     def test_create_http_request_no_objects(self):
         args = irr_rpsl_submit.get_arguments(["-h", UNRESOVABLE_HOST, "-m", "Biff=Badger"])
         with pytest.raises(irr_rpsl_submit.XNoObjects) as pytest_wrapped_e:
-            request = irr_rpsl_submit.create_http_request(RPSL_EMPTY, args)
+            request = irr_rpsl_submit.create_http_request(RPSL_EMPTY, args)  # pylint: disable=F841
         self.assertEqual(pytest_wrapped_e.type, irr_rpsl_submit.XNoObjects)
 
 
@@ -401,13 +400,13 @@ def my_raise(ex):
     raise ex
 
 
-class Test_300_Make_Request(MyBase):
+class Test300MakeRequest(MyBase):
     original = irr_rpsl_submit.__dict__["send_request"]
 
     @classmethod
-    def tearDown(self):
+    def tearDown(cls):
         super().tearDown()
-        irr_rpsl_submit.send_request = self.original
+        irr_rpsl_submit.send_request = cls.original
 
     def test_unresolvable_host_raises(self):
         args = irr_rpsl_submit.get_arguments(["-h", UNRESOVABLE_HOST])
@@ -434,7 +433,7 @@ class Test_300_Make_Request(MyBase):
         irr_rpsl_submit.send_request = lambda rpsl, args: my_raise(
             HTTPError(url="http://fake.example.com", code="500", msg="Internal Server Error", hdrs={}, fp=None)
         )
-        with pytest.raises(irr_rpsl_submit.XNetwork) as error:
+        with pytest.raises(irr_rpsl_submit.XNetwork):
             irr_rpsl_submit.make_request(RPSL_MINIMAL, args)
         self.assertTrue(True)
 
@@ -445,7 +444,7 @@ class Test_300_Make_Request(MyBase):
 
         irr_rpsl_submit.send_request = lambda rpsl, args: json.loads("{")
 
-        with pytest.raises(irr_rpsl_submit.XResponse) as error:
+        with pytest.raises(irr_rpsl_submit.XResponse):
             irr_rpsl_submit.make_request(RPSL_MINIMAL, args)
 
     def test_good_response(self):
@@ -459,7 +458,7 @@ class Test_300_Make_Request(MyBase):
         self.assertTrue(result["objects"][0]["successful"])
 
 
-class Test_310_Handle_Result(MyBase):
+class Test310HandleResult(MyBase):
     def test_result_rejected(self):
         options = ["-u", UNREACHABLE_URL, "-j"]
         args = irr_rpsl_submit.get_arguments(options)
@@ -511,7 +510,7 @@ class Test_310_Handle_Result(MyBase):
         self.assertRegex(output, re.compile("SUMMARY OF UPDATE"))
 
 
-class Test_400_Run_No_Network(MyBase):
+class Test400RunNoNetwork(MyBase):
     def test_help_message(self):
         options = ["--help"]
         with pytest.raises(SystemExit) as error:
@@ -544,13 +543,13 @@ class Test_400_Run_No_Network(MyBase):
         self.assertEqual(pytest_wrapped_e.value.code, EXIT_INPUT_ERROR)
 
 
-class Test_405_Run_Mock_Response(MyBase):
+class Test405RunMockResponse(MyBase):
     original = irr_rpsl_submit.__dict__["make_request"]
 
     @classmethod
-    def tearDown(self):
+    def tearDown(cls):
         super().tearDown()
-        irr_rpsl_submit.make_request = self.original
+        irr_rpsl_submit.make_request = cls.original
 
     def test_good_response(self):
         response = APIResult(
@@ -587,16 +586,13 @@ class Test_405_Run_Mock_Response(MyBase):
         self.assertEqual(pytest_wrapped_e.value.code, EXIT_CHANGE_FAILED)
 
 
-#     response_body = http_response.read().decode("utf-8")
-
-
-class Test_405_Run_Mock_Urlopen(MyBase):
+class Test405RunMockUrlopen(MyBase):
     original_urlopen = request.__dict__["urlopen"]
 
     @classmethod
-    def tearDown(self):
+    def tearDown(cls):
         super().tearDown()
-        request.urlopen = self.original_urlopen
+        request.urlopen = cls.original_urlopen
 
     def test_all_objects_succeed(self):
         options = ["-u", "http://abc.xyz.example.com"]
@@ -648,12 +644,6 @@ class Test_405_Run_Mock_Urlopen(MyBase):
     def test_general_exception(self):
         options = ["-u", "http://abc.xyz.example.com"]
         sys.stdin = io.StringIO(RPSL_MINIMAL)
-        response = APIResult(
-            [
-                APIResultObject().create().succeed(),
-                APIResultObject().modify().fail(),
-            ]
-        )
 
         request.urlopen = lambda url, **kwargs: my_raise(Exception("Random exception"))
 
@@ -664,20 +654,7 @@ class Test_405_Run_Mock_Urlopen(MyBase):
         self.assertEqual(pytest_wrapped_e.value.code, EXIT_OTHER_ERROR)
 
 
-#    def test_not_found(self):
-#        options = ['-u', 'http://abc.xyz.example.com']
-#        sys.stdin = io.StringIO(RPSL_MINIMAL)
-#
-#        request.urlopen = lambda url, **kwargs: raise
-#
-#        with pytest.raises(SystemExit) as pytest_wrapped_e:
-#            irr_rpsl_submit.run(options)
-#        out, err = self.capfd.readouterr()
-#        self.assertEqual(pytest_wrapped_e.type, SystemExit)
-#        self.assertEqual(pytest_wrapped_e.value.code, EXIT_SUCCESS)
-
-
-class Test_410_Run_Live_Network(MyBase):
+class Test410RunLiveNetwork(MyBase):
     def test_no_network(self):
         options = ["-u", "http://abc.xyz.example.com"]
         sys.stdin = io.StringIO("route: 1.2.3.4\n\n")
@@ -695,7 +672,7 @@ class Test_410_Run_Live_Network(MyBase):
         self.assertEqual(pytest_wrapped_e.value.code, EXIT_NETWORK_ERROR)
 
 
-class Test_900_Command(MyBase):
+class Test900Command(MyBase):
     """
     These tests run irr_rpsl_submit.py as a program. As such, none
     of these tests contribute to coverage since the work is done in
@@ -736,21 +713,21 @@ class Test_900_Command(MyBase):
         # network error exit, but that's not what we care about. We
         # merely want to error message to see what the url value
         # turned out to be:
-        self.assertEqual(result.returncode, EXIT_NETWORK_ERROR, f"-h with bad host is a network error")
-        self.assertRegex(result.stderr, re.compile(f"{host}:{dash_p_port}"), f"-h with port and -p prefers -p")
+        self.assertEqual(result.returncode, EXIT_NETWORK_ERROR, "-h with bad host is a network error")
+        self.assertRegex(result.stderr, re.compile(f"{host}:{dash_p_port}"), "-h with port and -p prefers -p")
 
     def test_020_dash_o_noop(self):
         # -O in irrdv3 was used to note the original host making the request
         # If we get an error, it should be from the -h, not the -O
         result = Runner.run(["-h", UNREACHABLE_HOST, "-O", BAD_RESPONSE_HOST], ENV_EMPTY, RPSL_MINIMAL)
         self.assertEqual(
-            result.returncode, EXIT_NETWORK_ERROR, f"using both -h and -O exits with value appropriate to -h value"
+            result.returncode, EXIT_NETWORK_ERROR, "using both -h and -O exits with value appropriate to -h value"
         )
         self.assertRegex(result.stderr, REGEX_UNREACHABLE)
 
         result = Runner.run(["-h", BAD_RESPONSE_HOST, "-O", UNREACHABLE_HOST], ENV_EMPTY, RPSL_MINIMAL)
         self.assertEqual(
-            result.returncode, EXIT_NETWORK_ERROR, f"using both -h and -O exits with value appropriate to -h value"
+            result.returncode, EXIT_NETWORK_ERROR, "using both -h and -O exits with value appropriate to -h value"
         )
         self.assertRegex(result.stderr, REGEX_NOT_FOUND)
 
@@ -821,7 +798,7 @@ class Test_900_Command(MyBase):
             self.assertRegex(result.stderr, REGEX_BAD_RESPONSE)
 
 
-class Test_990_Command(unittest.TestCase):
+class Test990Command(unittest.TestCase):
     """
     These tests run irr_rpsl_submit.py as a program. As such, none
     of these tests contribute to coverage since the work is done in
