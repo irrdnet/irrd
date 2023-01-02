@@ -27,54 +27,68 @@ from urllib.error import HTTPError, URLError
 
 logging.basicConfig(
     level=logging.INFO,
-    style='{',
-    datefmt='%Y-%m-%d %H:%M:%S',
-    format='{asctime} {levelname} {filename}:{lineno}: {message}'
+    style="{",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    format="{asctime} {levelname} {filename}:{lineno}: {message}",
 )
 logger = logging.getLogger(__name__)
 logger.disabled = True
 
-sys.stdout.reconfigure(encoding='utf-8')
-sys.stderr.reconfigure(encoding='utf-8')
+sys.stdout.reconfigure(encoding="utf-8")
+sys.stderr.reconfigure(encoding="utf-8")
+
 
 class BlankLinesHelpFormatter(argparse.HelpFormatter):
     """
     A formatter to allow argparse to respect blank lines
     """
+
     # textwrap doesn't understand multiple paragraphs, so
     # we split on paras then wrap each individually
     def _fill_text(self, text, width, indent):
         paras = text.split("\n\n")
 
         for i, para in enumerate(paras):
-            if re.match(r'\s', para):
+            if re.match(r"\s", para):
                 continue
-            paras[i] = textwrap.fill(
-                para, width,
-                initial_indent=indent,
-                subsequent_indent=indent
-            )
+            paras[i] = textwrap.fill(para, width, initial_indent=indent, subsequent_indent=indent)
 
         return "\n\n".join(paras)
 
-class SysExitValues():
+
+class SysExitValues:
     """
     A set of exit values for sys.exit
     """
+
     # pylint: disable=C0103,C0116,C0321,E0211
-    def Success        (): return  0
-    def ChangeRejected (): return  1
-    def ArgumentMisuse (): return  2
-    def InputError     (): return  4
-    def NetworkError   (): return  8
-    def ResponseError  (): return 16
-    def GeneralError   (): return 32
+    def Success():
+        return 0
+
+    def ChangeRejected():
+        return 1
+
+    def ArgumentMisuse():
+        return 2
+
+    def InputError():
+        return 4
+
+    def NetworkError():
+        return 8
+
+    def ResponseError():
+        return 16
+
+    def GeneralError():
+        return 32
+
 
 class XBasic(Exception):
-    def __init__(self, message=''):
+    def __init__(self, message=""):
         self.message = message
 
-    def exit_value(self): # pragma: no cover
+    def exit_value(self):  # pragma: no cover
         """
         Returns the exit value for a general error. This usually means
         that a derived class did not specify an exit value.
@@ -102,9 +116,10 @@ class XBasic(Exception):
         Output an error message the exit the program with the
         right exit value.
         """
-        self.log();
-        self.report();
+        self.log()
+        self.report()
         sys.exit(self.exit_value())
+
 
 class XArgumentError(XBasic):
     """
@@ -114,24 +129,29 @@ class XArgumentError(XBasic):
     might be on a version earlier than Python 3.9 where we can
     turn off argparse's exit_on_error
     """
+
     def exit_value(self):
         """
         Return the exit value for this type of error.
         """
         return SysExitValues.ArgumentMisuse()
 
+
 class XArgumentProcessing(XBasic):
     """
     Used for errors related to the semantic meaning of arguments after
     they have been parsed
     """
+
     pass
+
 
 class XHelp(XBasic):
     """
     Raised for argparse's help, which uses a non-zero exit. If we
     asked for a help message and got one, that's successful.
     """
+
     def exit_value(self):
         """
         Return the exit value for this type of error.
@@ -144,21 +164,25 @@ class XHelp(XBasic):
     def report(self):
         pass
 
+
 class XInput(XBasic):
     """
     General exception type for problems related to the RPSL input.
     """
+
     def exit_value(self):
         """
         Return the exit value for this type of error.
         """
         return SysExitValues.InputError()
 
+
 class XNetwork(XBasic):
     """
     General exception type for network problems.
     """
-    def __init__(self, message, extra=''):
+
+    def __init__(self, message, extra=""):
         self.message = f"{self.prefix()}: {message}"
         self.extra = extra
 
@@ -174,6 +198,7 @@ class XNetwork(XBasic):
         """
         return "Network error"
 
+
 # Don't alphabetize these classes because the base class has to
 # appear before any class that uses it. Done that twice already
 # forgetting that.
@@ -184,11 +209,13 @@ class XHTTPConnectionFailed(XNetwork):
     This is a refinement of HTTPError, which is not granular enough
     to provide useful information to consumers.
     """
+
     def prefix(self):
         """
         Returns the prefix to attach to the start of each logged message.
         """
-        return "Connection refused" # pragma: no cover
+        return "Connection refused"  # pragma: no cover
+
 
 class XHTTPNotFound(XNetwork):
     """
@@ -197,11 +224,13 @@ class XHTTPNotFound(XNetwork):
     This is a refinement of HTTPError, which is not granular enough
     to provide useful information to consumers.
     """
+
     def prefix(self):
         """
         Returns the prefix to attach to the start of each logged message.
         """
         return "Not found"
+
 
 class XNameResolutionFailed(XNetwork):
     """
@@ -210,18 +239,22 @@ class XNameResolutionFailed(XNetwork):
     This is a refinement of HTTPError, which is not granular enough
     to provide useful information to consumers.
     """
+
     def prefix(self):
         """
         Returns the prefix to attach to the start of each logged message.
         """
         return "Could not resolve host"
 
+
 class XNoObjects(XInput):
     """
     Raised when there are no RPSL objects. There must be at least
     one object in the input.
     """
+
     pass
+
 
 class XResponse(XBasic):
     def __init__(self, message, extra):
@@ -240,17 +273,17 @@ class XResponse(XBasic):
         """
         return "Response error"
 
+
 class XTooManyObjects(XInput):
     """
     Raised when there a delete operation gets more than one RPSL object.
     IRRdv4 requires that any delete operation have exactly one object
     in the request.
     """
+
     def __init__(self):
-        super().__init__(
-            "There was more than one RPSL object. " +
-            "A delete must have exactly one object."
-        )
+        super().__init__("There was more than one RPSL object. " + "A delete must have exactly one object.")
+
 
 def run(options):
     """
@@ -261,8 +294,8 @@ def run(options):
     """
 
     try:
-        args   = get_arguments(options)
-        rpsl   = get_rpsl()
+        args = get_arguments(options)
+        rpsl = get_rpsl()
         result = make_request(rpsl, args)
         output = handle_output(args, result)
         print(output)
@@ -270,17 +303,14 @@ def run(options):
         error.warn_and_exit()
     except Exception as error:
         sys.stderr.write(f"Some other error: {type(error).__name__} • {error}\n")
-        logger.fatal(
-            "Some other error with input (%s): %s",
-            type(error).__name__,
-            error
-        )
+        logger.fatal("Some other error with input (%s): %s", type(error).__name__, error)
         sys.exit(SysExitValues.GeneralError())
 
     exit_code = SysExitValues.Success()
     if at_least_one_change_was_rejected(result):
         exit_code = SysExitValues.ChangeRejected()
     sys.exit(exit_code)
+
 
 def get_arguments(options):
     """
@@ -290,6 +320,7 @@ def get_arguments(options):
     logger.debug("Args are: %s", args)
     return args
 
+
 def get_rpsl():
     """
     Get the RPSL.
@@ -297,6 +328,7 @@ def get_rpsl():
     rpsl = get_input()
     logger.debug("Input: ===\n%s\n===\n", rpsl)
     return rpsl
+
 
 def make_request(rpsl, args):
     """
@@ -306,7 +338,7 @@ def make_request(rpsl, args):
         result = send_request(rpsl, args)
     except (HTTPError, URLError) as error:
         logger.debug("HTTP problem: %s = %s", args.url, error.reason)
-        reason = re.sub( r'^.*?\]\s*', '', f"{error.reason}" )
+        reason = re.sub(r"^.*?\]\s*", "", f"{error.reason}")
         message = f"{args.url} = {reason}"
         raise XNetwork(message, [rpsl, args]) from error
     except json.decoder.JSONDecodeError as error:
@@ -316,6 +348,7 @@ def make_request(rpsl, args):
         raise XResponse(message, [rpsl, args]) from error
 
     return result
+
 
 def handle_output(args, result):
     """
@@ -330,17 +363,17 @@ def handle_output(args, result):
 
     return formatted_output
 
+
 def add_irrdv3_options(parser):
     """
     Add the legacy options for irrdv3 so argparse can process them.
     Some options will be ignored, and others will be translated to
     the right values the requests need.
     """
-    prefix='(IRRdv3 no-op)'
+    prefix = "(IRRdv3 no-op)"
 
     irr3_legacy_group = parser.add_argument_group(
-        'irrdv3 compatibility',
-        'these arguments are ignored and exist only to accept legacy calls'
+        "irrdv3 compatibility", "these arguments are ignored and exist only to accept legacy calls"
     )
     irr3_legacy_group.add_argument(
         "-c",
@@ -374,7 +407,7 @@ def add_irrdv3_options(parser):
         dest="footer",
         metavar="FOOTER",
         type=str,
-        help=f"{prefix} \" enclosed response footer string",
+        help=f'{prefix} " enclosed response footer string',
     )
     irr3_legacy_group.add_argument(
         "-l",
@@ -400,7 +433,7 @@ def add_irrdv3_options(parser):
         dest="forwarding_host",
         metavar="STR",
         type=str,
-        help=f"{prefix} \" enclosed host/IP web origin string",
+        help=f'{prefix} " enclosed host/IP web origin string',
     )
     irr3_legacy_group.add_argument(
         "-p",
@@ -452,6 +485,7 @@ def add_irrdv3_options(parser):
         help="output a text summary of operation (default off)",
     )
 
+
 def adjust_args(args):
     """
     Adjust the argument list after processing, for special circumstances
@@ -459,7 +493,7 @@ def adjust_args(args):
     # can't do this in argparse because debug is not a string type
     if args.debug:
         logger.disabled = False
-        logger.setLevel('DEBUG') # Python 3.2 accepts strings
+        logger.setLevel("DEBUG")  # Python 3.2 accepts strings
 
     choose_url(args)
 
@@ -467,13 +501,15 @@ def adjust_args(args):
 
     return args
 
+
 def at_least_one_change_was_rejected(result):
     """
     Return True if at least one RPSL object was rejected, and False otherwise.
     """
-    return result['summary']['failed'] > 0
+    return result["summary"]["failed"] > 0
 
-def choose_url (args):
+
+def choose_url(args):
     """
     Set the args.url value to the appropriate value for the combination
     of -h, -p, and -u.  This converts legacy irrdv3 calls to the IRRdv4
@@ -484,21 +520,20 @@ def choose_url (args):
     """
 
     if args.host:
-        scheme = 'http'
+        scheme = "http"
         hostport = args.host
 
         if args.port:
             # we don't validate hosts, so there might already be a
             # port attached to it. That's fine, but if -p is specified,
             # prefer that one.
-            hostport = re.sub(r":.*", "", hostport )
+            hostport = re.sub(r":.*", "", hostport)
             hostport += f":{args.port}"
 
         args.url = f"{scheme}://{hostport}/v1/submit/"
     elif not args.url:
-        raise XArgumentProcessing(
-            "choose_url did not get a host or url in the command-line arguments"
-        )
+        raise XArgumentProcessing("choose_url did not get a host or url in the command-line arguments")
+
 
 def create_http_request(requests_text, args):
     metadata = args.metadata
@@ -508,9 +543,9 @@ def create_http_request(requests_text, args):
     request_body = create_request_body(requests_text)
     is_delete = request_body.get("delete_reason")
 
-    if not request_body['objects']:
+    if not request_body["objects"]:
         raise XNoObjects("No RPSL objects were found after processing input.")
-    if is_delete and len(request_body['objects']) > 1:
+    if is_delete and len(request_body["objects"]) > 1:
         raise XTooManyObjects()
 
     method = "DELETE" if is_delete else "POST"
@@ -527,12 +562,10 @@ def create_http_request(requests_text, args):
         method=method,
         headers=headers,
     )
-    logger.debug(
-        "Submitting to %s; method %s}; headers %s; data %s",
-        url, method, headers, http_data
-    )
+    logger.debug("Submitting to %s; method %s}; headers %s; data %s", url, method, headers, http_data)
 
     return http_request
+
 
 def create_request_body(rpsl: str):
     """
@@ -541,9 +574,9 @@ def create_request_body(rpsl: str):
 
     Returns a dict suitable as a JSON HTTP POST payload.
     """
-    passwords     = []
-    override      = None
-    rpsl_texts    = []
+    passwords = []
+    override = None
+    rpsl_texts = []
     delete_reason = ""
 
     rpsl = rpsl.replace("\r", "")
@@ -583,11 +616,13 @@ def create_request_body(rpsl: str):
     }
     return result
 
+
 def format_as_default(response):
     """
     Format that raw response as whatever we decide the default is.
     """
     return format_as_text(response)
+
 
 def format_as_json(response):
     """
@@ -596,12 +631,14 @@ def format_as_json(response):
     """
     return json.dumps(response)
 
+
 def format_as_text(response):
     """
     Format an IRRd HTTP response into a human-friendly text.
     """
     summary = response["summary"]
-    user_report = textwrap.dedent(f"""
+    user_report = textwrap.dedent(
+        f"""
     SUMMARY OF UPDATE:
 
     Number of objects found:                  {summary["objects_found"]:3}
@@ -626,20 +663,21 @@ def format_as_text(response):
     user_report += "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"
     return user_report
 
+
 def format_report_object(report):
     """
     Format an IRRD HTTP response for a specific object into a human-friendly text.
     """
     status = "succeeded" if report["successful"] else "FAILED"
 
-    formatted_report = f'{report["type"]} {status}: "'\
-        f'"[{report["object_class"]}] {report["rpsl_pk"]}\n'
+    formatted_report = f'{report["type"]} {status}: ""[{report["object_class"]}] {report["rpsl_pk"]}\n'
     if report["info_messages"] or report["error_messages"]:
         if report["error_messages"]:
             formatted_report += "\n" + report["submitted_object_text"] + "\n"
         formatted_report += "".join([f"ERROR: {e}\n" for e in report["error_messages"]])
         formatted_report += "".join([f"INFO: {e}\n" for e in report["info_messages"]])
     return formatted_report
+
 
 def get_input():
     """
@@ -650,22 +688,24 @@ def get_input():
         raise XNoObjects("Empty input! Specify at least on RPSL object.")
     return rpsl
 
+
 def preprocess_args(options):
     """
     Fix up the command-line options before argparse gets in there.
     Some environment variables push values onto the options at this
     point.
     """
-    has_u_or_h = '-u' in options or '-h' in options
-    if os.getenv('IRR_RPSL_SUBMIT_URL') and not has_u_or_h:
-        options.extend( ['-u', os.getenv('IRR_RPSL_SUBMIT_URL')])
-    elif os.getenv('IRR_RPSL_SUBMIT_HOST') and not has_u_or_h:
-        options.extend( ['-h', os.getenv('IRR_RPSL_SUBMIT_HOST')])
+    has_u_or_h = "-u" in options or "-h" in options
+    if os.getenv("IRR_RPSL_SUBMIT_URL") and not has_u_or_h:
+        options.extend(["-u", os.getenv("IRR_RPSL_SUBMIT_URL")])
+    elif os.getenv("IRR_RPSL_SUBMIT_HOST") and not has_u_or_h:
+        options.extend(["-h", os.getenv("IRR_RPSL_SUBMIT_HOST")])
 
-    if os.getenv('IRR_RPSL_SUBMIT_DEBUG') and not '-d' in options:
-        options.extend( ['-d'] )
+    if os.getenv("IRR_RPSL_SUBMIT_DEBUG") and not "-d" in options:
+        options.extend(["-d"])
 
     return options
+
 
 def process_args(options):
     """
@@ -680,18 +720,19 @@ def process_args(options):
         # wants to exit with an error, so stop that. We don't
         # need a message for XHelp because argparse has already
         # output something.
-        if '--help' in options:
-            raise XHelp('') from error
+        if "--help" in options:
+            raise XHelp("") from error
         raise XArgumentError("Error processing command-line arguments: {error.message}") from error
 
     if args.debug:
         logger.setLevel(logging.DEBUG)
-        logger.debug('enabled debug level for logging')
+        logger.debug("enabled debug level for logging")
 
     logger.debug("raw args: %s", options)
     args = adjust_args(args)
     logger.debug("adjusted args: %s", args)
     return args
+
 
 def send_request(requests_text, args):
     """
@@ -700,14 +741,14 @@ def send_request(requests_text, args):
     http_request = create_http_request(requests_text, args)
 
     try:
-        http_response = request.urlopen(http_request, timeout=20) # pylint: disable=consider-using-with
+        http_response = request.urlopen(http_request, timeout=20)  # pylint: disable=consider-using-with
     except URLError as error:
         reason = error.reason
         if isinstance(reason, socket.gaierror):
             raise XNameResolutionFailed(args.url, reason) from error
-        if isinstance(reason, (socket.timeout, ConnectionRefusedError) ):
+        if isinstance(reason, (socket.timeout, ConnectionRefusedError)):
             raise XHTTPConnectionFailed(args.url, http_request) from error  # pragma: no cover
-        if reason == 'Not Found':
+        if reason == "Not Found":
             raise XHTTPNotFound(args.url, http_request) from error
         raise error
     except Exception as error:
@@ -718,20 +759,21 @@ def send_request(requests_text, args):
     response = json.loads(response_body)
     return response
 
+
 def setup_argparse():
     """
     Define the command-line arguments. This sets up the default set
     for IRRdv4 and adds some legacy options for IRRdv3 compatibility.
     """
+
     def metadata(metadata_values):
         try:
-            return {
-                item.split("=")[0]: item.split("=", 1)[1] for item in metadata_values.split(",")
-            }
+            return {item.split("=")[0]: item.split("=", 1)[1] for item in metadata_values.split(",")}
         except IndexError as error:
             raise ValueError() from error
 
-    description = textwrap.dedent("""\
+    description = textwrap.dedent(
+        """\
         Read RPSL submissions from stdin and return a response on stdout.
         Errors or debug info are printed to stderr. This program accepts
         the arguments for irrdv3's version of irr_rpsl_submit but ignores
@@ -768,7 +810,8 @@ def setup_argparse():
         formatter_class=BlankLinesHelpFormatter,
     )
     parser.add_argument(
-        "-d", "-v",
+        "-d",
+        "-v",
         default=False,
         dest="debug",
         action="store_true",
@@ -798,12 +841,13 @@ def setup_argparse():
         "-u",
         dest="url",
         type=str,
-        help="IRRd submission API URL, e.g. https://rr.example.net/v1/submit/ (also set by IRR_RPSL_SUBMIT_URL)", # pylint: disable=C0301
+        help="IRRd submission API URL, e.g. https://rr.example.net/v1/submit/ (also set by IRR_RPSL_SUBMIT_URL)",  # pylint: disable=C0301
     )
 
     add_irrdv3_options(parser)
 
     return parser
 
-if __name__ == "__main__": # pragma: no cover
+
+if __name__ == "__main__":  # pragma: no cover
     run(sys.argv[1:])
