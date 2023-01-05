@@ -360,7 +360,7 @@ class MockMirrorFileImportParser:
         assert serial is None
 
     def run_import(self):
-        with open(self.filename, 'r') as f:
+        with open(self.filename) as f:
             self.rpsl_data_calls.append(f.read())
 
 
@@ -581,7 +581,7 @@ class TestNRTMImportUpdateStreamRunner:
         NRTMImportUpdateStreamRunner('TEST').run(424242, mock_dh)
 
 
-class MockNRTMStreamParser(object):
+class MockNRTMStreamParser:
     def __init__(self, source, response, database_handler):
         assert source == 'TEST'
         assert response == 'response'

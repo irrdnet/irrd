@@ -76,7 +76,7 @@ class TestEventStreamInitialDownloadEndpoint:
         client = TestClient(app)
         response = client.get("/v1/event-stream/initial/", params={"sources": "TEST", "object_classes": "mntner"})
         assert response.status_code == 200
-        header, rpsl_obj = [json.loads(line) for line in response.text.splitlines()]
+        header, rpsl_obj = (json.loads(line) for line in response.text.splitlines())
 
         assert header["data_type"] == "irrd_event_stream_initial_download"
         assert header["sources_filter"] == ["TEST"]
