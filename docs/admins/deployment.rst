@@ -29,6 +29,7 @@ IRRd requires:
 * A recent version of PostgreSQL. Versions 9.6, 11.16, 13.7, 15.0 are all
   tested before release. 11 or higher is strongly recommended, due to faster
   database migrations during upgrades.
+* Redis 5 or newer.
 * At least 32GB RAM
 * At least 4 CPU cores
 * At least 150GB of disk space (SSD recommended)
@@ -263,7 +264,7 @@ A sample nginx configuration could initially look as follows
         default_type  application/octet-stream;
 
         gzip on;
-        gzip_types application/json text/plain;
+        gzip_types application/json text/plain application/jsonl+json;
 
         server {
             server_name  [your hostname];
