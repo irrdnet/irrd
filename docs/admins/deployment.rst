@@ -245,7 +245,8 @@ Useful options:
   ``log.logfile_path`` is not set, this also shows all log output
   in the terminal.
 
-IRRd can be stopped by sending a SIGTERM signal.
+IRRd can be stopped by sending a SIGTERM signal. A SIGUSR1 will log a
+traceback of all threads in a specific IRRd process.
 
 
 .. _deployment-https:
