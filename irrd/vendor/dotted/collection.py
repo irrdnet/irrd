@@ -30,7 +30,7 @@ import re
 
 from abc import ABCMeta, abstractmethod
 
-from six import add_metaclass, string_types as basestring, iteritems
+from six import string_types as basestring
 
 
 SPLIT_REGEX = r"(?<!\\)(\.)"
@@ -64,8 +64,7 @@ def split_key(key, max_keys=0):
     return result
 
 
-@add_metaclass(ABCMeta)
-class DottedCollection(object):
+class DottedCollection(metaclass=ABCMeta):
     """Abstract Base Class for DottedDict and DottedDict"""
 
     @classmethod
@@ -116,7 +115,7 @@ class DottedCollection(object):
         if isinstance(self.store, list):
             data = enumerate(self.store)
         else:
-            data = iteritems(self.store)
+            data = self.store.items()
 
         for key, value in data:
             try:
@@ -130,9 +129,9 @@ class DottedCollection(object):
             for item in initial:
                 self._validate_initial(item)
         elif isinstance(initial, dict):
-            for key, item in iteritems(initial):
+            for key, item in initial.items():
                 if is_dotted_key(key):
-                    raise ValueError("{0} is not a valid key inside a "
+                    raise ValueError("{} is not a valid key inside a "
                                      "DottedCollection!".format(key))
                 self._validate_initial(item)
 
@@ -188,7 +187,7 @@ class DottedList(DottedCollection, collections.abc.MutableSequence):
 
             # required by the dotted path
             if not isinstance(target, DottedCollection):
-                raise IndexError('cannot get "{0}" in "{1}" ({2})'.format(
+                raise IndexError('cannot get "{}" in "{}" ({})'.format(
                     alt_index,
                     my_index,
                     repr(target)
@@ -197,7 +196,7 @@ class DottedList(DottedCollection, collections.abc.MutableSequence):
             return target[alt_index]
 
         else:
-            raise IndexError('cannot get %s in %s' % (index, repr(self.store)))
+            raise IndexError(f'cannot get {index} in {repr(self.store)}')
 
     def __setitem__(self, index, value):
         if isinstance(index, int) \
@@ -220,13 +219,13 @@ class DottedList(DottedCollection, collections.abc.MutableSequence):
                     DottedCollection._factory_by_index(alt_index))
 
             if not isinstance(self[int(my_index)], DottedCollection):
-                raise IndexError('cannot set "%s" in "%s" (%s)' % (
+                raise IndexError('cannot set "{}" in "{}" ({})'.format(
                     alt_index, my_index, repr(self[int(my_index)])))
 
             self[int(my_index)][alt_index] = DottedCollection.factory(value)
 
         else:
-            raise IndexError('cannot use %s as index in %s' % (
+            raise IndexError('cannot use {} as index in {}'.format(
                 index, repr(self.store)))
 
     def __delitem__(self, index):
@@ -240,13 +239,13 @@ class DottedList(DottedCollection, collections.abc.MutableSequence):
 
             # required by the dotted path
             if not isinstance(target, DottedCollection):
-                raise IndexError('cannot delete "%s" in "%s" (%s)' % (
+                raise IndexError('cannot delete "{}" in "{}" ({})'.format(
                     alt_index, my_index, repr(target)))
 
             del target[alt_index]
 
         else:
-            raise IndexError('cannot delete %s in %s' % (
+            raise IndexError('cannot delete {} in {}'.format(
                 index, repr(self.store)))
 
     def to_python(self):
@@ -284,7 +283,7 @@ class DottedDict(DottedCollection, collections.abc.MutableMapping):
 
         # required by the dotted path
         if not isinstance(target, DottedCollection):
-            raise KeyError('cannot get "{0}" in "{1}" ({2})'.format(
+            raise KeyError('cannot get "{}" in "{}" ({})'.format(
                 alt_key,
                 my_key,
                 repr(target)
@@ -318,7 +317,7 @@ class DottedDict(DottedCollection, collections.abc.MutableMapping):
             target = self.store[my_key]
 
             if not isinstance(target, DottedCollection):
-                raise KeyError('cannot delete "{0}" in "{1}" ({2})'.format(
+                raise KeyError('cannot delete "{}" in "{}" ({})'.format(
                     alt_key,
                     my_key,
                     repr(target)
@@ -332,7 +331,7 @@ class DottedDict(DottedCollection, collections.abc.MutableMapping):
         """
         result = dict(self)
 
-        for key, value in iteritems(result):
+        for key, value in result.items():
             if isinstance(value, DottedCollection):
                 result[key] = value.to_python()
 

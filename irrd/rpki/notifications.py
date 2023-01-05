@@ -37,7 +37,7 @@ def notify_rpki_invalid_owners(database_handler: DatabaseHandler,
     if not rpsl_objs:
         return 0
 
-    sources = set([obj.parsed_data['source'] for obj in rpsl_objs])
+    sources = {obj.parsed_data['source'] for obj in rpsl_objs}
     mntner_emails_by_source = {}
     for source in sources:
         # For each source, a multi-step process is run to fill this
@@ -100,7 +100,7 @@ def notify_rpki_invalid_owners(database_handler: DatabaseHandler,
     header_template = get_setting('rpki.notify_invalid_header', '')
     subject_template = get_setting('rpki.notify_invalid_subject', '').replace('\n', ' ')
     for email, objs in objs_per_email.items():
-        sources_str = ', '.join(set([obj.parsed_data['source'] for obj in objs]))
+        sources_str = ', '.join({obj.parsed_data['source'] for obj in objs})
         subject = subject_template.format(sources_str=sources_str, object_count=len(objs))
         body = header_template.format(sources_str=sources_str, object_count=len(objs))
         body += '\nThe following objects are affected:\n'
