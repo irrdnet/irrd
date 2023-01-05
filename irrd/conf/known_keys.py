@@ -6,6 +6,7 @@ from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING, RPSLSet
 # Note that sources are checked separately,
 # and 'access_lists' is always permitted
 KNOWN_CONFIG_KEYS = DottedDict({
+    'profiling_available': {},
     'database_url': {},
     'database_readonly': {},
     'redis_url': {},

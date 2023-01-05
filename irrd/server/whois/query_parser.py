@@ -1,4 +1,5 @@
 import logging
+import platform
 import re
 from typing import Optional
 
@@ -34,6 +35,7 @@ class WhoisQueryParser:
     so a single instance of this object should be created per session, with
     handle_query() being called for each individual query.
     """
+    profiling_enabled = False
 
     def __init__(self, client_ip: str, client_str: str, preloader: Preloader,
                  database_handler: DatabaseHandler) -> None:
@@ -123,6 +125,13 @@ class WhoisQueryParser:
             self.query_resolver.disable_out_of_scope_filter()
             result = 'Filtering out out-of-scope objects is disabled for !r and RIPE style ' \
                      'queries for the rest of this connection.'
+        elif all([
+            full_command.upper() == 'FPROFILE',
+            get_setting('profiling_available'),
+            platform.python_implementation() == "CPython"
+        ]):
+            self.profiling_enabled = True
+            result = 'Profiling output is enabled. Performance may be affected. '
         elif command == 'v':
             result = self.handle_irrd_version()
         elif command == 't':

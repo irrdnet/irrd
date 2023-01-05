@@ -1,3 +1,4 @@
+import platform
 import uuid
 from unittest.mock import Mock
 
@@ -88,7 +89,7 @@ MOCK_DATABASE_RESPONSE = [
 
 
 @pytest.fixture()
-def prepare_parser(monkeypatch, config_override):
+def prepare_parser(monkeypatch):
     mock_query_resolver = Mock(spec=QueryResolver)
     mock_query_resolver.rpki_aware = False
     monkeypatch.setattr('irrd.server.whois.query_parser.QueryResolver',
@@ -827,6 +828,21 @@ class TestWhoisQueryParserIRRD:
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result.startswith('Filtering out out-of-scope')
         mock_query_resolver.disable_out_of_scope_filter.assert_called_once_with()
+
+    @pytest.mark.skipif(platform.python_implementation() != "CPython", reason="requires CPython")
+    def test_profile(self, prepare_parser, config_override):
+        mock_query_resolver, mock_dh, parser = prepare_parser
+
+        assert not parser.profiling_enabled
+        parser.handle_query('!profile')
+        assert not parser.profiling_enabled
+
+        config_override({'profiling_available': True})
+        response = parser.handle_query('!fprofile')
+        assert parser.profiling_enabled
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert response.result.startswith('Profiling')
 
     def test_exception_handling(self, prepare_parser, caplog):
         mock_query_resolver, mock_dh, parser = prepare_parser

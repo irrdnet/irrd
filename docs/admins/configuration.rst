@@ -41,6 +41,7 @@ This sample shows most configuration options
         piddir: /var/run/
         user: irrd
         group: irrd
+        profiling_available: true
 
         access_lists:
             http_database_status:
@@ -220,6 +221,12 @@ General settings
   need for IRRd to bind to port 80 or 443.
   |br| **Default**: not defined, IRRd does not drop privileges.
   |br| **Change takes effect**: after full IRRd restart.
+* ``profiling_available``: whether to allow profiling output with the
+  ``!fprofile`` whois command or adding the ``profile=1`` GET parameter to
+  HTTP requests. Profiling is only available for CPython, so this setting
+  has no effect for PyPy deployments.
+  |br| **Default**: false.
+  |br| **Change takes effect**: after SIGHUP, on the next request/connection.
 
 
 Servers

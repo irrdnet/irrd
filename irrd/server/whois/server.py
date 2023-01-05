@@ -1,6 +1,7 @@
 import logging
 import multiprocessing as mp
 import os
+import platform
 import signal
 import socket
 import socketserver
@@ -18,6 +19,12 @@ from irrd.server.whois.query_parser import WhoisQueryParser
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.preload import Preloader
 from irrd.utils.process_support import memory_trim
+
+if platform.python_implementation() == "CPython":
+    from pyinstrument import Profiler  # pragma: no cover
+
+
+WHOIS_PROFILER_INTERVAL = 0.0001
 
 logger = logging.getLogger(__name__)
 mp.allow_connection_pickling()
@@ -213,10 +220,22 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
             logger.debug(f'{self.client_str}: closed connection per request')
             return False
 
-        response = self.query_parser.handle_query(query)
-        response_bytes = response.generate_response().encode('utf-8')
+        profiler = None
+        if self.query_parser.profiling_enabled:   # pragma: no cover (CPython-only)
+            profiler = Profiler(interval=WHOIS_PROFILER_INTERVAL, async_mode="enabled")
+            profiler.start()
+            response = self.query_parser.handle_query(query)
+            response_bytes = response.generate_response().encode('utf-8')
+            profiler.stop()
+        else:
+            response = self.query_parser.handle_query(query)
+            response_bytes = response.generate_response().encode('utf-8')
+
         try:
             self.wfile.write(response_bytes)
+            if profiler:  # pragma: no cover (CPython-only)
+                profiler_output = profiler.output_text(show_all=True, unicode=True, color=True)
+                self.wfile.write(profiler_output.encode('utf-8'))
         except OSError:
             return False
 
