@@ -17,7 +17,7 @@ setuptools.setup(
     packages=setuptools.find_packages(
         exclude=['*.tests', '*.tests.*', 'tests.*', 'tests', 'irrd.integration_tests']
     ),
-    python_requires='>=3.6',
+    python_requires='>=3.7',
     package_data={'': ['*.txt', '*.yaml', '*.mako']},
     install_requires=[
         # This list must be kept in sync with requirements.txt version-wise,
