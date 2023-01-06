@@ -431,8 +431,8 @@ class Test300MakeRequest(MyBase):
         self.assertEqual(args.url, UNREACHABLE_URL)
 
         irr_rpsl_submit.send_request = lambda rpsl, args: my_raise(
-            HTTPError("http://fake.example.com", 500, "Internal Server Error", dict(), None)
-        )  # type: ignore
+            HTTPError("http://fake.example.com", 500, "Internal Server Error", dict(), None)  # type: ignore
+        )
         with pytest.raises(irr_rpsl_submit.XNetwork):
             irr_rpsl_submit.make_request(RPSL_MINIMAL, args)
         self.assertTrue(True)
