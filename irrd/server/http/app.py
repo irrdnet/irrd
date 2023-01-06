@@ -18,8 +18,7 @@ from irrd.server.graphql.schema_builder import build_executable_schema
 from irrd.server.http.endpoints import StatusEndpoint, WhoisQueryEndpoint, ObjectSubmissionEndpoint
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.preload import Preloader
-from irrd.utils.process_support import memory_trim
-
+from irrd.utils.process_support import memory_trim, set_traceback_handler
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +37,8 @@ async def startup():
     As these are run in a separate process, the config file
     is read from the environment.
     """
-    setproctitle('irrd-http-server-listener')
+    setproctitle("irrd-http-server-listener")
+    set_traceback_handler()
     global app
     config_path = os.getenv(ENV_UVICORN_WORKER_CONFIG_PATH)
     config_init(config_path)
