@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # flake8: noqa: E402
 import argparse
-import grp
 import logging
 import os
 import pwd
@@ -12,6 +11,7 @@ from pathlib import Path
 from typing import Tuple, Optional
 
 import daemon
+import grp
 import psutil
 from daemon.daemon import change_process_owner
 from pid import PidFile, PidFileError
@@ -19,7 +19,7 @@ from pid import PidFile, PidFileError
 logger = logging.getLogger(__name__)
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
-from irrd.utils.process_support import ExceptionLoggingProcess
+from irrd.utils.process_support import ExceptionLoggingProcess, set_traceback_handler
 from irrd.storage.preload import PreloadStoreManager
 from irrd.server.whois.server import start_whois_server
 from irrd.server.http.server import run_http_server
@@ -94,6 +94,7 @@ def main():
 def run_irrd(mirror_frequency: int, config_file_path: str, uid: Optional[int], gid: Optional[int]):
     terminated = False
     os.environ[ENV_MAIN_PROCESS_PID] = str(os.getpid())
+    set_traceback_handler()
 
     whois_process = ExceptionLoggingProcess(
         target=start_whois_server,
