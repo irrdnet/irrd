@@ -555,7 +555,7 @@ class TestChangeSubmissionHandler:
         admin-c:        PERSON-TEST
         upd-to:         unread@ripe.net
         auth:           PGPKey-80F238C6
-        auth:           MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.  # md5-password
+        auth:           MD5-pw DummyValue  # Filtered for security
         mnt-by:         TEST-MNT
         changed:        changed@example.com 20190701 # comment
         source:         TEST
@@ -628,8 +628,7 @@ class TestChangeSubmissionHandler:
                                              'upd-to:         unread@ripe.net\n'
                                              'auth:           PGPKey-80F238C6\n'
                                              'auth:           MD5-pw '
-                                             '$1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.  # '
-                                             'md5-password\n'
+                                             'DummyValue  # Filtered for security\n'
                                              'mnt-by:         TEST-MNT\n'
                                              'changed:        changed@example.com '
                                              '20190701 # comment\n'
@@ -902,7 +901,7 @@ class TestChangeSubmissionHandler:
         admin-c:        PERSON-TEST
         upd-to:         unread@ripe.net
         auth:           PGPKey-80F238C6
-        auth:           MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.  # md5-password
+        auth:           MD5-pw DummyValue  # Filtered for security
         mnt-by:         TEST-MNT
         changed:        changed@example.com 20190701 # comment
         source:         TEST
