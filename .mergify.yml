@@ -5,6 +5,7 @@ pull_request_rules:
       - label=backport-to-4.2
     actions:
       backport:
+        title: "[4.2.x] {{ title }} (backport #{{ number }})"
         branches:
           - stable/4.2.x
         assignees:
