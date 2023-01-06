@@ -1056,7 +1056,7 @@ class TestSingleChangeRequestHandling:
         mock_dq, mock_dh = prepare_mocks
 
         query_results = iter([
-            [{'object_text': SAMPLE_INETNUM}],
+            [{'object_text': SAMPLE_INETNUM + 'remarks: MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.'}],
             [],
         ])
         mock_dh.execute_query = lambda query: next(query_results)
@@ -1082,8 +1082,9 @@ class TestSingleChangeRequestHandling:
         assert 'ERROR: Mandatory attribute' in report_invalid
         assert 'ERROR: Invalid AS number PW1' in report_invalid
 
+        # The extra MD5-PW is a workaround to test #722 until we can address #412
         query_results = iter([
-            [{'object_text': SAMPLE_INETNUM}],
+            [{'object_text': SAMPLE_INETNUM + 'remarks: MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.'}],
             [],
         ])
         mock_dh.execute_query = lambda query: next(query_results)
@@ -1104,6 +1105,7 @@ class TestSingleChangeRequestHandling:
             changed:        changed@example.com 20190701 # comment
             source:         TEST
             remarks:        remark
+            remarks:        MD5-pw DummyValue  # Filtered for security
         """).strip() + '\n'
 
         assert result_as_set.notification_target_report() == textwrap.dedent("""
@@ -1128,7 +1130,7 @@ class TestSingleChangeRequestHandling:
         assert result_inetnum_modify.notification_target_report() == textwrap.dedent("""
             Modify succeeded for object below: [inetnum] 192.0.2.0 - 192.0.2.255:
             
-            @@ -4,8 +4,8 @@
+            @@ -4,11 +4,10 @@
              country:        IT
              notify:         notify@example.com
              geofeed:        https://example.com/geofeed
@@ -1139,6 +1141,9 @@ class TestSingleChangeRequestHandling:
              status:         ASSIGNED PA
              mnt-by:         test-MNT
              changed:        changed@example.com 20190701 # comment
+             source:         TEST
+             remarks:        remark
+            -remarks:        MD5-pw DummyValue  # Filtered for security
             
             New version of this object:
             
@@ -1162,7 +1167,7 @@ class TestSingleChangeRequestHandling:
         assert result_inetnum_modify.notification_target_report() == textwrap.dedent("""
             Modify FAILED AUTHORISATION for object below: [inetnum] 192.0.2.0 - 192.0.2.255:
             
-            @@ -4,8 +4,8 @@
+            @@ -4,11 +4,10 @@
              country:        IT
              notify:         notify@example.com
              geofeed:        https://example.com/geofeed
@@ -1173,7 +1178,10 @@ class TestSingleChangeRequestHandling:
              status:         ASSIGNED PA
              mnt-by:         test-MNT
              changed:        changed@example.com 20190701 # comment
-            
+             source:         TEST
+             remarks:        remark
+            -remarks:        MD5-pw DummyValue  # Filtered for security
+
             *Rejected* new version of this object:
             
             inetnum:        192.0.2.0 - 192.0.2.255
