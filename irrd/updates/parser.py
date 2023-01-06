@@ -12,7 +12,7 @@ from irrd.scopefilter.validators import ScopeFilterValidator
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.models import JournalEntryOrigin
 from irrd.storage.queries import RPSLDatabaseQuery
-from irrd.utils.text import splitline_unicodesafe
+from irrd.utils.text import splitline_unicodesafe, remove_auth_hashes
 from .parser_state import UpdateRequestType, UpdateRequestStatus, SuspensionRequestType
 from .validators import ReferenceValidator, AuthValidator, RulesValidator
 from .suspension import suspend_for_mntner, reactivate_for_mntner
@@ -149,9 +149,9 @@ class ChangeRequest:
         report = f'{self.request_type_str().title()} {status}: [{self.object_class_str()}] {self.object_pk_str()}\n'
         if self.info_messages or self.error_messages:
             if not self.rpsl_obj_new or self.error_messages:
-                report += '\n' + self.rpsl_text_submitted + '\n'
+                report += '\n' + remove_auth_hashes(self.rpsl_text_submitted) + '\n'
             else:
-                report += '\n' + self.rpsl_obj_new.render_rpsl_text() + '\n'
+                report += '\n' + remove_auth_hashes(self.rpsl_obj_new.render_rpsl_text()) + '\n'
             report += ''.join([f'ERROR: {e}\n' for e in self.error_messages])
             report += ''.join([f'INFO: {e}\n' for e in self.info_messages])
         return report
@@ -168,8 +168,8 @@ class ChangeRequest:
             'rpsl_pk': self.object_pk_str(),
             'info_messages': self.info_messages,
             'error_messages': self.error_messages,
-            'new_object_text': new_object_text,
-            'submitted_object_text': self.rpsl_text_submitted,
+            'new_object_text': remove_auth_hashes(new_object_text),
+            'submitted_object_text': remove_auth_hashes(self.rpsl_text_submitted),
         }
 
     def notification_target_report(self):
@@ -201,7 +201,7 @@ class ChangeRequest:
             report += self.rpsl_obj_current.render_rpsl_text()
         else:
             report += self.rpsl_obj_new.render_rpsl_text()
-        return report
+        return remove_auth_hashes(report)
 
     def request_type_str(self) -> str:
         return self.request_type.value if self.request_type else 'request'
