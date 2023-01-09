@@ -24,7 +24,7 @@ uvicorn[standard]==0.20.0; python_version > '3.7'  # ASGI server extras
 starlette==0.20.4      # pyup: <0.21  # ariadne conflict
 psutil==5.9.4          # Process management
 asgiref==3.6.0         # ASGI utilities
-pydantic==1.10.2        # Input validation
+pydantic==1.10.4        # Input validation
 typing-extensions==4.4.0
 
 # Database connections and management
