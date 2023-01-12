@@ -600,7 +600,7 @@ def create_request_body(rpsl: str):
                 passwords.append(password)
             elif line.startswith("override:"):
                 password = line.split(":", maxsplit=1)[1].strip()
-                logger.debug("override password is %s", password)
+                logger.debug("detected override password")
                 if override is not None and password != override:
                     raise XInput("override encountered twice with different values")
                 override = password
