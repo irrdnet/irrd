@@ -59,14 +59,24 @@ def main():
     # but this call here causes fast failure for most misconfigurations
     config_init(args.config_file_path, commit=False)
 
+    staged_logfile_path = get_configuration().user_config_staging.get('log.logfile_path')
+    staged_logging_config_path = get_configuration().user_config_staging.get('log.logging_config_path')
     if not any([
-        get_configuration().user_config_staging.get('log.logfile_path'),
-        get_configuration().user_config_staging.get('log.logging_config_path'),
+        staged_logfile_path,
+        staged_logging_config_path,
         args.foreground,
     ]):
         logging.critical('Unable to start: when not running in the foreground, you must set '
                          'either log.logfile_path or log.logging_config_path in the settings')
         return
+
+    uid, gid = get_configured_owner(from_staging=True)
+    if uid and gid:
+        os.setegid(gid)
+        os.seteuid(uid)
+        if staged_logfile_path and not os.access(staged_logfile_path, os.W_OK, effective_ids=True):
+            logging.critical(f'Unable to start: logfile {staged_logfile_path} not writable by UID {uid} / GID {gid}')
+            return
 
     with daemon.DaemonContext(**daemon_kwargs):
         config_init(args.config_file_path)
@@ -182,10 +192,16 @@ def run_irrd(mirror_frequency: int, config_file_path: str, uid: Optional[int], g
     logging.info(f'Main process exiting')
 
 
-def get_configured_owner() -> Tuple[Optional[int], Optional[int]]:
+def get_configured_owner(from_staging=False) -> Tuple[Optional[int], Optional[int]]:
     uid = gid = None
-    user = get_setting('user')
-    group = get_setting('group')
+    if not from_staging:
+        user = get_setting('user')
+        group = get_setting('group')
+    else:
+        config = get_configuration()
+        assert config
+        user = config.user_config_staging.get('user')
+        group = config.user_config_staging.get('group')
     if user and group:
         uid = pwd.getpwnam(user).pw_uid
         gid = grp.getgrnam(group).gr_gid
