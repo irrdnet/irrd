@@ -203,7 +203,7 @@ class XNetwork(XBasic):
         return "Network error"
 
 
-# Don't alphabetize these classes because the base class has to
+# These classes are out of alphabet order, as the base class has to
 # appear before any class that uses it. Done that twice already
 # forgetting that.
 class XHTTPConnectionFailed(XNetwork):
