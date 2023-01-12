@@ -57,8 +57,8 @@ def copy_to(source, dest, engine_or_conn, **flags):
     conn, autoclose = raw_connection_from(engine_or_conn)
     cursor = conn.cursor()
     query = cursor.mogrify(compiled.string, compiled.params).decode()
-    formatted_flags = '({})'.format(format_flags(flags)) if flags else ''
-    copy = 'COPY ({}) TO STDOUT {}'.format(query, formatted_flags)
+    formatted_flags = f'({format_flags(flags)})' if flags else ''
+    copy = f'COPY ({query}) TO STDOUT {formatted_flags}'
     cursor.copy_expert(copy, dest)
     if autoclose:
         conn.close()
@@ -91,9 +91,9 @@ def copy_from(source, dest, engine_or_conn, columns=(), **flags):
     tbl = dest.__table__ if is_model(dest) else dest
     conn, autoclose = raw_connection_from(engine_or_conn)
     cursor = conn.cursor()
-    relation = '.'.join('"{}"'.format(part) for part in (tbl.schema, tbl.name) if part)
+    relation = '.'.join(f'"{part}"' for part in (tbl.schema, tbl.name) if part)
     formatted_columns = '({})'.format(','.join(columns)) if columns else ''
-    formatted_flags = '({})'.format(format_flags(flags)) if flags else ''
+    formatted_flags = f'({format_flags(flags)})' if flags else ''
     copy = 'COPY {} {} FROM STDIN {}'.format(
         relation,
         formatted_columns,
@@ -119,7 +119,7 @@ def raw_connection_from(engine_or_conn):
 
 def format_flags(flags):
     return ', '.join(
-        '{} {}'.format(key.upper(), format_flag(value))
+        f'{key.upper()} {format_flag(value)}'
         for key, value in flags.items()
     )
 
@@ -159,7 +159,7 @@ def desc_entities(desc):
     elif isinstance(expr, ColumnOperators):
         return [expr.label(name)]
     else:
-        raise ValueError('Unrecognized query entity {!r}'.format(expr))
+        raise ValueError(f'Unrecognized query entity {expr!r}')
 
 
 def mapper_entities(mapper):

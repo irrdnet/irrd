@@ -104,6 +104,21 @@ recovered after being expired.
 Minimum Python version
 ----------------------
 The minimum Python version for IRRd is now 3.7. Python 3.6 is `end of life`_
-and therefore no longer supported.
+and therefore no longer supported. In turn, IRRd 4.3.x will be the last
+minor version to support Python 3.8.
 
 .. _end of life: https://endoflife.date/python
+
+
+Other dependency versions
+-------------------------
+IRRd now requires Redis 5 or newer. PostgreSQL 11 or newer is strongly
+recommended before upgrading, as it makes database migrations
+significantly faster.
+
+
+Debugging info on SIGUSR1
+-------------------------
+IRRd processes will now log a traceback of all their threads when
+receiving a SIGUSR1 signal. This can be helpful when debugging
+hanging workers or other complex issues.

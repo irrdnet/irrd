@@ -20,14 +20,16 @@ Requirements
 IRRd requires:
 
 * Linux, OpenBSD or MacOS. Other platforms are untested, but may work.
-* PyPy or CPython 3.7 through 3.10 with `pip` and `virtualenv` installed.
+* PyPy or CPython 3.7 through 3.11 with `pip` and `virtualenv` installed.
   PyPy is slightly recommended over CPython (the "default" Python interpreter),
   due to improved performance, in the order of 10% for some queries,
   and even higher for some GraphQL queries. However, CPython remains fully
   supported, and CPython may be the better option for you if it is easier to
   install on your deployment platform.
-* A recent version of PostgreSQL. Versions 9.6 and 10.5 have been
-  extensively tested.
+* A recent version of PostgreSQL. Versions 9.6, 11.16, 13.7, 15.0 are all
+  tested before release. 11 or higher is strongly recommended, due to faster
+  database migrations during upgrades.
+* Redis 5 or newer.
 * At least 32GB RAM
 * At least 4 CPU cores
 * At least 150GB of disk space (SSD recommended)
@@ -39,6 +41,9 @@ and your query load.
 A number of other Python packages are required. However, those are
 automatically installed in the installation process.
 
+You may need to install other packages on your OS to build IRRd's
+dependencies. That includes developer packages for Python, Redis
+and PostgreSQL. You will also need a Rust compiler.
 
 PostgreSQL configuration
 ------------------------
@@ -73,10 +78,12 @@ You need to change a few PostgreSQL settings from their default:
   will be one open connection for:
   * Each permitted whois connection
   * Each HTTP worker
-  * Each running mirror import and export process
-  * Each RPKI update process
+  * Each running mirror import or export process
+  * Each RPKI or scope filter update process
   * Each run of ``irrd_load_database``
   * Each run of ``irrd_submit_email``
+  * Each open WebSocket connection for the :doc:`event stream </users/queries/event-stream>`
+
 * ``log_min_duration_statement`` can be useful to set to ``0`` initially,
   to log all SQL queries to aid in debugging any issues.
   Note that initial imports of data produce significant logs if all queries
@@ -85,8 +92,8 @@ You need to change a few PostgreSQL settings from their default:
 The transaction isolation level should be set to "Read committed". This is
 the default in PostgreSQL.
 
-The database will be in the order of three times as large as the size of
-the RPSL text imported.
+The initial database will be in the order of three times as large as the
+size of the RPSL text imported.
 
 .. important::
 
@@ -100,7 +107,7 @@ the RPSL text imported.
 Redis configuration
 -------------------
 Redis is required for communication and persistence between IRRd's processes.
-IRRd has been tested on Redis 3 and 4.
+IRRd releases are tested on Redis 5, 6 and 7.
 Beyond a default Redis installation, it is recommended to:
 
 * Increase ``maxmemory`` to 1GB (no limit is also fine). This is a hard
@@ -238,7 +245,8 @@ Useful options:
   ``log.logfile_path`` is not set, this also shows all log output
   in the terminal.
 
-IRRd can be stopped by sending a SIGTERM signal.
+IRRd can be stopped by sending a SIGTERM signal. A SIGUSR1 will log a
+traceback of all threads in a specific IRRd process.
 
 
 .. _deployment-https:
@@ -257,7 +265,7 @@ A sample nginx configuration could initially look as follows
         default_type  application/octet-stream;
 
         gzip on;
-        gzip_types application/json text/plain;
+        gzip_types application/json text/plain application/jsonl+json;
 
         server {
             server_name  [your hostname];
@@ -285,7 +293,9 @@ configuration to enable HTTPS, including redirects from plain HTTP.
 
 You can also use other services or your own configuration. You will likely
 need to increase some timeouts for slower queries. Enabling GZIP compression
-for ``text/plain`` and ``application/json`` responses is recommended.
+for ``text/plain``, ``application/json`` and
+``application/jsonl+json`` responses is recommended, for other responses
+compression should be disabled.
 If your service runs on a different host, set
 ``server.http.forwarded_allow_ips`` to let IRRd trust the
 ``X-Forwarded-For`` header.

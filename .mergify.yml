@@ -1,0 +1,12 @@
+pull_request_rules:
+  - name: backport patches to stable/4.2.x
+    conditions:
+      - base=main
+      - label=backport-to-4.2
+    actions:
+      backport:
+        title: "[4.2.x] {{ title }} (backport #{{ number }})"
+        branches:
+          - stable/4.2.x
+        assignees:
+          - "{{ author }}"

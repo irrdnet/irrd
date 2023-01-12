@@ -155,14 +155,14 @@ class FileImportRunnerBase:
                 r = request.urlopen(url)
                 shutil.copyfileobj(r, destination)
             except URLError as error:
-                raise IOError(f'Failed to download {url}: {str(error)}')
+                raise OSError(f'Failed to download {url}: {str(error)}')
         elif url_parsed.scheme in ['http', 'https']:
             r = requests.get(url, stream=True, timeout=10)
             if r.status_code == 200:
                 for chunk in r.iter_content(10240):
                     destination.write(chunk)
             else:
-                raise IOError(f'Failed to download {url}: {r.status_code}: {str(r.content)}')
+                raise OSError(f'Failed to download {url}: {r.status_code}: {str(r.content)}')
 
     def _retrieve_file_local(self, path, return_contents=False) -> Tuple[str, bool]:
         if not return_contents:
