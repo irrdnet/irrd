@@ -108,6 +108,11 @@ def main():
 
 def run_irrd(mirror_frequency: int, config_file_path: str, uid: Optional[int], gid: Optional[int]):
     terminated = False
+
+    if sys.platform == "darwin":
+        logger.warning("Running on Mac OS, disabling proxy usage by setting no_proxy=*")
+        os.environ["no_proxy"] = " * "
+
     os.environ[ENV_MAIN_PROCESS_PID] = str(os.getpid())
     set_traceback_handler()
 
