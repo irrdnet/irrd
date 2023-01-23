@@ -57,6 +57,6 @@ flake8==6.0.0; python_version >= '3.8'
 pep8-naming==0.13.3
 
 # Creating python packages
-setuptools==66.0.0
+setuptools==66.1.1
 wheel==0.38.4  # also require for installing, #488
 twine==4.0.2
