@@ -1,3 +1,4 @@
+import platform
 import socket
 import time
 from io import BytesIO
@@ -65,6 +66,21 @@ class TestWhoisWorker:
         assert request.shutdown_called
         assert request.close_called
         assert request.timeout_set == 5
+
+    @pytest.mark.skipif(platform.python_implementation() != "CPython", reason="requires CPython")
+    def test_whois_request_profile(self, create_worker, config_override):
+        config_override({'profiling_available': True})
+        worker, request = create_worker
+        # Empty query in first line should be ignored.
+        request.rfile.write(b'!!\n!fprofile\n!v\r\n')
+        request.rfile.seek(0)
+        worker.run(keep_running=False)
+
+        assert worker.client_str == '192.0.2.1:99999'
+        request.wfile.seek(0)
+        response = request.wfile.read()
+        assert b'IRRd -- version' in response
+        assert b'Recorded' in response
 
     def test_whois_request_worker_exception(self, create_worker, monkeypatch, caplog):
         monkeypatch.setattr('irrd.server.whois.server.WhoisQueryParser',

@@ -1,5 +1,6 @@
 import logging
 import os
+import platform
 import signal
 
 from ariadne.asgi import GraphQL
@@ -7,12 +8,14 @@ from ariadne.asgi.handlers import GraphQLHTTPHandler
 from setproctitle import setproctitle
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import HTMLResponse
 from starlette.routing import Mount, Route, WebSocketRoute
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 # Relative imports are not allowed in this file
 from irrd import ENV_MAIN_PROCESS_PID
-from irrd.conf import config_init
+from irrd.conf import config_init, get_setting
 from irrd.server.graphql import ENV_UVICORN_WORKER_CONFIG_PATH
 from irrd.server.graphql.extensions import error_formatter, QueryMetadataExtension
 from irrd.server.graphql.schema_builder import build_executable_schema
@@ -26,6 +29,10 @@ from irrd.server.http.event_stream import EventStreamEndpoint, EventStreamInitia
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.preload import Preloader
 from irrd.utils.process_support import memory_trim, set_traceback_handler
+
+if platform.python_implementation() == "CPython":
+    from pyinstrument import Profiler  # pragma: no cover
+
 
 logger = logging.getLogger(__name__)
 
@@ -101,10 +108,23 @@ class MemoryTrimMiddleware:
         memory_trim()
 
 
+class ProfileMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        profiling = platform.python_implementation() and get_setting('profiling_available') and request.query_params.get("profile", False)
+        if profiling:
+            profiler = Profiler(async_mode="enabled")
+            profiler.start()
+            await call_next(request)
+            profiler.stop()
+            return HTMLResponse(profiler.output_html())
+        else:
+            return await call_next(request)
+
+
 app = Starlette(
     debug=False,
     routes=routes,
     on_startup=[startup],
     on_shutdown=[shutdown],
-    middleware=[Middleware(MemoryTrimMiddleware)],
+    middleware=[Middleware(MemoryTrimMiddleware), Middleware(ProfileMiddleware)],
 )
