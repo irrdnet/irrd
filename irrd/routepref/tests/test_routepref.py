@@ -66,20 +66,20 @@ def test_route_preference_validator(config_override):
             "pk": "route-H",
             "route_preference_status": RoutePreferenceStatus.visible,
         },
+        {
+            # No overlaps
+            "source": "SRC-LOWEST",
+            "prefix": "198.51.100.0/24",
+            "pk": "route-I",
+            "route_preference_status": RoutePreferenceStatus.suppressed,
+        },
     ]
 
     validator = RoutePreferenceValidator(route_objects)
     to_be_visible, to_be_suppressed = validator.validate_known_routes()
     assert validator.excluded_currently_suppressed == ["route-G"]
-    assert to_be_visible == ["route-A", "route-B"]
+    assert to_be_visible == ["route-A", "route-B", "route-I"]
     assert to_be_suppressed == ["route-D", "route-C", "route-E", "route-F"]
-
-    assert validator.validate_single(IP("192.0.0.0/26"), "SRC-NOPREF") == RoutePreferenceStatus.visible
-    assert validator.validate_single(IP("192.0.0.0/26"), "SRC-HIGH-A") == RoutePreferenceStatus.visible
-    assert validator.validate_single(IP("192.0.0.0/26"), "SRC-LOWEST") == RoutePreferenceStatus.suppressed
-    assert validator.validate_single(IP("192.0.0.0/8"), "SRC-HIGH-A") == RoutePreferenceStatus.visible
-    assert validator.validate_single(IP("192.0.0.0/8"), "SRC-LOWEST") == RoutePreferenceStatus.suppressed
-    assert validator.validate_single(IP("191.0.0.0/8"), "SRC-LOWEST") == RoutePreferenceStatus.visible
 
     config_override(
         {
@@ -94,15 +94,8 @@ def test_route_preference_validator(config_override):
 
     validator = RoutePreferenceValidator(route_objects)
     to_be_visible, to_be_suppressed = validator.validate_known_routes()
-    assert validator.excluded_currently_suppressed == ["route-A", "route-B", "route-G"]
+    assert validator.excluded_currently_suppressed == ["route-A", "route-B", "route-G", "route-I"]
     assert to_be_suppressed == []
-
-    assert validator.validate_single(IP("192.0.0.0/26"), "SRC-NOPREF") == RoutePreferenceStatus.visible
-    assert validator.validate_single(IP("192.0.0.0/26"), "SRC-HIGH-A") == RoutePreferenceStatus.visible
-    assert validator.validate_single(IP("192.0.0.0/26"), "SRC-LOWEST") == RoutePreferenceStatus.visible
-    assert validator.validate_single(IP("192.0.0.0/8"), "SRC-HIGH-A") == RoutePreferenceStatus.visible
-    assert validator.validate_single(IP("192.0.0.0/8"), "SRC-LOWEST") == RoutePreferenceStatus.visible
-    assert validator.validate_single(IP("191.0.0.0/8"), "SRC-LOWEST") == RoutePreferenceStatus.visible
 
 
 def test_update_route_preference_status(config_override):

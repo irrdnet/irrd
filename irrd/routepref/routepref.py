@@ -59,19 +59,6 @@ class RoutePreferenceValidator:
                 rnode.data = {}
             rnode.data[route_object["pk"]] = (preference, route_object["route_preference_status"])
 
-    def validate_single(self, prefix: IP, source: str) -> RoutePreferenceStatus:
-        # TODO: we might not need this at all?
-        if not self.source_preferences:
-            return RoutePreferenceStatus.visible
-        try:
-            preference = self.source_preferences[source]
-        except KeyError:
-            return RoutePreferenceStatus.visible
-
-        search_args = {"network": str(prefix)}
-        overlapping_nodes = self.rtree.search_covered(**search_args) + self.rtree.search_covering(**search_args)
-        return self._evaluate_route(preference, overlapping_nodes)
-
     def validate_known_routes(self) -> Tuple[List[str], List[str]]:
         """
         Validate all routes known to this validator, based on the
