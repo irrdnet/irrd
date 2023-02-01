@@ -48,7 +48,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'IRRd'
-copyright = u'2018-2020, NTT Ltd.'
+copyright = u'2018-2023, NTT Ltd. and Reliably Coded B.V.'
 author = u"IRRd developers"
 
 # The version info for the project you're documenting, acts as replacement
