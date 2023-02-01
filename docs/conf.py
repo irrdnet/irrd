@@ -32,7 +32,12 @@ import irrd  # noqa: E402
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode', 'sphinxcontrib.spelling']
+extensions = [
+    # 'sphinx.ext.autodoc',
+    # 'sphinx.ext.viewcode',
+    'sphinxcontrib.spelling',
+    "sphinx_immaterial",
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -65,7 +70,7 @@ release = irrd.__version__
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -84,7 +89,7 @@ todo_include_todos = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_material'
+html_theme = 'sphinx_immaterial'
 html_show_sourcelink = False
 
 html_sidebars = {
@@ -96,14 +101,30 @@ html_sidebars = {
 # documentation.
 #
 html_theme_options = {
-    'nav_title': 'IRRd ' + version,
-    'color_primary': 'indigo',
-    'color_accent': 'light-blue',
     'repo_url': 'https://github.com/irrdnet/irrd/',
     'repo_name': 'IRRd',
-    'globaltoc_depth': 2,
-    'master_doc': False,
-    'logo_icon': '&#xe1db',
+    "repo_type": "github",
+    "edit_uri": "blob/main/docs/",
+    "icon": {
+        "repo": "fontawesome/brands/github",
+        "edit": "material/file-edit-outline",
+    },
+    "features": [
+        "navigation.expand",
+        # "navigation.tabs",
+        "toc.integrate",
+        "navigation.sections",
+        # "navigation.instant",
+        # "header.autohide",
+        # "navigation.top",
+        "navigation.tracking",
+        "search.highlight",
+        # "search.share",
+        "toc.follow",
+        # "toc.sticky",
+        # "content.tabs.link",
+        # "announce.dismiss",
+    ],
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
