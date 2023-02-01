@@ -406,7 +406,7 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         return (
             get_setting('compatibility.inetnum_search_disabled')
             or (self._set_object_classes and 'inetnum' not in self._set_object_classes)
-        ) and not get_setting('compatibility.irrd42_migration_in_progress')
+        )
 
 
 class RPSLDatabaseJournalQuery(BaseRPSLObjectDatabaseQuery):
