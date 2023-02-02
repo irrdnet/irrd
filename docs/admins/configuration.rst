@@ -852,11 +852,6 @@ Compatibility
   Therefore, only enable this when you do not process any `inetnum` objects.
   |br| **Default**: ``false``, i.e. `inetnum` search is enabled.
   |br| **Change takes effect**: after SIGHUP, for all subsequent queries.
-* ``compatibility.irrd42_migration_in_progress``: this setting is used
-  when doing a minimum downtime upgrade from IRRd 4.1.x to IRRd 4.2.x.
-  See the :doc:`4.2.0 release notes </releases/4.2.0>` for details.
-  |br| **Default**: ``false``, operating normally.
-  |br| **Change takes effect**: after SIGHUP, for all subsequent queries.
 * ``compatibility.ipv4_only_route_set_members``: if set to ``true``, ``!i``
   queries will not return IPv6 prefixes. This option can be used for limited
   compatibility with IRRd version 2. Enabling this setting may have a

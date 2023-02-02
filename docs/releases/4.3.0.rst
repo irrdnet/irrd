@@ -131,3 +131,5 @@ Other changes
   multiple entries per source. This happens in NRTM mirroring
   or when users submit large sets of changes. IRRd will process
   these changes faster up to an order of magnitude.
+* The ``compatibility.irrd42_migration_in_progress`` setting
+  was removed.
