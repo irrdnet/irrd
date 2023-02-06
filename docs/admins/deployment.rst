@@ -349,8 +349,20 @@ using setcap, to be created in ``/lib/systemd/system/irrd.service``::
 
     [Install]
     WantedBy=multi-user.target
+    WantedBy=redis-server.service
+    WantedBy=postgresql@11-main.service
 
-You may need to update the PostgreSQL version if you are not using PosgreSQL 11.
+If you are not using PostgreSQL 11, you need to amend the service name
+``postgresql@11-main.service`` in both the ``Requires=`` and ``WantedBy=``
+directive.
+
+Please note that the combination of ``Requires=`` and ``WantedBy=`` in
+this unit file creates an indirect dependency between the service units
+of Redis and PostgreSQL, if ``irrd.service`` is enabled.
+This means that if you start either PostgreSQL or Redis, all three
+services are started, which might be somewhat surprising.
+This behaviour is needed for IRRd to be (re)started after (unattended)
+upgrades of PostgreSQL or Redis.
 
 Then, IRRd can be started under systemd with::
 
