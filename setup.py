@@ -35,7 +35,7 @@ setuptools.setup(
         'python-daemon==2.3.2',
         'pid==3.0.4',
         'redis==4.4.2',
-        'hiredis==2.1.1',
+        'hiredis==2.2.1',
         'coredis==4.10.2',
         'requests==2.28.2',
         'pytz==2022.7.1',

@@ -99,15 +99,15 @@ commands:
             echo
 
       - run:
-          name: Installing psql client and enchant
-          command: $SUDO apt -y install postgresql-client netcat python3-enchant
+          name: Installing psql client, enchant, netcat, rust
+          command: $SUDO apt -y install postgresql-client netcat python3-enchant rustc
 
       - restore_cache:
           keys:
-            - v20-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
+            - v21-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
               "requirements.txt" }}
             # fallback to using the latest cache if no exact match is found
-            - v20-dependencies-{{ .Environment.CIRCLE_JOB }}
+            - v21-dependencies-{{ .Environment.CIRCLE_JOB }}
 
       - run:
           name: install latest pip
@@ -127,7 +127,7 @@ commands:
       - save_cache:
           paths:
             - ./venv
-          key: v20-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
+          key: v21-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
             "requirements.txt" }}
 
   wait_for_postgres:
@@ -208,7 +208,7 @@ jobs:
           POSTGRES_HOST_AUTH_METHOD: trust
 
       - image: cimg/redis:<< parameters.redis_version >>
-      - image: cimg/rust:1.65
+#      - image: cimg/rust:1.65
 
     steps:
       - checkout
@@ -244,7 +244,7 @@ jobs:
           POSTGRES_HOST_AUTH_METHOD: trust
 
       - image: cimg/redis:<< parameters.redis_version >>
-      - image: cimg/rust:1.65
+#      - image: cimg/rust:1.65
 
     steps:
       - checkout
@@ -282,7 +282,7 @@ jobs:
           POSTGRES_HOST_AUTH_METHOD: trust
 
       - image: cimg/redis:<< parameters.redis_version >>
-      - image: cimg/rust:1.65
+#      - image: cimg/rust:1.65
 
     steps:
       - checkout
@@ -321,7 +321,7 @@ jobs:
           POSTGRES_HOST_AUTH_METHOD: trust
 
       - image: cimg/redis:<< parameters.redis_version >>
-      - image: cimg/rust:1.65
+#      - image: cimg/rust:1.65
 
     steps:
       - checkout
@@ -344,7 +344,7 @@ jobs:
         environment:
           PYTHON_INTERPRETER: python3
           SUDO: sudo
-      - image: cimg/rust:1.65
+#      - image: cimg/rust:1.65
 
     steps:
       - checkout
@@ -375,7 +375,7 @@ jobs:
         environment:
           PYTHON_INTERPRETER: python3
           SUDO: sudo
-      - image: cimg/rust:1.65
+#      - image: cimg/rust:1.65
 
     steps:
       - checkout
