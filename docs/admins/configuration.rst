@@ -643,10 +643,10 @@ Sources
   serials a client may request in one NRTM query, if otherwise permitted.
   This is intended to limit the maximum load of NRTM queries - it is checked
   before IRRd runs any heavy database queries. The limit is applied to the
-  requested range regardless of any gaps, i.e. a range of ``10-20`` requires
-  this setting to be at least 10, even if there are no entries for some of
-  these serials. IRRd is aware of the serial ``LAST`` refers to and will take
-  that into account.
+  requested range regardless of any gaps, i.e. querying a range of ``10-20``
+  is allowed if this setting to be at least 10, even if there are no entries
+  for some of those serials. IRRd is aware of the serial ``LAST`` refers to
+  and will take that into account.
   |br| **Default**: not defined, no limits on NRTM query size.
   |br| **Change takes effect**: after SIGHUP, upon next request.
 * ``sources.{name}.strict_import_keycert_objects``: a setting used when
