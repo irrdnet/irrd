@@ -85,6 +85,12 @@ Note that the request may take up to 10
 minutes, depending on the size of your database, and that it may take
 a few minutes for data to start streaming.
 
+If there is no data in the IRR database at all, ``max_serial_global``
+and ``last_change_timestamp`` will be ``null``, and no IRR records
+will be returned. If there are no (visible) objects for the selected
+sources, no IRR records will be returned, but these fields in the
+header will be filled.
+
 .. danger::
     This endpoint is not designed for frequent requests at this time.
 
