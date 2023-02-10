@@ -119,6 +119,8 @@ significantly faster.
 
 Other changes
 -------------
+* The ``sources.{name}.nrtm_query_serial_range_limit`` setting was
+  added to limit the load of NRTM queries.
 * IRRd processes will now log a traceback of all their threads when
   receiving a SIGUSR1 signal. This can be helpful when debugging
   hanging workers or other complex issues.

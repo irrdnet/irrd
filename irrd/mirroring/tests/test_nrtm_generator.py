@@ -15,6 +15,7 @@ def prepare_generator(monkeypatch, config_override):
         'sources': {
             'TEST': {
                 'keep_journal': True,
+                'nrtm_query_serial_range_limit': 200,
             }
         }
     })
@@ -84,7 +85,7 @@ class TestNRTMGenerator:
 
         %END TEST""").strip()
 
-    def test_generate_until_last(self, prepare_generator):
+    def test_generate_until_last(self, prepare_generator, config_override):
         generator, mock_dh = prepare_generator
         result = generator.generate('TEST', '3', 110, None, mock_dh)
 
@@ -168,6 +169,47 @@ class TestNRTMGenerator:
         with pytest.raises(NRTMGeneratorException) as nge:
             generator.generate('TEST', '3', 110, 300, mock_dh)
         assert 'There are no journal entries for this source.' in str(nge.value)
+
+    def test_v3_range_limit_not_set(self, prepare_generator, config_override):
+        generator, mock_dh = prepare_generator
+        config_override({
+            'sources': {
+                'TEST': {
+                    'keep_journal': True,
+                }
+            }
+        })
+
+        result = generator.generate('TEST', '3', 110, 190, mock_dh)
+
+        assert result == textwrap.dedent("""
+        %START Version: 3 TEST 110-190
+
+        ADD 120
+
+        object 1 🦄
+        auth: CRYPT-PW DummyValue  # Filtered for security
+
+        DEL 180
+
+        object 2 🌈
+
+        %END TEST""").strip()
+
+    def test_range_limit_exceeded(self, prepare_generator, config_override):
+        generator, mock_dh = prepare_generator
+        config_override({
+            'sources': {
+                'TEST': {
+                    'keep_journal': True,
+                    'nrtm_query_serial_range_limit': 50,
+                }
+            }
+        })
+
+        with pytest.raises(NRTMGeneratorException) as nge:
+            generator.generate('TEST', '3', 110, 190, mock_dh)
+        assert 'Serial range requested exceeds maximum range of 50' in str(nge.value)
 
     def test_include_auth_hash(self, prepare_generator):
         generator, mock_dh = prepare_generator

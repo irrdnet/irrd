@@ -95,6 +95,7 @@ class TestConfiguration:
                         'authoritative': True,
                         'keep_journal': True,
                         'suspension_enabled': True,
+                        'nrtm_query_serial_range_limit': 10,
                     },
                     'TESTDB2': {
                         'nrtm_host': '192.0.2.1',
@@ -290,6 +291,7 @@ class TestConfiguration:
                         'nrtm_host': '192.0.2.1',
                         'unknown': True,
                         'suspension_enabled': True,
+                        'nrtm_query_serial_range_limit': 'not-a-number',
                     },
                     'TESTDB2': {
                         'authoritative': True,
@@ -353,6 +355,7 @@ class TestConfiguration:
         assert 'Setting rpki.notify_invalid_header must be a string, if defined.' in str(ce.value)
         assert 'Setting import_timer for source TESTDB must be a number.' in str(ce.value)
         assert 'Setting export_timer for source TESTDB must be a number.' in str(ce.value)
+        assert 'Setting nrtm_query_serial_range_limit for source TESTDB must be a number.' in str(ce.value)
         assert 'Invalid source name: lowercase' in str(ce.value)
         assert 'Invalid source name: invalid char' in str(ce.value)
         assert 'but rpki.notify_invalid_enabled is not set' in str(ce.value)

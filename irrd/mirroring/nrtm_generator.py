@@ -57,6 +57,10 @@ class NRTMGenerator:
 
         serial_end_display = serial_end_available if serial_end_requested is None else serial_end_requested
 
+        range_limit = get_setting(f'sources.{source}.nrtm_query_serial_range_limit')
+        if range_limit and int(range_limit) < (serial_end_display - serial_start_requested):
+            raise NRTMGeneratorException(f'Serial range requested exceeds maximum range of {range_limit}')
+
         q = RPSLDatabaseJournalQuery().sources([source]).serial_nrtm_range(serial_start_requested, serial_end_requested)
         operations = list(database_handler.execute_query(q))
 

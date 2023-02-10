@@ -90,6 +90,7 @@ KNOWN_SOURCES_KEYS = {
     'export_timer',
     'nrtm_access_list',
     'nrtm_access_list_unfiltered',
+    'nrtm_query_serial_range_limit',
     'strict_import_keycert_objects',
     'rpki_excluded',
     'scopefilter_excluded',
