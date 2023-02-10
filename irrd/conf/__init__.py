@@ -398,6 +398,8 @@ class Configuration:
                 errors.append(f'Setting import_timer for source {name} must be a number.')
             if not str(details.get('export_timer', '0')).isnumeric():
                 errors.append(f'Setting export_timer for source {name} must be a number.')
+            if not str(details.get('nrtm_query_serial_range_limit', '0')).isnumeric():
+                errors.append(f'Setting nrtm_query_serial_range_limit for source {name} must be a number.')
 
             if details.get('nrtm_access_list'):
                 expected_access_lists.add(details.get('nrtm_access_list'))

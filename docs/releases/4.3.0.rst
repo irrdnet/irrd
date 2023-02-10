@@ -1,0 +1,137 @@
+==================================
+DRAFT Release notes for IRRd 4.3.0
+==================================
+
+New password hasher and new password settings
+---------------------------------------------
+IRRd 4 has always supported CRYPT-PW and MD5-PW hashing for passwords in
+_mntner_ objects. This version adds support for BCRYPT-PW, using bcrypt,
+a secure and modern password hashing method.
+
+IRRd 4.3 has a new setting ``auth.password_hashers`` which lets you configure
+which password hashes are enabled. **The default is stricter than in
+older versions**: ``bcrypt-pw`` and ``md5-pw`` are fully enabled, 
+``crypt-pw`` is only enabled in legacy mode. The legacy mode means that IRRd
+will accept authentication through CRYPT-PW on `mntners` as before, but will
+not accept ``auth`` lines using CRYPT-PW on new or modified `mntner`
+objects in authoritative databases. This requires users to upgrade to
+a stronger hash when they next update their `mntner` object.
+
+
+Changes to related object authentication and settings
+-----------------------------------------------------
+In version 4.2, IRRd required newly created authoritative `as-set` objects
+to have a hierarchical name where the first element is an AS number.
+In 4.3, this feature has been significantly expanded.
+
+For all RPSL set objects, IRRd can now be configured to require:
+
+* Including an ASN prefix in the name of the set, e.g. ``AS65537:AS-EXAMPLE``
+  being valid, but ``AS-EXAMPLE`` being invalid.
+* Passing authentication for the corresponding `aut-num`, e.g. AS65537 in the
+  example, skipping this check if the `aut-num` does not exist.
+* Passing authentication for the corresponding `aut-num`, e.g. AS65537 in the
+  example, failing this check if the `aut-num` does not exist.
+
+The first two options, requiring a prefix with opportunistic `aut-num` authentication,
+is now the default for all set objects.
+You can :ref:`change the configuration <conf-auth-set-creation>` for specific
+RPSL set objects, or set your own common configuration that applies to all sets.
+
+The ``compatibility.permit_non_hierarchical_as_set_name`` setting has been
+removed, as it is now covered by the ``prefix_required`` setting.
+
+The ``auth.authenticate_related_mntners`` setting has been renamed to 
+``auth.authenticate_parents_route_creation``, as this setting exclusively
+relates to :ref:`authentication for route(6) objects <auth-related-mntners-route>`
+and needs to be distinct from the configuration for RPSL set objects.
+
+If you were using ``auth.authenticate_related_mntners`` or 
+``compatibility.permit_non_hierarchical_as_set_name``, you need to update
+your configuration.
+
+All checks are only applied when users create new set objects in authoritative
+databases. Authoritative updates to existing objects, deletions, or objects from
+mirrors are never affected. When looking for related objects for authentication,
+IRRd only looks in the same IRR source.
+
+
+Replacement for irr_rpsl_submit
+-------------------------------
+IRRd now includes an :ref:`irr_rpsl_submit <database-changes-irr-rpsl-submit>`
+script, similar to the submit tool from IRRD v3.
+The main purpose of this script is to provide (limited) compatibility
+with existing integrations that called irr_rpsl_submit directly to submit
+to older IRRd versions. It is a light wrapper that calls the IRRd HTTP API.
+
+Note that this command is not intended to be used for handling incoming
+email changes - see the `deployment guide </admins/deployment>`_ for the
+``irrd_submit_email`` instead. This is unchanged from previous versions of IRRd.
+
+
+Support for maintainer suspension
+---------------------------------
+IRRd now supports
+:doc:`suspending a maintainer and all objects it maintains </admins/suspension>`.
+This feature is only accessible to admins using the override password, and only
+when enabled on an authoritative source with the ``suspension_enabled`` setting.
+
+Suspended objects act as if they have been deleted, but can be restored by an
+admin at a later time.
+
+
+Support for event stream
+------------------------
+IRRd now offers a :doc:`WebSocket-based event stream </users/queries/event-stream>`.
+All changes to IRR objects are published on this endpoint. There is
+also a new initial download endpoint that publishes all IRR data, with
+optional filtering, in JSONL format.
+
+In their current design, these features are not optimised for high volume
+use. Access is controlled by the new ``server.http.event_stream_access_list``
+setting, and by default all access is denied.
+
+
+New journal expiry command
+--------------------------
+IRRD includes a new command: ``irrd_expire_journal``. You can call this to
+remove journal entries older than a given date, in both
+authoritative and mirrored sources. Do use caution, as the journal is the
+only place where IRRd keeps a change history. Journal entries can not be
+recovered after being expired.
+
+
+Minimum Python version
+----------------------
+The minimum Python version for IRRd is now 3.7. Python 3.6 is `end of life`_
+and therefore no longer supported. In turn, IRRd 4.3.x will be the last
+minor version to support Python 3.7.
+
+.. _end of life: https://endoflife.date/python
+
+
+Other dependency versions
+-------------------------
+IRRd now requires Redis 5 or newer. PostgreSQL 11 or newer is strongly
+recommended before upgrading, as it makes database migrations
+significantly faster.
+
+
+Other changes
+-------------
+* The ``sources.{name}.nrtm_query_serial_range_limit`` setting was
+  added to limit the load of NRTM queries.
+* IRRd processes will now log a traceback of all their threads when
+  receiving a SIGUSR1 signal. This can be helpful when debugging
+  hanging workers or other complex issues.
+* When configured to drop privileges after starting, IRRd will now
+  check whether the less privileged user is able to write to the
+  log file, before dropping the privileges. Previously, it would
+  drop privileges, then fail to write to the log file, and be unable
+  to report this error.
+* Inserting the journal entries is now much faster when inserting
+  multiple entries per source. This happens in NRTM mirroring
+  or when users submit large sets of changes. IRRd will process
+  these changes faster up to an order of magnitude.
+* The ``compatibility.irrd42_migration_in_progress`` setting
+  was removed.
