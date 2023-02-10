@@ -122,12 +122,13 @@ class EventStreamInitialDownloadGenerator:
 
     async def generate_header(self):
         journal_stats = next(await self.dh.execute_query_async(RPSLDatabaseJournalStatisticsQuery()))
+        timestamp = journal_stats["max_timestamp"]
         return {
             "data_type": "irrd_event_stream_initial_download",
             "sources_filter": self.sources,
             "object_classes_filter": self.object_classes,
             "max_serial_global": journal_stats["max_serial_global"],
-            "last_change_timestamp": journal_stats["max_timestamp"].isoformat(),
+            "last_change_timestamp": timestamp.isoformat() if timestamp else None,
             "generated_at": datetime.datetime.utcnow().isoformat(),
             "generated_on": socket.gethostname(),
         }
