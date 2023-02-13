@@ -73,7 +73,10 @@ regular mirror for other registries.
 .. note::
    If you are migrating from a legacy version of IRRd, also see the
    :doc:`legacy migration documentation </admins/migrating-legacy-irrd>`
-   for relevant changes.
+   for relevant changes. Also relevant for legacy migrations is that IRRd
+   will only import one object per primary key from files. if you have
+   multiple objects in your file with the same key, IRRd will
+   only import the last one.
 
 
 Object validation
