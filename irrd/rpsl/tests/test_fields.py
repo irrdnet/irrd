@@ -161,7 +161,7 @@ def test_route_set_members_field():
     field = RPSLRouteSetMemberField(ip_version=4)
     messages = RPSLParserMessages()
 
-    assert field.parse('192.0.2.0/24^12-23', messages).value == '192.0.2.0/24^12-23'
+    assert field.parse('192.0.2.0/24^24-25', messages).value == '192.0.2.0/24^24-25'
     assert field.parse('AS065537:RS-TEST^32', messages).value == 'AS65537:RS-TEST^32'
     assert field.parse('AS065537^32', messages).value == 'AS65537^32'
     assert field.parse('192.0.2.0/25^+', messages).value == '192.0.2.0/25^+'
@@ -177,17 +177,21 @@ def test_route_set_members_field():
     ]
 
     assert_validation_err('Value is neither a valid set name nor a valid prefix', field.parse, 'AS65537:TEST')
-    assert_validation_err('Missing range operator', field.parse, '192.0.2.0/32^')
-    assert_validation_err('Invalid range operator', field.parse, '192.0.2.0/32^x')
-    assert_validation_err('Invalid range operator', field.parse, '192.0.2.0/32^-32')
-    assert_validation_err('Invalid range operator', field.parse, '192.0.2.0/32^32-')
-    assert_validation_err('Invalid range operator', field.parse, '192.0.2.0/32^24+32')
+    assert_validation_err('Missing range operator', field.parse, '192.0.2.0/24^')
+    assert_validation_err('Invalid range operator', field.parse, '192.0.2.0/24^x')
+    assert_validation_err('Invalid range operator', field.parse, '192.0.2.0/24^-32')
+    assert_validation_err('Invalid range operator', field.parse, '192.0.2.0/24^32-')
+    assert_validation_err('Invalid range operator', field.parse, '192.0.2.0/24^24+32')
+    assert_validation_err('operator length (23) must be equal ', field.parse, '192.0.2.0/24^23')
+    assert_validation_err('operator start (23) must be equal ', field.parse, '192.0.2.0/24^23-32')
+    assert_validation_err('operator end (30) must be equal', field.parse, '192.0.2.0/24^32-30')
 
     field = RPSLRouteSetMemberField(ip_version=None)
     messages = RPSLParserMessages()
 
-    assert field.parse('192.0.2.0/24^12-23', messages).value == '192.0.2.0/24^12-23'
-    assert field.parse('12ab:0:0:cd30::/128^12-23', messages).value == '12ab:0:0:cd30::/128^12-23'
+    assert field.parse('192.0.2.0/24^24-25', messages).value == '192.0.2.0/24^24-25'
+    assert field.parse('12ab:0:0:cd30::/128', messages).value == '12ab:0:0:cd30::/128'
+    assert field.parse('12ab:0:0:cd30::/64^120-128', messages).value == '12ab:0:0:cd30::/64^120-128'
     assert field.parse('AS65537:RS-TEST', messages).value == 'AS65537:RS-TEST'
 
     assert field.parse('192.0.2.0/25^+', messages).value == '192.0.2.0/25^+'

@@ -135,3 +135,7 @@ Other changes
   these changes faster up to an order of magnitude.
 * The ``compatibility.irrd42_migration_in_progress`` setting
   was removed.
+* IRRd applies stricter checks to the range operator in `route-set`
+  members in strict validation mode. Values are now checked
+  for appropriate prefix length, rejecting values like
+  ``192.0.2.0/26^24-32``.

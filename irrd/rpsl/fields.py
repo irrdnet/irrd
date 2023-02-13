@@ -20,7 +20,7 @@ re_ipv6_prefix = re.compile(r"^[A-F\d:]+/\d+$", re.IGNORECASE)
 #                         # Validate local-part           @ domain         | or IPv4 address        | or IPv6
 re_email = re.compile(r"^[A-Z0-9$!#%&\"*+\/=?^_`{|}~\\.-]+@(([A-Z0-9\\.-]+)|(\[\d+\.\d+\.\d+\.\d+\])|(\[[A-f\d:]+\]))$", re.IGNORECASE)
 
-re_range_operator = re.compile(r"^((\d{1,3}-\d{1,3})|(-)|(\+)|(\d{1,3}))$")
+re_range_operator = re.compile(r"^(?P<start>\d{1,3})-(?P<end>\d{1,3})$|^(-)$|^(\+)$|^(?P<single>\d{1,3})$")
 re_pgpkey = re.compile(r"^PGPKEY-[A-F0-9]{8}$")
 re_dnsname = re.compile(r"^(([A-Z0-9]|[A-Z0-9][A-Z0-9\-]*[A-Z0-9])\.)*([A-Z0-9]|[A-Z0-9][A-Z0-9\-]*[A-Z0-9])$", re.IGNORECASE)
 re_generic_name = re.compile(r"^[A-Z][A-Z0-9_-]*[A-Z0-9]$", re.IGNORECASE)
@@ -251,9 +251,34 @@ class RPSLRouteSetMemberField(RPSLTextField):
             messages.error(f'Value is neither a valid set name nor a valid prefix: {address}: {clean_error}')
             return None
 
-        if range_operator and not re_range_operator.match(range_operator):
-            messages.error(f'Invalid range operator {range_operator} in value: {value}')
-            return None
+        if range_operator:
+            range_operator_match = re_range_operator.match(range_operator)
+            if not range_operator_match:
+                messages.error(f'Invalid range operator {range_operator} in value: {value}')
+                return None
+
+            single_range = range_operator_match.group('single')
+            if single_range and int(single_range) < ip.prefixlen():
+                messages.error(
+                    f'Invalid range operator: operator length ({single_range}) must be equal '
+                    f'to or longer than prefix length ({ip.prefixlen()}) {value}'
+                )
+                return None
+
+            start_range = range_operator_match.group('start')
+            end_range = range_operator_match.group('end')
+            if start_range and int(start_range) < ip.prefixlen():
+                messages.error(
+                    f'Invalid range operator: operator start ({start_range}) must be equal '
+                    f'to or longer than prefix length ({ip.prefixlen()}) {value}'
+                )
+                return None
+            if end_range and int(end_range) < int(start_range):
+                messages.error(
+                    f'Invalid range operator: operator end ({end_range}) must be equal '
+                    f'to or longer than operator start ({start_range}) {value}'
+                )
+                return None
 
         parsed_ip_str = str(ip)
         if ip.version() == 4 and ip.prefixlen() == 32:
