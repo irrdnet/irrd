@@ -539,6 +539,16 @@ Sources
   |br| **Default**: not defined, all access denied. Clients in
   ``nrtm_access_list``, if defined, have filtered access.
   |br| **Change takes effect**: after SIGHUP, upon next request.
+* ``sources.{name}.nrtm_query_serial_range_limit``: the maximum number of
+  serials a client may request in one NRTM query, if otherwise permitted.
+  This is intended to limit the maximum load of NRTM queries - it is checked
+  before IRRd runs any heavy database queries. The limit is applied to the
+  requested range regardless of any gaps, i.e. querying a range of ``10-20``
+  is allowed if this setting to be at least 10, even if there are no entries
+  for some of those serials. IRRd is aware of the serial ``LAST`` refers to
+  and will take that into account.
+  |br| **Default**: not defined, no limits on NRTM query size.
+  |br| **Change takes effect**: after SIGHUP, upon next request.
 * ``sources.{name}.strict_import_keycert_objects``: a setting used when
   migrating authoritative data that may contain `key-cert` objects.
   See the :doc:`data migration guide </admins/availability-and-migration>`
