@@ -80,11 +80,7 @@ class TestConfiguration:
                     'TESTDB': {
                         'authoritative': True,
                         'keep_journal': True,
-<<<<<<< HEAD
-=======
-                        'suspension_enabled': True,
                         'nrtm_query_serial_range_limit': 10,
->>>>>>> 0e33e13 (Fix #742 - Add setting to limit NRTM response size (#745))
                     },
                     'TESTDB2': {
                         'nrtm_host': '192.0.2.1',
@@ -264,11 +260,7 @@ class TestConfiguration:
                         'export_timer': 'bar',
                         'nrtm_host': '192.0.2.1',
                         'unknown': True,
-<<<<<<< HEAD
-=======
-                        'suspension_enabled': True,
                         'nrtm_query_serial_range_limit': 'not-a-number',
->>>>>>> 0e33e13 (Fix #742 - Add setting to limit NRTM response size (#745))
                     },
                     'TESTDB2': {
                         'authoritative': True,
