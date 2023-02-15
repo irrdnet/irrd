@@ -81,6 +81,7 @@ stdout
 sublicense
 systemd
 th
+tracebacks
 unix
 upsert
 upserted
