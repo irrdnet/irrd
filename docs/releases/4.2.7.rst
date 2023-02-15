@@ -1,0 +1,21 @@
+============================
+Release notes for IRRd 4.2.7
+============================
+
+IRRd 4.2.7 was released on February 15th, 2023, and has three changes:
+
+* IRRd now has a new setting ``sources.{name}.nrtm_query_serial_range_limit``
+  to limit the maximum serial range a client may request in a single NRTM
+  query. This is configured per source, and evaluated in addition to
+  other access limits. By default, there is no limit.
+  See the :doc:`configuration documentation </admins/configuration>`
+  for details.
+* Each IRRd process will now log a traceback of all threads when receiving
+  a SIGUSR1 signal. The tracebacks are written to the normal logs, and
+  can help IRRd developers understand more complex issues, particularly
+  in hanging IRRd workers.
+* Password hashes were `visible in some email notifications`_. The scope
+  was limited. A notification could only be triggered by already
+  knowing a valid password.
+
+.. _visible in some email notifications: https://github.com/irrdnet/irrd/issues/722
