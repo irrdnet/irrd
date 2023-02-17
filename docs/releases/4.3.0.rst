@@ -2,20 +2,27 @@
 DRAFT Release notes for IRRd 4.3.0
 ==================================
 
-New password hasher and new password settings
----------------------------------------------
-IRRd 4 has always supported CRYPT-PW and MD5-PW hashing for passwords in
-_mntner_ objects. This version adds support for BCRYPT-PW, using bcrypt,
-a secure and modern password hashing method.
+IRRd 4.3's major new features are:
 
-IRRd 4.3 has a new setting ``auth.password_hashers`` which lets you configure
-which password hashes are enabled. **The default is stricter than in
-older versions**: ``bcrypt-pw`` and ``md5-pw`` are fully enabled, 
-``crypt-pw`` is only enabled in legacy mode. The legacy mode means that IRRd
-will accept authentication through CRYPT-PW on `mntners` as before, but will
-not accept ``auth`` lines using CRYPT-PW on new or modified `mntner`
-objects in authoritative databases. This requires users to upgrade to
-a stronger hash when they next update their `mntner` object.
+* Granular options for stricter authentication checks for related
+  objects, such as requiring an ASN prefix in a set name and
+  requiring authentication for the prefixed ASN.
+* Route object preference, where route objects from one source may
+  suppress overlapping route objects from a lower priority source.
+  Similar to RPKI and scope filter, suppression applies to mirrored
+  sources as well.
+* An event stream based on WebSocket, where clients can subscribe
+  to receive updates of all committed changes to IRR objects
+  for all sources, in a structured. Also includes an initial
+  download endpoint in JSONL format.
+* bcrypt hashes for maintainer passwords, and the option to mark
+  hashers as legacy or disable them entirely.
+* Maintainer suspension, where a `mntner` along with any objects
+  it maintains can be suspended. This is similar to deletion, except that
+  the objects can be reactivated later.
+* A replacement for ``irr_rpsl_submit`` from IRRd v3 to ease
+  migrations. This is an independent Python script that uses IRRd's
+  HTTP API, not depending on other IRRd code, to make it easy to drop in.
 
 
 Changes to related object authentication and settings
@@ -40,13 +47,12 @@ RPSL set objects, or set your own common configuration that applies to all sets.
 
 The ``compatibility.permit_non_hierarchical_as_set_name`` setting has been
 removed, as it is now covered by the ``prefix_required`` setting.
-
-The ``auth.authenticate_related_mntners`` setting has been renamed to 
+The ``auth.authenticate_related_mntners`` setting has been renamed to
 ``auth.authenticate_parents_route_creation``, as this setting exclusively
 relates to :ref:`authentication for route(6) objects <auth-related-mntners-route>`
 and needs to be distinct from the configuration for RPSL set objects.
 
-If you were using ``auth.authenticate_related_mntners`` or 
+If you were using ``auth.authenticate_related_mntners`` or
 ``compatibility.permit_non_hierarchical_as_set_name``, you need to update
 your configuration.
 
@@ -54,6 +60,60 @@ All checks are only applied when users create new set objects in authoritative
 databases. Authoritative updates to existing objects, deletions, or objects from
 mirrors are never affected. When looking for related objects for authentication,
 IRRd only looks in the same IRR source.
+
+**By default, IRRd 4.3 requires an ASN prefix and uses opportunistic
+authentication.**
+
+
+Route object preference
+-----------------------
+IRRd can now use
+:doc:`route object preference </admins/route-object-preference>`
+to suppress overlapping `route(6)` objects from different sources,
+based on a configured priority for each source.
+
+By default, this feature is not enabled for any sources.
+
+
+Event stream
+------------
+IRRd now offers a :doc:`WebSocket-based event stream </users/queries/event-stream>`.
+All changes to IRR objects are published on this endpoint. There is
+also a new initial download endpoint that publishes all IRR data, with
+optional filtering, in JSONL format.
+
+In their current design, these features are not optimised for high volume
+use. Access is controlled by the new ``server.http.event_stream_access_list``
+setting. By default all access is denied.
+
+
+New password hasher and new password settings
+---------------------------------------------
+IRRd 4 has always supported CRYPT-PW and MD5-PW hashing for passwords in
+`mntner` objects. This version adds support for BCRYPT-PW, using bcrypt,
+a secure and modern password hashing method.
+
+IRRd 4.3 has a new setting ``auth.password_hashers`` to configure
+which password hashes are enabled. **The default is stricter than in
+older versions**: ``bcrypt-pw`` and ``md5-pw`` are fully enabled,
+``crypt-pw`` is only enabled in legacy mode. The legacy mode means that IRRd
+will accept authentication through CRYPT-PW on `mntners` as before, but will
+not accept ``auth`` lines using CRYPT-PW on new or modified `mntner`
+objects in authoritative databases. This requires users to upgrade to
+a stronger hash when they next update their `mntner` object.
+
+
+Maintainer suspension
+---------------------
+IRRd now supports
+:doc:`suspending a maintainer and all objects it maintains </admins/suspension>`.
+This feature is only accessible to admins using the override password, and only
+when enabled on an authoritative source with the ``suspension_enabled`` setting.
+
+Suspended objects act as if they have been deleted, but can be restored by an
+admin at a later time.
+
+By default, this feature is not enabled for any sources.
 
 
 Replacement for irr_rpsl_submit
@@ -68,36 +128,10 @@ Note that this command is not intended to be used for handling incoming
 email changes - see the `deployment guide </admins/deployment>`_ for the
 ``irrd_submit_email`` instead. This is unchanged from previous versions of IRRd.
 
+This code was contributed by MERIT_ for
+use with RADb.
 
-Support for maintainer suspension
----------------------------------
-IRRd now supports
-:doc:`suspending a maintainer and all objects it maintains </admins/suspension>`.
-This feature is only accessible to admins using the override password, and only
-when enabled on an authoritative source with the ``suspension_enabled`` setting.
-
-Suspended objects act as if they have been deleted, but can be restored by an
-admin at a later time.
-
-
-Support for route object preference
------------------------------------
-IRRd can now use
-:doc:`route object preference </admins/route-object-preference>`
-to suppress overlapping `route(6)` objects from different sources,
-based on a configured priority for each source.
-
-
-Support for event stream
-------------------------
-IRRd now offers a :doc:`WebSocket-based event stream </users/queries/event-stream>`.
-All changes to IRR objects are published on this endpoint. There is
-also a new initial download endpoint that publishes all IRR data, with
-optional filtering, in JSONL format.
-
-In their current design, these features are not optimised for high volume
-use. Access is controlled by the new ``server.http.event_stream_access_list``
-setting, and by default all access is denied.
+.. _MERIT: https://www.merit.edu
 
 
 New journal expiry command
@@ -125,8 +159,8 @@ recommended before upgrading, as it makes database migrations
 significantly faster.
 
 
-Other changes
--------------
+Other changes compared to 4.2.8
+-------------------------------
 * The ``sources.{name}.nrtm_query_serial_range_limit`` setting was
   added to limit the load of NRTM queries.
 * IRRd processes will now log a traceback of all their threads when
@@ -141,9 +175,57 @@ Other changes
   multiple entries per source. This happens in NRTM mirroring
   or when users submit large sets of changes. IRRd will process
   these changes faster up to an order of magnitude.
-* The ``compatibility.irrd42_migration_in_progress`` setting
-  was removed.
 * IRRd applies stricter checks to the range operator in `route-set`
   members in strict validation mode. Values are now checked
   for appropriate prefix length, rejecting values like
   ``192.0.2.0/26^24-32``.
+* The ``compatibility.irrd42_migration_in_progress`` setting
+  was removed as it only applied to 4.2 upgrades.
+
+
+Upgrading to IRRd 4.3.0 from 4.2.x
+----------------------------------
+As with any other major IRRd release, depending on the availability
+needs of your setup, it is recommended to first test the upgrade
+and operation on a testing/acceptance setup.
+
+The database migrations only add columns, so you can keep your IRRd
+daemon running while running the database migrations. Load and locks
+will hold back database changes and may cause delayed responses
+to queries. Delayed responses may persist for an hour or so after
+the upgrade.
+
+The steps to upgrade are:
+
+* Update your configuration, as several configuration options have been removed,
+  as noted above.
+* Disable all cron and e-mail triggered tasks. There should be no calls
+  to any IRRd scripts during the upgrade process.
+* Upgrade the IRRd package from within the virtualenv with
+  ``pip install irrd==4.3.0``
+* Run the database migrations, using the
+  :ref:`irrd_database_upgrade <deployment-database-upgrade>` command.
+  **Important note**: some of the migrations change large amounts of data,
+  and may take up to 15-45 minutes to run in total. While the migrations are
+  running, IRRd should not be restarted and any cron / e-mail triggered tasks
+  must be disabled. There must be no calls to ``irrd_submit_email``,
+  ``irrd_load_database``, or any other scripts.
+* Restart IRRd.
+* Re-enable the cron / e-mail triggered tasks.
+
+
+Downgrading from 4.3 to 4.2.x
+-----------------------------
+If you are running IRRd 4.3, and would like to downgrade back to 4.2.x,
+the database schema needs to be modified. You can either restore an older
+copy of your database, start with a fresh database, or use the database
+migrations.
+
+If you want to use the database migrations, run this command **before**
+downgrading your local package installation to 4.2.x::
+
+    irrd_database_downgrade --version 8744b4b906bb
+
+If you would like to re-upgrade to 4.3 later on, you will need to run
+the database migrations again, as listed in the upgrade steps.
+
