@@ -231,9 +231,6 @@ Then, follow the process as before, but instead of stopping and
 starting, only restart IRRd once, after the database migration.
 
 
-
-
-
 Downgrading from 4.3 to 4.2.x
 -----------------------------
 If you are running IRRd 4.3, and would like to downgrade back to 4.2.x,

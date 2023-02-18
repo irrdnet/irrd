@@ -267,11 +267,11 @@ A sample nginx configuration could initially look as follows
         gzip on;
         gzip_types application/json text/plain application/jsonl+json;
 
-            map $http_upgrade $connection_upgrade {
-                default upgrade;
-                ''      close;
-            }
-            server {
+        map $http_upgrade $connection_upgrade {
+            default upgrade;
+            ''      close;
+        }
+        server {
             server_name  [your hostname];
             listen       80;
             listen       [::]:80;
