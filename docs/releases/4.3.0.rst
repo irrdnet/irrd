@@ -81,6 +81,9 @@ IRRd now offers a :doc:`WebSocket-based event stream </users/queries/event-strea
 All changes to IRR objects are published on this endpoint. There is
 also a new initial download endpoint that publishes all IRR data, with
 optional filtering, in JSONL format.
+Both initial downloads and ongoing changes include all data parsed
+from objects by IRRd, instead of only the raw object text. This makes this
+format easier to work with and integrate with other tooling.
 
 In their current design, these features are not optimised for high volume
 use. Access is controlled by the new ``server.http.event_stream_access_list``
@@ -187,31 +190,48 @@ Upgrading to IRRd 4.3.0 from 4.2.x
 ----------------------------------
 As with any other major IRRd release, depending on the availability
 needs of your setup, it is recommended to first test the upgrade
-and operation on a testing/acceptance setup.
+and operation on a testing/acceptance setup with similar data size.
 
-The database migrations only add columns, so you can keep your IRRd
-daemon running while running the database migrations. Load and locks
-will hold back database changes and may cause delayed responses
-to queries. Delayed responses may persist for an hour or so after
-the upgrade.
+The recommended steps to upgrade are:
 
-The steps to upgrade are:
-
+* Make sure your Python (minimum 3.7) and Redis (minimum 5)
+  versions are recent enough.
 * Update your configuration, as several configuration options have been removed,
   as noted above.
 * Disable all cron and e-mail triggered tasks. There should be no calls
   to any IRRd scripts during the upgrade process.
+* Stop the IRRd process.
 * Upgrade the IRRd package from within the virtualenv with
   ``pip install irrd==4.3.0``
 * Run the database migrations, using the
   :ref:`irrd_database_upgrade <deployment-database-upgrade>` command.
   **Important note**: some of the migrations change large amounts of data,
-  and may take up to 15-45 minutes to run in total. While the migrations are
-  running, IRRd should not be restarted and any cron / e-mail triggered tasks
+  and may take up to 10-45 minutes to run in total. While the migrations are
+  running, IRRd should not be running and any cron / e-mail triggered tasks
   must be disabled. There must be no calls to ``irrd_submit_email``,
   ``irrd_load_database``, or any other scripts.
 * Restart IRRd.
 * Re-enable the cron / e-mail triggered tasks.
+* To support the new event stream, update your nginx or other HTTP service
+  configuration to enable WebSocket connections. See the new
+  :ref:`nginx example <deployment-https>`. Note that the recommended
+  ``gzip_types`` was also expanded.
+
+The database migrations only add columns, so there is an option to keep
+can keep your IRRd daemon running while running the database migrations.
+This is more complex, but will reduce downtime.
+Load and locks will hold back database changes and may cause delayed responses
+to queries. Delayed responses may persist for an hour or so after
+the upgrade.
+
+If you prefer this option, before starting the process,
+set ``import_timer`` for all sources and ``rpki.roa_import_timer``
+to several hours. This reduces writes and possible deadlocks.
+Then, follow the process as before, but instead of stopping and
+starting, only restart IRRd once, after the database migration.
+
+
+
 
 
 Downgrading from 4.3 to 4.2.x

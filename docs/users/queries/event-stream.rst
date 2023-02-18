@@ -31,7 +31,7 @@ setting, and by default all access is denied.
 
 Initial retrieval over HTTPS
 ----------------------------
-To retrieve all current IRR data, make a GET request to ``/v1/event-stream/``
+To retrieve all current IRR data, make a GET request to ``/v1/event-stream/initial/``
 on the IRRd instance. There are two optional GET parameters to filter the
 returned data:
 
