@@ -56,6 +56,9 @@ setuptools.setup(
         ':python_version > "3.7"': [
             'uvicorn[standard]==0.20.0',
         ],
+        ':python_version < "3.8"': [
+            'websockets==10.4',
+        ],
         ':platform_python_implementation == "CPython"': [
             'psycopg2-binary==2.9.5',
         ],

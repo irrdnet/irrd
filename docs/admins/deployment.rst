@@ -267,6 +267,10 @@ A sample nginx configuration could initially look as follows
         gzip on;
         gzip_types application/json text/plain application/jsonl+json;
 
+        map $http_upgrade $connection_upgrade {
+            default upgrade;
+            ''      close;
+        }
         server {
             server_name  [your hostname];
             listen       80;
@@ -276,9 +280,12 @@ A sample nginx configuration could initially look as follows
                 proxy_set_header Host $http_host;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
                 proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection $connection_upgrade;
                 proxy_read_timeout 900;
                 proxy_connect_timeout 900;
                 proxy_send_timeout 900;
+                proxy_redirect off;
                 proxy_buffering off;
                 proxy_pass http://127.0.0.1:8000;
                 add_header Server $upstream_http_server;
