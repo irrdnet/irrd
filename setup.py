@@ -40,7 +40,7 @@ setuptools.setup(
         'requests==2.28.2',
         'pytz==2022.7.1',
         'ariadne==0.17.1',
-        'uvicorn[standard]==0.20.0',
+        'uvicorn==0.20.0',
         'starlette==0.20.4',
         'psutil==5.9.4',
         'asgiref==3.6.0',
@@ -53,6 +53,12 @@ setuptools.setup(
         'wheel==0.38.4',
     ],
     extras_require={
+        ':python_version > "3.7"': [
+            'uvicorn[standard]==0.20.0',
+        ],
+        ':python_version < "3.8"': [
+            'websockets==10.4',
+        ],
         ':platform_python_implementation == "CPython"': [
             'psycopg2-binary==2.9.5',
         ],
