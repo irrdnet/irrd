@@ -20,7 +20,7 @@ Requirements
 IRRd requires:
 
 * Linux, OpenBSD or MacOS. Other platforms are untested, but may work.
-* PyPy or CPython 3.7 through 3.11 with `pip` and `virtualenv` installed.
+* PyPy or CPython 3.8 through 3.11 with `pip` and `virtualenv` installed.
   PyPy is slightly recommended over CPython (the "default" Python interpreter),
   due to improved performance, in the order of 10% for some queries,
   and even higher for some GraphQL queries. However, CPython remains fully
