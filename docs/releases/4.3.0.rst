@@ -13,7 +13,7 @@ IRRd 4.3's major new features are:
   sources as well.
 * An event stream based on WebSocket, where clients can subscribe
   to receive updates of all committed changes to IRR objects
-  for all sources, in a structured. Also includes an initial
+  for all sources, in a structured format. Also includes an initial
   download endpoint in JSONL format.
 * bcrypt hashes for maintainer passwords, and the option to mark
   hashers as legacy or disable them entirely.
@@ -218,7 +218,7 @@ The recommended steps to upgrade are:
   ``gzip_types`` was also expanded.
 
 The database migrations only add columns, so there is an option to keep
-can keep your IRRd daemon running while running the database migrations.
+your IRRd daemon running while running the database migrations.
 This is more complex, but will reduce downtime.
 Load and locks will hold back database changes and may cause delayed responses
 to queries. Delayed responses may persist for an hour or so after
