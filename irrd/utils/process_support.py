@@ -21,7 +21,7 @@ class ExceptionLoggingProcess(Process):  # pragma: no cover
             super().run()
         except Exception as e:
             logger.critical(
-                f'Essential IRRd subprocess encountered a fatal error, traceback follows, shutting down: {e}',
+                f"Essential IRRd subprocess encountered a fatal error, traceback follows, shutting down: {e}",
                 exc_info=e,
             )
             os.kill(os.getppid(), signal.SIGTERM)

@@ -21,13 +21,13 @@ from irrd.storage.database_handler import DatabaseHandler
 def load(source, filename, serial) -> int:
     if any(
         [
-            get_setting(f'sources.{source}.import_source'),
-            get_setting(f'sources.{source}.import_serial_source'),
+            get_setting(f"sources.{source}.import_source"),
+            get_setting(f"sources.{source}.import_serial_source"),
         ]
     ):
         print(
-            'Error: to use this command, import_source and import_serial_source '
-            f'for source {source} must not be set.'
+            "Error: to use this command, import_source and import_serial_source "
+            f"for source {source} must not be set."
         )
         return 2
 
@@ -50,7 +50,7 @@ def load(source, filename, serial) -> int:
         dh.commit()
     dh.close()
     if error:
-        print(f'Error occurred while processing object:\n{error}')
+        print(f"Error occurred while processing object:\n{error}")
         return 1
     return 0
 
@@ -59,25 +59,25 @@ def main():  # pragma: no cover
     description = """Load an RPSL file into the database."""
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument(
-        '--config',
-        dest='config_file_path',
+        "--config",
+        dest="config_file_path",
         type=str,
-        help=f'use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})',
+        help=f"use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})",
     )
-    parser.add_argument('--serial', dest='serial', type=int, help=f'serial number (optional)')
+    parser.add_argument("--serial", dest="serial", type=int, help=f"serial number (optional)")
     parser.add_argument(
-        '--source', dest='source', type=str, required=True, help=f'name of the source, e.g. NTTCOM'
+        "--source", dest="source", type=str, required=True, help=f"name of the source, e.g. NTTCOM"
     )
-    parser.add_argument('input_file', type=str, help='the name of a file to read')
+    parser.add_argument("input_file", type=str, help="the name of a file to read")
     args = parser.parse_args()
 
     config_init(args.config_file_path)
-    if get_setting('database_readonly'):
-        print('Unable to run, because database_readonly is set')
+    if get_setting("database_readonly"):
+        print("Unable to run, because database_readonly is set")
         sys.exit(-1)
 
     sys.exit(load(args.source, args.input_file, args.serial))
 
 
-if __name__ == '__main__':  # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     main()

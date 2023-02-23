@@ -9,8 +9,8 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = '8b8357acd333'
-down_revision = '0548f1aa4f10'
+revision = "8b8357acd333"
+down_revision = "0548f1aa4f10"
 branch_labels = None
 depends_on = None
 
@@ -18,8 +18,8 @@ depends_on = None
 def upgrade():
     from sqlalchemy.schema import CreateSequence, Sequence
 
-    op.execute(CreateSequence(Sequence('rpsl_database_journal_serial_global_seq', start=1000000)))
-    op.add_column('rpsl_database_journal', sa.Column('serial_global', sa.BigInteger(), nullable=True))
+    op.execute(CreateSequence(Sequence("rpsl_database_journal_serial_global_seq", start=1000000)))
+    op.add_column("rpsl_database_journal", sa.Column("serial_global", sa.BigInteger(), nullable=True))
 
     op.execute(
         """
@@ -40,25 +40,25 @@ def upgrade():
     )
 
     op.alter_column(
-        'rpsl_database_journal',
-        'serial_global',
+        "rpsl_database_journal",
+        "serial_global",
         server_default=sa.text("nextval('rpsl_database_journal_serial_global_seq')"),
     )
     op.create_index(
-        op.f('ix_rpsl_database_journal_serial_global'),
-        'rpsl_database_journal',
-        ['serial_global'],
+        op.f("ix_rpsl_database_journal_serial_global"),
+        "rpsl_database_journal",
+        ["serial_global"],
         unique=True,
     )
     op.create_index(
-        op.f('ix_rpsl_database_journal_timestamp'), 'rpsl_database_journal', ['timestamp'], unique=False
+        op.f("ix_rpsl_database_journal_timestamp"), "rpsl_database_journal", ["timestamp"], unique=False
     )
 
 
 def downgrade():
     from sqlalchemy.schema import DropSequence, Sequence
 
-    op.drop_index(op.f('ix_rpsl_database_journal_timestamp'), table_name='rpsl_database_journal')
-    op.drop_index(op.f('ix_rpsl_database_journal_serial_global'), table_name='rpsl_database_journal')
-    op.drop_column('rpsl_database_journal', 'serial_global')
-    op.execute(DropSequence(Sequence('rpsl_database_journal_serial_global_seq')))
+    op.drop_index(op.f("ix_rpsl_database_journal_timestamp"), table_name="rpsl_database_journal")
+    op.drop_index(op.f("ix_rpsl_database_journal_serial_global"), table_name="rpsl_database_journal")
+    op.drop_column("rpsl_database_journal", "serial_global")
+    op.execute(DropSequence(Sequence("rpsl_database_journal_serial_global_seq")))

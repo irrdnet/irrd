@@ -11,8 +11,8 @@ from sqlalchemy.engine.reflection import Inspector
 
 # revision identifiers, used by Alembic.
 
-revision = '39e4f15ed80c'
-down_revision = '1743f98a456d'
+revision = "39e4f15ed80c"
+down_revision = "1743f98a456d"
 branch_labels = None
 depends_on = None
 
@@ -37,10 +37,10 @@ def upgrade():
 def downgrade():
     conn = op.get_bind()
     inspector = Inspector.from_engine(conn)
-    columns = inspector.get_columns('rpsl_objects')
+    columns = inspector.get_columns("rpsl_objects")
 
-    if 'bogon_status' in columns:
-        op.drop_index(op.f('ix_rpsl_objects_bogon_status'), table_name='rpsl_objects')
-        op.drop_column('rpsl_objects', 'bogon_status')
-        bogon_status = sa.Enum('unknown', 'not_bogon', 'bogon_as', 'bogon_prefix', name='bogonstatus')
+    if "bogon_status" in columns:
+        op.drop_index(op.f("ix_rpsl_objects_bogon_status"), table_name="rpsl_objects")
+        op.drop_column("rpsl_objects", "bogon_status")
+        bogon_status = sa.Enum("unknown", "not_bogon", "bogon_as", "bogon_prefix", name="bogonstatus")
         bogon_status.drop(op.get_bind())

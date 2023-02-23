@@ -26,16 +26,16 @@ class QueryMetadataExtension(Extension):
     def format(self, context):
         data = {}
         if self.start_timestamp:
-            data['execution'] = time.perf_counter() - self.start_timestamp
-        if 'sql_queries' in context:
-            data['sql_query_count'] = len(context['sql_queries'])
-            data['sql_queries'] = context['sql_queries']
+            data["execution"] = time.perf_counter() - self.start_timestamp
+        if "sql_queries" in context:
+            data["sql_query_count"] = len(context["sql_queries"])
+            data["sql_queries"] = context["sql_queries"]
 
-        query = context['request']._json
-        if context['request']._json.get('operationName') != 'IntrospectionQuery':
+        query = context["request"]._json
+        if context["request"]._json.get("operationName") != "IntrospectionQuery":
             # Reformat the query to make it fit neatly on a single log line
-            query['query'] = query['query'].replace(' ', '').replace('\n', ' ').replace('\t', '')
-            client = context['request'].client.host
+            query["query"] = query["query"].replace(" ", "").replace("\n", " ").replace("\t", "")
+            client = context["request"].client.host
             logger.info(f'{client} ran query in {data.get("execution")}s: {query}')
         return data
 

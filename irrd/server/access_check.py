@@ -26,7 +26,7 @@ def is_client_permitted(ip: str, access_list_setting: str, default_deny=True, lo
             client_ip = IP(ip)
         except (ValueError, AttributeError) as e:
             if log:
-                logger.error(f'Rejecting request as client IP could not be read from {ip}: {e}')
+                logger.error(f"Rejecting request as client IP could not be read from {ip}: {e}")
             return False
 
     if client_ip and client_ip.version() == 6:
@@ -36,17 +36,17 @@ def is_client_permitted(ip: str, access_list_setting: str, default_deny=True, lo
             pass
 
     access_list_name = get_setting(access_list_setting)
-    access_list = get_setting(f'access_lists.{access_list_name}')
+    access_list = get_setting(f"access_lists.{access_list_name}")
 
     if not access_list_name or not access_list:
         if default_deny:
             if log:
-                logger.info(f'Rejecting request, access list empty or undefined: {client_ip}')
+                logger.info(f"Rejecting request, access list empty or undefined: {client_ip}")
             return False
         else:
             return True
 
     allowed = bypass_auth or any([client_ip in IP(allowed) for allowed in access_list])
     if not allowed and log:
-        logger.info(f'Rejecting request, IP not in access list {access_list_name}: {client_ip}')
+        logger.info(f"Rejecting request, IP not in access list {access_list_name}: {client_ip}")
     return allowed

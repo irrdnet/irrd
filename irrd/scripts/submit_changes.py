@@ -26,15 +26,15 @@ def main(data):
     print(handler.submitter_report_human())
 
 
-if __name__ == '__main__':  # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     description = """Process a raw update message, i.e. without email headers. Authentication is still checked, 
                      but PGP is not supported. Message is always read from stdin, and a report is printed to stdout."""
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument(
-        '--config',
-        dest='config_file_path',
+        "--config",
+        dest="config_file_path",
         type=str,
-        help=f'use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})',
+        help=f"use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})",
     )
     args = parser.parse_args()
 

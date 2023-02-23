@@ -15,31 +15,31 @@ class TestNotifyRPKIInvalidOwners:
     def test_notify_regular(self, monkeypatch, config_override):
         config_override(
             {
-                'sources': {'TEST': {'authoritative': True}},
-                'rpki': {'notify_invalid_enabled': True},
+                "sources": {"TEST": {"authoritative": True}},
+                "rpki": {"notify_invalid_enabled": True},
             }
         )
         mock_dh = Mock(spec=DatabaseHandler)
         mock_dq = Mock(spec=RPSLDatabaseQuery)
-        monkeypatch.setattr('irrd.rpki.notifications.RPSLDatabaseQuery', lambda columns: mock_dq)
+        monkeypatch.setattr("irrd.rpki.notifications.RPSLDatabaseQuery", lambda columns: mock_dq)
         mock_email = Mock(spec=send_email)
-        monkeypatch.setattr('irrd.rpki.notifications.send_email', mock_email)
+        monkeypatch.setattr("irrd.rpki.notifications.send_email", mock_email)
 
         rpsl_dicts_now_invalid = [
             {
-                'source': 'TEST',
-                'object_text': SAMPLE_ROUTE + 'mnt-by: DOESNOTEXIST-MNT\nMISSING-DATA-MNT\n',
-                'rpki_status': RPKIStatus.invalid,
+                "source": "TEST",
+                "object_text": SAMPLE_ROUTE + "mnt-by: DOESNOTEXIST-MNT\nMISSING-DATA-MNT\n",
+                "rpki_status": RPKIStatus.invalid,
             },
             {
-                'source': 'TEST',
-                'object_text': SAMPLE_ROUTE6,
-                'rpki_status': RPKIStatus.valid,
+                "source": "TEST",
+                "object_text": SAMPLE_ROUTE6,
+                "rpki_status": RPKIStatus.valid,
             },  # should be ignored
             {
-                'source': 'TEST2',
-                'object_text': SAMPLE_ROUTE6,
-                'rpki_status': RPKIStatus.invalid,
+                "source": "TEST2",
+                "object_text": SAMPLE_ROUTE6,
+                "rpki_status": RPKIStatus.invalid,
             },  # should be ignored
         ]
 
@@ -47,20 +47,20 @@ class TestNotifyRPKIInvalidOwners:
             [
                 [
                     {
-                        'rpsl_pk': 'TEST-MNT',
-                        'parsed_data': {
-                            'mnt-nfy': ['mnt-nfy@example.com'],
-                            'tech-c': ['PERSON-TEST', 'DOESNOTEXIST-TEST'],
+                        "rpsl_pk": "TEST-MNT",
+                        "parsed_data": {
+                            "mnt-nfy": ["mnt-nfy@example.com"],
+                            "tech-c": ["PERSON-TEST", "DOESNOTEXIST-TEST"],
                         },
                     },
-                    {'rpsl_pk': 'MISSING-DATA-MNT', 'parsed_data': {}},
+                    {"rpsl_pk": "MISSING-DATA-MNT", "parsed_data": {}},
                 ],
                 [
                     {
-                        'rpsl_pk': 'PERSON-TEST',
-                        'parsed_data': {'e-mail': ['person@xample.com', 'person2@example.com']},
+                        "rpsl_pk": "PERSON-TEST",
+                        "parsed_data": {"e-mail": ["person@xample.com", "person2@example.com"]},
                     },
-                    {'rpsl_pk': 'IGNORED-TEST', 'parsed_data': {'e-mail': ['ignored@xample.com']}},
+                    {"rpsl_pk": "IGNORED-TEST", "parsed_data": {"e-mail": ["ignored@xample.com"]}},
                 ],
             ]
         )
@@ -69,19 +69,19 @@ class TestNotifyRPKIInvalidOwners:
         assert notified == 3
 
         assert flatten_mock_calls(mock_dq) == [
-            ['sources', (['TEST'],), {}],
-            ['rpsl_pks', ({'TEST-MNT', 'DOESNOTEXIST-MNT'},), {}],
-            ['object_classes', (['mntner'],), {}],
-            ['sources', (['TEST'],), {}],
-            ['rpsl_pks', ({'PERSON-TEST', 'DOESNOTEXIST-TEST'},), {}],
-            ['object_classes', (['role', 'person'],), {}],
+            ["sources", (["TEST"],), {}],
+            ["rpsl_pks", ({"TEST-MNT", "DOESNOTEXIST-MNT"},), {}],
+            ["object_classes", (["mntner"],), {}],
+            ["sources", (["TEST"],), {}],
+            ["rpsl_pks", ({"PERSON-TEST", "DOESNOTEXIST-TEST"},), {}],
+            ["object_classes", (["role", "person"],), {}],
         ]
 
         assert len(mock_email.mock_calls) == 3
         actual_recipients = {call[1][0] for call in mock_email.mock_calls}
-        expected_recipients = {'person@xample.com', 'person2@example.com', 'mnt-nfy@example.com'}
+        expected_recipients = {"person@xample.com", "person2@example.com", "mnt-nfy@example.com"}
         assert actual_recipients == expected_recipients
-        assert mock_email.mock_calls[0][1][1] == 'route(6) objects in TEST marked RPKI invalid'
+        assert mock_email.mock_calls[0][1][1] == "route(6) objects in TEST marked RPKI invalid"
         assert (
             mock_email.mock_calls[0][1][2]
             == textwrap.dedent(
@@ -131,16 +131,16 @@ class TestNotifyRPKIInvalidOwners:
     def test_notify_disabled(self, monkeypatch, config_override):
         config_override(
             {
-                'sources': {'TEST': {'authoritative': True}},
-                'rpki': {'notify_invalid_enabled': False},
+                "sources": {"TEST": {"authoritative": True}},
+                "rpki": {"notify_invalid_enabled": False},
             }
         )
         mock_dh = Mock(spec=DatabaseHandler)
         mock_email = Mock()
-        monkeypatch.setattr('irrd.rpki.notifications.send_email', mock_email)
+        monkeypatch.setattr("irrd.rpki.notifications.send_email", mock_email)
 
         rpsl_dicts_now_invalid = [
-            {'source': 'TEST', 'object_text': SAMPLE_ROUTE6, 'rpki_status': RPKIStatus.invalid},
+            {"source": "TEST", "object_text": SAMPLE_ROUTE6, "rpki_status": RPKIStatus.invalid},
         ]
 
         notified = notify_rpki_invalid_owners(mock_dh, rpsl_dicts_now_invalid)
@@ -150,17 +150,17 @@ class TestNotifyRPKIInvalidOwners:
     def test_notify_no_relevant_objects(self, monkeypatch, config_override):
         config_override(
             {
-                'sources': {'TEST': {'authoritative': True}},
-                'rpki': {'notify_invalid_enabled': True},
+                "sources": {"TEST": {"authoritative": True}},
+                "rpki": {"notify_invalid_enabled": True},
             }
         )
         mock_dh = Mock(spec=DatabaseHandler)
         mock_email = Mock()
-        monkeypatch.setattr('irrd.rpki.notifications.send_email', mock_email)
+        monkeypatch.setattr("irrd.rpki.notifications.send_email", mock_email)
 
         rpsl_dicts_now_invalid = [
             # should be ignored
-            {'source': 'TEST2', 'object_text': SAMPLE_ROUTE6, 'rpki_status': RPKIStatus.invalid},
+            {"source": "TEST2", "object_text": SAMPLE_ROUTE6, "rpki_status": RPKIStatus.invalid},
         ]
 
         notified = notify_rpki_invalid_owners(mock_dh, rpsl_dicts_now_invalid)

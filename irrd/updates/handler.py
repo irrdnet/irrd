@@ -75,8 +75,8 @@ class ChangeSubmissionHandler:
                 # so construct a pseudo-object by appending the text.
                 composite_object = []
                 for attribute in rpsl_obj.attributes:
-                    composite_object.append(attribute.name + ': ' + attribute.value)  # type: ignore
-                object_text = '\n'.join(composite_object) + '\n'
+                    composite_object.append(attribute.name + ": " + attribute.value)  # type: ignore
+                object_text = "\n".join(composite_object) + "\n"
 
             assert object_text  # enforced by pydantic
             change_requests.append(
@@ -126,10 +126,10 @@ class ChangeSubmissionHandler:
         reference_validator: ReferenceValidator,
         auth_validator: AuthValidator,
     ) -> None:
-        objects = ', '.join(
-            [f'{request.rpsl_obj_new} (request {id(request)})' for request in change_requests]
+        objects = ", ".join(
+            [f"{request.rpsl_obj_new} (request {id(request)})" for request in change_requests]
         )
-        logger.info(f'Processing change requests for {objects}, metadata is {self.request_meta}')
+        logger.info(f"Processing change requests for {objects}, metadata is {self.request_meta}")
         # When an object references another object, e.g. tech-c referring a person or mntner,
         # an add/update is only valid if those referred objects exist. To complicate matters,
         # the object referred to may be part of this very same submission. For this reason, the
@@ -162,8 +162,8 @@ class ChangeSubmissionHandler:
             loop_count += 1
             if loop_count > loop_max:  # pragma: no cover
                 msg = (
-                    'Update validity resolver ran an excessive amount of loops, may be stuck, aborting '
-                    f'processing. Message metadata: {self.request_meta}'
+                    "Update validity resolver ran an excessive amount of loops, may be stuck, aborting "
+                    f"processing. Message metadata: {self.request_meta}"
                 )
                 logger.error(msg)
                 raise ValueError(msg)
@@ -180,25 +180,25 @@ class ChangeSubmissionHandler:
         This method looks for an actual matching object in the database,
         and then returns the object's PK.
         """
-        clean_fingerprint = pgp_fingerprint.replace(' ', '')
-        key_id = 'PGPKEY-' + clean_fingerprint[-8:]
-        query = RPSLDatabaseQuery().object_classes(['key-cert']).rpsl_pk(key_id)
+        clean_fingerprint = pgp_fingerprint.replace(" ", "")
+        key_id = "PGPKEY-" + clean_fingerprint[-8:]
+        query = RPSLDatabaseQuery().object_classes(["key-cert"]).rpsl_pk(key_id)
         results = list(self.database_handler.execute_query(query))
 
         for result in results:
-            if result['parsed_data'].get('fingerpr', '').replace(' ', '') == clean_fingerprint:
+            if result["parsed_data"].get("fingerpr", "").replace(" ", "") == clean_fingerprint:
                 return key_id
         logger.info(
-            f'Message was signed with key {key_id}, but key was not found in the database. Treating message '
-            f'as unsigned. Message metadata: {self.request_meta}'
+            f"Message was signed with key {key_id}, but key was not found in the database. Treating message "
+            f"as unsigned. Message metadata: {self.request_meta}"
         )
         return None
 
     def status(self) -> str:
         """Provide a simple SUCCESS/FAILED string based - former used if all objects were saved."""
         if all([result.status == UpdateRequestStatus.SAVED for result in self.results]):
-            return 'SUCCESS'
-        return 'FAILED'
+            return "SUCCESS"
+        return "FAILED"
 
     def submitter_report_human(self) -> str:
         """Produce a human-readable report for the submitter."""
@@ -231,10 +231,10 @@ class ChangeSubmissionHandler:
         """
         )
         for result in self.results:
-            user_report += '---\n'
+            user_report += "---\n"
             user_report += result.submitter_report_human()
-            user_report += '\n'
-        user_report += '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n'
+            user_report += "\n"
+        user_report += "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"
         return user_report
 
     def submitter_report_json(self):
@@ -249,19 +249,19 @@ class ChangeSubmissionHandler:
         number_failed_delete = len([r for r in failed if r.request_type == UpdateRequestType.DELETE])
 
         return {
-            'request_meta': self.request_meta,
-            'summary': {
-                'objects_found': len(self.results),
-                'successful': len(successful),
-                'successful_create': number_successful_create,
-                'successful_modify': number_successful_modify,
-                'successful_delete': number_successful_delete,
-                'failed': len(failed),
-                'failed_create': number_failed_create,
-                'failed_modify': number_failed_modify,
-                'failed_delete': number_failed_delete,
+            "request_meta": self.request_meta,
+            "summary": {
+                "objects_found": len(self.results),
+                "successful": len(successful),
+                "successful_create": number_successful_create,
+                "successful_modify": number_successful_modify,
+                "successful_delete": number_successful_delete,
+                "failed": len(failed),
+                "failed_create": number_failed_create,
+                "failed_modify": number_failed_modify,
+                "failed_delete": number_failed_delete,
             },
-            'objects': [result.submitter_report_json() for result in self.results],
+            "objects": [result.submitter_report_json() for result in self.results],
         }
 
     def send_notification_target_reports(self):
@@ -278,11 +278,11 @@ class ChangeSubmissionHandler:
                     reports_per_recipient[target][result.status].add(result.notification_target_report())
                     sources.add(result.rpsl_obj_new.source())
 
-        sources_str = '/'.join(sources)
-        subject = f'Notification of {sources_str} database changes'
-        header = get_setting('email.notification_header', '').format(sources_str=sources_str)
-        header += '\nThis message is auto-generated.\n'
-        header += 'The request was made with the following details:\n'
+        sources_str = "/".join(sources)
+        subject = f"Notification of {sources_str} database changes"
+        header = get_setting("email.notification_header", "").format(sources_str=sources_str)
+        header += "\nThis message is auto-generated.\n"
+        header += "The request was made with the following details:\n"
         header_saved = textwrap.dedent(
             """
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -307,18 +307,18 @@ class ChangeSubmissionHandler:
             if UpdateRequestStatus.ERROR_AUTH in reports_per_status:
                 user_report += header_failed
                 for report in reports_per_status[UpdateRequestStatus.ERROR_AUTH]:
-                    user_report += f'---\n{report}\n'
-                user_report += '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n'
+                    user_report += f"---\n{report}\n"
+                user_report += "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n"
             if UpdateRequestStatus.SAVED in reports_per_status:
                 user_report += header_saved
                 for report in reports_per_status[UpdateRequestStatus.SAVED]:
-                    user_report += f'---\n{report}\n'
-                user_report += '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n'
+                    user_report += f"---\n{report}\n"
+                user_report += "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n"
 
             email.send_email(recipient, subject, user_report)
 
     def _request_meta_str(self):
-        request_meta_str = '\n'.join([f'> {k}: {v}' for k, v in self.request_meta.items() if v])
+        request_meta_str = "\n".join([f"> {k}: {v}" for k, v in self.request_meta.items() if v])
         if request_meta_str:
-            request_meta_str = '\n' + request_meta_str + '\n\n'
+            request_meta_str = "\n" + request_meta_str + "\n\n"
         return request_meta_str

@@ -82,7 +82,7 @@ class ChangeRequest:
             self.error_messages = self.rpsl_obj_new.messages.errors()
             self.info_messages = self.rpsl_obj_new.messages.infos()
             logger.debug(
-                f'{id(self)}: Processing new ChangeRequest for object {self.rpsl_obj_new}: request {id(self)}'
+                f"{id(self)}: Processing new ChangeRequest for object {self.rpsl_obj_new}: request {id(self)}"
             )
 
         except UnknownRPSLObjectClassException as exc:
@@ -94,9 +94,9 @@ class ChangeRequest:
 
         if self.is_valid() and self.rpsl_obj_new:
             source = self.rpsl_obj_new.source()
-            if not get_setting(f'sources.{source}.authoritative'):
-                logger.debug(f'{id(self)}: change is for non-authoritative source {source}, rejected')
-                self.error_messages.append(f'This instance is not authoritative for source {source}')
+            if not get_setting(f"sources.{source}.authoritative"):
+                logger.debug(f"{id(self)}: change is for non-authoritative source {source}, rejected")
+                self.error_messages.append(f"This instance is not authoritative for source {source}")
                 self.status = UpdateRequestStatus.ERROR_NON_AUTHORITIVE
                 return
 
@@ -107,11 +107,11 @@ class ChangeRequest:
             if not self.rpsl_obj_current:
                 self.status = UpdateRequestStatus.ERROR_PARSING
                 self.error_messages.append(
-                    'Can not delete object: no object found for this key in this database.'
+                    "Can not delete object: no object found for this key in this database."
                 )
                 logger.debug(
-                    f'{id(self)}: Request attempts to delete object {self.rpsl_obj_new}, '
-                    'but no existing object found.'
+                    f"{id(self)}: Request attempts to delete object {self.rpsl_obj_new}, "
+                    "but no existing object found."
                 )
 
     def _retrieve_existing_version(self):
@@ -126,37 +126,37 @@ class ChangeRequest:
         if not results:
             self.request_type = UpdateRequestType.CREATE
             logger.debug(
-                f'{id(self)}: Did not find existing version for object {self.rpsl_obj_new}, request is CREATE'
+                f"{id(self)}: Did not find existing version for object {self.rpsl_obj_new}, request is CREATE"
             )
         elif len(results) == 1:
             self.request_type = UpdateRequestType.MODIFY
-            self.rpsl_obj_current = rpsl_object_from_text(results[0]['object_text'], strict_validation=False)
+            self.rpsl_obj_current = rpsl_object_from_text(results[0]["object_text"], strict_validation=False)
             logger.debug(
-                f'{id(self)}: Retrieved existing version for object '
-                f'{self.rpsl_obj_current}, request is MODIFY/DELETE'
+                f"{id(self)}: Retrieved existing version for object "
+                f"{self.rpsl_obj_current}, request is MODIFY/DELETE"
             )
         else:  # pragma: no cover
             # This should not be possible, as rpsl_pk/source are a composite unique value in the database scheme.
             # Therefore, a query should not be able to affect more than one row.
-            affected_pks = ', '.join([r['pk'] for r in results])
-            msg = f'{id(self)}: Attempted to retrieve current version of object {self.rpsl_obj_new.pk()}/'
-            msg += f'{self.rpsl_obj_new.source()}, but multiple '
-            msg += f'objects were found, internal pks found: {affected_pks}'
+            affected_pks = ", ".join([r["pk"] for r in results])
+            msg = f"{id(self)}: Attempted to retrieve current version of object {self.rpsl_obj_new.pk()}/"
+            msg += f"{self.rpsl_obj_new.source()}, but multiple "
+            msg += f"objects were found, internal pks found: {affected_pks}"
             logger.error(msg)
             raise ValueError(msg)
 
     def save(self) -> None:
         """Save the change to the database."""
         if self.status != UpdateRequestStatus.PROCESSING or not self.rpsl_obj_new:
-            raise ValueError('ChangeRequest can only be saved in status PROCESSING')
+            raise ValueError("ChangeRequest can only be saved in status PROCESSING")
         if self.request_type == UpdateRequestType.DELETE and self.rpsl_obj_current is not None:
-            logger.info(f'{id(self)}: Saving change for {self.rpsl_obj_new}: deleting current object')
+            logger.info(f"{id(self)}: Saving change for {self.rpsl_obj_new}: deleting current object")
             self.database_handler.delete_rpsl_object(
                 rpsl_object=self.rpsl_obj_current, origin=JournalEntryOrigin.auth_change
             )
         else:
             logger.info(
-                f'{id(self)}: Saving change for {self.rpsl_obj_new}: inserting/updating current object'
+                f"{id(self)}: Saving change for {self.rpsl_obj_new}: inserting/updating current object"
             )
             self.database_handler.upsert_rpsl_object(self.rpsl_obj_new, JournalEntryOrigin.auth_change)
         self.status = UpdateRequestStatus.SAVED
@@ -166,19 +166,19 @@ class ChangeRequest:
 
     def submitter_report_human(self) -> str:
         """Produce a string suitable for reporting back status and messages to the human submitter."""
-        status = 'succeeded' if self.is_valid() else 'FAILED'
+        status = "succeeded" if self.is_valid() else "FAILED"
 
         report = (
-            f'{self.request_type_str().title()} {status}: [{self.object_class_str()}]'
-            f' {self.object_pk_str()}\n'
+            f"{self.request_type_str().title()} {status}: [{self.object_class_str()}]"
+            f" {self.object_pk_str()}\n"
         )
         if self.info_messages or self.error_messages:
             if not self.rpsl_obj_new or self.error_messages:
-                report += '\n' + remove_auth_hashes(self.rpsl_text_submitted) + '\n'
+                report += "\n" + remove_auth_hashes(self.rpsl_text_submitted) + "\n"
             else:
-                report += '\n' + remove_auth_hashes(self.rpsl_obj_new.render_rpsl_text()) + '\n'
-            report += ''.join([f'ERROR: {e}\n' for e in self.error_messages])
-            report += ''.join([f'INFO: {e}\n' for e in self.info_messages])
+                report += "\n" + remove_auth_hashes(self.rpsl_obj_new.render_rpsl_text()) + "\n"
+            report += "".join([f"ERROR: {e}\n" for e in self.error_messages])
+            report += "".join([f"INFO: {e}\n" for e in self.info_messages])
         return report
 
     def submitter_report_json(self) -> Dict[str, Union[None, bool, str, List[str]]]:
@@ -187,14 +187,14 @@ class ChangeRequest:
         if self.rpsl_obj_new and not self.error_messages:
             new_object_text = self.rpsl_obj_new.render_rpsl_text()
         return {
-            'successful': self.is_valid(),
-            'type': str(self.request_type.value) if self.request_type else None,
-            'object_class': self.object_class_str(),
-            'rpsl_pk': self.object_pk_str(),
-            'info_messages': self.info_messages,
-            'error_messages': self.error_messages,
-            'new_object_text': remove_auth_hashes(new_object_text),
-            'submitted_object_text': remove_auth_hashes(self.rpsl_text_submitted),
+            "successful": self.is_valid(),
+            "type": str(self.request_type.value) if self.request_type else None,
+            "object_class": self.object_class_str(),
+            "rpsl_pk": self.object_pk_str(),
+            "info_messages": self.info_messages,
+            "error_messages": self.error_messages,
+            "new_object_text": remove_auth_hashes(new_object_text),
+            "submitted_object_text": remove_auth_hashes(self.rpsl_text_submitted),
         }
 
     def notification_target_report(self):
@@ -205,24 +205,24 @@ class ChangeRequest:
         """
         if not self.is_valid() and self.status != UpdateRequestStatus.ERROR_AUTH:
             raise ValueError(
-                'Notification reports can only be made for changes that are valid '
-                'or have failed authorisation.'
+                "Notification reports can only be made for changes that are valid "
+                "or have failed authorisation."
             )
 
-        status = 'succeeded' if self.is_valid() else 'FAILED AUTHORISATION'
-        report = f'{self.request_type_str().title()} {status} for object below: '
-        report += f'[{self.object_class_str()}] {self.object_pk_str()}:\n\n'
+        status = "succeeded" if self.is_valid() else "FAILED AUTHORISATION"
+        report = f"{self.request_type_str().title()} {status} for object below: "
+        report += f"[{self.object_class_str()}] {self.object_pk_str()}:\n\n"
 
         if self.request_type == UpdateRequestType.MODIFY:
             current_text = list(splitline_unicodesafe(self.rpsl_obj_current.render_rpsl_text()))
             new_text = list(splitline_unicodesafe(self.rpsl_obj_new.render_rpsl_text()))
-            diff = list(difflib.unified_diff(current_text, new_text, lineterm=''))
+            diff = list(difflib.unified_diff(current_text, new_text, lineterm=""))
 
-            report += '\n'.join(diff[2:])  # skip the lines from the diff which would have filenames
+            report += "\n".join(diff[2:])  # skip the lines from the diff which would have filenames
             if self.status == UpdateRequestStatus.ERROR_AUTH:
-                report += '\n\n*Rejected* new version of this object:\n\n'
+                report += "\n\n*Rejected* new version of this object:\n\n"
             else:
-                report += '\n\nNew version of this object:\n\n'
+                report += "\n\nNew version of this object:\n\n"
 
         if self.request_type == UpdateRequestType.DELETE:
             report += self.rpsl_obj_current.render_rpsl_text()
@@ -231,13 +231,13 @@ class ChangeRequest:
         return remove_auth_hashes(report)
 
     def request_type_str(self) -> str:
-        return self.request_type.value if self.request_type else 'request'
+        return self.request_type.value if self.request_type else "request"
 
     def object_pk_str(self) -> str:
-        return self.rpsl_obj_new.pk() if self.rpsl_obj_new else '(unreadable object key)'
+        return self.rpsl_obj_new.pk() if self.rpsl_obj_new else "(unreadable object key)"
 
     def object_class_str(self) -> str:
-        return self.rpsl_obj_new.rpsl_object_class if self.rpsl_obj_new else '(unreadable object class)'
+        return self.rpsl_obj_new.rpsl_object_class if self.rpsl_obj_new else "(unreadable object class)"
 
     def notification_targets(self) -> Set[str]:
         """
@@ -250,13 +250,13 @@ class ChangeRequest:
         if self.used_override or not status_qualifies_notification:
             return targets
 
-        mntner_attr = 'upd-to' if self.status == UpdateRequestStatus.ERROR_AUTH else 'mnt-nfy'
+        mntner_attr = "upd-to" if self.status == UpdateRequestStatus.ERROR_AUTH else "mnt-nfy"
         for mntner in self.mntners_notify:
             for email in mntner.parsed_data.get(mntner_attr, []):
                 targets.add(email)
 
         if self.rpsl_obj_current:
-            for email in self.rpsl_obj_current.parsed_data.get('notify', []):
+            for email in self.rpsl_obj_current.parsed_data.get("notify", []):
                 targets.add(email)
 
         return targets
@@ -272,7 +272,7 @@ class ChangeRequest:
             self.info_messages += rules_result.info_messages
             self.error_messages += rules_result.error_messages
             if not rules_result.is_valid():
-                logger.debug(f'{id(self)}: Rules check failed: {rules_result.error_messages}')
+                logger.debug(f"{id(self)}: Rules check failed: {rules_result.error_messages}")
                 self.status = UpdateRequestStatus.ERROR_RULES
                 return False
 
@@ -293,12 +293,12 @@ class ChangeRequest:
         if not auth_result.is_valid():
             self.status = UpdateRequestStatus.ERROR_AUTH
             self.error_messages += auth_result.error_messages
-            logger.debug(f'{id(self)}: Authentication check failed: {list(auth_result.error_messages)}')
+            logger.debug(f"{id(self)}: Authentication check failed: {list(auth_result.error_messages)}")
             return False
 
         self.used_override = auth_result.used_override
 
-        logger.debug(f'{id(self)}: Authentication check succeeded')
+        logger.debug(f"{id(self)}: Authentication check succeeded")
         return True
 
     def _check_references(self) -> bool:
@@ -319,14 +319,14 @@ class ChangeRequest:
 
         if not references_result.is_valid():
             self.error_messages += references_result.error_messages
-            logger.debug(f'{id(self)}: Reference check failed: {list(references_result.error_messages)}')
+            logger.debug(f"{id(self)}: Reference check failed: {list(references_result.error_messages)}")
             if (
                 self.is_valid()
             ):  # Only change the status if this object was valid prior, so this is the first failure
                 self.status = UpdateRequestStatus.ERROR_REFERENCE
             return False
 
-        logger.debug(f'{id(self)}: Reference check succeeded')
+        logger.debug(f"{id(self)}: Reference check succeeded")
         return True
 
     def _check_conflicting_roa(self) -> bool:
@@ -339,7 +339,7 @@ class ChangeRequest:
         assert self.rpsl_obj_new
         if self._cached_roa_validity is not None:
             return self._cached_roa_validity
-        if not get_setting('rpki.roa_source') or not self.rpsl_obj_new.is_route:
+        if not get_setting("rpki.roa_source") or not self.rpsl_obj_new.is_route:
             return True
         # Deletes are permitted for RPKI-invalids, other operations are not
         if self.request_type == UpdateRequestType.DELETE:
@@ -350,10 +350,10 @@ class ChangeRequest:
             self.rpsl_obj_new.prefix, self.rpsl_obj_new.asn_first, self.rpsl_obj_new.source()
         )
         if validation_result == RPKIStatus.invalid:
-            import_timer = get_setting('rpki.roa_import_timer')
-            user_message = 'RPKI ROAs were found that conflict with this object. '
-            user_message += f'(This IRRd refreshes ROAs every {import_timer} seconds.)'
-            logger.debug(f'{id(self)}: Conflicting ROAs found')
+            import_timer = get_setting("rpki.roa_import_timer")
+            user_message = "RPKI ROAs were found that conflict with this object. "
+            user_message += f"(This IRRd refreshes ROAs every {import_timer} seconds.)"
+            logger.debug(f"{id(self)}: Conflicting ROAs found")
             if (
                 self.is_valid()
             ):  # Only change the status if this object was valid prior, so this is first failure
@@ -362,7 +362,7 @@ class ChangeRequest:
             self._cached_roa_validity = False
             return False
         else:
-            logger.debug(f'{id(self)}: No conflicting ROAs found')
+            logger.debug(f"{id(self)}: No conflicting ROAs found")
         self._cached_roa_validity = True
         return True
 
@@ -371,9 +371,9 @@ class ChangeRequest:
             return True
         result, comment = self.scopefilter_validator.validate_rpsl_object(self.rpsl_obj_new)
         if result in [ScopeFilterStatus.out_scope_prefix, ScopeFilterStatus.out_scope_as]:
-            user_message = 'Contains out of scope information: ' + comment
+            user_message = "Contains out of scope information: " + comment
             if self.request_type == UpdateRequestType.CREATE:
-                logger.debug(f'{id(self)}: object out of scope: ' + comment)
+                logger.debug(f"{id(self)}: object out of scope: " + comment)
                 if (
                     self.is_valid()
                 ):  # Only change the status if this object was valid prior, so this is first failure
@@ -426,7 +426,7 @@ class SuspensionRequest:
             self.request_type = getattr(SuspensionRequestType, suspension_state.upper())
         except AttributeError:
             self.status = UpdateRequestStatus.ERROR_PARSING
-            self.error_messages = [f'Unknown suspension type: {suspension_state}']
+            self.error_messages = [f"Unknown suspension type: {suspension_state}"]
             return
 
         try:
@@ -436,8 +436,8 @@ class SuspensionRequest:
             self.error_messages = self.rpsl_obj_new.messages.errors()
             self.info_messages = self.rpsl_obj_new.messages.infos()
             logger.debug(
-                f'{id(self)}: Processing new SuspensionRequest for object {self.rpsl_obj_new}: request'
-                f' {id(self)}'
+                f"{id(self)}: Processing new SuspensionRequest for object {self.rpsl_obj_new}: request"
+                f" {id(self)}"
             )
         except UnknownRPSLObjectClassException as exc:
             self.status = UpdateRequestStatus.ERROR_UNKNOWN_CLASS
@@ -447,20 +447,20 @@ class SuspensionRequest:
             return
 
         source = self.rpsl_obj_new.source()
-        if not get_setting(f'sources.{source}.suspension_enabled'):
+        if not get_setting(f"sources.{source}.suspension_enabled"):
             logger.debug(
-                f'{id(self)}: source of suspension request is {source}, does not have suspension support'
-                ' enabled, request rejected'
+                f"{id(self)}: source of suspension request is {source}, does not have suspension support"
+                " enabled, request rejected"
             )
             self.error_messages.append(
-                f'This instance is not authoritative for source {source} or suspension is not enabled'
+                f"This instance is not authoritative for source {source} or suspension is not enabled"
             )
             self.status = UpdateRequestStatus.ERROR_NON_AUTHORITIVE
             return
 
         if self.rpsl_obj_new.__class__ != RPSLMntner:
-            logger.debug(f'{id(self)}: suspension is for invalid object class, rejected')
-            self.error_messages.append('Suspensions/reactivations can only be done on mntner objects')
+            logger.debug(f"{id(self)}: suspension is for invalid object class, rejected")
+            self.error_messages.append("Suspensions/reactivations can only be done on mntner objects")
             self.status = UpdateRequestStatus.ERROR_PARSING
             return
 
@@ -468,16 +468,16 @@ class SuspensionRequest:
         """Save the state change to the database."""
         mntner: RPSLMntner = self.rpsl_obj_new  # type: ignore
         if self.status != UpdateRequestStatus.PROCESSING or not self.rpsl_obj_new:
-            raise ValueError('SuspensionRequest can only be saved in status PROCESSING')
+            raise ValueError("SuspensionRequest can only be saved in status PROCESSING")
         try:
             if self.request_type == SuspensionRequestType.SUSPEND:
-                logger.info(f'{id(self)}: Suspending mntner {self.rpsl_obj_new}')
+                logger.info(f"{id(self)}: Suspending mntner {self.rpsl_obj_new}")
                 suspended_objects = suspend_for_mntner(self.database_handler, mntner)
                 self.info_messages += [
                     f"Suspended {r['object_class']}/{r['rpsl_pk']}/{r['source']}" for r in suspended_objects
                 ]
             elif self.request_type == SuspensionRequestType.REACTIVATE:
-                logger.info(f'{id(self)}: Reactivating mntner {self.rpsl_obj_new}')
+                logger.info(f"{id(self)}: Reactivating mntner {self.rpsl_obj_new}")
                 (restored, info_messages) = reactivate_for_mntner(self.database_handler, mntner)
                 self.info_messages += info_messages
                 self.info_messages += [f"Restored {r}" for r in restored]
@@ -494,28 +494,28 @@ class SuspensionRequest:
 
     def submitter_report_human(self) -> str:
         """Produce a string suitable for reporting back status and messages to the human submitter."""
-        status = 'succeeded' if self.is_valid() else 'FAILED'
+        status = "succeeded" if self.is_valid() else "FAILED"
 
         report = (
-            f'{self.request_type_str().title()} {status}: [{self.object_class_str()}]'
-            f' {self.object_pk_str()}\n'
+            f"{self.request_type_str().title()} {status}: [{self.object_class_str()}]"
+            f" {self.object_pk_str()}\n"
         )
         if self.info_messages or self.error_messages:
             if self.error_messages:
-                report += '\n' + self.rpsl_text_submitted + '\n'
-            report += ''.join([f'ERROR: {e}\n' for e in self.error_messages])
-            report += ''.join([f'INFO: {e}\n' for e in self.info_messages])
+                report += "\n" + self.rpsl_text_submitted + "\n"
+            report += "".join([f"ERROR: {e}\n" for e in self.error_messages])
+            report += "".join([f"INFO: {e}\n" for e in self.info_messages])
         return report
 
     def submitter_report_json(self) -> Dict[str, Union[None, bool, str, List[str]]]:
         """Produce a dict suitable for reporting back status and messages in JSON."""
         return {
-            'successful': self.is_valid(),
-            'type': str(self.request_type.value) if self.request_type else None,
-            'object_class': self.object_class_str(),
-            'rpsl_pk': self.object_pk_str(),
-            'info_messages': self.info_messages,
-            'error_messages': self.error_messages,
+            "successful": self.is_valid(),
+            "type": str(self.request_type.value) if self.request_type else None,
+            "object_class": self.object_class_str(),
+            "rpsl_pk": self.object_pk_str(),
+            "info_messages": self.info_messages,
+            "error_messages": self.error_messages,
         }
 
     def notification_target_report(self):
@@ -523,13 +523,13 @@ class SuspensionRequest:
         raise NotImplementedError
 
     def request_type_str(self) -> str:
-        return self.request_type.value if self.request_type else 'request'
+        return self.request_type.value if self.request_type else "request"
 
     def object_pk_str(self) -> str:
-        return self.rpsl_obj_new.pk() if self.rpsl_obj_new else '(unreadable object key)'
+        return self.rpsl_obj_new.pk() if self.rpsl_obj_new else "(unreadable object key)"
 
     def object_class_str(self) -> str:
-        return self.rpsl_obj_new.rpsl_object_class if self.rpsl_obj_new else '(unreadable object class)'
+        return self.rpsl_obj_new.rpsl_object_class if self.rpsl_obj_new else "(unreadable object class)"
 
     def notification_targets(self) -> Set[str]:
         # We never message notification targets
@@ -539,9 +539,9 @@ class SuspensionRequest:
         if not self.auth_validator.check_override():
             self.status = UpdateRequestStatus.ERROR_AUTH
             self.error_messages.append("Invalid authentication: override password invalid or missing")
-            logger.debug(f'{id(self)}: Authentication check failed: override did not pass')
+            logger.debug(f"{id(self)}: Authentication check failed: override did not pass")
             return False
-        logger.debug(f'{id(self)}: Authentication check succeeded, override valid')
+        logger.debug(f"{id(self)}: Authentication check succeeded, override valid")
         return True
 
 
@@ -565,13 +565,13 @@ def parse_change_requests(
     passwords = []
     overrides = []
 
-    requests_text = requests_text.replace('\r', '')
-    for object_text in requests_text.split('\n\n'):
+    requests_text = requests_text.replace("\r", "")
+    for object_text in requests_text.split("\n\n"):
         object_text = object_text.strip()
         if not object_text:
             continue
 
-        rpsl_text = ''
+        rpsl_text = ""
         delete_reason = None
         suspension_state = None
 
@@ -580,18 +580,18 @@ def parse_change_requests(
         # object, password/override apply to all included objects.
         # Suspension is a special case that does not use the regular ChangeRequest.
         for line in splitline_unicodesafe(object_text):
-            if line.startswith('password:'):
-                password = line.split(':', maxsplit=1)[1].strip()
+            if line.startswith("password:"):
+                password = line.split(":", maxsplit=1)[1].strip()
                 passwords.append(password)
-            elif line.startswith('override:'):
-                override = line.split(':', maxsplit=1)[1].strip()
+            elif line.startswith("override:"):
+                override = line.split(":", maxsplit=1)[1].strip()
                 overrides.append(override)
-            elif line.startswith('delete:'):
-                delete_reason = line.split(':', maxsplit=1)[1].strip()
-            elif line.startswith('suspension:'):
-                suspension_state = line.split(':', maxsplit=1)[1].strip()
+            elif line.startswith("delete:"):
+                delete_reason = line.split(":", maxsplit=1)[1].strip()
+            elif line.startswith("suspension:"):
+                suspension_state = line.split(":", maxsplit=1)[1].strip()
             else:
-                rpsl_text += line + '\n'
+                rpsl_text += line + "\n"
 
         if not rpsl_text:
             continue

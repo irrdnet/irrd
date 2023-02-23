@@ -17,8 +17,8 @@ from .nrtm_operation import NRTMOperation
 logger = logging.getLogger(__name__)
 nrtm_start_line_re = re.compile(
     (
-        r'^% *START *Version: *(?P<version>\d+) +(?P<source>[\w-]+)'
-        r' +(?P<first_serial>\d+)-(?P<last_serial>\d+)( FILTERED)?\n$'
+        r"^% *START *Version: *(?P<version>\d+) +(?P<source>[\w-]+)"
+        r" +(?P<first_serial>\d+)-(?P<last_serial>\d+)( FILTERED)?\n$"
     ),
     flags=re.MULTILINE,
 )
@@ -31,7 +31,7 @@ class RPSLImportError(Exception):
 
 class MirrorParser:
     def __init__(self):
-        object_class_filter = get_setting(f'sources.{self.source}.object_class_filter')
+        object_class_filter = get_setting(f"sources.{self.source}.object_class_filter")
         if object_class_filter:
             if isinstance(object_class_filter, str):
                 object_class_filter = [object_class_filter]
@@ -40,7 +40,7 @@ class MirrorParser:
             self.object_class_filter = None
 
         self.strict_validation_key_cert = get_setting(
-            f'sources.{self.source}.strict_import_keycert_objects', False
+            f"sources.{self.source}.strict_import_keycert_objects", False
         )
 
 
@@ -99,26 +99,26 @@ class MirrorFileImportParserBase(MirrorParser):
 
             if obj.messages.errors():
                 log_msg = (
-                    f'Parsing errors: {obj.messages.errors()}, original object text follows:\n{rpsl_text}'
+                    f"Parsing errors: {obj.messages.errors()}, original object text follows:\n{rpsl_text}"
                 )
                 if self.direct_error_return:
                     raise RPSLImportError(log_msg)
                 self.database_handler.record_mirror_error(self.source, log_msg)
                 logger.critical(
-                    f'Parsing errors occurred while importing from file for {self.source}. '
-                    'This object is ignored, causing potential data inconsistencies. A new operation for '
-                    'this update, without errors, will still be processed and cause the inconsistency to '
-                    f'be resolved. Parser error messages: {obj.messages.errors()}; '
-                    f'original object text follows:\n{rpsl_text}'
+                    f"Parsing errors occurred while importing from file for {self.source}. "
+                    "This object is ignored, causing potential data inconsistencies. A new operation for "
+                    "this update, without errors, will still be processed and cause the inconsistency to "
+                    f"be resolved. Parser error messages: {obj.messages.errors()}; "
+                    f"original object text follows:\n{rpsl_text}"
                 )
                 self.obj_errors += 1
                 return None
 
             if obj.source() != self.source:
-                msg = f'Invalid source {obj.source()} for object {obj.pk()}, expected {self.source}'
+                msg = f"Invalid source {obj.source()} for object {obj.pk()}, expected {self.source}"
                 if self.direct_error_return:
                     raise RPSLImportError(msg)
-                logger.critical(msg + '. This object is ignored, causing potential data inconsistencies.')
+                logger.critical(msg + ". This object is ignored, causing potential data inconsistencies.")
                 self.database_handler.record_mirror_error(self.source, msg)
                 self.obj_errors += 1
                 return None
@@ -139,11 +139,11 @@ class MirrorFileImportParserBase(MirrorParser):
         except UnknownRPSLObjectClassException as e:
             # Ignore legacy IRRd artifacts
             # https://github.com/irrdnet/irrd4/issues/232
-            if e.rpsl_object_class.startswith('*xx'):
+            if e.rpsl_object_class.startswith("*xx"):
                 self.obj_parsed -= 1  # This object does not exist to us
                 return None
             if self.direct_error_return:
-                raise RPSLImportError(f'Unknown object class: {e.rpsl_object_class}')
+                raise RPSLImportError(f"Unknown object class: {e.rpsl_object_class}")
             self.obj_unknown += 1
             self.unknown_object_classes.add(e.rpsl_object_class)
         return None
@@ -163,14 +163,14 @@ class MirrorFileImportParser(MirrorFileImportParserBase):
     def __init__(self, serial: Optional[int] = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.serial = serial
-        logger.debug(f'Starting file import of {self.source} from {self.filename}')
+        logger.debug(f"Starting file import of {self.source} from {self.filename}")
 
     def run_import(self) -> Optional[str]:
         """
         Run the actual import. If direct_error_return is set, returns an error
         string on encountering the first error. Otherwise, returns None.
         """
-        f = open(self.filename, encoding='utf-8', errors='backslashreplace')
+        f = open(self.filename, encoding="utf-8", errors="backslashreplace")
         for paragraph in split_paragraphs_rpsl(f):
             try:
                 rpsl_obj = self._parse_object(paragraph)
@@ -191,17 +191,17 @@ class MirrorFileImportParser(MirrorFileImportParserBase):
     def log_report(self) -> None:
         obj_successful = self.obj_parsed - self.obj_unknown - self.obj_errors - self.obj_ignored_class
         logger.info(
-            f'File import for {self.source}: {self.obj_parsed} objects read, '
-            f'{obj_successful} objects inserted, '
-            f'ignored {self.obj_errors} due to errors, '
-            f'ignored {self.obj_ignored_class} due to object_class_filter, '
-            f'source {self.filename}'
+            f"File import for {self.source}: {self.obj_parsed} objects read, "
+            f"{obj_successful} objects inserted, "
+            f"ignored {self.obj_errors} due to errors, "
+            f"ignored {self.obj_ignored_class} due to object_class_filter, "
+            f"source {self.filename}"
         )
         if self.obj_unknown:
-            unknown_formatted = ', '.join(self.unknown_object_classes)
+            unknown_formatted = ", ".join(self.unknown_object_classes)
             logger.warning(
-                f'Ignored {self.obj_unknown} objects found in file import for {self.source} due to unknown '
-                f'object classes: {unknown_formatted}'
+                f"Ignored {self.obj_unknown} objects found in file import for {self.source} due to unknown "
+                f"object classes: {unknown_formatted}"
             )
 
 
@@ -221,7 +221,7 @@ class MirrorUpdateFileImportParser(MirrorFileImportParserBase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        logger.debug(f'Starting update import for {self.source} from {self.filename}')
+        logger.debug(f"Starting update import for {self.source} from {self.filename}")
         self.obj_new = 0  # New objects
         self.obj_modified = 0  # Modified objects
         self.obj_retained = 0  # Retained and possibly modified objects
@@ -233,7 +233,7 @@ class MirrorUpdateFileImportParser(MirrorFileImportParserBase):
         string on encountering the first error. Otherwise, returns None.
         """
         objs_from_file = []
-        f = open(self.filename, encoding='utf-8', errors='backslashreplace')
+        f = open(self.filename, encoding="utf-8", errors="backslashreplace")
         for paragraph in split_paragraphs_rpsl(f):
             try:
                 rpsl_obj = self._parse_object(paragraph)
@@ -246,10 +246,10 @@ class MirrorUpdateFileImportParser(MirrorFileImportParserBase):
         f.close()
 
         query = RPSLDatabaseQuery(
-            ordered_by_sources=False, enable_ordering=False, column_names=['rpsl_pk', 'object_class']
+            ordered_by_sources=False, enable_ordering=False, column_names=["rpsl_pk", "object_class"]
         ).sources([self.source])
         current_pks = {
-            (row['rpsl_pk'], row['object_class']) for row in self.database_handler.execute_query(query)
+            (row["rpsl_pk"], row["object_class"]) for row in self.database_handler.execute_query(query)
         }
 
         file_objs_by_pk = {(obj.pk(), obj.rpsl_object_class): obj for obj in objs_from_file}
@@ -278,15 +278,15 @@ class MirrorUpdateFileImportParser(MirrorFileImportParserBase):
         query = RPSLDatabaseQuery(
             ordered_by_sources=False,
             enable_ordering=False,
-            column_names=['rpsl_pk', 'object_class', 'object_text'],
+            column_names=["rpsl_pk", "object_class", "object_text"],
         )
         query = query.sources([self.source])
         for row in self.database_handler.execute_query(query):
             try:
-                file_obj = file_objs_by_pk[(row['rpsl_pk'], row['object_class'])]
+                file_obj = file_objs_by_pk[(row["rpsl_pk"], row["object_class"])]
             except KeyError:
                 continue
-            if file_obj.render_rpsl_text() != remove_last_modified(row['object_text']):
+            if file_obj.render_rpsl_text() != remove_last_modified(row["object_text"]):
                 self.database_handler.upsert_rpsl_object(file_obj, JournalEntryOrigin.synthetic_nrtm)
                 self.obj_modified += 1
 
@@ -296,21 +296,21 @@ class MirrorUpdateFileImportParser(MirrorFileImportParserBase):
     def log_report(self) -> None:
         obj_successful = self.obj_parsed - self.obj_unknown - self.obj_errors - self.obj_ignored_class
         logger.info(
-            f'File update for {self.source}: {self.obj_parsed} objects read, '
-            f'{obj_successful} objects processed, '
-            f'{self.obj_new} objects newly inserted, '
-            f'{self.obj_deleted} objects newly deleted, '
-            f'{self.obj_retained} objects retained, of which '
-            f'{self.obj_modified} modified, '
-            f'ignored {self.obj_errors} due to errors, '
-            f'ignored {self.obj_ignored_class} due to object_class_filter, '
-            f'source {self.filename}'
+            f"File update for {self.source}: {self.obj_parsed} objects read, "
+            f"{obj_successful} objects processed, "
+            f"{self.obj_new} objects newly inserted, "
+            f"{self.obj_deleted} objects newly deleted, "
+            f"{self.obj_retained} objects retained, of which "
+            f"{self.obj_modified} modified, "
+            f"ignored {self.obj_errors} due to errors, "
+            f"ignored {self.obj_ignored_class} due to object_class_filter, "
+            f"source {self.filename}"
         )
         if self.obj_unknown:
-            unknown_formatted = ', '.join(self.unknown_object_classes)
+            unknown_formatted = ", ".join(self.unknown_object_classes)
             logger.warning(
-                f'Ignored {self.obj_unknown} objects found in file import for {self.source} due to unknown '
-                f'object classes: {unknown_formatted}'
+                f"Ignored {self.obj_unknown} objects found in file import for {self.source} due to unknown "
+                f"object classes: {unknown_formatted}"
             )
 
 
@@ -337,7 +337,7 @@ class NRTMStreamParser(MirrorParser):
     def __init__(self, source: str, nrtm_data: str, database_handler: DatabaseHandler) -> None:
         self.source = source
         self.database_handler = database_handler
-        self.rpki_aware = bool(get_setting('rpki.roa_source'))
+        self.rpki_aware = bool(get_setting("rpki.roa_source"))
         super().__init__()
         self.operations: List[NRTMOperation] = []
         self._split_stream(nrtm_data)
@@ -345,31 +345,31 @@ class NRTMStreamParser(MirrorParser):
     def _split_stream(self, data: str) -> None:
         """Split a stream into individual operations."""
         paragraphs = split_paragraphs_rpsl(data, strip_comments=False)
-        last_comment_seen = ''
+        last_comment_seen = ""
 
         for paragraph in paragraphs:
             if self._handle_possible_start_line(paragraph):
                 continue
-            elif paragraph.startswith('%') or paragraph.startswith('#'):
+            elif paragraph.startswith("%") or paragraph.startswith("#"):
                 last_comment_seen = paragraph
-            elif paragraph.startswith('ADD') or paragraph.startswith('DEL'):
+            elif paragraph.startswith("ADD") or paragraph.startswith("DEL"):
                 self._handle_operation(paragraph, paragraphs)
 
-        if self.nrtm_source and last_comment_seen.upper().strip() != f'%END {self.source}':
+        if self.nrtm_source and last_comment_seen.upper().strip() != f"%END {self.source}":
             msg = (
-                f'NRTM stream error for {self.source}: last comment paragraph expected to be '
+                f"NRTM stream error for {self.source}: last comment paragraph expected to be "
                 f'"%END {self.source}", but is actually "{last_comment_seen.upper().strip()}" - '
-                'could be caused by TCP disconnection during NRTM query or mirror server '
-                'returning an error or an otherwise incomplete or invalid response'
+                "could be caused by TCP disconnection during NRTM query or mirror server "
+                "returning an error or an otherwise incomplete or invalid response"
             )
             logger.error(msg)
             self.database_handler.record_mirror_error(self.source, msg)
             raise ValueError(msg)
 
-        if self._current_op_serial > self.last_serial and self.version != '3':
+        if self._current_op_serial > self.last_serial and self.version != "3":
             msg = (
-                f'NRTM stream error for {self.source}: expected operations up to and including serial '
-                f'{self.last_serial}, last operation was {self._current_op_serial}'
+                f"NRTM stream error for {self.source}: expected operations up to and including serial "
+                f"{self.last_serial}, last operation was {self._current_op_serial}"
             )
             logger.error(msg)
             self.database_handler.record_mirror_error(self.source, msg)
@@ -386,35 +386,35 @@ class NRTMStreamParser(MirrorParser):
 
         if self.nrtm_source:  # nrtm_source can only be defined if this is a second START line
             msg = (
-                f'Encountered second START line in NRTM stream, first was {self.source} '
-                f'{self.first_serial}-{self.last_serial}, new line is: {line}'
+                f"Encountered second START line in NRTM stream, first was {self.source} "
+                f"{self.first_serial}-{self.last_serial}, new line is: {line}"
             )
             self.database_handler.record_mirror_error(self.source, msg)
             logger.error(msg)
             raise ValueError(msg)
 
-        self.version = start_line_match.group('version')
-        self.nrtm_source = start_line_match.group('source').upper()
-        self.first_serial = int(start_line_match.group('first_serial'))
-        self.last_serial = int(start_line_match.group('last_serial'))
+        self.version = start_line_match.group("version")
+        self.nrtm_source = start_line_match.group("source").upper()
+        self.first_serial = int(start_line_match.group("first_serial"))
+        self.last_serial = int(start_line_match.group("last_serial"))
 
         if self.source != self.nrtm_source:
             msg = (
-                f'Invalid NRTM source in START line: expected {self.source} but found '
-                f'{self.nrtm_source} in line: {line}'
+                f"Invalid NRTM source in START line: expected {self.source} but found "
+                f"{self.nrtm_source} in line: {line}"
             )
             self.database_handler.record_mirror_error(self.source, msg)
             logger.error(msg)
             raise ValueError(msg)
 
-        if self.version not in ['1', '3']:
-            msg = f'Invalid NRTM version {self.version} in START line: {line}'
+        if self.version not in ["1", "3"]:
+            msg = f"Invalid NRTM version {self.version} in START line: {line}"
             self.database_handler.record_mirror_error(self.source, msg)
             logger.error(msg)
             raise ValueError(msg)
 
         logger.debug(
-            f'Found valid start line for {self.source}, range {self.first_serial}-{self.last_serial}'
+            f"Found valid start line for {self.source}, range {self.first_serial}-{self.last_serial}"
         )
 
         return True
@@ -423,8 +423,8 @@ class NRTMStreamParser(MirrorParser):
         """Handle a single ADD/DEL operation."""
         if not self.nrtm_source:
             msg = (
-                'Encountered operation before valid NRTM START line, paragraph encountered:'
-                f' {current_paragraph}'
+                "Encountered operation before valid NRTM START line, paragraph encountered:"
+                f" {current_paragraph}"
             )
             self.database_handler.record_mirror_error(self.source, msg)
             logger.error(msg)
@@ -435,15 +435,15 @@ class NRTMStreamParser(MirrorParser):
         else:
             self._current_op_serial += 1
 
-        if ' ' in current_paragraph:
-            operation_str, line_serial_str = current_paragraph.split(' ')
+        if " " in current_paragraph:
+            operation_str, line_serial_str = current_paragraph.split(" ")
             line_serial = int(line_serial_str)
             # Gaps are allowed, but the line serial can never be lower, as that
             # means operations are served in the wrong order.
             if line_serial < self._current_op_serial:
                 msg = (
-                    f'Invalid NRTM serial for {self.source}: ADD/DEL has serial {line_serial}, '
-                    f'expected at least {self._current_op_serial}'
+                    f"Invalid NRTM serial for {self.source}: ADD/DEL has serial {line_serial}, "
+                    f"expected at least {self._current_op_serial}"
                 )
                 logger.error(msg)
                 self.database_handler.record_mirror_error(self.source, msg)

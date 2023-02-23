@@ -41,7 +41,7 @@ class BaseDatabaseQuery:
         return self.statement
 
     def __repr__(self):
-        return f'{self.__class__.__name__}: {self.statement}\nPARAMS: {self.statement.compile().params}'
+        return f"{self.__class__.__name__}: {self.statement}\nPARAMS: {self.statement.compile().params}"
 
 
 class BaseRPSLObjectDatabaseQuery(BaseDatabaseQuery):
@@ -117,11 +117,11 @@ class BaseRPSLObjectDatabaseQuery(BaseDatabaseQuery):
 
         if self._enable_ordering:
             order_by = []
-            if 'ip_first' in self.columns:
+            if "ip_first" in self.columns:
                 order_by.append(self.columns.ip_first.asc())
-            if 'asn_first' in self.columns:
+            if "asn_first" in self.columns:
                 order_by.append(self.columns.asn_first.asc())
-            if 'rpsl_pk' in self.columns:
+            if "rpsl_pk" in self.columns:
                 order_by.append(self.columns.rpsl_pk.asc())
 
             if self._ordered_by_sources and self._sources_list:
@@ -142,7 +142,7 @@ class BaseRPSLObjectDatabaseQuery(BaseDatabaseQuery):
 
     def _check_query_frozen(self) -> None:
         if self._query_frozen:
-            raise ValueError('This query was frozen - no more filters can be applied.')
+            raise ValueError("This query was frozen - no more filters can be applied.")
 
 
 class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
@@ -202,7 +202,7 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         attr_names = [attr_name.lower() for attr_name in attr_names]
         for attr_name in attr_names:
             if attr_name not in self.lookup_field_names:
-                raise ValueError(f'Invalid lookup attribute: {attr_name}')
+                raise ValueError(f"Invalid lookup attribute: {attr_name}")
         self._check_query_frozen()
 
         value_filters = []
@@ -212,10 +212,10 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
                 counter = self._lookup_attr_counter
                 self._lookup_attr_counter += 1
                 value_filters.append(
-                    sa.text(f'parsed_data->:lookup_attr_name{counter} ? :lookup_attr_value{counter}')
+                    sa.text(f"parsed_data->:lookup_attr_name{counter} ? :lookup_attr_value{counter}")
                 )
-                statement_params[f'lookup_attr_name{counter}'] = attr_name
-                statement_params[f'lookup_attr_value{counter}'] = attr_value.upper()
+                statement_params[f"lookup_attr_name{counter}"] = attr_name
+                statement_params[f"lookup_attr_value{counter}"] = attr_value.upper()
         fltr = sa.or_(*value_filters)
         self.statement = self.statement.where(fltr).params(**statement_params)
 
@@ -397,7 +397,7 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         if extract_asn_ip:
             try:
                 _, asn = parse_as_number(value)
-                return self.object_classes(['as-block', 'as-set', 'aut-num']).asn_less_specific(asn)
+                return self.object_classes(["as-block", "as-set", "aut-num"]).asn_less_specific(asn)
             except ValidationError:
                 pass
 
@@ -412,22 +412,22 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         fltr = sa.or_(
             self.columns.rpsl_pk == value.upper(),
             sa.and_(
-                self.columns.object_class == 'person',
+                self.columns.object_class == "person",
                 sa.text(f"parsed_data->>'person' ILIKE :lookup_attr_text_search{counter}"),
             ),
             sa.and_(
-                self.columns.object_class == 'role',
+                self.columns.object_class == "role",
                 sa.text(f"parsed_data->>'role' ILIKE :lookup_attr_text_search{counter}"),
             ),
         )
         self.statement = self.statement.where(fltr).params(
-            **{f'lookup_attr_text_search{counter}': '%' + value + '%'}
+            **{f"lookup_attr_text_search{counter}": "%" + value + "%"}
         )
         return self
 
     def _prefix_query_permitted(self):
-        return get_setting('compatibility.inetnum_search_disabled') or (
-            self._set_object_classes and 'inetnum' not in self._set_object_classes
+        return get_setting("compatibility.inetnum_search_disabled") or (
+            self._set_object_classes and "inetnum" not in self._set_object_classes
         )
 
 
@@ -498,8 +498,8 @@ class RPSLDatabaseJournalStatisticsQuery(BaseDatabaseQuery):
     def __init__(self):
         self.statement = sa.select(
             [
-                sa.func.max(self.columns.serial_global).label('max_serial_global'),
-                sa.func.max(self.columns.timestamp).label('max_timestamp'),
+                sa.func.max(self.columns.serial_global).label("max_serial_global"),
+                sa.func.max(self.columns.timestamp).label("max_timestamp"),
             ]
         )
 
@@ -595,7 +595,7 @@ class RPSLDatabaseObjectStatisticsQuery(BaseDatabaseQuery):
             [
                 self.columns.source,
                 self.columns.object_class,
-                sa.func.count(self.columns.pk).label('count'),
+                sa.func.count(self.columns.pk).label("count"),
             ]
         ).group_by(self.columns.source, self.columns.object_class)
 
@@ -622,6 +622,6 @@ class ROADatabaseObjectQuery(BaseDatabaseQuery):
 
     def ip_less_specific_or_exact(self, ip: IP):
         """Filter any less specifics or exact matches of a prefix."""
-        fltr = sa.and_(self.columns.prefix.op('>>=')(str(ip)))
+        fltr = sa.and_(self.columns.prefix.op(">>=")(str(ip)))
         self.statement = self.statement.where(fltr)
         return self

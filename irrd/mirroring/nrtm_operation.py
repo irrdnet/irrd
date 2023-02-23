@@ -54,32 +54,32 @@ class NRTMOperation:
         except UnknownRPSLObjectClassException as exc:
             # Unknown object classes are only logged if they have not been filtered out.
             if not self.object_class_filter or exc.rpsl_object_class.lower() in self.object_class_filter:
-                logger.info(f'Ignoring NRTM operation {str(self)}: {exc}')
+                logger.info(f"Ignoring NRTM operation {str(self)}: {exc}")
             return False
 
         if self.object_class_filter and obj.rpsl_object_class.lower() not in self.object_class_filter:
             return False
 
         if obj.messages.errors():
-            errors = '; '.join(obj.messages.errors())
+            errors = "; ".join(obj.messages.errors())
             logger.critical(
-                f'Parsing errors occurred while processing NRTM operation {str(self)}. '
-                'This operation is ignored, causing potential data inconsistencies. '
-                'A new operation for this update, without errors, '
-                'will still be processed and cause the inconsistency to be resolved. '
-                f'Parser error messages: {errors}; original object text follows:\n{self.object_text}'
+                f"Parsing errors occurred while processing NRTM operation {str(self)}. "
+                "This operation is ignored, causing potential data inconsistencies. "
+                "A new operation for this update, without errors, "
+                "will still be processed and cause the inconsistency to be resolved. "
+                f"Parser error messages: {errors}; original object text follows:\n{self.object_text}"
             )
             database_handler.record_mirror_error(
                 self.source,
-                f'Parsing errors: {obj.messages.errors()}, original object text follows:\n{self.object_text}',
+                f"Parsing errors: {obj.messages.errors()}, original object text follows:\n{self.object_text}",
             )
             return False
 
-        if 'source' in obj.parsed_data and obj.parsed_data['source'].upper() != self.source:
+        if "source" in obj.parsed_data and obj.parsed_data["source"].upper() != self.source:
             msg = (
-                f'Incorrect source in NRTM object: stream has source {self.source}, found object with '
-                f'source {obj.source()} in operation {self.serial}/{self.operation.value}/{obj.pk()}. '
-                'This operation is ignored, causing potential data inconsistencies.'
+                f"Incorrect source in NRTM object: stream has source {self.source}, found object with "
+                f"source {obj.source()} in operation {self.serial}/{self.operation.value}/{obj.pk()}. "
+                "This operation is ignored, causing potential data inconsistencies."
             )
             database_handler.record_mirror_error(self.source, msg)
             logger.critical(msg)
@@ -97,11 +97,11 @@ class NRTMOperation:
                 rpsl_object=obj, origin=JournalEntryOrigin.mirror, source_serial=self.serial
             )
 
-        log = f'Completed NRTM operation {str(self)}/{obj.rpsl_object_class}/{obj.pk()}'
+        log = f"Completed NRTM operation {str(self)}/{obj.rpsl_object_class}/{obj.pk()}"
         if self.rpki_aware and obj.is_route:
-            log += f', RPKI status {obj.rpki_status.value}'
+            log += f", RPKI status {obj.rpki_status.value}"
         logger.info(log)
         return True
 
     def __repr__(self):
-        return f'{self.source}/{self.serial}/{self.operation.value}'
+        return f"{self.source}/{self.serial}/{self.operation.value}"
