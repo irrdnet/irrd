@@ -1,5 +1,3 @@
-# flake8: noqa: W293
-
 import textwrap
 
 import pytest

@@ -1,4 +1,3 @@
-# flake8: noqa: W291, W293
 from itertools import cycle, repeat
 
 import pytest

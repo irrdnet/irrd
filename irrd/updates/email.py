@@ -1,4 +1,3 @@
-# flake8: noqa: W293
 import logging
 import textwrap
 from typing import Optional

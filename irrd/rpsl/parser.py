@@ -71,7 +71,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
     scopefilter_status: ScopeFilterStatus = ScopeFilterStatus.in_scope
     route_preference_status: RoutePreferenceStatus = RoutePreferenceStatus.visible
     pk_asn_segment: Optional[str] = None
-    default_source: Optional[str] = None  # noqa: E704 (flake8 bug)
+    default_source: Optional[str] = None
     # Shortcut for whether this object is a route-like object, and therefore
     # should be included in RPKI and route preference status. Enabled for route/route6.
     is_route = False

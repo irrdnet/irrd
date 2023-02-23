@@ -1,4 +1,3 @@
-# flake8: noqa: W293
 import pytest
 import textwrap
 from unittest.mock import Mock

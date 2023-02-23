@@ -1,5 +1,3 @@
-# flake8: noqa: W291,W293
-
 import socket
 import textwrap
 from datetime import datetime, timezone
