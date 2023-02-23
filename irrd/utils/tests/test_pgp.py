@@ -6,7 +6,7 @@ from ..pgp import validate_pgp_signature
 
 
 class TestValidatePGPSignature:
-    @pytest.mark.usefixtures('tmp_gpg_dir')
+    @pytest.mark.usefixtures("tmp_gpg_dir")
     def test_valid_detached_signed_ascii(self, tmp_gpg_dir, preload_gpg_key):
         message = (
             textwrap.dedent(
@@ -18,7 +18,7 @@ class TestValidatePGPSignature:
         test 1 2 3
         """
             ).strip()
-            + '\n'
+            + "\n"
         )
 
         signature = textwrap.dedent(
@@ -43,9 +43,9 @@ class TestValidatePGPSignature:
         ).strip()
         new_message, fingerprint = validate_pgp_signature(message, signature)
         assert new_message is None
-        assert fingerprint == '86261D8DBEBDA4F54692D64DA8383BA780F238C6'
+        assert fingerprint == "86261D8DBEBDA4F54692D64DA8383BA780F238C6"
 
-    @pytest.mark.usefixtures('tmp_gpg_dir')
+    @pytest.mark.usefixtures("tmp_gpg_dir")
     def test_valid_inline_signed_ascii(self, tmp_gpg_dir, preload_gpg_key):
         message = textwrap.dedent(
             """
@@ -81,10 +81,10 @@ class TestValidatePGPSignature:
         """
         ).strip()
         new_message, fingerprint = validate_pgp_signature(message)
-        assert new_message.strip() == 'test\n1\n\n2\n\n3'
-        assert fingerprint == '86261D8DBEBDA4F54692D64DA8383BA780F238C6'
+        assert new_message.strip() == "test\n1\n\n2\n\n3"
+        assert fingerprint == "86261D8DBEBDA4F54692D64DA8383BA780F238C6"
 
-    @pytest.mark.usefixtures('tmp_gpg_dir')
+    @pytest.mark.usefixtures("tmp_gpg_dir")
     def test_invalid_inline_signed_ascii_multiple_messages(self, tmp_gpg_dir, preload_gpg_key):
         message = textwrap.dedent(
             """
@@ -135,7 +135,7 @@ class TestValidatePGPSignature:
         assert new_message is None
         assert fingerprint is None
 
-    @pytest.mark.usefixtures('tmp_gpg_dir')
+    @pytest.mark.usefixtures("tmp_gpg_dir")
     def test_invalid_signature_detached_signed_ascii(self, tmp_gpg_dir, preload_gpg_key):
         message = (
             textwrap.dedent(
@@ -147,7 +147,7 @@ class TestValidatePGPSignature:
         test 1 2 INVALID
         """
             ).strip()
-            + '\n'
+            + "\n"
         )
         signature = textwrap.dedent(
             """

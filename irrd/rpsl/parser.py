@@ -31,7 +31,7 @@ class RPSLObjectMeta(type):
 
     def __init__(cls, name, bases, clsdict):  # noqa: N805
         super().__init__(name, bases, clsdict)
-        fields = clsdict.get('fields')
+        fields = clsdict.get("fields")
         if fields:
             cls.rpsl_object_class = list(fields.keys())[0]
             cls.pk_fields = [field[0] for field in fields.items() if field[1].primary_key]
@@ -51,7 +51,7 @@ class RPSLObjectMeta(type):
             cls.referring_strong_fields = [
                 (field[0], field[1].referring)
                 for field in fields.items()
-                if hasattr(field[1], 'referring') and getattr(field[1], 'strong')
+                if hasattr(field[1], "referring") and getattr(field[1], "strong")
             ]
 
 
@@ -92,9 +92,9 @@ class RPSLObject(metaclass=RPSLObjectMeta):
     discarded_fields: List[str] = []
     # Fields that are ignored in validation even
     # for authoritative objects (see #587 for example).
-    ignored_validation_fields: List[str] = ['last-modified']
+    ignored_validation_fields: List[str] = ["last-modified"]
 
-    _re_attr_name = re.compile(r'^[a-z0-9_-]+$')
+    _re_attr_name = re.compile(r"^[a-z0-9_-]+$")
 
     def __init__(self, from_text: Optional[str] = None, strict_validation=True, default_source=None) -> None:
         """
@@ -126,14 +126,14 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         composite_values = []
         for field in self.pk_fields:
             composite_values.append(self.parsed_data.get(field, ""))
-        return ''.join(composite_values).upper()
+        return "".join(composite_values).upper()
 
     def source(self) -> str:
         """Shortcut to retrieve object source"""
         try:
-            return self.parsed_data['source']
+            return self.parsed_data["source"]
         except KeyError:
-            raise ValueError('RPSL object has no known source')
+            raise ValueError("RPSL object has no known source")
 
     def ip_version(self) -> Optional[int]:
         """
@@ -177,7 +177,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
 
         for rpsl_object in OBJECT_CLASS_MAPPING.values():
             for field_name, field in rpsl_object.fields.items():
-                if self.rpsl_object_class in getattr(field, 'referring', []) and getattr(field, 'strong'):
+                if self.rpsl_object_class in getattr(field, "referring", []) and getattr(field, "strong"):
                     result.add(field_name)
         return result
 
@@ -189,14 +189,14 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         is authoritative.
         """
         output = ""
-        authoritative = get_setting(f'sources.{self.source()}.authoritative')
+        authoritative = get_setting(f"sources.{self.source()}.authoritative")
         for attr, value, continuation_chars in self._object_data:
-            if authoritative and last_modified and attr == 'last-modified':
+            if authoritative and last_modified and attr == "last-modified":
                 continue
-            attr_display = f'{attr}:'.ljust(RPSL_ATTRIBUTE_TEXT_WIDTH)
+            attr_display = f"{attr}:".ljust(RPSL_ATTRIBUTE_TEXT_WIDTH)
             value_lines = list(splitline_unicodesafe(value))
             if not value_lines:
-                output += f'{attr}:\n'
+                output += f"{attr}:\n"
             for idx, line in enumerate(value_lines):
                 if idx == 0:
                     output += attr_display + line
@@ -204,13 +204,13 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                     continuation_char = continuation_chars[idx - 1]
                     # Override the continuation char for empty lines #298
                     if not line:
-                        continuation_char = '+'
-                    output += continuation_char + (RPSL_ATTRIBUTE_TEXT_WIDTH - 1) * ' ' + line
-                output += '\n'
+                        continuation_char = "+"
+                    output += continuation_char + (RPSL_ATTRIBUTE_TEXT_WIDTH - 1) * " " + line
+                output += "\n"
         if authoritative and last_modified:
-            output += 'last-modified:'.ljust(RPSL_ATTRIBUTE_TEXT_WIDTH)
-            output += last_modified.replace(microsecond=0).isoformat().replace('+00:00', 'Z')
-            output += '\n'
+            output += "last-modified:".ljust(RPSL_ATTRIBUTE_TEXT_WIDTH)
+            output += last_modified.replace(microsecond=0).isoformat().replace("+00:00", "Z")
+            output += "\n"
         return output
 
     def generate_template(self):
@@ -218,21 +218,21 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         template = ""
         max_name_width = max(len(k) for k in self.fields.keys())
         for name, field in self.fields.items():
-            mandatory = '[optional] ' if field.optional else '[mandatory]'
-            single = '[multiple]' if field.multiple else '[single]  '
+            mandatory = "[optional] " if field.optional else "[mandatory]"
+            single = "[multiple]" if field.multiple else "[single]  "
             metadata = []
             if field.primary_key and field.lookup_key:
-                metadata.append('primary/look-up key')
+                metadata.append("primary/look-up key")
             elif field.primary_key:
-                metadata.append('primary key')
+                metadata.append("primary key")
             elif field.lookup_key:
-                metadata.append('look-up key')
-            if getattr(field, 'referring', []):
-                reference_type = 'strong' if getattr(field, 'strong') else 'weak'
-                metadata.append(f'{reference_type} references ' + '/'.join(field.referring))
-            metadata_str = ', '.join(metadata)
-            name_padding = (max_name_width - len(name)) * ' '
-            template += f'{name}: {name_padding}  {mandatory}  {single}  [{metadata_str}]\n'
+                metadata.append("look-up key")
+            if getattr(field, "referring", []):
+                reference_type = "strong" if getattr(field, "strong") else "weak"
+                metadata.append(f"{reference_type} references " + "/".join(field.referring))
+            metadata_str = ", ".join(metadata)
+            name_padding = (max_name_width - len(name)) * " "
+            template += f"{name}: {name_padding}  {mandatory}  {single}  [{metadata_str}]\n"
         return template
 
     def clean(self) -> bool:
@@ -260,7 +260,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         attribute value, and the continuation characters. The continuation
         characters are needed to reconstruct the original object into a string.
         """
-        continuation_chars = (' ', '+', '\t')
+        continuation_chars = (" ", "+", "\t")
         current_attr = None
         current_value = ""
         current_continuation_chars: List[str] = []
@@ -268,7 +268,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         for line_no, line in enumerate(splitline_unicodesafe(text.strip())):
             if not line:
                 self.messages.error(
-                    f'Line {line_no+1}: encountered empty line in the middle of object: [{line}]'
+                    f"Line {line_no+1}: encountered empty line in the middle of object: [{line}]"
                 )
                 return
 
@@ -279,24 +279,24 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                     # the attribute is finished.
                     self._object_data.append((current_attr, current_value, current_continuation_chars))
 
-                if ':' not in line:
+                if ":" not in line:
                     self.messages.error(
-                        f'Line {line_no+1}: line is neither continuation nor valid attribute [{line}]'
+                        f"Line {line_no+1}: line is neither continuation nor valid attribute [{line}]"
                     )
                     return
-                current_attr, current_value = line.split(':', maxsplit=1)
+                current_attr, current_value = line.split(":", maxsplit=1)
                 current_attr = current_attr.lower()
                 current_value = current_value.strip()
                 current_continuation_chars = []
 
                 if current_attr not in self.attrs_allowed and not self._re_attr_name.match(current_attr):
                     self.messages.error(
-                        f'Line {line_no+1}: encountered malformed attribute name: [{current_attr}]'
+                        f"Line {line_no+1}: encountered malformed attribute name: [{current_attr}]"
                     )
                     return
             else:
                 # Whitespace between the continuation character and the start of the data is not significant.
-                current_value += '\n' + line[1:].strip()
+                current_value += "\n" + line[1:].strip()
                 current_continuation_chars += line[0]
         if current_attr and current_attr not in self.discarded_fields:
             self._object_data.append((current_attr, current_value, current_continuation_chars))
@@ -330,12 +330,12 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                     continue
                 if attr_name not in self.attrs_allowed:
                     self.messages.error(
-                        f'Unrecognised attribute {attr_name} on object {self.rpsl_object_class}'
+                        f"Unrecognised attribute {attr_name} on object {self.rpsl_object_class}"
                     )
                 if count > 1 and attr_name not in self.attrs_multiple:
                     self.messages.error(
                         f'Attribute "{attr_name}" on object {self.rpsl_object_class} occurs multiple times,'
-                        ' but is only allowed once'
+                        " but is only allowed once"
                     )
             for attr_required in self.attrs_required:
                 if attr_required not in attrs_present:
@@ -345,7 +345,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         else:
             required_fields = self.pk_fields
             if not self.default_source:
-                required_fields = required_fields + ['source']
+                required_fields = required_fields + ["source"]
             for attr_pk in required_fields:
                 if attr_pk not in attrs_present:
                     self.messages.error(
@@ -377,7 +377,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                 # In all these other cases we pass a new parser messages object to the
                 # field parser, so that we basically discard any errors.
                 raise_errors = (
-                    self.strict_validation or field.primary_key or field.lookup_key or attr_name == 'source'
+                    self.strict_validation or field.primary_key or field.lookup_key or attr_name == "source"
                 )
                 field_messages = self.messages if raise_errors else RPSLParserMessages()
                 parsed_value = field.parse(normalised_value, field_messages, self.strict_validation)
@@ -408,26 +408,26 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                                 self.parsed_data[attr_name] = [parsed_value_str]
                         else:
                             if attr_name in self.parsed_data:
-                                self.parsed_data[attr_name] = '\n' + parsed_value_str
+                                self.parsed_data[attr_name] = "\n" + parsed_value_str
                             else:
                                 self.parsed_data[attr_name] = parsed_value_str
 
                     # Some fields provide additional metadata about the resources to
                     # which this object pertains.
                     if field.primary_key or field.lookup_key:
-                        for attr in 'ip_first', 'ip_last', 'asn_first', 'asn_last', 'prefix', 'prefix_length':
+                        for attr in "ip_first", "ip_last", "asn_first", "asn_last", "prefix", "prefix_length":
                             attr_value = getattr(parsed_value, attr, None)
                             if attr_value:
                                 existing_attr_value = getattr(self, attr, None)
                                 if existing_attr_value and not allow_invalid_metadata:  # pragma: no cover
                                     raise ValueError(
-                                        f'Parsing of {parsed_value.value} reads {attr_value} for {attr},'
-                                        f'but value {existing_attr_value} is already set.'
+                                        f"Parsing of {parsed_value.value} reads {attr_value} for {attr},"
+                                        f"but value {existing_attr_value} is already set."
                                     )
                                 setattr(self, attr, attr_value)
 
-        if 'source' not in self.parsed_data and self.default_source:
-            self.parsed_data['source'] = self.default_source
+        if "source" not in self.parsed_data and self.default_source:
+            self.parsed_data["source"] = self.default_source
 
     def _normalise_rpsl_value(self, value: str) -> str:
         """
@@ -448,15 +448,15 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         normalized_lines = []
         # The shortcuts below are functionally inconsequential, but significantly improve performance,
         # as most values are single line without comments, and this method is called extremely often.
-        if '\n' not in value:
-            if '#' in value:
-                return value.split('#')[0].strip()
+        if "\n" not in value:
+            if "#" in value:
+                return value.split("#")[0].strip()
             return value.strip()
         for line in splitline_unicodesafe(value):
-            parsed_line = line.split('#')[0].strip('\n\t, ')
+            parsed_line = line.split("#")[0].strip("\n\t, ")
             if parsed_line:
                 normalized_lines.append(parsed_line)
-        return ','.join(normalized_lines)
+        return ",".join(normalized_lines)
 
     def _update_attribute_value(self, attribute, new_values):
         """
@@ -471,7 +471,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         """
         if isinstance(new_values, str):
             new_values = [new_values]
-        self.parsed_data[attribute] = '\n'.join(new_values)
+        self.parsed_data[attribute] = "\n".join(new_values)
 
         self._object_data = list(filter(lambda a: a[0] != attribute, self._object_data))
         insert_idx = 1
@@ -480,8 +480,8 @@ class RPSLObject(metaclass=RPSLObjectMeta):
             insert_idx += 1
 
     def __repr__(self):
-        source = self.parsed_data.get('source', '')
-        return f'{self.rpsl_object_class}/{self.pk()}/{source}'
+        source = self.parsed_data.get("source", "")
+        return f"{self.rpsl_object_class}/{self.pk()}/{source}"
 
     def __key(self):
         return self.rpsl_object_class, self.pk(), json.dumps(self.parsed_data, sort_keys=True)

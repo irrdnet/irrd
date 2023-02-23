@@ -25,9 +25,9 @@ def run(data):
         handle_email_submission(data)
     except Exception as exc:
         logger.critical(
-            f'An exception occurred while attempting to process the following email: {data}', exc_info=exc
+            f"An exception occurred while attempting to process the following email: {data}", exc_info=exc
         )
-        print('An internal error occurred while processing this email.')
+        print("An internal error occurred while processing this email.")
 
 
 def main():  # pragma: no cover
@@ -36,10 +36,10 @@ def main():  # pragma: no cover
                      notifications to mntners and others."""
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument(
-        '--config',
-        dest='config_file_path',
+        "--config",
+        dest="config_file_path",
         type=str,
-        help=f'use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})',
+        help=f"use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})",
     )
     args = parser.parse_args()
 
@@ -48,5 +48,5 @@ def main():  # pragma: no cover
     run(sys.stdin.read())
 
 
-if __name__ == '__main__':  # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     main()

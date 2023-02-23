@@ -13,13 +13,13 @@ from irrd.conf import get_setting
 
 logger = logging.getLogger(__name__)
 pgp_inline_re = re.compile(
-    r'-----BEGIN PGP SIGNED MESSAGE-----(\n.+)?\n\n((?s:.+))\n-----BEGIN PGP SIGNATURE-----\n',
+    r"-----BEGIN PGP SIGNED MESSAGE-----(\n.+)?\n\n((?s:.+))\n-----BEGIN PGP SIGNATURE-----\n",
     flags=re.MULTILINE,
 )
 
 
 def get_gpg_instance() -> gnupg.GPG:  # type: ignore
-    keyring = get_setting('auth.gnupg_keyring')
+    keyring = get_setting("auth.gnupg_keyring")
     if not os.path.exists(keyring):
         os.mkdir(keyring)
     return gnupg.GPG(gnupghome=keyring)  # type: ignore
@@ -60,24 +60,24 @@ def validate_pgp_signature(
             data_file.flush()
             result = gpg.verify(detached_signature, data_filename=data_file.name)
 
-    elif message.count('BEGIN PGP SIGNED MESSAGE') == 1:
+    elif message.count("BEGIN PGP SIGNED MESSAGE") == 1:
         result = gpg.verify(message)
-        match = pgp_inline_re.search(message.replace('\r\n', '\n').replace('\r', '\n'))
+        match = pgp_inline_re.search(message.replace("\r\n", "\n").replace("\r", "\n"))
         if not match:  # pragma: no cover
             msg = (
-                'message contained an inline PGP signature, but regular expression failed to extract body:'
-                f' {message}'
+                "message contained an inline PGP signature, but regular expression failed to extract body:"
+                f" {message}"
             )
             logger.info(msg)
             return None, None
-        new_message = match.group(2) + '\n'
+        new_message = match.group(2) + "\n"
 
     else:
         return None, None
 
-    log_message = result.stderr.replace('\n', ' -- ').replace('gpg:                ', '')
-    logger.info(f'checked PGP signature, response: {log_message}')
+    log_message = result.stderr.replace("\n", " -- ").replace("gpg:                ", "")
+    logger.info(f"checked PGP signature, response: {log_message}")
     if result.valid and result.key_status is None:
-        logger.info(f'Found valid PGP signature, fingerprint {result.fingerprint}')
+        logger.info(f"Found valid PGP signature, fingerprint {result.fingerprint}")
         return new_message, result.fingerprint
     return None, None

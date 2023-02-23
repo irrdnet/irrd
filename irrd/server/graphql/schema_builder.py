@@ -43,19 +43,19 @@ def build_executable_schema():
     schema.rpsl_object_type.set_field("mntByObjs", sta(resolve_rpsl_object_mnt_by_objs, False))
     schema.rpsl_object_type.set_field("journal", sta(resolve_rpsl_object_journal, False))
     for object_type in schema.object_types:
-        if 'adminCObjs' in schema.graphql_types[object_type.name]:
+        if "adminCObjs" in schema.graphql_types[object_type.name]:
             object_type.set_field("adminCObjs", sta(resolve_rpsl_object_adminc_objs, False))
     for object_type in schema.object_types:
-        if 'techCObjs' in schema.graphql_types[object_type.name]:
+        if "techCObjs" in schema.graphql_types[object_type.name]:
             object_type.set_field("techCObjs", sta(resolve_rpsl_object_techc_objs, False))
     for object_type in schema.object_types:
-        if 'mbrsByRefObjs' in schema.graphql_types[object_type.name]:
+        if "mbrsByRefObjs" in schema.graphql_types[object_type.name]:
             object_type.set_field("mbrsByRefObjs", sta(resolve_rpsl_object_members_by_ref_objs, False))
     for object_type in schema.object_types:
-        if 'memberOfObjs' in schema.graphql_types[object_type.name]:
+        if "memberOfObjs" in schema.graphql_types[object_type.name]:
             object_type.set_field("memberOfObjs", sta(resolve_rpsl_object_member_of_objs, False))
     for object_type in schema.object_types:
-        if 'membersObjs' in schema.graphql_types[object_type.name]:
+        if "membersObjs" in schema.graphql_types[object_type.name]:
             object_type.set_field("membersObjs", sta(resolve_rpsl_object_members_objs, False))
 
     @schema.asn_scalar_type.value_parser
@@ -63,13 +63,13 @@ def build_executable_schema():
         try:
             return int(value)
         except ValueError:
-            raise GraphQLError(f'Invalid ASN: {value}; must be numeric')
+            raise GraphQLError(f"Invalid ASN: {value}; must be numeric")
 
     @schema.ip_scalar_type.value_parser
     def parse_ip_scalar(value):
         try:
             return IP(value)
         except ValueError as ve:
-            raise GraphQLError(f'Invalid IP: {value}: {clean_ip_value_error(ve)}')
+            raise GraphQLError(f"Invalid IP: {value}: {clean_ip_value_error(ve)}")
 
     return make_executable_schema(schema.type_defs, *schema.object_types)

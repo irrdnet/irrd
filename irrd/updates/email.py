@@ -14,16 +14,16 @@ def handle_email_submission(email_txt: str) -> Optional[ChangeSubmissionHandler]
     try:
         msg = email.EmailParser(email_txt)
         request_meta = {
-            'Message-ID': msg.message_id,
-            'From': msg.message_from,
-            'Date': msg.message_date,
-            'Subject': msg.message_subject,
+            "Message-ID": msg.message_id,
+            "From": msg.message_from,
+            "Date": msg.message_date,
+            "Subject": msg.message_subject,
         }
     except Exception as exc:
         logger.critical(
             (
-                f'An exception occurred while attempting to parse the following update e-mail: {email_txt}\n'
-                f'--- traceback for {exc} follows:'
+                f"An exception occurred while attempting to parse the following update e-mail: {email_txt}\n"
+                f"--- traceback for {exc} follows:"
             ),
             exc_info=exc,
         )
@@ -31,17 +31,17 @@ def handle_email_submission(email_txt: str) -> Optional[ChangeSubmissionHandler]
 
     if not msg.message_from:
         logger.critical(
-            'No from address was found while attempting to parse the following update e-mail - '
-            f'update not processed: {email_txt}\n'
+            "No from address was found while attempting to parse the following update e-mail - "
+            f"update not processed: {email_txt}\n"
         )
         return None
 
     try:
         if not msg.body:
             logger.warning(
-                f'Unable to extract message body from e-mail {msg.message_id} from {msg.message_from}'
+                f"Unable to extract message body from e-mail {msg.message_id} from {msg.message_from}"
             )
-            subject = f'FAILED: {msg.message_subject}'
+            subject = f"FAILED: {msg.message_subject}"
             reply_content = textwrap.dedent(
                 f"""
             Unfortunately, your message with ID {msg.message_id}
@@ -52,24 +52,24 @@ def handle_email_submission(email_txt: str) -> Optional[ChangeSubmissionHandler]
             )
         else:
             handler = ChangeSubmissionHandler().load_text_blob(msg.body, msg.pgp_fingerprint, request_meta)
-            logger.info(f'Processed e-mail {msg.message_id} from {msg.message_from}: {handler.status()}')
+            logger.info(f"Processed e-mail {msg.message_id} from {msg.message_from}: {handler.status()}")
             logger.debug(
-                f'Report for e-mail {msg.message_id} from {msg.message_from}:'
-                f' {handler.submitter_report_human()}'
+                f"Report for e-mail {msg.message_id} from {msg.message_from}:"
+                f" {handler.submitter_report_human()}"
             )
 
-            subject = f'{handler.status()}: {msg.message_subject}'
+            subject = f"{handler.status()}: {msg.message_subject}"
             reply_content = handler.submitter_report_human()
 
     except Exception as exc:
         logger.critical(
             (
-                f'An exception occurred while attempting to process the following update: {email_txt}\n'
-                f'--- traceback for {exc} follows:'
+                f"An exception occurred while attempting to process the following update: {email_txt}\n"
+                f"--- traceback for {exc} follows:"
             ),
             exc_info=exc,
         )
-        subject = f'ERROR: {msg.message_subject}'
+        subject = f"ERROR: {msg.message_subject}"
         reply_content = textwrap.dedent(
             f"""
         Unfortunately, your message with ID {msg.message_id}
@@ -84,8 +84,8 @@ def handle_email_submission(email_txt: str) -> Optional[ChangeSubmissionHandler]
     except Exception as exc:
         logger.critical(
             (
-                'An exception occurred while attempting to send a reply to an update: '
-                f'{subject}\n{reply_content}\n --- traceback for {exc} follows:'
+                "An exception occurred while attempting to send a reply to an update: "
+                f"{subject}\n{reply_content}\n --- traceback for {exc} follows:"
             ),
             exc_info=exc,
         )

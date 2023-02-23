@@ -2,33 +2,33 @@ from typing import List, Optional, TypeVar
 
 from IPy import IP
 
-RPSLParserMessagesType = TypeVar('RPSLParserMessagesType', bound='RPSLParserMessages')
+RPSLParserMessagesType = TypeVar("RPSLParserMessagesType", bound="RPSLParserMessages")
 
 
 class RPSLParserMessages:
-    levels = ['INFO', 'ERROR']
+    levels = ["INFO", "ERROR"]
 
     def __init__(self) -> None:
         self._messages: List[tuple] = []
 
     def __str__(self) -> str:
-        messages_str = [f'{msg[0]}: {msg[1]}' for msg in self._messages]
-        return '\n'.join(messages_str)
+        messages_str = [f"{msg[0]}: {msg[1]}" for msg in self._messages]
+        return "\n".join(messages_str)
 
     def messages(self) -> List[str]:
         return [msg[1] for msg in self._messages]
 
     def infos(self) -> List[str]:
-        return [msg[1] for msg in self._messages if msg[0] == 'INFO']
+        return [msg[1] for msg in self._messages if msg[0] == "INFO"]
 
     def errors(self) -> List[str]:
-        return [msg[1] for msg in self._messages if msg[0] == 'ERROR']
+        return [msg[1] for msg in self._messages if msg[0] == "ERROR"]
 
     def info(self, msg: str) -> None:
-        self._message('INFO', msg)
+        self._message("INFO", msg)
 
     def error(self, msg: str) -> None:
-        self._message('ERROR', msg)
+        self._message("ERROR", msg)
 
     def merge_messages(self, other_messages: RPSLParserMessagesType) -> None:
         self._messages += other_messages._messages

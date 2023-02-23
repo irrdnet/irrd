@@ -11,29 +11,29 @@ from irrd.scopefilter.status import ScopeFilterStatus
 
 
 class DatabaseOperation(enum.Enum):
-    add_or_update = 'ADD'
-    delete = 'DEL'
+    add_or_update = "ADD"
+    delete = "DEL"
 
 
 class JournalEntryOrigin(enum.Enum):
     # Legacy journal entries for which the origin is unknown, can be auth_change or mirror
-    unknown = 'UNKNOWN'
+    unknown = "UNKNOWN"
     # Journal entry received from a mirror by NRTM or importing from a file
-    mirror = 'MIRROR'
+    mirror = "MIRROR"
     # Journal entry generated from synthesized NRTM
-    synthetic_nrtm = 'SYNTHETIC_NRTM'
+    synthetic_nrtm = "SYNTHETIC_NRTM"
     # Journal entry generated from pseudo IRR
-    pseudo_irr = 'PSEUDO_IRR'
+    pseudo_irr = "PSEUDO_IRR"
     # Journal entry caused by a user-submitted change in an authoritative database
-    auth_change = 'AUTH_CHANGE'
+    auth_change = "AUTH_CHANGE"
     # Journal entry caused by a change in in the RPKI status of an object in an authoritative db
-    rpki_status = 'RPKI_STATUS'
+    rpki_status = "RPKI_STATUS"
     # Journal entry caused by a change in the scope filter status
-    scope_filter = 'SCOPE_FILTER'
+    scope_filter = "SCOPE_FILTER"
     # Journal entry caused by an object being suspended or reactivated
-    suspension = 'SUSPENSION'
+    suspension = "SUSPENSION"
     # Journal entry caused by an object's route preference changing between suppressed and visible
-    route_preference = 'ROUTE_PREFERENCE'
+    route_preference = "ROUTE_PREFERENCE"
 
 
 Base = declarative_base()
@@ -47,11 +47,11 @@ class RPSLDatabaseObject(Base):  # type: ignore
     objects - as that can be slower with large queries.
     """
 
-    __tablename__ = 'rpsl_objects'
+    __tablename__ = "rpsl_objects"
 
     # Requires extension pgcrypto
     # in alembic: op.execute('create EXTENSION if not EXISTS 'pgcrypto';')
-    pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text('gen_random_uuid()'), primary_key=True)
+    pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)
     rpsl_pk = sa.Column(sa.String, index=True, nullable=False)
     source = sa.Column(sa.String, index=True, nullable=False)
 
@@ -90,25 +90,25 @@ class RPSLDatabaseObject(Base):  # type: ignore
     def __table_args__(cls):  # noqa
         args = [
             sa.UniqueConstraint(
-                'rpsl_pk', 'source', 'object_class', name='rpsl_objects_rpsl_pk_source_class_unique'
+                "rpsl_pk", "source", "object_class", name="rpsl_objects_rpsl_pk_source_class_unique"
             ),
             sa.Index(
-                'ix_rpsl_objects_ip_first_ip_last',
-                'ip_first',
-                'ip_last',
+                "ix_rpsl_objects_ip_first_ip_last",
+                "ip_first",
+                "ip_last",
             ),
-            sa.Index('ix_rpsl_objects_ip_last_ip_first', 'ip_last', 'ip_first'),
-            sa.Index('ix_rpsl_objects_asn_first_asn_last', 'asn_first', 'asn_last'),
-            sa.Index('ix_rpsl_objects_prefix_gist', sa.text('prefix inet_ops'), postgresql_using='gist'),
+            sa.Index("ix_rpsl_objects_ip_last_ip_first", "ip_last", "ip_first"),
+            sa.Index("ix_rpsl_objects_asn_first_asn_last", "asn_first", "asn_last"),
+            sa.Index("ix_rpsl_objects_prefix_gist", sa.text("prefix inet_ops"), postgresql_using="gist"),
         ]
         for name in lookup_field_names():
-            index_name = 'ix_rpsl_objects_parsed_data_' + name.replace('-', '_')
+            index_name = "ix_rpsl_objects_parsed_data_" + name.replace("-", "_")
             index_on = sa.text(f"(parsed_data->'{name}')")
-            args.append(sa.Index(index_name, index_on, postgresql_using='gin'))
+            args.append(sa.Index(index_name, index_on, postgresql_using="gin"))
         return tuple(args)
 
     def __repr__(self):
-        return f'<{self.rpsl_pk}/{self.source}/{self.pk}>'
+        return f"<{self.rpsl_pk}/{self.source}/{self.pk}>"
 
 
 class RPSLDatabaseJournal(Base):  # type: ignore
@@ -116,11 +116,11 @@ class RPSLDatabaseJournal(Base):  # type: ignore
     SQLAlchemy ORM object for change history of RPSL database objects.
     """
 
-    __tablename__ = 'rpsl_database_journal'
+    __tablename__ = "rpsl_database_journal"
 
     # Requires extension pgcrypto
     # in alembic: op.execute('create EXTENSION if not EXISTS 'pgcrypto';')
-    pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text('gen_random_uuid()'), primary_key=True)
+    pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)
 
     # Serial_journal is intended to allow querying by insertion order.
     # This could almost be met by the timestamp, except that fails in case
@@ -159,12 +159,12 @@ class RPSLDatabaseJournal(Base):  # type: ignore
     def __table_args__(cls):  # noqa
         return (
             sa.UniqueConstraint(
-                'serial_nrtm', 'source', name='rpsl_objects_history_serial_nrtm_source_unique'
+                "serial_nrtm", "source", name="rpsl_objects_history_serial_nrtm_source_unique"
             ),
         )
 
     def __repr__(self):
-        return f'<{self.source}/{self.serial}/{self.operation}/{self.rpsl_pk}>'
+        return f"<{self.source}/{self.serial}/{self.operation}/{self.rpsl_pk}>"
 
 
 class RPSLDatabaseObjectSuspended(Base):  # type: ignore
@@ -172,9 +172,9 @@ class RPSLDatabaseObjectSuspended(Base):  # type: ignore
     SQLAlchemy ORM object for suspended RPSL objects (#577)
     """
 
-    __tablename__ = 'rpsl_objects_suspended'
+    __tablename__ = "rpsl_objects_suspended"
 
-    pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text('gen_random_uuid()'), primary_key=True)
+    pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)
     rpsl_pk = sa.Column(sa.String, index=True, nullable=False)
     source = sa.Column(sa.String, index=True, nullable=False)
 
@@ -187,7 +187,7 @@ class RPSLDatabaseObjectSuspended(Base):  # type: ignore
     original_updated = sa.Column(sa.DateTime(timezone=True), nullable=False)
 
     def __repr__(self):
-        return f'<{self.rpsl_pk}/{self.source}/{self.pk}>'
+        return f"<{self.rpsl_pk}/{self.source}/{self.pk}>"
 
 
 class RPSLDatabaseStatus(Base):  # type: ignore
@@ -198,9 +198,9 @@ class RPSLDatabaseStatus(Base):  # type: ignore
     of configuration parameters.
     """
 
-    __tablename__ = 'database_status'
+    __tablename__ = "database_status"
 
-    pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text('gen_random_uuid()'), primary_key=True)
+    pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)
     source = sa.Column(sa.String, index=True, nullable=False, unique=True)
 
     # The oldest and newest serial_nrtm's seen, for any reason since the last import
@@ -234,9 +234,9 @@ class ROADatabaseObject(Base):  # type: ignore
     SQLAlchemy ORM object for ROA objects.
     """
 
-    __tablename__ = 'roa_object'
+    __tablename__ = "roa_object"
 
-    pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text('gen_random_uuid()'), primary_key=True)
+    pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)
 
     prefix = sa.Column(pg.CIDR, nullable=False)
     asn = sa.Column(sa.BigInteger, nullable=False)
@@ -250,32 +250,32 @@ class ROADatabaseObject(Base):  # type: ignore
     def __table_args__(cls):  # noqa
         args = [
             sa.UniqueConstraint(
-                'prefix', 'asn', 'max_length', 'trust_anchor', name='roa_object_prefix_asn_maxlength_unique'
+                "prefix", "asn", "max_length", "trust_anchor", name="roa_object_prefix_asn_maxlength_unique"
             ),
-            sa.Index('ix_roa_objects_prefix_gist', sa.text('prefix inet_ops'), postgresql_using='gist'),
+            sa.Index("ix_roa_objects_prefix_gist", sa.text("prefix inet_ops"), postgresql_using="gist"),
         ]
         return tuple(args)
 
     def __repr__(self):
-        return f'<{self.prefix}/{self.asn}>'
+        return f"<{self.prefix}/{self.asn}>"
 
 
 # Before you update this, please check the storage documentation for changing lookup fields.
 expected_lookup_field_names = {
-    'admin-c',
-    'tech-c',
-    'zone-c',
-    'member-of',
-    'mnt-by',
-    'role',
-    'members',
-    'person',
-    'mp-members',
-    'origin',
-    'mbrs-by-ref',
+    "admin-c",
+    "tech-c",
+    "zone-c",
+    "member-of",
+    "mnt-by",
+    "role",
+    "members",
+    "person",
+    "mp-members",
+    "origin",
+    "mbrs-by-ref",
 }
 if sorted(lookup_field_names()) != sorted(expected_lookup_field_names):  # pragma: no cover
     raise RuntimeError(
-        'Field names of lookup fields do not match expected set. Indexes may be missing. '
-        f'Expected: {expected_lookup_field_names}, actual: {lookup_field_names()}'
+        "Field names of lookup fields do not match expected set. Indexes may be missing. "
+        f"Expected: {expected_lookup_field_names}, actual: {lookup_field_names()}"
     )

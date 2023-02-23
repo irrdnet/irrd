@@ -30,31 +30,31 @@ def suspend_for_mntner(
     Throws a ValueError if not authoritative for this source or suspended_mntner
     does not exist. Returns database rows for all suspended objects.
     """
-    log_prelude = f'suspension {suspended_mntner.pk()}'
+    log_prelude = f"suspension {suspended_mntner.pk()}"
     source = suspended_mntner.source()
-    if not get_setting(f'sources.{source}.authoritative'):
-        raise ValueError(f'Not authoritative for source {source}')
+    if not get_setting(f"sources.{source}.authoritative"):
+        raise ValueError(f"Not authoritative for source {source}")
 
     logger.info(f"{log_prelude}: Starting suspension for {suspended_mntner}")
 
     @functools.lru_cache(maxsize=50)
     def mntner_active(rpsl_pk: str):
         q = (
-            RPSLDatabaseQuery(column_names=['pk'])
+            RPSLDatabaseQuery(column_names=["pk"])
             .sources([source])
             .rpsl_pk(rpsl_pk)
-            .object_classes(['mntner'])
+            .object_classes(["mntner"])
         )
         return bool(list(database_handler.execute_query(q.first_only())))
 
     # This runs two queries, to account for the suspension of a mntner
     # who is not an mnt-by for itself. In that case, query1 will not retrieve it,
     # but query2 will.
-    query1 = RPSLDatabaseQuery(column_names=['pk', 'rpsl_pk', 'object_class', 'source', 'parsed_data'])
-    query1 = query1.sources([source]).lookup_attr('mnt-by', suspended_mntner.pk())
+    query1 = RPSLDatabaseQuery(column_names=["pk", "rpsl_pk", "object_class", "source", "parsed_data"])
+    query1 = query1.sources([source]).lookup_attr("mnt-by", suspended_mntner.pk())
     query1_result = list(database_handler.execute_query(query1))
-    query2 = RPSLDatabaseQuery(column_names=['pk', 'rpsl_pk', 'object_class', 'source', 'parsed_data'])
-    query2 = query2.sources([source]).rpsl_pk(suspended_mntner.pk()).object_classes(['mntner'])
+    query2 = RPSLDatabaseQuery(column_names=["pk", "rpsl_pk", "object_class", "source", "parsed_data"])
+    query2 = query2.sources([source]).rpsl_pk(suspended_mntner.pk()).object_classes(["mntner"])
     query2_result = list(database_handler.execute_query(query2))
 
     if not query2_result:
@@ -69,9 +69,9 @@ def suspend_for_mntner(
             continue
 
         mntners_active = [
-            m for m in set(row['parsed_data']['mnt-by']) if m != suspended_mntner.pk() and mntner_active(m)
+            m for m in set(row["parsed_data"]["mnt-by"]) if m != suspended_mntner.pk() and mntner_active(m)
         ]
-        if row['rpsl_pk'] != suspended_mntner.pk() and mntners_active:
+        if row["rpsl_pk"] != suspended_mntner.pk() and mntners_active:
             logger.info(
                 f"{log_prelude}: Skipping suspension of {row['object_class']}/{row['rpsl_pk']} because of"
                 f" remaining active mntners {mntners_active}"
@@ -79,7 +79,7 @@ def suspend_for_mntner(
             continue
 
         logger.info(f"{log_prelude}: Suspending {row['object_class']}/{row['rpsl_pk']}")
-        database_handler.suspend_rpsl_object(row['pk'])
+        database_handler.suspend_rpsl_object(row["pk"])
         suspended_objects.append(row)
     return suspended_objects
 
@@ -105,22 +105,22 @@ def reactivate_for_mntner(
     Returns a tuple of all reactivated RPSL objects and a list
     of info messages about reactivated and skipped objects.
     """
-    log_prelude = f'reactivation {reactivated_mntner.pk()}'
+    log_prelude = f"reactivation {reactivated_mntner.pk()}"
     source = reactivated_mntner.source()
     scopefilter_validator = ScopeFilterValidator()
     roa_validator = SingleRouteROAValidator(database_handler)
 
-    if not get_setting(f'sources.{source}.authoritative'):
-        raise ValueError(f'Not authoritative for source {source}')
+    if not get_setting(f"sources.{source}.authoritative"):
+        raise ValueError(f"Not authoritative for source {source}")
 
     logger.info(f"{log_prelude}: Starting reactivation for for {reactivated_mntner}")
 
     def pk_exists(pk: str, rpsl_object_class: str) -> bool:
-        existing_object_query = RPSLDatabaseQuery(column_names=['pk']).sources([source])
+        existing_object_query = RPSLDatabaseQuery(column_names=["pk"]).sources([source])
         existing_object_query = existing_object_query.rpsl_pk(pk).object_classes([rpsl_object_class])
         return bool(list(database_handler.execute_query(existing_object_query)))
 
-    if pk_exists(reactivated_mntner.pk(), 'mntner'):
+    if pk_exists(reactivated_mntner.pk(), "mntner"):
         msg = (
             f"source {source} has a currently active mntner {reactivated_mntner.pk()} - can not restore the"
             " suspended one"
@@ -134,7 +134,7 @@ def reactivate_for_mntner(
         RPSLDatabaseSuspendedQuery()
         .sources([source])
         .rpsl_pk(reactivated_mntner.pk())
-        .object_classes(['mntner'])
+        .object_classes(["mntner"])
     )
     results = list(database_handler.execute_query(query))
 
@@ -151,10 +151,10 @@ def reactivate_for_mntner(
     info_messages: List[str] = []
 
     for result in results:
-        if result['pk'] in restored_row_pk_uuids:
+        if result["pk"] in restored_row_pk_uuids:
             continue
 
-        reactivating_obj = rpsl_object_from_text(result['object_text'], strict_validation=False)
+        reactivating_obj = rpsl_object_from_text(result["object_text"], strict_validation=False)
 
         if pk_exists(reactivating_obj.pk(), reactivating_obj.rpsl_object_class):
             msg = (
@@ -165,15 +165,15 @@ def reactivate_for_mntner(
             continue
 
         reactivating_obj.scopefilter_status, _ = scopefilter_validator.validate_rpsl_object(reactivating_obj)
-        if get_setting('rpki.roa_source') and reactivating_obj.is_route and reactivating_obj.asn_first:
+        if get_setting("rpki.roa_source") and reactivating_obj.is_route and reactivating_obj.asn_first:
             reactivating_obj.rpki_status = roa_validator.validate_route(
                 reactivating_obj.prefix, reactivating_obj.asn_first, source
             )
 
         database_handler.upsert_rpsl_object(
-            reactivating_obj, JournalEntryOrigin.suspension, forced_created_value=result['original_created']
+            reactivating_obj, JournalEntryOrigin.suspension, forced_created_value=result["original_created"]
         )
-        restored_row_pk_uuids.add(result['pk'])
+        restored_row_pk_uuids.add(result["pk"])
         restored_objects.append(reactivating_obj)
         logger.info(f"{log_prelude}: Restoring object {reactivating_obj}")
 

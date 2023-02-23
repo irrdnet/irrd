@@ -102,7 +102,7 @@ class DottedCollection(metaclass=ABCMeta):
         transformed into DottedCollection instances.
         """
         if not isinstance(initial, list) and not isinstance(initial, dict):
-            raise ValueError('initial value must be a list or a dict')
+            raise ValueError("initial value must be a list or a dict")
 
         self._validate_initial(initial)
 
@@ -183,7 +183,7 @@ class DottedList(DottedCollection, collections.abc.MutableSequence):
             return target[alt_index]
 
         else:
-            raise IndexError(f'cannot get {index} in {repr(self.store)}')
+            raise IndexError(f"cannot get {index} in {repr(self.store)}")
 
     def __setitem__(self, index, value):
         if isinstance(index, int) or (isinstance(index, str) and index.isdigit()):
@@ -210,7 +210,7 @@ class DottedList(DottedCollection, collections.abc.MutableSequence):
             self[int(my_index)][alt_index] = DottedCollection.factory(value)
 
         else:
-            raise IndexError('cannot use {} as index in {}'.format(index, repr(self.store)))
+            raise IndexError("cannot use {} as index in {}".format(index, repr(self.store)))
 
     def __delitem__(self, index):
         if isinstance(index, int) or (isinstance(index, str) and index.isdigit()):
@@ -227,7 +227,7 @@ class DottedList(DottedCollection, collections.abc.MutableSequence):
             del target[alt_index]
 
         else:
-            raise IndexError('cannot delete {} in {}'.format(index, repr(self.store)))
+            raise IndexError("cannot delete {} in {}".format(index, repr(self.store)))
 
     def to_python(self):
         """Returns a plain python list and converts to plain python objects all
@@ -270,7 +270,7 @@ class DottedDict(DottedCollection, collections.abc.MutableMapping):
         key = self.__keytransform__(k)
 
         if not isinstance(k, str):
-            raise KeyError('DottedDict keys must be str or unicode')
+            raise KeyError("DottedDict keys must be str or unicode")
         elif not is_dotted_key(key):
             self.store[key] = DottedCollection.factory(value)
         else:
@@ -313,13 +313,13 @@ class DottedDict(DottedCollection, collections.abc.MutableMapping):
     # self.store does not exist before __init__() initializes it
 
     def __setattr__(self, key, value):
-        if key in self.__dict__ or key == 'store':
+        if key in self.__dict__ or key == "store":
             object.__setattr__(self, key, value)
         else:
             self.__setitem__(key, value)
 
     def __delattr__(self, key):
-        if key in self.__dict__ or key == 'store':
+        if key in self.__dict__ or key == "store":
             object.__delattr__(self, key)
         else:
             self.__delitem__(key)

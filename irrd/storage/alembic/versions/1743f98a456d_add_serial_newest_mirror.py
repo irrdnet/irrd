@@ -9,16 +9,16 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = '1743f98a456d'
-down_revision = '181670a62643'
+revision = "1743f98a456d"
+down_revision = "181670a62643"
 branch_labels = None
 depends_on = None
 
 
 def upgrade():
-    op.add_column('database_status', sa.Column('serial_newest_mirror', sa.Integer(), nullable=True))
-    op.execute('UPDATE database_status SET serial_newest_mirror = serial_newest_seen')
+    op.add_column("database_status", sa.Column("serial_newest_mirror", sa.Integer(), nullable=True))
+    op.execute("UPDATE database_status SET serial_newest_mirror = serial_newest_seen")
 
 
 def downgrade():
-    op.drop_column('database_status', 'serial_newest_mirror')
+    op.drop_column("database_status", "serial_newest_mirror")

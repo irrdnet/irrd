@@ -29,9 +29,9 @@ def start_whois_server(uid, gid):  # pragma: no cover
     Start the whois server, listening forever.
     This function does not return, except after SIGTERM is received.
     """
-    setproctitle('irrd-whois-server-listener')
-    address = (get_setting('server.whois.interface'), get_setting('server.whois.port'))
-    logger.info(f'Starting whois server on TCP {address}')
+    setproctitle("irrd-whois-server-listener")
+    address = (get_setting("server.whois.interface"), get_setting("server.whois.port"))
+    logger.info(f"Starting whois server on TCP {address}")
     server = WhoisTCPServer(
         server_address=address,
         uid=uid,
@@ -43,7 +43,7 @@ def start_whois_server(uid, gid):  # pragma: no cover
         nonlocal server
 
         def shutdown(server):
-            logging.info('Whois server shutting down')
+            logging.info("Whois server shutting down")
             server.shutdown()
             server.server_close()
 
@@ -76,7 +76,7 @@ class WhoisTCPServer(socketserver.TCPServer):  # pragma: no cover
 
         self.connection_queue = mp.Queue()
         self.workers = []
-        for i in range(int(get_setting('server.whois.max_connections'))):
+        for i in range(int(get_setting("server.whois.max_connections"))):
             worker = WhoisWorker(self.connection_queue)
             worker.start()
             self.workers.append(worker)
@@ -86,7 +86,7 @@ class WhoisTCPServer(socketserver.TCPServer):  # pragma: no cover
         self.connection_queue.put((request, client_address))
 
     def handle_error(self, request, client_address):
-        logger.error(f'Error while handling request from {client_address}', exc_info=True)
+        logger.error(f"Error while handling request from {client_address}", exc_info=True)
 
     def shutdown(self):
         """
@@ -132,8 +132,8 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
         except Exception as e:
             logger.critical(
                 (
-                    'Whois worker failed to initialise preloader or database, '
-                    f'unable to start, terminating IRRd, traceback follows: {e}'
+                    "Whois worker failed to initialise preloader or database, "
+                    f"unable to start, terminating IRRd, traceback follows: {e}"
                 ),
                 exc_info=e,
             )
@@ -141,12 +141,12 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
             if main_pid:  # pragma: no cover
                 os.kill(int(main_pid), signal.SIGTERM)
             else:
-                logger.error('Failed to terminate IRRd, unable to find main process PID')
+                logger.error("Failed to terminate IRRd, unable to find main process PID")
             return
 
         while True:
             try:
-                setproctitle('irrd-whois-worker')
+                setproctitle("irrd-whois-worker")
                 self.request, self.client_address = self.connection_queue.get()
                 self.setup()
                 self.handle_connection()
@@ -158,7 +158,7 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
                     self.close_request()
                 except Exception:  # pragma: no cover
                     pass
-                logger.error(f'Failed to handle whois connection, traceback follows: {e}', exc_info=e)
+                logger.error(f"Failed to handle whois connection, traceback follows: {e}", exc_info=e)
             if not keep_running:
                 break
 
@@ -183,11 +183,11 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
         When this method returns, the connection is closed.
         """
         client_ip = self.client_address[0]
-        self.client_str = client_ip + ':' + str(self.client_address[1])
-        setproctitle(f'irrd-whois-worker-{self.client_str}')
+        self.client_str = client_ip + ":" + str(self.client_address[1])
+        setproctitle(f"irrd-whois-worker-{self.client_str}")
 
         if not self.is_client_permitted(client_ip):
-            self.wfile.write(b'%% Access denied')
+            self.wfile.write(b"%% Access denied")
             return
 
         self.query_parser = WhoisQueryParser(
@@ -201,11 +201,11 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
             data = self.rfile.readline()
             timer.cancel()
 
-            query = data.decode('utf-8', errors='backslashreplace').strip()
+            query = data.decode("utf-8", errors="backslashreplace").strip()
             if not query:
                 continue
 
-            logger.debug(f'{self.client_str}: processing query: {query}')
+            logger.debug(f"{self.client_str}: processing query: {query}")
 
             if not self.handle_query(query):
                 return
@@ -217,12 +217,12 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
         True when more queries should be read.
         """
         start_time = time.perf_counter()
-        if query.upper() == '!Q':
-            logger.debug(f'{self.client_str}: closed connection per request')
+        if query.upper() == "!Q":
+            logger.debug(f"{self.client_str}: closed connection per request")
             return False
 
         response = self.query_parser.handle_query(query)
-        response_bytes = response.generate_response().encode('utf-8')
+        response_bytes = response.generate_response().encode("utf-8")
         try:
             self.wfile.write(response_bytes)
         except OSError:
@@ -230,12 +230,12 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
 
         elapsed = time.perf_counter() - start_time
         logger.info(
-            f'{self.client_str}: sent answer to query, elapsed {elapsed:.9f}s, '
-            f'{len(response_bytes)} bytes: {query}'
+            f"{self.client_str}: sent answer to query, elapsed {elapsed:.9f}s, "
+            f"{len(response_bytes)} bytes: {query}"
         )
 
         if not self.query_parser.multiple_command_mode:
-            logger.debug(f'{self.client_str}: auto-closed connection')
+            logger.debug(f"{self.client_str}: auto-closed connection")
             return False
         return True
 
@@ -243,4 +243,4 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
         """
         Check whether a client is permitted.
         """
-        return is_client_permitted(ip, 'server.whois.access_list', default_deny=False)
+        return is_client_permitted(ip, "server.whois.access_list", default_deny=False)

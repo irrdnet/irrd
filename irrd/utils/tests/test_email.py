@@ -36,11 +36,11 @@ class TestEmailParser:
         """
         ).strip()
         parser = EmailParser(email)
-        assert parser.body == 'message content'
-        assert parser.message_id == '<1325754288.4989.6.camel@hostname>'
-        assert parser.message_from == 'Sasha <sasha@example.com>'
-        assert parser.message_date == 'Thu, 05 Jan 2018 10:04:48 +0100'
-        assert parser.message_subject == 'my subject'
+        assert parser.body == "message content"
+        assert parser.message_id == "<1325754288.4989.6.camel@hostname>"
+        assert parser.message_from == "Sasha <sasha@example.com>"
+        assert parser.message_date == "Thu, 05 Jan 2018 10:04:48 +0100"
+        assert parser.message_subject == "my subject"
         assert parser.pgp_fingerprint is None
 
     def test_parse_valid_plain_without_charset(self):
@@ -64,7 +64,7 @@ class TestEmailParser:
         """
         ).strip()
         parser = EmailParser(email)
-        assert parser.body == 'message content'
+        assert parser.body == "message content"
         assert parser.pgp_fingerprint is None
 
     def test_parse_valid_multipart_text_plain_with_charset(self):
@@ -103,7 +103,7 @@ class TestEmailParser:
         """
         ).strip()
         parser = EmailParser(email)
-        assert parser.body.strip() == 'test 1 2 3'
+        assert parser.body.strip() == "test 1 2 3"
         assert parser.pgp_fingerprint is None
 
     def test_parse_valid_multipart_quoted_printable_with_charset(self):
@@ -143,7 +143,7 @@ class TestEmailParser:
         """
         ).strip()
         parser = EmailParser(email)
-        assert parser.body.strip() == 'se font vite pédagogues'
+        assert parser.body.strip() == "se font vite pédagogues"
         assert parser.pgp_fingerprint is None
 
     def test_parse_valid_multipart_quoted_printable_without_charset(self):
@@ -185,10 +185,10 @@ class TestEmailParser:
         """
         ).strip()
         parser = EmailParser(email)
-        assert parser.body.strip() == 'se font vite pdagogues'
+        assert parser.body.strip() == "se font vite pdagogues"
         assert parser.pgp_fingerprint is None
 
-    @pytest.mark.usefixtures('tmp_gpg_dir')
+    @pytest.mark.usefixtures("tmp_gpg_dir")
     def test_parse_valid_multipart_signed_ascii(self, tmp_gpg_dir, preload_gpg_key):
         email = textwrap.dedent(
             """
@@ -242,7 +242,7 @@ class TestEmailParser:
         """
         ).strip()
         parser = EmailParser(email)
-        assert parser.body.strip() == 'test 1 2 3'
+        assert parser.body.strip() == "test 1 2 3"
         assert (
             parser._pgp_signature
             == textwrap.dedent(
@@ -265,9 +265,9 @@ class TestEmailParser:
         -----END PGP SIGNATURE-----"""
             ).strip()
         )
-        assert parser.pgp_fingerprint == '86261D8DBEBDA4F54692D64DA8383BA780F238C6'
+        assert parser.pgp_fingerprint == "86261D8DBEBDA4F54692D64DA8383BA780F238C6"
 
-    @pytest.mark.usefixtures('tmp_gpg_dir')
+    @pytest.mark.usefixtures("tmp_gpg_dir")
     def test_parse_invalid_multipart_signed_ascii_with_additional_text_part(
         self, tmp_gpg_dir, preload_gpg_key
     ):
@@ -331,10 +331,10 @@ class TestEmailParser:
         """
         ).strip()
         parser = EmailParser(email)
-        assert parser.body.strip() == 'additional text/plain part - not signed'
+        assert parser.body.strip() == "additional text/plain part - not signed"
         assert parser.pgp_fingerprint is None
 
-    @pytest.mark.usefixtures('tmp_gpg_dir')
+    @pytest.mark.usefixtures("tmp_gpg_dir")
     def test_parse_valid_inline_signed_ascii(self, tmp_gpg_dir, preload_gpg_key):
         email = textwrap.dedent(
             """
@@ -377,10 +377,10 @@ class TestEmailParser:
         """
         ).strip()
         parser = EmailParser(email)
-        assert parser.body.strip() == 'test 1 2 3'
-        assert parser.pgp_fingerprint == '86261D8DBEBDA4F54692D64DA8383BA780F238C6'
+        assert parser.body.strip() == "test 1 2 3"
+        assert parser.pgp_fingerprint == "86261D8DBEBDA4F54692D64DA8383BA780F238C6"
 
-    @pytest.mark.usefixtures('tmp_gpg_dir')
+    @pytest.mark.usefixtures("tmp_gpg_dir")
     def test_parse_invalid_inline_signed_ascii_multiple_messages(self, tmp_gpg_dir, preload_gpg_key):
         email = textwrap.dedent(
             """
@@ -444,7 +444,7 @@ class TestEmailParser:
         parser = EmailParser(email)
         assert parser.pgp_fingerprint is None
 
-    @pytest.mark.usefixtures('tmp_gpg_dir')
+    @pytest.mark.usefixtures("tmp_gpg_dir")
     def test_parse_valid_multipart_signed_unicode(self, tmp_gpg_dir, preload_gpg_key):
         email = textwrap.dedent(
             """
@@ -499,10 +499,10 @@ class TestEmailParser:
         """
         ).strip()
         parser = EmailParser(email)
-        assert parser.body.strip() == 'test 💩 é æ'
-        assert parser.pgp_fingerprint == '86261D8DBEBDA4F54692D64DA8383BA780F238C6'
+        assert parser.body.strip() == "test 💩 é æ"
+        assert parser.pgp_fingerprint == "86261D8DBEBDA4F54692D64DA8383BA780F238C6"
 
-    @pytest.mark.usefixtures('tmp_gpg_dir')
+    @pytest.mark.usefixtures("tmp_gpg_dir")
     def test_parse_invalid_signature_multipart_signed_ascii_bad_signature(self, tmp_gpg_dir, preload_gpg_key):
         email = textwrap.dedent(
             """
@@ -556,7 +556,7 @@ class TestEmailParser:
         """
         ).strip()
         parser = EmailParser(email)
-        assert parser.body.strip() == 'test 1 2 INVALID'
+        assert parser.body.strip() == "test 1 2 INVALID"
         assert parser.pgp_fingerprint is None
 
     def test_invalid_blank_body(self):
@@ -586,24 +586,24 @@ class TestEmailParser:
 class TestSendEmail:
     def test_send_email(self, monkeypatch):
         mock_smtp = Mock()
-        monkeypatch.setattr('irrd.utils.email.SMTP', lambda server: mock_smtp)
-        send_email('Sasha <sasha@example.com>', 'subject', 'body')
-        assert mock_smtp.mock_calls[0][0] == 'send_message'
-        assert mock_smtp.mock_calls[0][1][0]['From'] == get_setting('email.from')
-        assert mock_smtp.mock_calls[0][1][0]['To'] == 'Sasha <sasha@example.com>'
-        assert mock_smtp.mock_calls[0][1][0]['Subject'] == 'subject'
+        monkeypatch.setattr("irrd.utils.email.SMTP", lambda server: mock_smtp)
+        send_email("Sasha <sasha@example.com>", "subject", "body")
+        assert mock_smtp.mock_calls[0][0] == "send_message"
+        assert mock_smtp.mock_calls[0][1][0]["From"] == get_setting("email.from")
+        assert mock_smtp.mock_calls[0][1][0]["To"] == "Sasha <sasha@example.com>"
+        assert mock_smtp.mock_calls[0][1][0]["Subject"] == "subject"
         payload = mock_smtp.mock_calls[0][1][0].get_payload()
-        assert 'body' in payload
-        assert 'IRRd version' in payload
-        assert get_setting('email.footer') in payload
-        assert mock_smtp.mock_calls[1][0] == 'quit'
+        assert "body" in payload
+        assert "IRRd version" in payload
+        assert get_setting("email.footer") in payload
+        assert mock_smtp.mock_calls[1][0] == "quit"
 
     def test_send_email_with_recipient_override(self, monkeypatch, config_override):
-        config_override({'email': {'recipient_override': 'override@example.com'}})
+        config_override({"email": {"recipient_override": "override@example.com"}})
         mock_smtp = Mock()
-        monkeypatch.setattr('irrd.utils.email.SMTP', lambda server: mock_smtp)
-        send_email('Sasha <sasha@example.com>', 'subject', 'body')
-        assert mock_smtp.mock_calls[0][0] == 'send_message'
-        assert mock_smtp.mock_calls[0][1][0]['From'] == get_setting('email.from')
-        assert mock_smtp.mock_calls[0][1][0]['To'] == 'override@example.com'
-        assert mock_smtp.mock_calls[0][1][0]['Subject'] == 'subject'
+        monkeypatch.setattr("irrd.utils.email.SMTP", lambda server: mock_smtp)
+        send_email("Sasha <sasha@example.com>", "subject", "body")
+        assert mock_smtp.mock_calls[0][0] == "send_message"
+        assert mock_smtp.mock_calls[0][1][0]["From"] == get_setting("email.from")
+        assert mock_smtp.mock_calls[0][1][0]["To"] == "override@example.com"
+        assert mock_smtp.mock_calls[0][1][0]["Subject"] == "subject"

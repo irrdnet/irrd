@@ -16,8 +16,8 @@ from ..importer import ROADataImporter, ROAParserException
 @pytest.fixture()
 def mock_scopefilter(monkeypatch):
     mock_scopefilter = Mock(spec=ScopeFilterValidator)
-    monkeypatch.setattr('irrd.rpki.importer.ScopeFilterValidator', lambda: mock_scopefilter)
-    mock_scopefilter.validate_rpsl_object = lambda obj: (ScopeFilterStatus.out_scope_as, '')
+    monkeypatch.setattr("irrd.rpki.importer.ScopeFilterValidator", lambda: mock_scopefilter)
+    mock_scopefilter.validate_rpsl_object = lambda obj: (ScopeFilterStatus.out_scope_as, "")
 
 
 class TestROAImportProcess:
@@ -122,78 +122,78 @@ class TestROAImportProcess:
         roa_importer = ROADataImporter(rpki_data, slurm_data, mock_dh)
         assert flatten_mock_calls(mock_dh, flatten_objects=True) == [
             [
-                'insert_roa_object',
+                "insert_roa_object",
                 (),
                 {
-                    'ip_version': 4,
-                    'prefix_str': '192.0.2.0/24',
-                    'asn': 64496,
-                    'max_length': 26,
-                    'trust_anchor': 'APNIC RPKI Root',
+                    "ip_version": 4,
+                    "prefix_str": "192.0.2.0/24",
+                    "asn": 64496,
+                    "max_length": 26,
+                    "trust_anchor": "APNIC RPKI Root",
                 },
             ],
             [
-                'upsert_rpsl_object',
-                ('route/192.0.2.0/24AS64496/ML26/RPKI', 'JournalEntryOrigin.pseudo_irr'),
-                {'rpsl_guaranteed_no_existing': True},
+                "upsert_rpsl_object",
+                ("route/192.0.2.0/24AS64496/ML26/RPKI", "JournalEntryOrigin.pseudo_irr"),
+                {"rpsl_guaranteed_no_existing": True},
             ],
             [
-                'insert_roa_object',
+                "insert_roa_object",
                 (),
                 {
-                    'ip_version': 6,
-                    'prefix_str': '2001:db8::/32',
-                    'asn': 64497,
-                    'max_length': 40,
-                    'trust_anchor': 'RIPE NCC RPKI Root',
+                    "ip_version": 6,
+                    "prefix_str": "2001:db8::/32",
+                    "asn": 64497,
+                    "max_length": 40,
+                    "trust_anchor": "RIPE NCC RPKI Root",
                 },
             ],
             [
-                'upsert_rpsl_object',
-                ('route6/2001:db8::/32AS64497/ML40/RPKI', 'JournalEntryOrigin.pseudo_irr'),
-                {'rpsl_guaranteed_no_existing': True},
+                "upsert_rpsl_object",
+                ("route6/2001:db8::/32AS64497/ML40/RPKI", "JournalEntryOrigin.pseudo_irr"),
+                {"rpsl_guaranteed_no_existing": True},
             ],
             [
-                'insert_roa_object',
+                "insert_roa_object",
                 (),
                 {
-                    'ip_version': 4,
-                    'prefix_str': '198.51.100.0/24',
-                    'asn': 64496,
-                    'max_length': 24,
-                    'trust_anchor': 'SLURM file',
+                    "ip_version": 4,
+                    "prefix_str": "198.51.100.0/24",
+                    "asn": 64496,
+                    "max_length": 24,
+                    "trust_anchor": "SLURM file",
                 },
             ],
             [
-                'upsert_rpsl_object',
-                ('route/198.51.100.0/24AS64496/ML24/RPKI', 'JournalEntryOrigin.pseudo_irr'),
-                {'rpsl_guaranteed_no_existing': True},
+                "upsert_rpsl_object",
+                ("route/198.51.100.0/24AS64496/ML24/RPKI", "JournalEntryOrigin.pseudo_irr"),
+                {"rpsl_guaranteed_no_existing": True},
             ],
             [
-                'insert_roa_object',
+                "insert_roa_object",
                 (),
                 {
-                    'ip_version': 6,
-                    'prefix_str': '2001:db8::/32',
-                    'asn': 64497,
-                    'max_length': 48,
-                    'trust_anchor': 'SLURM file',
+                    "ip_version": 6,
+                    "prefix_str": "2001:db8::/32",
+                    "asn": 64497,
+                    "max_length": 48,
+                    "trust_anchor": "SLURM file",
                 },
             ],
             [
-                'upsert_rpsl_object',
-                ('route6/2001:db8::/32AS64497/ML48/RPKI', 'JournalEntryOrigin.pseudo_irr'),
-                {'rpsl_guaranteed_no_existing': True},
+                "upsert_rpsl_object",
+                ("route6/2001:db8::/32AS64497/ML48/RPKI", "JournalEntryOrigin.pseudo_irr"),
+                {"rpsl_guaranteed_no_existing": True},
             ],
         ]
 
         assert roa_importer.roa_objs[0]._rpsl_object.scopefilter_status == ScopeFilterStatus.out_scope_as
         assert roa_importer.roa_objs[0]._rpsl_object.source() == RPKI_IRR_PSEUDO_SOURCE
         assert roa_importer.roa_objs[0]._rpsl_object.parsed_data == {
-            'origin': 'AS64496',
-            'route': '192.0.2.0/24',
-            'rpki_max_length': 26,
-            'source': 'RPKI',
+            "origin": "AS64496",
+            "route": "192.0.2.0/24",
+            "rpki_max_length": 26,
+            "source": "RPKI",
         }
         assert (
             roa_importer.roa_objs[0]._rpsl_object.render_rpsl_text()
@@ -209,18 +209,18 @@ class TestROAImportProcess:
             source:         RPKI  # Trust Anchor: APNIC RPKI Root
             """
             ).strip()
-            + '\n'
+            + "\n"
         )
 
     def test_invalid_rpki_json(self, monkeypatch, mock_scopefilter):
         mock_dh = Mock(spec=DatabaseHandler)
 
         with pytest.raises(ROAParserException) as rpe:
-            ROADataImporter('invalid', None, mock_dh)
+            ROADataImporter("invalid", None, mock_dh)
 
-        assert 'Unable to parse ROA input: invalid JSON: Expected object or value' in str(rpe.value)
+        assert "Unable to parse ROA input: invalid JSON: Expected object or value" in str(rpe.value)
 
-        data = ujson.dumps({'invalid root': 42})
+        data = ujson.dumps({"invalid root": 42})
         with pytest.raises(ROAParserException) as rpe:
             ROADataImporter(data, None, mock_dh)
         assert 'Unable to parse ROA input: root key "roas" not found' in str(rpe.value)
@@ -248,7 +248,7 @@ class TestROAImportProcess:
         )
         with pytest.raises(ROAParserException) as rpe:
             ROADataImporter(data, None, mock_dh)
-        assert 'Invalid AS number ASX: number part is not numeric' in str(rpe.value)
+        assert "Invalid AS number ASX: number part is not numeric" in str(rpe.value)
 
         data = ujson.dumps({"roas": [{"prefix": "192.0.2.0/24", "maxLength": 24, "ta": "APNIC RPKI Root"}]})
         with pytest.raises(ROAParserException) as rpe:
@@ -260,18 +260,18 @@ class TestROAImportProcess:
         )
         with pytest.raises(ROAParserException) as rpe:
             ROADataImporter(data, None, mock_dh)
-        assert 'Invalid ROA: prefix size 24 is smaller than max length 22' in str(rpe.value)
+        assert "Invalid ROA: prefix size 24 is smaller than max length 22" in str(rpe.value)
 
         data = ujson.dumps(
             {
                 "roas": [
-                    {"asn": "AS64496", "prefix": "192.0.2.0/24", "maxLength": 'xx', "ta": "APNIC RPKI Root"}
+                    {"asn": "AS64496", "prefix": "192.0.2.0/24", "maxLength": "xx", "ta": "APNIC RPKI Root"}
                 ]
             }
         )
         with pytest.raises(ROAParserException) as rpe:
             ROADataImporter(data, None, mock_dh)
-        assert 'xx' in str(rpe.value)
+        assert "xx" in str(rpe.value)
 
         assert flatten_mock_calls(mock_dh) == []
 
@@ -281,4 +281,4 @@ class TestROAImportProcess:
         with pytest.raises(ROAParserException) as rpe:
             ROADataImporter('{"roas": []}', '{"slurmVersion": 2}', mock_dh)
 
-        assert 'SLURM data has invalid version: 2' in str(rpe.value)
+        assert "SLURM data has invalid version: 2" in str(rpe.value)

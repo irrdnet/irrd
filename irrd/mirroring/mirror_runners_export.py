@@ -36,54 +36,54 @@ class SourceExportRunner:
     def run(self) -> None:
         self.database_handler = DatabaseHandler()
         try:
-            export_destination = get_setting(f'sources.{self.source}.export_destination')
+            export_destination = get_setting(f"sources.{self.source}.export_destination")
             if export_destination:
-                logger.info(f'Starting a source export for {self.source} to {export_destination}')
+                logger.info(f"Starting a source export for {self.source} to {export_destination}")
                 self._export(export_destination)
 
             export_destination_unfiltered = get_setting(
-                f'sources.{self.source}.export_destination_unfiltered'
+                f"sources.{self.source}.export_destination_unfiltered"
             )
             if export_destination_unfiltered:
                 logger.info(
-                    f'Starting an unfiltered source export for {self.source} '
-                    f'to {export_destination_unfiltered}'
+                    f"Starting an unfiltered source export for {self.source} "
+                    f"to {export_destination_unfiltered}"
                 )
                 self._export(export_destination_unfiltered, remove_auth_hashes=False)
 
             self.database_handler.commit()
         except Exception as exc:
             logger.error(
-                f'An exception occurred while attempting to run an export for {self.source}: {exc}',
+                f"An exception occurred while attempting to run an export for {self.source}: {exc}",
                 exc_info=exc,
             )
         finally:
             self.database_handler.close()
 
     def _export(self, export_destination, remove_auth_hashes=True):
-        filename_export = Path(export_destination) / f'{self.source.lower()}.db.gz'
+        filename_export = Path(export_destination) / f"{self.source.lower()}.db.gz"
         export_tmpfile = NamedTemporaryFile(delete=False)
-        filename_serial = Path(export_destination) / f'{self.source.upper()}.CURRENTSERIAL'
+        filename_serial = Path(export_destination) / f"{self.source.upper()}.CURRENTSERIAL"
 
         query = DatabaseStatusQuery().source(self.source)
 
         try:
-            serial = next(self.database_handler.execute_query(query))['serial_newest_seen']
+            serial = next(self.database_handler.execute_query(query))["serial_newest_seen"]
         except StopIteration:
             serial = None
 
-        with gzip.open(export_tmpfile.name, 'wb') as fh:
+        with gzip.open(export_tmpfile.name, "wb") as fh:
             query = RPSLDatabaseQuery().sources([self.source])
             query = query.rpki_status([RPKIStatus.not_found, RPKIStatus.valid])
             query = query.scopefilter_status([ScopeFilterStatus.in_scope])
             query = query.route_preference_status([RoutePreferenceStatus.visible])
             for obj in self.database_handler.execute_query(query):
-                object_text = obj['object_text']
+                object_text = obj["object_text"]
                 if remove_auth_hashes:
                     object_text = remove_auth_hashes_func(object_text)
-                object_bytes = object_text.encode('utf-8')
-                fh.write(object_bytes + b'\n')
-            fh.write(b'# EOF\n')
+                object_bytes = object_text.encode("utf-8")
+                fh.write(object_bytes + b"\n")
+            fh.write(b"# EOF\n")
 
         os.chmod(export_tmpfile.name, EXPORT_PERMISSIONS)
         if filename_export.exists():
@@ -93,12 +93,12 @@ class SourceExportRunner:
         shutil.move(export_tmpfile.name, filename_export)
 
         if serial is not None:
-            with open(filename_serial, 'w') as fh:
+            with open(filename_serial, "w") as fh:
                 fh.write(str(serial))
             os.chmod(filename_serial, EXPORT_PERMISSIONS)
 
         self.database_handler.record_serial_exported(self.source, serial)
         logger.info(
-            f'Export for {self.source} complete at serial {serial}, stored in {filename_export} /'
-            f' {filename_serial}'
+            f"Export for {self.source} complete at serial {serial}, stored in {filename_export} /"
+            f" {filename_serial}"
         )

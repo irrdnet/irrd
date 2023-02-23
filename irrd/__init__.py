@@ -1,2 +1,2 @@
-__version__ = '4.4-dev'
-ENV_MAIN_PROCESS_PID = 'IRRD_MAIN_PROCESS_PID'
+__version__ = "4.4-dev"
+ENV_MAIN_PROCESS_PID = "IRRD_MAIN_PROCESS_PID"
