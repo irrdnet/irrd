@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
 
 
 class StatusGenerator:
-
     def generate_status(self) -> str:
         """
         Generate a human-readable overview of database status.
@@ -31,7 +30,7 @@ class StatusGenerator:
         results = [
             self._generate_header(),
             self._generate_statistics_table(),
-            self._generate_source_detail(database_handler)
+            self._generate_source_detail(database_handler),
         ]
         database_handler.close()
         return '\n\n'.join(results)
@@ -41,10 +40,12 @@ class StatusGenerator:
         Generate the header of the report, containing basic info like version
         and time until the next mirror update.
         """
-        return textwrap.dedent(f"""
+        return textwrap.dedent(
+            f"""
         IRRD version {__version__}
         Listening on {get_setting('server.whois.interface')} port {get_setting('server.whois.port')}
-        """).lstrip()
+        """
+        ).lstrip()
 
     def _generate_statistics_table(self) -> str:
         """
@@ -103,9 +104,13 @@ class StatusGenerator:
             keep_journal = 'Yes' if get_setting(f'sources.{source}.keep_journal') else 'No'
             authoritative = 'Yes' if get_setting(f'sources.{source}.authoritative') else 'No'
             object_class_filter = get_setting(f'sources.{source}.object_class_filter')
-            rpki_enabled = get_setting('rpki.roa_source') and not get_setting(f'sources.{source}.rpki_excluded')
+            rpki_enabled = get_setting('rpki.roa_source') and not get_setting(
+                f'sources.{source}.rpki_excluded'
+            )
             rpki_enabled_str = 'Yes' if rpki_enabled else 'No'
-            scopefilter_enabled = get_setting('scopefilter') and not get_setting(f'sources.{source}.scopefilter_excluded')
+            scopefilter_enabled = get_setting('scopefilter') and not get_setting(
+                f'sources.{source}.scopefilter_excluded'
+            )
             scopefilter_enabled_str = 'Yes' if scopefilter_enabled else 'No'
             synchronised_serials_str = 'Yes' if is_serial_synchronised(database_handler, source) else 'No'
             route_object_preference = get_setting(f'sources.{source}.route_object_preference')
@@ -116,7 +121,8 @@ class StatusGenerator:
             remote_information = self._generate_remote_status_info(nrtm_host, nrtm_port, source)
             remote_information = textwrap.indent(remote_information, ' ' * 16)
 
-            result_txt += textwrap.dedent(f"""
+            result_txt += textwrap.dedent(
+                f"""
             Status for {source}
             -------------------
             Local information:
@@ -137,7 +143,8 @@ class StatusGenerator:
                 Route object preference: {route_object_preference}
 
             Remote information:{remote_information}
-            """)
+            """
+            )
         return result_txt
 
     def _generate_remote_status_info(self, nrtm_host: Optional[str], nrtm_port: int, source: str) -> str:
@@ -154,24 +161,32 @@ class StatusGenerator:
                 mirrorable, mirror_serial_oldest, mirror_serial_newest, mirror_export_serial = source_status
                 mirrorable_str = 'Yes' if mirrorable else 'No'
 
-                return textwrap.dedent(f"""
+                return textwrap.dedent(
+                    f"""
                     NRTM host: {nrtm_host} port {nrtm_port}
                     Mirrorable: {mirrorable_str}
                     Oldest journal serial number: {mirror_serial_oldest}
                     Newest journal serial number: {mirror_serial_newest}
                     Last export at serial number: {mirror_export_serial}
-                    """)
+                    """
+                )
             except ValueError:
-                return textwrap.dedent(f"""
+                return textwrap.dedent(
+                    f"""
                     NRTM host: {nrtm_host} port {nrtm_port}
                     Remote status query unsupported or query failed
-                    """)
+                    """
+                )
             except (socket.timeout, ConnectionError):
-                return textwrap.dedent(f"""
+                return textwrap.dedent(
+                    f"""
                     NRTM host: {nrtm_host} port {nrtm_port}
                     Unable to reach remote server for status query
-                    """)
+                    """
+                )
         else:
-            return textwrap.dedent("""
+            return textwrap.dedent(
+                """
                 No NRTM host configured.
-                """)
+                """
+            )

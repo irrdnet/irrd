@@ -45,7 +45,8 @@ class SchemaGenerator:
         self._set_enums()
 
         schema = self.enums
-        schema += """
+        schema += (
+            """
             scalar ASN
             scalar IP
 
@@ -54,7 +55,9 @@ class SchemaGenerator:
             }
 
             type Query {
-              rpslObjects(""" + self.rpsl_query_fields + """): [RPSLObject!]
+              rpslObjects("""
+            + self.rpsl_query_fields
+            + """): [RPSLObject!]
               databaseStatus(sources: [String!]): [DatabaseStatus]
               asnPrefixes(asns: [ASN!]!, ipVersion: Int, sources: [String!]): [ASNPrefixes!]
               asSetPrefixes(setNames: [String!]!, ipVersion: Int, sources: [String!], excludeSets: [String!], sqlTrace: Boolean): [AsSetPrefixes!]
@@ -104,6 +107,7 @@ class SchemaGenerator:
                 members: [String!]
             }
         """
+        )
         schema += self.rpsl_object_interface_schema
         schema += self.rpsl_contact_schema
         schema += ''.join(self.rpsl_object_schemas.values())
@@ -116,8 +120,13 @@ class SchemaGenerator:
         self.rpsl_contact_union_type = ariadne.UnionType("RPSLContactUnion")
         self.asn_scalar_type = ariadne.ScalarType("ASN")
         self.ip_scalar_type = ariadne.ScalarType("IP")
-        self.object_types = [self.query_type, self.rpsl_object_type, self.rpsl_contact_union_type,
-                             self.asn_scalar_type, self.ip_scalar_type]
+        self.object_types = [
+            self.query_type,
+            self.rpsl_object_type,
+            self.rpsl_contact_union_type,
+            self.asn_scalar_type,
+            self.ip_scalar_type,
+        ]
 
         for name in self.rpsl_object_schemas.keys():
             self.object_types.append(ariadne.ObjectType(name))
@@ -201,8 +210,7 @@ class SchemaGenerator:
                 rpsl_field = RPSLPerson.fields[field_name]
                 graphql_type = self._graphql_type_for_rpsl_field(rpsl_field)
 
-                reference_name, reference_type = self._grapql_type_for_reference_field(
-                    field_name, rpsl_field)
+                reference_name, reference_type = self._grapql_type_for_reference_field(field_name, rpsl_field)
                 if reference_name and reference_type:
                     common_field_dict[reference_name] = reference_type
             except KeyError:
@@ -266,7 +274,9 @@ class SchemaGenerator:
             return '[String!]'
         return 'String'
 
-    def _grapql_type_for_reference_field(self, field_name: str, rpsl_field: RPSLTextField) -> Tuple[Optional[str], Optional[str]]:
+    def _grapql_type_for_reference_field(
+        self, field_name: str, rpsl_field: RPSLTextField
+    ) -> Tuple[Optional[str], Optional[str]]:
         """
         Return the GraphQL name and type for a reference field.
         For example, for a field "admin-c" that refers to person/role,
@@ -289,7 +299,9 @@ class SchemaGenerator:
             return graphql_name, graphql_type
         return None, None
 
-    def _generate_schema_str(self, name: str, graphql_type: str, fields: Dict[str, str], implements: Optional[str]=None) -> str:
+    def _generate_schema_str(
+        self, name: str, graphql_type: str, fields: Dict[str, str], implements: Optional[str] = None
+    ) -> str:
         """
         Generate a schema string for a given name, object type and dict of fields.
         """

@@ -93,9 +93,14 @@ class QueryComparison:
 
             # If both produce error messages, don't compare them
             both_error = error_reference and error_tested
-            both_comment = (response_reference and response_tested and
-                            response_reference.strip() and response_tested.strip() and
-                            response_reference.strip()[0] == '%' and response_tested.strip()[0] == '%')
+            both_comment = (
+                response_reference
+                and response_tested
+                and response_reference.strip()
+                and response_tested.strip()
+                and response_reference.strip()[0] == '%'
+                and response_tested.strip()[0] == '%'
+            )
             if both_error or both_comment:
                 self.queries_both_error += 1
                 continue
@@ -116,10 +121,12 @@ class QueryComparison:
                 self.queries_different += 1
                 self.write_inconsistency_report(query, cleaned_reference, cleaned_tested)
 
-        print(f'Ran {self.queries_run} objects, {self.queries_different} had different results, '
-              f'{self.queries_both_error} produced errors on both instances, '
-              f'{self.queries_invalid} invalid queries were skipped, '
-              f'{self.queries_mirror} NRTM queries were skipped')
+        print(
+            f'Ran {self.queries_run} objects, {self.queries_different} had different results, '
+            f'{self.queries_both_error} produced errors on both instances, '
+            f'{self.queries_invalid} invalid queries were skipped, '
+            f'{self.queries_mirror} NRTM queries were skipped'
+        )
 
     def clean(self, query: str, response: Optional[str]) -> Optional[str]:
         """Clean the query response, so that the text can be compared."""
@@ -181,19 +188,18 @@ class QueryComparison:
 def main():  # pragma: no cover
     description = """Run a list of queries against two IRRD instances, and report significant results."""
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument('input_file', type=str,
-                        help='the name of a file to read containing queries, or - for stdin')
-    parser.add_argument('host_reference', type=str,
-                        help='host/IP of the reference IRRD server')
-    parser.add_argument('port_reference', type=int,
-                        help='port for the reference IRRD server')
-    parser.add_argument('host_tested', type=str,
-                        help='host/IP of the tested IRRD server')
-    parser.add_argument('port_tested', type=int,
-                        help='port for the tested IRRD server')
+    parser.add_argument(
+        'input_file', type=str, help='the name of a file to read containing queries, or - for stdin'
+    )
+    parser.add_argument('host_reference', type=str, help='host/IP of the reference IRRD server')
+    parser.add_argument('port_reference', type=int, help='port for the reference IRRD server')
+    parser.add_argument('host_tested', type=str, help='host/IP of the tested IRRD server')
+    parser.add_argument('port_tested', type=int, help='port for the tested IRRD server')
     args = parser.parse_args()
 
-    QueryComparison(args.input_file, args.host_reference, args.port_reference, args.host_tested, args.port_tested)
+    QueryComparison(
+        args.input_file, args.host_reference, args.port_reference, args.host_tested, args.port_tested
+    )
 
 
 if __name__ == '__main__':

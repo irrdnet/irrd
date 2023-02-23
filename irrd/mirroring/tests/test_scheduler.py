@@ -12,15 +12,17 @@ class TestMirrorScheduler:
         global thread_run_count
         thread_run_count = 0
 
-        config_override({
-            'database_readonly': True,
-            'sources': {
-                'TEST': {
-                    'import_source': 'url',
-                    'import_timer': 0,
-                }
+        config_override(
+            {
+                'database_readonly': True,
+                'sources': {
+                    'TEST': {
+                        'import_source': 'url',
+                        'import_timer': 0,
+                    }
+                },
             }
-        })
+        )
 
         monkeypatch.setattr('irrd.mirroring.scheduler.RPSLMirrorImportUpdateRunner', MockRunner)
         scheduler = MirrorScheduler()
@@ -32,14 +34,16 @@ class TestMirrorScheduler:
         global thread_run_count
         thread_run_count = 0
 
-        config_override({
-            'sources': {
-                'TEST': {
-                    'import_source': 'url',
-                    'import_timer': 0,
+        config_override(
+            {
+                'sources': {
+                    'TEST': {
+                        'import_source': 'url',
+                        'import_timer': 0,
+                    }
                 }
             }
-        })
+        )
 
         monkeypatch.setattr('irrd.mirroring.scheduler.RPSLMirrorImportUpdateRunner', MockRunner)
         MockRunner.run_sleep = True
@@ -66,26 +70,28 @@ class TestMirrorScheduler:
         global thread_run_count
         thread_run_count = 0
 
-        config_override({
-            'sources': {
-                'TEST': {
-                    'import_source': 'url',
-                    'import_timer': 0,
-                },
-                'TEST2': {
-                    'import_source': 'url',
-                    'import_timer': 0,
-                },
-                'TEST3': {
-                    'import_source': 'url',
-                    'import_timer': 0,
-                },
-                'TEST4': {
-                    'import_source': 'url',
-                    'import_timer': 0,
-                },
+        config_override(
+            {
+                'sources': {
+                    'TEST': {
+                        'import_source': 'url',
+                        'import_timer': 0,
+                    },
+                    'TEST2': {
+                        'import_source': 'url',
+                        'import_timer': 0,
+                    },
+                    'TEST3': {
+                        'import_source': 'url',
+                        'import_timer': 0,
+                    },
+                    'TEST4': {
+                        'import_source': 'url',
+                        'import_timer': 0,
+                    },
+                }
             }
-        })
+        )
 
         monkeypatch.setattr('irrd.mirroring.scheduler.RPSLMirrorImportUpdateRunner', MockRunner)
         MockRunner.run_sleep = False
@@ -101,11 +107,7 @@ class TestMirrorScheduler:
         global thread_run_count
         thread_run_count = 0
 
-        config_override({
-            'rpki': {
-                'roa_source': 'https://example.com/roa.json'
-            }
-        })
+        config_override({'rpki': {'roa_source': 'https://example.com/roa.json'}})
 
         monkeypatch.setattr('irrd.mirroring.scheduler.ROAImportRunner', MockRunner)
         MockRunner.run_sleep = True
@@ -123,12 +125,14 @@ class TestMirrorScheduler:
         global thread_run_count
         thread_run_count = 0
 
-        config_override({
-            'rpki': {'roa_source': None},
-            'scopefilter': {
-                'prefixes': ['192.0.2.0/24'],
+        config_override(
+            {
+                'rpki': {'roa_source': None},
+                'scopefilter': {
+                    'prefixes': ['192.0.2.0/24'],
+                },
             }
-        })
+        )
 
         monkeypatch.setattr('irrd.mirroring.scheduler.ScopeFilterUpdateRunner', MockRunner)
         MockRunner.run_sleep = False
@@ -137,22 +141,26 @@ class TestMirrorScheduler:
         scheduler.run()
 
         # Second run will not start the thread, as the config hasn't changed
-        config_override({
-            'rpki': {'roa_source': None},
-            'scopefilter': {
-                'prefixes': ['192.0.2.0/24'],
+        config_override(
+            {
+                'rpki': {'roa_source': None},
+                'scopefilter': {
+                    'prefixes': ['192.0.2.0/24'],
+                },
             }
-        })
+        )
         scheduler.run()
         time.sleep(0.2)
         assert thread_run_count == 1
 
-        config_override({
-            'rpki': {'roa_source': None},
-            'scopefilter': {
-                'asns': [23456],
+        config_override(
+            {
+                'rpki': {'roa_source': None},
+                'scopefilter': {
+                    'asns': [23456],
+                },
             }
-        })
+        )
 
         # Should run now, because config has changed
         scheduler.update_process_state()
@@ -160,15 +168,15 @@ class TestMirrorScheduler:
         time.sleep(0.2)
         assert thread_run_count == 2
 
-        config_override({
-            'rpki': {'roa_source': None},
-            'scopefilter': {
-                'asns': [23456],
-            },
-            'sources': {
-                'TEST': {'scopefilter_excluded': True}
-            },
-        })
+        config_override(
+            {
+                'rpki': {'roa_source': None},
+                'scopefilter': {
+                    'asns': [23456],
+                },
+                'sources': {'TEST': {'scopefilter_excluded': True}},
+            }
+        )
 
         # Should run again, because exclusions have changed
         scheduler.update_process_state()
@@ -181,12 +189,14 @@ class TestMirrorScheduler:
         global thread_run_count
         thread_run_count = 0
 
-        config_override({
-            'rpki': {'roa_source': None},
-            'sources': {
-                'TEST': {"route_object_preference": 200},
+        config_override(
+            {
+                'rpki': {'roa_source': None},
+                'sources': {
+                    'TEST': {"route_object_preference": 200},
+                },
             }
-        })
+        )
 
         monkeypatch.setattr('irrd.mirroring.scheduler.RoutePreferenceUpdateRunner', MockRunner)
         MockRunner.run_sleep = True
@@ -204,14 +214,16 @@ class TestMirrorScheduler:
         global thread_run_count
         thread_run_count = 0
 
-        config_override({
-            'sources': {
-                'TEST': {
-                    'import_source': 'url',
-                    'import_timer': 100,
+        config_override(
+            {
+                'sources': {
+                    'TEST': {
+                        'import_source': 'url',
+                        'import_timer': 100,
+                    }
                 }
             }
-        })
+        )
 
         monkeypatch.setattr('irrd.mirroring.scheduler.RPSLMirrorImportUpdateRunner', MockRunner)
         MockRunner.run_sleep = False
@@ -231,14 +243,16 @@ class TestMirrorScheduler:
         global thread_run_count
         thread_run_count = 0
 
-        config_override({
-            'sources': {
-                'TEST': {
-                    'export_destination': 'url',
-                    'export_timer': 0,
+        config_override(
+            {
+                'sources': {
+                    'TEST': {
+                        'export_destination': 'url',
+                        'export_timer': 0,
+                    }
                 }
             }
-        })
+        )
 
         monkeypatch.setattr('irrd.mirroring.scheduler.SourceExportRunner', MockRunner)
         MockRunner.run_sleep = True
@@ -256,14 +270,16 @@ class TestMirrorScheduler:
         global thread_run_count
         thread_run_count = 0
 
-        config_override({
-            'sources': {
-                'TEST': {
-                    'export_destination': 'url',
-                    'export_timer': 100,
+        config_override(
+            {
+                'sources': {
+                    'TEST': {
+                        'export_destination': 'url',
+                        'export_timer': 100,
+                    }
                 }
             }
-        })
+        )
 
         monkeypatch.setattr('irrd.mirroring.scheduler.SourceExportRunner', MockRunner)
         MockRunner.run_sleep = False

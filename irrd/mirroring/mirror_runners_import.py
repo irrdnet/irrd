@@ -37,6 +37,7 @@ class RPSLMirrorImportUpdateRunner:
     to run a new import from full export files. Otherwise, will call
     NRTMImportUpdateStreamRunner to retrieve new updates from NRTM.
     """
+
     def __init__(self, source: str) -> None:
         self.source = source
         self.full_import_runner = RPSLMirrorFullImportRunner(source)
@@ -48,12 +49,17 @@ class RPSLMirrorImportUpdateRunner:
         try:
             serial_newest_mirror, force_reload = self._status()
             nrtm_enabled = bool(get_setting(f'sources.{self.source}.nrtm_host'))
-            logger.debug(f'Most recent mirrored serial for {self.source}: {serial_newest_mirror}, '
-                         f'force_reload: {force_reload}, nrtm enabled: {nrtm_enabled}')
+            logger.debug(
+                f'Most recent mirrored serial for {self.source}: {serial_newest_mirror}, '
+                f'force_reload: {force_reload}, nrtm enabled: {nrtm_enabled}'
+            )
             full_reload = force_reload or not serial_newest_mirror or not nrtm_enabled
             if full_reload:
-                self.full_import_runner.run(database_handler=self.database_handler,
-                                            serial_newest_mirror=serial_newest_mirror, force_reload=force_reload)
+                self.full_import_runner.run(
+                    database_handler=self.database_handler,
+                    serial_newest_mirror=serial_newest_mirror,
+                    force_reload=force_reload,
+                )
             else:
                 assert serial_newest_mirror
                 self.update_stream_runner.run(serial_newest_mirror, database_handler=self.database_handler)
@@ -66,11 +72,18 @@ class RPSLMirrorImportUpdateRunner:
 
         except OSError as ose:
             # I/O errors can occur and should not log a full traceback (#177)
-            logger.error(f'An error occurred while attempting a mirror update or initial import '
-                         f'for {self.source}: {ose}')
+            logger.error(
+                'An error occurred while attempting a mirror update or initial import '
+                f'for {self.source}: {ose}'
+            )
         except Exception as exc:
-            logger.error(f'An exception occurred while attempting a mirror update or initial import '
-                         f'for {self.source}: {exc}', exc_info=exc)
+            logger.error(
+                (
+                    'An exception occurred while attempting a mirror update or initial import '
+                    f'for {self.source}: {exc}'
+                ),
+                exc_info=exc,
+            )
         finally:
             self.database_handler.close()
 
@@ -191,10 +204,16 @@ class RPSLMirrorFullImportRunner(FileImportRunnerBase):
     Files are downloaded, gunzipped if needed, and then sent through the
     MirrorFileImportParser.
     """
+
     def __init__(self, source: str) -> None:
         self.source = source
 
-    def run(self, database_handler: DatabaseHandler, serial_newest_mirror: Optional[int]=None, force_reload=False):
+    def run(
+        self,
+        database_handler: DatabaseHandler,
+        serial_newest_mirror: Optional[int] = None,
+        force_reload=False,
+    ):
         import_sources = get_setting(f'sources.{self.source}.import_source')
         if isinstance(import_sources, str):
             import_sources = [import_sources]
@@ -204,19 +223,30 @@ class RPSLMirrorFullImportRunner(FileImportRunnerBase):
             logger.info(f'Skipping full RPSL import for {self.source}, import_source not set.')
             return
 
-        logger.info(f'Running full RPSL import of {self.source} from {import_sources}, serial from {import_serial_source}')
+        logger.info(
+            f'Running full RPSL import of {self.source} from {import_sources}, serial from'
+            f' {import_serial_source}'
+        )
 
         import_serial = None
         if import_serial_source:
             import_serial = int(self._retrieve_file(import_serial_source, return_contents=True)[0])
 
-            if not force_reload and serial_newest_mirror is not None and import_serial <= serial_newest_mirror:
-                logger.info(f'Current newest serial seen from mirror for {self.source} is '
-                            f'{serial_newest_mirror}, import_serial is {import_serial}, cancelling import.')
+            if (
+                not force_reload
+                and serial_newest_mirror is not None
+                and import_serial <= serial_newest_mirror
+            ):
+                logger.info(
+                    f'Current newest serial seen from mirror for {self.source} is '
+                    f'{serial_newest_mirror}, import_serial is {import_serial}, cancelling import.'
+                )
                 return
 
         database_handler.delete_all_rpsl_objects_with_journal(self.source)
-        import_data = [self._retrieve_file(import_source, return_contents=False) for import_source in import_sources]
+        import_data = [
+            self._retrieve_file(import_source, return_contents=False) for import_source in import_sources
+        ]
 
         roa_validator = None
         if get_setting('rpki.roa_source'):
@@ -224,8 +254,13 @@ class RPSLMirrorFullImportRunner(FileImportRunnerBase):
 
         database_handler.disable_journaling()
         for import_filename, to_delete in import_data:
-            p = MirrorFileImportParser(source=self.source, filename=import_filename, serial=None,
-                                       database_handler=database_handler, roa_validator=roa_validator)
+            p = MirrorFileImportParser(
+                source=self.source,
+                filename=import_filename,
+                serial=None,
+                database_handler=database_handler,
+                roa_validator=roa_validator,
+            )
             p.run_import()
             if to_delete:
                 os.unlink(import_filename)
@@ -239,6 +274,7 @@ class ROAImportRunner(FileImportRunnerBase):
     The URL file for the ROA export in JSON format is provided
     in the configuration.
     """
+
     # API consistency with other importers, source is actually ignored
     def __init__(self, source=None):
         pass
@@ -264,10 +300,12 @@ class ROAImportRunner(FileImportRunnerBase):
             )
             self.database_handler.commit()
             notified = notify_rpki_invalid_owners(self.database_handler, objs_now_invalid)
-            logger.info(f'RPKI status updated for all routes, {len(objs_now_valid)} newly valid, '
-                        f'{len(objs_now_invalid)} newly invalid, '
-                        f'{len(objs_now_not_found)} newly not_found routes, '
-                        f'{notified} emails sent to contacts of newly invalid authoritative objects')
+            logger.info(
+                f'RPKI status updated for all routes, {len(objs_now_valid)} newly valid, '
+                f'{len(objs_now_invalid)} newly invalid, '
+                f'{len(objs_now_not_found)} newly not_found routes, '
+                f'{notified} emails sent to contacts of newly invalid authoritative objects'
+            )
 
         except OSError as ose:
             # I/O errors can occur and should not log a full traceback (#177)
@@ -299,7 +337,10 @@ class ROAImportRunner(FileImportRunnerBase):
             roa_importer = ROADataImporter(fh.read(), slurm_data, self.database_handler)
         if roa_to_delete:
             os.unlink(roa_filename)
-        logger.info(f'ROA import from {roa_source}, SLURM {slurm_source}, imported {len(roa_importer.roa_objs)} ROAs, running validator')
+        logger.info(
+            f'ROA import from {roa_source}, SLURM {slurm_source}, imported {len(roa_importer.roa_objs)} ROAs,'
+            ' running validator'
+        )
         return roa_importer.roa_objs
 
 
@@ -309,6 +350,7 @@ class ScopeFilterUpdateRunner:
     This runner does not actually import anything, the scope filter
     is in the configuration.
     """
+
     # API consistency with other importers, source is actually ignored
     def __init__(self, source=None):
         pass
@@ -326,13 +368,17 @@ class ScopeFilterUpdateRunner:
                 rpsl_objs_now_out_scope_prefix=rpsl_objs_now_out_scope_prefix,
             )
             self.database_handler.commit()
-            logger.info(f'Scopefilter status updated for all routes, '
-                        f'{len(rpsl_objs_now_in_scope)} newly in scope, '
-                        f'{len(rpsl_objs_now_out_scope_as)} newly out of scope AS, '
-                        f'{len(rpsl_objs_now_out_scope_prefix)} newly out of scope prefix')
+            logger.info(
+                'Scopefilter status updated for all routes, '
+                f'{len(rpsl_objs_now_in_scope)} newly in scope, '
+                f'{len(rpsl_objs_now_out_scope_as)} newly out of scope AS, '
+                f'{len(rpsl_objs_now_out_scope_prefix)} newly out of scope prefix'
+            )
 
         except Exception as exc:
-            logger.error(f'An exception occurred while attempting a scopefilter status update: {exc}', exc_info=exc)
+            logger.error(
+                f'An exception occurred while attempting a scopefilter status update: {exc}', exc_info=exc
+            )
         finally:
             self.database_handler.close()
 
@@ -343,6 +389,7 @@ class RoutePreferenceUpdateRunner:
     This runner does not actually import anything external, all
     data is already in our database.
     """
+
     # API consistency with other importers, source is actually ignored
     def __init__(self, source=None):
         pass
@@ -355,7 +402,10 @@ class RoutePreferenceUpdateRunner:
             database_handler.commit()
             logger.info('route preference update commit complete')
         except Exception as exc:
-            logger.error(f'An exception occurred while attempting a route preference status update: {exc}', exc_info=exc)
+            logger.error(
+                f'An exception occurred while attempting a route preference status update: {exc}',
+                exc_info=exc,
+            )
         finally:
             database_handler.close()
 
@@ -365,6 +415,7 @@ class NRTMImportUpdateStreamRunner:
     This runner attempts to pull updates from an NRTM stream for a specific
     mirrored database.
     """
+
     def __init__(self, source: str) -> None:
         self.source = source
 
@@ -385,7 +436,9 @@ class NRTMImportUpdateStreamRunner:
             '\n% Warning (1): there are no newer updates available',
         ]
 
-        logger.info(f'Retrieving NRTM updates for {self.source} from serial {serial_start} on {nrtm_host}:{nrtm_port}')
+        logger.info(
+            f'Retrieving NRTM updates for {self.source} from serial {serial_start} on {nrtm_host}:{nrtm_port}'
+        )
         query = f'-g {self.source}:3:{serial_start}-LAST'
         response = whois_query(nrtm_host, nrtm_port, query, end_markings)
         logger.debug(f'Received NRTM response for {self.source}: {response.strip()}')

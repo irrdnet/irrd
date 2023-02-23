@@ -43,18 +43,19 @@ def prepare_mocks(monkeypatch, config_override):
     monkeypatch.setattr('irrd.updates.validators.RPSLDatabaseQuery', lambda: mock_dq)
 
     mock_scopefilter = Mock(spec=ScopeFilterValidator)
-    monkeypatch.setattr('irrd.updates.parser.ScopeFilterValidator',
-                        lambda: mock_scopefilter)
+    monkeypatch.setattr('irrd.updates.parser.ScopeFilterValidator', lambda: mock_scopefilter)
     mock_scopefilter.validate_rpsl_object = lambda obj: (ScopeFilterStatus.in_scope, '')
     mock_rules_validator = Mock(spec=RulesValidator)
     monkeypatch.setattr('irrd.updates.parser.RulesValidator', lambda dh: mock_rules_validator)
     mock_rules_validator.validate.return_value = ValidatorResult()
 
-    config_override({
-        'auth': {
-            'password_hashers': {'crypt-pw': 'enabled'},
-        },
-    })
+    config_override(
+        {
+            'auth': {
+                'password_hashers': {'crypt-pw': 'enabled'},
+            },
+        }
+    )
     yield mock_dq, mock_dh
 
 
@@ -65,15 +66,18 @@ class TestSingleChangeRequestHandling:
     def test_parse(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
 
-        query_results = iter([
-            [{'object_text': SAMPLE_INETNUM}],
-            [{'object_text': SAMPLE_AS_SET}],
-        ])
+        query_results = iter(
+            [
+                [{'object_text': SAMPLE_INETNUM}],
+                [{'object_text': SAMPLE_AS_SET}],
+            ]
+        )
         mock_dh.execute_query = lambda query: next(query_results)
 
         auth_validator = AuthValidator(mock_dh)
         result_inetnum, result_as_set, result_unknown, result_invalid = parse_change_requests(
-            self._request_text(), mock_dh, auth_validator, None)
+            self._request_text(), mock_dh, auth_validator, None
+        )
 
         assert result_inetnum.status == UpdateRequestStatus.PROCESSING, result_inetnum.error_messages
         assert result_inetnum.is_valid()
@@ -121,9 +125,11 @@ class TestSingleChangeRequestHandling:
         with raises(ValueError):
             result_invalid.save()
         assert flatten_mock_calls(mock_dh) == [
-            ['delete_rpsl_object', (), {
-                'rpsl_object': result_inetnum.rpsl_obj_current, 'origin': JournalEntryOrigin.auth_change
-            }],
+            [
+                'delete_rpsl_object',
+                (),
+                {'rpsl_object': result_inetnum.rpsl_obj_current, 'origin': JournalEntryOrigin.auth_change},
+            ],
             ['upsert_rpsl_object', (result_as_set.rpsl_obj_new, JournalEntryOrigin.auth_change), {}],
         ]
 
@@ -133,7 +139,9 @@ class TestSingleChangeRequestHandling:
         mock_dh.execute_query = lambda query: []
 
         auth_validator = AuthValidator(mock_dh)
-        result = parse_change_requests(SAMPLE_MNTNER.replace('TEST', 'TEST2'), mock_dh, auth_validator, None)[0]
+        result = parse_change_requests(SAMPLE_MNTNER.replace('TEST', 'TEST2'), mock_dh, auth_validator, None)[
+            0
+        ]
 
         assert result.status == UpdateRequestStatus.ERROR_NON_AUTHORITIVE
         assert not result.is_valid()
@@ -194,7 +202,10 @@ class TestSingleChangeRequestHandling:
         assert result_inetnum.rpsl_text_submitted.startswith('inetnum:')
         assert result_inetnum.request_type == UpdateRequestType.DELETE
         assert len(result_inetnum.error_messages) == 1
-        assert 'Can not delete object: no object found for this key in this database' in result_inetnum.error_messages[0]
+        assert (
+            'Can not delete object: no object found for this key in this database'
+            in result_inetnum.error_messages[0]
+        )
 
     def test_check_references_valid(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
@@ -211,7 +222,9 @@ class TestSingleChangeRequestHandling:
             'object_class': 'mntner',
             'parsed_data': {'mntner': 'INTERDB-MNT'},
         }
-        query_results = iter([query_result_existing_obj, query_result_dumy_person, query_result_interdb_mntner])
+        query_results = iter(
+            [query_result_existing_obj, query_result_dumy_person, query_result_interdb_mntner]
+        )
         mock_dh.execute_query = lambda query: [next(query_results)]
 
         validator = ReferenceValidator(mock_dh)
@@ -246,9 +259,15 @@ class TestSingleChangeRequestHandling:
         assert not result_inetnum.is_valid()
         assert not result_inetnum.notification_targets()
         assert result_inetnum.error_messages == [
-            'Object PERSON-TEST referenced in field admin-c not found in database TEST - must reference one of role, person.',
-            'Object PERSON-TEST referenced in field tech-c not found in database TEST - must reference one of role, person.',
-            'Object TEST-MNT referenced in field mnt-by not found in database TEST - must reference mntner.'
+            (
+                'Object PERSON-TEST referenced in field admin-c not found in database TEST - must reference'
+                ' one of role, person.'
+            ),
+            (
+                'Object PERSON-TEST referenced in field tech-c not found in database TEST - must reference'
+                ' one of role, person.'
+            ),
+            'Object TEST-MNT referenced in field mnt-by not found in database TEST - must reference mntner.',
         ]
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}],
@@ -268,11 +287,14 @@ class TestSingleChangeRequestHandling:
     def test_check_references_valid_preload_references(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
 
-        mock_dh.execute_query = lambda query: next(iter([[{'object_text': SAMPLE_PERSON}], [{'object_text': SAMPLE_MNTNER}]]))
+        mock_dh.execute_query = lambda query: next(
+            iter([[{'object_text': SAMPLE_PERSON}], [{'object_text': SAMPLE_MNTNER}]])
+        )
         validator = ReferenceValidator(mock_dh)
 
-        preload = parse_change_requests(SAMPLE_PERSON + '\n' + SAMPLE_MNTNER,
-                                        mock_dh, AuthValidator(mock_dh), validator)
+        preload = parse_change_requests(
+            SAMPLE_PERSON + '\n' + SAMPLE_MNTNER, mock_dh, AuthValidator(mock_dh), validator
+        )
         mock_dq.reset_mock()
         validator.preload(preload)
 
@@ -282,7 +304,7 @@ class TestSingleChangeRequestHandling:
         assert flatten_mock_calls(mock_dq) == [
             ['sources', (['TEST'],), {}],
             ['object_classes', (['inetnum'],), {}],
-            ['rpsl_pk', ('192.0.2.0 - 192.0.2.255',), {}]
+            ['rpsl_pk', ('192.0.2.0 - 192.0.2.255',), {}],
         ]
 
     def test_check_references_valid_deleting_object_with_no_inbound_refs(self, prepare_mocks):
@@ -290,14 +312,23 @@ class TestSingleChangeRequestHandling:
         mock_dq, mock_dh = prepare_mocks
 
         validator = ReferenceValidator(mock_dh)
-        query_results = iter([
-            [{'object_text': SAMPLE_ROUTE, 'object_class': 'route',
-              'rpsl_pk': '192.0.2.0/24', 'source': 'TEST'}],
-        ])
+        query_results = iter(
+            [
+                [
+                    {
+                        'object_text': SAMPLE_ROUTE,
+                        'object_class': 'route',
+                        'rpsl_pk': '192.0.2.0/24',
+                        'source': 'TEST',
+                    }
+                ],
+            ]
+        )
         mock_dh.execute_query = lambda query: next(query_results)
 
-        result = parse_change_requests(SAMPLE_ROUTE + 'delete: delete',
-                                       mock_dh, AuthValidator(mock_dh), validator)[0]
+        result = parse_change_requests(
+            SAMPLE_ROUTE + 'delete: delete', mock_dh, AuthValidator(mock_dh), validator
+        )[0]
         result._check_references()
         assert result.is_valid(), result.error_messages
         assert not result.error_messages
@@ -316,15 +347,24 @@ class TestSingleChangeRequestHandling:
         mock_dq, mock_dh = prepare_mocks
 
         validator = ReferenceValidator(mock_dh)
-        query_results = iter([
-            [{'object_text': SAMPLE_PERSON}],
-            [{'object_text': SAMPLE_INETNUM, 'object_class': 'inetnum',
-              'rpsl_pk': '192.0.2.0 - 192.0.2.255', 'source': 'TEST'}],
-        ])
+        query_results = iter(
+            [
+                [{'object_text': SAMPLE_PERSON}],
+                [
+                    {
+                        'object_text': SAMPLE_INETNUM,
+                        'object_class': 'inetnum',
+                        'rpsl_pk': '192.0.2.0 - 192.0.2.255',
+                        'source': 'TEST',
+                    }
+                ],
+            ]
+        )
         mock_dh.execute_query = lambda query: next(query_results)
 
-        result = parse_change_requests(SAMPLE_PERSON + 'delete: delete',
-                                       mock_dh, AuthValidator(mock_dh), validator)[0]
+        result = parse_change_requests(
+            SAMPLE_PERSON + 'delete: delete', mock_dh, AuthValidator(mock_dh), validator
+        )[0]
         result._check_references()
         assert not result.is_valid()
         assert result.error_messages == [
@@ -344,24 +384,42 @@ class TestSingleChangeRequestHandling:
         mock_dq, mock_dh = prepare_mocks
 
         validator = ReferenceValidator(mock_dh)
-        query_results = iter([
-            [{'object_text': SAMPLE_PERSON}],
-            [{'object_text': SAMPLE_INETNUM}],
-            [],
-            [{'object_text': SAMPLE_PERSON, 'object_class': 'person',
-              'rpsl_pk': 'PERSON-TEST', 'source': 'TEST'}],
-        ])
+        query_results = iter(
+            [
+                [{'object_text': SAMPLE_PERSON}],
+                [{'object_text': SAMPLE_INETNUM}],
+                [],
+                [
+                    {
+                        'object_text': SAMPLE_PERSON,
+                        'object_class': 'person',
+                        'rpsl_pk': 'PERSON-TEST',
+                        'source': 'TEST',
+                    }
+                ],
+            ]
+        )
         mock_dh.execute_query = lambda query: next(query_results)
 
-        results = parse_change_requests(SAMPLE_PERSON + 'delete: delete' + '\n\n' + SAMPLE_INETNUM,
-                                        mock_dh, AuthValidator(mock_dh), validator)
+        results = parse_change_requests(
+            SAMPLE_PERSON + 'delete: delete' + '\n\n' + SAMPLE_INETNUM,
+            mock_dh,
+            AuthValidator(mock_dh),
+            validator,
+        )
         validator.preload(results)
         result_inetnum = results[1]
         result_inetnum._check_references()
         assert not result_inetnum.is_valid()
         assert result_inetnum.error_messages == [
-            'Object PERSON-TEST referenced in field admin-c not found in database TEST - must reference one of role, person.',
-            'Object PERSON-TEST referenced in field tech-c not found in database TEST - must reference one of role, person.',
+            (
+                'Object PERSON-TEST referenced in field admin-c not found in database TEST - must reference'
+                ' one of role, person.'
+            ),
+            (
+                'Object PERSON-TEST referenced in field tech-c not found in database TEST - must reference'
+                ' one of role, person.'
+            ),
             'Object TEST-MNT referenced in field mnt-by not found in database TEST - must reference mntner.',
         ]
 
@@ -385,20 +443,30 @@ class TestSingleChangeRequestHandling:
 
         validator = ReferenceValidator(mock_dh)
         mock_dh.execute_query = lambda query: []
-        result_inetnum = parse_change_requests(SAMPLE_INETNUM + 'delete: delete',
-                                               mock_dh, AuthValidator(mock_dh), validator)
+        result_inetnum = parse_change_requests(
+            SAMPLE_INETNUM + 'delete: delete', mock_dh, AuthValidator(mock_dh), validator
+        )
         validator.preload(result_inetnum)
         mock_dq.reset_mock()
 
-        query_results = iter([
-            [{'object_text': SAMPLE_PERSON}],
-            [{'object_text': SAMPLE_INETNUM, 'object_class': 'inetnum',
-              'rpsl_pk': '192.0.2.0 - 192.0.2.255', 'source': 'TEST'}],
-        ])
+        query_results = iter(
+            [
+                [{'object_text': SAMPLE_PERSON}],
+                [
+                    {
+                        'object_text': SAMPLE_INETNUM,
+                        'object_class': 'inetnum',
+                        'rpsl_pk': '192.0.2.0 - 192.0.2.255',
+                        'source': 'TEST',
+                    }
+                ],
+            ]
+        )
         mock_dh.execute_query = lambda query: next(query_results)
 
-        result = parse_change_requests(SAMPLE_PERSON + 'delete: delete' + '\n',
-                                       mock_dh, AuthValidator(mock_dh), validator)[0]
+        result = parse_change_requests(
+            SAMPLE_PERSON + 'delete: delete' + '\n', mock_dh, AuthValidator(mock_dh), validator
+        )[0]
         result._check_references()
         assert result.is_valid(), result.error_messages
         assert not result.error_messages
@@ -421,8 +489,9 @@ class TestSingleChangeRequestHandling:
         reference_validator = ReferenceValidator(mock_dh)
         auth_validator = AuthValidator(mock_dh)
 
-        result_inetnum = parse_change_requests(SAMPLE_INETNUM + 'password: crypt-password',
-                                               mock_dh, auth_validator, reference_validator)[0]
+        result_inetnum = parse_change_requests(
+            SAMPLE_INETNUM + 'password: crypt-password', mock_dh, auth_validator, reference_validator
+        )[0]
         assert result_inetnum._check_auth()
         assert not result_inetnum.error_messages
 
@@ -432,19 +501,25 @@ class TestSingleChangeRequestHandling:
             ['rpsl_pk', ('192.0.2.0 - 192.0.2.255',), {}],
             ['sources', (['TEST'],), {}],
             ['object_classes', (['mntner'],), {}],
-            ['rpsl_pks', ({'TEST-MNT'},), {}]
+            ['rpsl_pks', ({'TEST-MNT'},), {}],
         ]
 
         auth_validator = AuthValidator(mock_dh)
-        result_inetnum = parse_change_requests(SAMPLE_INETNUM + 'password: md5-password',
-                                               mock_dh, auth_validator, reference_validator)[0]
+        result_inetnum = parse_change_requests(
+            SAMPLE_INETNUM + 'password: md5-password', mock_dh, auth_validator, reference_validator
+        )[0]
         assert result_inetnum._check_auth()
         assert not result_inetnum.error_messages
         assert result_inetnum.notification_targets() == {
-            'mnt-nfy@example.net', 'mnt-nfy2@example.net', 'notify@example.com'}
+            'mnt-nfy@example.net',
+            'mnt-nfy2@example.net',
+            'notify@example.com',
+        }
 
         auth_validator = AuthValidator(mock_dh, 'PGPKEY-80F238C6')
-        result_inetnum = parse_change_requests(SAMPLE_INETNUM, mock_dh, auth_validator, reference_validator)[0]
+        result_inetnum = parse_change_requests(SAMPLE_INETNUM, mock_dh, auth_validator, reference_validator)[
+            0
+        ]
         assert result_inetnum._check_auth()
         assert not result_inetnum.error_messages
 
@@ -456,8 +531,9 @@ class TestSingleChangeRequestHandling:
         reference_validator = ReferenceValidator(mock_dh)
         auth_validator = AuthValidator(mock_dh)
 
-        result_mntner = parse_change_requests(SAMPLE_MNTNER + 'override: override-password',
-                                              mock_dh, auth_validator, reference_validator)[0]
+        result_mntner = parse_change_requests(
+            SAMPLE_MNTNER + 'override: override-password', mock_dh, auth_validator, reference_validator
+        )[0]
         auth_validator.pre_approve([result_mntner.rpsl_obj_new])
 
         assert result_mntner._check_auth()
@@ -477,8 +553,9 @@ class TestSingleChangeRequestHandling:
         reference_validator = ReferenceValidator(mock_dh)
         auth_validator = AuthValidator(mock_dh)
 
-        result_mntner = parse_change_requests(SAMPLE_MNTNER + 'override: invalid-password',
-                                              mock_dh, auth_validator, reference_validator)[0]
+        result_mntner = parse_change_requests(
+            SAMPLE_MNTNER + 'override: invalid-password', mock_dh, auth_validator, reference_validator
+        )[0]
         auth_validator.pre_approve([result_mntner.rpsl_obj_new])
 
         assert not result_mntner._check_auth()
@@ -495,7 +572,9 @@ class TestSingleChangeRequestHandling:
             ['rpsl_pks', ({'OTHER1-MNT', 'OTHER2-MNT', 'TEST-MNT'},), {}],
         ]
 
-    def test_check_auth_valid_update_mntner_submits_new_object_with_all_dummy_hash_values(self, prepare_mocks):
+    def test_check_auth_valid_update_mntner_submits_new_object_with_all_dummy_hash_values(
+        self, prepare_mocks
+    ):
         mock_dq, mock_dh = prepare_mocks
 
         mock_dh.execute_query = lambda query: [{'object_text': SAMPLE_MNTNER}]
@@ -507,15 +586,20 @@ class TestSingleChangeRequestHandling:
         # but a password attribute that is valid for the current DB object.
         data = SAMPLE_MNTNER.replace('LEuuhsBJNFV0Q', PASSWORD_HASH_DUMMY_VALUE)
         data = data.replace('$1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.', PASSWORD_HASH_DUMMY_VALUE)
-        data = data.replace('$2b$12$RMrlONJ0tasnpo.zHDF.yuYm/Gb1ARmIjP097ZoIWBn9YLIM2ao5W', PASSWORD_HASH_DUMMY_VALUE)
-        result_mntner = parse_change_requests(data + 'password: crypt-password',
-                                              mock_dh, auth_validator, reference_validator)[0]
+        data = data.replace(
+            '$2b$12$RMrlONJ0tasnpo.zHDF.yuYm/Gb1ARmIjP097ZoIWBn9YLIM2ao5W', PASSWORD_HASH_DUMMY_VALUE
+        )
+        result_mntner = parse_change_requests(
+            data + 'password: crypt-password', mock_dh, auth_validator, reference_validator
+        )[0]
         auth_validator.pre_approve([result_mntner.rpsl_obj_new])
         assert result_mntner._check_auth()
         assert not result_mntner.error_messages
-        assert result_mntner.info_messages == ['As you submitted dummy hash values, all password hashes on this object '
-                                               'were replaced with a new BCRYPT-PW hash of the password you provided for '
-                                               'authentication.']
+        assert result_mntner.info_messages == [
+            'As you submitted dummy hash values, all password hashes on this object '
+            'were replaced with a new BCRYPT-PW hash of the password you provided for '
+            'authentication.'
+        ]
 
         auth_pgp, auth_hash = splitline_unicodesafe(result_mntner.rpsl_obj_new.parsed_data['auth'])
         assert auth_pgp == 'PGPKey-80F238C6'
@@ -534,7 +618,9 @@ class TestSingleChangeRequestHandling:
             ['rpsl_pks', ({'OTHER1-MNT', 'OTHER2-MNT'},), {}],
         ]
 
-    def test_check_auth_invalid_update_mntner_submits_new_object_with_mixed_dummy_hash_real_hash(self, prepare_mocks):
+    def test_check_auth_invalid_update_mntner_submits_new_object_with_mixed_dummy_hash_real_hash(
+        self, prepare_mocks
+    ):
         mock_dq, mock_dh = prepare_mocks
 
         mock_dh.execute_query = lambda query: [{'object_text': SAMPLE_MNTNER}]
@@ -545,15 +631,18 @@ class TestSingleChangeRequestHandling:
         # Submit the mntner with dummy password values as would be returned by queries,
         # but a password attribute that is valid for the current DB object.
         data = SAMPLE_MNTNER.replace('LEuuhsBJNFV0Q', PASSWORD_HASH_DUMMY_VALUE)
-        result_mntner = parse_change_requests(data + 'password: md5-password',
-                                              mock_dh, auth_validator, reference_validator)[0]
+        result_mntner = parse_change_requests(
+            data + 'password: md5-password', mock_dh, auth_validator, reference_validator
+        )[0]
         auth_validator.pre_approve([result_mntner.rpsl_obj_new])
         assert not result_mntner.is_valid()
         assert result_mntner.error_messages == [
             'Either all password auth hashes in a submitted mntner must be dummy objects, or none.',
         ]
 
-    def test_check_auth_invalid_update_mntner_submits_new_object_with_dummy_hash_multiple_passwords(self, prepare_mocks):
+    def test_check_auth_invalid_update_mntner_submits_new_object_with_dummy_hash_multiple_passwords(
+        self, prepare_mocks
+    ):
         mock_dq, mock_dh = prepare_mocks
 
         mock_dh.execute_query = lambda query: [{'object_text': SAMPLE_MNTNER}]
@@ -564,10 +653,16 @@ class TestSingleChangeRequestHandling:
         # Submit the mntner with dummy password values as would be returned by queries,
         # but multiple password attributes, which means we wouldn't know which password to set.
         data = SAMPLE_MNTNER.replace('LEuuhsBJNFV0Q', PASSWORD_HASH_DUMMY_VALUE)
-        data = data.replace('$2b$12$RMrlONJ0tasnpo.zHDF.yuYm/Gb1ARmIjP097ZoIWBn9YLIM2ao5W', PASSWORD_HASH_DUMMY_VALUE)
+        data = data.replace(
+            '$2b$12$RMrlONJ0tasnpo.zHDF.yuYm/Gb1ARmIjP097ZoIWBn9YLIM2ao5W', PASSWORD_HASH_DUMMY_VALUE
+        )
         data = data.replace('$1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.', PASSWORD_HASH_DUMMY_VALUE)
-        result_mntner = parse_change_requests(data + 'password: md5-password\npassword: other-password',
-                                              mock_dh, auth_validator, reference_validator)[0]
+        result_mntner = parse_change_requests(
+            data + 'password: md5-password\npassword: other-password',
+            mock_dh,
+            auth_validator,
+            reference_validator,
+        )[0]
         auth_validator.pre_approve([result_mntner.rpsl_obj_new])
         result_mntner._check_auth()
         assert not result_mntner.is_valid()
@@ -586,8 +681,9 @@ class TestSingleChangeRequestHandling:
         auth_validator = AuthValidator(mock_dh)
 
         # This password is valid for the new object, but invalid for the current version in the DB
-        result_mntner = parse_change_requests(SAMPLE_MNTNER + 'password: crypt-password',
-                                              mock_dh, auth_validator, reference_validator)[0]
+        result_mntner = parse_change_requests(
+            SAMPLE_MNTNER + 'password: crypt-password', mock_dh, auth_validator, reference_validator
+        )[0]
         assert not result_mntner._check_auth()
         assert result_mntner.error_messages == [
             'Authorisation for mntner TEST-MNT failed: must be authenticated by one of: TEST-MNT, '
@@ -616,8 +712,9 @@ class TestSingleChangeRequestHandling:
         reference_validator = ReferenceValidator(mock_dh)
         auth_validator = AuthValidator(mock_dh)
 
-        result_inetnum = parse_change_requests(SAMPLE_INETNUM + 'password: wrong-pw',
-                                               mock_dh, auth_validator, reference_validator)[0]
+        result_inetnum = parse_change_requests(
+            SAMPLE_INETNUM + 'password: wrong-pw', mock_dh, auth_validator, reference_validator
+        )[0]
         assert not result_inetnum._check_auth()
         assert 'Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed' in result_inetnum.error_messages[0]
         assert 'one of: TEST-MNT' in result_inetnum.error_messages[0]
@@ -636,18 +733,21 @@ class TestSingleChangeRequestHandling:
         # This is a case that shouldn't happen, but in legacy databases it might.
         mock_dq, mock_dh = prepare_mocks
 
-        query_results = iter([
-            [{'object_text': SAMPLE_INETNUM.replace('test-MNT', 'FAIL-MNT')}],
-            [{'object_text': SAMPLE_MNTNER}],
-            []
-        ])
+        query_results = iter(
+            [
+                [{'object_text': SAMPLE_INETNUM.replace('test-MNT', 'FAIL-MNT')}],
+                [{'object_text': SAMPLE_MNTNER}],
+                [],
+            ]
+        )
         mock_dh.execute_query = lambda query: next(query_results)
 
         reference_validator = ReferenceValidator(mock_dh)
         auth_validator = AuthValidator(mock_dh)
 
-        result_inetnum = parse_change_requests(SAMPLE_INETNUM + 'password: md5-password',
-                                               mock_dh, auth_validator, reference_validator)[0]
+        result_inetnum = parse_change_requests(
+            SAMPLE_INETNUM + 'password: md5-password', mock_dh, auth_validator, reference_validator
+        )[0]
         assert not result_inetnum._check_auth(), result_inetnum
         assert 'Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed' in result_inetnum.error_messages[0]
         assert 'one of: FAIL-MNT' in result_inetnum.error_messages[0]
@@ -676,8 +776,9 @@ class TestSingleChangeRequestHandling:
         reference_validator = ReferenceValidator(mock_dh)
         auth_validator = AuthValidator(mock_dh)
 
-        result_inetnum = parse_change_requests(SAMPLE_INETNUM + 'override: override-password',
-                                               mock_dh, auth_validator, reference_validator)[0]
+        result_inetnum = parse_change_requests(
+            SAMPLE_INETNUM + 'override: override-password', mock_dh, auth_validator, reference_validator
+        )[0]
         assert result_inetnum._check_auth()
         assert not result_inetnum.error_messages
         assert not result_inetnum.notification_targets()
@@ -693,15 +794,21 @@ class TestSingleChangeRequestHandling:
         reference_validator = ReferenceValidator(mock_dh)
         auth_validator = AuthValidator(mock_dh)
 
-        result_inetnum = parse_change_requests(SAMPLE_INETNUM + 'override: wrong-override',
-                                               mock_dh, auth_validator, reference_validator)[0]
+        result_inetnum = parse_change_requests(
+            SAMPLE_INETNUM + 'override: wrong-override', mock_dh, auth_validator, reference_validator
+        )[0]
         assert not result_inetnum._check_auth()
         assert result_inetnum.error_messages == [
-            'Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed: must be authenticated by one of: TEST-MNT',
+            (
+                'Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed: must be authenticated by one of:'
+                ' TEST-MNT'
+            ),
         ]
         assert result_inetnum.notification_targets() == {'notify@example.com', 'upd-to@example.net'}
 
-    def test_check_auth_invalid_update_mntner_override_hash_misconfigured(self, prepare_mocks, monkeypatch, caplog):
+    def test_check_auth_invalid_update_mntner_override_hash_misconfigured(
+        self, prepare_mocks, monkeypatch, caplog
+    ):
         mock_dq, mock_dh = prepare_mocks
         monkeypatch.setenv('IRRD_AUTH_OVERRIDE_PASSWORD', 'invalid-hash')
 
@@ -713,11 +820,15 @@ class TestSingleChangeRequestHandling:
         reference_validator = ReferenceValidator(mock_dh)
         auth_validator = AuthValidator(mock_dh)
 
-        result_inetnum = parse_change_requests(SAMPLE_INETNUM + 'override: override-password',
-                                               mock_dh, auth_validator, reference_validator)[0]
+        result_inetnum = parse_change_requests(
+            SAMPLE_INETNUM + 'override: override-password', mock_dh, auth_validator, reference_validator
+        )[0]
         assert not result_inetnum._check_auth()
         assert result_inetnum.error_messages == [
-            'Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed: must be authenticated by one of: TEST-MNT',
+            (
+                'Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed: must be authenticated by one of:'
+                ' TEST-MNT'
+            ),
         ]
         assert result_inetnum.notification_targets() == {'notify@example.com', 'upd-to@example.net'}
         assert 'possible misconfigured hash' in caplog.text
@@ -734,11 +845,15 @@ class TestSingleChangeRequestHandling:
         reference_validator = ReferenceValidator(mock_dh)
         auth_validator = AuthValidator(mock_dh)
 
-        result_inetnum = parse_change_requests(SAMPLE_INETNUM + 'override: override-password',
-                                               mock_dh, auth_validator, reference_validator)[0]
+        result_inetnum = parse_change_requests(
+            SAMPLE_INETNUM + 'override: override-password', mock_dh, auth_validator, reference_validator
+        )[0]
         assert not result_inetnum._check_auth()
         assert result_inetnum.error_messages == [
-            'Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed: must be authenticated by one of: TEST-MNT',
+            (
+                'Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed: must be authenticated by one of:'
+                ' TEST-MNT'
+            ),
         ]
         assert result_inetnum.notification_targets() == {'notify@example.com', 'upd-to@example.net'}
         assert 'Ignoring override password, auth.override_password not set.' in caplog.text
@@ -758,16 +873,19 @@ class TestSingleChangeRequestHandling:
         reference_validator = ReferenceValidator(mock_dh)
         auth_validator = AuthValidator(mock_dh)
 
-        result_route = parse_change_requests(SAMPLE_ROUTE + 'password: md5-password',
-                                             mock_dh, auth_validator, reference_validator)[0]
+        result_route = parse_change_requests(
+            SAMPLE_ROUTE + 'password: md5-password', mock_dh, auth_validator, reference_validator
+        )[0]
         assert result_route._check_auth()
         assert not result_route.error_messages
         assert result_route.notification_targets() == {'mnt-nfy@example.net', 'mnt-nfy2@example.net'}
 
         assert flatten_mock_calls(mock_dq, flatten_objects=True) == [
-            ['sources', (['TEST'],), {}], ['object_classes', (['route'],), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['route'],), {}],
             ['rpsl_pk', ('192.0.2.0/24AS65537',), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}],
             ['rpsl_pks', ({'TEST-MNT'},), {}],
         ]
 
@@ -780,12 +898,14 @@ class TestSingleChangeRequestHandling:
         query_answers = [
             [],  # existing object version
             [{'object_text': SAMPLE_MNTNER}],  # mntner for object
-            [{
-                # attempt to look for exact inetnum
-                'object_class': 'route',
-                'rpsl_pk': '192.0.2.0/24AS65537',
-                'parsed_data': {'mnt-by': ['RELATED-MNT']}
-            }],
+            [
+                {
+                    # attempt to look for exact inetnum
+                    'object_class': 'route',
+                    'rpsl_pk': '192.0.2.0/24AS65537',
+                    'parsed_data': {'mnt-by': ['RELATED-MNT']},
+                }
+            ],
             [{'object_text': related_mntner}],  # related mntner retrieval
         ]
         query_results = itertools.cycle(query_answers)
@@ -794,22 +914,30 @@ class TestSingleChangeRequestHandling:
         reference_validator = ReferenceValidator(mock_dh)
         auth_validator = AuthValidator(mock_dh)
 
-        result_route = parse_change_requests(SAMPLE_ROUTE + 'password: md5-password',
-                                             mock_dh, auth_validator, reference_validator)[0]
+        result_route = parse_change_requests(
+            SAMPLE_ROUTE + 'password: md5-password', mock_dh, auth_validator, reference_validator
+        )[0]
         assert not result_route._check_auth()
-        assert result_route.error_messages[0] == (
-            'Authorisation for route 192.0.2.0/24AS65537 failed: must be authenticated by one of: '
-            'RELATED-MNT - from parent route 192.0.2.0/24AS65537')
+        assert (
+            result_route.error_messages[0]
+            == 'Authorisation for route 192.0.2.0/24AS65537 failed: must be authenticated by one of: '
+            'RELATED-MNT - from parent route 192.0.2.0/24AS65537'
+        )
         assert result_route.notification_targets() == {'upd-to-related@example.net'}
 
         assert flatten_mock_calls(mock_dq, flatten_objects=True) == [
-            ['sources', (['TEST'],), {}], ['object_classes', (['route'],), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['route'],), {}],
             ['rpsl_pk', ('192.0.2.0/24AS65537',), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}],
             ['rpsl_pks', ({'TEST-MNT'},), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['inetnum'],), {}],
-            ['first_only', (), {}], ['ip_exact', ('192.0.2.0/24',), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['inetnum'],), {}],
+            ['first_only', (), {}],
+            ['ip_exact', ('192.0.2.0/24',), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}],
             ['rpsl_pks', ({'RELATED-MNT'},), {}],
         ]
 
@@ -821,12 +949,14 @@ class TestSingleChangeRequestHandling:
         query_answers = [
             [],  # existing object version
             [{'object_text': SAMPLE_MNTNER}],  # mntner for object
-            [{
-                # attempt to look for exact inetnum
-                'object_class': 'route6',
-                'rpsl_pk': '2001:db8::/48AS65537',
-                'parsed_data': {'mnt-by': ['RELATED-MNT']}
-            }],
+            [
+                {
+                    # attempt to look for exact inetnum
+                    'object_class': 'route6',
+                    'rpsl_pk': '2001:db8::/48AS65537',
+                    'parsed_data': {'mnt-by': ['RELATED-MNT']},
+                }
+            ],
             [{'object_text': related_mntner}],  # related mntner retrieval
         ]
         query_results = itertools.cycle(query_answers)
@@ -835,21 +965,27 @@ class TestSingleChangeRequestHandling:
         reference_validator = ReferenceValidator(mock_dh)
         auth_validator = AuthValidator(mock_dh)
 
-        result_route = parse_change_requests(SAMPLE_ROUTE6 + 'password: md5-password',
-                                             mock_dh, auth_validator, reference_validator)[0]
+        result_route = parse_change_requests(
+            SAMPLE_ROUTE6 + 'password: md5-password', mock_dh, auth_validator, reference_validator
+        )[0]
         assert result_route._check_auth()
         assert result_route._check_auth()  # should be cached, no extra db queries
         assert not result_route.error_messages
         assert result_route.notification_targets() == {'mnt-nfy2@example.net', 'mnt-nfy@example.net'}
 
         assert flatten_mock_calls(mock_dq, flatten_objects=True) == [
-            ['sources', (['TEST'],), {}], ['object_classes', (['route6'],), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['route6'],), {}],
             ['rpsl_pk', ('2001:DB8::/48AS65537',), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}],
             ['rpsl_pks', ({'TEST-MNT'},), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['inet6num'],), {}],
-            ['first_only', (), {}], ['ip_exact', ('2001:db8::/48',), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['inet6num'],), {}],
+            ['first_only', (), {}],
+            ['ip_exact', ('2001:db8::/48',), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}],
             ['rpsl_pks', ({'RELATED-MNT'},), {}],
         ]
 
@@ -860,13 +996,15 @@ class TestSingleChangeRequestHandling:
             [],  # existing object version
             [{'object_text': SAMPLE_MNTNER}],  # mntner for object
             [],  # attempt to look for exact inetnum
-            [{
-                # attempt to look for less specific inetnum
-                'object_class': 'route',
-                'rpsl_pk': '192.0.2.0/24AS65537',
-                'parsed_data': {'mnt-by': ['RELATED-MNT']}
-            }],
-            [{'object_text': SAMPLE_MNTNER}]  # related mntner retrieval
+            [
+                {
+                    # attempt to look for less specific inetnum
+                    'object_class': 'route',
+                    'rpsl_pk': '192.0.2.0/24AS65537',
+                    'parsed_data': {'mnt-by': ['RELATED-MNT']},
+                }
+            ],
+            [{'object_text': SAMPLE_MNTNER}],  # related mntner retrieval
         ]
         query_results = itertools.cycle(query_answers)
         mock_dh.execute_query = lambda query: next(query_results)
@@ -874,22 +1012,30 @@ class TestSingleChangeRequestHandling:
         reference_validator = ReferenceValidator(mock_dh)
         auth_validator = AuthValidator(mock_dh)
 
-        result_route = parse_change_requests(SAMPLE_ROUTE + 'password: md5-password',
-                                             mock_dh, auth_validator, reference_validator)[0]
+        result_route = parse_change_requests(
+            SAMPLE_ROUTE + 'password: md5-password', mock_dh, auth_validator, reference_validator
+        )[0]
         assert result_route._check_auth()
         assert not result_route.error_messages
         assert result_route.notification_targets() == {'mnt-nfy2@example.net', 'mnt-nfy@example.net'}
 
         assert flatten_mock_calls(mock_dq, flatten_objects=True) == [
-            ['sources', (['TEST'],), {}], ['object_classes', (['route'],), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['route'],), {}],
             ['rpsl_pk', ('192.0.2.0/24AS65537',), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}],
             ['rpsl_pks', ({'TEST-MNT'},), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['inetnum'],), {}],
-            ['first_only', (), {}], ['ip_exact', ('192.0.2.0/24',), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['inetnum'],), {}],
-            ['first_only', (), {}], ['ip_less_specific_one_level', ('192.0.2.0/24',), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['inetnum'],), {}],
+            ['first_only', (), {}],
+            ['ip_exact', ('192.0.2.0/24',), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['inetnum'],), {}],
+            ['first_only', (), {}],
+            ['ip_less_specific_one_level', ('192.0.2.0/24',), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}],
             ['rpsl_pks', ({'RELATED-MNT'},), {}],
         ]
 
@@ -901,13 +1047,15 @@ class TestSingleChangeRequestHandling:
             [{'object_text': SAMPLE_MNTNER}],  # mntner for object
             [],  # attempt to look for exact inetnum
             [],  # attempt to look for less specific inetnum
-            [{
-                # attempt to look for less specific route
-                'object_class': 'route',
-                'rpsl_pk': '192.0.2.0/24AS65537',
-                'parsed_data': {'mnt-by': ['RELATED-MNT']}
-            }],
-            [{'object_text': SAMPLE_MNTNER}]  # related mntner retrieval
+            [
+                {
+                    # attempt to look for less specific route
+                    'object_class': 'route',
+                    'rpsl_pk': '192.0.2.0/24AS65537',
+                    'parsed_data': {'mnt-by': ['RELATED-MNT']},
+                }
+            ],
+            [{'object_text': SAMPLE_MNTNER}],  # related mntner retrieval
         ]
         query_results = itertools.cycle(query_answers)
         mock_dh.execute_query = lambda query: next(query_results)
@@ -915,24 +1063,34 @@ class TestSingleChangeRequestHandling:
         reference_validator = ReferenceValidator(mock_dh)
         auth_validator = AuthValidator(mock_dh)
 
-        result_route = parse_change_requests(SAMPLE_ROUTE + 'password: md5-password',
-                                             mock_dh, auth_validator, reference_validator)[0]
+        result_route = parse_change_requests(
+            SAMPLE_ROUTE + 'password: md5-password', mock_dh, auth_validator, reference_validator
+        )[0]
         assert result_route._check_auth()
         assert not result_route.error_messages
         assert result_route.notification_targets() == {'mnt-nfy2@example.net', 'mnt-nfy@example.net'}
 
         assert flatten_mock_calls(mock_dq, flatten_objects=True) == [
-            ['sources', (['TEST'],), {}], ['object_classes', (['route'],), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['route'],), {}],
             ['rpsl_pk', ('192.0.2.0/24AS65537',), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}],
             ['rpsl_pks', ({'TEST-MNT'},), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['inetnum'],), {}],
-            ['first_only', (), {}], ['ip_exact', ('192.0.2.0/24',), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['inetnum'],), {}],
-            ['first_only', (), {}], ['ip_less_specific_one_level', ('192.0.2.0/24',), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['route'],), {}],
-            ['first_only', (), {}], ['ip_less_specific_one_level', ('192.0.2.0/24',), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['inetnum'],), {}],
+            ['first_only', (), {}],
+            ['ip_exact', ('192.0.2.0/24',), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['inetnum'],), {}],
+            ['first_only', (), {}],
+            ['ip_less_specific_one_level', ('192.0.2.0/24',), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['route'],), {}],
+            ['first_only', (), {}],
+            ['ip_less_specific_one_level', ('192.0.2.0/24',), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}],
             ['rpsl_pks', ({'RELATED-MNT'},), {}],
         ]
 
@@ -952,23 +1110,32 @@ class TestSingleChangeRequestHandling:
         reference_validator = ReferenceValidator(mock_dh)
         auth_validator = AuthValidator(mock_dh)
 
-        result_route = parse_change_requests(SAMPLE_ROUTE + 'password: md5-password',
-                                             mock_dh, auth_validator, reference_validator)[0]
+        result_route = parse_change_requests(
+            SAMPLE_ROUTE + 'password: md5-password', mock_dh, auth_validator, reference_validator
+        )[0]
         assert result_route._check_auth()
         assert not result_route.error_messages
         assert result_route.notification_targets() == {'mnt-nfy2@example.net', 'mnt-nfy@example.net'}
 
         assert flatten_mock_calls(mock_dq, flatten_objects=True) == [
-            ['sources', (['TEST'],), {}], ['object_classes', (['route'],), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['route'],), {}],
             ['rpsl_pk', ('192.0.2.0/24AS65537',), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['mntner'],), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['mntner'],), {}],
             ['rpsl_pks', ({'TEST-MNT'},), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['inetnum'],), {}],
-            ['first_only', (), {}], ['ip_exact', ('192.0.2.0/24',), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['inetnum'],), {}],
-            ['first_only', (), {}], ['ip_less_specific_one_level', ('192.0.2.0/24',), {}],
-            ['sources', (['TEST'],), {}], ['object_classes', (['route'],), {}],
-            ['first_only', (), {}], ['ip_less_specific_one_level', ('192.0.2.0/24',), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['inetnum'],), {}],
+            ['first_only', (), {}],
+            ['ip_exact', ('192.0.2.0/24',), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['inetnum'],), {}],
+            ['first_only', (), {}],
+            ['ip_less_specific_one_level', ('192.0.2.0/24',), {}],
+            ['sources', (['TEST'],), {}],
+            ['object_classes', (['route'],), {}],
+            ['first_only', (), {}],
+            ['ip_less_specific_one_level', ('192.0.2.0/24',), {}],
         ]
 
     def test_rpki_validation(self, prepare_mocks, monkeypatch, config_override):
@@ -992,7 +1159,9 @@ class TestSingleChangeRequestHandling:
         # New object, RPKI-aware mode enabled but object not RPKI relevant
         mock_dh.execute_query = lambda query: []
         mock_roa_validator.validate_route = lambda prefix, asn, source: RPKIStatus.invalid
-        result_inetnum = parse_change_requests(SAMPLE_INETNUM, mock_dh, auth_validator, reference_validator)[0]
+        result_inetnum = parse_change_requests(SAMPLE_INETNUM, mock_dh, auth_validator, reference_validator)[
+            0
+        ]
         assert result_inetnum._check_conflicting_roa()
         assert not result_inetnum.error_messages
 
@@ -1008,7 +1177,9 @@ class TestSingleChangeRequestHandling:
         mock_roa_validator.validate_route = lambda prefix, asn, source: RPKIStatus.invalid
         result_route = parse_change_requests(SAMPLE_ROUTE, mock_dh, auth_validator, reference_validator)[0]
         assert not result_route._check_conflicting_roa()
-        assert result_route.error_messages[0].startswith('RPKI ROAs were found that conflict with this object.')
+        assert result_route.error_messages[0].startswith(
+            'RPKI ROAs were found that conflict with this object.'
+        )
 
         # Update object, RPKI invalid
         mock_dh.execute_query = lambda query: [{'object_text': SAMPLE_ROUTE}]
@@ -1016,7 +1187,9 @@ class TestSingleChangeRequestHandling:
         result_route = parse_change_requests(SAMPLE_ROUTE, mock_dh, auth_validator, reference_validator)[0]
         assert not result_route._check_conflicting_roa()
         assert not result_route._check_conflicting_roa()  # Should use cache
-        assert result_route.error_messages[0].startswith('RPKI ROAs were found that conflict with this object.')
+        assert result_route.error_messages[0].startswith(
+            'RPKI ROAs were found that conflict with this object.'
+        )
 
         # Delete object, RPKI invalid
         mock_dh.execute_query = lambda query: [{'object_text': SAMPLE_ROUTE}]
@@ -1042,14 +1215,20 @@ class TestSingleChangeRequestHandling:
 
         # New object, out of scope
         mock_dh.execute_query = lambda query: []
-        mock_scopefilter_validator.validate_rpsl_object = lambda obj: (ScopeFilterStatus.out_scope_as, 'out of scope AS')
+        mock_scopefilter_validator.validate_rpsl_object = lambda obj: (
+            ScopeFilterStatus.out_scope_as,
+            'out of scope AS',
+        )
         result_route = parse_change_requests(SAMPLE_ROUTE, mock_dh, auth_validator, reference_validator)[0]
         assert not result_route._check_scopefilter()
         assert result_route.error_messages[0] == 'Contains out of scope information: out of scope AS'
 
         # Update object, out of scope, permitted
         mock_dh.execute_query = lambda query: [{'object_text': SAMPLE_ROUTE}]
-        mock_scopefilter_validator.validate_rpsl_object = lambda obj: (ScopeFilterStatus.out_scope_prefix, 'out of scope prefix')
+        mock_scopefilter_validator.validate_rpsl_object = lambda obj: (
+            ScopeFilterStatus.out_scope_prefix,
+            'out of scope prefix',
+        )
         result_route = parse_change_requests(SAMPLE_ROUTE, mock_dh, auth_validator, reference_validator)[0]
         assert result_route._check_scopefilter()
         assert not result_route.error_messages
@@ -1057,7 +1236,10 @@ class TestSingleChangeRequestHandling:
 
         # Delete object, out of scope
         mock_dh.execute_query = lambda query: [{'object_text': SAMPLE_ROUTE}]
-        mock_scopefilter_validator.validate_rpsl_object = lambda obj: (ScopeFilterStatus.out_scope_as, 'out of scope AS')
+        mock_scopefilter_validator.validate_rpsl_object = lambda obj: (
+            ScopeFilterStatus.out_scope_as,
+            'out of scope AS',
+        )
         obj_text = SAMPLE_ROUTE + 'delete: delete'
         result_route = parse_change_requests(obj_text, mock_dh, auth_validator, reference_validator)[0]
         assert result_route._check_scopefilter()
@@ -1065,14 +1247,17 @@ class TestSingleChangeRequestHandling:
     def test_user_report(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
 
-        query_results = iter([
-            [{'object_text': SAMPLE_INETNUM + 'remarks: MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.'}],
-            [],
-        ])
+        query_results = iter(
+            [
+                [{'object_text': SAMPLE_INETNUM + 'remarks: MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.'}],
+                [],
+            ]
+        )
         mock_dh.execute_query = lambda query: next(query_results)
 
         result_inetnum, result_as_set, result_unknown, result_invalid = parse_change_requests(
-            self._request_text(), mock_dh, AuthValidator(mock_dh), None)
+            self._request_text(), mock_dh, AuthValidator(mock_dh), None
+        )
         report_inetnum = result_inetnum.submitter_report_human()
         report_as_set = result_as_set.submitter_report_human()
         report_unknown = result_unknown.submitter_report_human()
@@ -1093,13 +1278,18 @@ class TestSingleChangeRequestHandling:
         assert 'ERROR: Invalid AS number PW1' in report_invalid
 
         # The extra MD5-PW is a workaround to test #722 until we can address #412
-        query_results = iter([
-            [{'object_text': SAMPLE_INETNUM + 'remarks: MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.'}],
-            [],
-        ])
+        query_results = iter(
+            [
+                [{'object_text': SAMPLE_INETNUM + 'remarks: MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.'}],
+                [],
+            ]
+        )
         mock_dh.execute_query = lambda query: next(query_results)
 
-        assert result_inetnum.notification_target_report() == textwrap.dedent("""
+        assert (
+            result_inetnum.notification_target_report()
+            == textwrap.dedent(
+                """
             Delete succeeded for object below: [inetnum] 192.0.2.0 - 192.0.2.255:
             
             inetnum:        192.0.2.0 - 192.0.2.255
@@ -1116,9 +1306,15 @@ class TestSingleChangeRequestHandling:
             source:         TEST
             remarks:        remark
             remarks:        MD5-pw DummyValue  # Filtered for security
-        """).strip() + '\n'
+        """
+            ).strip()
+            + '\n'
+        )
 
-        assert result_as_set.notification_target_report() == textwrap.dedent("""
+        assert (
+            result_as_set.notification_target_report()
+            == textwrap.dedent(
+                """
             Create succeeded for object below: [as-set] AS65537:AS-SETTEST:
             
             as-set:         AS65537:AS-SETTEST
@@ -1133,11 +1329,19 @@ class TestSingleChangeRequestHandling:
             changed:        changed@example.com 20190701 # comment
             source:         TEST
             remarks:        remark
-        """).strip() + '\n'
+        """
+            ).strip()
+            + '\n'
+        )
 
         inetnum_modify = SAMPLE_INETNUM.replace('PERSON-TEST', 'NEW-TEST')
-        result_inetnum_modify = parse_change_requests(inetnum_modify, mock_dh, AuthValidator(mock_dh), None)[0]
-        assert result_inetnum_modify.notification_target_report() == textwrap.dedent("""
+        result_inetnum_modify = parse_change_requests(inetnum_modify, mock_dh, AuthValidator(mock_dh), None)[
+            0
+        ]
+        assert (
+            result_inetnum_modify.notification_target_report()
+            == textwrap.dedent(
+                """
             Modify succeeded for object below: [inetnum] 192.0.2.0 - 192.0.2.255:
             
             @@ -4,11 +4,10 @@
@@ -1170,11 +1374,17 @@ class TestSingleChangeRequestHandling:
             changed:        changed@example.com 20190701 # comment
             source:         TEST
             remarks:        remark
-        """).strip() + '\n'
+        """
+            ).strip()
+            + '\n'
+        )
 
         # Fake the result to look like an authentication failure
         result_inetnum_modify.status = UpdateRequestStatus.ERROR_AUTH
-        assert result_inetnum_modify.notification_target_report() == textwrap.dedent("""
+        assert (
+            result_inetnum_modify.notification_target_report()
+            == textwrap.dedent(
+                """
             Modify FAILED AUTHORISATION for object below: [inetnum] 192.0.2.0 - 192.0.2.255:
             
             @@ -4,11 +4,10 @@
@@ -1207,7 +1417,10 @@ class TestSingleChangeRequestHandling:
             changed:        changed@example.com 20190701 # comment
             source:         TEST
             remarks:        remark
-        """).strip() + '\n'
+        """
+            ).strip()
+            + '\n'
+        )
 
         with pytest.raises(ValueError) as ve:
             result_unknown.notification_target_report()
@@ -1235,20 +1448,33 @@ class TestSuspensionRequest:
         mock_reactivate_for_mntner = Mock(suspend_for_mntner)
         monkeypatch.setattr('irrd.updates.parser.reactivate_for_mntner', mock_reactivate_for_mntner)
         mock_auth_validator.check_override.return_value = True
-        
-        default_request = textwrap.dedent("""
+
+        default_request = (
+            textwrap.dedent(
+                """
             override: override-pw
             
             suspension: suspend
             mntner: MNT-SUSPEND
             source: TEST
-            """).strip() + '\n'
-        
-        return mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request
+            """
+            ).strip()
+            + '\n'
+        )
+
+        return (
+            mock_dh,
+            mock_auth_validator,
+            mock_suspend_for_mntner,
+            mock_reactivate_for_mntner,
+            default_request,
+        )
 
     def test_valid_suspension(self, prepare_suspension_request_test):
-        mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request = prepare_suspension_request_test
-        
+        mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request = (
+            prepare_suspension_request_test
+        )
+
         (r, *_) = parse_change_requests(default_request, mock_dh, mock_auth_validator, None)
 
         assert r.request_type == SuspensionRequestType.SUSPEND
@@ -1279,15 +1505,17 @@ class TestSuspensionRequest:
             'object_class': 'mntner',
             'rpsl_pk': 'MNT-SUSPEND',
             'info_messages': ['Suspended route/192.0.2.0/24/TEST'],
-            'error_messages': []
+            'error_messages': [],
         }
-        assert r.submitter_report_human() == (
-            "Suspend succeeded: [mntner] MNT-SUSPEND\n"
-            "INFO: Suspended route/192.0.2.0/24/TEST\n"
+        assert (
+            r.submitter_report_human()
+            == "Suspend succeeded: [mntner] MNT-SUSPEND\nINFO: Suspended route/192.0.2.0/24/TEST\n"
         )
-    
+
     def test_valid_reactivation(self, prepare_suspension_request_test):
-        mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request = prepare_suspension_request_test
+        mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request = (
+            prepare_suspension_request_test
+        )
 
         request = default_request.replace('suspend', 'reactivate')
         (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None)
@@ -1298,22 +1526,22 @@ class TestSuspensionRequest:
         assert mock_auth_validator.overrides == ['override-pw']
 
         mock_reactivate_for_mntner.return_value = [
-            ['route/192.0.2.0/24/TEST'], ['info msg'],
+            ['route/192.0.2.0/24/TEST'],
+            ['info msg'],
         ]
         r.save()
         assert r.status == UpdateRequestStatus.SAVED
         assert not r.error_messages
-        assert r.info_messages == [
-            'info msg',
-            'Restored route/192.0.2.0/24/TEST'
-        ]
+        assert r.info_messages == ['info msg', 'Restored route/192.0.2.0/24/TEST']
 
         assert mock_reactivate_for_mntner.call_count == 1
         assert mock_reactivate_for_mntner.call_args[0][1].pk() == 'MNT-SUSPEND'
         assert flatten_mock_calls(mock_auth_validator) == [['check_override', (), {}]]
 
     def test_failed_reactivation(self, prepare_suspension_request_test):
-        mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request = prepare_suspension_request_test
+        mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request = (
+            prepare_suspension_request_test
+        )
 
         request = default_request.replace('suspend', 'reactivate')
         (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None)
@@ -1326,7 +1554,9 @@ class TestSuspensionRequest:
         assert 'failure' in r.submitter_report_human()
 
     def test_not_authoritative(self, prepare_suspension_request_test, config_override):
-        mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request = prepare_suspension_request_test
+        mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request = (
+            prepare_suspension_request_test
+        )
         config_override({'sources': {'TEST': {'suspension_enabled': False}}})
 
         (r, *_) = parse_change_requests(default_request, mock_dh, mock_auth_validator, None)
@@ -1342,7 +1572,9 @@ class TestSuspensionRequest:
             r.save()
 
     def test_unknown_suspension(self, prepare_suspension_request_test):
-        mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request = prepare_suspension_request_test
+        mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request = (
+            prepare_suspension_request_test
+        )
 
         request = default_request.replace('suspend', 'invalid')
         (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None)
@@ -1355,7 +1587,9 @@ class TestSuspensionRequest:
         assert not r.is_valid()
 
     def test_invalid_rpsl_object(self, prepare_suspension_request_test):
-        mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request = prepare_suspension_request_test
+        mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request = (
+            prepare_suspension_request_test
+        )
 
         request = "suspension: suspend\nmntner: TEST"
         (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None)
@@ -1367,7 +1601,9 @@ class TestSuspensionRequest:
         assert not r.is_valid()
 
     def test_invalid_rpsl_object_class(self, prepare_suspension_request_test):
-        mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request = prepare_suspension_request_test
+        mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request = (
+            prepare_suspension_request_test
+        )
 
         request = "suspension: suspend\nsource: TEST"
         (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None)
@@ -1379,7 +1615,9 @@ class TestSuspensionRequest:
         assert not r.is_valid()
 
     def test_incorrect_object_class(self, prepare_suspension_request_test):
-        mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request = prepare_suspension_request_test
+        mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request = (
+            prepare_suspension_request_test
+        )
 
         request = 'override: override-pw\n\nsuspension: suspend\n' + SAMPLE_INETNUM
         (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None)
@@ -1391,7 +1629,9 @@ class TestSuspensionRequest:
         assert not r.is_valid()
 
     def test_invalid_override_password(self, prepare_suspension_request_test):
-        mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request = prepare_suspension_request_test
+        mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request = (
+            prepare_suspension_request_test
+        )
         mock_auth_validator.check_override.return_value = False
 
         (r, *_) = parse_change_requests(default_request, mock_dh, mock_auth_validator, None)

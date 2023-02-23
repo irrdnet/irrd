@@ -30,9 +30,8 @@ def get_engine():
         if connection_record.info['pid'] != pid:  # pragma: no cover
             connection_record.connection = connection_proxy.connection = None
             raise sa.exc.DisconnectionError(
-                "Connection record belongs to pid %s, "
-                "attempting to check out in pid %s" %
-                (connection_record.info['pid'], pid)
+                "Connection record belongs to pid %s, attempting to check out in pid %s"
+                % (connection_record.info['pid'], pid)
             )
 
     return engine

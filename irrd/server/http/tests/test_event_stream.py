@@ -76,7 +76,9 @@ class TestEventStreamInitialDownloadEndpoint:
         monkeypatch.setattr("irrd.server.http.event_stream.postgres_copy.copy_to", mock_copy_to)
 
         client = TestClient(app)
-        response = client.get("/v1/event-stream/initial/", params={"sources": "TEST", "object_classes": "mntner"})
+        response = client.get(
+            "/v1/event-stream/initial/", params={"sources": "TEST", "object_classes": "mntner"}
+        )
         assert response.status_code == 200
         header, rpsl_obj = (json.loads(line) for line in response.text.splitlines())
 
@@ -151,7 +153,9 @@ class TestEventStreamEndpoint:
         mock_dh = MockDatabaseHandler()
         mock_dh.reset_mock()
         monkeypatch.setattr("irrd.server.http.event_stream.DatabaseHandler", MockDatabaseHandler)
-        monkeypatch.setattr("irrd.server.http.event_stream.AsyncEventStreamFollower", mock_event_stream_follower)
+        monkeypatch.setattr(
+            "irrd.server.http.event_stream.AsyncEventStreamFollower", mock_event_stream_follower
+        )
 
         client = TestClient(app)
         with client.websocket_connect("/v1/event-stream/") as websocket:
@@ -230,8 +234,12 @@ class TestAsyncEventStreamFollower:
         assert mock_dh.readonly
         assert mock_dh.closed
         assert mock_dh.queries[0] == RPSLDatabaseJournalStatisticsQuery()
-        assert mock_dh.queries[1] == RPSLDatabaseJournalQuery().serial_global_range(expected_serial_starts.pop(0))
-        assert mock_dh.queries[2] == RPSLDatabaseJournalQuery().serial_global_range(expected_serial_starts.pop(0))
+        assert mock_dh.queries[1] == RPSLDatabaseJournalQuery().serial_global_range(
+            expected_serial_starts.pop(0)
+        )
+        assert mock_dh.queries[2] == RPSLDatabaseJournalQuery().serial_global_range(
+            expected_serial_starts.pop(0)
+        )
 
         msg_journal1, event_journal_extended = messages
 

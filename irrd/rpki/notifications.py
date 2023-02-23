@@ -14,8 +14,9 @@ from irrd.utils.email import send_email
 logger = logging.getLogger(__name__)
 
 
-def notify_rpki_invalid_owners(database_handler: DatabaseHandler,
-                               rpsl_dicts_now_invalid: List[Dict[str, str]]) -> int:
+def notify_rpki_invalid_owners(
+    database_handler: DatabaseHandler, rpsl_dicts_now_invalid: List[Dict[str, str]]
+) -> int:
     """
     Notify the owners/contacts of newly RPKI invalid objects.
 
@@ -45,12 +46,21 @@ def notify_rpki_invalid_owners(database_handler: DatabaseHandler,
         mntner_emails = defaultdict(set)
 
         # Step 1: retrieve all relevant maintainers from the DB
-        mntner_pks = set(itertools.chain(*[
-            obj.parsed_data.get('mnt-by', [])
-            for obj in rpsl_objs
-            if obj.parsed_data['source'] == source
-        ]))
-        query = RPSLDatabaseQuery(['rpsl_pk', 'parsed_data']).sources([source]).rpsl_pks(mntner_pks).object_classes(['mntner'])
+        mntner_pks = set(
+            itertools.chain(
+                *[
+                    obj.parsed_data.get('mnt-by', [])
+                    for obj in rpsl_objs
+                    if obj.parsed_data['source'] == source
+                ]
+            )
+        )
+        query = (
+            RPSLDatabaseQuery(['rpsl_pk', 'parsed_data'])
+            .sources([source])
+            .rpsl_pks(mntner_pks)
+            .object_classes(['mntner'])
+        )
         mntners = list(database_handler.execute_query(query))
 
         # Step 2: any mnt-nfy on these maintainers is a contact address
@@ -66,10 +76,14 @@ def notify_rpki_invalid_owners(database_handler: DatabaseHandler,
         # Step 4: retrieve all these contacts from the DB in bulk,
         # and extract their e-mail addresses
         contact_pks = set(itertools.chain(*mntner_contacts.values()))
-        query = RPSLDatabaseQuery(['rpsl_pk', 'parsed_data']).sources([source]).rpsl_pks(contact_pks).object_classes(['role', 'person'])
+        query = (
+            RPSLDatabaseQuery(['rpsl_pk', 'parsed_data'])
+            .sources([source])
+            .rpsl_pks(contact_pks)
+            .object_classes(['role', 'person'])
+        )
         contacts = {
-            r['rpsl_pk']: r['parsed_data'].get('e-mail', [])
-            for r in database_handler.execute_query(query)
+            r['rpsl_pk']: r['parsed_data'].get('e-mail', []) for r in database_handler.execute_query(query)
         }
 
         # Step 5: use the contacts per maintainer, and emails per contact

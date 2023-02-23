@@ -26,10 +26,13 @@ def set_force_reload(source) -> None:
 def main():  # pragma: no cover
     description = """Force a full reload for a mirror."""
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument('--config', dest='config_file_path', type=str,
-                        help=f'use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})')
-    parser.add_argument('source', type=str,
-                        help='the name of the source to reload')
+    parser.add_argument(
+        '--config',
+        dest='config_file_path',
+        type=str,
+        help=f'use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})',
+    )
+    parser.add_argument('source', type=str, help='the name of the source to reload')
     args = parser.parse_args()
 
     config_init(args.config_file_path)

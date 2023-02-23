@@ -162,7 +162,7 @@ class TestRPSLAsSet:
         assert obj.referred_strong_objects() == [
             ('admin-c', ['role', 'person'], ['PERSON-TEST']),
             ('tech-c', ['role', 'person'], ['PERSON-TEST']),
-            ('mnt-by', ['mntner'], ['TEST-MNT'])
+            ('mnt-by', ['mntner'], ['TEST-MNT']),
         ]
         assert obj.references_strong_inbound() == set()
         assert obj.source() == 'TEST'
@@ -187,9 +187,9 @@ class TestRPSLAsSet:
         assert obj.clean_for_create()
         assert not obj.pk_asn_segment
 
-        config_override({'auth': {'set_creation': {
-            AUTH_SET_CREATION_COMMON_KEY: {'prefix_required': False}
-        }}})
+        config_override(
+            {'auth': {'set_creation': {AUTH_SET_CREATION_COMMON_KEY: {'prefix_required': False}}}}
+        )
         obj = rpsl_object_from_text(rpsl_text)
         assert obj.clean_for_create()
         assert not obj.pk_asn_segment
@@ -300,6 +300,7 @@ class TestRPSLKeyCert:
     tests call the actual gpg binary, as the test has little value when gpg is
     mocked out.
     """
+
     def test_has_mapping(self):
         obj = RPSLKeyCert()
         assert OBJECT_CLASS_MAPPING[obj.rpsl_object_class] == obj.__class__
@@ -309,8 +310,12 @@ class TestRPSLKeyCert:
         rpsl_text = object_sample_mapping[RPSLKeyCert().rpsl_object_class]
 
         # Mangle the fingerprint/owner/method lines to ensure the parser correctly re-generates them
-        mangled_rpsl_text = rpsl_text.replace('8626 1D8D BEBD A4F5 4692  D64D A838 3BA7 80F2 38C6', 'fingerprint')
-        mangled_rpsl_text = mangled_rpsl_text.replace('sasha', 'foo').replace('method:         PGP', 'method: test')
+        mangled_rpsl_text = rpsl_text.replace(
+            '8626 1D8D BEBD A4F5 4692  D64D A838 3BA7 80F2 38C6', 'fingerprint'
+        )
+        mangled_rpsl_text = mangled_rpsl_text.replace('sasha', 'foo').replace(
+            'method:         PGP', 'method: test'
+        )
 
         expected_text = rpsl_text.replace('                \n', '+               \n')  # #298
         obj = rpsl_object_from_text(mangled_rpsl_text)
@@ -341,7 +346,9 @@ class TestRPSLKeyCert:
     @pytest.mark.usefixtures('tmp_gpg_dir')  # noqa: F811
     def test_parse_invalid_key(self, tmp_gpg_dir):
         rpsl_text = object_sample_mapping[RPSLKeyCert().rpsl_object_class]
-        obj = rpsl_object_from_text(rpsl_text.replace('mQINBFnY7YoBEADH5ooPsoR9G', 'foo'), strict_validation=True)
+        obj = rpsl_object_from_text(
+            rpsl_text.replace('mQINBFnY7YoBEADH5ooPsoR9G', 'foo'), strict_validation=True
+        )
 
         errors = obj.messages.errors()
         assert len(errors) == 1, f'Unexpected multiple errors: {errors}'
@@ -390,7 +397,9 @@ class TestRPSLMntner:
         rpsl_text = object_sample_mapping[RPSLMntner().rpsl_object_class]
         # Unknown hashes and invalid hashes should simply be ignored.
         # Strict validation set to False to allow legacy mode for CRYPT-PW
-        obj = rpsl_object_from_text(rpsl_text + 'auth: UNKNOWN_HASH foo\nauth: MD5-PW 💩', strict_validation=False)
+        obj = rpsl_object_from_text(
+            rpsl_text + 'auth: UNKNOWN_HASH foo\nauth: MD5-PW 💩', strict_validation=False
+        )
 
         assert obj.verify_auth(['crypt-password'])
         assert obj.verify_auth(['md5-password'])
@@ -546,7 +555,7 @@ class TestRPSLRtrSet:
         assert obj.referred_strong_objects() == [
             ('admin-c', ['role', 'person'], ['PERSON-TEST']),
             ('tech-c', ['role', 'person'], ['PERSON-TEST']),
-            ('mnt-by', ['mntner'], ['TEST-MNT'])
+            ('mnt-by', ['mntner'], ['TEST-MNT']),
         ]
         assert obj.references_strong_inbound() == set()
         assert obj.render_rpsl_text() == rpsl_text
@@ -554,9 +563,7 @@ class TestRPSLRtrSet:
 
 class TestLastModified:
     def test_authoritative(self, config_override):
-        config_override({
-            'sources': {'TEST': {'authoritative': True}}
-        })
+        config_override({'sources': {'TEST': {'authoritative': True}}})
         rpsl_text = object_sample_mapping[RPSLRtrSet().rpsl_object_class]
         obj = rpsl_object_from_text(rpsl_text + 'last-modified: old-value\n')
         assert not obj.messages.errors()

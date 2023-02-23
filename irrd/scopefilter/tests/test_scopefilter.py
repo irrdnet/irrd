@@ -15,19 +15,18 @@ from ..validators import ScopeFilterValidator
 
 class TestScopeFilterValidator:
     def test_validate(self, config_override):
-        config_override({
-            'scopefilter': {
-                'asns': [
-                    '23456',
-                    '10-20',
-                ],
-                'prefixes': [
-                    '10/8',
-                    '192.168.0.0/24'
-                ],
-            },
-            'sources': {'TEST-EXCLUDED': {'scopefilter_excluded': True}}
-        })
+        config_override(
+            {
+                'scopefilter': {
+                    'asns': [
+                        '23456',
+                        '10-20',
+                    ],
+                    'prefixes': ['10/8', '192.168.0.0/24'],
+                },
+                'sources': {'TEST-EXCLUDED': {'scopefilter_excluded': True}},
+            }
+        )
 
         validator = ScopeFilterValidator()
         assert validator.validate('TEST', IP('192.0.2/24')) == ScopeFilterStatus.in_scope
@@ -64,31 +63,37 @@ class TestScopeFilterValidator:
         autnum_obj = rpsl_object_from_text(SAMPLE_AUT_NUM)
         assert validator.validate_rpsl_object(autnum_obj) == (ScopeFilterStatus.in_scope, '')
 
-        config_override({
-            'scopefilter': {
-                'asns': ['65537'],
-            },
-        })
+        config_override(
+            {
+                'scopefilter': {
+                    'asns': ['65537'],
+                },
+            }
+        )
         validator.load_filters()
         result = validator.validate_rpsl_object(route_obj)
         assert result == (ScopeFilterStatus.out_scope_as, 'ASN 65537 is out of scope')
         result = validator.validate_rpsl_object(autnum_obj)
         assert result == (ScopeFilterStatus.out_scope_as, 'ASN 65537 is out of scope')
 
-        config_override({
-            'scopefilter': {
-                'prefixes': ['192.0.2.0/32'],
-            },
-        })
+        config_override(
+            {
+                'scopefilter': {
+                    'prefixes': ['192.0.2.0/32'],
+                },
+            }
+        )
         validator.load_filters()
         result = validator.validate_rpsl_object(route_obj)
         assert result == (ScopeFilterStatus.out_scope_prefix, 'prefix 192.0.2.0/24 is out of scope')
 
-        config_override({
-            'scopefilter': {
-                'prefix': ['0/0'],
-            },
-        })
+        config_override(
+            {
+                'scopefilter': {
+                    'prefix': ['0/0'],
+                },
+            }
+        )
         validator.load_filters()
 
         # Ignored object class
@@ -98,92 +103,98 @@ class TestScopeFilterValidator:
     def test_validate_all_rpsl_objects(self, config_override, monkeypatch):
         mock_dh = Mock(spec=DatabaseHandler)
         mock_dq = Mock(spec=RPSLDatabaseQuery)
-        monkeypatch.setattr('irrd.scopefilter.validators.RPSLDatabaseQuery',
-                            lambda column_names=None, enable_ordering=True: mock_dq)
+        monkeypatch.setattr(
+            'irrd.scopefilter.validators.RPSLDatabaseQuery',
+            lambda column_names=None, enable_ordering=True: mock_dq,
+        )
 
-        config_override({
-            'scopefilter': {
-                'asns': [
-                    '23456',
-                ],
-                'prefixes': [
-                    '192.0.2.0/25',
-                ],
-            },
-        })
+        config_override(
+            {
+                'scopefilter': {
+                    'asns': [
+                        '23456',
+                    ],
+                    'prefixes': [
+                        '192.0.2.0/25',
+                    ],
+                },
+            }
+        )
 
-        mock_query_result = iter([
+        mock_query_result = iter(
             [
-                {
-                    # Should become in_scope
-                    'pk': '192.0.2.128/25,AS65547',
-                    'rpsl_pk': '192.0.2.128/25,AS65547',
-                    'prefix': '192.0.2.128/25',
-                    'asn_first': 65547,
-                    'source': 'TEST',
-                    'object_class': 'route',
-                    'scopefilter_status': ScopeFilterStatus.out_scope_prefix,
-                },
-                {
-                    # Should become out_scope_prefix
-                    'pk': '192.0.2.0/25,AS65547',
-                    'rpsl_pk': '192.0.2.0/25,AS65547',
-                    'prefix': '192.0.2.0/25',
-                    'asn_first': 65547,
-                    'source': 'TEST',
-                    'object_class': 'route',
-                    'scopefilter_status': ScopeFilterStatus.in_scope,
-                },
-                {
-                    # Should become out_scope_as
-                    'pk': '192.0.2.128/25,AS65547',
-                    'rpsl_pk': '192.0.2.128/25,AS65547',
-                    'prefix': '192.0.2.128/25',
-                    'asn_first': 23456,
-                    'source': 'TEST',
-                    'object_class': 'route',
-                    'scopefilter_status': ScopeFilterStatus.out_scope_prefix,
-                },
-                {
-                    # Should become out_scope_as
-                    'pk': 'AS65547',
-                    'rpsl_pk': 'AS65547',
-                    'asn_first': 23456,
-                    'source': 'TEST',
-                    'object_class': 'aut-num',
-                    'object_text': 'text',
-                    'scopefilter_status': ScopeFilterStatus.in_scope,
-                },
-                {
-                    # Should not change
-                    'pk': '192.0.2.128/25,AS65548',
-                    'rpsl_pk': '192.0.2.128/25,AS65548',
-                    'prefix': '192.0.2.128/25',
-                    'asn_first': 65548,
-                    'source': 'TEST',
-                    'object_class': 'route',
-                    'scopefilter_status': ScopeFilterStatus.in_scope,
-                },
-            ],
-            [
-                {
-                    'pk': '192.0.2.128/25,AS65547',
-                    'object_text': 'text-192.0.2.128/25,AS65547',
-                },
-                {
-                    'pk': '192.0.2.0/25,AS65547',
-                    'object_text': 'text-192.0.2.0/25,AS65547',
-                },
-                {
-                    'pk': '192.0.2.128/25,AS65547',
-                    'object_text': 'text-192.0.2.128/25,AS65547',
-                },
-                {
-                    'pk': 'AS65547',
-                    'object_text': 'text-AS65547',
-                },
+                [
+                    {
+                        # Should become in_scope
+                        'pk': '192.0.2.128/25,AS65547',
+                        'rpsl_pk': '192.0.2.128/25,AS65547',
+                        'prefix': '192.0.2.128/25',
+                        'asn_first': 65547,
+                        'source': 'TEST',
+                        'object_class': 'route',
+                        'scopefilter_status': ScopeFilterStatus.out_scope_prefix,
+                    },
+                    {
+                        # Should become out_scope_prefix
+                        'pk': '192.0.2.0/25,AS65547',
+                        'rpsl_pk': '192.0.2.0/25,AS65547',
+                        'prefix': '192.0.2.0/25',
+                        'asn_first': 65547,
+                        'source': 'TEST',
+                        'object_class': 'route',
+                        'scopefilter_status': ScopeFilterStatus.in_scope,
+                    },
+                    {
+                        # Should become out_scope_as
+                        'pk': '192.0.2.128/25,AS65547',
+                        'rpsl_pk': '192.0.2.128/25,AS65547',
+                        'prefix': '192.0.2.128/25',
+                        'asn_first': 23456,
+                        'source': 'TEST',
+                        'object_class': 'route',
+                        'scopefilter_status': ScopeFilterStatus.out_scope_prefix,
+                    },
+                    {
+                        # Should become out_scope_as
+                        'pk': 'AS65547',
+                        'rpsl_pk': 'AS65547',
+                        'asn_first': 23456,
+                        'source': 'TEST',
+                        'object_class': 'aut-num',
+                        'object_text': 'text',
+                        'scopefilter_status': ScopeFilterStatus.in_scope,
+                    },
+                    {
+                        # Should not change
+                        'pk': '192.0.2.128/25,AS65548',
+                        'rpsl_pk': '192.0.2.128/25,AS65548',
+                        'prefix': '192.0.2.128/25',
+                        'asn_first': 65548,
+                        'source': 'TEST',
+                        'object_class': 'route',
+                        'scopefilter_status': ScopeFilterStatus.in_scope,
+                    },
+                ],
+                [
+                    {
+                        'pk': '192.0.2.128/25,AS65547',
+                        'object_text': 'text-192.0.2.128/25,AS65547',
+                    },
+                    {
+                        'pk': '192.0.2.0/25,AS65547',
+                        'object_text': 'text-192.0.2.0/25,AS65547',
+                    },
+                    {
+                        'pk': '192.0.2.128/25,AS65547',
+                        'object_text': 'text-192.0.2.128/25,AS65547',
+                    },
+                    {
+                        'pk': 'AS65547',
+                        'object_text': 'text-AS65547',
+                    },
+                ],
             ]
-        ])
+        )
         mock_dh.execute_query = lambda query: next(mock_query_result)
 
         validator = ScopeFilterValidator()
@@ -211,5 +222,9 @@ class TestScopeFilterValidator:
 
         assert flatten_mock_calls(mock_dq) == [
             ['object_classes', (['route', 'route6', 'aut-num'],), {}],
-            ['pks', (['192.0.2.128/25,AS65547', '192.0.2.0/25,AS65547', '192.0.2.128/25,AS65547', 'AS65547'],), {}],
+            [
+                'pks',
+                (['192.0.2.128/25,AS65547', '192.0.2.0/25,AS65547', '192.0.2.128/25,AS65547', 'AS65547'],),
+                {},
+            ],
         ]

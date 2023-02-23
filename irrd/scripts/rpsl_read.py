@@ -81,24 +81,36 @@ def main():  # pragma: no cover
                      the parser, the object is printed followed by the messages. Optionally, insert objects into
                      the database."""
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument('--config', dest='config_file_path', type=str,
-                        help=f'use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})')
-    parser.add_argument('--hide-info', dest='hide_info', action='store_true',
-                        help='hide INFO messages')
-    parser.add_argument('--strict', dest='strict_validation', action='store_true',
-                        help='use strict validation (errors on e.g. unknown or missing attributes)')
-    parser.add_argument('--database-destructive-overwrite', dest='database', action='store_true',
-                        help='insert all valid objects into the IRRD database - OVERWRITING ANY EXISTING ENTRIES, if '
-                             'they have the same RPSL primary key and source')
-    parser.add_argument('input_file', type=str,
-                        help='the name of a file to read, or - for stdin')
+    parser.add_argument(
+        '--config',
+        dest='config_file_path',
+        type=str,
+        help=f'use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})',
+    )
+    parser.add_argument('--hide-info', dest='hide_info', action='store_true', help='hide INFO messages')
+    parser.add_argument(
+        '--strict',
+        dest='strict_validation',
+        action='store_true',
+        help='use strict validation (errors on e.g. unknown or missing attributes)',
+    )
+    parser.add_argument(
+        '--database-destructive-overwrite',
+        dest='database',
+        action='store_true',
+        help=(
+            'insert all valid objects into the IRRD database - OVERWRITING ANY EXISTING ENTRIES, if '
+            'they have the same RPSL primary key and source'
+        ),
+    )
+    parser.add_argument('input_file', type=str, help='the name of a file to read, or - for stdin')
     args = parser.parse_args()
 
     config_init(args.config_file_path)
     if get_setting('database_readonly'):
         print('Unable to run, because database_readonly is set')
         sys.exit(-1)
-        
+
     RPSLParse().main(args.input_file, args.strict_validation, args.database, not args.hide_info)
 
 

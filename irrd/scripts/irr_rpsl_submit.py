@@ -845,7 +845,10 @@ def setup_argparse():
         "-u",
         dest="url",
         type=str,
-        help="IRRd submission API URL, e.g. https://rr.example.net/v1/submit/ (also set by IRR_RPSL_SUBMIT_URL)",  # pylint: disable=C0301
+        help=(  # pylint: disable=C0301
+            "IRRd submission API URL, e.g. https://rr.example.net/v1/submit/ (also set by"
+            " IRR_RPSL_SUBMIT_URL)"
+        ),
     )
 
     add_irrdv3_options(parser)

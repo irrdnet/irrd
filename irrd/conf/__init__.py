@@ -28,15 +28,10 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
-        'verbose': {
-            'format': '%(asctime)s irrd[%(process)d]: [%(name)s#%(levelname)s] %(message)s'
-        },
+        'verbose': {'format': '%(asctime)s irrd[%(process)d]: [%(name)s#%(levelname)s] %(message)s'},
     },
     'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'verbose'
-        },
+        'console': {'class': 'logging.StreamHandler', 'formatter': 'verbose'},
     },
     'loggers': {
         # Tune down some very loud and not very useful loggers from libraries.
@@ -58,7 +53,7 @@ LOGGING = {
             'handlers': ['console'],
             'level': 'INFO',
         },
-    }
+    },
 }
 
 
@@ -81,15 +76,17 @@ class Configuration:
     The Configuration class stores the current IRRD configuration,
     checks the validity of the settings, and offers graceful reloads.
     """
+
     user_config_staging: DottedDict
     user_config_live: DottedDict
 
-    def __init__(self, user_config_path: Optional[str]=None, commit=True):
+    def __init__(self, user_config_path: Optional[str] = None, commit=True):
         """
         Load the default config and load and check the user provided config.
         If a logfile was specified, direct logs there.
         """
         from .known_keys import KNOWN_CONFIG_KEYS, KNOWN_SOURCES_KEYS
+
         self.known_config_keys = KNOWN_CONFIG_KEYS
         self.known_sources_keys = KNOWN_SOURCES_KEYS
         self.user_config_path = user_config_path if user_config_path else CONFIG_PATH_DEFAULT
@@ -115,19 +112,19 @@ class Configuration:
                 self.logging_config = config_module.LOGGING  # type: ignore
                 logging.config.dictConfig(self.logging_config)
             elif logfile_path:
-                LOGGING['handlers']['file'] = {   # type:ignore
+                LOGGING['handlers']['file'] = {  # type:ignore
                     'class': 'logging.handlers.WatchedFileHandler',
                     'filename': logfile_path,
                     'formatter': 'verbose',
                 }
                 # noinspection PyTypeChecker
-                LOGGING['loggers']['']['handlers'] = ['file']   # type:ignore
+                LOGGING['loggers']['']['handlers'] = ['file']  # type:ignore
                 logging.config.dictConfig(LOGGING)
 
             # Re-commit to apply loglevel
             self._commit_staging()
 
-    def get_setting_live(self, setting_name: str, default: Optional[Any]=None) -> Any:
+    def get_setting_live(self, setting_name: str, default: Optional[Any] = None) -> Any:
         """
         Get a setting from the live config.
         In order, this will look in:
@@ -209,7 +206,9 @@ class Configuration:
 
         errors = self._check_staging_config()
         if not errors and log_success:
-            logger.info(f'Configuration successfully (re)loaded from {self.user_config_path} in PID {os.getpid()}')
+            logger.info(
+                f'Configuration successfully (re)loaded from {self.user_config_path} in PID {os.getpid()}'
+            )
         return errors
 
     def _check_staging_config(self) -> List[str]:
@@ -258,13 +257,21 @@ class Configuration:
             errors.append('Setting email.from is required and must be an email address.')
         if not self._check_is_str(config, 'email.smtp'):
             errors.append('Setting email.smtp is required.')
-        if not self._check_is_str(config, 'email.recipient_override', required=False) \
-                or '@' not in config.get('email.recipient_override', '@'):
+        if not self._check_is_str(
+            config, 'email.recipient_override', required=False
+        ) or '@' not in config.get('email.recipient_override', '@'):
             errors.append('Setting email.recipient_override must be an email address if set.')
 
-        string_not_required = ['email.footer', 'server.whois.access_list',
-                               'server.http.status_access_list', 'rpki.notify_invalid_subject',
-                               'rpki.notify_invalid_header', 'rpki.slurm_source', 'user', 'group']
+        string_not_required = [
+            'email.footer',
+            'server.whois.access_list',
+            'server.http.status_access_list',
+            'rpki.notify_invalid_subject',
+            'rpki.notify_invalid_header',
+            'rpki.slurm_source',
+            'user',
+            'group',
+        ]
         for setting in string_not_required:
             if not self._check_is_str(config, setting, required=False):
                 errors.append(f'Setting {setting} must be a string, if defined.')
@@ -276,18 +283,28 @@ class Configuration:
             errors.append('Setting auth.gnupg_keyring is required.')
 
         from irrd.updates.parser_state import RPSLSetAutnumAuthenticationMode
+
         valid_auth = [mode.value for mode in RPSLSetAutnumAuthenticationMode]
         for set_name, params in config.get('auth.set_creation', {}).items():
             if not isinstance(params.get('prefix_required', False), bool):
                 errors.append(f'Setting auth.set_creation.{set_name}.prefix_required must be a bool')
-            if params.get('autnum_authentication') and params['autnum_authentication'].lower() not in valid_auth:
-                errors.append(f'Setting auth.set_creation.{set_name}.autnum_authentication must be one of {valid_auth} if set')
+            if (
+                params.get('autnum_authentication')
+                and params['autnum_authentication'].lower() not in valid_auth
+            ):
+                errors.append(
+                    f'Setting auth.set_creation.{set_name}.autnum_authentication must be one of'
+                    f' {valid_auth} if set'
+                )
 
         from irrd.rpsl.passwords import PasswordHasherAvailability
+
         valid_hasher_availability = [avl.value for avl in PasswordHasherAvailability]
         for hasher_name, setting in config.get('auth.password_hashers', {}).items():
             if setting.lower() not in valid_hasher_availability:
-                errors.append(f'Setting auth.password_hashers.{hasher_name} must be one of {valid_hasher_availability}')
+                errors.append(
+                    f'Setting auth.password_hashers.{hasher_name} must be one of {valid_hasher_availability}'
+                )
 
         for name, access_list in config.get('access_lists', {}).items():
             for item in access_list:
@@ -328,28 +345,43 @@ class Configuration:
                 errors.append(f'Invalid source name: {name}')
 
             if details.get('suspension_enabled') and not details.get('authoritative'):
-                errors.append(f'Setting suspension_enabled for source {name} can not be enabled without enabling '
-                              f'authoritative.')
+                errors.append(
+                    f'Setting suspension_enabled for source {name} can not be enabled without enabling '
+                    'authoritative.'
+                )
 
             nrtm_mirror = details.get('nrtm_host') and details.get('import_serial_source')
             if details.get('keep_journal') and not (nrtm_mirror or details.get('authoritative')):
-                errors.append(f'Setting keep_journal for source {name} can not be enabled unless either authoritative '
-                              f'is enabled, or all three of nrtm_host, nrtm_port and import_serial_source.')
+                errors.append(
+                    f'Setting keep_journal for source {name} can not be enabled unless either authoritative '
+                    'is enabled, or all three of nrtm_host, nrtm_port and import_serial_source.'
+                )
             if details.get('nrtm_host') and not details.get('import_serial_source'):
-                errors.append(f'Setting nrtm_host for source {name} can not be enabled without setting '
-                              f'import_serial_source.')
+                errors.append(
+                    f'Setting nrtm_host for source {name} can not be enabled without setting '
+                    'import_serial_source.'
+                )
 
             if details.get('authoritative') and (details.get('nrtm_host') or details.get('import_source')):
-                errors.append(f'Setting authoritative for source {name} can not be enabled when either '
-                              f'nrtm_host or import_source are set.')
+                errors.append(
+                    f'Setting authoritative for source {name} can not be enabled when either '
+                    'nrtm_host or import_source are set.'
+                )
 
-            if config.get('database_readonly') and (details.get('authoritative') or details.get('nrtm_host') or details.get('import_source')):
-                errors.append(f'Source {name} can not have authoritative, import_source or nrtm_host set '
-                              f'when database_readonly is enabled.')
+            if config.get('database_readonly') and (
+                details.get('authoritative') or details.get('nrtm_host') or details.get('import_source')
+            ):
+                errors.append(
+                    f'Source {name} can not have authoritative, import_source or nrtm_host set '
+                    'when database_readonly is enabled.'
+                )
 
             number_fields = [
-                'nrtm_port', 'import_timer', 'export_timer',
-                'route_object_preference', 'nrtm_query_serial_range_limit',
+                'nrtm_port',
+                'import_timer',
+                'export_timer',
+                'route_object_preference',
+                'nrtm_query_serial_range_limit',
             ]
             for field_name in number_fields:
                 if not str(details.get(field_name, 0)).isnumeric():
@@ -363,32 +395,51 @@ class Configuration:
         if config.get('rpki.roa_source', 'https://rpki.gin.ntt.net/api/export.json'):
             known_sources.add(RPKI_IRR_PSEUDO_SOURCE)
             if has_authoritative_sources and config.get('rpki.notify_invalid_enabled') is None:
-                errors.append('RPKI-aware mode is enabled and authoritative sources are configured, '
-                              'but rpki.notify_invalid_enabled is not set. Set to true or false.'
-                              'DANGER: care is required with this setting in testing setups with '
-                              'live data, as it may send bulk emails to real resource contacts '
-                              'unless email.recipient_override is also set. '
-                              'Read documentation carefully.')
+                errors.append(
+                    'RPKI-aware mode is enabled and authoritative sources are configured, '
+                    'but rpki.notify_invalid_enabled is not set. Set to true or false.'
+                    'DANGER: care is required with this setting in testing setups with '
+                    'live data, as it may send bulk emails to real resource contacts '
+                    'unless email.recipient_override is also set. '
+                    'Read documentation carefully.'
+                )
 
         unknown_default_sources = set(config.get('sources_default', [])).difference(known_sources)
         if unknown_default_sources:
-            errors.append(f'Setting sources_default contains unknown sources: {", ".join(unknown_default_sources)}')
+            errors.append(
+                f'Setting sources_default contains unknown sources: {", ".join(unknown_default_sources)}'
+            )
 
         if not str(config.get('rpki.roa_import_timer', '0')).isnumeric():
             errors.append('Setting rpki.roa_import_timer must be set to a number.')
 
-        if config.get('log.level') and config.get('log.level') not in ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']:
-            errors.append(f'Invalid log.level: {config.get("log.level")}. '
-                          f'Valid settings for log.level are `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`.')
-        if config.get('log.logging_config_path') and (config.get('log.logfile_path') or config.get('log.level')):
-            errors.append('Setting log.logging_config_path can not be combined with'
-                          'log.logfile_path or log.level')
+        if config.get('log.level') and config.get('log.level') not in [
+            'DEBUG',
+            'INFO',
+            'WARNING',
+            'ERROR',
+            'CRITICAL',
+        ]:
+            errors.append(
+                f'Invalid log.level: {config.get("log.level")}. '
+                'Valid settings for log.level are `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`.'
+            )
+        if config.get('log.logging_config_path') and (
+            config.get('log.logfile_path') or config.get('log.level')
+        ):
+            errors.append(
+                'Setting log.logging_config_path can not be combined withlog.logfile_path or log.level'
+            )
 
         access_lists = set(config.get('access_lists', {}).keys())
-        unresolved_access_lists = [x for x in expected_access_lists.difference(access_lists) if x and isinstance(x, str)]
+        unresolved_access_lists = [
+            x for x in expected_access_lists.difference(access_lists) if x and isinstance(x, str)
+        ]
         unresolved_access_lists.sort()
         if unresolved_access_lists:
-            errors.append(f'Access lists {", ".join(unresolved_access_lists)} referenced in settings, but not defined.')
+            errors.append(
+                f'Access lists {", ".join(unresolved_access_lists)} referenced in settings, but not defined.'
+            )
 
         return errors
 
@@ -427,7 +478,7 @@ def is_config_initialised() -> bool:
     return configuration is not None
 
 
-def get_setting(setting_name: str, default: Optional[Any]=None) -> Any:
+def get_setting(setting_name: str, default: Optional[Any] = None) -> Any:
     """
     Convenience wrapper to get the value of a setting.
     """

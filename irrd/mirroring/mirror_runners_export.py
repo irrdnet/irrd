@@ -41,16 +41,22 @@ class SourceExportRunner:
                 logger.info(f'Starting a source export for {self.source} to {export_destination}')
                 self._export(export_destination)
 
-            export_destination_unfiltered = get_setting(f'sources.{self.source}.export_destination_unfiltered')
+            export_destination_unfiltered = get_setting(
+                f'sources.{self.source}.export_destination_unfiltered'
+            )
             if export_destination_unfiltered:
-                logger.info(f'Starting an unfiltered source export for {self.source} '
-                            f'to {export_destination_unfiltered}')
+                logger.info(
+                    f'Starting an unfiltered source export for {self.source} '
+                    f'to {export_destination_unfiltered}'
+                )
                 self._export(export_destination_unfiltered, remove_auth_hashes=False)
 
             self.database_handler.commit()
         except Exception as exc:
-            logger.error(f'An exception occurred while attempting to run an export '
-                         f'for {self.source}: {exc}', exc_info=exc)
+            logger.error(
+                f'An exception occurred while attempting to run an export for {self.source}: {exc}',
+                exc_info=exc,
+            )
         finally:
             self.database_handler.close()
 
@@ -92,4 +98,7 @@ class SourceExportRunner:
             os.chmod(filename_serial, EXPORT_PERMISSIONS)
 
         self.database_handler.record_serial_exported(self.source, serial)
-        logger.info(f'Export for {self.source} complete at serial {serial}, stored in {filename_export} / {filename_serial}')
+        logger.info(
+            f'Export for {self.source} complete at serial {serial}, stored in {filename_export} /'
+            f' {filename_serial}'
+        )

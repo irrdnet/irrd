@@ -33,9 +33,12 @@ def set_last_modified():
             print(f'Failed to process {rpsl_obj}: {rpsl_obj.messages.errors()}')
             continue
         new_text = rpsl_obj.render_rpsl_text(result['updated'])
-        stmt = RPSLDatabaseObject.__table__.update().where(
-            RPSLDatabaseObject.__table__.c.pk == result['pk']).values(
-            object_text=new_text,
+        stmt = (
+            RPSLDatabaseObject.__table__.update()
+            .where(RPSLDatabaseObject.__table__.c.pk == result['pk'])
+            .values(
+                object_text=new_text,
+            )
         )
         dh.execute_statement(stmt)
     dh.commit()
@@ -45,8 +48,12 @@ def set_last_modified():
 def main():  # pragma: no cover
     description = """Set last-modified attribute on all authoritative objects."""
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument('--config', dest='config_file_path', type=str,
-                        help=f'use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})')
+    parser.add_argument(
+        '--config',
+        dest='config_file_path',
+        type=str,
+        help=f'use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})',
+    )
     args = parser.parse_args()
 
     config_init(args.config_file_path)

@@ -58,11 +58,21 @@ class ReferenceValidator:
         for request in results:
             assert request.rpsl_obj_new
             if request.request_type == UpdateRequestType.DELETE:
-                self._preloaded_deleted.add((request.rpsl_obj_new.rpsl_object_class, request.rpsl_obj_new.pk(),
-                                             request.rpsl_obj_new.source()))
+                self._preloaded_deleted.add(
+                    (
+                        request.rpsl_obj_new.rpsl_object_class,
+                        request.rpsl_obj_new.pk(),
+                        request.rpsl_obj_new.source(),
+                    )
+                )
             elif request.request_type in [UpdateRequestType.CREATE, UpdateRequestType.MODIFY]:
-                self._preloaded_new.add((request.rpsl_obj_new.rpsl_object_class, request.rpsl_obj_new.pk(),
-                                         request.rpsl_obj_new.source()))
+                self._preloaded_new.add(
+                    (
+                        request.rpsl_obj_new.rpsl_object_class,
+                        request.rpsl_obj_new.pk(),
+                        request.rpsl_obj_new.source(),
+                    )
+                )
 
     def check_references_to_others(self, rpsl_obj: RPSLObject) -> ValidatorResult:
         """
@@ -80,8 +90,10 @@ class ReferenceValidator:
                         objects_referred_str = 'one of ' + ', '.join(objects_referred)
                     else:
                         objects_referred_str = objects_referred[0]
-                    result.error_messages.add(f'Object {object_pk} referenced in field {field_name} not found in '
-                                              f'database {source} - must reference {objects_referred_str}.')
+                    result.error_messages.add(
+                        f'Object {object_pk} referenced in field {field_name} not found in '
+                        f'database {source} - must reference {objects_referred_str}.'
+                    )
         return result
 
     def _check_reference_to_others(self, object_classes: List[str], object_pk: str, source: str) -> bool:
@@ -125,11 +137,16 @@ class ReferenceValidator:
         query = query.lookup_attrs_in(rpsl_obj.references_strong_inbound(), [rpsl_obj.pk()])
         query_results = self.database_handler.execute_query(query)
         for query_result in query_results:
-            reference_to_be_deleted = (query_result['object_class'], query_result['rpsl_pk'],
-                                       query_result['source']) in self._preloaded_deleted
+            reference_to_be_deleted = (
+                query_result['object_class'],
+                query_result['rpsl_pk'],
+                query_result['source'],
+            ) in self._preloaded_deleted
             if not reference_to_be_deleted:
-                result.error_messages.add(f'Object {rpsl_obj.pk()} to be deleted, but still referenced '
-                                          f'by {query_result["object_class"]} {query_result["rpsl_pk"]}')
+                result.error_messages.add(
+                    f'Object {rpsl_obj.pk()} to be deleted, but still referenced '
+                    f'by {query_result["object_class"]} {query_result["rpsl_pk"]}'
+                )
         return result
 
 
@@ -142,6 +159,7 @@ class AuthValidator:
     fail, as it does not exist yet. To prevent this failure, call pre_approve()
     with a list of UpdateRequests.
     """
+
     passwords: List[str]
     overrides: List[str]
     keycert_obj_pk: Optional[str] = None
@@ -167,7 +185,9 @@ class AuthValidator:
         """
         self._pre_approved = {obj.pk() for obj in presumed_valid_new_mntners}
 
-    def process_auth(self, rpsl_obj_new: RPSLObject, rpsl_obj_current: Optional[RPSLObject]) -> ValidatorResult:
+    def process_auth(
+        self, rpsl_obj_new: RPSLObject, rpsl_obj_current: Optional[RPSLObject]
+    ) -> ValidatorResult:
         """
         Check whether authentication passes for all required objects.
         Returns a ValidatorResult object with error/info messages, and fills
@@ -194,8 +214,10 @@ class AuthValidator:
 
         if rpsl_obj_current:
             mntners_current = rpsl_obj_current.parsed_data['mnt-by']
-            logger.debug(f'Checking auth for current object {rpsl_obj_current}, '
-                         f'mntners in current object: {mntners_current}')
+            logger.debug(
+                f'Checking auth for current object {rpsl_obj_current}, '
+                f'mntners in current object: {mntners_current}'
+            )
             valid, mntner_objs_current = self._check_mntners(mntners_current, source)
             if not valid:
                 self._generate_failure_message(result, mntners_current, rpsl_obj_new)
@@ -206,12 +228,15 @@ class AuthValidator:
             mntners_related = self._find_related_mntners(rpsl_obj_new, result)
             if mntners_related:
                 related_object_class, related_pk, related_mntner_list = mntners_related
-                logger.debug(f'Checking auth for related object {related_object_class} / '
-                             f'{related_pk} with mntners {related_mntner_list}')
+                logger.debug(
+                    f'Checking auth for related object {related_object_class} / '
+                    f'{related_pk} with mntners {related_mntner_list}'
+                )
                 valid, mntner_objs_related = self._check_mntners(related_mntner_list, source)
                 if not valid:
-                    self._generate_failure_message(result, related_mntner_list, rpsl_obj_new,
-                                                   related_object_class, related_pk)
+                    self._generate_failure_message(
+                        result, related_mntner_list, rpsl_obj_new, related_object_class, related_pk
+                    )
                     result.mntners_notify = mntner_objs_related
 
         if isinstance(rpsl_obj_new, RPSLMntner):
@@ -221,15 +246,21 @@ class AuthValidator:
             # Dummy auth values are only permitted in existing objects
             if rpsl_obj_new.has_dummy_auth_value():
                 if len(self.passwords) == 1:
-                    logger.debug(f'Object {rpsl_obj_new} submitted with dummy hash values and single password, '
-                                 f'replacing all hashes with currently supplied password.')
+                    logger.debug(
+                        f'Object {rpsl_obj_new} submitted with dummy hash values and single password, '
+                        'replacing all hashes with currently supplied password.'
+                    )
                     rpsl_obj_new.force_single_new_password(self.passwords[0])
-                    result.info_messages.add('As you submitted dummy hash values, all password hashes on this object '
-                                             'were replaced with a new BCRYPT-PW hash of the password you provided for '
-                                             'authentication.')
+                    result.info_messages.add(
+                        'As you submitted dummy hash values, all password hashes on this object '
+                        'were replaced with a new BCRYPT-PW hash of the password you provided for '
+                        'authentication.'
+                    )
                 else:
-                    result.error_messages.add('Object submitted with dummy hash values, but multiple or no passwords '
-                                              'submitted. Either submit only full hashes, or a single password.')
+                    result.error_messages.add(
+                        'Object submitted with dummy hash values, but multiple or no passwords '
+                        'submitted. Either submit only full hashes, or a single password.'
+                    )
             elif not rpsl_obj_new.verify_auth(self.passwords, self.keycert_obj_pk):
                 result.error_messages.add('Authorisation failed for the auth methods on this mntner object.')
 
@@ -245,7 +276,10 @@ class AuthValidator:
                     else:
                         logger.info('Found invalid override password, ignoring.')
                 except ValueError as ve:
-                    logger.error(f'Exception occurred while checking override password: {ve} (possible misconfigured hash?)')
+                    logger.error(
+                        f'Exception occurred while checking override password: {ve} (possible misconfigured'
+                        ' hash?)'
+                    )
         elif self.overrides:
             logger.info('Ignoring override password, auth.override_password not set.')
         return False
@@ -261,8 +295,7 @@ class AuthValidator:
         """
         mntner_pk_set = set(mntner_pk_list)
         mntner_objs: List[RPSLMntner] = [
-            m for m in self._mntner_db_cache
-            if m.pk() in mntner_pk_set and m.source() == source
+            m for m in self._mntner_db_cache if m.pk() in mntner_pk_set and m.source() == source
         ]
         mntner_pks_to_resolve: Set[str] = mntner_pk_set - {m.pk() for m in mntner_objs}
 
@@ -271,7 +304,7 @@ class AuthValidator:
             query = query.object_classes(['mntner']).rpsl_pks(mntner_pks_to_resolve)
             results = self.database_handler.execute_query(query)
 
-            retrieved_mntner_objs: List[RPSLMntner] = [rpsl_object_from_text(r['object_text']) for r in results]   # type: ignore
+            retrieved_mntner_objs: List[RPSLMntner] = [rpsl_object_from_text(r['object_text']) for r in results]  # type: ignore
             self._mntner_db_cache.update(retrieved_mntner_objs)
             mntner_objs += retrieved_mntner_objs
 
@@ -285,9 +318,14 @@ class AuthValidator:
 
         return False, mntner_objs
 
-    def _generate_failure_message(self, result: ValidatorResult, failed_mntner_list: List[str],
-                                  rpsl_obj, related_object_class: Optional[str]=None,
-                                  related_pk: Optional[str]=None) -> None:
+    def _generate_failure_message(
+        self,
+        result: ValidatorResult,
+        failed_mntner_list: List[str],
+        rpsl_obj,
+        related_object_class: Optional[str] = None,
+        related_pk: Optional[str] = None,
+    ) -> None:
         mntner_str = ', '.join(failed_mntner_list)
         msg = f'Authorisation for {rpsl_obj.rpsl_object_class} {rpsl_obj.pk()} failed: '
         msg += f'must be authenticated by one of: {mntner_str}'
@@ -295,7 +333,9 @@ class AuthValidator:
             msg += f' - from parent {related_object_class} {related_pk}'
         result.error_messages.add(msg)
 
-    def _find_related_mntners(self, rpsl_obj_new: RPSLObject, result: ValidatorResult) -> Optional[Tuple[str, str, List[str]]]:
+    def _find_related_mntners(
+        self, rpsl_obj_new: RPSLObject, result: ValidatorResult
+    ) -> Optional[Tuple[str, str, List[str]]]:
         """
         Find the maintainers of the related object to rpsl_obj_new, if any.
         This is used to authorise creating objects - authentication may be
@@ -340,14 +380,18 @@ class AuthValidator:
         inetnums = list(self.database_handler.execute_query(query))
 
         if not inetnums:
-            query = _init_related_object_query(object_class, rpsl_obj_new).ip_less_specific_one_level(rpsl_obj_new.prefix)
+            query = _init_related_object_query(object_class, rpsl_obj_new).ip_less_specific_one_level(
+                rpsl_obj_new.prefix
+            )
             inetnums = list(self.database_handler.execute_query(query))
 
         if inetnums:
             return inetnums[0]
 
         object_class = rpsl_obj_new.rpsl_object_class
-        query = _init_related_object_query(object_class, rpsl_obj_new).ip_less_specific_one_level(rpsl_obj_new.prefix)
+        query = _init_related_object_query(object_class, rpsl_obj_new).ip_less_specific_one_level(
+            rpsl_obj_new.prefix
+        )
         routes = list(self.database_handler.execute_query(query))
         if routes:
             return routes[0]
@@ -360,6 +404,7 @@ class AuthValidator:
         depending on settings.
         Returns a dict as returned by the database handler.
         """
+
         @functools.lru_cache(maxsize=50)
         def _find_in_db():
             query = _init_related_object_query('aut-num', rpsl_obj_new).rpsl_pk(rpsl_obj_new.pk_asn_segment)
@@ -401,8 +446,11 @@ class RulesValidator:
 
     def validate(self, rpsl_obj: RPSLObject, request_type: UpdateRequestType) -> ValidatorResult:
         result = ValidatorResult()
-        if request_type == UpdateRequestType.CREATE and rpsl_obj.rpsl_object_class == 'mntner' and \
-                self._check_suspended_mntner_with_same_pk(rpsl_obj.pk(), rpsl_obj.source()):
+        if (
+            request_type == UpdateRequestType.CREATE
+            and rpsl_obj.rpsl_object_class == 'mntner'
+            and self._check_suspended_mntner_with_same_pk(rpsl_obj.pk(), rpsl_obj.source())
+        ):
             result.error_messages.add(
                 f'A suspended mntner with primary key {rpsl_obj.pk()} already exists for {rpsl_obj.source()}'
             )

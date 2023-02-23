@@ -9,16 +9,18 @@ class TestIsClientPermitted:
         assert not is_client_permitted(self.client_ip, 'server.whois.access_list', default_deny=True)
 
     def test_access_list_permitted(self, config_override):
-        config_override({
-            'server': {
-                'whois': {
-                    'access_list': 'test-access-list',
+        config_override(
+            {
+                'server': {
+                    'whois': {
+                        'access_list': 'test-access-list',
+                    },
                 },
-            },
-            'access_lists': {
-                'test-access-list': ['192.0.2.0/25', '2001:db8::/32'],
-            },
-        })
+                'access_lists': {
+                    'test-access-list': ['192.0.2.0/25', '2001:db8::/32'],
+                },
+            }
+        )
 
         assert is_client_permitted(self.client_ip, 'server.whois.access_list', default_deny=False)
         assert is_client_permitted(self.client_ip, 'server.whois.access_list', default_deny=True)
@@ -26,19 +28,23 @@ class TestIsClientPermitted:
         assert is_client_permitted('2001:db8::1', 'server.whois.access_list', default_deny=True)
 
     def test_access_list_denied(self, config_override):
-        config_override({
-            'server': {
-                'whois': {
-                    'access_list': 'test-access-list',
+        config_override(
+            {
+                'server': {
+                    'whois': {
+                        'access_list': 'test-access-list',
+                    },
                 },
-            },
-            'access_lists': {
-                'test-access-list': ['192.0.2.128/25', '2001:db8::/32'],
-            },
-        })
+                'access_lists': {
+                    'test-access-list': ['192.0.2.128/25', '2001:db8::/32'],
+                },
+            }
+        )
 
         assert not is_client_permitted(self.client_ip, 'server.whois.access_list', default_deny=False)
-        assert not is_client_permitted(f'::ffff:{self.client_ip}', 'server.whois.access_list', default_deny=False)
+        assert not is_client_permitted(
+            f'::ffff:{self.client_ip}', 'server.whois.access_list', default_deny=False
+        )
         assert not is_client_permitted(self.client_ip, 'server.whois.access_list', default_deny=True)
 
     def test_access_list_denied_invalid_ip(self):

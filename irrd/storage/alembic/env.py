@@ -32,7 +32,9 @@ def run_migrations_offline():
         config_init(os.environ['IRRD_CONFIG_FILE'])
     url = translate_url(get_setting('database_url'))
     context.configure(
-        url=url, target_metadata=target_metadata, literal_binds=True,
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
         transaction_per_migration=True,
     )
 
@@ -52,10 +54,7 @@ def run_migrations_online():
     engine = create_engine(translate_url(get_setting('database_url')))
 
     with engine.connect() as connection:
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

@@ -34,10 +34,18 @@ def mock_preload_updater(monkeypatch, config_override):
 
 @pytest.fixture()
 def mock_redis_keys(monkeypatch, config_override):
-    monkeypatch.setattr('irrd.storage.preload.REDIS_ORIGIN_ROUTE4_STORE_KEY', TEST_REDIS_ORIGIN_ROUTE4_STORE_KEY)
-    monkeypatch.setattr('irrd.storage.preload.REDIS_ORIGIN_ROUTE6_STORE_KEY', TEST_REDIS_ORIGIN_ROUTE6_STORE_KEY)
-    monkeypatch.setattr('irrd.storage.preload.REDIS_PRELOAD_RELOAD_CHANNEL', TEST_REDIS_PRELOAD_RELOAD_CHANNEL)
-    monkeypatch.setattr('irrd.storage.preload.REDIS_PRELOAD_COMPLETE_CHANNEL', TEST_REDIS_PRELOAD_COMPLETE_CHANNEL)
+    monkeypatch.setattr(
+        'irrd.storage.preload.REDIS_ORIGIN_ROUTE4_STORE_KEY', TEST_REDIS_ORIGIN_ROUTE4_STORE_KEY
+    )
+    monkeypatch.setattr(
+        'irrd.storage.preload.REDIS_ORIGIN_ROUTE6_STORE_KEY', TEST_REDIS_ORIGIN_ROUTE6_STORE_KEY
+    )
+    monkeypatch.setattr(
+        'irrd.storage.preload.REDIS_PRELOAD_RELOAD_CHANNEL', TEST_REDIS_PRELOAD_RELOAD_CHANNEL
+    )
+    monkeypatch.setattr(
+        'irrd.storage.preload.REDIS_PRELOAD_COMPLETE_CHANNEL', TEST_REDIS_PRELOAD_COMPLETE_CHANNEL
+    )
 
 
 class TestPreloading:
@@ -118,11 +126,25 @@ class TestPreloading:
         assert preloader.routes_for_origins(['AS65546'], sources, 6) == set()
         assert preloader.routes_for_origins(['AS65547'], sources, 6) == {'2001:db8::/32'}
         assert preloader.routes_for_origins(['AS65546'], sources) == {'192.0.2.0/25'}
-        assert preloader.routes_for_origins(['AS65547'], sources) == {'192.0.2.128/25', '198.51.100.0/25', '2001:db8::/32'}
-        assert preloader.routes_for_origins(['AS65547', 'AS65546'], sources, 4) == {'192.0.2.0/25', '192.0.2.128/25', '198.51.100.0/25'}
+        assert preloader.routes_for_origins(['AS65547'], sources) == {
+            '192.0.2.128/25',
+            '198.51.100.0/25',
+            '2001:db8::/32',
+        }
+        assert preloader.routes_for_origins(['AS65547', 'AS65546'], sources, 4) == {
+            '192.0.2.0/25',
+            '192.0.2.128/25',
+            '198.51.100.0/25',
+        }
 
-        assert preloader.routes_for_origins(['AS65547', 'AS65546'], ['TEST1']) == {'192.0.2.128/25', '198.51.100.0/25'}
-        assert preloader.routes_for_origins(['AS65547', 'AS65546'], ['TEST2']) == {'192.0.2.0/25', '2001:db8::/32'}
+        assert preloader.routes_for_origins(['AS65547', 'AS65546'], ['TEST1']) == {
+            '192.0.2.128/25',
+            '198.51.100.0/25',
+        }
+        assert preloader.routes_for_origins(['AS65547', 'AS65546'], ['TEST2']) == {
+            '192.0.2.0/25',
+            '2001:db8::/32',
+        }
 
         with pytest.raises(ValueError) as ve:
             preloader.routes_for_origins(['AS65547'], [], 2)
@@ -133,8 +155,10 @@ class TestPreloadUpdater:
     def test_preload_updater(self, monkeypatch):
         mock_database_handler = Mock(spec=DatabaseHandler)
         mock_database_query = Mock(spec=RPSLDatabaseQuery)
-        monkeypatch.setattr('irrd.storage.preload.RPSLDatabaseQuery',
-                            lambda column_names, enable_ordering: mock_database_query)
+        monkeypatch.setattr(
+            'irrd.storage.preload.RPSLDatabaseQuery',
+            lambda column_names, enable_ordering: mock_database_query,
+        )
         mock_reload_lock = Mock()
         mock_preload_obj = Mock()
 
@@ -185,13 +209,14 @@ class TestPreloadUpdater:
                 (
                     {
                         f'TEST1{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65546': {'192.0.2.0/25'},
-                        f'TEST1{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65547': {'192.0.2.128/25', '198.51.100.0/25'},
+                        f'TEST1{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65547': {
+                            '192.0.2.128/25',
+                            '198.51.100.0/25',
+                        },
                     },
-                    {
-                        f'TEST2{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65547': {'2001:db8::/32'}
-                    },
+                    {f'TEST2{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65547': {'2001:db8::/32'}},
                 ),
-                {}
+                {},
             ]
         ]
 

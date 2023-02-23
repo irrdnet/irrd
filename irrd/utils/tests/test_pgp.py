@@ -6,18 +6,23 @@ from ..pgp import validate_pgp_signature
 
 
 class TestValidatePGPSignature:
-
     @pytest.mark.usefixtures('tmp_gpg_dir')
     def test_valid_detached_signed_ascii(self, tmp_gpg_dir, preload_gpg_key):
-        message = textwrap.dedent("""
+        message = (
+            textwrap.dedent(
+                """
         Content-Transfer-Encoding: 7bit
         Content-Type: text/plain;
         \tcharset=us-ascii
 
         test 1 2 3
-        """).strip() + '\n'
+        """
+            ).strip()
+            + '\n'
+        )
 
-        signature = textwrap.dedent("""
+        signature = textwrap.dedent(
+            """
         -----BEGIN PGP SIGNATURE-----
 
         iQIzBAEBCAAdFiEEhiYdjb69pPVGktZNqDg7p4DyOMYFAlthsw0ACgkQqDg7p4Dy
@@ -34,14 +39,16 @@ class TestValidatePGPSignature:
         QxtFWD7kfutDc40U0GjukbcPsfni1BH9AZZbUsm6YS7JMxoh1Rk=
         =92HM
         -----END PGP SIGNATURE-----
-        """).strip()
+        """
+        ).strip()
         new_message, fingerprint = validate_pgp_signature(message, signature)
         assert new_message is None
         assert fingerprint == '86261D8DBEBDA4F54692D64DA8383BA780F238C6'
 
     @pytest.mark.usefixtures('tmp_gpg_dir')
     def test_valid_inline_signed_ascii(self, tmp_gpg_dir, preload_gpg_key):
-        message = textwrap.dedent("""
+        message = textwrap.dedent(
+            """
         UNSIGNED TEXT TO BE IGNORED
 
         -----BEGIN PGP SIGNED MESSAGE-----
@@ -71,14 +78,16 @@ class TestValidatePGPSignature:
         =iWS2
         -----END PGP SIGNATURE-----
 
-        """).strip()
+        """
+        ).strip()
         new_message, fingerprint = validate_pgp_signature(message)
         assert new_message.strip() == 'test\n1\n\n2\n\n3'
         assert fingerprint == '86261D8DBEBDA4F54692D64DA8383BA780F238C6'
 
     @pytest.mark.usefixtures('tmp_gpg_dir')
     def test_invalid_inline_signed_ascii_multiple_messages(self, tmp_gpg_dir, preload_gpg_key):
-        message = textwrap.dedent("""
+        message = textwrap.dedent(
+            """
         -----BEGIN PGP SIGNED MESSAGE-----
         Hash: SHA256
 
@@ -120,21 +129,28 @@ class TestValidatePGPSignature:
         4Ni0aIkkZY3cM0QR9EEHSCJgS2RVQujw/KZTeTQTLAJLtGtLbq8=
         =Zn24
         -----END PGP SIGNATURE-----
-        """).strip()
+        """
+        ).strip()
         new_message, fingerprint = validate_pgp_signature(message)
         assert new_message is None
         assert fingerprint is None
 
     @pytest.mark.usefixtures('tmp_gpg_dir')
     def test_invalid_signature_detached_signed_ascii(self, tmp_gpg_dir, preload_gpg_key):
-        message = textwrap.dedent("""
+        message = (
+            textwrap.dedent(
+                """
         Content-Transfer-Encoding: 7bit
         Content-Type: text/plain;
         \tcharset=us-ascii
 
         test 1 2 INVALID
-        """).strip() + '\n'
-        signature = textwrap.dedent("""
+        """
+            ).strip()
+            + '\n'
+        )
+        signature = textwrap.dedent(
+            """
         -----BEGIN PGP SIGNATURE-----
 
         iQIzBAEBCAAdFiEEhiYdjb69pPVGktZNqDg7p4DyOMYFAlthsw0ACgkQqDg7p4Dy
@@ -151,7 +167,8 @@ class TestValidatePGPSignature:
         QxtFWD7kfutDc40U0GjukbcPsfni1BH9AZZbUsm6YS7JMxoh1Rk=
         =92HM
         -----END PGP SIGNATURE-----
-        """).strip()
+        """
+        ).strip()
         new_message, fingerprint = validate_pgp_signature(message, signature)
         assert new_message is None
         assert fingerprint is None

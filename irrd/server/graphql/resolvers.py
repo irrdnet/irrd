@@ -45,16 +45,22 @@ def resolve_rpsl_objects(_, info: GraphQLResolveInfo, **kwargs):
     database query.
     """
     low_specificity_kwargs = {
-        'object_class', 'rpki_status', 'scope_filter_status', 'route_preference_status',
-        'sources', 'sql_trace'
+        'object_class',
+        'rpki_status',
+        'scope_filter_status',
+        'route_preference_status',
+        'sources',
+        'sql_trace',
     }
     # A query is sufficiently specific if it has other fields than listed above,
     # except that rpki_status is sufficient if it is exclusively selecting on
     # valid or invalid.
-    low_specificity = all([
-        not (set(kwargs.keys()) - low_specificity_kwargs),
-        kwargs.get('rpki_status', []) not in [[RPKIStatus.valid], [RPKIStatus.invalid]],
-    ])
+    low_specificity = all(
+        [
+            not (set(kwargs.keys()) - low_specificity_kwargs),
+            kwargs.get('rpki_status', []) not in [[RPKIStatus.valid], [RPKIStatus.invalid]],
+        ]
+    )
     if low_specificity:
         raise ValueError('Your query must be more specific.')
 
@@ -62,9 +68,7 @@ def resolve_rpsl_objects(_, info: GraphQLResolveInfo, **kwargs):
         info.context['sql_trace'] = True
 
     query = RPSLDatabaseQuery(
-        column_names=_columns_for_graphql_selection(info),
-        ordered_by_sources=False,
-        enable_ordering=False
+        column_names=_columns_for_graphql_selection(info), ordered_by_sources=False, enable_ordering=False
     )
 
     if 'record_limit' in kwargs:
@@ -106,9 +110,7 @@ def resolve_rpsl_objects(_, info: GraphQLResolveInfo, **kwargs):
         if attr in lookup_fields:
             query.lookup_attrs_in([attr], value)
 
-    ip_filters = [
-        'ip_exact', 'ip_less_specific', 'ip_more_specific', 'ip_less_specific_one_level', 'ip_any'
-    ]
+    ip_filters = ['ip_exact', 'ip_less_specific', 'ip_more_specific', 'ip_less_specific_one_level', 'ip_any']
     for ip_filter in ip_filters:
         if ip_filter in kwargs:
             getattr(query, ip_filter)(IP(kwargs[ip_filter]))
@@ -139,14 +141,14 @@ def resolve_rpsl_object_members_by_ref_objs(rpsl_object, info: GraphQLResolveInf
 def resolve_rpsl_object_member_of_objs(rpsl_object, info: GraphQLResolveInfo):
     """Resolve memberOfObjs on RPSL objects"""
     object_klass = OBJECT_CLASS_MAPPING[rpsl_object['objectClass']]
-    sub_object_classes = object_klass.fields['member-of'].referring   # type: ignore
+    sub_object_classes = object_klass.fields['member-of'].referring  # type: ignore
     return _resolve_subquery(rpsl_object, info, sub_object_classes, pk_field='memberOf')
 
 
 def resolve_rpsl_object_members_objs(rpsl_object, info: GraphQLResolveInfo):
     """Resolve membersObjs on RPSL objects"""
     object_klass = OBJECT_CLASS_MAPPING[rpsl_object['objectClass']]
-    sub_object_classes = object_klass.fields['members'].referring   # type: ignore
+    sub_object_classes = object_klass.fields['members'].referring  # type: ignore
     # The reference to an aut-num should not be fully resolved, as the
     # reference is very weak.
     if 'aut-num' in sub_object_classes:
@@ -156,7 +158,9 @@ def resolve_rpsl_object_members_objs(rpsl_object, info: GraphQLResolveInfo):
     return _resolve_subquery(rpsl_object, info, sub_object_classes, 'members', sticky_source=False)
 
 
-def _resolve_subquery(rpsl_object, info: GraphQLResolveInfo, object_classes: List[str], pk_field: str, sticky_source=True):
+def _resolve_subquery(
+    rpsl_object, info: GraphQLResolveInfo, object_classes: List[str], pk_field: str, sticky_source=True
+):
     """
     Resolve a subquery, like techCobjs, on an RPSL object, considering
     a number of object classes, extracting the PK from pk_field.
@@ -168,9 +172,7 @@ def _resolve_subquery(rpsl_object, info: GraphQLResolveInfo, object_classes: Lis
     if not isinstance(pks, list):
         pks = [pks]
     query = RPSLDatabaseQuery(
-        column_names=_columns_for_graphql_selection(info),
-        ordered_by_sources=False,
-        enable_ordering=False
+        column_names=_columns_for_graphql_selection(info), ordered_by_sources=False, enable_ordering=False
     )
     query.object_classes(object_classes).rpsl_pks(pks)
     if sticky_source:
@@ -237,11 +239,10 @@ def _rpsl_db_query_to_graphql_out(query: RPSLDatabaseQuery, info: GraphQLResolve
 
 
 @ariadne.convert_kwargs_to_snake_case
-def resolve_database_status(_, info: GraphQLResolveInfo, sources: Optional[List[str]]=None):
+def resolve_database_status(_, info: GraphQLResolveInfo, sources: Optional[List[str]] = None):
     """Resolve a databaseStatus query"""
     query_resolver = QueryResolver(
-        info.context['request'].app.state.preloader,
-        info.context['request'].app.state.database_handler
+        info.context['request'].app.state.preloader, info.context['request'].app.state.database_handler
     )
     for name, data in query_resolver.database_status(sources=sources).items():
         camel_case_data = OrderedDict(data)
@@ -252,26 +253,35 @@ def resolve_database_status(_, info: GraphQLResolveInfo, sources: Optional[List[
 
 
 @ariadne.convert_kwargs_to_snake_case
-def resolve_asn_prefixes(_, info: GraphQLResolveInfo, asns: List[int], ip_version: Optional[int]=None, sources: Optional[List[str]]=None):
+def resolve_asn_prefixes(
+    _,
+    info: GraphQLResolveInfo,
+    asns: List[int],
+    ip_version: Optional[int] = None,
+    sources: Optional[List[str]] = None,
+):
     """Resolve an asnPrefixes query"""
     query_resolver = QueryResolver(
-        info.context['request'].app.state.preloader,
-        info.context['request'].app.state.database_handler
+        info.context['request'].app.state.preloader, info.context['request'].app.state.database_handler
     )
     query_resolver.set_query_sources(sources)
     for asn in asns:
-        yield dict(
-            asn=asn,
-            prefixes=list(query_resolver.routes_for_origin(f'AS{asn}', ip_version))
-        )
+        yield dict(asn=asn, prefixes=list(query_resolver.routes_for_origin(f'AS{asn}', ip_version)))
 
 
 @ariadne.convert_kwargs_to_snake_case
-def resolve_as_set_prefixes(_, info: GraphQLResolveInfo, set_names: List[str], sources: Optional[List[str]]=None, ip_version: Optional[int]=None, exclude_sets: Optional[List[str]]=None, sql_trace: bool=False):
+def resolve_as_set_prefixes(
+    _,
+    info: GraphQLResolveInfo,
+    set_names: List[str],
+    sources: Optional[List[str]] = None,
+    ip_version: Optional[int] = None,
+    exclude_sets: Optional[List[str]] = None,
+    sql_trace: bool = False,
+):
     """Resolve an asSetPrefixes query"""
     query_resolver = QueryResolver(
-        info.context['request'].app.state.preloader,
-        info.context['request'].app.state.database_handler
+        info.context['request'].app.state.preloader, info.context['request'].app.state.database_handler
     )
     if sql_trace:
         query_resolver.enable_sql_trace()
@@ -286,11 +296,18 @@ def resolve_as_set_prefixes(_, info: GraphQLResolveInfo, set_names: List[str], s
 
 
 @ariadne.convert_kwargs_to_snake_case
-def resolve_recursive_set_members(_, info: GraphQLResolveInfo, set_names: List[str], depth: int=0, sources: Optional[List[str]]=None, exclude_sets: Optional[List[str]]=None, sql_trace: bool=False):
+def resolve_recursive_set_members(
+    _,
+    info: GraphQLResolveInfo,
+    set_names: List[str],
+    depth: int = 0,
+    sources: Optional[List[str]] = None,
+    exclude_sets: Optional[List[str]] = None,
+    sql_trace: bool = False,
+):
     """Resolve an recursiveSetMembers query"""
     query_resolver = QueryResolver(
-        info.context['request'].app.state.preloader,
-        info.context['request'].app.state.database_handler
+        info.context['request'].app.state.preloader, info.context['request'].app.state.database_handler
     )
     if sql_trace:
         query_resolver.enable_sql_trace()
@@ -298,7 +315,9 @@ def resolve_recursive_set_members(_, info: GraphQLResolveInfo, set_names: List[s
     exclude_sets_set = {i.upper() for i in exclude_sets} if exclude_sets else set()
     query_resolver.set_query_sources(sources)
     for set_name in set_names_set:
-        results = query_resolver.members_for_set_per_source(set_name, exclude_sets=exclude_sets_set, depth=depth, recursive=True)
+        results = query_resolver.members_for_set_per_source(
+            set_name, exclude_sets=exclude_sets_set, depth=depth, recursive=True
+        )
         for source, members in results.items():
             yield dict(rpslPk=set_name, rootSource=source, members=members)
     if sql_trace:

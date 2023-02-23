@@ -44,8 +44,7 @@ from .nrtm_samples import (
 @pytest.fixture
 def mock_scopefilter(monkeypatch):
     mock_scopefilter = Mock(spec=ScopeFilterValidator)
-    monkeypatch.setattr('irrd.mirroring.parsers.ScopeFilterValidator',
-                        lambda: mock_scopefilter)
+    monkeypatch.setattr('irrd.mirroring.parsers.ScopeFilterValidator', lambda: mock_scopefilter)
     mock_scopefilter.validate_rpsl_object = lambda obj: (ScopeFilterStatus.in_scope, '')
     return mock_scopefilter
 
@@ -53,14 +52,16 @@ def mock_scopefilter(monkeypatch):
 class TestMirrorFileImportParser:
     # This test also covers the common parts of MirrorFileImportParserBase
     def test_parse(self, mock_scopefilter, caplog, tmp_gpg_dir, config_override):
-        config_override({
-            'sources': {
-                'TEST': {
-                    'object_class_filter': ['route', 'key-cert'],
-                    'strict_import_keycert_objects': True,
+        config_override(
+            {
+                'sources': {
+                    'TEST': {
+                        'object_class_filter': ['route', 'key-cert'],
+                        'strict_import_keycert_objects': True,
+                    }
                 }
             }
-        })
+        )
         mock_dh = Mock()
         mock_roa_validator = Mock(spec=BulkRouteROAValidator)
         mock_roa_validator.validate_route = lambda ip, length, asn, source: RPKIStatus.invalid
@@ -102,7 +103,9 @@ class TestMirrorFileImportParser:
 
         assert 'Invalid source BADSOURCE for object' in caplog.text
         assert 'Invalid address prefix' in caplog.text
-        assert 'File import for TEST: 6 objects read, 2 objects inserted, ignored 2 due to errors' in caplog.text
+        assert (
+            'File import for TEST: 6 objects read, 2 objects inserted, ignored 2 due to errors' in caplog.text
+        )
         assert 'ignored 1 due to object_class_filter' in caplog.text
         assert 'Ignored 1 objects found in file import for TEST due to unknown object classes' in caplog.text
 
@@ -110,11 +113,13 @@ class TestMirrorFileImportParser:
         assert key_cert_obj.verify(KEY_CERT_SIGNED_MESSAGE_VALID)
 
     def test_direct_error_return_invalid_source(self, mock_scopefilter, caplog, tmp_gpg_dir, config_override):
-        config_override({
-            'sources': {
-                'TEST': {},
+        config_override(
+            {
+                'sources': {
+                    'TEST': {},
+                }
             }
-        })
+        )
         mock_dh = Mock()
 
         test_data = [
@@ -144,11 +149,13 @@ class TestMirrorFileImportParser:
         assert 'File import for TEST' not in caplog.text
 
     def test_direct_error_return_malformed_pk(self, mock_scopefilter, caplog, tmp_gpg_dir, config_override):
-        config_override({
-            'sources': {
-                'TEST': {},
+        config_override(
+            {
+                'sources': {
+                    'TEST': {},
+                }
             }
-        })
+        )
         mock_dh = Mock()
 
         with tempfile.NamedTemporaryFile() as fp:
@@ -169,11 +176,13 @@ class TestMirrorFileImportParser:
         assert 'File import for TEST' not in caplog.text
 
     def test_direct_error_return_unknown_class(self, mock_scopefilter, caplog, tmp_gpg_dir, config_override):
-        config_override({
-            'sources': {
-                'TEST': {},
+        config_override(
+            {
+                'sources': {
+                    'TEST': {},
+                }
             }
-        })
+        )
         mock_dh = Mock()
 
         with tempfile.NamedTemporaryFile() as fp:
@@ -196,13 +205,15 @@ class TestMirrorFileImportParser:
 
 class TestMirrorUpdateFileImportParser:
     def test_parse(self, mock_scopefilter, caplog, config_override):
-        config_override({
-            'sources': {
-                'TEST': {
-                    'object_class_filter': ['route', 'route6', 'key-cert', 'role'],
+        config_override(
+            {
+                'sources': {
+                    'TEST': {
+                        'object_class_filter': ['route', 'route6', 'key-cert', 'role'],
+                    }
                 }
             }
-        })
+        )
         mock_dh = Mock()
 
         test_data = [
@@ -264,16 +275,16 @@ class TestMirrorUpdateFileImportParser:
 
         assert 'Invalid source BADSOURCE for object' in caplog.text
         assert 'Invalid address prefix' in caplog.text
-        assert 'File update for TEST: 6 objects read, 3 objects processed, 1 objects newly inserted, 1 objects newly deleted, 2 objects retained, of which 1 modified' in caplog.text
+        assert (
+            'File update for TEST: 6 objects read, 3 objects processed, 1 objects newly inserted, 1 objects'
+            ' newly deleted, 2 objects retained, of which 1 modified'
+            in caplog.text
+        )
         assert 'ignored 0 due to object_class_filter' in caplog.text
         assert 'Ignored 1 objects found in file import for TEST due to unknown object classes' in caplog.text
 
     def test_direct_error_return(self, mock_scopefilter, config_override):
-        config_override({
-            'sources': {
-                'TEST': {}
-            }
-        })
+        config_override({'sources': {'TEST': {}}})
         mock_dh = Mock()
 
         test_data = [
@@ -304,14 +315,16 @@ class TestNRTMStreamParser:
         assert flatten_mock_calls(mock_dh) == [['record_serial_newest_mirror', ('TEST', 11012701), {}]]
 
     def test_test_parse_nrtm_v1_valid(self, config_override):
-        config_override({
-            'sources': {
-                'TEST': {
-                    'object_class_filter': 'person',
-                    'strict_import_keycert_objects': True,
+        config_override(
+            {
+                'sources': {
+                    'TEST': {
+                        'object_class_filter': 'person',
+                        'strict_import_keycert_objects': True,
+                    }
                 }
             }
-        })
+        )
         mock_dh = Mock()
         parser = NRTMStreamParser('TEST', SAMPLE_NRTM_V1, mock_dh)
         self._assert_valid(parser)

@@ -11,8 +11,8 @@ def test_set_force_reload(capsys, monkeypatch):
 
     set_force_reload('TEST')
     assert flatten_mock_calls(mock_dh) == [
-        ['set_force_reload', ('TEST', ), {}],
+        ['set_force_reload', ('TEST',), {}],
         ['commit', (), {}],
-        ['close', (), {}]
+        ['close', (), {}],
     ]
     assert not capsys.readouterr().out

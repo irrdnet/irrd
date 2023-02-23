@@ -26,8 +26,7 @@ def is_client_permitted(ip: str, access_list_setting: str, default_deny=True, lo
             client_ip = IP(ip)
         except (ValueError, AttributeError) as e:
             if log:
-                logger.error(f'Rejecting request as client IP could not be read from '
-                             f'{ip}: {e}')
+                logger.error(f'Rejecting request as client IP could not be read from {ip}: {e}')
             return False
 
     if client_ip and client_ip.version() == 6:

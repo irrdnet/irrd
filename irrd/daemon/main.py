@@ -31,13 +31,22 @@ from irrd.utils.process_support import ExceptionLoggingProcess, set_traceback_ha
 # This file does not have a unit test, but is instead tested through
 # the integration tests. Writing a unit test would be too complex.
 
+
 def main():
     description = """IRRd main process"""
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument('--config', dest='config_file_path', type=str,
-                        help=f'use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})')
-    parser.add_argument('--foreground', dest='foreground', action='store_true',
-                        help=f"run IRRd in the foreground, don't detach")
+    parser.add_argument(
+        '--config',
+        dest='config_file_path',
+        type=str,
+        help=f'use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})',
+    )
+    parser.add_argument(
+        '--foreground',
+        dest='foreground',
+        action='store_true',
+        help=f"run IRRd in the foreground, don't detach",
+    )
     args = parser.parse_args()
 
     mirror_frequency = int(os.environ.get('IRRD_SCHEDULER_TIMER_OVERRIDE', 15))
@@ -60,13 +69,17 @@ def main():
 
     staged_logfile_path = get_configuration().user_config_staging.get('log.logfile_path')
     staged_logging_config_path = get_configuration().user_config_staging.get('log.logging_config_path')
-    if not any([
-        staged_logfile_path,
-        staged_logging_config_path,
-        args.foreground,
-    ]):
-        logging.critical('Unable to start: when not running in the foreground, you must set '
-                         'either log.logfile_path or log.logging_config_path in the settings')
+    if not any(
+        [
+            staged_logfile_path,
+            staged_logging_config_path,
+            args.foreground,
+        ]
+    ):
+        logging.critical(
+            'Unable to start: when not running in the foreground, you must set '
+            'either log.logfile_path or log.logging_config_path in the settings'
+        )
         return
 
     uid, gid = get_configured_owner(from_staging=True)
@@ -74,7 +87,9 @@ def main():
         os.setegid(gid)
         os.seteuid(uid)
         if staged_logfile_path and not os.access(staged_logfile_path, os.W_OK, effective_ids=True):
-            logging.critical(f'Unable to start: logfile {staged_logfile_path} not writable by UID {uid} / GID {gid}')
+            logging.critical(
+                f'Unable to start: logfile {staged_logfile_path} not writable by UID {uid} / GID {gid}'
+            )
             return
 
     with daemon.DaemonContext(**daemon_kwargs):
@@ -83,8 +98,9 @@ def main():
         uid, gid = get_configured_owner()
         # Running as root is permitted on CI
         if not os.environ.get('CI') and not uid and os.geteuid() == 0:
-            logging.critical('Unable to start: user and group must be defined in settings '
-                             'when starting IRRd as root')
+            logging.critical(
+                'Unable to start: user and group must be defined in settings when starting IRRd as root'
+            )
             return
 
         piddir = get_setting('piddir')
@@ -92,11 +108,12 @@ def main():
         try:
             with PidFile(pidname='irrd', piddir=piddir):
                 logger.info(f'IRRd {__version__} starting, PID {os.getpid()}, PID file in {piddir}')
-                run_irrd(mirror_frequency=mirror_frequency,
-                         config_file_path=args.config_file_path if args.config_file_path else CONFIG_PATH_DEFAULT,
-                         uid=uid,
-                         gid=gid,
-                         )
+                run_irrd(
+                    mirror_frequency=mirror_frequency,
+                    config_file_path=args.config_file_path if args.config_file_path else CONFIG_PATH_DEFAULT,
+                    uid=uid,
+                    gid=gid,
+                )
         except PidFileError as pfe:
             logger.error(f'Failed to start IRRd, unable to lock PID file irrd.pid in {piddir}: {pfe}')
         except Exception as e:
@@ -116,9 +133,7 @@ def run_irrd(mirror_frequency: int, config_file_path: str, uid: Optional[int], g
     set_traceback_handler()
 
     whois_process = ExceptionLoggingProcess(
-        target=start_whois_server,
-        name='irrd-whois-server-listener',
-        kwargs={'uid': uid, 'gid': gid}
+        target=start_whois_server, name='irrd-whois-server-listener', kwargs={'uid': uid, 'gid': gid}
     )
     whois_process.start()
     if uid and gid:
@@ -131,7 +146,9 @@ def run_irrd(mirror_frequency: int, config_file_path: str, uid: Optional[int], g
         preload_manager = PreloadStoreManager(name='irrd-preload-store-manager')
         preload_manager.start()
 
-    uvicorn_process = ExceptionLoggingProcess(target=run_http_server, name='irrd-http-server-listener', args=(config_file_path, ))
+    uvicorn_process = ExceptionLoggingProcess(
+        target=run_http_server, name='irrd-http-server-listener', args=(config_file_path,)
+    )
     uvicorn_process.start()
 
     def sighup_handler(signum, frame):
@@ -144,8 +161,11 @@ def run_irrd(mirror_frequency: int, config_file_path: str, uid: Optional[int], g
             for process in children:
                 process.send_signal(signal.SIGHUP)
             if children:
-                logging.info('Main process received SIGHUP with valid config, sent SIGHUP to '
-                             f'child processes {[c.pid for c in children]}')
+                logging.info(
+                    'Main process received SIGHUP with valid config, sent SIGHUP to '
+                    f'child processes {[c.pid for c in children]}'
+                )
+
     signal.signal(signal.SIGHUP, sighup_handler)
 
     def sigterm_handler(signum, frame):
@@ -160,11 +180,13 @@ def run_irrd(mirror_frequency: int, config_file_path: str, uid: Optional[int], g
                 # do the best we can.
                 pass
         if children:
-            logging.info('Main process received SIGTERM, sent SIGTERM to '
-                         f'child processes {[c.pid for c in children]}')
+            logging.info(
+                f'Main process received SIGTERM, sent SIGTERM to child processes {[c.pid for c in children]}'
+            )
 
         nonlocal terminated
         terminated = True
+
     signal.signal(signal.SIGTERM, sigterm_handler)
 
     sleeps = mirror_frequency
@@ -190,8 +212,10 @@ def run_irrd(mirror_frequency: int, config_file_path: str, uid: Optional[int], g
         except Exception:
             pass
     if children:
-        logging.info('Some processes left alive after SIGTERM, send SIGKILL to '
-                     f'child processes {[c.pid for c in children]}')
+        logging.info(
+            'Some processes left alive after SIGTERM, send SIGKILL to '
+            f'child processes {[c.pid for c in children]}'
+        )
 
     logging.info(f'Main process exiting')
 

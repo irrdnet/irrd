@@ -15,6 +15,7 @@ class QueryMetadataExtension(Extension):
     - Returns SQL queries if SQL trace was enabled
     - Logs the query and execution time
     """
+
     def __init__(self):
         self.start_timestamp = None
         self.end_timestamp = None
@@ -39,7 +40,7 @@ class QueryMetadataExtension(Extension):
         return data
 
 
-def error_formatter(error: GraphQLError, debug: bool=False):
+def error_formatter(error: GraphQLError, debug: bool = False):
     """
     Custom Ariadne error formatter. A generic text is used if the
     server is not in debug mode and the original error is a

@@ -27,22 +27,33 @@ class ChangeSubmissionHandler:
     those part of the same message, and checking authentication.
     """
 
-    def load_text_blob(self, object_texts_blob: str, pgp_fingerprint: Optional[str]=None, request_meta: Optional[Dict[str, Optional[str]]]=None):
+    def load_text_blob(
+        self,
+        object_texts_blob: str,
+        pgp_fingerprint: Optional[str] = None,
+        request_meta: Optional[Dict[str, Optional[str]]] = None,
+    ):
         self.database_handler = DatabaseHandler()
         self.request_meta = request_meta if request_meta else {}
         self._pgp_key_id = self._resolve_pgp_key_id(pgp_fingerprint) if pgp_fingerprint else None
 
         reference_validator = ReferenceValidator(self.database_handler)
         auth_validator = AuthValidator(self.database_handler, self._pgp_key_id)
-        change_requests = parse_change_requests(object_texts_blob, self.database_handler,
-                                                auth_validator, reference_validator)
+        change_requests = parse_change_requests(
+            object_texts_blob, self.database_handler, auth_validator, reference_validator
+        )
 
         self._handle_change_requests(change_requests, reference_validator, auth_validator)
         self.database_handler.commit()
         self.database_handler.close()
         return self
 
-    def load_change_submission(self, data: RPSLChangeSubmission, delete=False, request_meta: Optional[Dict[str, Optional[str]]]=None):
+    def load_change_submission(
+        self,
+        data: RPSLChangeSubmission,
+        delete=False,
+        request_meta: Optional[Dict[str, Optional[str]]] = None,
+    ):
         self.database_handler = DatabaseHandler()
         self.request_meta = request_meta if request_meta else {}
 
@@ -68,20 +79,20 @@ class ChangeSubmissionHandler:
                 object_text = '\n'.join(composite_object) + '\n'
 
             assert object_text  # enforced by pydantic
-            change_requests.append(ChangeRequest(
-                object_text,
-                self.database_handler,
-                auth_validator,
-                reference_validator,
-                delete_reason
-            ))
+            change_requests.append(
+                ChangeRequest(
+                    object_text, self.database_handler, auth_validator, reference_validator, delete_reason
+                )
+            )
 
         self._handle_change_requests(change_requests, reference_validator, auth_validator)
         self.database_handler.commit()
         self.database_handler.close()
         return self
 
-    def load_suspension_submission(self, data: RPSLSuspensionSubmission, request_meta: Optional[Dict[str, Optional[str]]]=None):
+    def load_suspension_submission(
+        self, data: RPSLSuspensionSubmission, request_meta: Optional[Dict[str, Optional[str]]] = None
+    ):
         self.database_handler = DatabaseHandler()
         self.request_meta = request_meta if request_meta else {}
 
@@ -95,26 +106,29 @@ class ChangeSubmissionHandler:
             # We don't have a neat way to process individual attribute pairs,
             # so construct a pseudo-object by appending the text.
             object_text = f"mntner: {rpsl_obj.mntner}\nsource: {rpsl_obj.source}\n"
-            change_requests.append(SuspensionRequest(
-                object_text,
-                self.database_handler,
-                auth_validator,
-                rpsl_obj.request_type.value,
-            ))
+            change_requests.append(
+                SuspensionRequest(
+                    object_text,
+                    self.database_handler,
+                    auth_validator,
+                    rpsl_obj.request_type.value,
+                )
+            )
 
         self._handle_change_requests(change_requests, reference_validator, auth_validator)
         self.database_handler.commit()
         self.database_handler.close()
         return self
 
-    def _handle_change_requests(self, change_requests: List[Union[ChangeRequest, SuspensionRequest]],
-                                reference_validator: ReferenceValidator,
-                                auth_validator: AuthValidator) -> None:
-
-        objects = ', '.join([
-            f'{request.rpsl_obj_new} (request {id(request)})'
-            for request in change_requests
-        ])
+    def _handle_change_requests(
+        self,
+        change_requests: List[Union[ChangeRequest, SuspensionRequest]],
+        reference_validator: ReferenceValidator,
+        auth_validator: AuthValidator,
+    ) -> None:
+        objects = ', '.join(
+            [f'{request.rpsl_obj_new} (request {id(request)})' for request in change_requests]
+        )
         logger.info(f'Processing change requests for {objects}, metadata is {self.request_meta}')
         # When an object references another object, e.g. tech-c referring a person or mntner,
         # an add/update is only valid if those referred objects exist. To complicate matters,
@@ -147,8 +161,10 @@ class ChangeSubmissionHandler:
 
             loop_count += 1
             if loop_count > loop_max:  # pragma: no cover
-                msg = f'Update validity resolver ran an excessive amount of loops, may be stuck, aborting ' \
-                      f'processing. Message metadata: {self.request_meta}'
+                msg = (
+                    'Update validity resolver ran an excessive amount of loops, may be stuck, aborting '
+                    f'processing. Message metadata: {self.request_meta}'
+                )
                 logger.error(msg)
                 raise ValueError(msg)
 
@@ -172,8 +188,10 @@ class ChangeSubmissionHandler:
         for result in results:
             if result['parsed_data'].get('fingerpr', '').replace(' ', '') == clean_fingerprint:
                 return key_id
-        logger.info(f'Message was signed with key {key_id}, but key was not found in the database. Treating message '
-                    f'as unsigned. Message metadata: {self.request_meta}')
+        logger.info(
+            f'Message was signed with key {key_id}, but key was not found in the database. Treating message '
+            f'as unsigned. Message metadata: {self.request_meta}'
+        )
         return None
 
     def status(self) -> str:
@@ -193,7 +211,8 @@ class ChangeSubmissionHandler:
         number_failed_modify = len([r for r in failed if r.request_type == UpdateRequestType.MODIFY])
         number_failed_delete = len([r for r in failed if r.request_type == UpdateRequestType.DELETE])
 
-        user_report = self._request_meta_str() + textwrap.dedent(f"""
+        user_report = self._request_meta_str() + textwrap.dedent(
+            f"""
         SUMMARY OF UPDATE:
 
         Number of objects found:                  {len(self.results):3}
@@ -209,7 +228,8 @@ class ChangeSubmissionHandler:
         DETAILED EXPLANATION:
         
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """)
+        """
+        )
         for result in self.results:
             user_report += '---\n'
             user_report += result.submitter_report_human()
@@ -263,20 +283,24 @@ class ChangeSubmissionHandler:
         header = get_setting('email.notification_header', '').format(sources_str=sources_str)
         header += '\nThis message is auto-generated.\n'
         header += 'The request was made with the following details:\n'
-        header_saved = textwrap.dedent("""
+        header_saved = textwrap.dedent(
+            """
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Some objects in which you are referenced have been created,
             deleted or changed.
             
-        """)
+        """
+        )
 
-        header_failed = textwrap.dedent("""
+        header_failed = textwrap.dedent(
+            """
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Some objects in which you are referenced were requested
             to be created, deleted or changed, but *failed* the 
             proper authorisation for any of the referenced maintainers.
             
-        """)
+        """
+        )
 
         for recipient, reports_per_status in reports_per_recipient.items():
             user_report = header + self._request_meta_str()

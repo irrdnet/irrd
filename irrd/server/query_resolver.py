@@ -41,6 +41,7 @@ class QueryResolver:
     Some aspects like setting sources retain state, so a single instance
     should not be shared across unrelated query sessions.
     """
+
     lookup_field_names = lookup_field_names()
     database_handler: DatabaseHandler
     _current_set_root_object_class: Optional[str]
@@ -112,13 +113,15 @@ class QueryResolver:
         """
         if attribute not in self.lookup_field_names:
             readable_lookup_field_names = ', '.join(self.lookup_field_names)
-            msg = (f'Inverse attribute search not supported for {attribute},' +
-                   f'only supported for attributes: {readable_lookup_field_names}')
+            msg = (
+                f'Inverse attribute search not supported for {attribute},'
+                + f'only supported for attributes: {readable_lookup_field_names}'
+            )
             raise InvalidQueryException(msg)
         query = self._prepare_query(ordered_by_sources=False).lookup_attr(attribute, value)
         return self._execute_query(query)
 
-    def routes_for_origin(self, origin: str, ip_version: Optional[int]=None) -> Set[str]:
+    def routes_for_origin(self, origin: str, ip_version: Optional[int] = None) -> Set[str]:
         """
         Resolve all route(6)s prefixes for an origin, returning a set
         of all prefixes. Origin must be in 'ASxxx' format.
@@ -126,7 +129,9 @@ class QueryResolver:
         prefixes = self.preloader.routes_for_origins([origin], self.sources, ip_version=ip_version)
         return prefixes
 
-    def routes_for_as_set(self, set_name: str, ip_version: Optional[int]=None, exclude_sets: Optional[Set[str]]=None) -> Set[str]:
+    def routes_for_as_set(
+        self, set_name: str, ip_version: Optional[int] = None, exclude_sets: Optional[Set[str]] = None
+    ) -> Set[str]:
         """
         Find all originating prefixes for all members of an AS-set. May be restricted
         to IPv4 or IPv6. Returns a set of all prefixes.
@@ -137,7 +142,9 @@ class QueryResolver:
         members = self._recursive_set_resolve({set_name})
         return self.preloader.routes_for_origins(members, self.sources, ip_version=ip_version)
 
-    def members_for_set_per_source(self, parameter: str, exclude_sets: Optional[Set[str]]=None, depth=0, recursive=False) -> Dict[str, List[str]]:
+    def members_for_set_per_source(
+        self, parameter: str, exclude_sets: Optional[Set[str]] = None, depth=0, recursive=False
+    ) -> Dict[str, List[str]]:
         """
         Find all members of an as-set or route-set, possibly recursively, distinguishing
         between multiple root objects in different sources with the same name.
@@ -160,7 +167,14 @@ class QueryResolver:
             for source in set_sources
         }
 
-    def members_for_set(self, parameter: str, exclude_sets: Optional[Set[str]]=None, depth=0, recursive=False, root_source: Optional[str]=None) -> List[str]:
+    def members_for_set(
+        self,
+        parameter: str,
+        exclude_sets: Optional[Set[str]] = None,
+        depth=0,
+        recursive=False,
+        root_source: Optional[str] = None,
+    ) -> List[str]:
         """
         Find all members of an as-set or route-set, possibly recursively.
         Returns a list of all members, including leaf members.
@@ -194,7 +208,9 @@ class QueryResolver:
 
         return sorted(members)
 
-    def _recursive_set_resolve(self, members: Set[str], sets_seen=None, root_source: Optional[str]=None) -> Set[str]:
+    def _recursive_set_resolve(
+        self, members: Set[str], sets_seen=None, root_source: Optional[str] = None
+    ) -> Set[str]:
         """
         Resolve all members of a number of sets, recursively.
 
@@ -217,7 +233,10 @@ class QueryResolver:
         sub_members, leaf_members = self._find_set_members(members, limit_source=root_source)
 
         for sub_member in sub_members:
-            if self._current_set_root_object_class is None or self._current_set_root_object_class == 'route-set':
+            if (
+                self._current_set_root_object_class is None
+                or self._current_set_root_object_class == 'route-set'
+            ):
                 try:
                     IP(sub_member.split('^')[0])
                     set_members.add(sub_member)
@@ -230,8 +249,7 @@ class QueryResolver:
             try:
                 as_number_formatted, _ = parse_as_number(sub_member)
                 if self._current_set_root_object_class == 'route-set':
-                    set_members.update(self.preloader.routes_for_origins(
-                        [as_number_formatted], self.sources))
+                    set_members.update(self.preloader.routes_for_origins([as_number_formatted], self.sources))
                     resolved_as_members.add(sub_member)
                 else:
                     set_members.add(sub_member)
@@ -243,13 +261,17 @@ class QueryResolver:
         if self._current_set_maximum_depth == 0:
             return set_members | sub_members | leaf_members
 
-        further_resolving_required = sub_members - set_members - sets_seen - resolved_as_members - self._current_excluded_sets
+        further_resolving_required = (
+            sub_members - set_members - sets_seen - resolved_as_members - self._current_excluded_sets
+        )
         new_members = self._recursive_set_resolve(further_resolving_required, sets_seen)
         set_members.update(new_members)
 
         return set_members
 
-    def _find_set_members(self, set_names: Set[str], limit_source: Optional[str]=None) -> Tuple[Set[str], Set[str]]:
+    def _find_set_members(
+        self, set_names: Set[str], limit_source: Optional[str] = None
+    ) -> Tuple[Set[str], Set[str]]:
         """
         Find all members of a number of route-sets or as-sets. Includes both
         direct members listed in members attribute, but also
@@ -331,7 +353,9 @@ class QueryResolver:
         leaf_members = set_names - sets_already_resolved
         return members, leaf_members
 
-    def database_status(self, sources: Optional[List[str]]=None) -> 'OrderedDict[str, OrderedDict[str, Any]]':
+    def database_status(
+        self, sources: Optional[List[str]] = None
+    ) -> 'OrderedDict[str, OrderedDict[str, Any]]':
         """Database status. If sources is None, return all valid sources."""
         if sources is None:
             sources = self.sources_default if self.sources_default else self.all_valid_sources
@@ -345,9 +369,15 @@ class QueryResolver:
             results[source] = OrderedDict()
             results[source]['authoritative'] = get_setting(f'sources.{source}.authoritative', False)
             object_class_filter = get_setting(f'sources.{source}.object_class_filter')
-            results[source]['object_class_filter'] = list(object_class_filter) if object_class_filter else None
-            results[source]['rpki_rov_filter'] = bool(get_setting('rpki.roa_source') and not get_setting(f'sources.{source}.rpki_excluded'))
-            results[source]['scopefilter_enabled'] = bool(get_setting('scopefilter')) and not get_setting(f'sources.{source}.scopefilter_excluded')
+            results[source]['object_class_filter'] = (
+                list(object_class_filter) if object_class_filter else None
+            )
+            results[source]['rpki_rov_filter'] = bool(
+                get_setting('rpki.roa_source') and not get_setting(f'sources.{source}.rpki_excluded')
+            )
+            results[source]['scopefilter_enabled'] = bool(get_setting('scopefilter')) and not get_setting(
+                f'sources.{source}.scopefilter_excluded'
+            )
             results[source]['route_preference'] = get_setting(f'sources.{source}.route_object_preference')
             results[source]['local_journal_kept'] = get_setting(f'sources.{source}.keep_journal', False)
             results[source]['serial_oldest_journal'] = query_result['serial_oldest_journal']

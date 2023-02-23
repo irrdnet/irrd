@@ -12,8 +12,10 @@ from irrd.conf import get_setting
 # isort: on
 
 logger = logging.getLogger(__name__)
-pgp_inline_re = re.compile(r'-----BEGIN PGP SIGNED MESSAGE-----(\n.+)?\n\n((?s:.+))\n-----BEGIN PGP SIGNATURE-----\n',
-                           flags=re.MULTILINE)
+pgp_inline_re = re.compile(
+    r'-----BEGIN PGP SIGNED MESSAGE-----(\n.+)?\n\n((?s:.+))\n-----BEGIN PGP SIGNATURE-----\n',
+    flags=re.MULTILINE,
+)
 
 
 def get_gpg_instance() -> gnupg.GPG:  # type: ignore
@@ -23,7 +25,9 @@ def get_gpg_instance() -> gnupg.GPG:  # type: ignore
     return gnupg.GPG(gnupghome=keyring)  # type: ignore
 
 
-def validate_pgp_signature(message: str, detached_signature: Optional[str]=None) -> Tuple[Optional[str], Optional[str]]:
+def validate_pgp_signature(
+    message: str, detached_signature: Optional[str] = None
+) -> Tuple[Optional[str], Optional[str]]:
     """
     Verify a PGP signature in a message.
 
@@ -60,7 +64,10 @@ def validate_pgp_signature(message: str, detached_signature: Optional[str]=None)
         result = gpg.verify(message)
         match = pgp_inline_re.search(message.replace('\r\n', '\n').replace('\r', '\n'))
         if not match:  # pragma: no cover
-            msg = f'message contained an inline PGP signature, but regular expression failed to extract body: {message}'
+            msg = (
+                'message contained an inline PGP signature, but regular expression failed to extract body:'
+                f' {message}'
+            )
             logger.info(msg)
             return None, None
         new_message = match.group(2) + '\n'

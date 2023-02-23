@@ -35,8 +35,8 @@ class ROADataImporter:
         database_handler.delete_all_roa_objects()
         database_handler.delete_all_rpsl_objects_with_journal(RPKI_IRR_PSEUDO_SOURCE)
     """
-    def __init__(self, rpki_json_str: str, slurm_json_str: Optional[str],
-                 database_handler: DatabaseHandler):
+
+    def __init__(self, rpki_json_str: str, slurm_json_str: Optional[str], database_handler: DatabaseHandler):
         self.roa_objs: List[ROA] = []
         self._filtered_asns: Set[int] = set()
         self._filtered_prefixes: IPSet = IPSet()
@@ -126,12 +126,14 @@ class ROADataImporter:
             max_length = assertion.get('maxPrefixLength')
             if max_length is None:
                 max_length = IP(assertion['prefix']).prefixlen()
-            self._roa_dicts.append({
-                'asn': 'AS' + str(assertion['asn']),
-                'prefix': assertion['prefix'],
-                'maxLength': max_length,
-                'ta': SLURM_TRUST_ANCHOR,
-            })
+            self._roa_dicts.append(
+                {
+                    'asn': 'AS' + str(assertion['asn']),
+                    'prefix': assertion['prefix'],
+                    'maxLength': max_length,
+                    'ta': SLURM_TRUST_ANCHOR,
+                }
+            )
 
 
 class ROA:
@@ -141,6 +143,7 @@ class ROA:
     This is used when (re-)importing all ROAs, to save the data to the DB,
     and by the BulkRouteROAValidator when validating all existing routes.
     """
+
     def __init__(self, prefix: IP, asn: int, max_length: str, trust_anchor: str):
         try:
             self.prefix = prefix
@@ -154,8 +157,10 @@ class ROA:
             raise ROAParserException(msg)
 
         if self.max_length < self.prefix.prefixlen():
-            msg = f'Invalid ROA: prefix size {self.prefix.prefixlen()} is smaller than max length {max_length} in ' \
-                  f'ROA for {self.prefix} / AS{self.asn}'
+            msg = (
+                f'Invalid ROA: prefix size {self.prefix.prefixlen()} is smaller than max length'
+                f' {max_length} in ROA for {self.prefix} / AS{self.asn}'
+            )
             logger.error(msg)
             raise ROAParserException(msg)
 
@@ -178,8 +183,9 @@ class ROA:
             trust_anchor=self.trust_anchor,
             scopefilter_validator=scopefilter_validator,
         )
-        database_handler.upsert_rpsl_object(self._rpsl_object, JournalEntryOrigin.pseudo_irr,
-                                            rpsl_guaranteed_no_existing=True)
+        database_handler.upsert_rpsl_object(
+            self._rpsl_object, JournalEntryOrigin.pseudo_irr, rpsl_guaranteed_no_existing=True
+        )
 
 
 class RPSLObjectFromROA(RPSLObject):
@@ -188,9 +194,17 @@ class RPSLObjectFromROA(RPSLObject):
     an RPKI pseudo-IRR object. It overrides the API in
     relevant parts.
     """
+
     # noinspection PyMissingConstructor
-    def __init__(self, prefix: IP, prefix_str: str, asn: int, max_length: int, trust_anchor: str,
-                 scopefilter_validator: ScopeFilterValidator):
+    def __init__(
+        self,
+        prefix: IP,
+        prefix_str: str,
+        asn: int,
+        max_length: int,
+        trust_anchor: str,
+        scopefilter_validator: ScopeFilterValidator,
+    ):
         self.prefix = prefix
         self.prefix_str = prefix_str
         self.asn = asn
@@ -223,12 +237,15 @@ class RPSLObjectFromROA(RPSLObject):
         remarks_fill = RPSL_ATTRIBUTE_TEXT_WIDTH * ' '
         remarks = get_setting('rpki.pseudo_irr_remarks').replace('\n', '\n' + remarks_fill).strip()
         remarks = remarks.format(asn=self.asn, prefix=self.prefix_str)
-        rpsl_object_text = f"""
+        rpsl_object_text = (
+            f"""
 {object_class_display}{self.prefix_str}
 descr:          RPKI ROA for {self.prefix_str} / AS{self.asn}
 remarks:        {remarks}
 max-length:     {self.max_length}
 origin:         AS{self.asn}
 source:         {RPKI_IRR_PSEUDO_SOURCE}  # Trust Anchor: {self.trust_anchor}
-""".strip() + '\n'
+""".strip()
+            + '\n'
+        )
         return rpsl_object_text

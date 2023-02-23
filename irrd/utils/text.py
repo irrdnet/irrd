@@ -81,6 +81,7 @@ def snake_to_camel_case(snake: Union[Set[str], List[str], str]):
     Convert a snake case string to camel case, with lowercase first
     letter. Can also accept a list or set of strings.
     """
+
     def _str_to_camel_case(snake_str: str):
         components = snake_str.replace('_', '-').split('-')
         return components[0] + ''.join(x.title() for x in components[1:])

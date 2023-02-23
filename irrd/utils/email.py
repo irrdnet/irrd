@@ -16,6 +16,7 @@ class EmailParser:
     """
     Parse a raw email.
     """
+
     body: Optional[str] = None
     pgp_fingerprint: Optional[str] = None
     message_id: Optional[str] = None

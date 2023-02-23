@@ -15,7 +15,8 @@ class TestEmailParser:
     # their coupling easily cause security issues.
 
     def test_parse_valid_plain_with_charset(self):
-        email = textwrap.dedent("""
+        email = textwrap.dedent(
+            """
         From sasha@localhost  Thu Jan  5 10:04:48 2018
         Received: from [127.0.0.1] (localhost.localdomain [127.0.0.1])
           by hostname (Postfix) with ESMTPS id 740AD310597
@@ -32,7 +33,8 @@ class TestEmailParser:
         Mime-Version: 1.0
 
         message content
-        """).strip()
+        """
+        ).strip()
         parser = EmailParser(email)
         assert parser.body == 'message content'
         assert parser.message_id == '<1325754288.4989.6.camel@hostname>'
@@ -42,7 +44,8 @@ class TestEmailParser:
         assert parser.pgp_fingerprint is None
 
     def test_parse_valid_plain_without_charset(self):
-        email = textwrap.dedent("""
+        email = textwrap.dedent(
+            """
         From sasha@localhost  Thu Jan  5 10:04:48 2018
         Received: from [127.0.0.1] (localhost.localdomain [127.0.0.1])
           by hostname (Postfix) with ESMTPS id 740AD310597
@@ -58,13 +61,15 @@ class TestEmailParser:
         Mime-Version: 1.0
 
         message content
-        """).strip()
+        """
+        ).strip()
         parser = EmailParser(email)
         assert parser.body == 'message content'
         assert parser.pgp_fingerprint is None
 
     def test_parse_valid_multipart_text_plain_with_charset(self):
-        email = textwrap.dedent("""
+        email = textwrap.dedent(
+            """
         From sasha@localhost  Thu Jan  5 10:04:48 2018
         Received: from [127.0.0.1] (localhost.localdomain [127.0.0.1])
           by hostname (Postfix) with ESMTPS id 740AD310597
@@ -95,13 +100,15 @@ class TestEmailParser:
         
         <html><head><meta http-equiv="Content-Type" content="text/html charset=us-ascii"></head><body style="word-wrap: break-word; -webkit-nbsp-mode: space; -webkit-line-break: after-white-space;" class=""><b class="">test 1 2 3</b><div class=""><br class=""></div></body></html>
         --Apple-Mail=_01FE5B2D-C7F3-4DDD-AB42-B92C88CFBF0F--
-        """).strip()
+        """
+        ).strip()
         parser = EmailParser(email)
         assert parser.body.strip() == 'test 1 2 3'
         assert parser.pgp_fingerprint is None
 
     def test_parse_valid_multipart_quoted_printable_with_charset(self):
-        email = textwrap.dedent("""
+        email = textwrap.dedent(
+            """
         From sasha@localhost  Thu Jan  5 10:04:48 2018
         Received: from [127.0.0.1] (localhost.localdomain [127.0.0.1])
           by hostname (Postfix) with ESMTPS id 740AD310597
@@ -133,14 +140,16 @@ class TestEmailParser:
 
         <html><head><meta http-equiv="Content-Type" content="text/html charset=us-ascii"></head><body style="word-wrap: break-word; -webkit-nbsp-mode: space; -webkit-line-break: after-white-space;" class=""><b class="">test 1 2 3</b><div class=""><br class=""></div></body></html>
         --Apple-Mail=_01FE5B2D-C7F3-4DDD-AB42-B92C88CFBF0F--
-        """).strip()
+        """
+        ).strip()
         parser = EmailParser(email)
         assert parser.body.strip() == 'se font vite pédagogues'
         assert parser.pgp_fingerprint is None
 
     def test_parse_valid_multipart_quoted_printable_without_charset(self):
         # latin-1 will be assumed
-        email = textwrap.dedent("""
+        email = textwrap.dedent(
+            """
         From sasha@localhost  Thu Jan  5 10:04:48 2018
         Received: from [127.0.0.1] (localhost.localdomain [127.0.0.1])
           by hostname (Postfix) with ESMTPS id 740AD310597
@@ -173,14 +182,16 @@ class TestEmailParser:
 
         <html><head><meta http-equiv='Content-Type' content='text/html charset=us-ascii'></head><body style='word-wrap: break-word; -webkit-nbsp-mode: space; -webkit-line-break: after-white-space;' class=""><b class="">test 1 2 3</b><div class=""><br class=""></div></body></html>
         --Apple-Mail=_01FE5B2D-C7F3-4DDD-AB42-B92C88CFBF0F--
-        """).strip()
+        """
+        ).strip()
         parser = EmailParser(email)
         assert parser.body.strip() == 'se font vite pdagogues'
         assert parser.pgp_fingerprint is None
 
     @pytest.mark.usefixtures('tmp_gpg_dir')
     def test_parse_valid_multipart_signed_ascii(self, tmp_gpg_dir, preload_gpg_key):
-        email = textwrap.dedent("""
+        email = textwrap.dedent(
+            """
         From sasha@localhost  Thu Jan  5 10:04:48 2018
         Received: from [127.0.0.1] (localhost.localdomain [127.0.0.1])
           by hostname (Postfix) with ESMTPS id 740AD310597
@@ -228,10 +239,14 @@ class TestEmailParser:
         QxtFWD7kfutDc40U0GjukbcPsfni1BH9AZZbUsm6YS7JMxoh1Rk=
         =92HM
         -----END PGP SIGNATURE-----
-        """).strip()
+        """
+        ).strip()
         parser = EmailParser(email)
         assert parser.body.strip() == 'test 1 2 3'
-        assert parser._pgp_signature == textwrap.dedent("""
+        assert (
+            parser._pgp_signature
+            == textwrap.dedent(
+                """
         -----BEGIN PGP SIGNATURE-----
 
         iQIzBAEBCAAdFiEEhiYdjb69pPVGktZNqDg7p4DyOMYFAlthsw0ACgkQqDg7p4Dy
@@ -247,12 +262,17 @@ class TestEmailParser:
         k1Bt6Qyyn4qWD19aV6yClqyhJwZB2uoSKHvBmPIu31nHRYNr9SWD75dht8YODsmF
         QxtFWD7kfutDc40U0GjukbcPsfni1BH9AZZbUsm6YS7JMxoh1Rk=
         =92HM
-        -----END PGP SIGNATURE-----""").strip()
+        -----END PGP SIGNATURE-----"""
+            ).strip()
+        )
         assert parser.pgp_fingerprint == '86261D8DBEBDA4F54692D64DA8383BA780F238C6'
 
     @pytest.mark.usefixtures('tmp_gpg_dir')
-    def test_parse_invalid_multipart_signed_ascii_with_additional_text_part(self, tmp_gpg_dir, preload_gpg_key):
-        email = textwrap.dedent("""
+    def test_parse_invalid_multipart_signed_ascii_with_additional_text_part(
+        self, tmp_gpg_dir, preload_gpg_key
+    ):
+        email = textwrap.dedent(
+            """
         From sasha@localhost  Thu Jan  5 10:04:48 2018
         Received: from [127.0.0.1] (localhost.localdomain [127.0.0.1])
           by hostname (Postfix) with ESMTPS id 740AD310597
@@ -308,14 +328,16 @@ class TestEmailParser:
 
         additional text/plain part - not signed
 
-        """).strip()
+        """
+        ).strip()
         parser = EmailParser(email)
         assert parser.body.strip() == 'additional text/plain part - not signed'
         assert parser.pgp_fingerprint is None
 
     @pytest.mark.usefixtures('tmp_gpg_dir')
     def test_parse_valid_inline_signed_ascii(self, tmp_gpg_dir, preload_gpg_key):
-        email = textwrap.dedent("""
+        email = textwrap.dedent(
+            """
         From sasha@localhost  Thu Jan  5 10:04:48 2018
         Received: from [127.0.0.1] (localhost.localdomain [127.0.0.1])
           by hostname (Postfix) with ESMTPS id 740AD310597
@@ -352,14 +374,16 @@ class TestEmailParser:
         4Ni0aIkkZY3cM0QR9EEHSCJgS2RVQujw/KZTeTQTLAJLtGtLbq8=
         =Zn24
         -----END PGP SIGNATURE-----
-        """).strip()
+        """
+        ).strip()
         parser = EmailParser(email)
         assert parser.body.strip() == 'test 1 2 3'
         assert parser.pgp_fingerprint == '86261D8DBEBDA4F54692D64DA8383BA780F238C6'
 
     @pytest.mark.usefixtures('tmp_gpg_dir')
     def test_parse_invalid_inline_signed_ascii_multiple_messages(self, tmp_gpg_dir, preload_gpg_key):
-        email = textwrap.dedent("""
+        email = textwrap.dedent(
+            """
         From sasha@localhost  Thu Jan  5 10:04:48 2018
         Received: from [127.0.0.1] (localhost.localdomain [127.0.0.1])
           by hostname (Postfix) with ESMTPS id 740AD310597
@@ -415,13 +439,15 @@ class TestEmailParser:
         4Ni0aIkkZY3cM0QR9EEHSCJgS2RVQujw/KZTeTQTLAJLtGtLbq8=
         =Zn24
         -----END PGP SIGNATURE-----
-        """).strip()
+        """
+        ).strip()
         parser = EmailParser(email)
         assert parser.pgp_fingerprint is None
 
     @pytest.mark.usefixtures('tmp_gpg_dir')
     def test_parse_valid_multipart_signed_unicode(self, tmp_gpg_dir, preload_gpg_key):
-        email = textwrap.dedent("""
+        email = textwrap.dedent(
+            """
         From sasha@localhost  Thu Jan  5 10:04:48 2018
         Received: from [127.0.0.1] (localhost.localdomain [127.0.0.1])
           by hostname (Postfix) with ESMTPS id 740AD310597
@@ -470,14 +496,16 @@ class TestEmailParser:
         -----END PGP SIGNATURE-----
         
         --Apple-Mail=_18B291D9-548C-4458-8F17-B76537227FDF--
-        """).strip()
+        """
+        ).strip()
         parser = EmailParser(email)
         assert parser.body.strip() == 'test 💩 é æ'
         assert parser.pgp_fingerprint == '86261D8DBEBDA4F54692D64DA8383BA780F238C6'
 
     @pytest.mark.usefixtures('tmp_gpg_dir')
     def test_parse_invalid_signature_multipart_signed_ascii_bad_signature(self, tmp_gpg_dir, preload_gpg_key):
-        email = textwrap.dedent("""
+        email = textwrap.dedent(
+            """
         From sasha@localhost  Thu Jan  5 10:04:48 2018
         Received: from [127.0.0.1] (localhost.localdomain [127.0.0.1])
           by hostname (Postfix) with ESMTPS id 740AD310597
@@ -525,13 +553,15 @@ class TestEmailParser:
         QxtFWD7kfutDc40U0GjukbcPsfni1BH9AZZbUsm6YS7JMxoh1Rk=
         =92HM
         -----END PGP SIGNATURE-----
-        """).strip()
+        """
+        ).strip()
         parser = EmailParser(email)
         assert parser.body.strip() == 'test 1 2 INVALID'
         assert parser.pgp_fingerprint is None
 
     def test_invalid_blank_body(self):
-        email = textwrap.dedent("""
+        email = textwrap.dedent(
+            """
         From sasha@localhost  Thu Jan  5 10:04:48 2018
         Received: from [127.0.0.1] (localhost.localdomain [127.0.0.1])
           by hostname (Postfix) with ESMTPS id 740AD310597
@@ -546,7 +576,8 @@ class TestEmailParser:
         Mime-Version: 1.0 (Mac OS X Mail 10.3 
         To: sasha@localhost
         X-Mailer: Apple Mail (2.3273)
-        """).strip()
+        """
+        ).strip()
         parser = EmailParser(email)
         assert not parser.body.strip()
         assert parser.pgp_fingerprint is None
