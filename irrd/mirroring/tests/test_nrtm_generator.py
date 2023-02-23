@@ -11,14 +11,16 @@ from ..nrtm_generator import NRTMGenerator, NRTMGeneratorException
 
 @pytest.fixture()
 def prepare_generator(monkeypatch, config_override):
-    config_override({
-        'sources': {
-            'TEST': {
-                'keep_journal': True,
-                'nrtm_query_serial_range_limit': 200,
+    config_override(
+        {
+            'sources': {
+                'TEST': {
+                    'keep_journal': True,
+                    'nrtm_query_serial_range_limit': 200,
+                }
             }
         }
-    })
+    )
 
     mock_dh = Mock()
     mock_djq = Mock()
@@ -27,22 +29,24 @@ def prepare_generator(monkeypatch, config_override):
     monkeypatch.setattr('irrd.mirroring.nrtm_generator.RPSLDatabaseJournalQuery', lambda: mock_djq)
     monkeypatch.setattr('irrd.mirroring.nrtm_generator.DatabaseStatusQuery', lambda: mock_dsq)
 
-    responses = cycle([
-        repeat({'serial_oldest_journal': 100, 'serial_newest_journal': 200}),
+    responses = cycle(
         [
-            {
-                # The CRYPT-PW hash must not appear in the output
-                'object_text': 'object 1 🦄\nauth: CRYPT-PW foobar\n',
-                'operation': DatabaseOperation.add_or_update,
-                'serial_nrtm': 120,
-            },
-            {
-                'object_text': 'object 2 🌈\n',
-                'operation': DatabaseOperation.delete,
-                'serial_nrtm': 180,
-            },
-        ],
-    ])
+            repeat({'serial_oldest_journal': 100, 'serial_newest_journal': 200}),
+            [
+                {
+                    # The CRYPT-PW hash must not appear in the output
+                    'object_text': 'object 1 🦄\nauth: CRYPT-PW foobar\n',
+                    'operation': DatabaseOperation.add_or_update,
+                    'serial_nrtm': 120,
+                },
+                {
+                    'object_text': 'object 2 🌈\n',
+                    'operation': DatabaseOperation.delete,
+                    'serial_nrtm': 180,
+                },
+            ],
+        ]
+    )
     mock_dh.execute_query = lambda q: next(responses)
 
     yield NRTMGenerator(), mock_dh
@@ -53,7 +57,10 @@ class TestNRTMGenerator:
         generator, mock_dh = prepare_generator
         result = generator.generate('TEST', '3', 110, 190, mock_dh)
 
-        assert result == textwrap.dedent("""
+        assert (
+            result
+            == textwrap.dedent(
+                """
         %START Version: 3 TEST 110-190
 
         ADD 120
@@ -65,13 +72,18 @@ class TestNRTMGenerator:
 
         object 2 🌈
 
-        %END TEST""").strip()
+        %END TEST"""
+            ).strip()
+        )
 
     def test_generate_serial_range_v1(self, prepare_generator):
         generator, mock_dh = prepare_generator
         result = generator.generate('TEST', '1', 110, 190, mock_dh)
 
-        assert result == textwrap.dedent("""
+        assert (
+            result
+            == textwrap.dedent(
+                """
         %START Version: 1 TEST 110-190
 
         ADD
@@ -83,13 +95,18 @@ class TestNRTMGenerator:
 
         object 2 🌈
 
-        %END TEST""").strip()
+        %END TEST"""
+            ).strip()
+        )
 
     def test_generate_until_last(self, prepare_generator, config_override):
         generator, mock_dh = prepare_generator
         result = generator.generate('TEST', '3', 110, None, mock_dh)
 
-        assert result == textwrap.dedent("""
+        assert (
+            result
+            == textwrap.dedent(
+                """
         %START Version: 3 TEST 110-200
 
         ADD 120
@@ -101,14 +118,19 @@ class TestNRTMGenerator:
 
         object 2 🌈
 
-        %END TEST""").strip()
+        %END TEST"""
+            ).strip()
+        )
 
     def test_serial_range_start_higher_than_low(self, prepare_generator):
         generator, mock_dh = prepare_generator
 
         with pytest.raises(NRTMGeneratorException) as nge:
             generator.generate('TEST', '3', 200, 190, mock_dh)
-        assert 'Start of the serial range (200) must be lower or equal to end of the serial range (190)' in str(nge.value)
+        assert (
+            'Start of the serial range (200) must be lower or equal to end of the serial range (190)'
+            in str(nge.value)
+        )
 
     def test_serial_start_too_low(self, prepare_generator):
         generator, mock_dh = prepare_generator
@@ -150,13 +172,15 @@ class TestNRTMGenerator:
 
     def test_no_journal_kept(self, prepare_generator, config_override):
         generator, mock_dh = prepare_generator
-        config_override({
-            'sources': {
-                'TEST': {
-                    'keep_journal': False,
+        config_override(
+            {
+                'sources': {
+                    'TEST': {
+                        'keep_journal': False,
+                    }
                 }
             }
-        })
+        )
 
         with pytest.raises(NRTMGeneratorException) as nge:
             generator.generate('TEST', '3', 110, 300, mock_dh)
@@ -172,17 +196,22 @@ class TestNRTMGenerator:
 
     def test_v3_range_limit_not_set(self, prepare_generator, config_override):
         generator, mock_dh = prepare_generator
-        config_override({
-            'sources': {
-                'TEST': {
-                    'keep_journal': True,
+        config_override(
+            {
+                'sources': {
+                    'TEST': {
+                        'keep_journal': True,
+                    }
                 }
             }
-        })
+        )
 
         result = generator.generate('TEST', '3', 110, 190, mock_dh)
 
-        assert result == textwrap.dedent("""
+        assert (
+            result
+            == textwrap.dedent(
+                """
         %START Version: 3 TEST 110-190
 
         ADD 120
@@ -194,18 +223,22 @@ class TestNRTMGenerator:
 
         object 2 🌈
 
-        %END TEST""").strip()
+        %END TEST"""
+            ).strip()
+        )
 
     def test_range_limit_exceeded(self, prepare_generator, config_override):
         generator, mock_dh = prepare_generator
-        config_override({
-            'sources': {
-                'TEST': {
-                    'keep_journal': True,
-                    'nrtm_query_serial_range_limit': 50,
+        config_override(
+            {
+                'sources': {
+                    'TEST': {
+                        'keep_journal': True,
+                        'nrtm_query_serial_range_limit': 50,
+                    }
                 }
             }
-        })
+        )
 
         with pytest.raises(NRTMGeneratorException) as nge:
             generator.generate('TEST', '3', 110, 190, mock_dh)
@@ -215,7 +248,10 @@ class TestNRTMGenerator:
         generator, mock_dh = prepare_generator
         result = generator.generate('TEST', '3', 110, 190, mock_dh, False)
 
-        assert result == textwrap.dedent("""
+        assert (
+            result
+            == textwrap.dedent(
+                """
         %START Version: 3 TEST 110-190
 
         ADD 120
@@ -227,4 +263,6 @@ class TestNRTMGenerator:
 
         object 2 🌈
 
-        %END TEST""").strip()
+        %END TEST"""
+            ).strip()
+        )

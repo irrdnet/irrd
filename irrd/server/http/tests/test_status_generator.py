@@ -10,17 +10,23 @@ from ..status_generator import StatusGenerator
 
 
 class TestStatusGenerator:
-
     def test_request(self, monkeypatch, config_override):
         mock_database_handler = Mock()
-        monkeypatch.setattr('irrd.server.http.status_generator.DatabaseHandler', lambda: mock_database_handler)
+        monkeypatch.setattr(
+            'irrd.server.http.status_generator.DatabaseHandler', lambda: mock_database_handler
+        )
         mock_status_query = Mock()
-        monkeypatch.setattr('irrd.server.http.status_generator.DatabaseStatusQuery', lambda: mock_status_query)
-        monkeypatch.setattr('irrd.server.http.status_generator.is_serial_synchronised',
-                            lambda dh, source: False)
+        monkeypatch.setattr(
+            'irrd.server.http.status_generator.DatabaseStatusQuery', lambda: mock_status_query
+        )
+        monkeypatch.setattr(
+            'irrd.server.http.status_generator.is_serial_synchronised', lambda dh, source: False
+        )
         mock_statistics_query = Mock()
-        monkeypatch.setattr('irrd.server.http.status_generator.RPSLDatabaseObjectStatisticsQuery',
-                            lambda: mock_statistics_query)
+        monkeypatch.setattr(
+            'irrd.server.http.status_generator.RPSLDatabaseObjectStatisticsQuery',
+            lambda: mock_statistics_query,
+        )
 
         def mock_whois_query(nrtm_host, nrtm_port, source):
             assert source in ['TEST1', 'TEST2', 'TEST3']
@@ -35,97 +41,100 @@ class TestStatusGenerator:
 
         monkeypatch.setattr('irrd.server.http.status_generator.whois_query_source_status', mock_whois_query)
 
-        config_override({
-            'sources': {
-                'rpki': {
-                    'roa_source': 'roa source'
-                },
-                'TEST1': {
-                    'authoritative': False,
-                    'keep_journal': True,
-                    'nrtm_host': 'nrtm1.example.com',
-                    'nrtm_port': 43,
-                    'object_class_filter': 'object-class-filter',
-                    'rpki_excluded': True,
-                    'route_object_preference': 200,
-                },
-                'TEST2': {
-                    'authoritative': True,
-                    'keep_journal': False,
-                    'nrtm_host': 'nrtm2.example.com',
-                    'nrtm_port': 44,
-                },
-                'TEST3': {
-                    'authoritative': True,
-                    'keep_journal': False,
-                    'nrtm_host': 'nrtm3.example.com',
-                    'nrtm_port': 45,
-                },
-                'TEST4': {
-                    'authoritative': False,
-                    'keep_journal': False,
-                },
+        config_override(
+            {
+                'sources': {
+                    'rpki': {'roa_source': 'roa source'},
+                    'TEST1': {
+                        'authoritative': False,
+                        'keep_journal': True,
+                        'nrtm_host': 'nrtm1.example.com',
+                        'nrtm_port': 43,
+                        'object_class_filter': 'object-class-filter',
+                        'rpki_excluded': True,
+                        'route_object_preference': 200,
+                    },
+                    'TEST2': {
+                        'authoritative': True,
+                        'keep_journal': False,
+                        'nrtm_host': 'nrtm2.example.com',
+                        'nrtm_port': 44,
+                    },
+                    'TEST3': {
+                        'authoritative': True,
+                        'keep_journal': False,
+                        'nrtm_host': 'nrtm3.example.com',
+                        'nrtm_port': 45,
+                    },
+                    'TEST4': {
+                        'authoritative': False,
+                        'keep_journal': False,
+                    },
+                }
             }
-        })
+        )
 
-        mock_query_result = iter([
+        mock_query_result = iter(
             [
-                {'source': 'TEST1', 'object_class': 'route', 'count': 10},
-                {'source': 'TEST1', 'object_class': 'aut-num', 'count': 10},
-                {'source': 'TEST1', 'object_class': 'other', 'count': 5},
-                {'source': 'TEST2', 'object_class': 'route', 'count': 42},
-            ],
-            [
-                {
-                    'source': 'TEST1',
-                    'serial_oldest_seen': 10,
-                    'serial_newest_seen': 21,
-                    'serial_oldest_journal': 15,
-                    'serial_newest_journal': 20,
-                    'serial_last_export': 16,
-                    'serial_newest_mirror': 25,
-                    'last_error_timestamp': datetime(2018, 1, 1, tzinfo=timezone.utc),
-                    'updated': datetime(2018, 6, 1, tzinfo=timezone.utc),
-                },
-                {
-                    'source': 'TEST2',
-                    'serial_oldest_seen': 210,
-                    'serial_newest_seen': 221,
-                    'serial_oldest_journal': None,
-                    'serial_newest_journal': None,
-                    'serial_last_export': None,
-                    'serial_newest_mirror': None,
-                    'last_error_timestamp': datetime(2019, 1, 1, tzinfo=timezone.utc),
-                    'updated': datetime(2019, 6, 1, tzinfo=timezone.utc),
-                },
-                {
-                    'source': 'TEST3',
-                    'serial_oldest_seen': None,
-                    'serial_newest_seen': None,
-                    'serial_oldest_journal': None,
-                    'serial_newest_journal': None,
-                    'serial_last_export': None,
-                    'serial_newest_mirror': None,
-                    'last_error_timestamp': None,
-                    'updated': None,
-                },
-                {
-                    'source': 'TEST4',
-                    'serial_oldest_seen': None,
-                    'serial_newest_seen': None,
-                    'serial_oldest_journal': None,
-                    'serial_newest_journal': None,
-                    'serial_last_export': None,
-                    'serial_newest_mirror': None,
-                    'last_error_timestamp': None,
-                    'updated': None,
-                },
-            ],
-        ])
+                [
+                    {'source': 'TEST1', 'object_class': 'route', 'count': 10},
+                    {'source': 'TEST1', 'object_class': 'aut-num', 'count': 10},
+                    {'source': 'TEST1', 'object_class': 'other', 'count': 5},
+                    {'source': 'TEST2', 'object_class': 'route', 'count': 42},
+                ],
+                [
+                    {
+                        'source': 'TEST1',
+                        'serial_oldest_seen': 10,
+                        'serial_newest_seen': 21,
+                        'serial_oldest_journal': 15,
+                        'serial_newest_journal': 20,
+                        'serial_last_export': 16,
+                        'serial_newest_mirror': 25,
+                        'last_error_timestamp': datetime(2018, 1, 1, tzinfo=timezone.utc),
+                        'updated': datetime(2018, 6, 1, tzinfo=timezone.utc),
+                    },
+                    {
+                        'source': 'TEST2',
+                        'serial_oldest_seen': 210,
+                        'serial_newest_seen': 221,
+                        'serial_oldest_journal': None,
+                        'serial_newest_journal': None,
+                        'serial_last_export': None,
+                        'serial_newest_mirror': None,
+                        'last_error_timestamp': datetime(2019, 1, 1, tzinfo=timezone.utc),
+                        'updated': datetime(2019, 6, 1, tzinfo=timezone.utc),
+                    },
+                    {
+                        'source': 'TEST3',
+                        'serial_oldest_seen': None,
+                        'serial_newest_seen': None,
+                        'serial_oldest_journal': None,
+                        'serial_newest_journal': None,
+                        'serial_last_export': None,
+                        'serial_newest_mirror': None,
+                        'last_error_timestamp': None,
+                        'updated': None,
+                    },
+                    {
+                        'source': 'TEST4',
+                        'serial_oldest_seen': None,
+                        'serial_newest_seen': None,
+                        'serial_oldest_journal': None,
+                        'serial_newest_journal': None,
+                        'serial_last_export': None,
+                        'serial_newest_mirror': None,
+                        'last_error_timestamp': None,
+                        'updated': None,
+                    },
+                ],
+            ]
+        )
         mock_database_handler.execute_query = lambda query, flush_rpsl_buffer=True: next(mock_query_result)
 
         status_report = StatusGenerator().generate_status()
-        expected_report = textwrap.dedent(f"""
+        expected_report = textwrap.dedent(
+            f"""
             IRRD version {__version__}
             Listening on ::0 port {get_setting('server.whois.port')}
             
@@ -235,6 +244,7 @@ class TestStatusGenerator:
                 Route object preference: None
             
             Remote information:
-                No NRTM host configured.\n\n""").lstrip()
+                No NRTM host configured.\n\n"""
+        ).lstrip()
 
         assert expected_report == status_report

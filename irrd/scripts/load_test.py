@@ -28,7 +28,7 @@ def main(host, port, count):
 
     start_time = time.perf_counter()
     while 1:
-        data = s.recv(1024*1024)
+        data = s.recv(1024 * 1024)
         if not data:
             break
 
@@ -41,12 +41,11 @@ def main(host, port, count):
 if __name__ == '__main__':  # pragma: no cover
     description = """A simple load tester for IRRd. Sends random !g queries."""
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument('--count', dest='count', type=int, default=5000,
-                        help=f'number of queries to run (default: 5000)')
-    parser.add_argument('host', type=str,
-                        help='hostname of instance')
-    parser.add_argument('port', type=int,
-                        help='port of instance')
+    parser.add_argument(
+        '--count', dest='count', type=int, default=5000, help=f'number of queries to run (default: 5000)'
+    )
+    parser.add_argument('host', type=str, help='hostname of instance')
+    parser.add_argument('port', type=int, help='port of instance')
     args = parser.parse_args()
 
     main(args.host, args.port, args.count)

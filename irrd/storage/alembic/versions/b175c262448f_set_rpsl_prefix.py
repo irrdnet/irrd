@@ -16,7 +16,10 @@ depends_on = None
 
 def upgrade():
     connection = op.get_bind()
-    connection.execute("update rpsl_objects set prefix=(host(ip_first) || '/' || prefix_length)::cidr where object_class in ('route', 'route6', 'inet6num');")
+    connection.execute(
+        "update rpsl_objects set prefix=(host(ip_first) || '/' || prefix_length)::cidr where object_class in"
+        " ('route', 'route6', 'inet6num');"
+    )
 
 
 def downgrade():

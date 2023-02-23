@@ -144,7 +144,9 @@ def test_update_route_preference_status(config_override):
     mock_dh.query_responses[RPSLDatabaseQuery] = iter(route_objects)
     update_route_preference_status(mock_dh)
     assert mock_dh.queries == [
-        RPSLDatabaseQuery(column_names=expected_columns, ordered_by_sources=False).object_classes(object_classes),
+        RPSLDatabaseQuery(column_names=expected_columns, ordered_by_sources=False).object_classes(
+            object_classes
+        ),
         RPSLDatabaseQuery(
             enrich_columns,
             enable_ordering=False,

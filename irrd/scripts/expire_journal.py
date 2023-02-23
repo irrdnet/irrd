@@ -24,7 +24,11 @@ from irrd.storage.queries import RPSLDatabaseJournalQuery
 def expire_journal(skip_confirmation: bool, expire_before: datetime, source: str):
     dh = DatabaseHandler()
 
-    q = RPSLDatabaseJournalQuery(column_names=["timestamp"]).sources([source]).entries_before_date(expire_before)
+    q = (
+        RPSLDatabaseJournalQuery(column_names=["timestamp"])
+        .sources([source])
+        .entries_before_date(expire_before)
+    )
     affected_object_count = len(list(dh.execute_query(q)))
 
     if not affected_object_count:
@@ -73,7 +77,10 @@ def main():  # pragma: no cover
         help=f"use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})",
     )
     parser.add_argument(
-        "--expire-before", type=str, required=True, help="expire all entries from before this date (YYYY-MM-DD)"
+        "--expire-before",
+        type=str,
+        required=True,
+        help="expire all entries from before this date (YYYY-MM-DD)",
     )
     parser.add_argument("--source", type=str, required=True, help="the name of the source to reload")
 

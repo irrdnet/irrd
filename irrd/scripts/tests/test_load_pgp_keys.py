@@ -15,7 +15,7 @@ def test_load_pgp_keys(capsys, monkeypatch):
     monkeypatch.setattr('irrd.scripts.load_pgp_keys.DatabaseHandler', lambda: mock_dh)
     monkeypatch.setattr('irrd.scripts.load_pgp_keys.RPSLDatabaseQuery', lambda column_names: mock_dq)
 
-    mock_dh.execute_query = lambda q, : [
+    mock_dh.execute_query = lambda q,: [
         {
             'rpsl_pk': 'PGPKEY-80F238C6',
             'object_text': SAMPLE_KEY_CERT,
@@ -23,7 +23,7 @@ def test_load_pgp_keys(capsys, monkeypatch):
         {
             'rpsl_pk': 'PGPKEY-BAD',
             'object_text': SAMPLE_KEY_CERT.replace('rpYI', 'a'),
-        }
+        },
     ]
 
     load_pgp_keys('TEST')

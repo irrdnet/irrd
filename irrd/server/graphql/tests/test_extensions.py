@@ -7,10 +7,12 @@ from ..extensions import QueryMetadataExtension, error_formatter
 def test_query_metedata_extension(caplog):
     extension = QueryMetadataExtension()
 
-    mock_request = HTTPConnection({
-        'type': 'http',
-        'client': ('127.0.0.1', '8000'),
-    })
+    mock_request = HTTPConnection(
+        {
+            'type': 'http',
+            'client': ('127.0.0.1', '8000'),
+        }
+    )
     mock_request._json = {
         'operationName': 'operation',
         'query': 'graphql query',

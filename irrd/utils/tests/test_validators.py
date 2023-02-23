@@ -26,34 +26,47 @@ def test_validate_as_number():
 
 
 def test_validate_rpsl_change_submission():
-    result = RPSLChangeSubmission.parse_obj({
-        'objects': [
-            {'object_text': 'text'},
-            {'attributes': [
-                {'name': 'name1', 'value': 'value1'},
-                {'name': 'name1', 'value': ['list1', 'list2']},
-            ]},
-        ],
-        'passwords': ['password'],
-        'override': 'override',
-        'delete_reason': 'delete reason',
-    })
+    result = RPSLChangeSubmission.parse_obj(
+        {
+            'objects': [
+                {'object_text': 'text'},
+                {
+                    'attributes': [
+                        {'name': 'name1', 'value': 'value1'},
+                        {'name': 'name1', 'value': ['list1', 'list2']},
+                    ]
+                },
+            ],
+            'passwords': ['password'],
+            'override': 'override',
+            'delete_reason': 'delete reason',
+        }
+    )
     assert result.objects[1].attributes[1].value == 'list1, list2'
 
     with pytest.raises(pydantic.ValidationError):
-        RPSLChangeSubmission.parse_obj({
-            'objects': [
-                {'attributes': [
-                    {'name': 'name1', 'missing-value': 'value1'},
-                ]},
-            ],
-        })
+        RPSLChangeSubmission.parse_obj(
+            {
+                'objects': [
+                    {
+                        'attributes': [
+                            {'name': 'name1', 'missing-value': 'value1'},
+                        ]
+                    },
+                ],
+            }
+        )
 
     with pytest.raises(pydantic.ValidationError):
-        RPSLChangeSubmission.parse_obj({
-            'objects': [
-                {'object_text': 'text', 'attributes': [
-                    {'name': 'name1', 'value': 'value1'},
-                ]},
-            ],
-        })
+        RPSLChangeSubmission.parse_obj(
+            {
+                'objects': [
+                    {
+                        'object_text': 'text',
+                        'attributes': [
+                            {'name': 'name1', 'value': 'value1'},
+                        ],
+                    },
+                ],
+            }
+        )

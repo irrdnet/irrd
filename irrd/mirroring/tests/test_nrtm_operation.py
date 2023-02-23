@@ -18,12 +18,10 @@ from ..nrtm_operation import NRTMOperation
 
 
 class TestNRTMOperation:
-
     def test_nrtm_add_valid_without_strict_import_keycert(self, monkeypatch, tmp_gpg_dir):
         mock_dh = Mock()
         mock_scopefilter = Mock(spec=ScopeFilterValidator)
-        monkeypatch.setattr('irrd.mirroring.nrtm_operation.ScopeFilterValidator',
-                            lambda: mock_scopefilter)
+        monkeypatch.setattr('irrd.mirroring.nrtm_operation.ScopeFilterValidator', lambda: mock_scopefilter)
         mock_scopefilter.validate_rpsl_object = lambda obj: (ScopeFilterStatus.in_scope, '')
 
         operation = NRTMOperation(
@@ -48,8 +46,7 @@ class TestNRTMOperation:
     def test_nrtm_add_valid_with_strict_import_keycert(self, monkeypatch, tmp_gpg_dir):
         mock_dh = Mock()
         mock_scopefilter = Mock(spec=ScopeFilterValidator)
-        monkeypatch.setattr('irrd.mirroring.nrtm_operation.ScopeFilterValidator',
-                            lambda: mock_scopefilter)
+        monkeypatch.setattr('irrd.mirroring.nrtm_operation.ScopeFilterValidator', lambda: mock_scopefilter)
         mock_scopefilter.validate_rpsl_object = lambda obj: (ScopeFilterStatus.in_scope, '')
 
         operation = NRTMOperation(
@@ -74,11 +71,11 @@ class TestNRTMOperation:
     def test_nrtm_add_valid_rpki_scopefilter_aware(self, tmp_gpg_dir, monkeypatch):
         mock_dh = Mock()
         mock_route_validator = Mock()
-        monkeypatch.setattr('irrd.mirroring.nrtm_operation.SingleRouteROAValidator',
-                            lambda dh: mock_route_validator)
+        monkeypatch.setattr(
+            'irrd.mirroring.nrtm_operation.SingleRouteROAValidator', lambda dh: mock_route_validator
+        )
         mock_scopefilter = Mock(spec=ScopeFilterValidator)
-        monkeypatch.setattr('irrd.mirroring.nrtm_operation.ScopeFilterValidator',
-                            lambda: mock_scopefilter)
+        monkeypatch.setattr('irrd.mirroring.nrtm_operation.ScopeFilterValidator', lambda: mock_scopefilter)
 
         mock_route_validator.validate_route = lambda prefix, asn, source: RPKIStatus.invalid
         mock_scopefilter.validate_rpsl_object = lambda obj: (ScopeFilterStatus.out_scope_prefix, '')

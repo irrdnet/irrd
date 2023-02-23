@@ -42,9 +42,11 @@ def create_worker(config_override, monkeypatch):
     mock_preloader = Mock(spec=Preloader)
     monkeypatch.setattr('irrd.server.whois.server.Preloader', lambda: mock_preloader)
 
-    config_override({
-        'redis_url': 'redis://invalid-host.example.com',  # Not actually used
-    })
+    config_override(
+        {
+            'redis_url': 'redis://invalid-host.example.com',  # Not actually used
+        }
+    )
     queue = Queue()
     worker = WhoisWorker(queue)
     request = MockSocket()
@@ -68,8 +70,9 @@ class TestWhoisWorker:
         assert request.timeout_set == 5
 
     def test_whois_request_worker_exception(self, create_worker, monkeypatch, caplog):
-        monkeypatch.setattr('irrd.server.whois.server.WhoisQueryParser',
-                            Mock(side_effect=OSError('expected')))
+        monkeypatch.setattr(
+            'irrd.server.whois.server.WhoisQueryParser', Mock(side_effect=OSError('expected'))
+        )
 
         worker, request = create_worker
         request.rfile.write(b'!v\r\n')
@@ -83,8 +86,7 @@ class TestWhoisWorker:
         assert 'Failed to handle whois connection' in caplog.text
 
     def test_whois_request_worker_preload_failed(self, create_worker, monkeypatch, caplog):
-        monkeypatch.setattr('irrd.server.whois.server.Preloader',
-                            Mock(side_effect=OSError('expected')))
+        monkeypatch.setattr('irrd.server.whois.server.Preloader', Mock(side_effect=OSError('expected')))
 
         worker, request = create_worker
         request.rfile.write(b'!v\r\n')
@@ -117,6 +119,7 @@ class TestWhoisWorker:
             if readline_call_count == 3:
                 time.sleep(2)
                 return b''
+
         request.rfile.readline = mock_readline
 
         request.rfile.seek(0)
@@ -136,17 +139,19 @@ class TestWhoisWorker:
         worker.run(keep_running=False)
 
     def test_whois_request_worker_access_list_permitted(self, config_override, create_worker):
-        config_override({
-            'redis_url': 'redis://invalid-host.example.com',  # Not actually used
-            'server': {
-                'whois': {
-                    'access_list': 'test-access-list',
+        config_override(
+            {
+                'redis_url': 'redis://invalid-host.example.com',  # Not actually used
+                'server': {
+                    'whois': {
+                        'access_list': 'test-access-list',
+                    },
                 },
-            },
-            'access_lists': {
-                'test-access-list': ['192.0.2.0/25'],
-            },
-        })
+                'access_lists': {
+                    'test-access-list': ['192.0.2.0/25'],
+                },
+            }
+        )
 
         worker, request = create_worker
         request.rfile.write(b'!q\n')
@@ -157,17 +162,19 @@ class TestWhoisWorker:
         assert not request.wfile.read()
 
     def test_whois_request_worker_access_list_denied(self, config_override, create_worker):
-        config_override({
-            'redis_url': 'redis://invalid-host.example.com',  # Not actually used
-            'server': {
-                'whois': {
-                    'access_list': 'test-access-list',
+        config_override(
+            {
+                'redis_url': 'redis://invalid-host.example.com',  # Not actually used
+                'server': {
+                    'whois': {
+                        'access_list': 'test-access-list',
+                    },
                 },
-            },
-            'access_lists': {
-                'test-access-list': ['192.0.2.128/25'],
-            },
-        })
+                'access_lists': {
+                    'test-access-list': ['192.0.2.128/25'],
+                },
+            }
+        )
 
         worker, request = create_worker
         request.rfile.write(b'!v\n')

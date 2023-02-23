@@ -23,10 +23,19 @@ def run(version):
 def main():  # pragma: no cover
     description = """Downgrade the IRRd SQL database to a particular version by running database migrations. See release notes."""
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument('--config', dest='config_file_path', type=str,
-                        help=f'use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})')
-    parser.add_argument('--version', dest='version', type=str, required=True,
-                        help=f'version to downgrade to (see release notes)')
+    parser.add_argument(
+        '--config',
+        dest='config_file_path',
+        type=str,
+        help=f'use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})',
+    )
+    parser.add_argument(
+        '--version',
+        dest='version',
+        type=str,
+        required=True,
+        help=f'version to downgrade to (see release notes)',
+    )
     args = parser.parse_args()
 
     config_init(args.config_file_path)

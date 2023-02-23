@@ -28,6 +28,7 @@ class RPSLObjectMeta(type):
     kept as small as possible. This metaclass pre-calculates some derived data
     from the fields defined by a subclass of RPSLObject, for optimised parsing speed.
     """
+
     def __init__(cls, name, bases, clsdict):  # noqa: N805
         super().__init__(name, bases, clsdict)
         fields = clsdict.get('fields')
@@ -38,10 +39,20 @@ class RPSLObjectMeta(type):
             cls.attrs_allowed = [field[0] for field in fields.items()]
             cls.attrs_required = [field[0] for field in fields.items() if not field[1].optional]
             cls.attrs_multiple = [field[0] for field in fields.items() if field[1].multiple]
-            cls.field_extracts = list(itertools.chain(
-                *[field[1].extracts for field in fields.items() if field[1].primary_key or field[1].lookup_key]
-            ))
-            cls.referring_strong_fields = [(field[0], field[1].referring) for field in fields.items() if hasattr(field[1], 'referring') and getattr(field[1], 'strong')]
+            cls.field_extracts = list(
+                itertools.chain(
+                    *[
+                        field[1].extracts
+                        for field in fields.items()
+                        if field[1].primary_key or field[1].lookup_key
+                    ]
+                )
+            )
+            cls.referring_strong_fields = [
+                (field[0], field[1].referring)
+                for field in fields.items()
+                if hasattr(field[1], 'referring') and getattr(field[1], 'strong')
+            ]
 
 
 class RPSLObject(metaclass=RPSLObjectMeta):
@@ -56,6 +67,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
     made for each RPSL type with the appropriate fields defined. Note that any
     subclasses should also be added to OBJECT_CLASS_MAPPING.
     """
+
     fields: Dict[str, RPSLTextField] = OrderedDict()
     rpsl_object_class: str
     pk_fields: List[str] = []
@@ -84,7 +96,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
 
     _re_attr_name = re.compile(r'^[a-z0-9_-]+$')
 
-    def __init__(self, from_text: Optional[str]=None, strict_validation=True, default_source=None) -> None:
+    def __init__(self, from_text: Optional[str] = None, strict_validation=True, default_source=None) -> None:
         """
         Create a new RPSL object, optionally instantiated from a string.
 
@@ -162,13 +174,14 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         """
         result = set()
         from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING
+
         for rpsl_object in OBJECT_CLASS_MAPPING.values():
             for field_name, field in rpsl_object.fields.items():
                 if self.rpsl_object_class in getattr(field, 'referring', []) and getattr(field, 'strong'):
                     result.add(field_name)
         return result
 
-    def render_rpsl_text(self, last_modified: Optional[datetime.datetime]=None) -> str:
+    def render_rpsl_text(self, last_modified: Optional[datetime.datetime] = None) -> str:
         """
         Render the RPSL object as an RPSL string.
         If last_modified is provided, removes existing last-modified:
@@ -254,7 +267,9 @@ class RPSLObject(metaclass=RPSLObjectMeta):
 
         for line_no, line in enumerate(splitline_unicodesafe(text.strip())):
             if not line:
-                self.messages.error(f'Line {line_no+1}: encountered empty line in the middle of object: [{line}]')
+                self.messages.error(
+                    f'Line {line_no+1}: encountered empty line in the middle of object: [{line}]'
+                )
                 return
 
             if not line.startswith(continuation_chars):
@@ -265,7 +280,9 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                     self._object_data.append((current_attr, current_value, current_continuation_chars))
 
                 if ':' not in line:
-                    self.messages.error(f'Line {line_no+1}: line is neither continuation nor valid attribute [{line}]')
+                    self.messages.error(
+                        f'Line {line_no+1}: line is neither continuation nor valid attribute [{line}]'
+                    )
                     return
                 current_attr, current_value = line.split(':', maxsplit=1)
                 current_attr = current_attr.lower()
@@ -273,7 +290,9 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                 current_continuation_chars = []
 
                 if current_attr not in self.attrs_allowed and not self._re_attr_name.match(current_attr):
-                    self.messages.error(f'Line {line_no+1}: encountered malformed attribute name: [{current_attr}]')
+                    self.messages.error(
+                        f'Line {line_no+1}: encountered malformed attribute name: [{current_attr}]'
+                    )
                     return
             else:
                 # Whitespace between the continuation character and the start of the data is not significant.
@@ -310,11 +329,14 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                 if attr_name in self.ignored_validation_fields:
                     continue
                 if attr_name not in self.attrs_allowed:
-                    self.messages.error(f'Unrecognised attribute {attr_name} on object {self.rpsl_object_class}')
+                    self.messages.error(
+                        f'Unrecognised attribute {attr_name} on object {self.rpsl_object_class}'
+                    )
                 if count > 1 and attr_name not in self.attrs_multiple:
                     self.messages.error(
-                        f'Attribute "{attr_name}" on object {self.rpsl_object_class} occurs multiple times, but is '
-                        f'only allowed once')
+                        f'Attribute "{attr_name}" on object {self.rpsl_object_class} occurs multiple times,'
+                        ' but is only allowed once'
+                    )
             for attr_required in self.attrs_required:
                 if attr_required not in attrs_present:
                     self.messages.error(
@@ -354,7 +376,9 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                 # the source field. In all other cases, the field parsing is best effort.
                 # In all these other cases we pass a new parser messages object to the
                 # field parser, so that we basically discard any errors.
-                raise_errors = self.strict_validation or field.primary_key or field.lookup_key or attr_name == 'source'
+                raise_errors = (
+                    self.strict_validation or field.primary_key or field.lookup_key or attr_name == 'source'
+                )
                 field_messages = self.messages if raise_errors else RPSLParserMessages()
                 parsed_value = field.parse(normalised_value, field_messages, self.strict_validation)
 
@@ -396,8 +420,10 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                             if attr_value:
                                 existing_attr_value = getattr(self, attr, None)
                                 if existing_attr_value and not allow_invalid_metadata:  # pragma: no cover
-                                    raise ValueError(f'Parsing of {parsed_value.value} reads {attr_value} for {attr},'
-                                                     f'but value {existing_attr_value} is already set.')
+                                    raise ValueError(
+                                        f'Parsing of {parsed_value.value} reads {attr_value} for {attr},'
+                                        f'but value {existing_attr_value} is already set.'
+                                    )
                                 setattr(self, attr, attr_value)
 
         if 'source' not in self.parsed_data and self.default_source:

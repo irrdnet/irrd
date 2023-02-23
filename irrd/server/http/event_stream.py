@@ -154,7 +154,9 @@ class EventStreamEndpoint(WebSocketEndpoint):
         await self.send_header()
 
     async def send_header(self) -> None:
-        journaled_sources = [name for name, settings in get_setting("sources").items() if settings.get("keep_journal")]
+        journaled_sources = [
+            name for name, settings in get_setting("sources").items() if settings.get("keep_journal")
+        ]
         dh = DatabaseHandler(readonly=True)
         query = DatabaseStatusQuery().sources(journaled_sources)
         sources_created = {row["source"]: row["created"].isoformat() for row in dh.execute_query(query)}
@@ -255,7 +257,9 @@ class AsyncEventStreamFollower:
 
     async def _run_monitor(self) -> None:
         after_redis_event_id = REDIS_STREAM_END_IDENTIFIER
-        logger.info(f"event stream {self.host}: sending entries from global serial {self.after_global_serial}")
+        logger.info(
+            f"event stream {self.host}: sending entries from global serial {self.after_global_serial}"
+        )
         await self._send_new_journal_entries()
         logger.debug(f"event stream {self.host}: initial send complete, waiting for new events")
         while True:
@@ -302,7 +306,9 @@ class AsyncEventStreamFollower:
             )
             self.after_global_serial = max([entry["serial_global"], self.after_global_serial])
 
-        logger.debug(f"event stream {self.host}: sent new changes up to global serial {self.after_global_serial}")
+        logger.debug(
+            f"event stream {self.host}: sent new changes up to global serial {self.after_global_serial}"
+        )
 
     async def close(self):
         if self.streaming_task.done():

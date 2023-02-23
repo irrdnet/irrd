@@ -19,19 +19,23 @@ from irrd.storage.database_handler import DatabaseHandler
 
 
 def update(source, filename) -> int:
-    if any([
-        get_setting(f'sources.{source}.import_source'),
-        get_setting(f'sources.{source}.import_serial_source')
-    ]):
-        print(f'Error: to use this command, import_source and import_serial_source '
-              f'for source {source} must not be set.')
+    if any(
+        [
+            get_setting(f'sources.{source}.import_source'),
+            get_setting(f'sources.{source}.import_serial_source'),
+        ]
+    ):
+        print(
+            'Error: to use this command, import_source and import_serial_source '
+            f'for source {source} must not be set.'
+        )
         return 2
 
     dh = DatabaseHandler()
     roa_validator = BulkRouteROAValidator(dh)
     parser = MirrorUpdateFileImportParser(
-        source, filename, database_handler=dh,
-        direct_error_return=True, roa_validator=roa_validator)
+        source, filename, database_handler=dh, direct_error_return=True, roa_validator=roa_validator
+    )
     error = parser.run_import()
     if error:
         dh.rollback()
@@ -47,12 +51,16 @@ def update(source, filename) -> int:
 def main():  # pragma: no cover
     description = """Update a database based on a RPSL file."""
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument('--config', dest='config_file_path', type=str,
-                        help=f'use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})')
-    parser.add_argument('--source', dest='source', type=str, required=True,
-                        help=f'name of the source, e.g. NTTCOM')
-    parser.add_argument('input_file', type=str,
-                        help='the name of a file to read')
+    parser.add_argument(
+        '--config',
+        dest='config_file_path',
+        type=str,
+        help=f'use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})',
+    )
+    parser.add_argument(
+        '--source', dest='source', type=str, required=True, help=f'name of the source, e.g. NTTCOM'
+    )
+    parser.add_argument('input_file', type=str, help='the name of a file to read')
     args = parser.parse_args()
 
     config_init(args.config_file_path)

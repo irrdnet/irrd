@@ -20,8 +20,18 @@ def upgrade():
     scopefilter_status = sa.Enum('in_scope', 'out_scope_as', 'out_scope_prefix', name='scopefilterstatus')
     scopefilter_status.create(op.get_bind())
 
-    op.add_column('rpsl_objects', sa.Column('scopefilter_status', sa.Enum('in_scope', 'out_scope_as', 'out_scope_prefix', name='scopefilterstatus'), server_default='in_scope', nullable=False))
-    op.create_index(op.f('ix_rpsl_objects_scopefilter_status'), 'rpsl_objects', ['scopefilter_status'], unique=False)
+    op.add_column(
+        'rpsl_objects',
+        sa.Column(
+            'scopefilter_status',
+            sa.Enum('in_scope', 'out_scope_as', 'out_scope_prefix', name='scopefilterstatus'),
+            server_default='in_scope',
+            nullable=False,
+        ),
+    )
+    op.create_index(
+        op.f('ix_rpsl_objects_scopefilter_status'), 'rpsl_objects', ['scopefilter_status'], unique=False
+    )
 
     conn = op.get_bind()
     inspector = Inspector.from_engine(conn)

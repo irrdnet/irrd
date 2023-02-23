@@ -19,18 +19,22 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column('database_status', sa.Column('synchronised_serials', sa.Boolean(), nullable=False, server_default='f'))
+    op.add_column(
+        'database_status', sa.Column('synchronised_serials', sa.Boolean(), nullable=False, server_default='f')
+    )
 
     connection = op.get_bind()
     t_db_status = RPSLDatabaseStatus.__table__
 
     for row in connection.execute(t_db_status.select()):
         synchronised_serials = is_serial_synchronised(None, row['source'], settings_only=True)
-        connection.execute(t_db_status.update().where(
-            t_db_status.c.source == row['source']
-        ).values(
-            synchronised_serials=synchronised_serials,
-        ))
+        connection.execute(
+            t_db_status.update()
+            .where(t_db_status.c.source == row['source'])
+            .values(
+                synchronised_serials=synchronised_serials,
+            )
+        )
 
 
 def downgrade():

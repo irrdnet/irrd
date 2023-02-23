@@ -57,8 +57,10 @@ async def startup():
         app.state.preloader = Preloader(enable_queries=True)
     except Exception as e:
         logger.critical(
-            "HTTP worker failed to initialise preloader or database, "
-            f"unable to start, terminating IRRd, traceback follows: {e}",
+            (
+                "HTTP worker failed to initialise preloader or database, "
+                f"unable to start, terminating IRRd, traceback follows: {e}"
+            ),
             exc_info=e,
         )
         main_pid = os.getenv(ENV_MAIN_PROCESS_PID)

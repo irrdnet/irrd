@@ -25,16 +25,17 @@ logger = logging.getLogger(__name__)
 
 
 class BaseDatabaseQuery:
-
     def __init__(self):  # pragma: no cover
         self.statement = sa.select([1])
 
     def __eq__(self, other):
-        return all([
-            str(self.statement) == str(other.statement),
-            self.statement.compile().params == other.statement.compile().params,
-            getattr(self, "_query_frozen", False) is getattr(other, "_query_frozen", False)
-        ])
+        return all(
+            [
+                str(self.statement) == str(other.statement),
+                self.statement.compile().params == other.statement.compile().params,
+                getattr(self, "_query_frozen", False) is getattr(other, "_query_frozen", False),
+            ]
+        )
 
     def finalise_statement(self):
         return self.statement
@@ -156,6 +157,7 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
 
     For methods taking a prefix or IP address, this should be an IPy.IP object.
     """
+
     table = RPSLDatabaseObject.__table__
     columns = RPSLDatabaseObject.__table__.c
     lookup_field_names = lookup_field_names()
@@ -209,7 +211,9 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
             for attr_value in attr_values:
                 counter = self._lookup_attr_counter
                 self._lookup_attr_counter += 1
-                value_filters.append(sa.text(f'parsed_data->:lookup_attr_name{counter} ? :lookup_attr_value{counter}'))
+                value_filters.append(
+                    sa.text(f'parsed_data->:lookup_attr_name{counter} ? :lookup_attr_value{counter}')
+                )
                 statement_params[f'lookup_attr_name{counter}'] = attr_name
                 statement_params[f'lookup_attr_value{counter}'] = attr_value.upper()
         fltr = sa.or_(*value_filters)
@@ -227,7 +231,7 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         fltr = sa.and_(
             self.columns.ip_first == str(ip.net()),
             self.columns.ip_last == str(ip.broadcast()),
-            self.columns.ip_version == ip.version()
+            self.columns.ip_version == ip.version(),
         )
         return self._filter(fltr)
 
@@ -240,7 +244,7 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
             fltr = sa.and_(
                 self.columns.ip_first <= str(ip.net()),
                 self.columns.ip_last >= str(ip.broadcast()),
-                self.columns.ip_version == ip.version()
+                self.columns.ip_version == ip.version(),
             )
         return self._filter(fltr)
 
@@ -260,7 +264,9 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
             self.columns.ip_first <= str(ip.net()),
             self.columns.ip_last >= str(ip.broadcast()),
             self.columns.ip_version == ip.version(),
-            sa.not_(sa.and_(self.columns.ip_first == str(ip.net()), self.columns.ip_last == str(ip.broadcast()))),
+            sa.not_(
+                sa.and_(self.columns.ip_first == str(ip.net()), self.columns.ip_last == str(ip.broadcast()))
+            ),
         )
         self.statement = self.statement.where(fltr)
 
@@ -288,7 +294,11 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
                 self.columns.ip_last <= str(ip.broadcast()),
                 self.columns.ip_last >= str(ip.net()),
                 self.columns.ip_version == ip.version(),
-                sa.not_(sa.and_(self.columns.ip_first == str(ip.net()), self.columns.ip_last == str(ip.broadcast()))),
+                sa.not_(
+                    sa.and_(
+                        self.columns.ip_first == str(ip.net()), self.columns.ip_last == str(ip.broadcast())
+                    )
+                ),
             )
         return self._filter(fltr)
 
@@ -319,7 +329,7 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
                         self.columns.ip_last >= str(ip.net()),
                     ),
                 ),
-                self.columns.ip_version == ip.version()
+                self.columns.ip_version == ip.version(),
             )
         return self._filter(fltr)
 
@@ -403,11 +413,11 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
             self.columns.rpsl_pk == value.upper(),
             sa.and_(
                 self.columns.object_class == 'person',
-                sa.text(f"parsed_data->>'person' ILIKE :lookup_attr_text_search{counter}")
+                sa.text(f"parsed_data->>'person' ILIKE :lookup_attr_text_search{counter}"),
             ),
             sa.and_(
                 self.columns.object_class == 'role',
-                sa.text(f"parsed_data->>'role' ILIKE :lookup_attr_text_search{counter}")
+                sa.text(f"parsed_data->>'role' ILIKE :lookup_attr_text_search{counter}"),
             ),
         )
         self.statement = self.statement.where(fltr).params(
@@ -416,9 +426,8 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         return self
 
     def _prefix_query_permitted(self):
-        return (
-            get_setting('compatibility.inetnum_search_disabled')
-            or (self._set_object_classes and 'inetnum' not in self._set_object_classes)
+        return get_setting('compatibility.inetnum_search_disabled') or (
+            self._set_object_classes and 'inetnum' not in self._set_object_classes
         )
 
 
@@ -427,6 +436,7 @@ class RPSLDatabaseJournalQuery(BaseRPSLObjectDatabaseQuery):
     RPSL data query builder for retrieving the journal,
     analogous to RPSLDatabaseQuery.
     """
+
     table = RPSLDatabaseJournal.__table__
     columns = RPSLDatabaseJournal.__table__.c
 
@@ -457,19 +467,19 @@ class RPSLDatabaseJournalQuery(BaseRPSLObjectDatabaseQuery):
         """
         return self._filter(self.columns.timestamp < timestamp)
 
-    def serial_nrtm_range(self, start: int, end: Optional[int]=None):
+    def serial_nrtm_range(self, start: int, end: Optional[int] = None):
         """
         Filter for NRTM serials within a specific range, inclusive.
         """
         return self._filter_range(self.columns.serial_nrtm, start, end)
 
-    def serial_global_range(self, start: int, end: Optional[int]=None):
+    def serial_global_range(self, start: int, end: Optional[int] = None):
         """
         Filter for journal-wide serials within a specific range, inclusive.
         """
         return self._filter_range(self.columns.serial_global, start, end)
 
-    def _filter_range(self, target: sa.Column, start: int, end: Optional[int]=None):
+    def _filter_range(self, target: sa.Column, start: int, end: Optional[int] = None):
         if end is not None:
             fltr = sa.and_(target >= start, target <= end)
         else:
@@ -481,14 +491,17 @@ class RPSLDatabaseJournalStatisticsQuery(BaseDatabaseQuery):
     """
     Special journal statistics query.
     """
+
     table = RPSLDatabaseJournal.__table__
     columns = RPSLDatabaseJournal.__table__.c
 
     def __init__(self):
-        self.statement = sa.select([
-            sa.func.max(self.columns.serial_global).label('max_serial_global'),
-            sa.func.max(self.columns.timestamp).label('max_timestamp'),
-        ])
+        self.statement = sa.select(
+            [
+                sa.func.max(self.columns.serial_global).label('max_serial_global'),
+                sa.func.max(self.columns.timestamp).label('max_timestamp'),
+            ]
+        )
 
 
 class RPSLDatabaseSuspendedQuery(BaseRPSLObjectDatabaseQuery):
@@ -496,6 +509,7 @@ class RPSLDatabaseSuspendedQuery(BaseRPSLObjectDatabaseQuery):
     RPSL data query builder for retrieving suspended objects,
     analogous to RPSLDatabaseQuery.
     """
+
     table = RPSLDatabaseObjectSuspended.__table__
     columns = RPSLDatabaseObjectSuspended.__table__.c
 
@@ -517,22 +531,24 @@ class DatabaseStatusQuery(BaseDatabaseQuery):
 
     def __init__(self):
         self._sources_list: List[str] = []
-        self.statement = sa.select([
-            self.columns.pk,
-            self.columns.source,
-            self.columns.serial_oldest_seen,
-            self.columns.serial_newest_seen,
-            self.columns.serial_oldest_journal,
-            self.columns.serial_newest_journal,
-            self.columns.serial_last_export,
-            self.columns.serial_newest_mirror,
-            self.columns.force_reload,
-            self.columns.synchronised_serials,
-            self.columns.last_error,
-            self.columns.last_error_timestamp,
-            self.columns.created,
-            self.columns.updated,
-        ])
+        self.statement = sa.select(
+            [
+                self.columns.pk,
+                self.columns.source,
+                self.columns.serial_oldest_seen,
+                self.columns.serial_newest_seen,
+                self.columns.serial_oldest_journal,
+                self.columns.serial_newest_journal,
+                self.columns.serial_last_export,
+                self.columns.serial_newest_mirror,
+                self.columns.force_reload,
+                self.columns.synchronised_serials,
+                self.columns.last_error,
+                self.columns.last_error_timestamp,
+                self.columns.created,
+                self.columns.updated,
+            ]
+        )
 
     def source(self, source: str):
         """Filter on a source."""
@@ -570,38 +586,42 @@ class RPSLDatabaseObjectStatisticsQuery(BaseDatabaseQuery):
     Special statistics query, calculating the number of
     objects per object class per source.
     """
+
     table = RPSLDatabaseObject.__table__
     columns = RPSLDatabaseObject.__table__.c
 
     def __init__(self):
-        self.statement = sa.select([
-            self.columns.source,
-            self.columns.object_class,
-            sa.func.count(self.columns.pk).label('count'),
-        ]).group_by(self.columns.source, self.columns.object_class)
+        self.statement = sa.select(
+            [
+                self.columns.source,
+                self.columns.object_class,
+                sa.func.count(self.columns.pk).label('count'),
+            ]
+        ).group_by(self.columns.source, self.columns.object_class)
 
 
 class ROADatabaseObjectQuery(BaseDatabaseQuery):
     """
     Query builder for ROA objects.
     """
+
     table = ROADatabaseObject.__table__
     columns = ROADatabaseObject.__table__.c
 
     def __init__(self, *args, **kwargs):
-        self.statement = sa.select([
-            self.columns.pk,
-            self.columns.prefix,
-            self.columns.asn,
-            self.columns.max_length,
-            self.columns.trust_anchor,
-            self.columns.ip_version,
-        ])
+        self.statement = sa.select(
+            [
+                self.columns.pk,
+                self.columns.prefix,
+                self.columns.asn,
+                self.columns.max_length,
+                self.columns.trust_anchor,
+                self.columns.ip_version,
+            ]
+        )
 
     def ip_less_specific_or_exact(self, ip: IP):
         """Filter any less specifics or exact matches of a prefix."""
-        fltr = sa.and_(
-            self.columns.prefix.op('>>=')(str(ip))
-        )
+        fltr = sa.and_(self.columns.prefix.op('>>=')(str(ip)))
         self.statement = self.statement.where(fltr)
         return self

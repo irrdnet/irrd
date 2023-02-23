@@ -16,7 +16,13 @@ depends_on = None
 
 
 def upgrade():
-    op.create_index('ix_rpsl_objects_prefix_gist', 'rpsl_objects', [sa.text('prefix inet_ops')], unique=False, postgresql_using='gist')
+    op.create_index(
+        'ix_rpsl_objects_prefix_gist',
+        'rpsl_objects',
+        [sa.text('prefix inet_ops')],
+        unique=False,
+        postgresql_using='gist',
+    )
 
 
 def downgrade():

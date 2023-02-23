@@ -118,18 +118,11 @@ def raw_connection_from(engine_or_conn):
 
 
 def format_flags(flags):
-    return ', '.join(
-        f'{key.upper()} {format_flag(value)}'
-        for key, value in flags.items()
-    )
+    return ', '.join(f'{key.upper()} {format_flag(value)}' for key, value in flags.items())
 
 
 def format_flag(value):
-    return (
-        str(value).upper()
-        if isinstance(value, bool)
-        else repr(value)
-    )
+    return str(value).upper() if isinstance(value, bool) else repr(value)
 
 
 def relabel_query(query):
@@ -144,10 +137,7 @@ def relabel_query(query):
 
 
 def query_entities(query):
-    return sum(
-        [desc_entities(desc) for desc in query.column_descriptions],
-        []
-    )
+    return sum([desc_entities(desc) for desc in query.column_descriptions], [])
 
 
 def desc_entities(desc):
@@ -164,10 +154,7 @@ def desc_entities(desc):
 
 def mapper_entities(mapper):
     model = mapper.class_
-    return [
-        getattr(model, prop.key).label(prop.key)
-        for prop in mapper.column_attrs
-    ]
+    return [getattr(model, prop.key).label(prop.key) for prop in mapper.column_attrs]
 
 
 def is_model(class_):

@@ -46,8 +46,10 @@ def start_whois_server(uid, gid):  # pragma: no cover
             logging.info('Whois server shutting down')
             server.shutdown()
             server.server_close()
+
         # Shutdown must be called from a thread to prevent blocking.
         threading.Thread(target=shutdown, args=(server,)).start()
+
     signal.signal(signal.SIGTERM, sigterm_handler)
 
     server.serve_forever()
@@ -62,6 +64,7 @@ class WhoisTCPServer(socketserver.TCPServer):  # pragma: no cover
     from which a worker picks it up. The workers are responsible for the
     connection from then on.
     """
+
     allow_reuse_address = True
     request_queue_size = 50
 
@@ -105,6 +108,7 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
     which are retrieved from a queue. After handling a connection,
     the process waits for the next connection from the queue.s
     """
+
     def __init__(self, connection_queue, *args, **kwargs):
         self.connection_queue = connection_queue
         # Note that StreamRequestHandler.__init__ is not called - the
@@ -126,9 +130,13 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
             self.preloader = Preloader()
             self.database_handler = DatabaseHandler(readonly=True)
         except Exception as e:
-            logger.critical(f'Whois worker failed to initialise preloader or database, '
-                            f'unable to start, terminating IRRd, traceback follows: {e}',
-                            exc_info=e)
+            logger.critical(
+                (
+                    'Whois worker failed to initialise preloader or database, '
+                    f'unable to start, terminating IRRd, traceback follows: {e}'
+                ),
+                exc_info=e,
+            )
             main_pid = os.getenv(ENV_MAIN_PROCESS_PID)
             if main_pid:  # pragma: no cover
                 os.kill(int(main_pid), signal.SIGTERM)
@@ -150,8 +158,7 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
                     self.close_request()
                 except Exception:  # pragma: no cover
                     pass
-                logger.error(f'Failed to handle whois connection, traceback follows: {e}',
-                             exc_info=e)
+                logger.error(f'Failed to handle whois connection, traceback follows: {e}', exc_info=e)
             if not keep_running:
                 break
 
@@ -183,8 +190,9 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
             self.wfile.write(b'%% Access denied')
             return
 
-        self.query_parser = WhoisQueryParser(client_ip, self.client_str, self.preloader,
-                                             self.database_handler)
+        self.query_parser = WhoisQueryParser(
+            client_ip, self.client_str, self.preloader, self.database_handler
+        )
 
         data = True
         while data:
@@ -221,8 +229,10 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
             return False
 
         elapsed = time.perf_counter() - start_time
-        logger.info(f'{self.client_str}: sent answer to query, elapsed {elapsed:.9f}s, '
-                    f'{len(response_bytes)} bytes: {query}')
+        logger.info(
+            f'{self.client_str}: sent answer to query, elapsed {elapsed:.9f}s, '
+            f'{len(response_bytes)} bytes: {query}'
+        )
 
         if not self.query_parser.multiple_command_mode:
             logger.debug(f'{self.client_str}: auto-closed connection')

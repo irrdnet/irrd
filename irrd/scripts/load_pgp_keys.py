@@ -39,10 +39,13 @@ def load_pgp_keys(source: str) -> None:
 def main():  # pragma: no cover
     description = """Load all PGP keys from key-cert objects for a specific source into the GnuPG keychain."""
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument('--config', dest='config_file_path', type=str,
-                        help=f'use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})')
-    parser.add_argument('source', type=str,
-                        help='the name of the source for which to load PGP keys')
+    parser.add_argument(
+        '--config',
+        dest='config_file_path',
+        type=str,
+        help=f'use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})',
+    )
+    parser.add_argument('source', type=str, help='the name of the source for which to load PGP keys')
     args = parser.parse_args()
 
     config_init(args.config_file_path)

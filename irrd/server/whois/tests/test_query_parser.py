@@ -42,7 +42,14 @@ source:         TEST2
 """
 
 MOCK_ROUTE_COMBINED = MOCK_ROUTE1 + '\n' + MOCK_ROUTE2 + '\n' + MOCK_ROUTE3.strip()
-MOCK_ROUTE_COMBINED_WITH_RPKI = MOCK_ROUTE1 + 'rpki-ov-state:  not_found # No ROAs found, or RPKI validation not enabled for source\n\n' + MOCK_ROUTE2 + 'rpki-ov-state:  valid\n\n' + MOCK_ROUTE3 + 'rpki-ov-state:  valid'
+MOCK_ROUTE_COMBINED_WITH_RPKI = (
+    MOCK_ROUTE1
+    + 'rpki-ov-state:  not_found # No ROAs found, or RPKI validation not enabled for source\n\n'
+    + MOCK_ROUTE2
+    + 'rpki-ov-state:  valid\n\n'
+    + MOCK_ROUTE3
+    + 'rpki-ov-state:  valid'
+)
 
 
 MOCK_ROUTE_COMBINED_KEY_FIELDS = """route: 192.0.2.0/25
@@ -61,8 +68,11 @@ MOCK_DATABASE_RESPONSE = [
         'rpsl_pk': '192.0.2.0/25,AS65547',
         'object_class': 'route',
         'parsed_data': {
-            'route': '192.0.2.0/25', 'origin': 'AS65547', 'mnt-by': 'MNT-TEST', 'source': 'TEST1',
-            'members': ['AS1, AS2']
+            'route': '192.0.2.0/25',
+            'origin': 'AS65547',
+            'mnt-by': 'MNT-TEST',
+            'source': 'TEST1',
+            'members': ['AS1, AS2'],
         },
         'object_text': MOCK_ROUTE1,
         'rpki_status': RPKIStatus.not_found,
@@ -70,11 +80,14 @@ MOCK_DATABASE_RESPONSE = [
     },
     {
         'pk': uuid.uuid4(),
-
         'rpsl_pk': '192.0.2.0/25,AS65544',
         'object_class': 'route',
-        'parsed_data': {'route': '192.0.2.0/25', 'origin': 'AS65544', 'mnt-by': 'MNT-TEST',
-                        'source': 'TEST2'},
+        'parsed_data': {
+            'route': '192.0.2.0/25',
+            'origin': 'AS65544',
+            'mnt-by': 'MNT-TEST',
+            'source': 'TEST2',
+        },
         'object_text': MOCK_ROUTE2,
         'rpki_status': RPKIStatus.valid,
         'source': 'TEST2',
@@ -83,8 +96,12 @@ MOCK_DATABASE_RESPONSE = [
         'pk': uuid.uuid4(),
         'rpsl_pk': '192.0.2.128/25,AS65545',
         'object_class': 'route',
-        'parsed_data': {'route': '192.0.2.128/25', 'origin': 'AS65545', 'mnt-by': 'MNT-TEST',
-                        'source': 'TEST2'},
+        'parsed_data': {
+            'route': '192.0.2.128/25',
+            'origin': 'AS65545',
+            'mnt-by': 'MNT-TEST',
+            'source': 'TEST2',
+        },
         'object_text': MOCK_ROUTE3,
         'rpki_status': RPKIStatus.valid,
         'source': 'TEST2',
@@ -96,8 +113,10 @@ MOCK_DATABASE_RESPONSE = [
 def prepare_parser(monkeypatch, config_override):
     mock_query_resolver = Mock(spec=QueryResolver)
     mock_query_resolver.rpki_aware = False
-    monkeypatch.setattr('irrd.server.whois.query_parser.QueryResolver',
-                        lambda preloader, database_handler: mock_query_resolver)
+    monkeypatch.setattr(
+        'irrd.server.whois.query_parser.QueryResolver',
+        lambda preloader, database_handler: mock_query_resolver,
+    )
 
     mock_dh = Mock(spec=DatabaseHandler)
     parser = WhoisQueryParser('127.0.0.1', '127.0.0.1:99999', None, mock_dh)
@@ -147,7 +166,8 @@ class TestWhoisQueryParserRIPE:
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert response.result == MOCK_ROUTE_COMBINED
         mock_query_resolver.route_search.assert_called_once_with(
-            IP('192.0.2.0/25'), RouteLookupType.EXACT,
+            IP('192.0.2.0/25'),
+            RouteLookupType.EXACT,
         )
         mock_query_resolver.reset_mock()
 
@@ -167,7 +187,8 @@ class TestWhoisQueryParserRIPE:
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert response.result == MOCK_ROUTE_COMBINED
         mock_query_resolver.route_search.assert_called_once_with(
-            IP('192.0.2.0/25'), RouteLookupType.LESS_SPECIFIC_ONE_LEVEL,
+            IP('192.0.2.0/25'),
+            RouteLookupType.LESS_SPECIFIC_ONE_LEVEL,
         )
 
     def test_route_search_less_specific(self, prepare_parser):
@@ -179,7 +200,8 @@ class TestWhoisQueryParserRIPE:
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert response.result == MOCK_ROUTE_COMBINED
         mock_query_resolver.route_search.assert_called_once_with(
-            IP('192.0.2.0/25'), RouteLookupType.LESS_SPECIFIC_WITH_EXACT,
+            IP('192.0.2.0/25'),
+            RouteLookupType.LESS_SPECIFIC_WITH_EXACT,
         )
 
     def test_route_search_more_specific(self, prepare_parser):
@@ -191,7 +213,8 @@ class TestWhoisQueryParserRIPE:
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert response.result == MOCK_ROUTE_COMBINED
         mock_query_resolver.route_search.assert_called_once_with(
-            IP('192.0.2.0/25'), RouteLookupType.MORE_SPECIFIC_WITHOUT_EXACT,
+            IP('192.0.2.0/25'),
+            RouteLookupType.MORE_SPECIFIC_WITHOUT_EXACT,
         )
 
     def test_route_search_invalid_parameter(self, prepare_parser):
@@ -272,7 +295,8 @@ class TestWhoisQueryParserRIPE:
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert response.result == MOCK_ROUTE_COMBINED_KEY_FIELDS
         mock_query_resolver.route_search.assert_called_once_with(
-            IP('192.0.2.0/25'), RouteLookupType.EXACT,
+            IP('192.0.2.0/25'),
+            RouteLookupType.EXACT,
         )
 
         mock_query_resolver.route_search = Mock(return_value=[])
@@ -295,22 +319,28 @@ class TestWhoisQueryParserRIPE:
 
         mock_nrg = Mock()
         monkeypatch.setattr('irrd.server.whois.query_parser.NRTMGenerator', lambda: mock_nrg)
-        mock_nrg.generate = lambda source, version, serial_start, serial_end, dh, remove_auth_hashes: f'{source}/{version}/{serial_start}/{serial_end}/{remove_auth_hashes}'
+        mock_nrg.generate = (
+            lambda source, version, serial_start, serial_end, dh, remove_auth_hashes: (
+                f'{source}/{version}/{serial_start}/{serial_end}/{remove_auth_hashes}'
+            )
+        )
 
         response = parser.handle_query('-g TEST1:3:1-5')
         assert response.response_type == WhoisQueryResponseType.ERROR_USER
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert response.result == 'Access denied'
 
-        config_override({
-            'sources': {
-                'TEST1': {'nrtm_access_list': 'nrtm_access'},
-            },
-            'access_lists': {
-                'nrtm_access': ['0/0', '0::/0'],
-            },
-            'sources_default': [],
-        })
+        config_override(
+            {
+                'sources': {
+                    'TEST1': {'nrtm_access_list': 'nrtm_access'},
+                },
+                'access_lists': {
+                    'nrtm_access': ['0/0', '0::/0'],
+                },
+                'sources_default': [],
+            }
+        )
 
         response = parser.handle_query('-g TEST1:3:1-5')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
@@ -324,33 +354,37 @@ class TestWhoisQueryParserRIPE:
         assert response.result == 'TEST1/3/1/None/True'
         assert not response.remove_auth_hashes
 
-        config_override({
-            'sources': {
-                'TEST1': {'nrtm_access_list_unfiltered': 'nrtm_access'},
-            },
-            'access_lists': {
-                'nrtm_access': ['0/0', '0::/0'],
-            },
-            'sources_default': [],
-        })
+        config_override(
+            {
+                'sources': {
+                    'TEST1': {'nrtm_access_list_unfiltered': 'nrtm_access'},
+                },
+                'access_lists': {
+                    'nrtm_access': ['0/0', '0::/0'],
+                },
+                'sources_default': [],
+            }
+        )
         response = parser.handle_query('-g TEST1:3:1-LAST')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert response.result == 'TEST1/3/1/None/False'
         assert not response.remove_auth_hashes
 
-        config_override({
-            'sources': {
-                'TEST1': {
-                    'nrtm_access_list': 'nrtm_access',
-                    'nrtm_access_list_unfiltered': 'nrtm_access',
+        config_override(
+            {
+                'sources': {
+                    'TEST1': {
+                        'nrtm_access_list': 'nrtm_access',
+                        'nrtm_access_list_unfiltered': 'nrtm_access',
+                    },
                 },
-            },
-            'access_lists': {
-                'nrtm_access': ['0/0', '0::/0'],
-            },
-            'sources_default': [],
-        })
+                'access_lists': {
+                    'nrtm_access': ['0/0', '0::/0'],
+                },
+                'sources_default': [],
+            }
+        )
         response = parser.handle_query('-g TEST1:3:1-LAST')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.RIPE
@@ -479,9 +513,7 @@ class TestWhoisQueryParserIRRD:
 
     def test_routes_for_origin(self, prepare_parser):
         mock_query_resolver, mock_dh, parser = prepare_parser
-        mock_query_resolver.routes_for_origin = Mock(
-            return_value=['192.0.2.0/25', '192.0.2.128/25']
-        )
+        mock_query_resolver.routes_for_origin = Mock(return_value=['192.0.2.0/25', '192.0.2.128/25'])
 
         response = parser.handle_query('!gas065547')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
@@ -489,9 +521,7 @@ class TestWhoisQueryParserIRRD:
         assert response.result == '192.0.2.0/25 192.0.2.128/25'
         mock_query_resolver.routes_for_origin.assert_called_once_with('AS65547', 4)
 
-        mock_query_resolver.routes_for_origin = Mock(
-            return_value=['2001:db8::/32']
-        )
+        mock_query_resolver.routes_for_origin = Mock(return_value=['2001:db8::/32'])
         response = parser.handle_query('!6as065547')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
@@ -526,9 +556,7 @@ class TestWhoisQueryParserIRRD:
             assert response.mode == WhoisQueryResponseMode.IRRD
             assert response.result == 'Missing required set name for A query'
 
-        mock_query_resolver.routes_for_as_set = Mock(
-            return_value=['192.0.2.0/25', '192.0.2.128/25']
-        )
+        mock_query_resolver.routes_for_as_set = Mock(return_value=['192.0.2.0/25', '192.0.2.128/25'])
 
         response = parser.handle_query('!aAS-FOO')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
@@ -589,8 +617,18 @@ class TestWhoisQueryParserIRRD:
         monkeypatch.setattr('irrd.server.whois.query_parser.DatabaseStatusQuery', lambda: mock_dsq)
 
         mock_query_result = [
-            {'source': 'TEST1', 'serial_oldest_seen': 10, 'serial_newest_mirror': 20, 'serial_last_export': 10},
-            {'source': 'TEST2', 'serial_oldest_seen': None, 'serial_newest_mirror': None, 'serial_last_export': None},
+            {
+                'source': 'TEST1',
+                'serial_oldest_seen': 10,
+                'serial_newest_mirror': 20,
+                'serial_last_export': 10,
+            },
+            {
+                'source': 'TEST2',
+                'serial_oldest_seen': None,
+                'serial_newest_mirror': None,
+                'serial_last_export': None,
+            },
         ]
         mock_dh.execute_query = lambda query, refresh_on_error=False: mock_query_result
 
@@ -598,18 +636,14 @@ class TestWhoisQueryParserIRRD:
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == 'TEST1:N:0-20:10\nTEST2:N:-'
-        assert flatten_mock_calls(mock_dsq) == [
-            ['sources', (['TEST1', 'TEST2'],), {}]
-        ]
+        assert flatten_mock_calls(mock_dsq) == [['sources', (['TEST1', 'TEST2'],), {}]]
         mock_dsq.reset_mock()
 
         response = parser.handle_query('!jtest1,test-invalid')
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == 'TEST1:N:0-20:10\nTEST2:N:-\nTEST-INVALID:X:Database unknown'
-        assert flatten_mock_calls(mock_dsq) == [
-            ['sources', (['TEST1', 'TEST-INVALID'],), {}]
-        ]
+        assert flatten_mock_calls(mock_dsq) == [['sources', (['TEST1', 'TEST-INVALID'],), {}]]
 
     def test_database_status(self, monkeypatch, prepare_parser, config_override):
         mock_query_resolver, mock_dh, parser = prepare_parser
@@ -706,7 +740,8 @@ class TestWhoisQueryParserIRRD:
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == MOCK_ROUTE_COMBINED
         mock_query_resolver.route_search.assert_called_once_with(
-            IP('192.0.2.0/25'), RouteLookupType.EXACT,
+            IP('192.0.2.0/25'),
+            RouteLookupType.EXACT,
         )
         mock_query_resolver.route_search.reset_mock()
 
@@ -715,7 +750,8 @@ class TestWhoisQueryParserIRRD:
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == 'AS65547 AS65544 AS65545'
         mock_query_resolver.route_search.assert_called_once_with(
-            IP('192.0.2.0/25'), RouteLookupType.EXACT,
+            IP('192.0.2.0/25'),
+            RouteLookupType.EXACT,
         )
 
         mock_query_resolver.route_search = Mock(return_value=[])
@@ -734,7 +770,8 @@ class TestWhoisQueryParserIRRD:
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == MOCK_ROUTE_COMBINED_WITH_RPKI
         mock_query_resolver.route_search.assert_called_once_with(
-            IP('192.0.2.0/25'), RouteLookupType.EXACT,
+            IP('192.0.2.0/25'),
+            RouteLookupType.EXACT,
         )
         mock_query_resolver.route_search.reset_mock()
 
@@ -747,7 +784,8 @@ class TestWhoisQueryParserIRRD:
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == MOCK_ROUTE_COMBINED
         mock_query_resolver.route_search.assert_called_once_with(
-            IP('192.0.2.0/25'), RouteLookupType.LESS_SPECIFIC_ONE_LEVEL,
+            IP('192.0.2.0/25'),
+            RouteLookupType.LESS_SPECIFIC_ONE_LEVEL,
         )
 
     def test_route_search_less_specific(self, prepare_parser):
@@ -759,7 +797,8 @@ class TestWhoisQueryParserIRRD:
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == MOCK_ROUTE_COMBINED
         mock_query_resolver.route_search.assert_called_once_with(
-            IP('192.0.2.0/25'), RouteLookupType.LESS_SPECIFIC_WITH_EXACT,
+            IP('192.0.2.0/25'),
+            RouteLookupType.LESS_SPECIFIC_WITH_EXACT,
         )
 
     def test_route_search_more_specific(self, prepare_parser):
@@ -771,7 +810,8 @@ class TestWhoisQueryParserIRRD:
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == MOCK_ROUTE_COMBINED
         mock_query_resolver.route_search.assert_called_once_with(
-            IP('192.0.2.0/25'), RouteLookupType.MORE_SPECIFIC_WITHOUT_EXACT,
+            IP('192.0.2.0/25'),
+            RouteLookupType.MORE_SPECIFIC_WITHOUT_EXACT,
         )
 
     def test_route_search_invalid(self, prepare_parser):

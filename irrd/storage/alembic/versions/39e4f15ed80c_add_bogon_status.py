@@ -29,6 +29,7 @@ depends_on = None
 # It assumes the existence of the bogonstatus enum matches that of
 # the bogon_status column.
 
+
 def upgrade():
     pass
 

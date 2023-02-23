@@ -9,7 +9,7 @@ class WhoisQueryError(ValueError):
     pass
 
 
-def whois_query(host: str, port: int, query: str, end_markings: Optional[List[str]]=None) -> str:
+def whois_query(host: str, port: int, query: str, end_markings: Optional[List[str]] = None) -> str:
     """
     Perform a query on a whois server, connecting to the specified host and port.
 
@@ -30,7 +30,7 @@ def whois_query(host: str, port: int, query: str, end_markings: Optional[List[st
     buffer = b''
     while not any([end_marking in buffer for end_marking in end_markings_bytes]):
         try:
-            data = s.recv(1024*1024)
+            data = s.recv(1024 * 1024)
         except socket.timeout:
             break
         if not data:
@@ -89,15 +89,21 @@ def whois_query_irrd(host: str, port: int, query: str) -> Optional[str]:
     if not expected_data_length and buffer in [b'C\n', b'D\n']:
         return None
     if not expected_data_length or not data_offset:
-        raise ValueError(f'Data receiving ended without a valid IRRD-format response, query {query},'
-                         f'received: {buffer.decode("ascii", "ignore")}')
+        raise ValueError(
+            f'Data receiving ended without a valid IRRD-format response, query {query},'
+            f'received: {buffer.decode("ascii", "ignore")}'
+        )
     if len(buffer) < (expected_data_length + data_offset):
         raise ValueError(f'Unable to receive all expected {expected_data_length} bytes')
 
-    return buffer[data_offset:expected_data_length+data_offset-1].decode('utf-8', errors='backslashreplace')
+    return buffer[data_offset : expected_data_length + data_offset - 1].decode(
+        'utf-8', errors='backslashreplace'
+    )
 
 
-def whois_query_source_status(host: str, port: int, source: str) -> Tuple[Optional[bool], int, int, Optional[int]]:
+def whois_query_source_status(
+    host: str, port: int, source: str
+) -> Tuple[Optional[bool], int, int, Optional[int]]:
     """
     Query the status of a particular source against an NRTM server,
     which supports IRRD-style !j queries.
@@ -116,7 +122,9 @@ def whois_query_source_status(host: str, port: int, source: str) -> Tuple[Option
     fields = remote_status.split(':')
     match_source = fields[0].upper()
     if match_source != source.upper():
-        raise ValueError(f'Received invalid source {match_source}, expecting {source}, in status: {remote_status}')
+        raise ValueError(
+            f'Received invalid source {match_source}, expecting {source}, in status: {remote_status}'
+        )
 
     mirrorable_choices = {'Y': True, 'N': False}
     mirrorable = mirrorable_choices.get(fields[1].upper())

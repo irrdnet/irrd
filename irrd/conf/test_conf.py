@@ -23,6 +23,7 @@ def save_yaml_config(tmpdir, monkeypatch):
             fh.write(yaml.safe_dump(config))
         if run_init:
             config_init(str(tmp_file))
+
     return _save
 
 
@@ -59,20 +60,14 @@ class TestConfiguration:
                 'database_url': 'db-url',
                 'redis_url': 'redis-url',
                 'piddir': str(tmpdir),
-                'email': {
-                    'from': 'example@example.com',
-                    'smtp': '192.0.2.1'
-                },
+                'email': {'from': 'example@example.com', 'smtp': '192.0.2.1'},
                 'route_object_preference': {
                     'update_timer': 10,
                 },
                 'rpki': {
                     'roa_source': None,
                 },
-                'scopefilter': {
-                    'prefixes': ['10/8'],
-                    'asns': ['23456', '10-20']
-                },
+                'scopefilter': {'prefixes': ['10/8'], 'asns': ['23456', '10-20']},
                 'access_lists': {
                     'valid-list': {
                         '192/24',
@@ -120,11 +115,7 @@ class TestConfiguration:
                     # RPKI source permitted, rpki.roa_source not set
                     'RPKI': {},
                 },
-                'log': {
-                    'level': 'DEBUG',
-                    'logfile_path': logfile
-                },
-
+                'log': {'level': 'DEBUG', 'logfile_path': logfile},
             }
         }
         save_yaml_config(config)
@@ -146,7 +137,9 @@ class TestConfiguration:
         logfile = str(tmpdir + '/logfile.txt')
         logging_config_path = str(tmpdir + '/logging.py')
         with open(logging_config_path, 'w') as fh:
-            fh.write(textwrap.dedent("""
+            fh.write(
+                textwrap.dedent(
+                    """
                 LOGGING = {
                     'version': 1,
                     'disable_existing_loggers': False,
@@ -158,7 +151,9 @@ class TestConfiguration:
                     'handlers': {
                         'file': {
                             'class': 'logging.handlers.WatchedFileHandler',
-                            'filename': '""" + logfile + """',
+                            'filename': '"""
+                    + logfile
+                    + """',
                             'formatter': 'verbose',
                         },
                     },
@@ -169,26 +164,22 @@ class TestConfiguration:
                         },
                     }
                 }
-            """))
+            """
+                )
+            )
         config = {
             'irrd': {
                 'database_url': 'db-url',
                 'redis_url': 'redis-url',
                 'piddir': str(tmpdir),
-                'email': {
-                    'from': 'example@example.com',
-                    'smtp': '192.0.2.1'
-                },
+                'email': {'from': 'example@example.com', 'smtp': '192.0.2.1'},
                 'rpki': {
                     'roa_source': None,
                 },
-                'auth': {
-                    'gnupg_keyring': str(tmpdir)
-                },
+                'auth': {'gnupg_keyring': str(tmpdir)},
                 'log': {
                     'logging_config_path': logging_config_path,
                 },
-
             }
         }
         save_yaml_config(config)
@@ -196,47 +187,45 @@ class TestConfiguration:
         assert get_configuration().logging_config['handlers']['file']['filename'] == logfile
 
     def test_load_valid_reload_invalid_config(self, save_yaml_config, tmpdir, caplog):
-        save_yaml_config({
-            'irrd': {
-                'database_url': 'db-url',
-                'redis_url': 'redis-url',
-                'piddir': str(tmpdir),
-                'email': {
-                    'from': 'example@example.com',
-                    'smtp': '192.0.2.1'
-                },
-                'access_lists': {
-                    'valid-list': {
-                        '192/24',
-                        '192.0.2.1',
-                        '2001:db8::32',
-                        '2001:db8::1',
-                    }
-                },
-                'auth': {
-                    'gnupg_keyring': str(tmpdir),
-                },
-                'rpki': {
-                    'roa_source': 'https://example.com/roa.json',
-                    'notify_invalid_enabled': False,
-                },
-                'sources_default': ['TESTDB2', 'TESTDB', 'RPKI'],
-                'sources': {
-                    'TESTDB': {
-                        'authoritative': True,
-                        'keep_journal': True,
+        save_yaml_config(
+            {
+                'irrd': {
+                    'database_url': 'db-url',
+                    'redis_url': 'redis-url',
+                    'piddir': str(tmpdir),
+                    'email': {'from': 'example@example.com', 'smtp': '192.0.2.1'},
+                    'access_lists': {
+                        'valid-list': {
+                            '192/24',
+                            '192.0.2.1',
+                            '2001:db8::32',
+                            '2001:db8::1',
+                        }
                     },
-                    'TESTDB2': {
-                        'nrtm_host': '192.0.2.1',
-                        'nrtm_port': 43,
-                        'import_serial_source': 'ftp://example.com/serial',
-                        'keep_journal': True,
-                        'import_timer': '1234',
+                    'auth': {
+                        'gnupg_keyring': str(tmpdir),
                     },
-                },
-
+                    'rpki': {
+                        'roa_source': 'https://example.com/roa.json',
+                        'notify_invalid_enabled': False,
+                    },
+                    'sources_default': ['TESTDB2', 'TESTDB', 'RPKI'],
+                    'sources': {
+                        'TESTDB': {
+                            'authoritative': True,
+                            'keep_journal': True,
+                        },
+                        'TESTDB2': {
+                            'nrtm_host': '192.0.2.1',
+                            'nrtm_port': 43,
+                            'import_serial_source': 'ftp://example.com/serial',
+                            'keep_journal': True,
+                            'import_timer': '1234',
+                        },
+                    },
+                }
             }
-        })
+        )
 
         save_yaml_config({}, run_init=False)
         os.kill(os.getpid(), signal.SIGHUP)
@@ -263,9 +252,7 @@ class TestConfiguration:
                     'recipient_override': 'invalid-mail',
                 },
                 'access_lists': {
-                    'bad-list': {
-                        '192.0.2.2.1'
-                    },
+                    'bad-list': {'192.0.2.2.1'},
                 },
                 'auth': {
                     'set_creation': {
@@ -349,20 +336,44 @@ class TestConfiguration:
         assert 'Setting auth.set_creation.as-set.autnum_authentication must be one of' in str(ce.value)
         assert 'Unknown setting key: auth.password_hashers.unknown-hash' in str(ce.value)
         assert 'Setting auth.password_hashers.crypt-pw must be one of' in str(ce.value)
-        assert 'Access lists doesnotexist, invalid-list referenced in settings, but not defined.' in str(ce.value)
+        assert 'Access lists doesnotexist, invalid-list referenced in settings, but not defined.' in str(
+            ce.value
+        )
         assert 'Setting server.http.status_access_list must be a string, if defined.' in str(ce.value)
         assert 'Invalid item in access list bad-list: IPv4 Address with more than 4 bytes.' in str(ce.value)
         assert 'Invalid item in prefix scopefilter: invalid-prefix' in str(ce.value)
         assert 'Invalid item in asn scopefilter: invalid.' in str(ce.value)
         assert 'Invalid item in asn scopefilter: 10-invalid.' in str(ce.value)
         assert 'Setting sources contains reserved source name: RPKI' in str(ce.value)
-        assert 'Setting suspension_enabled for source TESTDB can not be enabled without enabling authoritative.' in str(ce.value)
+        assert (
+            'Setting suspension_enabled for source TESTDB can not be enabled without enabling authoritative.'
+            in str(ce.value)
+        )
         assert 'Setting keep_journal for source TESTDB can not be enabled unless either ' in str(ce.value)
-        assert 'Setting nrtm_host for source TESTDB can not be enabled without setting import_serial_source.' in str(ce.value)
-        assert 'Setting authoritative for source TESTDB2 can not be enabled when either nrtm_host or import_source are set.' in str(ce.value)
-        assert 'Setting authoritative for source TESTDB3 can not be enabled when either nrtm_host or import_source are set.' in str(ce.value)
-        assert 'Source TESTDB can not have authoritative, import_source or nrtm_host set when database_readonly is enabled.' in str(ce.value)
-        assert 'Source TESTDB3 can not have authoritative, import_source or nrtm_host set when database_readonly is enabled.' in str(ce.value)
+        assert (
+            'Setting nrtm_host for source TESTDB can not be enabled without setting import_serial_source.'
+            in str(ce.value)
+        )
+        assert (
+            'Setting authoritative for source TESTDB2 can not be enabled when either nrtm_host or'
+            ' import_source are set.'
+            in str(ce.value)
+        )
+        assert (
+            'Setting authoritative for source TESTDB3 can not be enabled when either nrtm_host or'
+            ' import_source are set.'
+            in str(ce.value)
+        )
+        assert (
+            'Source TESTDB can not have authoritative, import_source or nrtm_host set when database_readonly'
+            ' is enabled.'
+            in str(ce.value)
+        )
+        assert (
+            'Source TESTDB3 can not have authoritative, import_source or nrtm_host set when database_readonly'
+            ' is enabled.'
+            in str(ce.value)
+        )
         assert 'Setting nrtm_port for source TESTDB2 must be a number.' in str(ce.value)
         assert 'Setting rpki.roa_import_timer must be set to a number.' in str(ce.value)
         assert 'Setting rpki.notify_invalid_subject must be a string, if defined.' in str(ce.value)

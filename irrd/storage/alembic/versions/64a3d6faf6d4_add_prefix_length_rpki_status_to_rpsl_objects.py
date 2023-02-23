@@ -19,7 +19,15 @@ def upgrade():
     rpki_status = sa.Enum('valid', 'invalid', 'not_found', name='rpkistatus')
     rpki_status.create(op.get_bind())
 
-    op.add_column('rpsl_objects', sa.Column('rpki_status', sa.Enum('valid', 'invalid', 'not_found', name='rpkistatus'), nullable=False, server_default='not_found'))
+    op.add_column(
+        'rpsl_objects',
+        sa.Column(
+            'rpki_status',
+            sa.Enum('valid', 'invalid', 'not_found', name='rpkistatus'),
+            nullable=False,
+            server_default='not_found',
+        ),
+    )
     op.create_index(op.f('ix_rpsl_objects_rpki_status'), 'rpsl_objects', ['rpki_status'], unique=False)
 
     op.add_column('rpsl_objects', sa.Column('prefix_length', sa.Integer(), nullable=True))

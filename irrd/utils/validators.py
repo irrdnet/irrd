@@ -36,6 +36,7 @@ class RPSLChangeSubmissionObjectAttribute(pydantic.main.BaseModel):
     Model for a single name/value pair of an RPSL attribute
     in an object in an RPSL change submission
     """
+
     name: str
     value: Union[str, List[str]]
 
@@ -49,19 +50,20 @@ class RPSLChangeSubmissionObjectAttribute(pydantic.main.BaseModel):
 
 class RPSLChangeSubmissionObject(pydantic.main.BaseModel):
     """Model for a single object in an RPSL change submission"""
+
     object_text: Optional[str]
     attributes: Optional[List[RPSLChangeSubmissionObjectAttribute]]
 
     @pydantic.root_validator(pre=True)
     def check_text_xor_attributes_present(cls, values):  # noqa: N805
         if bool(values.get('object_text')) == bool(values.get('attributes')):
-            raise ValueError('You must describe each object with either '
-                             '"object_text" or "attributes"')
+            raise ValueError('You must describe each object with either "object_text" or "attributes"')
         return values
 
 
 class RPSLChangeSubmission(pydantic.main.BaseModel):
     """Model for an RPSL change submission"""
+
     objects: List[RPSLChangeSubmissionObject]
     passwords: List[str] = []
     override: Optional[str]
@@ -73,6 +75,7 @@ class RPSLSuspensionSubmissionObject(pydantic.main.BaseModel):
     Model for a single key/source pair for a suspension/
     reactivation request
     """
+
     mntner: str
     source: str
     request_type: SuspensionRequestType
@@ -80,5 +83,6 @@ class RPSLSuspensionSubmissionObject(pydantic.main.BaseModel):
 
 class RPSLSuspensionSubmission(pydantic.main.BaseModel):
     """Model for an RPSL suspension submission"""
+
     objects: List[RPSLSuspensionSubmissionObject]
     override: Optional[str]

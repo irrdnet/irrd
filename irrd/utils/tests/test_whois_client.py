@@ -19,7 +19,9 @@ class TestWhoisQuery:
     def test_query_end_line(self, monkeypatch):
         self.recv_calls = 0
         mock_socket = Mock()
-        monkeypatch.setattr('irrd.utils.whois_client.socket.create_connection', lambda address, timeout: mock_socket)
+        monkeypatch.setattr(
+            'irrd.utils.whois_client.socket.create_connection', lambda address, timeout: mock_socket
+        )
 
         def mock_socket_recv(bytes) -> bytes:
             self.recv_calls += 1
@@ -31,16 +33,15 @@ class TestWhoisQuery:
         response = whois_query('192.0.2.1', 43, 'query', ['END'])
         assert response == '12END'
 
-        assert flatten_mock_calls(mock_socket) == [
-            ['sendall', (b'query\n',), {}],
-            ['close', (), {}]
-        ]
+        assert flatten_mock_calls(mock_socket) == [['sendall', (b'query\n',), {}], ['close', (), {}]]
         assert self.recv_calls == 3
 
     def test_no_more_data(self, monkeypatch):
         self.recv_calls = 0
         mock_socket = Mock()
-        monkeypatch.setattr('irrd.utils.whois_client.socket.create_connection', lambda address, timeout: mock_socket)
+        monkeypatch.setattr(
+            'irrd.utils.whois_client.socket.create_connection', lambda address, timeout: mock_socket
+        )
 
         def mock_socket_recv(bytes) -> bytes:
             self.recv_calls += 1
@@ -52,16 +53,15 @@ class TestWhoisQuery:
         response = whois_query('192.0.2.1', 43, 'query', ['END'])
         assert response == '12'
 
-        assert flatten_mock_calls(mock_socket) == [
-            ['sendall', (b'query\n',), {}],
-            ['close', (), {}]
-        ]
+        assert flatten_mock_calls(mock_socket) == [['sendall', (b'query\n',), {}], ['close', (), {}]]
         assert self.recv_calls == 3
 
     def test_query_timeout(self, monkeypatch):
         self.recv_calls = 0
         mock_socket = Mock()
-        monkeypatch.setattr('irrd.utils.whois_client.socket.create_connection', lambda address, timeout: mock_socket)
+        monkeypatch.setattr(
+            'irrd.utils.whois_client.socket.create_connection', lambda address, timeout: mock_socket
+        )
 
         def mock_socket_recv(bytes) -> bytes:
             self.recv_calls += 1
@@ -73,10 +73,7 @@ class TestWhoisQuery:
         response = whois_query('192.0.2.1', 43, 'query')
         assert response == '12'
 
-        assert flatten_mock_calls(mock_socket) == [
-            ['sendall', (b'query\n',), {}],
-            ['close', (), {}]
-        ]
+        assert flatten_mock_calls(mock_socket) == [['sendall', (b'query\n',), {}], ['close', (), {}]]
         assert self.recv_calls == 3
 
 
@@ -86,7 +83,9 @@ class TestWhoisQueryIRRD:
     def test_query_valid(self, monkeypatch):
         self.recv_calls = 0
         mock_socket = Mock()
-        monkeypatch.setattr('irrd.utils.whois_client.socket.create_connection', lambda address, timeout: mock_socket)
+        monkeypatch.setattr(
+            'irrd.utils.whois_client.socket.create_connection', lambda address, timeout: mock_socket
+        )
 
         def mock_socket_recv(bytes) -> bytes:
             self.recv_calls += 1
@@ -100,16 +99,15 @@ class TestWhoisQueryIRRD:
         response = whois_query_irrd('192.0.2.1', 43, 'query')
         assert response == '2'
 
-        assert flatten_mock_calls(mock_socket) == [
-            ['sendall', (b'query\n',), {}],
-            ['close', (), {}]
-        ]
+        assert flatten_mock_calls(mock_socket) == [['sendall', (b'query\n',), {}], ['close', (), {}]]
         assert self.recv_calls == 3
 
     def test_query_valid_empty_c_response(self, monkeypatch):
         self.recv_calls = 0
         mock_socket = Mock()
-        monkeypatch.setattr('irrd.utils.whois_client.socket.create_connection', lambda address, timeout: mock_socket)
+        monkeypatch.setattr(
+            'irrd.utils.whois_client.socket.create_connection', lambda address, timeout: mock_socket
+        )
 
         def mock_socket_recv(bytes) -> bytes:
             self.recv_calls += 1
@@ -119,16 +117,15 @@ class TestWhoisQueryIRRD:
         response = whois_query_irrd('192.0.2.1', 43, 'query')
         assert response is None
 
-        assert flatten_mock_calls(mock_socket) == [
-            ['sendall', (b'query\n',), {}],
-            ['close', (), {}]
-        ]
+        assert flatten_mock_calls(mock_socket) == [['sendall', (b'query\n',), {}], ['close', (), {}]]
         assert self.recv_calls == 1
 
     def test_query_valid_empty_d_response(self, monkeypatch):
         self.recv_calls = 0
         mock_socket = Mock()
-        monkeypatch.setattr('irrd.utils.whois_client.socket.create_connection', lambda address, timeout: mock_socket)
+        monkeypatch.setattr(
+            'irrd.utils.whois_client.socket.create_connection', lambda address, timeout: mock_socket
+        )
 
         def mock_socket_recv(bytes) -> bytes:
             self.recv_calls += 1
@@ -138,16 +135,15 @@ class TestWhoisQueryIRRD:
         response = whois_query_irrd('192.0.2.1', 43, 'query')
         assert response is None
 
-        assert flatten_mock_calls(mock_socket) == [
-            ['sendall', (b'query\n',), {}],
-            ['close', (), {}]
-        ]
+        assert flatten_mock_calls(mock_socket) == [['sendall', (b'query\n',), {}], ['close', (), {}]]
         assert self.recv_calls == 1
 
     def test_query_invalid_f_response(self, monkeypatch):
         self.recv_calls = 0
         mock_socket = Mock()
-        monkeypatch.setattr('irrd.utils.whois_client.socket.create_connection', lambda address, timeout: mock_socket)
+        monkeypatch.setattr(
+            'irrd.utils.whois_client.socket.create_connection', lambda address, timeout: mock_socket
+        )
 
         def mock_socket_recv(bytes) -> bytes:
             self.recv_calls += 1
@@ -158,16 +154,15 @@ class TestWhoisQueryIRRD:
             whois_query_irrd('192.0.2.1', 43, 'query')
         assert 'unrecognized command' in str(wqe.value)
 
-        assert flatten_mock_calls(mock_socket) == [
-            ['sendall', (b'query\n',), {}],
-            ['close', (), {}]
-        ]
+        assert flatten_mock_calls(mock_socket) == [['sendall', (b'query\n',), {}], ['close', (), {}]]
         assert self.recv_calls == 1
 
     def test_no_valid_start(self, monkeypatch):
         self.recv_calls = 0
         mock_socket = Mock()
-        monkeypatch.setattr('irrd.utils.whois_client.socket.create_connection', lambda address, timeout: mock_socket)
+        monkeypatch.setattr(
+            'irrd.utils.whois_client.socket.create_connection', lambda address, timeout: mock_socket
+        )
 
         def mock_socket_recv(bytes) -> bytes:
             self.recv_calls += 1
@@ -180,16 +175,15 @@ class TestWhoisQueryIRRD:
             whois_query_irrd('192.0.2.1', 43, 'query')
         assert 'without a valid IRRD-format response' in str(ve.value)
 
-        assert flatten_mock_calls(mock_socket) == [
-            ['sendall', (b'query\n',), {}],
-            ['close', (), {}]
-        ]
+        assert flatten_mock_calls(mock_socket) == [['sendall', (b'query\n',), {}], ['close', (), {}]]
         assert self.recv_calls == 3
 
     def test_no_more_data(self, monkeypatch):
         self.recv_calls = 0
         mock_socket = Mock()
-        monkeypatch.setattr('irrd.utils.whois_client.socket.create_connection', lambda address, timeout: mock_socket)
+        monkeypatch.setattr(
+            'irrd.utils.whois_client.socket.create_connection', lambda address, timeout: mock_socket
+        )
 
         def mock_socket_recv(bytes) -> bytes:
             self.recv_calls += 1
@@ -204,16 +198,15 @@ class TestWhoisQueryIRRD:
             whois_query_irrd('192.0.2.1', 43, 'query')
         assert 'Unable to receive ' in str(ve.value)
 
-        assert flatten_mock_calls(mock_socket) == [
-            ['sendall', (b'query\n',), {}],
-            ['close', (), {}]
-        ]
+        assert flatten_mock_calls(mock_socket) == [['sendall', (b'query\n',), {}], ['close', (), {}]]
         assert self.recv_calls == 3
 
     def test_query_timeout(self, monkeypatch):
         self.recv_calls = 0
         mock_socket = Mock()
-        monkeypatch.setattr('irrd.utils.whois_client.socket.create_connection', lambda address, timeout: mock_socket)
+        monkeypatch.setattr(
+            'irrd.utils.whois_client.socket.create_connection', lambda address, timeout: mock_socket
+        )
 
         def mock_socket_recv(bytes) -> bytes:
             self.recv_calls += 1
@@ -228,15 +221,11 @@ class TestWhoisQueryIRRD:
             whois_query_irrd('192.0.2.1', 43, 'query')
         assert 'Unable to receive ' in str(ve.value)
 
-        assert flatten_mock_calls(mock_socket) == [
-            ['sendall', (b'query\n',), {}],
-            ['close', (), {}]
-        ]
+        assert flatten_mock_calls(mock_socket) == [['sendall', (b'query\n',), {}], ['close', (), {}]]
         assert self.recv_calls == 3
 
 
 class TestQuerySourceStatus:
-
     def test_query_valid_with_export(self, monkeypatch):
         def mock_whois_query_irrd(host: str, port: int, query: str) -> Optional[str]:
             assert host == 'host'
@@ -246,7 +235,9 @@ class TestQuerySourceStatus:
 
         monkeypatch.setattr('irrd.utils.whois_client.whois_query_irrd', mock_whois_query_irrd)
 
-        mirrorable, serial_oldest, serial_newest, export_serial = whois_query_source_status('host', 43, 'TEST')
+        mirrorable, serial_oldest, serial_newest, export_serial = whois_query_source_status(
+            'host', 43, 'TEST'
+        )
         assert mirrorable is True
         assert serial_oldest == 1
         assert serial_newest == 2
@@ -261,7 +252,9 @@ class TestQuerySourceStatus:
 
         monkeypatch.setattr('irrd.utils.whois_client.whois_query_irrd', mock_whois_query_irrd)
 
-        mirrorable, serial_oldest, serial_newest, export_serial = whois_query_source_status('host', 43, 'TEST')
+        mirrorable, serial_oldest, serial_newest, export_serial = whois_query_source_status(
+            'host', 43, 'TEST'
+        )
         assert mirrorable is None
         assert serial_oldest == 1
         assert serial_newest == 2

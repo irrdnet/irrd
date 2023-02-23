@@ -22,10 +22,12 @@ from ..status_generator import StatusGenerator
 
 class TestStatusEndpoint:
     def setup_method(self):
-        self.mock_request = HTTPConnection({
-            'type': 'http',
-            'client': ('127.0.0.1', '8000'),
-        })
+        self.mock_request = HTTPConnection(
+            {
+                'type': 'http',
+                'client': ('127.0.0.1', '8000'),
+            }
+        )
         self.endpoint = StatusEndpoint(scope=self.mock_request, receive=None, send=None)
 
     def test_status_no_access_list(self):
@@ -34,22 +36,25 @@ class TestStatusEndpoint:
         assert response.body == b'Access denied'
 
     def test_status_access_list_permitted(self, config_override, monkeypatch):
-        config_override({
-            'server': {
-                'http': {
-                    'status_access_list': 'test_access_list',
-                }
-            },
-            'access_lists': {
-                'test_access_list': {
-                    '127.0.0.0/25',
-                }
-            },
-        })
+        config_override(
+            {
+                'server': {
+                    'http': {
+                        'status_access_list': 'test_access_list',
+                    }
+                },
+                'access_lists': {
+                    'test_access_list': {
+                        '127.0.0.0/25',
+                    }
+                },
+            }
+        )
 
         mock_database_status_generator = Mock(spec=StatusGenerator)
-        monkeypatch.setattr('irrd.server.http.endpoints.StatusGenerator',
-                            lambda: mock_database_status_generator)
+        monkeypatch.setattr(
+            'irrd.server.http.endpoints.StatusGenerator', lambda: mock_database_status_generator
+        )
         mock_database_status_generator.generate_status = lambda: 'status'
 
         response = self.endpoint.get(self.mock_request)
@@ -57,18 +62,20 @@ class TestStatusEndpoint:
         assert response.body == b'status'
 
     def test_status_access_list_denied(self, config_override):
-        config_override({
-            'server': {
-                'http': {
-                    'status_access_list': 'test_access_list',
-                }
-            },
-            'access_lists': {
-                'test_access_list': {
-                    '192.0.2.0/25',
-                }
-            },
-        })
+        config_override(
+            {
+                'server': {
+                    'http': {
+                        'status_access_list': 'test_access_list',
+                    }
+                },
+                'access_lists': {
+                    'test_access_list': {
+                        '192.0.2.0/25',
+                    }
+                },
+            }
+        )
         response = self.endpoint.get(self.mock_request)
         assert response.status_code == 403
         assert response.body == b'Access denied'
@@ -77,35 +84,43 @@ class TestStatusEndpoint:
 class TestWhoisQueryEndpoint:
     def test_query_endpoint(self, monkeypatch):
         mock_query_parser = Mock(spec=WhoisQueryParser)
-        monkeypatch.setattr('irrd.server.http.endpoints.WhoisQueryParser',
-                            lambda client_ip, client_str, preloader, database_handler: mock_query_parser)
-        app = Mock(state=Mock(
-            database_handler=Mock(spec=DatabaseHandler),
-            preloader=Mock(spec=Preloader),
-        ))
-        mock_request = HTTPConnection({
-            'type': 'http',
-            'client': ('127.0.0.1', '8000'),
-            'app': app,
-            'query_string': '',
-        })
+        monkeypatch.setattr(
+            'irrd.server.http.endpoints.WhoisQueryParser',
+            lambda client_ip, client_str, preloader, database_handler: mock_query_parser,
+        )
+        app = Mock(
+            state=Mock(
+                database_handler=Mock(spec=DatabaseHandler),
+                preloader=Mock(spec=Preloader),
+            )
+        )
+        mock_request = HTTPConnection(
+            {
+                'type': 'http',
+                'client': ('127.0.0.1', '8000'),
+                'app': app,
+                'query_string': '',
+            }
+        )
         endpoint = WhoisQueryEndpoint(scope=mock_request, receive=None, send=None)
 
         result = endpoint.get(mock_request)
         assert result.status_code == 400
         assert result.body.startswith(b'Missing required query')
 
-        mock_request = HTTPConnection({
-            'type': 'http',
-            'client': ('127.0.0.1', '8000'),
-            'app': app,
-            'query_string': 'q=query',
-        })
+        mock_request = HTTPConnection(
+            {
+                'type': 'http',
+                'client': ('127.0.0.1', '8000'),
+                'app': app,
+                'query_string': 'q=query',
+            }
+        )
 
         mock_query_parser.handle_query = lambda query: WhoisQueryResponse(
             response_type=WhoisQueryResponseType.SUCCESS,
             mode=WhoisQueryResponseMode.IRRD,  # irrelevant
-            result=f'result {query} 🦄'
+            result=f'result {query} 🦄',
         )
         result = endpoint.get(mock_request)
         assert result.status_code == 200
@@ -123,7 +138,7 @@ class TestWhoisQueryEndpoint:
         mock_query_parser.handle_query = lambda query: WhoisQueryResponse(
             response_type=WhoisQueryResponseType.ERROR_USER,
             mode=WhoisQueryResponseMode.IRRD,  # irrelevant
-            result=f'result {query} 🦄'
+            result=f'result {query} 🦄',
         )
         result = endpoint.get(mock_request)
         assert result.status_code == 400
@@ -132,7 +147,7 @@ class TestWhoisQueryEndpoint:
         mock_query_parser.handle_query = lambda query: WhoisQueryResponse(
             response_type=WhoisQueryResponseType.ERROR_INTERNAL,
             mode=WhoisQueryResponseMode.IRRD,  # irrelevant
-            result=f'result {query} 🦄'
+            result=f'result {query} 🦄',
         )
         result = endpoint.get(mock_request)
         assert result.status_code == 500
@@ -142,25 +157,28 @@ class TestWhoisQueryEndpoint:
 class TestObjectSubmissionEndpoint:
     def test_endpoint(self, monkeypatch):
         mock_handler = Mock(spec=ChangeSubmissionHandler)
-        monkeypatch.setattr('irrd.server.http.endpoints.ChangeSubmissionHandler',
-                            lambda: mock_handler)
+        monkeypatch.setattr('irrd.server.http.endpoints.ChangeSubmissionHandler', lambda: mock_handler)
         mock_handler.submitter_report_json = lambda: {'response': True}
 
         client = TestClient(app)
         data = {
             'objects': [
-                {'attributes': [
-                    {'name': 'person', 'value': 'Placeholder Person Object'},
-                    {'name': 'nic-hdl', 'value': 'PERSON-TEST'},
-                    {'name': 'changed', 'value': 'changed@example.com 20190701 # comment'},
-                    {'name': 'source', 'value': 'TEST'},
-                ]},
+                {
+                    'attributes': [
+                        {'name': 'person', 'value': 'Placeholder Person Object'},
+                        {'name': 'nic-hdl', 'value': 'PERSON-TEST'},
+                        {'name': 'changed', 'value': 'changed@example.com 20190701 # comment'},
+                        {'name': 'source', 'value': 'TEST'},
+                    ]
+                },
             ],
             'passwords': ['invalid1', 'invalid2'],
         }
         expected_data = RPSLChangeSubmission.parse_obj(data)
 
-        response_post = client.post('/v1/submit/', data=ujson.dumps(data), headers={'X-irrd-metadata': '{"meta": 2}'})
+        response_post = client.post(
+            '/v1/submit/', data=ujson.dumps(data), headers={'X-irrd-metadata': '{"meta": 2}'}
+        )
         assert response_post.status_code == 200
         assert response_post.text == '{"response":true}'
         mock_handler.load_change_submission.assert_called_once_with(
@@ -198,15 +216,12 @@ class TestObjectSubmissionEndpoint:
 class TestSuspensionSubmissionEndpoint:
     def test_endpoint(self, monkeypatch):
         mock_handler = Mock(spec=ChangeSubmissionHandler)
-        monkeypatch.setattr('irrd.server.http.endpoints.ChangeSubmissionHandler',
-                            lambda: mock_handler)
+        monkeypatch.setattr('irrd.server.http.endpoints.ChangeSubmissionHandler', lambda: mock_handler)
         mock_handler.submitter_report_json = lambda: {'response': True}
 
         client = TestClient(app)
         data = {
-            "objects": [
-                {"mntner": "DASHCARE-MNT", "source": "DASHCARE", "request_type": "reactivate"}
-            ],
+            "objects": [{"mntner": "DASHCARE-MNT", "source": "DASHCARE", "request_type": "reactivate"}],
             "override": "<>",
         }
         expected_data = RPSLSuspensionSubmission.parse_obj(data)

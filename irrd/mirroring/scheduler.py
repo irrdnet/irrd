@@ -38,8 +38,10 @@ class ScheduledTaskProcess(multiprocessing.Process):
             return super().close()
         if self._popen is not None:
             if self._popen.poll() is None:
-                raise ValueError("Cannot close a process while it is still running. "
-                                 "You should first call join() or terminate().")
+                raise ValueError(
+                    "Cannot close a process while it is still running. "
+                    "You should first call join() or terminate()."
+                )
             self._popen = None
             del self._sentinel
         self._closed = True
@@ -61,6 +63,7 @@ class MirrorScheduler:
     unless a process is still running for that database (which is likely to be
     the case in some full imports).
     """
+
     processes: Dict[str, ScheduledTaskProcess]
     last_started_time: Dict[str, int]
 
@@ -80,10 +83,12 @@ class MirrorScheduler:
             import_timer = int(get_setting('rpki.roa_import_timer'))
             self.run_if_relevant(RPKI_IRR_PSEUDO_SOURCE, ROAImportRunner, import_timer)
 
-        if get_setting("sources") and any([
-            source_settings.get("route_object_preference")
-            for source_settings in get_setting("sources").values()
-        ]):
+        if get_setting("sources") and any(
+            [
+                source_settings.get("route_object_preference")
+                for source_settings in get_setting("sources").values()
+            ]
+        ):
             import_timer = int(get_setting('route_object_preference.update_timer'))
             self.run_if_relevant('routepref', RoutePreferenceUpdateRunner, import_timer)
 
@@ -97,13 +102,17 @@ class MirrorScheduler:
             started_import = False
             started_export = False
 
-            is_mirror = get_setting(f'sources.{source}.import_source') or get_setting(f'sources.{source}.nrtm_host')
+            is_mirror = get_setting(f'sources.{source}.import_source') or get_setting(
+                f'sources.{source}.nrtm_host'
+            )
             import_timer = int(get_setting(f'sources.{source}.import_timer', DEFAULT_SOURCE_IMPORT_TIMER))
 
             if is_mirror:
                 started_import = self.run_if_relevant(source, RPSLMirrorImportUpdateRunner, import_timer)
 
-            runs_export = get_setting(f'sources.{source}.export_destination') or get_setting(f'sources.{source}.export_destination_unfiltered')
+            runs_export = get_setting(f'sources.{source}.export_destination') or get_setting(
+                f'sources.{source}.export_destination_unfiltered'
+            )
             export_timer = int(get_setting(f'sources.{source}.export_timer', DEFAULT_SOURCE_EXPORT_TIMER))
 
             if runs_export:
@@ -128,11 +137,13 @@ class MirrorScheduler:
             if settings.get('scopefilter_excluded')
         }
 
-        if any([
-            self.previous_scopefilter_prefixes != current_prefixes,
-            self.previous_scopefilter_asns != current_asns,
-            self.previous_scopefilter_excluded != current_exclusions,
-        ]):
+        if any(
+            [
+                self.previous_scopefilter_prefixes != current_prefixes,
+                self.previous_scopefilter_asns != current_asns,
+                self.previous_scopefilter_excluded != current_exclusions,
+            ]
+        ):
             self.previous_scopefilter_prefixes = current_prefixes
             self.previous_scopefilter_asns = current_asns
             self.previous_scopefilter_excluded = current_exclusions
@@ -172,8 +183,9 @@ class MirrorScheduler:
             try:
                 process.close()
             except Exception as e:  # pragma: no cover
-                logging.error(f'Failed to close {process_name} (pid {process.pid}), '
-                              f'possible resource leak: {e}')
+                logging.error(
+                    f'Failed to close {process_name} (pid {process.pid}), possible resource leak: {e}'
+                )
             del self.processes[process_name]
             gc_collect_needed = True
         if gc_collect_needed:

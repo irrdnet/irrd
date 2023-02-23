@@ -10,6 +10,7 @@ class WhoisQueryResponseType(Enum):
     KEY_NOT_FOUND is specific to IRRD-style.
     NO_RESPONSE means no response should be sent at all.
     """
+
     SUCCESS = 'success'
     ERROR_INTERNAL = 'error_internal'
     ERROR_USER = 'error_user'
@@ -22,6 +23,7 @@ ERROR_TYPES = [WhoisQueryResponseType.ERROR_INTERNAL, WhoisQueryResponseType.ERR
 
 class WhoisQueryResponseMode(Enum):
     """Response mode for queries - IRRD and RIPE queries have different output."""
+
     IRRD = 'irrd'
     RIPE = 'ripe'
 
@@ -33,16 +35,17 @@ class WhoisQueryResponse:
     Based on the response_type and mode, can render a string of the complete
     response to send back to the user.
     """
+
     response_type: WhoisQueryResponseType = WhoisQueryResponseType.SUCCESS
     mode: WhoisQueryResponseMode = WhoisQueryResponseMode.RIPE
     result: Optional[str] = None
 
     def __init__(
-            self,
-            response_type: WhoisQueryResponseType,
-            mode: WhoisQueryResponseMode,
-            result: Optional[str],
-            remove_auth_hashes=True,
+        self,
+        response_type: WhoisQueryResponseType,
+        mode: WhoisQueryResponseMode,
+        result: Optional[str],
+        remove_auth_hashes=True,
     ) -> None:
         self.response_type = response_type
         self.mode = mode
@@ -62,7 +65,9 @@ class WhoisQueryResponse:
             if response is not None:
                 return response
 
-        raise RuntimeError(f'Unable to formulate response for {self.response_type} / {self.mode}: {self.result}')
+        raise RuntimeError(
+            f'Unable to formulate response for {self.response_type} / {self.mode}: {self.result}'
+        )
 
     def clean_response(self):
         if self.remove_auth_hashes:

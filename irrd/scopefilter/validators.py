@@ -38,7 +38,9 @@ class ScopeFilterValidator:
             else:
                 self.filtered_asns.add(int(asn_filter))
 
-    def validate(self, source: str, prefix: Optional[IP]=None, asn: Optional[int]=None) -> ScopeFilterStatus:
+    def validate(
+        self, source: str, prefix: Optional[IP] = None, asn: Optional[int] = None
+    ) -> ScopeFilterStatus:
         """
         Validate a prefix and/or ASN, for a particular source.
         Returns a tuple of a ScopeFilterStatus and an explanation string.
@@ -63,8 +65,9 @@ class ScopeFilterValidator:
 
         return ScopeFilterStatus.in_scope
 
-    def _validate_rpsl_data(self, source: str, object_class: str, prefix: Optional[IP],
-                            asn_first: Optional[int]) -> Tuple[ScopeFilterStatus, str]:
+    def _validate_rpsl_data(
+        self, source: str, object_class: str, prefix: Optional[IP], asn_first: Optional[int]
+    ) -> Tuple[ScopeFilterStatus, str]:
         """
         Validate whether a particular set of RPSL data is in scope.
         Returns a ScopeFilterStatus.
@@ -97,8 +100,9 @@ class ScopeFilterValidator:
             rpsl_object.asn_first,
         )
 
-    def validate_all_rpsl_objects(self, database_handler: DatabaseHandler) -> \
-            Tuple[List[Dict[str, str]], List[Dict[str, str]], List[Dict[str, str]]]:
+    def validate_all_rpsl_objects(
+        self, database_handler: DatabaseHandler
+    ) -> Tuple[List[Dict[str, str]], List[Dict[str, str]], List[Dict[str, str]]]:
         """
         Apply the scope filter to all relevant objects.
 
@@ -113,8 +117,7 @@ class ScopeFilterValidator:
         Objects where their current status in the DB matches the new
         validation result, are not included in the return value.
         """
-        columns = ['pk', 'rpsl_pk', 'prefix', 'asn_first', 'source', 'object_class',
-                   'scopefilter_status']
+        columns = ['pk', 'rpsl_pk', 'prefix', 'asn_first', 'source', 'object_class', 'scopefilter_status']
 
         objs_changed: Dict[ScopeFilterStatus, List[Dict[str, str]]] = defaultdict(list)
 
@@ -140,13 +143,17 @@ class ScopeFilterValidator:
 
         # Object text is only retrieved for objects with state changes
         pks_to_enrich = [obj['pk'] for objs in objs_changed.values() for obj in objs]
-        query = RPSLDatabaseQuery(['pk', 'object_text', 'rpki_status', 'route_preference_status'], enable_ordering=False).pks(pks_to_enrich)
+        query = RPSLDatabaseQuery(
+            ['pk', 'object_text', 'rpki_status', 'route_preference_status'], enable_ordering=False
+        ).pks(pks_to_enrich)
         rows_per_pk = {row['pk']: row for row in database_handler.execute_query(query)}
 
         for rpsl_objs in objs_changed.values():
             for rpsl_obj in rpsl_objs:
                 rpsl_obj.update(rows_per_pk[rpsl_obj['pk']])
 
-        return (objs_changed[ScopeFilterStatus.in_scope],
-                objs_changed[ScopeFilterStatus.out_scope_as],
-                objs_changed[ScopeFilterStatus.out_scope_prefix])
+        return (
+            objs_changed[ScopeFilterStatus.in_scope],
+            objs_changed[ScopeFilterStatus.out_scope_as],
+            objs_changed[ScopeFilterStatus.out_scope_prefix],
+        )

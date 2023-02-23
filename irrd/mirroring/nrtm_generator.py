@@ -11,9 +11,15 @@ class NRTMGeneratorException(Exception):  # noqa: N818
 
 
 class NRTMGenerator:
-    def generate(self, source: str, version: str,
-                 serial_start_requested: int, serial_end_requested: Optional[int],
-                 database_handler: DatabaseHandler, remove_auth_hashes=True) -> str:
+    def generate(
+        self,
+        source: str,
+        version: str,
+        serial_start_requested: int,
+        serial_end_requested: Optional[int],
+        database_handler: DatabaseHandler,
+        remove_auth_hashes=True,
+    ) -> str:
         """
         Generate an NRTM response for a particular source, serial range and
         NRTM version. Raises NRTMGeneratorException for various error conditions.
@@ -31,8 +37,10 @@ class NRTMGenerator:
             raise NRTMGeneratorException('There are no journal entries for this source.')
 
         if serial_end_requested and serial_end_requested < serial_start_requested:
-            raise NRTMGeneratorException(f'Start of the serial range ({serial_start_requested}) must be lower or '
-                                         f'equal to end of the serial range ({serial_end_requested})')
+            raise NRTMGeneratorException(
+                f'Start of the serial range ({serial_start_requested}) must be lower or '
+                f'equal to end of the serial range ({serial_end_requested})'
+            )
 
         serial_start_available = status['serial_oldest_journal']
         serial_end_available = status['serial_newest_journal']
@@ -41,10 +49,14 @@ class NRTMGenerator:
             return '% Warning: there are no updates available'
 
         if serial_start_requested < serial_start_available:
-            raise NRTMGeneratorException(f'Serials {serial_start_requested} - {serial_start_available} do not exist')
+            raise NRTMGeneratorException(
+                f'Serials {serial_start_requested} - {serial_start_available} do not exist'
+            )
 
         if serial_end_requested is not None and serial_end_requested > serial_end_available:
-            raise NRTMGeneratorException(f'Serials {serial_end_available} - {serial_end_requested} do not exist')
+            raise NRTMGeneratorException(
+                f'Serials {serial_end_available} - {serial_end_requested} do not exist'
+            )
 
         if serial_end_requested is None:
             if serial_start_requested == serial_end_available + 1:
@@ -53,7 +65,8 @@ class NRTMGenerator:
                 return '% Warning: there are no newer updates available'
             elif serial_start_requested > serial_end_available:
                 raise NRTMGeneratorException(
-                    f'Serials {serial_end_available} - {serial_start_requested} do not exist')
+                    f'Serials {serial_end_available} - {serial_start_requested} do not exist'
+                )
 
         serial_end_display = serial_end_available if serial_end_requested is None else serial_end_requested
 
@@ -61,7 +74,11 @@ class NRTMGenerator:
         if range_limit and int(range_limit) < (serial_end_display - serial_start_requested):
             raise NRTMGeneratorException(f'Serial range requested exceeds maximum range of {range_limit}')
 
-        q = RPSLDatabaseJournalQuery().sources([source]).serial_nrtm_range(serial_start_requested, serial_end_requested)
+        q = (
+            RPSLDatabaseJournalQuery()
+            .sources([source])
+            .serial_nrtm_range(serial_start_requested, serial_end_requested)
+        )
         operations = list(database_handler.execute_query(q))
 
         output = f'%START Version: {version} {source} {serial_start_requested}-{serial_end_display}\n'

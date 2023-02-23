@@ -44,8 +44,9 @@ class WhoisQueryParser:
     handle_query() being called for each individual query.
     """
 
-    def __init__(self, client_ip: str, client_str: str, preloader: Preloader,
-                 database_handler: DatabaseHandler) -> None:
+    def __init__(
+        self, client_ip: str, client_str: str, preloader: Preloader, database_handler: DatabaseHandler
+    ) -> None:
         self.multiple_command_mode = False
         self.timeout = SOCKET_DEFAULT_TIMEOUT
         self.key_fields_only = False
@@ -75,18 +76,22 @@ class WhoisQueryParser:
             try:
                 return self.handle_irrd_command(query[1:])
             except InvalidQueryException as exc:
-                logger.info(f'{self.client_str}: encountered parsing error while parsing query "{query}": {exc}')
+                logger.info(
+                    f'{self.client_str}: encountered parsing error while parsing query "{query}": {exc}'
+                )
                 return WhoisQueryResponse(
                     response_type=WhoisQueryResponseType.ERROR_USER,
                     mode=WhoisQueryResponseMode.IRRD,
-                    result=str(exc)
+                    result=str(exc),
                 )
             except Exception as exc:
-                logger.error(f'An exception occurred while processing whois query "{query}": {exc}', exc_info=exc)
+                logger.error(
+                    f'An exception occurred while processing whois query "{query}": {exc}', exc_info=exc
+                )
                 return WhoisQueryResponse(
                     response_type=WhoisQueryResponseType.ERROR_INTERNAL,
                     mode=WhoisQueryResponseMode.IRRD,
-                    result='An internal error occurred while processing this query.'
+                    result='An internal error occurred while processing this query.',
                 )
 
         try:
@@ -96,18 +101,18 @@ class WhoisQueryParser:
             return WhoisQueryResponse(
                 response_type=WhoisQueryResponseType.ERROR_USER,
                 mode=WhoisQueryResponseMode.RIPE,
-                result=str(exc)
+                result=str(exc),
             )
         except Exception as exc:
             logger.error(f'An exception occurred while processing whois query "{query}": {exc}', exc_info=exc)
             return WhoisQueryResponse(
                 response_type=WhoisQueryResponseType.ERROR_INTERNAL,
                 mode=WhoisQueryResponseMode.RIPE,
-                result='An internal error occurred while processing this query.'
+                result='An internal error occurred while processing this query.',
             )
 
     def handle_irrd_command(self, full_command: str) -> WhoisQueryResponse:
-        """Handle an IRRD-style query. full_command should not include the first exclamation mark. """
+        """Handle an IRRD-style query. full_command should not include the first exclamation mark."""
         if not full_command:
             raise InvalidQueryException('Missing IRRD command')
         command = full_command[0]
@@ -126,16 +131,22 @@ class WhoisQueryParser:
             response_type = WhoisQueryResponseType.NO_RESPONSE
         elif full_command.upper() == 'FNO-RPKI-FILTER':
             self.query_resolver.disable_rpki_filter()
-            result = 'Filtering out RPKI invalids is disabled for !r and RIPE style ' \
-                     'queries for the rest of this connection.'
+            result = (
+                'Filtering out RPKI invalids is disabled for !r and RIPE style '
+                'queries for the rest of this connection.'
+            )
         elif full_command.upper() == 'FNO-SCOPE-FILTER':
             self.query_resolver.disable_out_of_scope_filter()
-            result = 'Filtering out out-of-scope objects is disabled for !r and RIPE style ' \
-                     'queries for the rest of this connection.'
+            result = (
+                'Filtering out out-of-scope objects is disabled for !r and RIPE style '
+                'queries for the rest of this connection.'
+            )
         elif full_command.upper() == 'FNO-ROUTE-PREFERENCE-FILTER':
             self.query_resolver.disable_route_preference_filter()
-            result = 'Filtering out objects suppressed due to route preference is disabled for ' \
-                     '!r and RIPE style queries for the rest of this connection.'
+            result = (
+                'Filtering out objects suppressed due to route preference is disabled for '
+                '!r and RIPE style queries for the rest of this connection.'
+            )
         elif command == 'v':
             result = self.handle_irrd_version()
         elif command == 't':
@@ -205,7 +216,7 @@ class WhoisQueryParser:
         """!6 query - find all originating IPv6 prefixes from an origin, e.g. !6as65537"""
         return self._routes_for_origin(origin, 6)
 
-    def _routes_for_origin(self, origin: str, ip_version: Optional[int]=None) -> str:
+    def _routes_for_origin(self, origin: str, ip_version: Optional[int] = None) -> str:
         """
         Resolve all route(6)s prefixes for an origin, returning a space-separated list
         of all originating prefixes, not including duplicates.
@@ -256,7 +267,11 @@ class WhoisQueryParser:
         directly here instead of in the query resolver.
         """
         if parameter == '-*':
-            sources = self.query_resolver.sources_default if self.query_resolver.sources_default else self.query_resolver.all_valid_sources
+            sources = (
+                self.query_resolver.sources_default
+                if self.query_resolver.sources_default
+                else self.query_resolver.all_valid_sources
+            )
         else:
             sources = [s.upper() for s in parameter.split(',')]
         invalid_sources = [s for s in sources if s not in self.query_resolver.all_valid_sources]
@@ -440,7 +455,7 @@ class WhoisQueryParser:
         return self._flatten_query_output(result)
 
     def handle_ripe_sources_list(self, sources_list: Optional[str]) -> None:
-        """-s/-a parameter - set sources list. Empty list enables all sources. """
+        """-s/-a parameter - set sources list. Empty list enables all sources."""
         if sources_list:
             sources = sources_list.upper().split(',')
             self.query_resolver.set_query_sources(sources)
@@ -492,14 +507,21 @@ class WhoisQueryParser:
             raise InvalidQueryException(f'Unknown source: {source}')
 
         in_access_list = is_client_permitted(self.client_ip, f'sources.{source}.nrtm_access_list', log=False)
-        in_unfiltered_access_list = is_client_permitted(self.client_ip, f'sources.{source}.nrtm_access_list_unfiltered', log=False)
+        in_unfiltered_access_list = is_client_permitted(
+            self.client_ip, f'sources.{source}.nrtm_access_list_unfiltered', log=False
+        )
         if not in_access_list and not in_unfiltered_access_list:
             raise InvalidQueryException('Access denied')
 
         try:
             return NRTMGenerator().generate(
-                source, version, serial_start, serial_end, self.database_handler,
-                remove_auth_hashes=not in_unfiltered_access_list)
+                source,
+                version,
+                serial_start,
+                serial_end,
+                self.database_handler,
+                remove_auth_hashes=not in_unfiltered_access_list,
+            )
         except NRTMGeneratorException as nge:
             raise InvalidQueryException(str(nge))
 
@@ -524,9 +546,9 @@ class WhoisQueryParser:
             for obj in query_response:
                 result += obj['object_text']
                 if (
-                        self.query_resolver.rpki_aware and
-                        obj['source'] != RPKI_IRR_PSEUDO_SOURCE and
-                        obj['object_class'] in RPKI_RELEVANT_OBJECT_CLASSES
+                    self.query_resolver.rpki_aware
+                    and obj['source'] != RPKI_IRR_PSEUDO_SOURCE
+                    and obj['object_class'] in RPKI_RELEVANT_OBJECT_CLASSES
                 ):
                     comment = ''
                     if obj['rpki_status'] == RPKIStatus.not_found:

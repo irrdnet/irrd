@@ -32,20 +32,24 @@ def upgrade():
     t_rpsl_objects = RPSLDatabaseObject.__table__
 
     for length in range(33):
-        ip_size = pow(2, 32-length)
-        connection.execute(t_rpsl_objects.update().where(
-            sa.and_(t_rpsl_objects.c.ip_size == ip_size, t_rpsl_objects.c.object_class == 'route')
-        ).values(
-            prefix_length=length,
-        ))
+        ip_size = pow(2, 32 - length)
+        connection.execute(
+            t_rpsl_objects.update()
+            .where(sa.and_(t_rpsl_objects.c.ip_size == ip_size, t_rpsl_objects.c.object_class == 'route'))
+            .values(
+                prefix_length=length,
+            )
+        )
 
     for length in range(129):
-        ip_size = pow(2, 128-length)
-        connection.execute(t_rpsl_objects.update().where(
-            sa.and_(t_rpsl_objects.c.ip_size == ip_size, t_rpsl_objects.c.object_class == 'route6')
-        ).values(
-            prefix_length=length,
-        ))
+        ip_size = pow(2, 128 - length)
+        connection.execute(
+            t_rpsl_objects.update()
+            .where(sa.and_(t_rpsl_objects.c.ip_size == ip_size, t_rpsl_objects.c.object_class == 'route6'))
+            .values(
+                prefix_length=length,
+            )
+        )
 
 
 def downgrade():

@@ -60,7 +60,9 @@ PASSWORD2 = "mnbvc"
 RPSL_EMPTY = ""
 RPSL_WHITESPACE = "\n\n\n    \t\t\n"
 RPSL_MINIMAL = "route: 1.2.3.4\norigin: AS65414\n"
-RPSL_EXTRA_WHITESPACE = "\n\nroute: 1.2.3.4\norigin: AS65414\n\n\n\nroute: 5.6.8.9\norigin: AS65414\n\n\n\n\n\n"
+RPSL_EXTRA_WHITESPACE = (
+    "\n\nroute: 1.2.3.4\norigin: AS65414\n\n\n\nroute: 5.6.8.9\norigin: AS65414\n\n\n\n\n\n"
+)
 RPSL_DELETE = f"role: Badgers\ndelete: {DELETE_REASON}"
 RPSL_DELETE_WITH_TWO_OBJECTS = f"person: Biff Badger\n\nrole: Badgers\ndelete: {DELETE_REASON}"
 RPSL_WITH_OVERRIDE = f"mnter: Biff\noverride: {OVERRIDE}"
@@ -284,7 +286,10 @@ class Test100GetArguments(MyBase):
             {"expected": "http://localhost/v1/submit/", "args": ["-h", "localhost"]},
             {"expected": "http://localhost:8080/v1/submit/", "args": ["-h", "localhost", "-p", "8080"]},
             {"expected": "http://example.com:137/v1/submit/", "args": ["-h", "example.com", "-p", "137"]},
-            {"expected": "http://example.com:137/v1/submit/", "args": ["-u", "http://example.com:137/v1/submit/"]},
+            {
+                "expected": "http://example.com:137/v1/submit/",
+                "args": ["-u", "http://example.com:137/v1/submit/"],
+            },
             {"expected": "http://example.com/v1/submit/", "args": ["-u", "http://example.com/v1/submit/"]},
         ]
 
@@ -453,7 +458,9 @@ class Test300MakeRequest(MyBase):
         args = irr_rpsl_submit.get_arguments(options)
         self.assertEqual(args.url, UNREACHABLE_URL)
 
-        irr_rpsl_submit.send_request = lambda rpsl, args: APIResult([APIResultObject().create().succeed()]).to_dict()
+        irr_rpsl_submit.send_request = lambda rpsl, args: APIResult(
+            [APIResultObject().create().succeed()]
+        ).to_dict()
 
         result = irr_rpsl_submit.make_request(RPSL_MINIMAL, args)
         self.assertTrue(result["objects"][0]["successful"])
@@ -684,13 +691,17 @@ class Test900Command(MyBase):
         for s in ["-Z", "-X", "-9", "--not-there"]:
             result = Runner.run([s], ENV_EMPTY, RPSL_EMPTY)
             self.assertEqual(
-                result.returncode, EXIT_ARGUMENT_ERROR, f"nonsense switch {s} exits with {EXIT_ARGUMENT_ERROR}"
+                result.returncode,
+                EXIT_ARGUMENT_ERROR,
+                f"nonsense switch {s} exits with {EXIT_ARGUMENT_ERROR}",
             )
             self.assertRegex(result.stderr, REGEX_ONE_OF)
 
     def test_010_no_args(self):
         result = Runner.run([], ENV_EMPTY, RPSL_EMPTY)
-        self.assertEqual(result.returncode, EXIT_ARGUMENT_ERROR, f"no arguments exits with {EXIT_ARGUMENT_ERROR}")
+        self.assertEqual(
+            result.returncode, EXIT_ARGUMENT_ERROR, f"no arguments exits with {EXIT_ARGUMENT_ERROR}"
+        )
         self.assertRegex(result.stderr, REGEX_ONE_OF)
 
     def test_020_help(self):
@@ -722,19 +733,25 @@ class Test900Command(MyBase):
         # If we get an error, it should be from the -h, not the -O
         result = Runner.run(["-h", UNREACHABLE_HOST, "-O", BAD_RESPONSE_HOST], ENV_EMPTY, RPSL_MINIMAL)
         self.assertEqual(
-            result.returncode, EXIT_NETWORK_ERROR, "using both -h and -O exits with value appropriate to -h value"
+            result.returncode,
+            EXIT_NETWORK_ERROR,
+            "using both -h and -O exits with value appropriate to -h value",
         )
         self.assertRegex(result.stderr, REGEX_UNREACHABLE)
 
         result = Runner.run(["-h", BAD_RESPONSE_HOST, "-O", UNREACHABLE_HOST], ENV_EMPTY, RPSL_MINIMAL)
         self.assertEqual(
-            result.returncode, EXIT_NETWORK_ERROR, "using both -h and -O exits with value appropriate to -h value"
+            result.returncode,
+            EXIT_NETWORK_ERROR,
+            "using both -h and -O exits with value appropriate to -h value",
         )
         self.assertRegex(result.stderr, REGEX_NOT_FOUND)
 
     def test_030_empty_input_option(self):
         result = Runner.run(["-u", IRRD_URL], ENV_EMPTY, RPSL_EMPTY)
-        self.assertEqual(result.returncode, EXIT_INPUT_ERROR, f"empty input with -u exits with {EXIT_INPUT_ERROR}")
+        self.assertEqual(
+            result.returncode, EXIT_INPUT_ERROR, f"empty input with -u exits with {EXIT_INPUT_ERROR}"
+        )
         self.assertRegex(result.stderr, REGEX_NO_OBJECTS)
 
     def test_030_empty_input_env(self):
@@ -750,13 +767,17 @@ class Test900Command(MyBase):
 
     def test_030_only_whitespace_input(self):
         result = Runner.run(["-u", IRRD_URL], ENV_EMPTY, RPSL_WHITESPACE)
-        self.assertEqual(result.returncode, EXIT_INPUT_ERROR, f"whitespace only input exits with {EXIT_INPUT_ERROR}")
+        self.assertEqual(
+            result.returncode, EXIT_INPUT_ERROR, f"whitespace only input exits with {EXIT_INPUT_ERROR}"
+        )
         self.assertRegex(result.stderr, REGEX_NO_OBJECTS)
 
     def test_030_multiple_object_delete(self):
         result = Runner.run(["-u", IRRD_URL], ENV_EMPTY, RPSL_DELETE_WITH_TWO_OBJECTS)
         self.assertEqual(
-            result.returncode, EXIT_INPUT_ERROR, f"RPSL delete with multiple objects exits with {EXIT_INPUT_ERROR}"
+            result.returncode,
+            EXIT_INPUT_ERROR,
+            f"RPSL delete with multiple objects exits with {EXIT_INPUT_ERROR}",
         )
         self.assertRegex(result.stderr, REGEX_TOO_MANY)
 
@@ -769,7 +790,9 @@ class Test900Command(MyBase):
         for row in table:
             result = Runner.run(row, ENV_EMPTY, RPSL_MINIMAL)
             self.assertEqual(
-                result.returncode, EXIT_NETWORK_ERROR, f"Unresolvable host in {row[1]} exits with {EXIT_NETWORK_ERROR}"
+                result.returncode,
+                EXIT_NETWORK_ERROR,
+                f"Unresolvable host in {row[1]} exits with {EXIT_NETWORK_ERROR}",
             )
             self.assertRegex(result.stderr, REGEX_UNRESOLVABLE)
 
@@ -782,7 +805,9 @@ class Test900Command(MyBase):
         for row in table:
             result = Runner.run(row, ENV_EMPTY, RPSL_MINIMAL)
             self.assertEqual(
-                result.returncode, EXIT_NETWORK_ERROR, f"Unreachable host in {row[1]} with {EXIT_NETWORK_ERROR}"
+                result.returncode,
+                EXIT_NETWORK_ERROR,
+                f"Unreachable host in {row[1]} with {EXIT_NETWORK_ERROR}",
             )
             self.assertRegex(result.stderr, REGEX_UNREACHABLE)
 
@@ -793,7 +818,9 @@ class Test900Command(MyBase):
         for row in table:
             result = Runner.run(row, ENV_EMPTY, RPSL_MINIMAL)
             self.assertEqual(
-                result.returncode, EXIT_RESPONSE_ERROR, f"Bad response URL {row[1]} exits with {EXIT_NETWORK_ERROR}"
+                result.returncode,
+                EXIT_RESPONSE_ERROR,
+                f"Bad response URL {row[1]} exits with {EXIT_NETWORK_ERROR}",
             )
             self.assertRegex(result.stderr, REGEX_BAD_RESPONSE)
 

@@ -17,21 +17,30 @@ depends_on = None
 
 
 def upgrade():
-    op.create_table('roa_object',
-                    sa.Column('pk', postgresql.UUID(as_uuid=True), server_default=sa.text('gen_random_uuid()'),
-                              nullable=False),
-                    sa.Column('prefix', postgresql.CIDR(), nullable=False),
-                    sa.Column('asn', sa.BigInteger(), nullable=False),
-                    sa.Column('max_length', sa.Integer(), nullable=False),
-                    sa.Column('trust_anchor', sa.String(), nullable=True),
-                    sa.Column('ip_version', sa.Integer(), nullable=False),
-                    sa.Column('created', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-                    sa.PrimaryKeyConstraint('pk'),
-                    sa.UniqueConstraint('prefix', 'asn', 'max_length', 'trust_anchor', name='roa_object_prefix_asn_maxlength_unique')
-                    )
+    op.create_table(
+        'roa_object',
+        sa.Column(
+            'pk', postgresql.UUID(as_uuid=True), server_default=sa.text('gen_random_uuid()'), nullable=False
+        ),
+        sa.Column('prefix', postgresql.CIDR(), nullable=False),
+        sa.Column('asn', sa.BigInteger(), nullable=False),
+        sa.Column('max_length', sa.Integer(), nullable=False),
+        sa.Column('trust_anchor', sa.String(), nullable=True),
+        sa.Column('ip_version', sa.Integer(), nullable=False),
+        sa.Column('created', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.PrimaryKeyConstraint('pk'),
+        sa.UniqueConstraint(
+            'prefix', 'asn', 'max_length', 'trust_anchor', name='roa_object_prefix_asn_maxlength_unique'
+        ),
+    )
     op.create_index(op.f('ix_roa_object_ip_version'), 'roa_object', ['ip_version'], unique=False)
-    op.create_index('ix_roa_objects_prefix_gist', 'roa_object', [sa.text('prefix inet_ops')], unique=False,
-                    postgresql_using='gist')
+    op.create_index(
+        'ix_roa_objects_prefix_gist',
+        'roa_object',
+        [sa.text('prefix inet_ops')],
+        unique=False,
+        postgresql_using='gist',
+    )
 
 
 def downgrade():

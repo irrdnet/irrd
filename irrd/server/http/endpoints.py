@@ -40,18 +40,16 @@ class WhoisQueryEndpoint(HTTPEndpoint):
         query = request.query_params['q']
 
         parser = WhoisQueryParser(
-            request.client.host,
-            client_str,
-            request.app.state.preloader,
-            request.app.state.database_handler
+            request.client.host, client_str, request.app.state.preloader, request.app.state.database_handler
         )
         response = parser.handle_query(query)
         response.clean_response()
 
         elapsed = time.perf_counter() - start_time
         length = len(response.result) if response.result else 0
-        logger.info(f'{client_str}: sent answer to HTTP query, elapsed {elapsed:.9f}s, '
-                    f'{length} chars: {query}')
+        logger.info(
+            f'{client_str}: sent answer to HTTP query, elapsed {elapsed:.9f}s, {length} chars: {query}'
+        )
 
         if response.response_type == WhoisQueryResponseType.ERROR_INTERNAL:
             return PlainTextResponse(response.result, status_code=500)
@@ -109,7 +107,5 @@ class SuspensionSubmissionEndpoint(HTTPEndpoint):
             'HTTP-User-Agent': request.headers.get('User-Agent'),
         }
         handler = ChangeSubmissionHandler()
-        await sync_to_async(handler.load_suspension_submission)(
-            data=data, request_meta=request_meta
-        )
+        await sync_to_async(handler.load_suspension_submission)(data=data, request_meta=request_meta)
         return JSONResponse(handler.submitter_report_json())
