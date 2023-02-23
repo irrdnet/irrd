@@ -1,5 +1,4 @@
 # Sample objects used in various tests.
-# flake8: noqa: W291,W293
 
 SAMPLE_AS_BLOCK = """as-block:       AS65536 - as065538
 descr:          TEST ASN block

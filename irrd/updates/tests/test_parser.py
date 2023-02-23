@@ -1,4 +1,3 @@
-# flake8: noqa: W293
 import itertools
 import passlib.hash
 import textwrap

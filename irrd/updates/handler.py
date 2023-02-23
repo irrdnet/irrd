@@ -183,7 +183,6 @@ class ChangeSubmissionHandler:
 
     def submitter_report_human(self) -> str:
         """Produce a human-readable report for the submitter."""
-        # flake8: noqa: W293
         successful = [r for r in self.results if r.status == UpdateRequestStatus.SAVED]
         failed = [r for r in self.results if r.status != UpdateRequestStatus.SAVED]
         number_successful_create = len([r for r in successful if r.request_type == UpdateRequestType.CREATE])

@@ -377,7 +377,7 @@ class Configuration:
         if not str(config.get('rpki.roa_import_timer', '0')).isnumeric():
             errors.append('Setting rpki.roa_import_timer must be set to a number.')
 
-        if config.get('log.level') and not config.get('log.level') in ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']:
+        if config.get('log.level') and config.get('log.level') not in ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']:
             errors.append(f'Invalid log.level: {config.get("log.level")}. '
                           f'Valid settings for log.level are `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`.')
         if config.get('log.logging_config_path') and (config.get('log.logfile_path') or config.get('log.level')):

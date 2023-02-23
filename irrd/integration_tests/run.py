@@ -1,4 +1,3 @@
-# flake8: noqa: W293
 import sys
 import time
 import unittest
