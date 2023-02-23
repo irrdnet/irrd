@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Optional, Tuple, List, Dict
+from typing import Dict, List, Optional, Tuple
 
 from IPy import IP
 
@@ -7,6 +7,7 @@ from irrd.conf import get_setting
 from irrd.rpsl.parser import RPSLObject
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseQuery
+
 from .status import ScopeFilterStatus
 
 

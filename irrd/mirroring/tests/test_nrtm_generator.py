@@ -1,10 +1,11 @@
-from itertools import cycle, repeat
-
-import pytest
 import textwrap
+from itertools import cycle, repeat
 from unittest.mock import Mock
 
+import pytest
+
 from irrd.storage.models import DatabaseOperation
+
 from ..nrtm_generator import NRTMGenerator, NRTMGeneratorException
 
 

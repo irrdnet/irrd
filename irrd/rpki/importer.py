@@ -1,14 +1,13 @@
+import logging
 from collections import defaultdict
+from typing import Dict, List, Optional, Set
 
 import ujson
-
-import logging
 from IPy import IP, IPSet
-from typing import List, Optional, Dict, Set
 
 from irrd.conf import RPKI_IRR_PSEUDO_SOURCE, get_setting
 from irrd.rpki.status import RPKIStatus
-from irrd.rpsl.parser import RPSLObject, RPSL_ATTRIBUTE_TEXT_WIDTH
+from irrd.rpsl.parser import RPSL_ATTRIBUTE_TEXT_WIDTH, RPSLObject
 from irrd.rpsl.rpsl_objects import RPSL_ROUTE_OBJECT_CLASS_FOR_IP_VERSION
 from irrd.scopefilter.validators import ScopeFilterValidator
 from irrd.storage.database_handler import DatabaseHandler

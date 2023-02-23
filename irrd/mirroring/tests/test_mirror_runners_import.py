@@ -6,15 +6,20 @@ from urllib.error import URLError
 
 import pytest
 
+from irrd.routepref.routepref import update_route_preference_status
 from irrd.rpki.importer import ROAParserException
 from irrd.rpki.validators import BulkRouteROAValidator
-from irrd.routepref.routepref import update_route_preference_status
-from irrd.storage.database_handler import DatabaseHandler
 from irrd.scopefilter.validators import ScopeFilterValidator
+from irrd.storage.database_handler import DatabaseHandler
 from irrd.utils.test_utils import flatten_mock_calls
+
 from ..mirror_runners_import import (
-    RPSLMirrorImportUpdateRunner, RPSLMirrorFullImportRunner, NRTMImportUpdateStreamRunner,
-    ROAImportRunner, ScopeFilterUpdateRunner, RoutePreferenceUpdateRunner
+    NRTMImportUpdateStreamRunner,
+    ROAImportRunner,
+    RoutePreferenceUpdateRunner,
+    RPSLMirrorFullImportRunner,
+    RPSLMirrorImportUpdateRunner,
+    ScopeFilterUpdateRunner,
 )
 
 

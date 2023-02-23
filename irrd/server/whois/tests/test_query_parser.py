@@ -6,11 +6,16 @@ from IPy import IP
 
 from irrd.mirroring.nrtm_generator import NRTMGeneratorException
 from irrd.rpki.status import RPKIStatus
-from irrd.server.query_resolver import QueryResolver, RouteLookupType, InvalidQueryException
+from irrd.server.query_resolver import (
+    InvalidQueryException,
+    QueryResolver,
+    RouteLookupType,
+)
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.utils.test_utils import flatten_mock_calls
+
 from ..query_parser import WhoisQueryParser
-from ..query_response import WhoisQueryResponseType, WhoisQueryResponseMode
+from ..query_response import WhoisQueryResponseMode, WhoisQueryResponseType
 
 # Note that these mock objects are not entirely valid RPSL objects,
 # as they are meant to test all the scenarios in the query parser.

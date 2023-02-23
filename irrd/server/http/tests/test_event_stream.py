@@ -18,13 +18,14 @@ from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.storage.event_stream import OPERATION_JOURNAL_EXTENDED
 from irrd.storage.queries import (
-    RPSLDatabaseJournalStatisticsQuery,
     RPSLDatabaseJournalQuery,
+    RPSLDatabaseJournalStatisticsQuery,
     RPSLDatabaseQuery,
 )
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
 from irrd.utils.test_utils import MockDatabaseHandler
 from irrd.vendor import postgres_copy
+
 from ..app import app
 from ..event_stream import AsyncEventStreamFollower
 

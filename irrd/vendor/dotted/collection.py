@@ -27,9 +27,7 @@
 import collections
 import json
 import re
-
 from abc import ABCMeta, abstractmethod
-
 
 SPLIT_REGEX = r"(?<!\\)(\.)"
 

@@ -7,12 +7,13 @@ import pytest
 from IPy import IP
 from pytz import timezone
 
-from irrd.rpki.status import RPKIStatus
 from irrd.routepref.status import RoutePreferenceStatus
+from irrd.rpki.status import RPKIStatus
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.storage.preload import Preloader
 from irrd.utils.test_utils import flatten_mock_calls
-from ..query_resolver import QueryResolver, RouteLookupType, InvalidQueryException
+
+from ..query_resolver import InvalidQueryException, QueryResolver, RouteLookupType
 
 # Note that these mock objects are not entirely valid RPSL objects,
 # as they are meant to test all the scenarios in the query resolver.

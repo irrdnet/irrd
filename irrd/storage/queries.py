@@ -3,18 +3,23 @@ from datetime import datetime
 from typing import List, Optional
 
 import sqlalchemy as sa
-from IPy import IP
-from sqlalchemy.sql import Select, ColumnCollection
 import sqlalchemy.dialects.postgresql as pg
+from IPy import IP
+from sqlalchemy.sql import ColumnCollection, Select
 
 from irrd.conf import get_setting
-from irrd.rpki.status import RPKIStatus
 from irrd.routepref.status import RoutePreferenceStatus
+from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import lookup_field_names
 from irrd.scopefilter.status import ScopeFilterStatus
-from irrd.storage.models import (RPSLDatabaseObject, RPSLDatabaseJournal, RPSLDatabaseStatus,
-                                 ROADatabaseObject, RPSLDatabaseObjectSuspended)
-from irrd.utils.validators import parse_as_number, ValidationError
+from irrd.storage.models import (
+    ROADatabaseObject,
+    RPSLDatabaseJournal,
+    RPSLDatabaseObject,
+    RPSLDatabaseObjectSuspended,
+    RPSLDatabaseStatus,
+)
+from irrd.utils.validators import ValidationError, parse_as_number
 
 logger = logging.getLogger(__name__)
 

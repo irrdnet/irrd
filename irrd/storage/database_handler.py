@@ -3,30 +3,41 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from functools import lru_cache
 from io import StringIO
-from typing import List, Set, Dict, Any, Tuple, Iterator, Union, Optional, Iterable
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Set, Tuple, Union
 
 import sqlalchemy as sa
-from IPy import IP
 from asgiref.sync import sync_to_async
+from IPy import IP
 from sqlalchemy.dialects import postgresql as pg
 
 from irrd.conf import get_setting
+from irrd.routepref.status import RoutePreferenceStatus
 from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.parser import RPSLObject
 from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING, RPKI_RELEVANT_OBJECT_CLASSES
 from irrd.scopefilter.status import ScopeFilterStatus
+from irrd.utils.misc import chunked_iterable
 from irrd.vendor import postgres_copy
+
 from . import get_engine
 from .event_stream import EventStreamPublisher
-from .models import RPSLDatabaseObject, RPSLDatabaseJournal, DatabaseOperation, RPSLDatabaseStatus, \
-    ROADatabaseObject, JournalEntryOrigin, RPSLDatabaseObjectSuspended
+from .models import (
+    DatabaseOperation,
+    JournalEntryOrigin,
+    ROADatabaseObject,
+    RPSLDatabaseJournal,
+    RPSLDatabaseObject,
+    RPSLDatabaseObjectSuspended,
+    RPSLDatabaseStatus,
+)
 from .preload import Preloader
-from .queries import (BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery,
-                      RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery,
-                      RPSLDatabaseJournalStatisticsQuery)
-from irrd.routepref.status import RoutePreferenceStatus
-from irrd.utils.misc import chunked_iterable
-
+from .queries import (
+    BaseRPSLObjectDatabaseQuery,
+    DatabaseStatusQuery,
+    ROADatabaseObjectQuery,
+    RPSLDatabaseJournalStatisticsQuery,
+    RPSLDatabaseObjectStatisticsQuery,
+)
 
 QueryType = Union[
     BaseRPSLObjectDatabaseQuery, DatabaseStatusQuery,

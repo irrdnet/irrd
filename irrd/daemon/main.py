@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # flake8: noqa: E402
 import argparse
+import grp
 import logging
 import multiprocessing
 import os
@@ -9,10 +10,9 @@ import signal
 import sys
 import time
 from pathlib import Path
-from typing import Tuple, Optional
+from typing import Optional, Tuple
 
 import daemon
-import grp
 import psutil
 from daemon.daemon import change_process_owner
 from pid import PidFile, PidFileError
@@ -20,14 +20,13 @@ from pid import PidFile, PidFileError
 logger = logging.getLogger(__name__)
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
-from irrd.utils.process_support import ExceptionLoggingProcess, set_traceback_handler
-from irrd.storage.preload import PreloadStoreManager
-from irrd.server.whois.server import start_whois_server
-from irrd.server.http.server import run_http_server
+from irrd import ENV_MAIN_PROCESS_PID, __version__
+from irrd.conf import CONFIG_PATH_DEFAULT, config_init, get_configuration, get_setting
 from irrd.mirroring.scheduler import MirrorScheduler
-from irrd.conf import config_init, CONFIG_PATH_DEFAULT, get_setting, get_configuration
-from irrd import __version__, ENV_MAIN_PROCESS_PID
-
+from irrd.server.http.server import run_http_server
+from irrd.server.whois.server import start_whois_server
+from irrd.storage.preload import PreloadStoreManager
+from irrd.utils.process_support import ExceptionLoggingProcess, set_traceback_handler
 
 # This file does not have a unit test, but is instead tested through
 # the integration tests. Writing a unit test would be too complex.

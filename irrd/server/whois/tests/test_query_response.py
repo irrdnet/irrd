@@ -2,7 +2,12 @@ from _pytest.python_api import raises
 
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
-from ..query_response import WhoisQueryResponse, WhoisQueryResponseMode, WhoisQueryResponseType
+
+from ..query_response import (
+    WhoisQueryResponse,
+    WhoisQueryResponseMode,
+    WhoisQueryResponseType,
+)
 
 
 class TestWhoisQueryResponse:

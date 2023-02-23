@@ -1,14 +1,15 @@
 import datetime
 import re
-from typing import List, Type, Optional
+from typing import List, Optional, Type
 from urllib.parse import urlparse
 
 from IPy import IP
 
 from irrd.utils.text import clean_ip_value_error
-from irrd.utils.validators import parse_as_number, ValidationError
+from irrd.utils.validators import ValidationError, parse_as_number
+
+from .parser_state import RPSLFieldParseResult, RPSLParserMessages
 from .passwords import get_password_hashers
-from .parser_state import RPSLParserMessages, RPSLFieldParseResult
 
 # The IPv4/IPv6 regexes are for initial screening - not full validators
 

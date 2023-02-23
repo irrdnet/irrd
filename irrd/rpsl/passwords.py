@@ -1,6 +1,8 @@
-from enum import unique, Enum
+from enum import Enum, unique
+
+from passlib.hash import bcrypt, des_crypt, md5_crypt
+
 from irrd.conf import get_setting
-from passlib.hash import des_crypt, md5_crypt, bcrypt
 
 
 @unique

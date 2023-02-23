@@ -1,17 +1,18 @@
 import logging
 import re
-from typing import List, Set, Optional
+from typing import List, Optional, Set
 
 from irrd.conf import get_setting
 from irrd.rpki.validators import BulkRouteROAValidator
-from irrd.rpsl.parser import UnknownRPSLObjectClassException, RPSLObject
-from irrd.rpsl.rpsl_objects import rpsl_object_from_text, RPSLKeyCert
+from irrd.rpsl.parser import RPSLObject, UnknownRPSLObjectClassException
+from irrd.rpsl.rpsl_objects import RPSLKeyCert, rpsl_object_from_text
 from irrd.scopefilter.validators import ScopeFilterValidator
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.models import DatabaseOperation, JournalEntryOrigin
-from irrd.utils.text import split_paragraphs_rpsl, remove_last_modified
-from .nrtm_operation import NRTMOperation
+from irrd.utils.text import remove_last_modified, split_paragraphs_rpsl
+
 from ..storage.queries import RPSLDatabaseQuery
+from .nrtm_operation import NRTMOperation
 
 logger = logging.getLogger(__name__)
 nrtm_start_line_re = re.compile(r'^% *START *Version: *(?P<version>\d+) +(?P<source>[\w-]+) +(?P<first_serial>\d+)-(?P<last_serial>\d+)( FILTERED)?\n$', flags=re.MULTILINE)

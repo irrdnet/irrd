@@ -11,14 +11,26 @@ from irrd.rpki.status import RPKIStatus
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.scopefilter.validators import ScopeFilterValidator
 from irrd.storage.models import JournalEntryOrigin
-from irrd.utils.rpsl_samples import SAMPLE_INETNUM, SAMPLE_AS_SET, SAMPLE_PERSON, SAMPLE_MNTNER, \
-    SAMPLE_ROUTE, SAMPLE_ROUTE6
+from irrd.updates.suspension import suspend_for_mntner
+from irrd.utils.rpsl_samples import (
+    SAMPLE_AS_SET,
+    SAMPLE_INETNUM,
+    SAMPLE_MNTNER,
+    SAMPLE_PERSON,
+    SAMPLE_ROUTE,
+    SAMPLE_ROUTE6,
+)
 from irrd.utils.test_utils import flatten_mock_calls
 from irrd.utils.text import splitline_unicodesafe
-from irrd.updates.suspension import suspend_for_mntner
+
 from ..parser import parse_change_requests
-from ..parser_state import SuspensionRequestType, UpdateRequestType, UpdateRequestStatus
-from ..validators import ReferenceValidator, AuthValidator, RulesValidator, ValidatorResult
+from ..parser_state import SuspensionRequestType, UpdateRequestStatus, UpdateRequestType
+from ..validators import (
+    AuthValidator,
+    ReferenceValidator,
+    RulesValidator,
+    ValidatorResult,
+)
 
 
 @pytest.fixture()

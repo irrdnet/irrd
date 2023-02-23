@@ -8,12 +8,16 @@ from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.preload import Preloader
 from irrd.updates.handler import ChangeSubmissionHandler
 from irrd.utils.validators import RPSLChangeSubmission, RPSLSuspensionSubmission
+
+from ...whois.query_parser import WhoisQueryParser
+from ...whois.query_response import (
+    WhoisQueryResponse,
+    WhoisQueryResponseMode,
+    WhoisQueryResponseType,
+)
 from ..app import app
 from ..endpoints import StatusEndpoint, WhoisQueryEndpoint
 from ..status_generator import StatusGenerator
-from ...whois.query_parser import WhoisQueryParser
-from ...whois.query_response import WhoisQueryResponse, WhoisQueryResponseType, \
-    WhoisQueryResponseMode
 
 
 class TestStatusEndpoint:

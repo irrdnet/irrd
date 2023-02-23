@@ -1,8 +1,7 @@
+import threading
 import time
 
-import threading
-
-from ..scheduler import MirrorScheduler, ScheduledTaskProcess, MAX_SIMULTANEOUS_RUNS
+from ..scheduler import MAX_SIMULTANEOUS_RUNS, MirrorScheduler, ScheduledTaskProcess
 
 thread_run_count = 0
 

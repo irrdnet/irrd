@@ -1,21 +1,22 @@
 import difflib
 import logging
-from typing import List, Optional, Set, Dict, Union
+from typing import Dict, List, Optional, Set, Union
 
 from irrd.conf import get_setting
 from irrd.rpki.status import RPKIStatus
 from irrd.rpki.validators import SingleRouteROAValidator
-from irrd.rpsl.parser import UnknownRPSLObjectClassException, RPSLObject
-from irrd.rpsl.rpsl_objects import rpsl_object_from_text, RPSLMntner
+from irrd.rpsl.parser import RPSLObject, UnknownRPSLObjectClassException
+from irrd.rpsl.rpsl_objects import RPSLMntner, rpsl_object_from_text
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.scopefilter.validators import ScopeFilterValidator
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.models import JournalEntryOrigin
 from irrd.storage.queries import RPSLDatabaseQuery
-from irrd.utils.text import splitline_unicodesafe, remove_auth_hashes
-from .parser_state import UpdateRequestType, UpdateRequestStatus, SuspensionRequestType
-from .validators import ReferenceValidator, AuthValidator, RulesValidator
-from .suspension import suspend_for_mntner, reactivate_for_mntner
+from irrd.utils.text import remove_auth_hashes, splitline_unicodesafe
+
+from .parser_state import SuspensionRequestType, UpdateRequestStatus, UpdateRequestType
+from .suspension import reactivate_for_mntner, suspend_for_mntner
+from .validators import AuthValidator, ReferenceValidator, RulesValidator
 
 logger = logging.getLogger(__name__)
 

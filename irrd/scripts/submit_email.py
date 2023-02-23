@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # flake8: noqa: E402
 
-import sys
-
 import argparse
 import logging
+import sys
 from pathlib import Path
 
 """
@@ -17,7 +16,7 @@ A report on the results will be sent to the user by e-mail.
 logger = logging.getLogger(__name__)
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
-from irrd.conf import config_init, CONFIG_PATH_DEFAULT
+from irrd.conf import CONFIG_PATH_DEFAULT, config_init
 from irrd.updates.email import handle_email_submission
 
 

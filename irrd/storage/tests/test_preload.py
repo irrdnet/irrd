@@ -4,13 +4,18 @@ from unittest.mock import Mock
 
 import pytest
 
-from irrd.rpki.status import RPKIStatus
 from irrd.routepref.status import RoutePreferenceStatus
+from irrd.rpki.status import RPKIStatus
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.utils.test_utils import flatten_mock_calls
+
 from ..database_handler import DatabaseHandler
-from ..preload import (Preloader, PreloadStoreManager, PreloadUpdater,
-                       REDIS_KEY_ORIGIN_SOURCE_SEPARATOR)
+from ..preload import (
+    REDIS_KEY_ORIGIN_SOURCE_SEPARATOR,
+    Preloader,
+    PreloadStoreManager,
+    PreloadUpdater,
+)
 from ..queries import RPSLDatabaseQuery
 
 # Use different stores in tests

@@ -16,9 +16,9 @@ Remove journal entries from IRRd.
 logger = logging.getLogger(__name__)
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
+from irrd.conf import CONFIG_PATH_DEFAULT, config_init, get_setting
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseJournalQuery
-from irrd.conf import config_init, CONFIG_PATH_DEFAULT, get_setting
 
 
 def expire_journal(skip_confirmation: bool, expire_before: datetime, source: str):

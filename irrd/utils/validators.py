@@ -1,6 +1,7 @@
-from typing import Tuple, List, Union, Optional
+from typing import List, Optional, Tuple, Union
 
 import pydantic
+
 from irrd.updates.parser_state import SuspensionRequestType
 
 

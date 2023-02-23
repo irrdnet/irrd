@@ -1,13 +1,26 @@
 from IPy import IP
 from pytest import raises
 
-from ..fields import (RPSLIPv4PrefixField, RPSLIPv4PrefixesField, RPSLIPv6PrefixField,
-                      RPSLIPv6PrefixesField, RPSLIPv4AddressRangeField, RPSLASNumberField,
-                      RPSLASBlockField,
-                      RPSLSetNameField, RPSLEmailField, RPSLDNSNameField, RPSLGenericNameField,
-                      RPSLReferenceField,
-                      RPSLReferenceListField, RPSLTextField, RPSLAuthField, RPSLRouteSetMemberField,
-                      RPSLChangedField, RPSLURLField)
+from ..fields import (
+    RPSLASBlockField,
+    RPSLASNumberField,
+    RPSLAuthField,
+    RPSLChangedField,
+    RPSLDNSNameField,
+    RPSLEmailField,
+    RPSLGenericNameField,
+    RPSLIPv4AddressRangeField,
+    RPSLIPv4PrefixesField,
+    RPSLIPv4PrefixField,
+    RPSLIPv6PrefixesField,
+    RPSLIPv6PrefixField,
+    RPSLReferenceField,
+    RPSLReferenceListField,
+    RPSLRouteSetMemberField,
+    RPSLSetNameField,
+    RPSLTextField,
+    RPSLURLField,
+)
 from ..parser_state import RPSLParserMessages
 
 

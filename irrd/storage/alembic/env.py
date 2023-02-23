@@ -1,16 +1,16 @@
 # flake8: noqa: E402
 import os
 import sys
+from pathlib import Path
 
 from alembic import context
-from pathlib import Path
 from sqlalchemy import create_engine
 
 from irrd.storage import translate_url
 
 sys.path.append(str(Path(__file__).resolve().parents[3]))
 
-from irrd.conf import get_setting, config_init, is_config_initialised
+from irrd.conf import config_init, get_setting, is_config_initialised
 from irrd.storage.models import Base
 
 target_metadata = Base.metadata

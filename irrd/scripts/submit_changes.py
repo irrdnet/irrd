@@ -13,12 +13,11 @@ be sent to a user by e-mail.
 """
 import argparse
 import sys
-
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
-from irrd.conf import config_init, CONFIG_PATH_DEFAULT
+from irrd.conf import CONFIG_PATH_DEFAULT, config_init
 from irrd.updates.handler import ChangeSubmissionHandler
 
 

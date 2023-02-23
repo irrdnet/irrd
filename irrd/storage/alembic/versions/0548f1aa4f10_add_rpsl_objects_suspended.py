@@ -5,8 +5,8 @@ Revises: 8744b4b906bb
 Create Date: 2021-12-02 14:34:10.566178
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.exc import ProgrammingError
 

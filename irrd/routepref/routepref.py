@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict, Iterable, Tuple, Optional
+from typing import Dict, Iterable, List, Optional, Tuple
 
 import radix
 from IPy import IP
@@ -8,8 +8,8 @@ from radix.radix import RadixNode
 from irrd.conf import get_setting
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseQuery
-from .status import RoutePreferenceStatus
 
+from .status import RoutePreferenceStatus
 
 logger = logging.getLogger(__name__)
 

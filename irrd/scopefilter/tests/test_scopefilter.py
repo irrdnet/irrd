@@ -6,8 +6,9 @@ from IPy import IP
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseQuery
-from irrd.utils.rpsl_samples import SAMPLE_AUT_NUM, SAMPLE_ROUTE, SAMPLE_INETNUM
+from irrd.utils.rpsl_samples import SAMPLE_AUT_NUM, SAMPLE_INETNUM, SAMPLE_ROUTE
 from irrd.utils.test_utils import flatten_mock_calls
+
 from ..status import ScopeFilterStatus
 from ..validators import ScopeFilterValidator
 

@@ -1,7 +1,6 @@
-import os
-
 import gzip
 import logging
+import os
 import shutil
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -11,7 +10,7 @@ from irrd.routepref.status import RoutePreferenceStatus
 from irrd.rpki.status import RPKIStatus
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.storage.database_handler import DatabaseHandler
-from irrd.storage.queries import RPSLDatabaseQuery, DatabaseStatusQuery
+from irrd.storage.queries import DatabaseStatusQuery, RPSLDatabaseQuery
 from irrd.utils.text import remove_auth_hashes as remove_auth_hashes_func
 
 EXPORT_PERMISSIONS = 0o644

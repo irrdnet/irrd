@@ -13,8 +13,7 @@ from uvicorn import _subprocess
 sys.path.append(str(Path(__file__).resolve().parents[3]))
 
 from irrd import __version__
-from irrd.conf import get_setting, get_configuration
-
+from irrd.conf import get_configuration, get_setting
 from irrd.server.graphql import ENV_UVICORN_WORKER_CONFIG_PATH
 
 

@@ -2,7 +2,7 @@ import pydantic
 import pytest
 from pytest import raises
 
-from ..validators import parse_as_number, ValidationError, RPSLChangeSubmission
+from ..validators import RPSLChangeSubmission, ValidationError, parse_as_number
 
 
 def test_validate_as_number():

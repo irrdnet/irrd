@@ -1,21 +1,22 @@
 from collections import OrderedDict
-from typing import Set, Dict, Optional, List
+from typing import Dict, List, Optional, Set
 
 import ariadne
 import graphql
+from graphql import GraphQLError, GraphQLResolveInfo
 from IPy import IP
-from graphql import GraphQLResolveInfo, GraphQLError
 
-from irrd.conf import get_setting, RPKI_IRR_PSEUDO_SOURCE
-from irrd.rpki.status import RPKIStatus
+from irrd.conf import RPKI_IRR_PSEUDO_SOURCE, get_setting
 from irrd.routepref.status import RoutePreferenceStatus
+from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING, lookup_field_names
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.server.access_check import is_client_permitted
-from irrd.storage.queries import RPSLDatabaseQuery, RPSLDatabaseJournalQuery
-from irrd.utils.text import snake_to_camel_case, remove_auth_hashes
-from .schema_generator import SchemaGenerator
+from irrd.storage.queries import RPSLDatabaseJournalQuery, RPSLDatabaseQuery
+from irrd.utils.text import remove_auth_hashes, snake_to_camel_case
+
 from ..query_resolver import QueryResolver
+from .schema_generator import SchemaGenerator
 
 """
 Resolvers resolve GraphQL queries, usually by translating them

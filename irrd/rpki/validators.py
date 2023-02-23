@@ -1,14 +1,15 @@
-import datrie
-from collections import defaultdict
-
 import codecs
 import socket
+from collections import defaultdict
+from typing import Dict, List, Optional, Tuple
+
+import datrie
 from IPy import IP
-from typing import Optional, List, Tuple, Dict
 
 from irrd.conf import RPKI_IRR_PSEUDO_SOURCE, get_setting
 from irrd.storage.database_handler import DatabaseHandler
-from irrd.storage.queries import RPSLDatabaseQuery, ROADatabaseObjectQuery
+from irrd.storage.queries import ROADatabaseObjectQuery, RPSLDatabaseQuery
+
 from .importer import ROA
 from .status import RPKIStatus
 

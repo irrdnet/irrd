@@ -1,13 +1,14 @@
 import textwrap
 from unittest.mock import Mock
 
-from ..notifications import notify_rpki_invalid_owners
-from irrd.utils.test_utils import flatten_mock_calls
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.utils.rpsl_samples import SAMPLE_ROUTE, SAMPLE_ROUTE6
-from ..status import RPKIStatus
+from irrd.utils.test_utils import flatten_mock_calls
+
 from ...storage.queries import RPSLDatabaseQuery
 from ...utils.email import send_email
+from ..notifications import notify_rpki_invalid_owners
+from ..status import RPKIStatus
 
 
 class TestNotifyRPKIInvalidOwners:

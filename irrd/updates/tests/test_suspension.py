@@ -1,16 +1,23 @@
-import pytest
 from unittest.mock import Mock
 
+import pytest
+
+from irrd.rpki.status import RPKIStatus
+from irrd.rpki.validators import SingleRouteROAValidator
 from irrd.rpsl.rpsl_objects import RPSLMntner
+from irrd.scopefilter.status import ScopeFilterStatus
+from irrd.scopefilter.validators import ScopeFilterValidator
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseQuery, RPSLDatabaseSuspendedQuery
-from irrd.utils.rpsl_samples import SAMPLE_MNTNER, SAMPLE_PERSON, SAMPLE_ROLE, SAMPLE_ROUTE
+from irrd.utils.rpsl_samples import (
+    SAMPLE_MNTNER,
+    SAMPLE_PERSON,
+    SAMPLE_ROLE,
+    SAMPLE_ROUTE,
+)
 from irrd.utils.test_utils import flatten_mock_calls
-from irrd.scopefilter.validators import ScopeFilterValidator
-from irrd.rpki.validators import SingleRouteROAValidator
-from irrd.rpki.status import RPKIStatus
-from irrd.scopefilter.status import ScopeFilterStatus
-from ..suspension import suspend_for_mntner, reactivate_for_mntner
+
+from ..suspension import reactivate_for_mntner, suspend_for_mntner
 
 
 class TestSuspension:

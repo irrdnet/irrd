@@ -7,8 +7,8 @@ import socketserver
 import threading
 import time
 
-from IPy import IP
 from daemon.daemon import change_process_owner
+from IPy import IP
 from setproctitle import setproctitle
 
 from irrd import ENV_MAIN_PROCESS_PID

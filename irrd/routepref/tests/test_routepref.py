@@ -2,6 +2,7 @@ from IPy import IP
 
 from irrd.storage.queries import RPSLDatabaseQuery
 from irrd.utils.test_utils import MockDatabaseHandler
+
 from ..routepref import RoutePreferenceValidator, update_route_preference_status
 from ..status import RoutePreferenceStatus
 

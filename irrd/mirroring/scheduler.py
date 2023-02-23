@@ -1,19 +1,23 @@
-import time
-from collections import defaultdict
-
 import gc
 import logging
 import multiprocessing
-
 import signal
-from setproctitle import setproctitle
+import time
+from collections import defaultdict
 from typing import Dict
 
-from irrd.conf import get_setting, RPKI_IRR_PSEUDO_SOURCE
-from irrd.conf.defaults import DEFAULT_SOURCE_IMPORT_TIMER, DEFAULT_SOURCE_EXPORT_TIMER
+from setproctitle import setproctitle
+
+from irrd.conf import RPKI_IRR_PSEUDO_SOURCE, get_setting
+from irrd.conf.defaults import DEFAULT_SOURCE_EXPORT_TIMER, DEFAULT_SOURCE_IMPORT_TIMER
+
 from .mirror_runners_export import SourceExportRunner
-from .mirror_runners_import import RPSLMirrorImportUpdateRunner, ROAImportRunner, \
-    ScopeFilterUpdateRunner, RoutePreferenceUpdateRunner
+from .mirror_runners_import import (
+    ROAImportRunner,
+    RoutePreferenceUpdateRunner,
+    RPSLMirrorImportUpdateRunner,
+    ScopeFilterUpdateRunner,
+)
 
 logger = logging.getLogger(__name__)
 

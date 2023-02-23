@@ -5,7 +5,12 @@ from unittest.mock import Mock
 import pytest
 
 from ..test_utils import flatten_mock_calls
-from ..whois_client import whois_query, whois_query_irrd, whois_query_source_status, WhoisQueryError
+from ..whois_client import (
+    WhoisQueryError,
+    whois_query,
+    whois_query_irrd,
+    whois_query_source_status,
+)
 
 
 class TestWhoisQuery:

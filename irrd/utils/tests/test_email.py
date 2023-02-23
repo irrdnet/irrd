@@ -1,8 +1,10 @@
-import pytest
 import textwrap
 from unittest.mock import Mock
 
+import pytest
+
 from irrd.conf import get_setting
+
 from ..email import EmailParser, send_email
 
 

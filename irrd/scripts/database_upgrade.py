@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 # flake8: noqa: E402
-import sys
-
 import argparse
+import sys
+from pathlib import Path
+
 from alembic import command
 from alembic.config import Config
-from pathlib import Path
 
 irrd_root = str(Path(__file__).resolve().parents[2])
 sys.path.append(irrd_root)
 
-from irrd.conf import config_init, CONFIG_PATH_DEFAULT
+from irrd.conf import CONFIG_PATH_DEFAULT, config_init
 
 
 def run(version):

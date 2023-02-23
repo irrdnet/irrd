@@ -7,6 +7,7 @@ from unittest.mock import Mock
 import pytest
 
 from irrd.storage.preload import Preloader
+
 from ..server import WhoisWorker
 
 
