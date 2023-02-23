@@ -7,10 +7,10 @@ import socketserver
 import threading
 import time
 
-from daemon.daemon import change_process_owner
 from IPy import IP
 from setproctitle import setproctitle
 
+from daemon.daemon import change_process_owner
 from irrd import ENV_MAIN_PROCESS_PID
 from irrd.conf import get_setting
 from irrd.server.access_check import is_client_permitted

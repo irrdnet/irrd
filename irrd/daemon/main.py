@@ -12,10 +12,11 @@ import time
 from pathlib import Path
 from typing import Optional, Tuple
 
-import daemon
 import psutil
-from daemon.daemon import change_process_owner
 from pid import PidFile, PidFileError
+
+import daemon
+from daemon.daemon import change_process_owner
 
 logger = logging.getLogger(__name__)
 sys.path.append(str(Path(__file__).resolve().parents[2]))
