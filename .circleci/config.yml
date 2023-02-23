@@ -375,14 +375,24 @@ jobs:
         environment:
           PYTHON_INTERPRETER: python3
           SUDO: sudo
+          SPHINX_IMMATERIAL_EXTERNAL_RESOURCE_CACHE_DIR: sphinx_immaterial_cache
 #      - image: cimg/rust:1.65
 
     steps:
       - checkout
       - install_dependencies
 
+      - restore_cache:
+          keys: v1-docs-cache
+
       - run:
           name: build docs
           command: |
             . venv/bin/activate
             sphinx-build -nW -b spelling docs/ docs/build
+
+      - save_cache:
+          paths:
+            - ./sphinx_immaterial_cache
+          key: v1-docs-cache
+
