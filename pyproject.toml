@@ -1,0 +1,143 @@
+[project]
+dynamic = ["version"]
+name = "irrd"
+
+[tool.poetry]
+name = "irrd"
+version = "4.4-dev"
+description = "Internet Routing Registry daemon (IRRd)"
+authors = ["Reliably Coded for NTT Ltd. and others <irrd@reliablycoded.nl>"]
+license = "BSD"
+readme = "README.rst"
+repository = "https://github.com/irrdnet/irrd"
+documentation = "https://irrd.readthedocs.io/"
+exclude = ['irrd/*/tests', 'irrd/*/*/tests', 'irrd/integration_tests']
+
+[tool.poetry.dependencies]
+python = "^3.8"
+# For installation dependencies, this project pins on exact
+# versions. This is because it's an application rather than
+# a library, so we assume that irrd is the only tool installe
+# in the venv. Pinning exact versions increases reproducability
+# in our distributed packages.
+# https://github.com/python-poetry/poetry/issues/2778 may fix this
+python-gnupg = "0.5.0"
+passlib = "1.7.4"
+bcrypt = "4.0.1"
+ipy = "1.1"
+ordered-set = "4.1.0"
+beautifultable = "0.8.0"
+pyyaml = "6.0"
+datrie = "0.8.2"
+setproctitle = "1.3.2"
+python-daemon = "2.3.2"
+pid = "3.0.4"
+redis = "4.5.1"
+hiredis = "2.2.2"
+coredis = "4.10.2"
+requests = "2.28.2"
+pytz = "2022.7.1"
+# TODO: check 0.18 upgrade
+ariadne = "0.17.1"
+uvicorn = { extras = ["standard"], version = "0.20.0" }
+starlette = "0.20.4"
+psutil = "5.9.4"
+asgiref = "3.6.0"
+pydantic = "1.10.5"
+typing-extensions = "4.5.0"
+py-radix-sr = "1.0.0.post1"
+psycopg2-binary = { version = "2.9.5", markers = "platform_python_implementation == 'CPython'" }
+psycopg2cffi = { version = "2.9.0", markers = "platform_python_implementation == 'PyPy'" }
+sqlalchemy = "1.3.24"
+alembic = "1.9.4"
+ujson = "5.7.0"
+wheel = "0.38.4"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.2.1"
+pytest-cov = "^4.0.0"
+coverage = "^7.2.0"
+twisted = "^22.10.0"
+python-graphql-client = "^0.4.3"
+pytest-asyncio = "^0.20.3"
+freezegun = "^1.2.2"
+pytest-freezegun = "^0.4.2"
+mypy = { version = "^1.0.1", markers = "platform_python_implementation == 'CPython'" }
+ruff = "^0.0.252"
+isort = "^5.12.0"
+black = "^23.1.0"
+setuptools-scm = "^7.1.0"
+
+[tool.poetry.group.docs.dependencies]
+sphinx = "^6.1.3"
+sphinxcontrib-spelling = "^8.0.0"
+sphinx-immaterial = "^0.11.3"
+
+[tool.poetry.scripts]
+irrd = 'irrd.daemon.main:main'
+irrd_submit_email = 'irrd.scripts.submit_email:main'
+irrd_database_upgrade = 'irrd.scripts.database_upgrade:main'
+irrd_database_downgrade = 'irrd.scripts.database_downgrade:main'
+irrd_load_database = 'irrd.scripts.load_database:main'
+irrd_update_database = 'irrd.scripts.update_database:main'
+irrd_set_last_modified_auth = 'irrd.scripts.set_last_modified_auth:main'
+irrd_expire_journal = 'irrd.scripts.expire_journal:main'
+irrd_mirror_force_reload = 'irrd.scripts.mirror_force_reload:main'
+irr_rpsl_submit = 'irrd.scripts.irr_rpsl_submit:main'
+irrd_load_pgp_keys = 'irrd.scripts.load_pgp_keys:main'
+
+[tool.isort]
+profile = "black"
+py_version = 38
+src_paths = "irrd"
+
+[tool.ruff]
+line-length = 110
+ignore = ["E501"]
+target-version = "py38"
+
+[tool.black]
+line-length = 110
+target-version = ['py38']
+preview = true
+
+[tool.pytest.ini_options]
+log_level = "DEBUG"
+asyncio_mode = "auto"
+
+[tool.mypy]
+ignore_missing_imports = true
+install_types = true
+non_interactive = true
+exclude = "irrd/storage/alembic/*"
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == '__main__':",
+]
+
+# Impractical for unit tests, but covered in integration tests
+omit = [
+    "irrd/daemon/main.py",
+    "irrd/server/http/app.py",
+    "irrd/server/graphql/schema_builder.py",
+    "irrd/server/http/server.py",
+    "irrd/storage/alembic/*",
+    "irrd/scripts/query_qa_comparison.py",
+    "irrd/scripts/database_upgrade.py",
+    "irrd/scripts/database_downgrade.py",
+    "irrd/scripts/load_test.py",
+    "irrd/integration_tests/*",
+    "irrd/vendor/*"
+]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

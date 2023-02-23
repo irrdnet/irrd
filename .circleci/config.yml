@@ -102,33 +102,29 @@ commands:
           name: Installing psql client, enchant, netcat, rust
           command: $SUDO apt -y install postgresql-client netcat python3-enchant rustc
 
+      - run:
+          name: Installing poetry if needed
+          command: which poetry || curl -sSL https://install.python-poetry.org | POETRY_HOME=/usr python3 -
+
       - restore_cache:
           keys:
-            - v21-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
-              "requirements.txt" }}
+            - v2-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
+              "poetry.lock" }}
             # fallback to using the latest cache if no exact match is found
-            - v21-dependencies-{{ .Environment.CIRCLE_JOB }}
+            - v2-dependencies-{{ .Environment.CIRCLE_JOB }}
 
       - run:
-          name: install latest pip
-          command: |
-            $PYTHON_INTERPRETER -m venv venv
-            . venv/bin/activate
-            pip install -U pip
-
-      - run:
-          name: install dependencies
-          command: |
-            PATH=$PATH:/root/.cargo/bin/
-            $PYTHON_INTERPRETER -m venv venv
-            . venv/bin/activate
-            pip install -vUr requirements.txt
+          name: install python dependencies
+          working_directory: irrd
+          environment:
+            POETRY_VIRTUALENVS_IN_PROJECT: true
+          command: poetry -n --no-ansi --no-root --with=dev,docs install
 
       - save_cache:
           paths:
-            - ./venv
-          key: v21-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
-            "requirements.txt" }}
+            - /mnt/ramdisk/.venv
+          key: v2-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
+            "poetry.lock" }}
 
   wait_for_postgres:
     steps:
@@ -147,9 +143,7 @@ commands:
     steps:
       - run:
           name: run regular tests
-          command: |
-            . venv/bin/activate
-            py.test -s -vvvv --cov=irrd irrd --junitxml=test-reports/junit.xml --cov-fail-under=100 --cov-report term-missing:skip-covered
+          command: poetry -n --no-ansi run py.test -s -vvvv --cov=irrd irrd --junitxml=test-reports/junit.xml --cov-fail-under=100 --cov-report term-missing:skip-covered
 
   create_integration_test_db:
     steps:
@@ -167,9 +161,7 @@ commands:
     steps:
       - run:
           name: run integration tests
-          command: |
-            . venv/bin/activate
-            py.test irrd/integration_tests/run.py -s
+          command: poetry -n --no-ansi run py.test irrd/integration_tests/run.py -s
 
   store_results:
     steps:
@@ -227,7 +219,7 @@ jobs:
       redis_version:
         type: string
 
-    resource_class: small
+    resource_class: medium
     working_directory: /mnt/ramdisk
     docker:
       - image: pypy:<< parameters.python_version >>
@@ -352,21 +344,19 @@ jobs:
 
       - run:
           name: run ruff
-          command: |
-            . venv/bin/activate
-            ruff irrd
+          command: poetry -n --no-ansi run ruff irrd
 
       - run:
           name: run isort
-          command: |
-            . venv/bin/activate
-            isort --check --diff irrd
+          command: poetry -n --no-ansi run isort --check --diff irrd
 
       - run:
           name: run mypy
-          command: |
-            . venv/bin/activate
-            mypy irrd
+          command: poetry -n --no-ansi run mypy irrd
+
+      - run:
+          name: run black
+          command: poetry -n --no-ansi run black --check irrd
 
 
   build_docs:
@@ -398,13 +388,11 @@ jobs:
       - run:
           name: hack sphinx_immaterial
           command: |
-            sed -i 's/max_workers=32/max_workers=1/' /mnt/ramdisk/venv/lib/py*/site-packages/sphinx_immaterial/google_fonts.py
+            sed -i 's/max_workers=32/max_workers=1/' /mnt/ramdisk/.venv/lib/py*/site-packages/sphinx_immaterial/google_fonts.py
 
       - run:
           name: build docs
-          command: |
-            . venv/bin/activate
-            sphinx-build -nW -b spelling docs/ docs/build
+          command: poetry -n --no-ansi run sphinx-build -nW -b spelling docs/ docs/build
 
       - save_cache:
           paths:
