@@ -14,7 +14,7 @@ from starlette.requests import Request
 from starlette.responses import Response, StreamingResponse, PlainTextResponse
 from starlette.status import WS_1003_UNSUPPORTED_DATA, WS_1008_POLICY_VIOLATION
 from starlette.websockets import WebSocket
-from typing_extensions import Literal
+from typing import Literal
 
 from irrd.conf import get_setting
 from irrd.rpki.status import RPKIStatus

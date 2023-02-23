@@ -1,0 +1,32 @@
+==================================
+DRAFT Release notes for IRRd 4.4.0
+==================================
+
+Minimum Python version
+----------------------
+The minimum Python version for IRRd is now 3.8. Python 3.7 is `end of life`_
+as of 27 June 2023 and therefore no longer supported.
+
+.. _end of life: https://endoflife.date/python
+
+
+Upgrading to IRRd 4.4.0 from 4.3.x
+----------------------------------
+TODO
+
+
+Downgrading from 4.4 to 4.3.x
+-----------------------------
+If you are running IRRd 4.4, and would like to downgrade back to 4.3.x,
+the database schema needs to be modified. You can either restore an older
+copy of your database, start with a fresh database, or use the database
+migrations.
+
+If you want to use the database migrations, run this command **before**
+downgrading your local package installation to 4.3.x::
+
+    irrd_database_downgrade --version TODO-TODO
+
+If you would like to re-upgrade to 4.4 later on, you will need to run
+the database migrations again, as listed in the upgrade steps.
+

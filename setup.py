@@ -17,7 +17,7 @@ setuptools.setup(
     packages=setuptools.find_packages(
         exclude=['*.tests', '*.tests.*', 'tests.*', 'tests', 'irrd.integration_tests']
     ),
-    python_requires='>=3.7',
+    python_requires='>=3.8',
     package_data={'': ['*.txt', '*.yaml', '*.mako']},
     install_requires=[
         # This list must be kept in sync with requirements.txt version-wise,
@@ -40,7 +40,7 @@ setuptools.setup(
         'requests==2.28.2',
         'pytz==2022.7.1',
         'ariadne==0.17.1',
-        'uvicorn==0.20.0',
+        'uvicorn[standard]==0.20.0',
         'starlette==0.20.4',
         'psutil==5.9.4',
         'asgiref==3.6.0',
@@ -53,12 +53,6 @@ setuptools.setup(
         'wheel==0.38.4',
     ],
     extras_require={
-        ':python_version > "3.7"': [
-            'uvicorn[standard]==0.20.0',
-        ],
-        ':python_version < "3.8"': [
-            'websockets==10.4',
-        ],
         ':platform_python_implementation == "CPython"': [
             'psycopg2-binary==2.9.5',
         ],
@@ -84,7 +78,6 @@ setuptools.setup(
     classifiers=[
         'License :: OSI Approved :: BSD License',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',

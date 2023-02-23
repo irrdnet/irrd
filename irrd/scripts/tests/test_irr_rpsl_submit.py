@@ -163,7 +163,7 @@ class APIResult:
 
 class APIBadResponse:
     def read(self):
-        return "This is not JSON".encode("utf-8")
+        return b"This is not JSON"
 
 
 class Runner:
