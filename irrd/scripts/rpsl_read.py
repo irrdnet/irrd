@@ -114,5 +114,5 @@ def main():  # pragma: no cover
     RPSLParse().main(args.input_file, args.strict_validation, args.database, not args.hide_info)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()
