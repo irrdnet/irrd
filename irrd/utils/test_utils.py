@@ -3,7 +3,11 @@ from typing import Any, Dict, Iterable
 
 from irrd.storage.database_handler import QueryType, RPSLDatabaseResponse
 from irrd.storage.models import DatabaseOperation, JournalEntryOrigin
-from irrd.storage.queries import RPSLDatabaseJournalStatisticsQuery, RPSLDatabaseJournalQuery, DatabaseStatusQuery
+from irrd.storage.queries import (
+    DatabaseStatusQuery,
+    RPSLDatabaseJournalQuery,
+    RPSLDatabaseJournalStatisticsQuery,
+)
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
 
 

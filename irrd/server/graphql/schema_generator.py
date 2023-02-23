@@ -1,13 +1,19 @@
 from collections import OrderedDict, defaultdict
-from typing import Optional, Dict, Tuple, List
+from typing import Dict, List, Optional, Tuple
 
 import ariadne
 
 from irrd.routepref.status import RoutePreferenceStatus
 from irrd.rpki.status import RPKIStatus
-from irrd.rpsl.fields import RPSLFieldListMixin, RPSLTextField, RPSLReferenceField
-from irrd.rpsl.rpsl_objects import (lookup_field_names, OBJECT_CLASS_MAPPING, RPSLAutNum,
-                                    RPSLInetRtr, RPSLPerson, RPSLRole)
+from irrd.rpsl.fields import RPSLFieldListMixin, RPSLReferenceField, RPSLTextField
+from irrd.rpsl.rpsl_objects import (
+    OBJECT_CLASS_MAPPING,
+    RPSLAutNum,
+    RPSLInetRtr,
+    RPSLPerson,
+    RPSLRole,
+    lookup_field_names,
+)
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.utils.text import snake_to_camel_case
 

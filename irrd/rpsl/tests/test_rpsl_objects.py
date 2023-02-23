@@ -5,26 +5,50 @@ from IPy import IP
 from pytest import raises
 from pytz import timezone
 
-from irrd.conf import PASSWORD_HASH_DUMMY_VALUE, AUTH_SET_CREATION_COMMON_KEY
-from irrd.utils.rpsl_samples import (object_sample_mapping, SAMPLE_MALFORMED_EMPTY_LINE,
-                                     SAMPLE_MALFORMED_ATTRIBUTE_NAME,
-                                     SAMPLE_UNKNOWN_CLASS, SAMPLE_MISSING_MANDATORY_ATTRIBUTE,
-                                     SAMPLE_MALFORMED_SOURCE,
-                                     SAMPLE_MALFORMED_PK, SAMPLE_UNKNOWN_ATTRIBUTE,
-                                     SAMPLE_INVALID_MULTIPLE_ATTRIBUTE,
-                                     KEY_CERT_SIGNED_MESSAGE_VALID, KEY_CERT_SIGNED_MESSAGE_INVALID,
-                                     KEY_CERT_SIGNED_MESSAGE_CORRUPT,
-                                     KEY_CERT_SIGNED_MESSAGE_WRONG_KEY,
-                                     TEMPLATE_ROUTE_OBJECT,
-                                     TEMPLATE_PERSON_OBJECT,
-                                     SAMPLE_LINE_NEITHER_CONTINUATION_NOR_ATTR,
-                                     SAMPLE_MISSING_SOURCE, SAMPLE_ROUTE)
+from irrd.conf import AUTH_SET_CREATION_COMMON_KEY, PASSWORD_HASH_DUMMY_VALUE
+from irrd.utils.rpsl_samples import (
+    KEY_CERT_SIGNED_MESSAGE_CORRUPT,
+    KEY_CERT_SIGNED_MESSAGE_INVALID,
+    KEY_CERT_SIGNED_MESSAGE_VALID,
+    KEY_CERT_SIGNED_MESSAGE_WRONG_KEY,
+    SAMPLE_INVALID_MULTIPLE_ATTRIBUTE,
+    SAMPLE_LINE_NEITHER_CONTINUATION_NOR_ATTR,
+    SAMPLE_MALFORMED_ATTRIBUTE_NAME,
+    SAMPLE_MALFORMED_EMPTY_LINE,
+    SAMPLE_MALFORMED_PK,
+    SAMPLE_MALFORMED_SOURCE,
+    SAMPLE_MISSING_MANDATORY_ATTRIBUTE,
+    SAMPLE_MISSING_SOURCE,
+    SAMPLE_ROUTE,
+    SAMPLE_UNKNOWN_ATTRIBUTE,
+    SAMPLE_UNKNOWN_CLASS,
+    TEMPLATE_PERSON_OBJECT,
+    TEMPLATE_ROUTE_OBJECT,
+    object_sample_mapping,
+)
 
 from ..parser import UnknownRPSLObjectClassException
-from ..rpsl_objects import (RPSLAsBlock, RPSLAsSet, RPSLAutNum, RPSLDomain, RPSLFilterSet, RPSLInetRtr,
-                            RPSLInet6Num, RPSLInetnum, RPSLKeyCert, RPSLMntner, RPSLPeeringSet,
-                            RPSLPerson, RPSLRole, RPSLRoute, RPSLRouteSet, RPSLRoute6, RPSLRtrSet,
-                            OBJECT_CLASS_MAPPING, rpsl_object_from_text)
+from ..rpsl_objects import (
+    OBJECT_CLASS_MAPPING,
+    RPSLAsBlock,
+    RPSLAsSet,
+    RPSLAutNum,
+    RPSLDomain,
+    RPSLFilterSet,
+    RPSLInet6Num,
+    RPSLInetnum,
+    RPSLInetRtr,
+    RPSLKeyCert,
+    RPSLMntner,
+    RPSLPeeringSet,
+    RPSLPerson,
+    RPSLRole,
+    RPSLRoute,
+    RPSLRoute6,
+    RPSLRouteSet,
+    RPSLRtrSet,
+    rpsl_object_from_text,
+)
 
 
 class TestRPSLParsingGeneric:

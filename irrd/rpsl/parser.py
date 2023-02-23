@@ -2,18 +2,19 @@ import datetime
 import itertools
 import json
 import re
-from collections import OrderedDict, Counter
-from typing import Dict, List, Optional, Tuple, Any, Set
+from collections import Counter, OrderedDict
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from IPy import IP
 
-from irrd.rpki.status import RPKIStatus
 from irrd.routepref.status import RoutePreferenceStatus
+from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.parser_state import RPSLParserMessages
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.utils.text import splitline_unicodesafe
-from .fields import RPSLTextField
+
 from ..conf import get_setting
+from .fields import RPSLTextField
 
 RPSL_ATTRIBUTE_TEXT_WIDTH = 16
 TypeRPSLObjectData = List[Tuple[str, str, List[str]]]

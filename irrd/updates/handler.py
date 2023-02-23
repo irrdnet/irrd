@@ -1,7 +1,7 @@
 import logging
 import textwrap
 from collections import defaultdict
-from typing import List, Optional, Dict, Union
+from typing import Dict, List, Optional, Union
 
 from ordered_set import OrderedSet
 
@@ -10,10 +10,11 @@ from irrd.rpsl.rpsl_objects import RPSLMntner
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseQuery
 from irrd.utils import email
-from .parser import parse_change_requests, ChangeRequest, SuspensionRequest
-from .parser_state import UpdateRequestStatus, UpdateRequestType
-from .validators import ReferenceValidator, AuthValidator
+
 from ..utils.validators import RPSLChangeSubmission, RPSLSuspensionSubmission
+from .parser import ChangeRequest, SuspensionRequest, parse_change_requests
+from .parser_state import UpdateRequestStatus, UpdateRequestType
+from .validators import AuthValidator, ReferenceValidator
 
 logger = logging.getLogger(__name__)
 

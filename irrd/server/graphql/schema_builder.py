@@ -1,17 +1,25 @@
-from IPy import IP
 from ariadne import make_executable_schema
 from asgiref.sync import sync_to_async as sta
 from graphql import GraphQLError
+from IPy import IP
 
-from .resolvers import (resolve_rpsl_objects, resolve_rpsl_object_type,
-                        resolve_database_status, resolve_rpsl_object_mnt_by_objs,
-                        resolve_rpsl_object_member_of_objs, resolve_rpsl_object_members_by_ref_objs,
-                        resolve_rpsl_object_members_objs, resolve_rpsl_object_adminc_objs,
-                        resolve_asn_prefixes, resolve_as_set_prefixes,
-                        resolve_recursive_set_members, resolve_rpsl_object_techc_objs,
-                        resolve_rpsl_object_journal)
-from .schema_generator import SchemaGenerator
 from ...utils.text import clean_ip_value_error
+from .resolvers import (
+    resolve_as_set_prefixes,
+    resolve_asn_prefixes,
+    resolve_database_status,
+    resolve_recursive_set_members,
+    resolve_rpsl_object_adminc_objs,
+    resolve_rpsl_object_journal,
+    resolve_rpsl_object_member_of_objs,
+    resolve_rpsl_object_members_by_ref_objs,
+    resolve_rpsl_object_members_objs,
+    resolve_rpsl_object_mnt_by_objs,
+    resolve_rpsl_object_techc_objs,
+    resolve_rpsl_object_type,
+    resolve_rpsl_objects,
+)
+from .schema_generator import SchemaGenerator
 
 
 def build_executable_schema():

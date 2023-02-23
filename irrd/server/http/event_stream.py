@@ -5,30 +5,32 @@ import logging
 import socket
 import sys
 import tempfile
-from typing import Any, List, Optional, Callable
+from typing import Any, Callable, List, Literal, Optional
 
 import pydantic
 import ujson
-from starlette.endpoints import WebSocketEndpoint, HTTPEndpoint
+from starlette.endpoints import HTTPEndpoint, WebSocketEndpoint
 from starlette.requests import Request
-from starlette.responses import Response, StreamingResponse, PlainTextResponse
+from starlette.responses import PlainTextResponse, Response, StreamingResponse
 from starlette.status import WS_1003_UNSUPPORTED_DATA, WS_1008_POLICY_VIOLATION
 from starlette.websockets import WebSocket
-from typing import Literal
 
 from irrd.conf import get_setting
+from irrd.routepref.status import RoutePreferenceStatus
 from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
-from irrd.routepref.status import RoutePreferenceStatus
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.server.access_check import is_client_permitted
 from irrd.storage.database_handler import DatabaseHandler
-from irrd.storage.event_stream import AsyncEventStreamRedisClient, REDIS_STREAM_END_IDENTIFIER
+from irrd.storage.event_stream import (
+    REDIS_STREAM_END_IDENTIFIER,
+    AsyncEventStreamRedisClient,
+)
 from irrd.storage.queries import (
     DatabaseStatusQuery,
-    RPSLDatabaseQuery,
-    RPSLDatabaseJournalStatisticsQuery,
     RPSLDatabaseJournalQuery,
+    RPSLDatabaseJournalStatisticsQuery,
+    RPSLDatabaseQuery,
 )
 from irrd.utils.text import remove_auth_hashes
 from irrd.vendor import postgres_copy

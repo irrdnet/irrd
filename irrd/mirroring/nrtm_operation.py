@@ -1,9 +1,9 @@
 import logging
-from typing import Optional, List
+from typing import List, Optional
 
 from irrd.rpki.validators import SingleRouteROAValidator
 from irrd.rpsl.parser import UnknownRPSLObjectClassException
-from irrd.rpsl.rpsl_objects import rpsl_object_from_text, RPSLKeyCert
+from irrd.rpsl.rpsl_objects import RPSLKeyCert, rpsl_object_from_text
 from irrd.scopefilter.validators import ScopeFilterValidator
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.models import DatabaseOperation, JournalEntryOrigin

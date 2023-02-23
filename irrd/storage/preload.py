@@ -4,16 +4,17 @@ import signal
 import threading
 import time
 from collections import defaultdict
-from typing import Optional, List, Set, Dict, Union
+from typing import Dict, List, Optional, Set, Union
 
 import redis
 from setproctitle import setproctitle
 
 from irrd.conf import get_setting
-from irrd.rpki.status import RPKIStatus
 from irrd.routepref.status import RoutePreferenceStatus
+from irrd.rpki.status import RPKIStatus
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.utils.process_support import ExceptionLoggingProcess
+
 from .queries import RPSLDatabaseQuery
 
 SENTINEL_HASH_CREATED = b'SENTINEL_HASH_CREATED'

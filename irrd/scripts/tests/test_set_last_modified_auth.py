@@ -6,6 +6,7 @@ from pytz import timezone
 
 from irrd.utils.rpsl_samples import SAMPLE_RTR_SET
 from irrd.utils.test_utils import flatten_mock_calls
+
 from ..set_last_modified_auth import set_last_modified
 
 

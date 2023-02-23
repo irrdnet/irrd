@@ -1,7 +1,7 @@
 from irrd.conf import AUTH_SET_CREATION_COMMON_KEY
 from irrd.rpsl.passwords import PASSWORD_HASHERS_ALL
-from irrd.vendor.dotted.collection import DottedDict
 from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING, RPSLSet
+from irrd.vendor.dotted.collection import DottedDict
 
 # Note that sources are checked separately,
 # and 'access_lists' is always permitted

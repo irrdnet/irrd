@@ -1,12 +1,18 @@
 import os
-import textwrap
-
-import pytest
 import signal
-import yaml
+import textwrap
 from typing import Dict
 
-from . import get_setting, ConfigurationError, config_init, is_config_initialised, get_configuration
+import pytest
+import yaml
+
+from . import (
+    ConfigurationError,
+    config_init,
+    get_configuration,
+    get_setting,
+    is_config_initialised,
+)
 
 
 @pytest.fixture()

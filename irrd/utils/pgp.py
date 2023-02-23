@@ -4,10 +4,12 @@ import re
 from tempfile import NamedTemporaryFile
 from typing import Optional, Tuple
 
-# Mypy struggles to see gnupg.GPG
-import gnupg  # type: ignore
+# isort: off
+import gnupg
 
 from irrd.conf import get_setting
+
+# isort: on
 
 logger = logging.getLogger(__name__)
 pgp_inline_re = re.compile(r'-----BEGIN PGP SIGNED MESSAGE-----(\n.+)?\n\n((?s:.+))\n-----BEGIN PGP SIGNATURE-----\n',

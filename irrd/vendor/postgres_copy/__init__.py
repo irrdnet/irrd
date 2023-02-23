@@ -22,10 +22,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Mapper, class_mapper
 from sqlalchemy.sql.operators import ColumnOperators
-from sqlalchemy.dialects import postgresql
 
 __version__ = '0.5.0'
 

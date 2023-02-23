@@ -1,33 +1,53 @@
-import sys
-import time
-import unittest
-
-import ujson
-
 import base64
 import email
 import os
-import requests
 import signal
 import socket
-import sqlalchemy as sa
 import subprocess
+import sys
 import textwrap
-import yaml
-from alembic import command, config
+import time
+import unittest
 from pathlib import Path
 
+import requests
+import sqlalchemy as sa
+import ujson
+import yaml
+from alembic import command, config
 from python_graphql_client import GraphqlClient
 
-from irrd.conf import config_init, PASSWORD_HASH_DUMMY_VALUE
-from irrd.utils.rpsl_samples import (SAMPLE_MNTNER, SAMPLE_PERSON, SAMPLE_KEY_CERT, SIGNED_PERSON_UPDATE_VALID,
-                                     SAMPLE_AS_SET, SAMPLE_AUT_NUM, SAMPLE_DOMAIN, SAMPLE_FILTER_SET, SAMPLE_INET_RTR,
-                                     SAMPLE_INET6NUM, SAMPLE_INETNUM, SAMPLE_PEERING_SET, SAMPLE_ROLE, SAMPLE_ROUTE,
-                                     SAMPLE_ROUTE_SET, SAMPLE_ROUTE6, SAMPLE_RTR_SET, SAMPLE_AS_BLOCK)
+from irrd.conf import PASSWORD_HASH_DUMMY_VALUE, config_init
+from irrd.utils.rpsl_samples import (
+    SAMPLE_AS_BLOCK,
+    SAMPLE_AS_SET,
+    SAMPLE_AUT_NUM,
+    SAMPLE_DOMAIN,
+    SAMPLE_FILTER_SET,
+    SAMPLE_INET6NUM,
+    SAMPLE_INET_RTR,
+    SAMPLE_INETNUM,
+    SAMPLE_KEY_CERT,
+    SAMPLE_MNTNER,
+    SAMPLE_PEERING_SET,
+    SAMPLE_PERSON,
+    SAMPLE_ROLE,
+    SAMPLE_ROUTE,
+    SAMPLE_ROUTE6,
+    SAMPLE_ROUTE_SET,
+    SAMPLE_RTR_SET,
+    SIGNED_PERSON_UPDATE_VALID,
+)
 from irrd.utils.whois_client import whois_query, whois_query_irrd
-from .constants import (EMAIL_SMTP_PORT, EMAIL_DISCARD_MSGS_COMMAND, EMAIL_RETURN_MSGS_COMMAND, EMAIL_SEPARATOR,
-                        EMAIL_END)
+
 from ..storage import translate_url
+from .constants import (
+    EMAIL_DISCARD_MSGS_COMMAND,
+    EMAIL_END,
+    EMAIL_RETURN_MSGS_COMMAND,
+    EMAIL_SEPARATOR,
+    EMAIL_SMTP_PORT,
+)
 
 IRRD_ROOT_PATH = str(Path(__file__).resolve().parents[2])
 sys.path.append(IRRD_ROOT_PATH)

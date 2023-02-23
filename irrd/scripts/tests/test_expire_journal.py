@@ -5,6 +5,7 @@ import pytz
 
 from irrd.storage.queries import RPSLDatabaseJournalQuery
 from irrd.utils.test_utils import MockDatabaseHandler
+
 from ..expire_journal import expire_journal
 
 EXPIRY_DATE = datetime(2022, 1, 1, tzinfo=pytz.utc)

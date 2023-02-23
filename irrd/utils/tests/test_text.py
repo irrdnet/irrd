@@ -1,10 +1,17 @@
 from io import StringIO
 
+import pytest
+
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
-import pytest
-from ..text import (splitline_unicodesafe, split_paragraphs_rpsl, remove_auth_hashes,
-                    remove_last_modified, snake_to_camel_case)
+
+from ..text import (
+    remove_auth_hashes,
+    remove_last_modified,
+    snake_to_camel_case,
+    split_paragraphs_rpsl,
+    splitline_unicodesafe,
+)
 
 
 def test_remove_auth_hashes():

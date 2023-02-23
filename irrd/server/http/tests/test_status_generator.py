@@ -5,6 +5,7 @@ from unittest.mock import Mock
 
 from irrd import __version__
 from irrd.conf import get_setting
+
 from ..status_generator import StatusGenerator
 
 

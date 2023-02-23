@@ -2,7 +2,7 @@ from typing import Optional
 
 from irrd.conf import get_setting
 from irrd.storage.database_handler import DatabaseHandler
-from irrd.storage.queries import RPSLDatabaseJournalQuery, DatabaseStatusQuery
+from irrd.storage.queries import DatabaseStatusQuery, RPSLDatabaseJournalQuery
 from irrd.utils.text import remove_auth_hashes as remove_auth_hashes_func
 
 

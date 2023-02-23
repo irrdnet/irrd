@@ -7,14 +7,15 @@ import pydantic
 from asgiref.sync import sync_to_async
 from starlette.endpoints import HTTPEndpoint
 from starlette.requests import Request
-from starlette.responses import PlainTextResponse, Response, JSONResponse
+from starlette.responses import JSONResponse, PlainTextResponse, Response
 
 from irrd.server.access_check import is_client_permitted
 from irrd.updates.handler import ChangeSubmissionHandler
 from irrd.utils.validators import RPSLChangeSubmission, RPSLSuspensionSubmission
-from .status_generator import StatusGenerator
+
 from ..whois.query_parser import WhoisQueryParser
 from ..whois.query_response import WhoisQueryResponseType
+from .status_generator import StatusGenerator
 
 logger = logging.getLogger(__name__)
 

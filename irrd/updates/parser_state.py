@@ -1,6 +1,6 @@
-from enum import unique, Enum
+from enum import Enum, unique
 
-from irrd.conf import get_setting, AUTH_SET_CREATION_COMMON_KEY
+from irrd.conf import AUTH_SET_CREATION_COMMON_KEY, get_setting
 
 
 @unique

@@ -1,19 +1,36 @@
 from collections import OrderedDict
+from typing import List, Optional, Set, Union
 
-from typing import Set, List, Optional, Union
-
-from irrd.conf import AUTH_SET_CREATION_COMMON_KEY, PASSWORD_HASH_DUMMY_VALUE, get_setting
+from irrd.conf import (
+    AUTH_SET_CREATION_COMMON_KEY,
+    PASSWORD_HASH_DUMMY_VALUE,
+    get_setting,
+)
 from irrd.utils.pgp import get_gpg_instance
-from .passwords import PASSWORD_REPLACEMENT_HASH, get_password_hashers
-from .fields import (RPSLTextField, RPSLIPv4PrefixField, RPSLIPv4PrefixesField, RPSLIPv6PrefixField,
-                     RPSLIPv6PrefixesField, RPSLIPv4AddressRangeField, RPSLASNumberField,
-                     RPSLASBlockField,
-                     RPSLSetNameField, RPSLEmailField, RPSLDNSNameField, RPSLGenericNameField,
-                     RPSLReferenceField,
-                     RPSLReferenceListField, RPSLAuthField, RPSLRouteSetMembersField,
-                     RPSLChangedField, RPSLURLField)
+
+from ..utils.validators import ValidationError, parse_as_number
+from .fields import (
+    RPSLASBlockField,
+    RPSLASNumberField,
+    RPSLAuthField,
+    RPSLChangedField,
+    RPSLDNSNameField,
+    RPSLEmailField,
+    RPSLGenericNameField,
+    RPSLIPv4AddressRangeField,
+    RPSLIPv4PrefixesField,
+    RPSLIPv4PrefixField,
+    RPSLIPv6PrefixesField,
+    RPSLIPv6PrefixField,
+    RPSLReferenceField,
+    RPSLReferenceListField,
+    RPSLRouteSetMembersField,
+    RPSLSetNameField,
+    RPSLTextField,
+    RPSLURLField,
+)
 from .parser import RPSLObject, UnknownRPSLObjectClassException
-from ..utils.validators import parse_as_number, ValidationError
+from .passwords import PASSWORD_REPLACEMENT_HASH, get_password_hashers
 
 RPSL_ROUTE_OBJECT_CLASS_FOR_IP_VERSION = {
     4: 'route',

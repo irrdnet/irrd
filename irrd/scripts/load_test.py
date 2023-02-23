@@ -5,11 +5,10 @@
 A simple load tester for IRRd.
 Sends random !g queries.
 """
-import time
-
 import argparse
 import random
 import socket
+import time
 
 
 def main(host, port, count):

@@ -5,8 +5,8 @@ Revises: 0548f1aa4f10
 Create Date: 2022-10-07 13:43:46.598866
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = '8b8357acd333'
@@ -16,7 +16,7 @@ depends_on = None
 
 
 def upgrade():
-    from sqlalchemy.schema import Sequence, CreateSequence
+    from sqlalchemy.schema import CreateSequence, Sequence
     op.execute(CreateSequence(Sequence('rpsl_database_journal_serial_global_seq', start=1000000)))
     op.add_column('rpsl_database_journal', sa.Column('serial_global', sa.BigInteger(), nullable=True))
 
@@ -42,7 +42,7 @@ def upgrade():
 
 
 def downgrade():
-    from sqlalchemy.schema import Sequence, DropSequence
+    from sqlalchemy.schema import DropSequence, Sequence
     op.drop_index(op.f('ix_rpsl_database_journal_timestamp'), table_name='rpsl_database_journal')
     op.drop_index(op.f('ix_rpsl_database_journal_serial_global'), table_name='rpsl_database_journal')
     op.drop_column('rpsl_database_journal', 'serial_global')

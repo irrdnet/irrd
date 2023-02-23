@@ -6,7 +6,6 @@ insert it into the database.
 """
 import argparse
 import sys
-
 from pathlib import Path
 from typing import Optional, Set
 
@@ -15,9 +14,9 @@ from irrd.storage.models import JournalEntryOrigin
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from irrd.conf import CONFIG_PATH_DEFAULT, config_init, get_setting
-from irrd.storage.database_handler import DatabaseHandler
 from irrd.rpsl.parser import UnknownRPSLObjectClassException
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
+from irrd.storage.database_handler import DatabaseHandler
 from irrd.utils.text import split_paragraphs_rpsl
 
 

@@ -7,17 +7,26 @@ from IPy import IP
 from ordered_set import OrderedSet
 
 from irrd import __version__
-from irrd.conf import get_setting, RPKI_IRR_PSEUDO_SOURCE, SOCKET_DEFAULT_TIMEOUT
+from irrd.conf import RPKI_IRR_PSEUDO_SOURCE, SOCKET_DEFAULT_TIMEOUT, get_setting
 from irrd.mirroring.nrtm_generator import NRTMGenerator, NRTMGeneratorException
 from irrd.rpki.status import RPKIStatus
-from irrd.rpsl.rpsl_objects import (OBJECT_CLASS_MAPPING, RPKI_RELEVANT_OBJECT_CLASSES)
-from irrd.server.query_resolver import QueryResolver, RouteLookupType, InvalidQueryException
+from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING, RPKI_RELEVANT_OBJECT_CLASSES
+from irrd.server.query_resolver import (
+    InvalidQueryException,
+    QueryResolver,
+    RouteLookupType,
+)
 from irrd.storage.database_handler import DatabaseHandler, RPSLDatabaseResponse
 from irrd.storage.preload import Preloader
 from irrd.storage.queries import DatabaseStatusQuery
-from irrd.utils.validators import parse_as_number, ValidationError
-from .query_response import WhoisQueryResponseType, WhoisQueryResponseMode, WhoisQueryResponse
+from irrd.utils.validators import ValidationError, parse_as_number
+
 from ..access_check import is_client_permitted
+from .query_response import (
+    WhoisQueryResponse,
+    WhoisQueryResponseMode,
+    WhoisQueryResponseType,
+)
 
 logger = logging.getLogger(__name__)
 

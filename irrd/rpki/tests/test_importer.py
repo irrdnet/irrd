@@ -9,6 +9,7 @@ from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.scopefilter.validators import ScopeFilterValidator
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.utils.test_utils import flatten_mock_calls
+
 from ..importer import ROADataImporter, ROAParserException
 
 

@@ -3,7 +3,6 @@
 import argparse
 import logging
 import sys
-
 from pathlib import Path
 
 """
@@ -13,10 +12,11 @@ Load an RPSL file into the database.
 logger = logging.getLogger(__name__)
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
-from irrd.conf import config_init, CONFIG_PATH_DEFAULT
-from irrd.storage.queries import RPSLDatabaseQuery
-from irrd.storage.database_handler import DatabaseHandler
+from irrd.conf import CONFIG_PATH_DEFAULT, config_init
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
+from irrd.storage.database_handler import DatabaseHandler
+from irrd.storage.queries import RPSLDatabaseQuery
+
 
 def load_pgp_keys(source: str) -> None:
     dh = DatabaseHandler()

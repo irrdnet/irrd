@@ -1,7 +1,6 @@
+import email
 import logging
 import socket
-
-import email
 from email.mime.text import MIMEText
 from smtplib import SMTP
 from typing import Optional
@@ -9,7 +8,6 @@ from typing import Optional
 from irrd import __version__
 from irrd.conf import get_setting
 from irrd.utils.pgp import validate_pgp_signature
-
 
 logger = logging.getLogger(__name__)
 

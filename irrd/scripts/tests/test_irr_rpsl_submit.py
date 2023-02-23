@@ -1,13 +1,14 @@
-import json
 import io
+import json
 import os
-import pytest
 import re
-from urllib import request
 import subprocess
 import sys
 import unittest
+from urllib import request
 from urllib.error import HTTPError
+
+import pytest
 
 from .. import irr_rpsl_submit
 

@@ -1,8 +1,10 @@
-import pytest
 from unittest.mock import Mock
 
-from irrd.utils.test_utils import flatten_mock_calls
+import pytest
+
 from irrd.utils.rpsl_samples import SAMPLE_KEY_CERT
+from irrd.utils.test_utils import flatten_mock_calls
+
 from ..load_pgp_keys import load_pgp_keys
 
 

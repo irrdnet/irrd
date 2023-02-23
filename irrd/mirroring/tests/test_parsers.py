@@ -10,15 +10,35 @@ from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.scopefilter.validators import ScopeFilterValidator
 from irrd.storage.models import DatabaseOperation, JournalEntryOrigin
 from irrd.utils.rpsl_samples import (
-    SAMPLE_ROUTE, SAMPLE_UNKNOWN_CLASS, SAMPLE_UNKNOWN_ATTRIBUTE, SAMPLE_MALFORMED_PK,
-    SAMPLE_ROUTE6, SAMPLE_KEY_CERT, KEY_CERT_SIGNED_MESSAGE_VALID, SAMPLE_LEGACY_IRRD_ARTIFACT,
-    SAMPLE_ROLE, SAMPLE_RTR_SET)
+    KEY_CERT_SIGNED_MESSAGE_VALID,
+    SAMPLE_KEY_CERT,
+    SAMPLE_LEGACY_IRRD_ARTIFACT,
+    SAMPLE_MALFORMED_PK,
+    SAMPLE_ROLE,
+    SAMPLE_ROUTE,
+    SAMPLE_ROUTE6,
+    SAMPLE_RTR_SET,
+    SAMPLE_UNKNOWN_ATTRIBUTE,
+    SAMPLE_UNKNOWN_CLASS,
+)
 from irrd.utils.test_utils import flatten_mock_calls
-from .nrtm_samples import (SAMPLE_NRTM_V3, SAMPLE_NRTM_V1, SAMPLE_NRTM_V1_TOO_MANY_ITEMS,
-                           SAMPLE_NRTM_INVALID_VERSION, SAMPLE_NRTM_V3_NO_END,
-                           SAMPLE_NRTM_V3_SERIAL_GAP, SAMPLE_NRTM_V3_INVALID_MULTIPLE_START_LINES,
-                           SAMPLE_NRTM_INVALID_NO_START_LINE, SAMPLE_NRTM_V3_SERIAL_OUT_OF_ORDER)
-from ..parsers import NRTMStreamParser, MirrorFileImportParser, MirrorUpdateFileImportParser
+
+from ..parsers import (
+    MirrorFileImportParser,
+    MirrorUpdateFileImportParser,
+    NRTMStreamParser,
+)
+from .nrtm_samples import (
+    SAMPLE_NRTM_INVALID_NO_START_LINE,
+    SAMPLE_NRTM_INVALID_VERSION,
+    SAMPLE_NRTM_V1,
+    SAMPLE_NRTM_V1_TOO_MANY_ITEMS,
+    SAMPLE_NRTM_V3,
+    SAMPLE_NRTM_V3_INVALID_MULTIPLE_START_LINES,
+    SAMPLE_NRTM_V3_NO_END,
+    SAMPLE_NRTM_V3_SERIAL_GAP,
+    SAMPLE_NRTM_V3_SERIAL_OUT_OF_ORDER,
+)
 
 
 @pytest.fixture

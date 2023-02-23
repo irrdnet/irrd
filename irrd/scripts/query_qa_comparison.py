@@ -7,21 +7,19 @@ and report significant results.
 
 import argparse
 import difflib
-import sys
-
 import re
-from IPy import IP
-from ordered_set import OrderedSet
+import sys
 from pathlib import Path
 from typing import Optional
 
+from IPy import IP
+from ordered_set import OrderedSet
 
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
-from irrd.utils.text import splitline_unicodesafe, split_paragraphs_rpsl
-from irrd.utils.whois_client import whois_query_irrd, whois_query, WhoisQueryError
-
+from irrd.utils.text import split_paragraphs_rpsl, splitline_unicodesafe
+from irrd.utils.whois_client import WhoisQueryError, whois_query, whois_query_irrd
 
 SSP_QUERIES = ['!6', '!g', '!i']
 ASDOT_RE = re.compile(r'as\d+\.\d*', flags=re.IGNORECASE)

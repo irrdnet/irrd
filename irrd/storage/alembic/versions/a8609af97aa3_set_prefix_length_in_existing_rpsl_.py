@@ -10,7 +10,6 @@ from alembic import op
 from sqlalchemy.dialects import postgresql as pg
 from sqlalchemy.ext.declarative import declarative_base
 
-
 # revision identifiers, used by Alembic.
 revision = 'a8609af97aa3'
 down_revision = '64a3d6faf6d4'

@@ -1,20 +1,23 @@
 import logging
 from collections import OrderedDict
 from enum import Enum
-from typing import Optional, List, Set, Tuple, Any, Dict
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from IPy import IP
 from pytz import timezone
 
-from irrd.conf import get_setting, RPKI_IRR_PSEUDO_SOURCE
+from irrd.conf import RPKI_IRR_PSEUDO_SOURCE, get_setting
 from irrd.routepref.status import RoutePreferenceStatus
 from irrd.rpki.status import RPKIStatus
-from irrd.rpsl.rpsl_objects import (OBJECT_CLASS_MAPPING, lookup_field_names)
+from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING, lookup_field_names
 from irrd.scopefilter.status import ScopeFilterStatus
-from irrd.storage.database_handler import DatabaseHandler, is_serial_synchronised, \
-    RPSLDatabaseResponse
+from irrd.storage.database_handler import (
+    DatabaseHandler,
+    RPSLDatabaseResponse,
+    is_serial_synchronised,
+)
 from irrd.storage.preload import Preloader
-from irrd.storage.queries import RPSLDatabaseQuery, DatabaseStatusQuery
+from irrd.storage.queries import DatabaseStatusQuery, RPSLDatabaseQuery
 from irrd.utils.validators import parse_as_number
 
 logger = logging.getLogger(__name__)

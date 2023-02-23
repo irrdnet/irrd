@@ -10,7 +10,6 @@ Create Date: 2021-11-30 19:46:01.195353
 """
 from alembic import op
 
-
 # revision identifiers, used by Alembic.
 revision = '8744b4b906bb'
 down_revision = '893d0d5363b3'

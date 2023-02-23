@@ -4,24 +4,25 @@ import os
 import shutil
 from io import BytesIO
 from tempfile import NamedTemporaryFile
-from typing import Optional, Tuple, Any, IO
+from typing import IO, Any, Optional, Tuple
 from urllib import request
-from urllib.parse import urlparse
 from urllib.error import URLError
+from urllib.parse import urlparse
 
 import requests
 
-from irrd.conf import get_setting, RPKI_IRR_PSEUDO_SOURCE
+from irrd.conf import RPKI_IRR_PSEUDO_SOURCE, get_setting
 from irrd.conf.defaults import DEFAULT_SOURCE_NRTM_PORT
+from irrd.routepref.routepref import update_route_preference_status
 from irrd.rpki.importer import ROADataImporter, ROAParserException
 from irrd.rpki.notifications import notify_rpki_invalid_owners
 from irrd.rpki.validators import BulkRouteROAValidator
-from irrd.routepref.routepref import update_route_preference_status
 from irrd.scopefilter.validators import ScopeFilterValidator
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.event_stream import EventStreamPublisher
 from irrd.storage.queries import DatabaseStatusQuery
 from irrd.utils.whois_client import whois_query
+
 from .parsers import MirrorFileImportParser, NRTMStreamParser
 
 logger = logging.getLogger(__name__)

@@ -1,6 +1,7 @@
 from unittest.mock import Mock
 
 from irrd.utils.test_utils import flatten_mock_calls
+
 from ..mirror_force_reload import set_force_reload
 
 

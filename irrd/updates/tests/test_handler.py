@@ -8,8 +8,9 @@ from irrd.scopefilter.validators import ScopeFilterValidator
 from irrd.storage.models import JournalEntryOrigin
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
 from irrd.utils.test_utils import flatten_mock_calls
-from ..handler import ChangeSubmissionHandler
+
 from ...utils.validators import RPSLChangeSubmission, RPSLSuspensionSubmission
+from ..handler import ChangeSubmissionHandler
 from ..parser_state import SuspensionRequestType
 
 

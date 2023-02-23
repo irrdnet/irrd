@@ -1,7 +1,7 @@
 from unittest.mock import Mock
 
-from ..submit_changes import main
 from ...updates.handler import ChangeSubmissionHandler
+from ..submit_changes import main
 
 
 def test_submit_changes(capsys, monkeypatch):

@@ -5,9 +5,15 @@ from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.scopefilter.validators import ScopeFilterValidator
 from irrd.storage.models import DatabaseOperation, JournalEntryOrigin
-from irrd.utils.rpsl_samples import (SAMPLE_MNTNER, SAMPLE_UNKNOWN_CLASS,
-                                     SAMPLE_MALFORMED_EMPTY_LINE, SAMPLE_KEY_CERT,
-                                     KEY_CERT_SIGNED_MESSAGE_VALID, SAMPLE_ROUTE)
+from irrd.utils.rpsl_samples import (
+    KEY_CERT_SIGNED_MESSAGE_VALID,
+    SAMPLE_KEY_CERT,
+    SAMPLE_MALFORMED_EMPTY_LINE,
+    SAMPLE_MNTNER,
+    SAMPLE_ROUTE,
+    SAMPLE_UNKNOWN_CLASS,
+)
+
 from ..nrtm_operation import NRTMOperation
 
 

@@ -1,8 +1,8 @@
 from unittest.mock import Mock
 
 import pytest
-from IPy import IP
 from graphql import GraphQLError
+from IPy import IP
 from starlette.requests import HTTPConnection
 
 from irrd.routepref.status import RoutePreferenceStatus
@@ -12,8 +12,9 @@ from irrd.server.query_resolver import QueryResolver
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.models import DatabaseOperation, JournalEntryOrigin
 from irrd.storage.preload import Preloader
-from irrd.storage.queries import RPSLDatabaseQuery, RPSLDatabaseJournalQuery
+from irrd.storage.queries import RPSLDatabaseJournalQuery, RPSLDatabaseQuery
 from irrd.utils.test_utils import flatten_mock_calls
+
 from .. import resolvers
 
 EXPECTED_RPSL_GRAPHQL_OUTPUT = [{

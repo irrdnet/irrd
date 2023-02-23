@@ -4,11 +4,12 @@ from itertools import cycle, repeat
 from pathlib import Path
 from unittest.mock import Mock
 
-from irrd.rpki.status import RPKIStatus
 from irrd.routepref.status import RoutePreferenceStatus
+from irrd.rpki.status import RPKIStatus
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.utils.test_utils import flatten_mock_calls
-from ..mirror_runners_export import SourceExportRunner, EXPORT_PERMISSIONS
+
+from ..mirror_runners_export import EXPORT_PERMISSIONS, SourceExportRunner
 
 
 class TestSourceExportRunner:

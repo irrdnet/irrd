@@ -6,14 +6,21 @@ import pytest
 from irrd.conf import AUTH_SET_CREATION_COMMON_KEY
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.storage.database_handler import DatabaseHandler
-from irrd.utils.rpsl_samples import (SAMPLE_AS_SET, SAMPLE_FILTER_SET, SAMPLE_MNTNER, SAMPLE_MNTNER_CRYPT,
-                                     SAMPLE_MNTNER_MD5, SAMPLE_PERSON,
-                                     SAMPLE_ROUTE, SAMPLE_ROUTE6)
+from irrd.storage.queries import RPSLDatabaseSuspendedQuery
+from irrd.updates.parser_state import UpdateRequestType
+from irrd.utils.rpsl_samples import (
+    SAMPLE_AS_SET,
+    SAMPLE_FILTER_SET,
+    SAMPLE_MNTNER,
+    SAMPLE_MNTNER_CRYPT,
+    SAMPLE_MNTNER_MD5,
+    SAMPLE_PERSON,
+    SAMPLE_ROUTE,
+    SAMPLE_ROUTE6,
+)
 from irrd.utils.test_utils import flatten_mock_calls
 from irrd.utils.text import remove_auth_hashes
 
-from irrd.storage.queries import RPSLDatabaseSuspendedQuery
-from irrd.updates.parser_state import UpdateRequestType
 from ..validators import AuthValidator, RulesValidator
 
 VALID_PW = 'override-password'

@@ -1,16 +1,17 @@
 import functools
 import logging
 from dataclasses import dataclass, field
-from typing import Set, Tuple, List, Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, List, Optional, Set, Tuple, Union
 
 from ordered_set import OrderedSet
 from passlib.hash import md5_crypt
 
 from irrd.conf import get_setting
 from irrd.rpsl.parser import RPSLObject
-from irrd.rpsl.rpsl_objects import RPSLMntner, rpsl_object_from_text, RPSLSet
+from irrd.rpsl.rpsl_objects import RPSLMntner, RPSLSet, rpsl_object_from_text
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseQuery, RPSLDatabaseSuspendedQuery
+
 from .parser_state import RPSLSetAutnumAuthenticationMode, UpdateRequestType
 
 if TYPE_CHECKING:  # pragma: no cover

@@ -1,15 +1,15 @@
-import logging
-from typing import List, Dict, Tuple
 import functools
+import logging
+from typing import Dict, List, Tuple
 
-from irrd.storage.models import JournalEntryOrigin
 from irrd.conf import get_setting
-from irrd.rpsl.rpsl_objects import RPSLMntner, rpsl_object_from_text
-from irrd.storage.database_handler import DatabaseHandler
-from irrd.storage.queries import RPSLDatabaseQuery, RPSLDatabaseSuspendedQuery
-from irrd.rpsl.parser import RPSLObject
-from irrd.scopefilter.validators import ScopeFilterValidator
 from irrd.rpki.validators import SingleRouteROAValidator
+from irrd.rpsl.parser import RPSLObject
+from irrd.rpsl.rpsl_objects import RPSLMntner, rpsl_object_from_text
+from irrd.scopefilter.validators import ScopeFilterValidator
+from irrd.storage.database_handler import DatabaseHandler
+from irrd.storage.models import JournalEntryOrigin
+from irrd.storage.queries import RPSLDatabaseQuery, RPSLDatabaseSuspendedQuery
 
 logger = logging.getLogger(__name__)
 

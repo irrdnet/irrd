@@ -1,10 +1,12 @@
-from IPy import IP
 from unittest.mock import Mock
+
+from IPy import IP
 
 from irrd.conf import RPKI_IRR_PSEUDO_SOURCE
 from irrd.storage.database_handler import DatabaseHandler
-from irrd.storage.queries import RPSLDatabaseQuery, ROADatabaseObjectQuery
+from irrd.storage.queries import ROADatabaseObjectQuery, RPSLDatabaseQuery
 from irrd.utils.test_utils import flatten_mock_calls
+
 from ..importer import ROA
 from ..status import RPKIStatus
 from ..validators import BulkRouteROAValidator, SingleRouteROAValidator

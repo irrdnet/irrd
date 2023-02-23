@@ -7,16 +7,23 @@ from IPy import IP
 from pytest import raises
 from sqlalchemy.exc import ProgrammingError
 
-from irrd.rpki.status import RPKIStatus
 from irrd.routepref.status import RoutePreferenceStatus
+from irrd.rpki.status import RPKIStatus
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.utils.test_utils import flatten_mock_calls
+
 from .. import get_engine
 from ..database_handler import DatabaseHandler
-from ..models import RPSLDatabaseObject, DatabaseOperation, JournalEntryOrigin
+from ..models import DatabaseOperation, JournalEntryOrigin, RPSLDatabaseObject
 from ..preload import Preloader
-from ..queries import (RPSLDatabaseQuery, RPSLDatabaseJournalQuery, DatabaseStatusQuery,
-                       RPSLDatabaseObjectStatisticsQuery, ROADatabaseObjectQuery, RPSLDatabaseSuspendedQuery)
+from ..queries import (
+    DatabaseStatusQuery,
+    ROADatabaseObjectQuery,
+    RPSLDatabaseJournalQuery,
+    RPSLDatabaseObjectStatisticsQuery,
+    RPSLDatabaseQuery,
+    RPSLDatabaseSuspendedQuery,
+)
 
 """
 These tests for the database use a live PostgreSQL database,

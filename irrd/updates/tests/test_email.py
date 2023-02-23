@@ -1,6 +1,7 @@
-import pytest
 import textwrap
 from unittest.mock import Mock
+
+import pytest
 
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.updates.email import handle_email_submission
