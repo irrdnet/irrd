@@ -351,10 +351,16 @@ jobs:
       - install_dependencies
 
       - run:
-          name: run flake8
+          name: run ruff
           command: |
             . venv/bin/activate
-            flake8 irrd
+            ruff irrd
+
+      - run:
+          name: run isort
+          command: |
+            . venv/bin/activate
+            isort --check --diff irrd
 
       - run:
           name: run mypy
