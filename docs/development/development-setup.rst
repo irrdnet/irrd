@@ -5,10 +5,16 @@ Development setup
 Development environment & unit tests
 ------------------------------------
 
+This project uses poetry_.
 The basic method to set up a local environment is::
 
-    mkvirtualenv -p `which python3` irrd
-    pip install -r requirements.txt
+    poetry install --no-root --with=dev,docs
+
+Poetry will make a virtualenv by default, details of which you
+can find in ``poetry env info``. The rest of this page assumes
+you are running commands inside ``poetry shell``.
+
+.. _poetry: https://python-poetry.org/
 
 Some of the test use a live database for thoroughness. The database
 URL needs to be set in ``IRRD_DATABASE_URL``, e.g. for a local database,
@@ -79,30 +85,28 @@ Code coverage is not measured for the integration test, as its purpose is
 not to test all paths, but rather verify that the most important paths
 are working end-to-end.
 
-Mypy and flake8
----------------
+Linting and formatting
+----------------------
 
-In addition to the tests, this project uses `mypy` for type checking and `flake8`
+In addition to the tests, this project uses `mypy`, `ruff`, `isort` and `black`
 for style checking. To run these, run::
 
     mypy irrd
-    flake8
+    ruff irrd
+    isort irrd
+    black irrd
 
-If all is well, neither command should provide output.
-The versions of these tools may only work on newer CPython versions.
 
 Exclusions from checks
 ----------------------
 
 Code can be excluded from code coverage, and can be excluded from checks by
-`mypy` and `flake8`. This should be done in rare cases, where the quality of
+`mypy`. This should be done in rare cases, where the quality of
 the code would suffer otherwise, and for tests where the risks are small and
 the effort would be great.
 
 To ignore a line or block for test coverage, add ``# pragma: no cover`` to
-the end, ``# type:ignore`` to ignore `mypy` errors, and ``# noqa: <number>``
-for `flake8` violations. For the latter, the number is the error number
-from the command output.
+the end, and ``# type:ignore`` to ignore `mypy` errors.
 
 Docs
 ----
@@ -128,14 +132,14 @@ To create a new packaged version of IRRD:
   cherry-pick the changes from the main branch, at least including the release
   notes commit. Version updates of dependencies are not generally applied to
   the release branch, except in case of known important bugs or security issues.
-* Ensure the version is correct/updated in ``irrd/__init__.py``.
+* Ensure the version is correct/updated in ``irrd/__init__.py`` and ``pyproject.toml``.
 * Commit the version change (in the existing release branch if there is one).
 * Tag the new release with git (`git tag v<version>`),
   and push the tag (`git push origin v<version>`).
-* Run ``./setup.py sdist bdist_wheel``
+* Run ``poetry build``
 * Your source archive and built distribution are now in ``dist/``
 * Create a new release on GitHub
-* If this is not a pre-release, upload to PyPI with ``twine upload dist/*``
+* If this is not a pre-release, upload to PyPI with ``poetry publish``
 * If this was a new minor release (x.y), create a new branch for it.
 
 For more background, a good start is the `Python packaging tutorial`_.

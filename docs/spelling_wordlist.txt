@@ -39,6 +39,7 @@ integrations
 journaling
 keepalive
 keychain
+keyring
 logfile
 loglevel
 logrotate
