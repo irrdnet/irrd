@@ -8,7 +8,6 @@ from irrd.scopefilter.validators import ScopeFilterValidator
 from irrd.storage.models import JournalEntryOrigin
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
 from irrd.utils.test_utils import flatten_mock_calls
-from irrd.updates.parser import parse_change_requests
 from ..handler import ChangeSubmissionHandler
 from ...utils.validators import RPSLChangeSubmission, RPSLSuspensionSubmission
 from ..parser_state import SuspensionRequestType
@@ -200,7 +199,7 @@ class TestChangeSubmissionHandler:
         assert mock_dh.mock_calls[2][0] == 'commit'
         assert mock_dh.mock_calls[3][0] == 'close'
 
-        assert handler.submitter_report_human() == textwrap.dedent(f"""
+        assert handler.submitter_report_human() == textwrap.dedent("""
         > Message-ID: test
         > From: example@example.com
         
@@ -229,7 +228,7 @@ class TestChangeSubmissionHandler:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """)
 
-        expected_notification = textwrap.dedent(f"""
+        expected_notification = textwrap.dedent("""
             This is to notify you of changes in the TEST database
             or object authorisation failures.
             

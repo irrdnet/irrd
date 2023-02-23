@@ -1,5 +1,4 @@
 import itertools
-import passlib.hash
 import textwrap
 from unittest.mock import Mock
 
@@ -16,7 +15,7 @@ from irrd.utils.rpsl_samples import SAMPLE_INETNUM, SAMPLE_AS_SET, SAMPLE_PERSON
     SAMPLE_ROUTE, SAMPLE_ROUTE6
 from irrd.utils.test_utils import flatten_mock_calls
 from irrd.utils.text import splitline_unicodesafe
-from irrd.updates.suspension import reactivate_for_mntner, suspend_for_mntner
+from irrd.updates.suspension import suspend_for_mntner
 from ..parser import parse_change_requests
 from ..parser_state import SuspensionRequestType, UpdateRequestType, UpdateRequestStatus
 from ..validators import ReferenceValidator, AuthValidator, RulesValidator, ValidatorResult

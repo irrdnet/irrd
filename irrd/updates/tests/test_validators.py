@@ -2,7 +2,6 @@ import itertools
 from unittest.mock import Mock
 
 import pytest
-from pytest import raises
 
 from irrd.conf import AUTH_SET_CREATION_COMMON_KEY
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
