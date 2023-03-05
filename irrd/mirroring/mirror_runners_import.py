@@ -167,7 +167,7 @@ class FileImportRunnerBase:
         """
         if url_parsed.scheme == "ftp":
             try:
-                r = request.urlopen(url)
+                r = request.urlopen(url, timeout=10)
                 shutil.copyfileobj(r, destination)
             except URLError as error:
                 raise OSError(f"Failed to download {url}: {str(error)}")
