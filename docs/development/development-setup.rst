@@ -89,13 +89,12 @@ Linting and formatting
 ----------------------
 
 In addition to the tests, this project uses `mypy`, `ruff`, `isort` and `black`
-for style checking. To run these, run::
+for style checking. Some are in a poe task for convenience. To run these, run::
 
     mypy irrd
-    ruff irrd
-    isort irrd
-    black irrd
-
+    poe lint
+    # To run ruff with auto fix:
+    poe ruff-fix
 
 Exclusions from checks
 ----------------------
