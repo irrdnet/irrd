@@ -157,13 +157,8 @@ class TestRPSLMirrorFullImportRunner:
             'ftp://host/source2': b'source2',
             'ftp://host/serial': b'424242',
         }
-<<<<<<< HEAD
-        request.urlopen = lambda url: MockUrlopenResponse(responses[url])
-        RPSLMirrorFullImportRunner('TEST').run(mock_dh, serial_newest_mirror=424241)
-=======
         request.urlopen = lambda url, timeout: MockUrlopenResponse(responses[url])
         RPSLMirrorFullImportRunner("TEST").run(mock_dh, serial_newest_mirror=424241)
->>>>>>> a5c2f2b (Add FTP mirroring timeout (#763))
 
         assert MockMirrorFileImportParser.rpsl_data_calls == ['source1', 'source2']
         assert flatten_mock_calls(mock_dh) == [
@@ -192,11 +187,7 @@ class TestRPSLMirrorFullImportRunner:
         mock_bulk_validator_init = Mock()
         monkeypatch.setattr('irrd.mirroring.mirror_runners_import.BulkRouteROAValidator', mock_bulk_validator_init)
 
-<<<<<<< HEAD
-        request.urlopen = lambda url: MockUrlopenResponse(b'', fail=True)
-=======
         request.urlopen = lambda url, timeout: MockUrlopenResponse(b"", fail=True)
->>>>>>> a5c2f2b (Add FTP mirroring timeout (#763))
         with pytest.raises(IOError):
             RPSLMirrorFullImportRunner('TEST').run(mock_dh, serial_newest_mirror=424241)
 
@@ -256,13 +247,8 @@ class TestRPSLMirrorFullImportRunner:
             'ftp://host/source1.gz': b64decode('H4sIAE4CfFsAAyvOLy1KTjUEAE5Fj0oHAAAA'),
             'ftp://host/source2': b'source2',
         }
-<<<<<<< HEAD
-        request.urlopen = lambda url: MockUrlopenResponse(responses[url])
-        RPSLMirrorFullImportRunner('TEST').run(mock_dh, serial_newest_mirror=42)
-=======
         request.urlopen = lambda url, timeout: MockUrlopenResponse(responses[url])
         RPSLMirrorFullImportRunner("TEST").run(mock_dh, serial_newest_mirror=42)
->>>>>>> a5c2f2b (Add FTP mirroring timeout (#763))
 
         assert MockMirrorFileImportParser.rpsl_data_calls == ['source1', 'source2']
         assert flatten_mock_calls(mock_dh) == [
@@ -292,13 +278,8 @@ class TestRPSLMirrorFullImportRunner:
             'ftp://host/source2': b'source2',
             'ftp://host/serial': b'424242',
         }
-<<<<<<< HEAD
-        request.urlopen = lambda url: MockUrlopenResponse(responses[url])
-        RPSLMirrorFullImportRunner('TEST').run(mock_dh, serial_newest_mirror=424243)
-=======
         request.urlopen = lambda url, timeout: MockUrlopenResponse(responses[url])
         RPSLMirrorFullImportRunner("TEST").run(mock_dh, serial_newest_mirror=424243)
->>>>>>> a5c2f2b (Add FTP mirroring timeout (#763))
 
         assert not MockMirrorFileImportParser.rpsl_data_calls
         assert flatten_mock_calls(mock_dh) == []
@@ -327,13 +308,8 @@ class TestRPSLMirrorFullImportRunner:
             'ftp://host/source2': b'source2',
             'ftp://host/serial': b'424242',
         }
-<<<<<<< HEAD
-        request.urlopen = lambda url: MockUrlopenResponse(responses[url])
-        RPSLMirrorFullImportRunner('TEST').run(mock_dh, serial_newest_mirror=424243, force_reload=True)
-=======
         request.urlopen = lambda url, timeout: MockUrlopenResponse(responses[url])
         RPSLMirrorFullImportRunner("TEST").run(mock_dh, serial_newest_mirror=424243, force_reload=True)
->>>>>>> a5c2f2b (Add FTP mirroring timeout (#763))
 
         assert MockMirrorFileImportParser.rpsl_data_calls == ['source1', 'source2']
         assert flatten_mock_calls(mock_dh) == [
