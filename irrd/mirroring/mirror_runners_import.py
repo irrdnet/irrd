@@ -157,6 +157,7 @@ class FileImportRunnerBase:
                 r = request.urlopen(url, timeout=DOWNLOAD_TIMEOUT)
                 shutil.copyfileobj(r, destination)
             except URLError as error:
+                raise OSError(f'Failed to download {url}: {str(error)}')
         elif url_parsed.scheme in ["http", "https"]:
             r = requests.get(url, stream=True, timeout=DOWNLOAD_TIMEOUT)
             if r.status_code == 200:
