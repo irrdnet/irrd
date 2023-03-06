@@ -189,7 +189,7 @@ class TestRPSLMirrorFullImportRunner:
             "ftp://host/source2": b"source2",
             "ftp://host/serial": b"424242",
         }
-        request.urlopen = lambda url: MockUrlopenResponse(responses[url])
+        request.urlopen = lambda url, timeout: MockUrlopenResponse(responses[url])
         RPSLMirrorFullImportRunner("TEST").run(mock_dh, serial_newest_mirror=424241)
 
         assert MockMirrorFileImportParser.rpsl_data_calls == ["source1", "source2"]
@@ -225,7 +225,7 @@ class TestRPSLMirrorFullImportRunner:
             "irrd.mirroring.mirror_runners_import.BulkRouteROAValidator", mock_bulk_validator_init
         )
 
-        request.urlopen = lambda url: MockUrlopenResponse(b"", fail=True)
+        request.urlopen = lambda url, timeout: MockUrlopenResponse(b"", fail=True)
         with pytest.raises(IOError):
             RPSLMirrorFullImportRunner("TEST").run(mock_dh, serial_newest_mirror=424241)
 
@@ -296,7 +296,7 @@ class TestRPSLMirrorFullImportRunner:
             "ftp://host/source1.gz": b64decode("H4sIAE4CfFsAAyvOLy1KTjUEAE5Fj0oHAAAA"),
             "ftp://host/source2": b"source2",
         }
-        request.urlopen = lambda url: MockUrlopenResponse(responses[url])
+        request.urlopen = lambda url, timeout: MockUrlopenResponse(responses[url])
         RPSLMirrorFullImportRunner("TEST").run(mock_dh, serial_newest_mirror=42)
 
         assert MockMirrorFileImportParser.rpsl_data_calls == ["source1", "source2"]
@@ -331,7 +331,7 @@ class TestRPSLMirrorFullImportRunner:
             "ftp://host/source2": b"source2",
             "ftp://host/serial": b"424242",
         }
-        request.urlopen = lambda url: MockUrlopenResponse(responses[url])
+        request.urlopen = lambda url, timeout: MockUrlopenResponse(responses[url])
         RPSLMirrorFullImportRunner("TEST").run(mock_dh, serial_newest_mirror=424243)
 
         assert not MockMirrorFileImportParser.rpsl_data_calls
@@ -365,7 +365,7 @@ class TestRPSLMirrorFullImportRunner:
             "ftp://host/source2": b"source2",
             "ftp://host/serial": b"424242",
         }
-        request.urlopen = lambda url: MockUrlopenResponse(responses[url])
+        request.urlopen = lambda url, timeout: MockUrlopenResponse(responses[url])
         RPSLMirrorFullImportRunner("TEST").run(mock_dh, serial_newest_mirror=424243, force_reload=True)
 
         assert MockMirrorFileImportParser.rpsl_data_calls == ["source1", "source2"]
