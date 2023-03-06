@@ -26,6 +26,7 @@ from irrd.utils.whois_client import whois_query
 from .parsers import MirrorFileImportParser, NRTMStreamParser
 
 logger = logging.getLogger(__name__)
+DOWNLOAD_TIMEOUT = 10
 
 
 class RPSLMirrorImportUpdateRunner:
@@ -167,12 +168,12 @@ class FileImportRunnerBase:
         """
         if url_parsed.scheme == "ftp":
             try:
-                r = request.urlopen(url)
+                r = request.urlopen(url, timeout=DOWNLOAD_TIMEOUT)
                 shutil.copyfileobj(r, destination)
             except URLError as error:
                 raise OSError(f"Failed to download {url}: {str(error)}")
         elif url_parsed.scheme in ["http", "https"]:
-            r = requests.get(url, stream=True, timeout=10)
+            r = requests.get(url, stream=True, timeout=DOWNLOAD_TIMEOUT)
             if r.status_code == 200:
                 for chunk in r.iter_content(10240):
                     destination.write(chunk)
