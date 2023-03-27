@@ -262,7 +262,6 @@ class RPSLMirrorFullImportRunner(FileImportRunnerBase):
                 database_handler=database_handler,
                 roa_validator=roa_validator,
             )
-
             try:
                 p.run_import()
             finally:
