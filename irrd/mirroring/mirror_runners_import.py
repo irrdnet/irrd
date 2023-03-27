@@ -262,9 +262,13 @@ class RPSLMirrorFullImportRunner(FileImportRunnerBase):
                 database_handler=database_handler,
                 roa_validator=roa_validator,
             )
-            p.run_import()
-            if to_delete:
-                os.unlink(import_filename)
+
+            try:
+                p.run_import()
+            finally:
+                if to_delete:
+                    os.unlink(import_filename)
+
         if import_serial:
             database_handler.record_serial_newest_mirror(self.source, import_serial)
 
