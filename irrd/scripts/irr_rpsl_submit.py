@@ -549,8 +549,6 @@ def create_http_request(requests_text, args):
 
     if not request_body["objects"]:
         raise XNoObjects("No RPSL objects were found after processing input.")
-    if is_delete and len(request_body["objects"]) > 1:
-        raise XTooManyObjects()
 
     method = "DELETE" if is_delete else "POST"
     http_data = json.dumps(request_body).encode("utf-8")
