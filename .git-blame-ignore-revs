@@ -2,6 +2,9 @@
 # Apply to your local blame with:
 #   git config blame.ignoreRevsFile .git-blame-ignore-revs
 
+# Reformat all code according to black for 4.3.x
+5c56da8e15a297c72512885332b17b64835f9b83
+
 ### PR #759 ###
 # Normalise all strings according to black
 ebd6f321c786347fbafa2bed6b12d211df023844
