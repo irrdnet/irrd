@@ -1,14 +1,15 @@
-import datrie
-from collections import defaultdict
-
 import codecs
 import socket
+from collections import defaultdict
+from typing import Dict, List, Optional, Tuple
+
+import datrie
 from IPy import IP
-from typing import Optional, List, Tuple, Dict
 
 from irrd.conf import RPKI_IRR_PSEUDO_SOURCE, get_setting
 from irrd.storage.database_handler import DatabaseHandler
-from irrd.storage.queries import RPSLDatabaseQuery, ROADatabaseObjectQuery
+from irrd.storage.queries import ROADatabaseObjectQuery, RPSLDatabaseQuery
+
 from .importer import ROA
 from .status import RPKIStatus
 
@@ -58,19 +59,20 @@ class BulkRouteROAValidator:
         self.database_handler = dh
 
         self.excluded_sources = []
-        for source, settings in get_setting('sources', {}).items():
-            if settings.get('rpki_excluded'):
+        for source, settings in get_setting("sources", {}).items():
+            if settings.get("rpki_excluded"):
                 self.excluded_sources.append(source)
 
-        self.roa_tree4 = datrie.Trie('01')
-        self.roa_tree6 = datrie.Trie('01')
+        self.roa_tree4 = datrie.Trie("01")
+        self.roa_tree6 = datrie.Trie("01")
         if roas is None:
             self._build_roa_tree_from_db()
         else:
             self._build_roa_tree_from_roa_objs(roas)
 
-    def validate_all_routes(self, sources: Optional[List[str]]=None) -> \
-            Tuple[List[Dict[str, str]], List[Dict[str, str]], List[Dict[str, str]]]:
+    def validate_all_routes(
+        self, sources: Optional[List[str]] = None
+    ) -> Tuple[List[Dict[str, str]], List[Dict[str, str]], List[Dict[str, str]]]:
         """
         Validate all RPSL route/route6 objects.
 
@@ -85,10 +87,9 @@ class BulkRouteROAValidator:
         Routes where their current validation status in the DB matches the new
         validation result, are not included in the return value.
         """
-        columns = ['pk', 'rpsl_pk', 'ip_first', 'prefix_length', 'asn_first', 'source',
-                   'rpki_status']
+        columns = ["pk", "rpsl_pk", "ip_first", "prefix_length", "asn_first", "source", "rpki_status"]
         q = RPSLDatabaseQuery(column_names=columns, enable_ordering=False)
-        q = q.object_classes(['route', 'route6'])
+        q = q.object_classes(["route", "route6"])
         if sources:
             q = q.sources(sources)
         routes = self.database_handler.execute_query(q)
@@ -97,27 +98,35 @@ class BulkRouteROAValidator:
 
         for result in routes:
             # RPKI_IRR_PSEUDO_SOURCE objects are ROAs, and don't need validation.
-            if result['source'] == RPKI_IRR_PSEUDO_SOURCE:
+            if result["source"] == RPKI_IRR_PSEUDO_SOURCE:
                 continue
 
-            current_status = result['rpki_status']
-            result['old_status'] = current_status
-            new_status = self.validate_route(result['ip_first'], result['prefix_length'],
-                                             result['asn_first'], result['source'])
+            current_status = result["rpki_status"]
+            result["old_status"] = current_status
+            new_status = self.validate_route(
+                result["ip_first"], result["prefix_length"], result["asn_first"], result["source"]
+            )
             if new_status != current_status:
-                result['rpki_status'] = new_status
+                result["rpki_status"] = new_status
                 objs_changed[new_status].append(result)
 
         # Object text and class are only retrieved for objects with state changes
-        pks_to_enrich = [obj['pk'] for objs in objs_changed.values() for obj in objs]
-        query = RPSLDatabaseQuery(['pk', 'prefix', 'object_text', 'object_class', 'scopefilter_status', 'route_preference_status'], enable_ordering=False).pks(pks_to_enrich)
-        rows_per_pk = {row['pk']: row for row in self.database_handler.execute_query(query)}
+        pks_to_enrich = [obj["pk"] for objs in objs_changed.values() for obj in objs]
+        query = RPSLDatabaseQuery(
+            ["pk", "prefix", "object_text", "object_class", "scopefilter_status", "route_preference_status"],
+            enable_ordering=False,
+        ).pks(pks_to_enrich)
+        rows_per_pk = {row["pk"]: row for row in self.database_handler.execute_query(query)}
 
         for rpsl_objs in objs_changed.values():
             for rpsl_obj in rpsl_objs:
-                rpsl_obj.update(rows_per_pk[rpsl_obj['pk']])
+                rpsl_obj.update(rows_per_pk[rpsl_obj["pk"]])
 
-        return objs_changed[RPKIStatus.valid], objs_changed[RPKIStatus.invalid], objs_changed[RPKIStatus.not_found]
+        return (
+            objs_changed[RPKIStatus.valid],
+            objs_changed[RPKIStatus.invalid],
+            objs_changed[RPKIStatus.not_found],
+        )
 
     def validate_route(self, prefix_ip: str, prefix_length: int, prefix_asn: int, source: str) -> RPKIStatus:
         """
@@ -149,7 +158,7 @@ class BulkRouteROAValidator:
         """
         for roa in roas:
             roa_tree = self.roa_tree6 if roa.prefix.version() == 6 else self.roa_tree4
-            key = roa.prefix.strBin()[:roa.prefix.prefixlen()]
+            key = roa.prefix.strBin()[: roa.prefix.prefixlen()]
             if key in roa_tree:
                 roa_tree[key].append((roa.prefix_str, roa.asn, roa.max_length))
             else:
@@ -161,14 +170,14 @@ class BulkRouteROAValidator:
         """
         roas = self.database_handler.execute_query(ROADatabaseObjectQuery())
         for roa in roas:
-            first_ip, length = roa['prefix'].split('/')
+            first_ip, length = roa["prefix"].split("/")
             ip_version, ip_bin_str = self._ip_to_binary_str(first_ip)
-            key = ip_bin_str[:int(length)]
+            key = ip_bin_str[: int(length)]
             roa_tree = self.roa_tree6 if ip_version == 6 else self.roa_tree4
             if key in roa_tree:
-                roa_tree[key].append((roa['prefix'], roa['asn'], roa['max_length']))
+                roa_tree[key].append((roa["prefix"], roa["asn"], roa["max_length"]))
             else:
-                roa_tree[key] = [(roa['prefix'], roa['asn'], roa['max_length'])]
+                roa_tree[key] = [(roa["prefix"], roa["asn"], roa["max_length"])]
 
     def _ip_to_binary_str(self, ip: str) -> Tuple[int, str]:
         """
@@ -176,9 +185,9 @@ class BulkRouteROAValidator:
         192.0.2.139 to 11000000000000000000001010001011
         and return the IP version.
         """
-        address_family = socket.AF_INET6 if ':' in ip else socket.AF_INET
+        address_family = socket.AF_INET6 if ":" in ip else socket.AF_INET
         ip_bin = socket.inet_pton(address_family, ip)
-        ip_bin_str = ''.join([BYTE_BIN[b] for b in ip_bin]) + '0'
+        ip_bin_str = "".join([BYTE_BIN[b] for b in ip_bin]) + "0"
         ip_version = 6 if address_family == socket.AF_INET6 else 4
         return ip_version, ip_bin_str
 
@@ -191,7 +200,7 @@ class SingleRouteROAValidator:
         """
         Validate a route from a particular source.
         """
-        if get_setting(f'sources.{source}.rpki_excluded'):
+        if get_setting(f"sources.{source}.rpki_excluded"):
             return RPKIStatus.not_found
 
         query = ROADatabaseObjectQuery().ip_less_specific_or_exact(route)
@@ -199,6 +208,6 @@ class SingleRouteROAValidator:
         if not roas_covering:
             return RPKIStatus.not_found
         for roa in roas_covering:
-            if roa['asn'] != 0 and roa['asn'] == asn and route.prefixlen() <= roa['max_length']:
+            if roa["asn"] != 0 and roa["asn"] == asn and route.prefixlen() <= roa["max_length"]:
                 return RPKIStatus.valid
         return RPKIStatus.invalid

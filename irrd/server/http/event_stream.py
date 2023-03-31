@@ -5,30 +5,33 @@ import logging
 import socket
 import sys
 import tempfile
-from typing import Any, List, Optional, Callable
+from typing import Any, Callable, List, Optional
 
 import pydantic
 import ujson
-from starlette.endpoints import WebSocketEndpoint, HTTPEndpoint
+from starlette.endpoints import HTTPEndpoint, WebSocketEndpoint
 from starlette.requests import Request
-from starlette.responses import Response, StreamingResponse, PlainTextResponse
+from starlette.responses import PlainTextResponse, Response, StreamingResponse
 from starlette.status import WS_1003_UNSUPPORTED_DATA, WS_1008_POLICY_VIOLATION
 from starlette.websockets import WebSocket
 from typing_extensions import Literal
 
 from irrd.conf import get_setting
+from irrd.routepref.status import RoutePreferenceStatus
 from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
-from irrd.routepref.status import RoutePreferenceStatus
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.server.access_check import is_client_permitted
 from irrd.storage.database_handler import DatabaseHandler
-from irrd.storage.event_stream import AsyncEventStreamRedisClient, REDIS_STREAM_END_IDENTIFIER
+from irrd.storage.event_stream import (
+    REDIS_STREAM_END_IDENTIFIER,
+    AsyncEventStreamRedisClient,
+)
 from irrd.storage.queries import (
     DatabaseStatusQuery,
-    RPSLDatabaseQuery,
-    RPSLDatabaseJournalStatisticsQuery,
     RPSLDatabaseJournalQuery,
+    RPSLDatabaseJournalStatisticsQuery,
+    RPSLDatabaseQuery,
 )
 from irrd.utils.text import remove_auth_hashes
 from irrd.vendor import postgres_copy
@@ -152,7 +155,9 @@ class EventStreamEndpoint(WebSocketEndpoint):
         await self.send_header()
 
     async def send_header(self) -> None:
-        journaled_sources = [name for name, settings in get_setting("sources").items() if settings.get("keep_journal")]
+        journaled_sources = [
+            name for name, settings in get_setting("sources").items() if settings.get("keep_journal")
+        ]
         dh = DatabaseHandler(readonly=True)
         query = DatabaseStatusQuery().sources(journaled_sources)
         sources_created = {row["source"]: row["created"].isoformat() for row in dh.execute_query(query)}
@@ -253,7 +258,9 @@ class AsyncEventStreamFollower:
 
     async def _run_monitor(self) -> None:
         after_redis_event_id = REDIS_STREAM_END_IDENTIFIER
-        logger.info(f"event stream {self.host}: sending entries from global serial {self.after_global_serial}")
+        logger.info(
+            f"event stream {self.host}: sending entries from global serial {self.after_global_serial}"
+        )
         await self._send_new_journal_entries()
         logger.debug(f"event stream {self.host}: initial send complete, waiting for new events")
         while True:
@@ -300,7 +307,9 @@ class AsyncEventStreamFollower:
             )
             self.after_global_serial = max([entry["serial_global"], self.after_global_serial])
 
-        logger.debug(f"event stream {self.host}: sent new changes up to global serial {self.after_global_serial}")
+        logger.debug(
+            f"event stream {self.host}: sent new changes up to global serial {self.after_global_serial}"
+        )
 
     async def close(self):
         if self.streaming_task.done():

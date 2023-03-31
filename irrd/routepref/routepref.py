@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict, Iterable, Tuple, Optional
+from typing import Dict, Iterable, List, Optional, Tuple
 
 import radix
 from IPy import IP
@@ -8,8 +8,8 @@ from radix.radix import RadixNode
 from irrd.conf import get_setting
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseQuery
-from .status import RoutePreferenceStatus
 
+from .status import RoutePreferenceStatus
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +74,9 @@ class RoutePreferenceValidator:
         to_be_suppressed = []
         for evaluated_node in self.rtree:
             search_args = {"packed": evaluated_node.packed, "masklen": evaluated_node.prefixlen}
-            overlapping_nodes = self.rtree.search_covered(**search_args) + self.rtree.search_covering(**search_args)
+            overlapping_nodes = self.rtree.search_covered(**search_args) + self.rtree.search_covering(
+                **search_args
+            )
 
             for evaluated_key, (evaluated_preference, current_status) in evaluated_node.data.items():
                 new_status = self._evaluate_route(evaluated_preference, overlapping_nodes)
@@ -85,7 +87,9 @@ class RoutePreferenceValidator:
                         to_be_visible.append(evaluated_key)
         return to_be_visible, to_be_suppressed
 
-    def _evaluate_route(self, route_preference: int, overlapping_nodes: List[RadixNode]) -> RoutePreferenceStatus:
+    def _evaluate_route(
+        self, route_preference: int, overlapping_nodes: List[RadixNode]
+    ) -> RoutePreferenceStatus:
         """
         Given a preference, evaluate the correct state of a route based
         on a given list of overlapping nodes.

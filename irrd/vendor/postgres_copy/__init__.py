@@ -22,12 +22,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Mapper, class_mapper
 from sqlalchemy.sql.operators import ColumnOperators
-from sqlalchemy.dialects import postgresql
 
-__version__ = '0.5.0'
+__version__ = "0.5.0"
 
 
 def copy_to(source, dest, engine_or_conn, **flags):
@@ -52,13 +52,13 @@ def copy_to(source, dest, engine_or_conn, **flags):
     responsibility to commit and close.
     """
     dialect = postgresql.dialect()
-    statement = getattr(source, 'statement', source)
+    statement = getattr(source, "statement", source)
     compiled = statement.compile(dialect=dialect)
     conn, autoclose = raw_connection_from(engine_or_conn)
     cursor = conn.cursor()
     query = cursor.mogrify(compiled.string, compiled.params).decode()
-    formatted_flags = f'({format_flags(flags)})' if flags else ''
-    copy = f'COPY ({query}) TO STDOUT {formatted_flags}'
+    formatted_flags = f"({format_flags(flags)})" if flags else ""
+    copy = f"COPY ({query}) TO STDOUT {formatted_flags}"
     cursor.copy_expert(copy, dest)
     if autoclose:
         conn.close()
@@ -91,10 +91,10 @@ def copy_from(source, dest, engine_or_conn, columns=(), **flags):
     tbl = dest.__table__ if is_model(dest) else dest
     conn, autoclose = raw_connection_from(engine_or_conn)
     cursor = conn.cursor()
-    relation = '.'.join(f'"{part}"' for part in (tbl.schema, tbl.name) if part)
-    formatted_columns = '({})'.format(','.join(columns)) if columns else ''
-    formatted_flags = f'({format_flags(flags)})' if flags else ''
-    copy = 'COPY {} {} FROM STDIN {}'.format(
+    relation = ".".join(f'"{part}"' for part in (tbl.schema, tbl.name) if part)
+    formatted_columns = "({})".format(",".join(columns)) if columns else ""
+    formatted_flags = f"({format_flags(flags)})" if flags else ""
+    copy = "COPY {} {} FROM STDIN {}".format(
         relation,
         formatted_columns,
         formatted_flags,
@@ -110,26 +110,19 @@ def raw_connection_from(engine_or_conn):
 
     Only connections opened by this package will be closed automatically.
     """
-    if hasattr(engine_or_conn, 'cursor'):
+    if hasattr(engine_or_conn, "cursor"):
         return engine_or_conn, False
-    if hasattr(engine_or_conn, 'connection'):
+    if hasattr(engine_or_conn, "connection"):
         return engine_or_conn.connection, False
     return engine_or_conn.raw_connection(), True
 
 
 def format_flags(flags):
-    return ', '.join(
-        f'{key.upper()} {format_flag(value)}'
-        for key, value in flags.items()
-    )
+    return ", ".join(f"{key.upper()} {format_flag(value)}" for key, value in flags.items())
 
 
 def format_flag(value):
-    return (
-        str(value).upper()
-        if isinstance(value, bool)
-        else repr(value)
-    )
+    return str(value).upper() if isinstance(value, bool) else repr(value)
 
 
 def relabel_query(query):
@@ -144,14 +137,11 @@ def relabel_query(query):
 
 
 def query_entities(query):
-    return sum(
-        [desc_entities(desc) for desc in query.column_descriptions],
-        []
-    )
+    return sum([desc_entities(desc) for desc in query.column_descriptions], [])
 
 
 def desc_entities(desc):
-    expr, name = desc['expr'], desc['name']
+    expr, name = desc["expr"], desc["name"]
     if isinstance(expr, Mapper):
         return mapper_entities(expr)
     elif is_model(expr):
@@ -159,15 +149,12 @@ def desc_entities(desc):
     elif isinstance(expr, ColumnOperators):
         return [expr.label(name)]
     else:
-        raise ValueError(f'Unrecognized query entity {expr!r}')
+        raise ValueError(f"Unrecognized query entity {expr!r}")
 
 
 def mapper_entities(mapper):
     model = mapper.class_
-    return [
-        getattr(model, prop.key).label(prop.key)
-        for prop in mapper.column_attrs
-    ]
+    return [getattr(model, prop.key).label(prop.key) for prop in mapper.column_attrs]
 
 
 def is_model(class_):

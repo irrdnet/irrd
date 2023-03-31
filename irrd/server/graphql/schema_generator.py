@@ -1,13 +1,19 @@
 from collections import OrderedDict, defaultdict
-from typing import Optional, Dict, Tuple, List
+from typing import Dict, List, Optional, Tuple
 
 import ariadne
 
 from irrd.routepref.status import RoutePreferenceStatus
 from irrd.rpki.status import RPKIStatus
-from irrd.rpsl.fields import RPSLFieldListMixin, RPSLTextField, RPSLReferenceField
-from irrd.rpsl.rpsl_objects import (lookup_field_names, OBJECT_CLASS_MAPPING, RPSLAutNum,
-                                    RPSLInetRtr, RPSLPerson, RPSLRole)
+from irrd.rpsl.fields import RPSLFieldListMixin, RPSLReferenceField, RPSLTextField
+from irrd.rpsl.rpsl_objects import (
+    OBJECT_CLASS_MAPPING,
+    RPSLAutNum,
+    RPSLInetRtr,
+    RPSLPerson,
+    RPSLRole,
+    lookup_field_names,
+)
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.utils.text import snake_to_camel_case
 
@@ -39,7 +45,8 @@ class SchemaGenerator:
         self._set_enums()
 
         schema = self.enums
-        schema += """
+        schema += (
+            """
             scalar ASN
             scalar IP
 
@@ -48,7 +55,9 @@ class SchemaGenerator:
             }
 
             type Query {
-              rpslObjects(""" + self.rpsl_query_fields + """): [RPSLObject!]
+              rpslObjects("""
+            + self.rpsl_query_fields
+            + """): [RPSLObject!]
               databaseStatus(sources: [String!]): [DatabaseStatus]
               asnPrefixes(asns: [ASN!]!, ipVersion: Int, sources: [String!]): [ASNPrefixes!]
               asSetPrefixes(setNames: [String!]!, ipVersion: Int, sources: [String!], excludeSets: [String!], sqlTrace: Boolean): [AsSetPrefixes!]
@@ -98,10 +107,11 @@ class SchemaGenerator:
                 members: [String!]
             }
         """
+        )
         schema += self.rpsl_object_interface_schema
         schema += self.rpsl_contact_schema
-        schema += ''.join(self.rpsl_object_schemas.values())
-        schema += 'union RPSLContactUnion = RPSLPerson | RPSLRole'
+        schema += "".join(self.rpsl_object_schemas.values())
+        schema += "union RPSLContactUnion = RPSLPerson | RPSLRole"
 
         self.type_defs = ariadne.gql(schema)
 
@@ -110,8 +120,13 @@ class SchemaGenerator:
         self.rpsl_contact_union_type = ariadne.UnionType("RPSLContactUnion")
         self.asn_scalar_type = ariadne.ScalarType("ASN")
         self.ip_scalar_type = ariadne.ScalarType("IP")
-        self.object_types = [self.query_type, self.rpsl_object_type, self.rpsl_contact_union_type,
-                             self.asn_scalar_type, self.ip_scalar_type]
+        self.object_types = [
+            self.query_type,
+            self.rpsl_object_type,
+            self.rpsl_contact_union_type,
+            self.asn_scalar_type,
+            self.ip_scalar_type,
+        ]
 
         for name in self.rpsl_object_schemas.keys():
             self.object_types.append(ariadne.ObjectType(name))
@@ -129,34 +144,34 @@ class SchemaGenerator:
         This includes all fields from all objects, along with a few
         special fields.
         """
-        string_list_fields = {'rpsl_pk', 'sources', 'object_class'}.union(lookup_field_names())
-        params = [snake_to_camel_case(p) + ': [String!]' for p in sorted(string_list_fields)]
+        string_list_fields = {"rpsl_pk", "sources", "object_class"}.union(lookup_field_names())
+        params = [snake_to_camel_case(p) + ": [String!]" for p in sorted(string_list_fields)]
         params += [
-            'ipExact: IP',
-            'ipLessSpecific: IP',
-            'ipLessSpecificOneLevel: IP',
-            'ipMoreSpecific: IP',
-            'ipAny: IP',
-            'asn: [ASN!]',
-            'rpkiStatus: [RPKIStatus!]',
-            'scopeFilterStatus: [ScopeFilterStatus!]',
-            'routePreferenceStatus: [RoutePreferenceStatus!]',
-            'textSearch: String',
-            'recordLimit: Int',
-            'sqlTrace: Boolean',
+            "ipExact: IP",
+            "ipLessSpecific: IP",
+            "ipLessSpecificOneLevel: IP",
+            "ipMoreSpecific: IP",
+            "ipAny: IP",
+            "asn: [ASN!]",
+            "rpkiStatus: [RPKIStatus!]",
+            "scopeFilterStatus: [ScopeFilterStatus!]",
+            "routePreferenceStatus: [RoutePreferenceStatus!]",
+            "textSearch: String",
+            "recordLimit: Int",
+            "sqlTrace: Boolean",
         ]
-        self.rpsl_query_fields = ', '.join(params)
+        self.rpsl_query_fields = ", ".join(params)
 
     def _set_enums(self):
         """
         Create the schema for enums of RPKI, scope filter and route preference..
         """
-        self.enums = ''
+        self.enums = ""
         for enum in [RPKIStatus, ScopeFilterStatus, RoutePreferenceStatus]:
-            self.enums += f'enum {enum.__name__} {{\n'
+            self.enums += f"enum {enum.__name__} {{\n"
             for value in enum:
-                self.enums += f'    {value.name}\n'
-            self.enums += '}\n\n'
+                self.enums += f"    {value.name}\n"
+            self.enums += "}\n\n"
 
     def _set_rpsl_object_interface_schema(self):
         """
@@ -170,10 +185,10 @@ class SchemaGenerator:
             else:
                 common_fields = common_fields.intersection(set(rpsl_object_class.fields.keys()))
         common_fields = list(common_fields)
-        common_fields = ['rpslPk', 'objectClass', 'objectText', 'updated'] + common_fields
+        common_fields = ["rpslPk", "objectClass", "objectText", "updated"] + common_fields
         common_field_dict = self._dict_for_common_fields(common_fields)
-        common_field_dict['journal'] = '[RPSLJournalEntry]'
-        schema = self._generate_schema_str('RPSLObject', 'interface', common_field_dict)
+        common_field_dict["journal"] = "[RPSLJournalEntry]"
+        schema = self._generate_schema_str("RPSLObject", "interface", common_field_dict)
         self.rpsl_object_interface_schema = schema
 
     def _set_rpsl_contact_schema(self):
@@ -182,9 +197,9 @@ class SchemaGenerator:
         RPSLPerson and RPSLRole, as they are so similar.
         """
         common_fields = set(RPSLPerson.fields.keys()).intersection(set(RPSLRole.fields.keys()))
-        common_fields = common_fields.union({'rpslPk', 'objectClass', 'objectText', 'updated'})
+        common_fields = common_fields.union({"rpslPk", "objectClass", "objectText", "updated"})
         common_field_dict = self._dict_for_common_fields(list(common_fields))
-        schema = self._generate_schema_str('RPSLContact', 'interface', common_field_dict)
+        schema = self._generate_schema_str("RPSLContact", "interface", common_field_dict)
         self.rpsl_contact_schema = schema
 
     def _dict_for_common_fields(self, common_fields: List[str]):
@@ -195,12 +210,11 @@ class SchemaGenerator:
                 rpsl_field = RPSLPerson.fields[field_name]
                 graphql_type = self._graphql_type_for_rpsl_field(rpsl_field)
 
-                reference_name, reference_type = self._grapql_type_for_reference_field(
-                    field_name, rpsl_field)
+                reference_name, reference_type = self._grapql_type_for_reference_field(field_name, rpsl_field)
                 if reference_name and reference_type:
                     common_field_dict[reference_name] = reference_type
             except KeyError:
-                graphql_type = 'String'
+                graphql_type = "String"
             common_field_dict[snake_to_camel_case(field_name)] = graphql_type
         return common_field_dict
 
@@ -215,11 +229,11 @@ class SchemaGenerator:
         for object_class, klass in OBJECT_CLASS_MAPPING.items():
             object_name = klass.__name__
             graphql_fields = OrderedDict()
-            graphql_fields['rpslPk'] = 'String'
-            graphql_fields['objectClass'] = 'String'
-            graphql_fields['objectText'] = 'String'
-            graphql_fields['updated'] = 'String'
-            graphql_fields['journal'] = '[RPSLJournalEntry]'
+            graphql_fields["rpslPk"] = "String"
+            graphql_fields["objectClass"] = "String"
+            graphql_fields["objectText"] = "String"
+            graphql_fields["updated"] = "String"
+            graphql_fields["journal"] = "[RPSLJournalEntry]"
             for field_name, field in klass.fields.items():
                 graphql_type = self._graphql_type_for_rpsl_field(field)
                 graphql_fields[snake_to_camel_case(field_name)] = graphql_type
@@ -231,22 +245,22 @@ class SchemaGenerator:
                     self.graphql_types[object_name][reference_name] = reference_type
 
             for field_name in klass.field_extracts:
-                if field_name.startswith('asn'):
-                    graphql_type = 'ASN'
-                elif field_name == 'prefix':
-                    graphql_type = 'IP'
-                elif field_name == 'prefix_length':
-                    graphql_type = 'Int'
+                if field_name.startswith("asn"):
+                    graphql_type = "ASN"
+                elif field_name == "prefix":
+                    graphql_type = "IP"
+                elif field_name == "prefix_length":
+                    graphql_type = "Int"
                 else:
-                    graphql_type = 'String'
+                    graphql_type = "String"
                 graphql_fields[snake_to_camel_case(field_name)] = graphql_type
             if klass.is_route:
-                graphql_fields['rpkiStatus'] = 'RPKIStatus'
-                graphql_fields['rpkiMaxLength'] = 'Int'
-                self.graphql_types[object_name]['rpki_max_length'] = 'Int'
-                graphql_fields['routePreferenceStatus'] = 'RoutePreferenceStatus'
-            implements = 'RPSLContact & RPSLObject' if klass in [RPSLPerson, RPSLRole] else 'RPSLObject'
-            schema = self._generate_schema_str(object_name, 'type', graphql_fields, implements)
+                graphql_fields["rpkiStatus"] = "RPKIStatus"
+                graphql_fields["rpkiMaxLength"] = "Int"
+                self.graphql_types[object_name]["rpki_max_length"] = "Int"
+                graphql_fields["routePreferenceStatus"] = "RoutePreferenceStatus"
+            implements = "RPSLContact & RPSLObject" if klass in [RPSLPerson, RPSLRole] else "RPSLObject"
+            schema = self._generate_schema_str(object_name, "type", graphql_fields, implements)
             schemas[object_name] = schema
         self.rpsl_object_schemas = schemas
 
@@ -257,10 +271,12 @@ class SchemaGenerator:
         can occur multiple times.
         """
         if RPSLFieldListMixin in field.__class__.__bases__ or field.multiple:
-            return '[String!]'
-        return 'String'
+            return "[String!]"
+        return "String"
 
-    def _grapql_type_for_reference_field(self, field_name: str, rpsl_field: RPSLTextField) -> Tuple[Optional[str], Optional[str]]:
+    def _grapql_type_for_reference_field(
+        self, field_name: str, rpsl_field: RPSLTextField
+    ) -> Tuple[Optional[str], Optional[str]]:
         """
         Return the GraphQL name and type for a reference field.
         For example, for a field "admin-c" that refers to person/role,
@@ -268,31 +284,33 @@ class SchemaGenerator:
         Some fields are excluded because they are syntactical references,
         not real references.
         """
-        if isinstance(rpsl_field, RPSLReferenceField) and getattr(rpsl_field, 'referring', None):
+        if isinstance(rpsl_field, RPSLReferenceField) and getattr(rpsl_field, "referring", None):
             rpsl_field.resolve_references()
-            graphql_name = snake_to_camel_case(field_name) + 'Objs'
+            graphql_name = snake_to_camel_case(field_name) + "Objs"
             grapql_referring = set(rpsl_field.referring_object_classes)
             if RPSLAutNum in grapql_referring:
                 grapql_referring.remove(RPSLAutNum)
             if RPSLInetRtr in grapql_referring:
                 grapql_referring.remove(RPSLInetRtr)
             if grapql_referring == {RPSLPerson, RPSLRole}:
-                graphql_type = '[RPSLContactUnion!]'
+                graphql_type = "[RPSLContactUnion!]"
             else:
-                graphql_type = '[' + grapql_referring.pop().__name__ + '!]'
+                graphql_type = "[" + grapql_referring.pop().__name__ + "!]"
             return graphql_name, graphql_type
         return None, None
 
-    def _generate_schema_str(self, name: str, graphql_type: str, fields: Dict[str, str], implements: Optional[str]=None) -> str:
+    def _generate_schema_str(
+        self, name: str, graphql_type: str, fields: Dict[str, str], implements: Optional[str] = None
+    ) -> str:
         """
         Generate a schema string for a given name, object type and dict of fields.
         """
-        schema = f'{graphql_type} {name} '
+        schema = f"{graphql_type} {name} "
         if implements:
-            schema += f'implements {implements} '
-        schema += '{\n'
+            schema += f"implements {implements} "
+        schema += "{\n"
 
         for field, field_type in fields.items():
-            schema += f'  {field}: {field_type}\n'
-        schema += '}\n\n'
+            schema += f"  {field}: {field_type}\n"
+        schema += "}\n\n"
         return schema

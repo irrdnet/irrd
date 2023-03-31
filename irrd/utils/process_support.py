@@ -20,8 +20,10 @@ class ExceptionLoggingProcess(Process):  # pragma: no cover
         try:
             super().run()
         except Exception as e:
-            logger.critical(f'Essential IRRd subprocess encountered a fatal error, '
-                            f'traceback follows, shutting down: {e}', exc_info=e)
+            logger.critical(
+                f"Essential IRRd subprocess encountered a fatal error, traceback follows, shutting down: {e}",
+                exc_info=e,
+            )
             os.kill(os.getppid(), signal.SIGTERM)
 
 
@@ -39,6 +41,7 @@ def set_traceback_handler():  # pragma: no cover
     This is inherited by child processes, so only set twice:
     in the main process, and in the uvicorn app startup.
     """
+
     def sigusr1_handler(signal, frame):
         thread_names = {th.ident: th.name for th in threading.enumerate()}
         code = [f"Traceback follows for all threads of process {os.getpid()} ({getproctitle()}):"]

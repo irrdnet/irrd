@@ -3,7 +3,11 @@ from typing import Any, Dict, Iterable
 
 from irrd.storage.database_handler import QueryType, RPSLDatabaseResponse
 from irrd.storage.models import DatabaseOperation, JournalEntryOrigin
-from irrd.storage.queries import RPSLDatabaseJournalStatisticsQuery, RPSLDatabaseJournalQuery, DatabaseStatusQuery
+from irrd.storage.queries import (
+    DatabaseStatusQuery,
+    RPSLDatabaseJournalQuery,
+    RPSLDatabaseJournalStatisticsQuery,
+)
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
 
 
@@ -64,7 +68,9 @@ class MockDatabaseHandler(metaclass=Singleton):
         }
 
     def reset_mock(self):
-        self.query_responses = {RPSLDatabaseJournalQuery: self._default_rpsl_database_journal_query_iterator()}
+        self.query_responses = {
+            RPSLDatabaseJournalQuery: self._default_rpsl_database_journal_query_iterator()
+        }
         self.queries = []
         self.other_calls = []
 
@@ -84,21 +90,31 @@ class MockDatabaseHandler(metaclass=Singleton):
     ) -> RPSLDatabaseResponse:
         return self.execute_query(query, flush_rpsl_buffer, refresh_on_error)
 
-    def execute_query(self, query: QueryType, flush_rpsl_buffer=True, refresh_on_error=False) -> RPSLDatabaseResponse:
+    def execute_query(
+        self, query: QueryType, flush_rpsl_buffer=True, refresh_on_error=False
+    ) -> RPSLDatabaseResponse:
         self.serial_nrtm += 1
         self.serial_global += 2
         self.queries.append(query)
 
         if type(query) == RPSLDatabaseJournalStatisticsQuery:
-            return iter([{
-                "max_timestamp": datetime.utcnow(),
-                "max_serial_global": 42,
-            }])
+            return iter(
+                [
+                    {
+                        "max_timestamp": datetime.utcnow(),
+                        "max_serial_global": 42,
+                    }
+                ]
+            )
         elif type(query) == DatabaseStatusQuery:
-            return iter([{
-                "source": "TEST",
-                "created": datetime.utcnow(),
-            }])
+            return iter(
+                [
+                    {
+                        "source": "TEST",
+                        "created": datetime.utcnow(),
+                    }
+                ]
+            )
         else:
             try:
                 return self.query_responses[type(query)]
@@ -106,9 +122,10 @@ class MockDatabaseHandler(metaclass=Singleton):
                 raise ValueError(f"Unknown query in MockDatabaseHandler: {query}")
 
     def update_route_preference_status(
-            self,
-            rpsl_objs_now_visible: Iterable[Dict[str, Any]]=[],
-            rpsl_objs_now_suppressed: Iterable[Dict[str, Any]]=[]) -> None:
+        self,
+        rpsl_objs_now_visible: Iterable[Dict[str, Any]] = [],
+        rpsl_objs_now_suppressed: Iterable[Dict[str, Any]] = [],
+    ) -> None:
         self.other_calls.append(
             (
                 "update_route_preference_status",

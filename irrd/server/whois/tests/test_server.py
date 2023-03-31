@@ -7,6 +7,7 @@ from unittest.mock import Mock
 import pytest
 
 from irrd.storage.preload import Preloader
+
 from ..server import WhoisWorker
 
 
@@ -21,7 +22,7 @@ class MockSocket:
         self.timeout_set = None
 
     def makefile(self, mode, bufsize):
-        return self.wfile if 'w' in mode else self.rfile
+        return self.wfile if "w" in mode else self.rfile
 
     def sendall(self, bytes):
         self.wfile.write(bytes)
@@ -39,15 +40,17 @@ class MockSocket:
 @pytest.fixture()
 def create_worker(config_override, monkeypatch):
     mock_preloader = Mock(spec=Preloader)
-    monkeypatch.setattr('irrd.server.whois.server.Preloader', lambda: mock_preloader)
+    monkeypatch.setattr("irrd.server.whois.server.Preloader", lambda: mock_preloader)
 
-    config_override({
-        'redis_url': 'redis://invalid-host.example.com',  # Not actually used
-    })
+    config_override(
+        {
+            "redis_url": "redis://invalid-host.example.com",  # Not actually used
+        }
+    )
     queue = Queue()
     worker = WhoisWorker(queue)
     request = MockSocket()
-    queue.put((request, ('192.0.2.1', 99999)))
+    queue.put((request, ("192.0.2.1", 99999)))
     yield worker, request
 
 
@@ -55,23 +58,24 @@ class TestWhoisWorker:
     def test_whois_request_worker_no_access_list(self, create_worker):
         worker, request = create_worker
         # Empty query in first line should be ignored.
-        request.rfile.write(b' \n!v\r\n')
+        request.rfile.write(b" \n!v\r\n")
         request.rfile.seek(0)
         worker.run(keep_running=False)
 
-        assert worker.client_str == '192.0.2.1:99999'
+        assert worker.client_str == "192.0.2.1:99999"
         request.wfile.seek(0)
-        assert b'IRRd -- version' in request.wfile.read()
+        assert b"IRRd -- version" in request.wfile.read()
         assert request.shutdown_called
         assert request.close_called
         assert request.timeout_set == 5
 
     def test_whois_request_worker_exception(self, create_worker, monkeypatch, caplog):
-        monkeypatch.setattr('irrd.server.whois.server.WhoisQueryParser',
-                            Mock(side_effect=OSError('expected')))
+        monkeypatch.setattr(
+            "irrd.server.whois.server.WhoisQueryParser", Mock(side_effect=OSError("expected"))
+        )
 
         worker, request = create_worker
-        request.rfile.write(b'!v\r\n')
+        request.rfile.write(b"!v\r\n")
         request.rfile.seek(0)
         worker.run(keep_running=False)
 
@@ -79,20 +83,19 @@ class TestWhoisWorker:
         assert not request.wfile.read()
         assert request.shutdown_called
         assert request.close_called
-        assert 'Failed to handle whois connection' in caplog.text
+        assert "Failed to handle whois connection" in caplog.text
 
     def test_whois_request_worker_preload_failed(self, create_worker, monkeypatch, caplog):
-        monkeypatch.setattr('irrd.server.whois.server.Preloader',
-                            Mock(side_effect=OSError('expected')))
+        monkeypatch.setattr("irrd.server.whois.server.Preloader", Mock(side_effect=OSError("expected")))
 
         worker, request = create_worker
-        request.rfile.write(b'!v\r\n')
+        request.rfile.write(b"!v\r\n")
         request.rfile.seek(0)
         worker.run(keep_running=False)
 
         request.wfile.seek(0)
         assert not request.wfile.read()
-        assert 'worker failed to initialise preloader' in caplog.text
+        assert "worker failed to initialise preloader" in caplog.text
 
     def test_whois_request_worker_timeout(self, create_worker):
         worker, request = create_worker
@@ -110,12 +113,13 @@ class TestWhoisWorker:
             nonlocal readline_call_count
             readline_call_count += 1
             if readline_call_count == 1:
-                return b'!!\n'
+                return b"!!\n"
             if readline_call_count == 2:
-                return b'!t1\n'
+                return b"!t1\n"
             if readline_call_count == 3:
                 time.sleep(2)
-                return b''
+                return b""
+
         request.rfile.readline = mock_readline
 
         request.rfile.seek(0)
@@ -126,29 +130,31 @@ class TestWhoisWorker:
 
     def test_whois_request_worker_write_error(self, create_worker, caplog):
         worker, request = create_worker
-        request.rfile.write(b'!!\n!v\n')
+        request.rfile.write(b"!!\n!v\n")
         request.rfile.seek(0)
         # Write errors are usually due to the connection being
         # dropped, and should cause the connection to be closed
         # from our end.
-        request.sendall = Mock(side_effect=socket.error('expected'))
+        request.sendall = Mock(side_effect=socket.error("expected"))
         worker.run(keep_running=False)
 
     def test_whois_request_worker_access_list_permitted(self, config_override, create_worker):
-        config_override({
-            'redis_url': 'redis://invalid-host.example.com',  # Not actually used
-            'server': {
-                'whois': {
-                    'access_list': 'test-access-list',
+        config_override(
+            {
+                "redis_url": "redis://invalid-host.example.com",  # Not actually used
+                "server": {
+                    "whois": {
+                        "access_list": "test-access-list",
+                    },
                 },
-            },
-            'access_lists': {
-                'test-access-list': ['192.0.2.0/25'],
-            },
-        })
+                "access_lists": {
+                    "test-access-list": ["192.0.2.0/25"],
+                },
+            }
+        )
 
         worker, request = create_worker
-        request.rfile.write(b'!q\n')
+        request.rfile.write(b"!q\n")
         request.rfile.seek(0)
         worker.run(keep_running=False)
 
@@ -156,23 +162,25 @@ class TestWhoisWorker:
         assert not request.wfile.read()
 
     def test_whois_request_worker_access_list_denied(self, config_override, create_worker):
-        config_override({
-            'redis_url': 'redis://invalid-host.example.com',  # Not actually used
-            'server': {
-                'whois': {
-                    'access_list': 'test-access-list',
+        config_override(
+            {
+                "redis_url": "redis://invalid-host.example.com",  # Not actually used
+                "server": {
+                    "whois": {
+                        "access_list": "test-access-list",
+                    },
                 },
-            },
-            'access_lists': {
-                'test-access-list': ['192.0.2.128/25'],
-            },
-        })
+                "access_lists": {
+                    "test-access-list": ["192.0.2.128/25"],
+                },
+            }
+        )
 
         worker, request = create_worker
-        request.rfile.write(b'!v\n')
+        request.rfile.write(b"!v\n")
         request.rfile.seek(0)
         worker.run(keep_running=False)
 
-        assert worker.client_str == '192.0.2.1:99999'
+        assert worker.client_str == "192.0.2.1:99999"
         request.wfile.seek(0)
-        assert request.wfile.read() == b'%% Access denied'
+        assert request.wfile.read() == b"%% Access denied"

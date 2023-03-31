@@ -5,6 +5,7 @@ import pytz
 
 from irrd.storage.queries import RPSLDatabaseJournalQuery
 from irrd.utils.test_utils import MockDatabaseHandler
+
 from ..expire_journal import expire_journal
 
 EXPIRY_DATE = datetime(2022, 1, 1, tzinfo=pytz.utc)
@@ -12,7 +13,9 @@ EXPIRY_DATE = datetime(2022, 1, 1, tzinfo=pytz.utc)
 
 class TestExpireJournal:
     expected_query = (
-        RPSLDatabaseJournalQuery(column_names=["timestamp"]).sources(["TEST"]).entries_before_date(EXPIRY_DATE)
+        RPSLDatabaseJournalQuery(column_names=["timestamp"])
+        .sources(["TEST"])
+        .entries_before_date(EXPIRY_DATE)
     )
 
     def test_expire_confirmed(self, capsys, monkeypatch):
@@ -87,7 +90,7 @@ class TestExpireJournal:
 
         assert mock_dh.closed
         [query] = mock_dh.queries
-        assert query == RPSLDatabaseJournalQuery(column_names=["timestamp"]).sources(["TEST"]).entries_before_date(
-            EXPIRY_DATE
-        )
+        assert query == RPSLDatabaseJournalQuery(column_names=["timestamp"]).sources(
+            ["TEST"]
+        ).entries_before_date(EXPIRY_DATE)
         assert not mock_dh.other_calls

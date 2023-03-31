@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # flake8: noqa: E402
 
-import sys
-
 import argparse
 import logging
+import sys
 from pathlib import Path
 
 """
@@ -17,7 +16,7 @@ A report on the results will be sent to the user by e-mail.
 logger = logging.getLogger(__name__)
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
-from irrd.conf import config_init, CONFIG_PATH_DEFAULT
+from irrd.conf import CONFIG_PATH_DEFAULT, config_init
 from irrd.updates.email import handle_email_submission
 
 
@@ -25,8 +24,10 @@ def run(data):
     try:
         handle_email_submission(data)
     except Exception as exc:
-        logger.critical(f'An exception occurred while attempting to process the following email: {data}', exc_info=exc)
-        print('An internal error occurred while processing this email.')
+        logger.critical(
+            f"An exception occurred while attempting to process the following email: {data}", exc_info=exc
+        )
+        print("An internal error occurred while processing this email.")
 
 
 def main():  # pragma: no cover
@@ -34,8 +35,12 @@ def main():  # pragma: no cover
                      is always read from stdin. A report is sent to the user by email, along with any
                      notifications to mntners and others."""
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument('--config', dest='config_file_path', type=str,
-                        help=f'use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})')
+    parser.add_argument(
+        "--config",
+        dest="config_file_path",
+        type=str,
+        help=f"use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})",
+    )
     args = parser.parse_args()
 
     config_init(args.config_file_path)
@@ -43,5 +48,5 @@ def main():  # pragma: no cover
     run(sys.stdin.read())
 
 
-if __name__ == '__main__':  # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     main()

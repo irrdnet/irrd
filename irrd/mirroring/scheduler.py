@@ -1,19 +1,23 @@
-import time
-from collections import defaultdict
-
 import gc
 import logging
 import multiprocessing
-
 import signal
-from setproctitle import setproctitle
+import time
+from collections import defaultdict
 from typing import Dict
 
-from irrd.conf import get_setting, RPKI_IRR_PSEUDO_SOURCE
-from irrd.conf.defaults import DEFAULT_SOURCE_IMPORT_TIMER, DEFAULT_SOURCE_EXPORT_TIMER
+from setproctitle import setproctitle
+
+from irrd.conf import RPKI_IRR_PSEUDO_SOURCE, get_setting
+from irrd.conf.defaults import DEFAULT_SOURCE_EXPORT_TIMER, DEFAULT_SOURCE_IMPORT_TIMER
+
 from .mirror_runners_export import SourceExportRunner
-from .mirror_runners_import import RPSLMirrorImportUpdateRunner, ROAImportRunner, \
-    ScopeFilterUpdateRunner, RoutePreferenceUpdateRunner
+from .mirror_runners_import import (
+    ROAImportRunner,
+    RoutePreferenceUpdateRunner,
+    RPSLMirrorImportUpdateRunner,
+    ScopeFilterUpdateRunner,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -30,12 +34,14 @@ class ScheduledTaskProcess(multiprocessing.Process):
         close() is not available in Python 3.6,
         use our own implementation if needed.
         """
-        if hasattr(super, 'close'):
+        if hasattr(super, "close"):
             return super().close()
         if self._popen is not None:
             if self._popen.poll() is None:
-                raise ValueError("Cannot close a process while it is still running. "
-                                 "You should first call join() or terminate().")
+                raise ValueError(
+                    "Cannot close a process while it is still running. "
+                    "You should first call join() or terminate()."
+                )
             self._popen = None
             del self._sentinel
         self._closed = True
@@ -45,7 +51,7 @@ class ScheduledTaskProcess(multiprocessing.Process):
         # (signal handlers are inherited)
         signal.signal(signal.SIGTERM, signal.SIG_DFL)
 
-        setproctitle(f'irrd-{self.name}')
+        setproctitle(f"irrd-{self.name}")
         self.runner.run()
 
 
@@ -57,6 +63,7 @@ class MirrorScheduler:
     unless a process is still running for that database (which is likely to be
     the case in some full imports).
     """
+
     processes: Dict[str, ScheduledTaskProcess]
     last_started_time: Dict[str, int]
 
@@ -69,38 +76,44 @@ class MirrorScheduler:
         self.previous_scopefilter_excluded = None
 
     def run(self) -> None:
-        if get_setting('database_readonly'):
+        if get_setting("database_readonly"):
             return
 
-        if get_setting('rpki.roa_source'):
-            import_timer = int(get_setting('rpki.roa_import_timer'))
+        if get_setting("rpki.roa_source"):
+            import_timer = int(get_setting("rpki.roa_import_timer"))
             self.run_if_relevant(RPKI_IRR_PSEUDO_SOURCE, ROAImportRunner, import_timer)
 
-        if get_setting("sources") and any([
-            source_settings.get("route_object_preference")
-            for source_settings in get_setting("sources").values()
-        ]):
-            import_timer = int(get_setting('route_object_preference.update_timer'))
-            self.run_if_relevant('routepref', RoutePreferenceUpdateRunner, import_timer)
+        if get_setting("sources") and any(
+            [
+                source_settings.get("route_object_preference")
+                for source_settings in get_setting("sources").values()
+            ]
+        ):
+            import_timer = int(get_setting("route_object_preference.update_timer"))
+            self.run_if_relevant("routepref", RoutePreferenceUpdateRunner, import_timer)
 
         if self._check_scopefilter_change():
-            self.run_if_relevant('scopefilter', ScopeFilterUpdateRunner, 0)
+            self.run_if_relevant("scopefilter", ScopeFilterUpdateRunner, 0)
 
         sources_started = 0
-        for source in get_setting('sources', {}).keys():
+        for source in get_setting("sources", {}).keys():
             if sources_started >= MAX_SIMULTANEOUS_RUNS:
                 break
             started_import = False
             started_export = False
 
-            is_mirror = get_setting(f'sources.{source}.import_source') or get_setting(f'sources.{source}.nrtm_host')
-            import_timer = int(get_setting(f'sources.{source}.import_timer', DEFAULT_SOURCE_IMPORT_TIMER))
+            is_mirror = get_setting(f"sources.{source}.import_source") or get_setting(
+                f"sources.{source}.nrtm_host"
+            )
+            import_timer = int(get_setting(f"sources.{source}.import_timer", DEFAULT_SOURCE_IMPORT_TIMER))
 
             if is_mirror:
                 started_import = self.run_if_relevant(source, RPSLMirrorImportUpdateRunner, import_timer)
 
-            runs_export = get_setting(f'sources.{source}.export_destination') or get_setting(f'sources.{source}.export_destination_unfiltered')
-            export_timer = int(get_setting(f'sources.{source}.export_timer', DEFAULT_SOURCE_EXPORT_TIMER))
+            runs_export = get_setting(f"sources.{source}.export_destination") or get_setting(
+                f"sources.{source}.export_destination_unfiltered"
+            )
+            export_timer = int(get_setting(f"sources.{source}.export_timer", DEFAULT_SOURCE_EXPORT_TIMER))
 
             if runs_export:
                 started_export = self.run_if_relevant(source, SourceExportRunner, export_timer)
@@ -113,22 +126,24 @@ class MirrorScheduler:
         Check whether the scope filter has changed since last call.
         Always returns True on the first call.
         """
-        if not get_setting('scopefilter'):
+        if not get_setting("scopefilter"):
             return False
 
-        current_prefixes = list(get_setting('scopefilter.prefixes', []))
-        current_asns = list(get_setting('scopefilter.asns', []))
+        current_prefixes = list(get_setting("scopefilter.prefixes", []))
+        current_asns = list(get_setting("scopefilter.asns", []))
         current_exclusions = {
             name
-            for name, settings in get_setting('sources', {}).items()
-            if settings.get('scopefilter_excluded')
+            for name, settings in get_setting("sources", {}).items()
+            if settings.get("scopefilter_excluded")
         }
 
-        if any([
-            self.previous_scopefilter_prefixes != current_prefixes,
-            self.previous_scopefilter_asns != current_asns,
-            self.previous_scopefilter_excluded != current_exclusions,
-        ]):
+        if any(
+            [
+                self.previous_scopefilter_prefixes != current_prefixes,
+                self.previous_scopefilter_asns != current_asns,
+                self.previous_scopefilter_excluded != current_exclusions,
+            ]
+        ):
             self.previous_scopefilter_prefixes = current_prefixes
             self.previous_scopefilter_asns = current_asns
             self.previous_scopefilter_excluded = current_exclusions
@@ -142,7 +157,7 @@ class MirrorScheduler:
         if not has_expired or process_name in self.processes:
             return False
 
-        logger.debug(f'Started new process {process_name} for mirror import/export for {source}')
+        logger.debug(f"Started new process {process_name} for mirror import/export for {source}")
         initiator = runner_class(source=source)
         process = ScheduledTaskProcess(runner=initiator, name=process_name)
         self.processes[process_name] = process
@@ -151,7 +166,7 @@ class MirrorScheduler:
         return True
 
     def terminate_children(self) -> None:  # pragma: no cover
-        logger.info('MirrorScheduler terminating children')
+        logger.info("MirrorScheduler terminating children")
         for process in self.processes.values():
             try:
                 process.terminate()
@@ -168,8 +183,9 @@ class MirrorScheduler:
             try:
                 process.close()
             except Exception as e:  # pragma: no cover
-                logging.error(f'Failed to close {process_name} (pid {process.pid}), '
-                              f'possible resource leak: {e}')
+                logging.error(
+                    f"Failed to close {process_name} (pid {process.pid}), possible resource leak: {e}"
+                )
             del self.processes[process_name]
             gc_collect_needed = True
         if gc_collect_needed:

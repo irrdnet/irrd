@@ -3,9 +3,9 @@ import enum
 
 @enum.unique
 class RPKIStatus(enum.Enum):
-    valid = 'VALID'
-    invalid = 'INVALID'
-    not_found = 'NOT_FOUND'
+    valid = "VALID"
+    invalid = "INVALID"
+    not_found = "NOT_FOUND"
 
     @classmethod
     def is_visible(cls, status: "RPKIStatus"):

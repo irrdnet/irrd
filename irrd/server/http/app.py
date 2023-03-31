@@ -14,15 +14,18 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 from irrd import ENV_MAIN_PROCESS_PID
 from irrd.conf import config_init
 from irrd.server.graphql import ENV_UVICORN_WORKER_CONFIG_PATH
-from irrd.server.graphql.extensions import error_formatter, QueryMetadataExtension
+from irrd.server.graphql.extensions import QueryMetadataExtension, error_formatter
 from irrd.server.graphql.schema_builder import build_executable_schema
 from irrd.server.http.endpoints import (
+    ObjectSubmissionEndpoint,
     StatusEndpoint,
     SuspensionSubmissionEndpoint,
     WhoisQueryEndpoint,
-    ObjectSubmissionEndpoint,
 )
-from irrd.server.http.event_stream import EventStreamEndpoint, EventStreamInitialDownloadEndpoint
+from irrd.server.http.event_stream import (
+    EventStreamEndpoint,
+    EventStreamInitialDownloadEndpoint,
+)
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.preload import Preloader
 from irrd.utils.process_support import memory_trim, set_traceback_handler
@@ -54,8 +57,10 @@ async def startup():
         app.state.preloader = Preloader(enable_queries=True)
     except Exception as e:
         logger.critical(
-            "HTTP worker failed to initialise preloader or database, "
-            f"unable to start, terminating IRRd, traceback follows: {e}",
+            (
+                "HTTP worker failed to initialise preloader or database, "
+                f"unable to start, terminating IRRd, traceback follows: {e}"
+            ),
             exc_info=e,
         )
         main_pid = os.getenv(ENV_MAIN_PROCESS_PID)

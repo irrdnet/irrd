@@ -1,4 +1,8 @@
-from ..event_stream import EventStreamPublisher, AsyncEventStreamRedisClient, REDIS_STREAM_END_IDENTIFIER
+from ..event_stream import (
+    REDIS_STREAM_END_IDENTIFIER,
+    AsyncEventStreamRedisClient,
+    EventStreamPublisher,
+)
 
 # Use different stores in tests
 TEST_REDIS_STREAM_RPSL = "TEST-irrd-eventstream-rpsl-stream"

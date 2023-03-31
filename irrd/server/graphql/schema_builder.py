@@ -1,17 +1,25 @@
-from IPy import IP
 from ariadne import make_executable_schema
 from asgiref.sync import sync_to_async as sta
 from graphql import GraphQLError
+from IPy import IP
 
-from .resolvers import (resolve_rpsl_objects, resolve_rpsl_object_type,
-                        resolve_database_status, resolve_rpsl_object_mnt_by_objs,
-                        resolve_rpsl_object_member_of_objs, resolve_rpsl_object_members_by_ref_objs,
-                        resolve_rpsl_object_members_objs, resolve_rpsl_object_adminc_objs,
-                        resolve_asn_prefixes, resolve_as_set_prefixes,
-                        resolve_recursive_set_members, resolve_rpsl_object_techc_objs,
-                        resolve_rpsl_object_journal)
-from .schema_generator import SchemaGenerator
 from ...utils.text import clean_ip_value_error
+from .resolvers import (
+    resolve_as_set_prefixes,
+    resolve_asn_prefixes,
+    resolve_database_status,
+    resolve_recursive_set_members,
+    resolve_rpsl_object_adminc_objs,
+    resolve_rpsl_object_journal,
+    resolve_rpsl_object_member_of_objs,
+    resolve_rpsl_object_members_by_ref_objs,
+    resolve_rpsl_object_members_objs,
+    resolve_rpsl_object_mnt_by_objs,
+    resolve_rpsl_object_techc_objs,
+    resolve_rpsl_object_type,
+    resolve_rpsl_objects,
+)
+from .schema_generator import SchemaGenerator
 
 
 def build_executable_schema():
@@ -35,19 +43,19 @@ def build_executable_schema():
     schema.rpsl_object_type.set_field("mntByObjs", sta(resolve_rpsl_object_mnt_by_objs, False))
     schema.rpsl_object_type.set_field("journal", sta(resolve_rpsl_object_journal, False))
     for object_type in schema.object_types:
-        if 'adminCObjs' in schema.graphql_types[object_type.name]:
+        if "adminCObjs" in schema.graphql_types[object_type.name]:
             object_type.set_field("adminCObjs", sta(resolve_rpsl_object_adminc_objs, False))
     for object_type in schema.object_types:
-        if 'techCObjs' in schema.graphql_types[object_type.name]:
+        if "techCObjs" in schema.graphql_types[object_type.name]:
             object_type.set_field("techCObjs", sta(resolve_rpsl_object_techc_objs, False))
     for object_type in schema.object_types:
-        if 'mbrsByRefObjs' in schema.graphql_types[object_type.name]:
+        if "mbrsByRefObjs" in schema.graphql_types[object_type.name]:
             object_type.set_field("mbrsByRefObjs", sta(resolve_rpsl_object_members_by_ref_objs, False))
     for object_type in schema.object_types:
-        if 'memberOfObjs' in schema.graphql_types[object_type.name]:
+        if "memberOfObjs" in schema.graphql_types[object_type.name]:
             object_type.set_field("memberOfObjs", sta(resolve_rpsl_object_member_of_objs, False))
     for object_type in schema.object_types:
-        if 'membersObjs' in schema.graphql_types[object_type.name]:
+        if "membersObjs" in schema.graphql_types[object_type.name]:
             object_type.set_field("membersObjs", sta(resolve_rpsl_object_members_objs, False))
 
     @schema.asn_scalar_type.value_parser
@@ -55,13 +63,13 @@ def build_executable_schema():
         try:
             return int(value)
         except ValueError:
-            raise GraphQLError(f'Invalid ASN: {value}; must be numeric')
+            raise GraphQLError(f"Invalid ASN: {value}; must be numeric")
 
     @schema.ip_scalar_type.value_parser
     def parse_ip_scalar(value):
         try:
             return IP(value)
         except ValueError as ve:
-            raise GraphQLError(f'Invalid IP: {value}: {clean_ip_value_error(ve)}')
+            raise GraphQLError(f"Invalid IP: {value}: {clean_ip_value_error(ve)}")
 
     return make_executable_schema(schema.type_defs, *schema.object_types)

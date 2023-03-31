@@ -494,9 +494,9 @@ changed:        changed@example.com 20190701 # comment
 source:         TEST
 """
 
-SAMPLE_MNTNER_MD5 = 'md5-password'
-SAMPLE_MNTNER_CRYPT = 'crypt-password'
-SAMPLE_MNTNER_BCRYPT = 'bcrypt-password'
+SAMPLE_MNTNER_MD5 = "md5-password"
+SAMPLE_MNTNER_CRYPT = "crypt-password"
+SAMPLE_MNTNER_BCRYPT = "bcrypt-password"
 SAMPLE_MNTNER = """mntner:         TEST-MNT
 admin-c:        PERSON-TEST
 notify:         notify@example.net
@@ -793,23 +793,23 @@ zwBzW+p+qqN0rNRMFTNy3WnVVzZY5UWljU83jMBQkXiOSxo72/yIpG89xzi24Bqp
 """
 
 object_sample_mapping = {
-    'as-block': SAMPLE_AS_BLOCK,
-    'as-set': SAMPLE_AS_SET,
-    'aut-num': SAMPLE_AUT_NUM,
-    'domain': SAMPLE_DOMAIN,
-    'filter-set': SAMPLE_FILTER_SET,
-    'inet-rtr': SAMPLE_INET_RTR,
-    'inet6num': SAMPLE_INET6NUM,
-    'inetnum': SAMPLE_INETNUM,
-    'key-cert': SAMPLE_KEY_CERT,
-    'mntner': SAMPLE_MNTNER,
-    'peering-set': SAMPLE_PEERING_SET,
-    'person': SAMPLE_PERSON,
-    'role': SAMPLE_ROLE,
-    'route': SAMPLE_ROUTE,
-    'route-set': SAMPLE_ROUTE_SET,
-    'route6': SAMPLE_ROUTE6,
-    'rtr-set': SAMPLE_RTR_SET,
+    "as-block": SAMPLE_AS_BLOCK,
+    "as-set": SAMPLE_AS_SET,
+    "aut-num": SAMPLE_AUT_NUM,
+    "domain": SAMPLE_DOMAIN,
+    "filter-set": SAMPLE_FILTER_SET,
+    "inet-rtr": SAMPLE_INET_RTR,
+    "inet6num": SAMPLE_INET6NUM,
+    "inetnum": SAMPLE_INETNUM,
+    "key-cert": SAMPLE_KEY_CERT,
+    "mntner": SAMPLE_MNTNER,
+    "peering-set": SAMPLE_PEERING_SET,
+    "person": SAMPLE_PERSON,
+    "role": SAMPLE_ROLE,
+    "route": SAMPLE_ROUTE,
+    "route-set": SAMPLE_ROUTE_SET,
+    "route6": SAMPLE_ROUTE6,
+    "rtr-set": SAMPLE_RTR_SET,
 }
 
 TEMPLATE_ROUTE_OBJECT = """route:          [mandatory]  [single]    [primary/look-up key]

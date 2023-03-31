@@ -15,6 +15,7 @@ class QueryMetadataExtension(Extension):
     - Returns SQL queries if SQL trace was enabled
     - Logs the query and execution time
     """
+
     def __init__(self):
         self.start_timestamp = None
         self.end_timestamp = None
@@ -25,21 +26,21 @@ class QueryMetadataExtension(Extension):
     def format(self, context):
         data = {}
         if self.start_timestamp:
-            data['execution'] = time.perf_counter() - self.start_timestamp
-        if 'sql_queries' in context:
-            data['sql_query_count'] = len(context['sql_queries'])
-            data['sql_queries'] = context['sql_queries']
+            data["execution"] = time.perf_counter() - self.start_timestamp
+        if "sql_queries" in context:
+            data["sql_query_count"] = len(context["sql_queries"])
+            data["sql_queries"] = context["sql_queries"]
 
-        query = context['request']._json
-        if context['request']._json.get('operationName') != 'IntrospectionQuery':
+        query = context["request"]._json
+        if context["request"]._json.get("operationName") != "IntrospectionQuery":
             # Reformat the query to make it fit neatly on a single log line
-            query['query'] = query['query'].replace(' ', '').replace('\n', ' ').replace('\t', '')
-            client = context['request'].client.host
+            query["query"] = query["query"].replace(" ", "").replace("\n", " ").replace("\t", "")
+            client = context["request"].client.host
             logger.info(f'{client} ran query in {data.get("execution")}s: {query}')
         return data
 
 
-def error_formatter(error: GraphQLError, debug: bool=False):
+def error_formatter(error: GraphQLError, debug: bool = False):
     """
     Custom Ariadne error formatter. A generic text is used if the
     server is not in debug mode and the original error is a
