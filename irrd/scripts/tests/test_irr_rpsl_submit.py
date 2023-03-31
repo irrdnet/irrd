@@ -387,7 +387,7 @@ class Test200CreateRequestBody(MyBase):
         self.assertEqual(len(request_body["objects"]), 2)
 
 
-class Test200CreateRequesty(MyBase):
+class Test200CreateRequest(MyBase):
     def test_create_http_request_metadata(self):
         args = irr_rpsl_submit.get_arguments(["-h", UNRESOVABLE_HOST, "-m", "Biff=Badger"])
         request = irr_rpsl_submit.create_http_request(RPSL_MINIMAL, args)
@@ -781,7 +781,7 @@ class Test900Command(MyBase):
         )
         self.assertRegex(result.stderr, REGEX_TOO_MANY)
 
-    def test_040_unresovlable_host(self):
+    def test_040_unresolvable_host(self):
         table = [
             ["-u", UNRESOVABLE_URL],
             ["-h", UNRESOVABLE_HOST],
