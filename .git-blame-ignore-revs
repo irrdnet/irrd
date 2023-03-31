@@ -1,0 +1,18 @@
+# https://docs.github.com/en/repositories/working-with-files/using-files/viewing-a-file#ignore-commits-in-the-blame-view
+# Apply to your local blame with:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# Reformat all code according to black for 4.3.x
+5c56da8e15a297c72512885332b17b64835f9b83
+
+### PR #759 ###
+# Normalise all strings according to black
+ebd6f321c786347fbafa2bed6b12d211df023844
+# Reformat all code according to black (preview, 110 line length)
+1c4f3666f5c06f587e7b329d2c1dfe91b62b0149
+# Run isort
+8cf25a14da2f18ab91e5ad5d30fa9ef85f341b75
+# Clean up unused imports / extra f-strings
+f3afd08d43f8d17d0bbb96431c27b195ca46e2ad
+# Remove outdated flake8 ignores
+f61b346da2f1e35c8f8b9167807a64c2d9bde64a
