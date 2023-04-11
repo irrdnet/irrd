@@ -161,6 +161,14 @@ class DatabaseHandler:
         self._flush_roa_writing_buffer()
         self.status_tracker.finalise_transaction()
         try:
+            # When journaling is disabled, which happens for large imports,
+            # we must do a two-step commit: the changed objects tracker
+            # is called after an intermediate commit. Otherwise, we are
+            # guaranteed to run into deadlocks with other importers, which
+            # will keep reoccurring due to the large number of rows affected.
+            if not self.journaling_enabled:
+                self._transaction.commit()
+                self._transaction = self._connection.begin()
             self.changed_objects_tracker.pre_commit()
             self._transaction.commit()
             self.changed_objects_tracker.commit()
@@ -1180,6 +1188,9 @@ class SessionChangedObjectsTracker:
         is no way to do this while inserting the objects.
         It is also done in this process, rather than a background thread,
         so that the preloader takes the status into account.
+
+        See the note in DatabaseHandler.commit() about one case where this is
+        actually called after an intermediate commit to avoid deadlocks.
         """
         if self._prefixes_for_routepref:
             from irrd.routepref.routepref import update_route_preference_status
