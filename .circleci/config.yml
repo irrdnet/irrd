@@ -104,10 +104,10 @@ commands:
 
       - restore_cache:
           keys:
-            - v21-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
+            - v22-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
               "requirements.txt" }}
             # fallback to using the latest cache if no exact match is found
-            - v21-dependencies-{{ .Environment.CIRCLE_JOB }}
+            - v22-dependencies-{{ .Environment.CIRCLE_JOB }}
 
       - run:
           name: install latest pip
@@ -127,7 +127,7 @@ commands:
       - save_cache:
           paths:
             - ./venv
-          key: v21-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
+          key: v22-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
             "requirements.txt" }}
 
   wait_for_postgres:
