@@ -1,3 +1,5 @@
+import itertools
+
 from IPy import IP
 
 from irrd.storage.queries import RPSLDatabaseQuery
@@ -99,7 +101,7 @@ def test_route_preference_validator(config_override):
     assert to_be_suppressed == []
 
 
-def test_update_route_preference_status(config_override):
+def test_update_route_preference_status(config_override, monkeypatch):
     config_override(
         {
             "sources": {
@@ -174,6 +176,33 @@ def test_update_route_preference_status(config_override):
         RPSLDatabaseQuery(column_names=expected_columns, ordered_by_sources=False)
         .object_classes(object_classes)
         .ip_any(IP("198.51.100.0/24")),
+        RPSLDatabaseQuery(
+            enrich_columns,
+            enable_ordering=False,
+        ).pks(["route-A"]),
+        RPSLDatabaseQuery(
+            enrich_columns,
+            enable_ordering=False,
+        ).pks(["route-D"]),
+    ]
+    assert mock_dh.other_calls == [
+        (
+            "update_route_preference_status",
+            {"rpsl_objs_now_visible": [], "rpsl_objs_now_suppressed": []},
+        )
+    ]
+
+    # Finally, test with a "large" set of prefixes
+    monkeypatch.setattr("irrd.routepref.routepref.MAX_FILTER_PREFIX_LEN", 5)
+    mock_dh.reset_mock()
+    mock_dh.query_responses[RPSLDatabaseQuery] = iter(route_objects)
+    ip = IP("192.0.0.0/23")
+    filter_prefixes = list(itertools.chain.from_iterable(itertools.repeat(ip, 10)))
+    update_route_preference_status(mock_dh, filter_prefixes)
+    assert mock_dh.queries == [
+        RPSLDatabaseQuery(column_names=expected_columns, ordered_by_sources=False).object_classes(
+            object_classes
+        ),
         RPSLDatabaseQuery(
             enrich_columns,
             enable_ordering=False,

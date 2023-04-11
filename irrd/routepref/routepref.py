@@ -12,6 +12,7 @@ from irrd.storage.queries import RPSLDatabaseQuery
 from .status import RoutePreferenceStatus
 
 logger = logging.getLogger(__name__)
+MAX_FILTER_PREFIX_LEN = 5000
 
 
 class RoutePreferenceValidator:
@@ -137,6 +138,9 @@ def update_route_preference_status(
     and an optional set of prefixes to limit the evaluation.
     Results are saved to the database and counters are logged.
     """
+    if filter_prefixes and len(filter_prefixes) > MAX_FILTER_PREFIX_LEN:
+        filter_prefixes = None
+
     validator = build_validator(database_handler, filter_prefixes)
     pks_to_be_visible, pks_to_be_suppressed = validator.validate_known_routes()
     pks_to_become_visible = pks_to_be_visible + validator.excluded_currently_suppressed
