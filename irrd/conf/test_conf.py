@@ -92,7 +92,7 @@ class TestConfiguration:
                     "password_hashers": {
                         "bcrypt-pw": "legacy",
                     },
-                    "password_hash_dummy_placeholder": "HIDDENCRYPTPW",
+                    "password_hash_dummy_value": "HIDDENCRYPTPW",
                 },
                 "sources_default": ["TESTDB2", "TESTDB"],
                 "sources": {
@@ -134,7 +134,7 @@ class TestConfiguration:
         logfile_contents = open(logfile).read()
         assert "Configuration successfully (re)loaded from " in logfile_contents
 
-        assert get_setting('auth.password_hash_dummy_placeholder') == 'HIDDENCRYPTPW'
+        assert get_setting('auth.password_hash_dummy_value') == 'HIDDENCRYPTPW'
 
     def test_load_custom_logging_config(self, monkeypatch, save_yaml_config, tmpdir, caplog):
         logfile = str(tmpdir + "/logfile.txt")

@@ -51,7 +51,7 @@ KNOWN_CONFIG_KEYS = DottedDict(
                 + [AUTH_SET_CREATION_COMMON_KEY]
             },
             "password_hashers": {hasher_name.lower(): {} for hasher_name in PASSWORD_HASHERS_ALL.keys()},
-            "password_hash_dummy_placeholder": {},
+            "password_hash_dummy_value": {},
         },
         "rpki": {
             "roa_source": {},

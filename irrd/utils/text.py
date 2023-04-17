@@ -17,7 +17,7 @@ def remove_auth_hashes(input: Optional[str]):
     input_lower = input.lower()
     if not any([pw_hash.lower() in input_lower for pw_hash in PASSWORD_HASHERS_ALL.keys()]):
         return input
-    return re_remove_passwords.sub(r"\1 %s" % get_setting('auth.password_hash_dummy_placeholder'), input)
+    return re_remove_passwords.sub(r"\1 %s" % get_setting('auth.password_hash_dummy_value'), input)
 
 
 def remove_last_modified(rpsl_text: str):

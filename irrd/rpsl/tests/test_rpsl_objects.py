@@ -385,7 +385,7 @@ class TestRPSLMntner:
     def test_parse_invalid_partial_dummy_hash(self, config_override):
         config_override({"auth": {"password_hashers": {"crypt-pw": "enabled"}}})
         rpsl_text = object_sample_mapping[RPSLMntner().rpsl_object_class]
-        rpsl_text = rpsl_text.replace("LEuuhsBJNFV0Q", get_setting('auth.password_hash_dummy_placeholder'))
+        rpsl_text = rpsl_text.replace("LEuuhsBJNFV0Q", get_setting('auth.password_hash_dummy_value'))
         obj = rpsl_object_from_text(rpsl_text)
         assert obj.__class__ == RPSLMntner
         assert obj.messages.errors() == [

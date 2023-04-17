@@ -92,8 +92,8 @@ class TestWhoisQueryResponse:
             response_type=WhoisQueryResponseType.ERROR_USER,
             result=SAMPLE_MNTNER,
         ).generate_response()
-        assert "bcrypt-pw " + get_setting('auth.password_hash_dummy_placeholder') in response
-        assert "CRYPT-Pw " + get_setting('auth.password_hash_dummy_placeholder') in response
+        assert "bcrypt-pw " + get_setting('auth.password_hash_dummy_value') in response
+        assert "CRYPT-Pw " + get_setting('auth.password_hash_dummy_value') in response
         assert "CRYPT-Pw LEuuhsBJNFV0Q" not in response
         assert "MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM." not in response
 

@@ -171,7 +171,7 @@ class TestIntegration:
         # whether the hash is masked, and whether encoding is correct.
         mntner_text = whois_query("127.0.0.1", self.port_whois1, "TEST-MNT")
         assert "TEST-MNT" in mntner_text
-        assert get_setting('auth.password_hash_dummy_placeholder') in mntner_text
+        assert get_setting('auth.password_hash_dummy_value') in mntner_text
         assert "unįcöde tæst 🌈🦄" in mntner_text
         assert "PERSON-TEST" in mntner_text
 
@@ -180,7 +180,7 @@ class TestIntegration:
         time.sleep(3)
         mntner_text = whois_query("127.0.0.1", self.port_whois2, "TEST-MNT")
         assert "TEST-MNT" in mntner_text
-        assert get_setting('auth.password_hash_dummy_placeholder') in mntner_text
+        assert get_setting('auth.password_hash_dummy_value') in mntner_text
         assert "unįcöde tæst 🌈🦄" in mntner_text
         assert "PERSON-TEST" in mntner_text
 
@@ -414,7 +414,7 @@ class TestIntegration:
         # and whether the hash is masked.
         mntner_text = whois_query("127.0.0.1", self.port_whois1, "TEST-MNT")
         assert "TEST-MNT" in mntner_text
-        assert get_setting('auth.password_hash_dummy_placeholder') in mntner_text
+        assert get_setting('auth.password_hash_dummy_value') in mntner_text
         assert "unįcöde tæst 🌈🦄" in mntner_text
         assert "PERSON-TEST" in mntner_text
 
@@ -423,7 +423,7 @@ class TestIntegration:
         time.sleep(3)
         mntner_text = whois_query("127.0.0.1", self.port_whois2, "TEST-MNT")
         assert "TEST-MNT" in mntner_text
-        assert get_setting('auth.password_hash_dummy_placeholder') in mntner_text
+        assert get_setting('auth.password_hash_dummy_value') in mntner_text
         assert "unįcöde tæst 🌈🦄" in mntner_text
         assert "PERSON-TEST" in mntner_text
 
