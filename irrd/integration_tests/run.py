@@ -17,7 +17,7 @@ import yaml
 from alembic import command, config
 from python_graphql_client import GraphqlClient
 
-from irrd.conf import PASSWORD_HASH_DUMMY_VALUE, config_init
+from irrd.conf import config_init, get_setting
 from irrd.utils.rpsl_samples import (
     SAMPLE_AS_BLOCK,
     SAMPLE_AS_SET,
@@ -171,7 +171,7 @@ class TestIntegration:
         # whether the hash is masked, and whether encoding is correct.
         mntner_text = whois_query("127.0.0.1", self.port_whois1, "TEST-MNT")
         assert "TEST-MNT" in mntner_text
-        assert PASSWORD_HASH_DUMMY_VALUE in mntner_text
+        assert get_setting('auth.password_hash_dummy_placeholder') in mntner_text
         assert "unįcöde tæst 🌈🦄" in mntner_text
         assert "PERSON-TEST" in mntner_text
 
@@ -180,7 +180,7 @@ class TestIntegration:
         time.sleep(3)
         mntner_text = whois_query("127.0.0.1", self.port_whois2, "TEST-MNT")
         assert "TEST-MNT" in mntner_text
-        assert PASSWORD_HASH_DUMMY_VALUE in mntner_text
+        assert get_setting('auth.password_hash_dummy_placeholder') in mntner_text
         assert "unįcöde tæst 🌈🦄" in mntner_text
         assert "PERSON-TEST" in mntner_text
 
@@ -414,7 +414,7 @@ class TestIntegration:
         # and whether the hash is masked.
         mntner_text = whois_query("127.0.0.1", self.port_whois1, "TEST-MNT")
         assert "TEST-MNT" in mntner_text
-        assert PASSWORD_HASH_DUMMY_VALUE in mntner_text
+        assert get_setting('auth.password_hash_dummy_placeholder') in mntner_text
         assert "unįcöde tæst 🌈🦄" in mntner_text
         assert "PERSON-TEST" in mntner_text
 
@@ -423,7 +423,7 @@ class TestIntegration:
         time.sleep(3)
         mntner_text = whois_query("127.0.0.1", self.port_whois2, "TEST-MNT")
         assert "TEST-MNT" in mntner_text
-        assert PASSWORD_HASH_DUMMY_VALUE in mntner_text
+        assert get_setting('auth.password_hash_dummy_placeholder') in mntner_text
         assert "unįcöde tæst 🌈🦄" in mntner_text
         assert "PERSON-TEST" in mntner_text
 

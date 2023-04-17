@@ -92,6 +92,7 @@ class TestConfiguration:
                     "password_hashers": {
                         "bcrypt-pw": "legacy",
                     },
+                    "password_hash_dummy_placeholder": "HIDDENCRYPTPW",
                 },
                 "sources_default": ["TESTDB2", "TESTDB"],
                 "sources": {

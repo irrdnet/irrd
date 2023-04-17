@@ -5,7 +5,7 @@ from IPy import IP
 from pytest import raises
 from pytz import timezone
 
-from irrd.conf import AUTH_SET_CREATION_COMMON_KEY, PASSWORD_HASH_DUMMY_VALUE
+from irrd.conf import AUTH_SET_CREATION_COMMON_KEY, get_setting
 from irrd.utils.rpsl_samples import (
     KEY_CERT_SIGNED_MESSAGE_CORRUPT,
     KEY_CERT_SIGNED_MESSAGE_INVALID,
@@ -385,7 +385,7 @@ class TestRPSLMntner:
     def test_parse_invalid_partial_dummy_hash(self, config_override):
         config_override({"auth": {"password_hashers": {"crypt-pw": "enabled"}}})
         rpsl_text = object_sample_mapping[RPSLMntner().rpsl_object_class]
-        rpsl_text = rpsl_text.replace("LEuuhsBJNFV0Q", PASSWORD_HASH_DUMMY_VALUE)
+        rpsl_text = rpsl_text.replace("LEuuhsBJNFV0Q", get_setting('auth.password_hash_dummy_placeholder'))
         obj = rpsl_object_from_text(rpsl_text)
         assert obj.__class__ == RPSLMntner
         assert obj.messages.errors() == [

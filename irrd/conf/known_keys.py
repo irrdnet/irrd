@@ -1,4 +1,7 @@
-from irrd.conf import AUTH_SET_CREATION_COMMON_KEY
+from irrd.conf import (
+  AUTH_SET_CREATION_COMMON_KEY,
+  PASSWORD_HASH_DUMMY_VALUE,
+)
 from irrd.rpsl.passwords import PASSWORD_HASHERS_ALL
 from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING, RPSLSet
 from irrd.vendor.dotted.collection import DottedDict
@@ -51,6 +54,7 @@ KNOWN_CONFIG_KEYS = DottedDict(
                 + [AUTH_SET_CREATION_COMMON_KEY]
             },
             "password_hashers": {hasher_name.lower(): {} for hasher_name in PASSWORD_HASHERS_ALL.keys()},
+            "password_hash_dummy_placeholder": PASSWORD_HASH_DUMMY_VALUE,
         },
         "rpki": {
             "roa_source": {},

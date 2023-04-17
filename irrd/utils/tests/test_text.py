@@ -2,7 +2,7 @@ from io import StringIO
 
 import pytest
 
-from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
+from irrd.conf import get_setting
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
 
 from ..text import (
@@ -24,11 +24,11 @@ def test_remove_auth_hashes():
     assert "bcrypt-pw $2b$12$RMrlONJ0tasnpo.zHDF.yuYm/Gb1ARmIjP097ZoIWBn9YLIM2ao5W" in original_text
 
     result = remove_auth_hashes(original_text)
-    assert "CRYPT-Pw " + PASSWORD_HASH_DUMMY_VALUE in result
+    assert "CRYPT-Pw " + get_setting('auth.password_hash_dummy_placeholder') in result
     assert "CRYPT-Pw LEuuhsBJNFV0Q" not in result
-    assert "MD5-pw " + PASSWORD_HASH_DUMMY_VALUE in result
+    assert "MD5-pw " + get_setting('auth.password_hash_dummy_placeholder') in result
     assert "MD5-pw $1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM." not in result
-    assert "bcrypt-pw " + PASSWORD_HASH_DUMMY_VALUE in result
+    assert "bcrypt-pw " + get_setting('auth.password_hash_dummy_placeholder') in result
     assert "bcrypt-pw $2b$12$RMrlONJ0tasnpo.zHDF.yuYm/Gb1ARmIjP097ZoIWBn9YLIM2ao5W" not in result
     assert "other_text" == remove_auth_hashes("other_text")
 

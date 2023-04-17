@@ -3,7 +3,6 @@ from typing import List, Optional, Set, Union
 
 from irrd.conf import (
     AUTH_SET_CREATION_COMMON_KEY,
-    PASSWORD_HASH_DUMMY_VALUE,
     get_setting,
 )
 from irrd.utils.pgp import get_gpg_instance
@@ -428,7 +427,7 @@ class RPSLMntner(RPSLObject):
         if not super().clean():
             return False  # pragma: no cover
 
-        dummy_matches = [auth[1] == PASSWORD_HASH_DUMMY_VALUE for auth in self._auth_lines(True)]
+        dummy_matches = [auth[1] == get_setting('auth.password_hash_dummy_placeholder') for auth in self._auth_lines(True)]
         if any(dummy_matches) and not all(dummy_matches):
             self.messages.error(
                 "Either all password auth hashes in a submitted mntner must be dummy objects, or none."
@@ -464,7 +463,7 @@ class RPSLMntner(RPSLObject):
         means that either all or no hashes have dummy values.
         """
         auth_values = [auth[1] for auth in self._auth_lines(password_hashes=True)]
-        return bool(auth_values) and all([value == PASSWORD_HASH_DUMMY_VALUE for value in auth_values])
+        return bool(auth_values) and all([value == get_setting('auth.password_hash_dummy_placeholder') for value in auth_values])
 
     def force_single_new_password(self, password) -> None:
         """
