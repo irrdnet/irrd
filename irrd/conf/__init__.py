@@ -16,7 +16,6 @@ from irrd.vendor.dotted.collection import DottedDict
 CONFIG_PATH_DEFAULT = "/etc/irrd.yaml"
 
 logger = logging.getLogger(__name__)
-PASSWORD_HASH_DUMMY_VALUE = "DummyValue"
 SOURCE_NAME_RE = re.compile("^[A-Z][A-Z0-9-]*[A-Z0-9]$")
 RPKI_IRR_PSEUDO_SOURCE = "RPKI"
 ROUTEPREF_IMPORT_TIME = 3600

@@ -134,6 +134,8 @@ class TestConfiguration:
         logfile_contents = open(logfile).read()
         assert "Configuration successfully (re)loaded from " in logfile_contents
 
+        assert get_setting('auth.password_hash_dummy_placeholder') == 'HIDDENCRYPTPW'
+
     def test_load_custom_logging_config(self, monkeypatch, save_yaml_config, tmpdir, caplog):
         logfile = str(tmpdir + "/logfile.txt")
         logging_config_path = str(tmpdir + "/logging.py")
