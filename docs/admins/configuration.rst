@@ -336,6 +336,9 @@ Authentication and validation
   new `route(6)` objects.
   |br| **Default**: true, check enabled
   |br| **Change takes effect**: upon the next update attempt.
+* ``auth.password_hash_dummy_value``: String used to mask password hashes.
+  |br| **Default**: ``DummyValue  # Filtered for security``
+  |br| ** Change takes effect**: after SIGHUP.
 
 .. danger::
 
