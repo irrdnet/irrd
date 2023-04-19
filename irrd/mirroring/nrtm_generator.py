@@ -63,6 +63,7 @@ class NRTMGenerator:
 
         q = RPSLDatabaseJournalQuery().sources([source]).serial_range(serial_start_requested, serial_end_requested)
 
+<<<<<<< HEAD
         operations = list(database_handler.execute_query(q))
 
         output = f'%START Version: {version} {source} {serial_start_requested}-{serial_end_display}\n'
@@ -78,3 +79,25 @@ class NRTMGenerator:
 
         output += f'\n%END {source}'
         return output
+=======
+        q = (
+            RPSLDatabaseJournalQuery()
+            .sources([source])
+            .serial_nrtm_range(serial_start_requested, serial_end_requested)
+        )
+
+        output = [f"%START Version: {version} {source} {serial_start_requested}-{serial_end_display}\n"]
+
+        for operation in database_handler.execute_query(q):
+            operation_str = operation["operation"].value
+            if version == "3":
+                operation_str += " " + str(operation["serial_nrtm"])
+            text = operation["object_text"]
+            if remove_auth_hashes:
+                text = remove_auth_hashes_func(text)
+            operation_str += "\n\n" + text
+            output.append(operation_str)
+
+        output.append(f"%END {source}")
+        return "\n".join(output)
+>>>>>>> 87bceb8 (Fix #774 - Fix NRTM generator performance on PyPy (#777))
