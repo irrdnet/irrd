@@ -92,5 +92,5 @@ class NRTMGenerator:
             operation_str += "\n\n" + text
             output.append(operation_str)
 
-        output += [f"%END {source}"]
+        output.append(f"%END {source}")
         return "\n".join(output)
