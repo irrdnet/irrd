@@ -79,18 +79,18 @@ class NRTMGenerator:
             .sources([source])
             .serial_nrtm_range(serial_start_requested, serial_end_requested)
         )
-        operations = list(database_handler.execute_query(q))
 
-        output = f"%START Version: {version} {source} {serial_start_requested}-{serial_end_display}\n"
+        output = [f"%START Version: {version} {source} {serial_start_requested}-{serial_end_display}\n"]
 
-        for operation in operations:
-            output += "\n" + operation["operation"].value
+        for operation in database_handler.execute_query(q):
+            operation_str = operation["operation"].value
             if version == "3":
-                output += " " + str(operation["serial_nrtm"])
+                operation_str += " " + str(operation["serial_nrtm"])
             text = operation["object_text"]
             if remove_auth_hashes:
                 text = remove_auth_hashes_func(text)
-            output += "\n\n" + text
+            operation_str += "\n\n" + text
+            output.append(operation_str)
 
-        output += f"\n%END {source}"
-        return output
+        output += [f"%END {source}"]
+        return "\n".join(output)
