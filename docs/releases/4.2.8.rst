@@ -1,0 +1,9 @@
+============================
+Release notes for IRRd 4.2.8
+============================
+
+IRRd 4.2.8 was released on April 19th, 2023, and fixes an issue where
+`NRTM queries could hang indefinitely on PyPy deployments`_.
+This did not affect CPython deployments.
+
+.. _NRTM queries could hang indefinitely on PyPy deployments: https://github.com/irrdnet/irrd/issues/774
