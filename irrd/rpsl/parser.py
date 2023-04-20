@@ -458,7 +458,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                 normalized_lines.append(parsed_line)
         return ",".join(normalized_lines)
 
-    def _update_attribute_value(self, attribute, new_values):
+    def _update_attribute_value(self, attribute, new_values, flatten=True):
         """
         Update the value of an attribute in the internal state and in
         parsed_data.
@@ -471,7 +471,10 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         """
         if isinstance(new_values, str):
             new_values = [new_values]
-        self.parsed_data[attribute] = "\n".join(new_values)
+        if flatten:
+            self.parsed_data[attribute] = "\n".join(new_values)
+        else:
+            self.parsed_data[attribute] = new_values
 
         self._object_data = list(filter(lambda a: a[0] != attribute, self._object_data))
         insert_idx = 1

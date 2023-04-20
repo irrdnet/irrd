@@ -152,7 +152,7 @@ class FileImportRunnerBase:
                 destination = NamedTemporaryFile(delete=False)
                 logger.debug(f"Downloaded file is expected to be gzipped, gunzipping from {zipped_file.name}")
                 with gzip.open(zipped_file.name, "rb") as f_in:
-                    shutil.copyfileobj(f_in, destination)
+                    shutil.copyfileobj(f_in, destination)  # type: ignore
                 os.unlink(zipped_file.name)
 
             destination.close()

@@ -1,0 +1,6 @@
+You, or someone using your address, has created an IRRD
+account on this instance. To confirm the account, go to:
+
+{{ url_for("ui:auth:set_password", pk=user_pk, token=token, initial=1 ) }}
+
+If you did not request this, you can ignore this email.

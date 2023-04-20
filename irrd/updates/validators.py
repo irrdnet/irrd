@@ -3,13 +3,15 @@ import logging
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, List, Optional, Set, Tuple, Union
 
+import sqlalchemy.orm as saorm
 from ordered_set import OrderedSet
 from passlib.hash import md5_crypt
 
-from irrd.conf import get_setting
+from irrd.conf import RPSL_MNTNER_AUTH_INTERNAL, get_setting
 from irrd.rpsl.parser import RPSLObject
 from irrd.rpsl.rpsl_objects import RPSLMntner, RPSLSet, rpsl_object_from_text
 from irrd.storage.database_handler import DatabaseHandler
+from irrd.storage.models import AuthMntner, AuthUser
 from irrd.storage.queries import RPSLDatabaseQuery, RPSLDatabaseSuspendedQuery
 
 from .parser_state import RPSLSetAutnumAuthenticationMode, UpdateRequestType
@@ -164,13 +166,19 @@ class AuthValidator:
     overrides: List[str]
     keycert_obj_pk: Optional[str] = None
 
-    def __init__(self, database_handler: DatabaseHandler, keycert_obj_pk=None) -> None:
+    def __init__(
+        self,
+        database_handler: DatabaseHandler,
+        keycert_obj_pk=None,
+        internal_authenticated_user: Optional[AuthUser] = None,
+    ) -> None:
         self.database_handler = database_handler
         self.passwords = []
         self.overrides = []
         self._mntner_db_cache: Set[RPSLMntner] = set()
         self._pre_approved: Set[str] = set()
         self.keycert_obj_pk = keycert_obj_pk
+        self._internal_authenticated_user = internal_authenticated_user
 
     def pre_approve(self, presumed_valid_new_mntners: List[RPSLMntner]) -> None:
         """
@@ -208,7 +216,7 @@ class AuthValidator:
 
         mntners_new = rpsl_obj_new.parsed_data["mnt-by"]
         logger.debug(f"Checking auth for new object {rpsl_obj_new}, mntners in new object: {mntners_new}")
-        valid, mntner_objs_new = self._check_mntners(mntners_new, source)
+        valid, mntner_objs_new = self._check_mntners(rpsl_obj_new, mntners_new, source)
         if not valid:
             self._generate_failure_message(result, mntners_new, rpsl_obj_new)
 
@@ -218,7 +226,7 @@ class AuthValidator:
                 f"Checking auth for current object {rpsl_obj_current}, "
                 f"mntners in current object: {mntners_current}"
             )
-            valid, mntner_objs_current = self._check_mntners(mntners_current, source)
+            valid, mntner_objs_current = self._check_mntners(rpsl_obj_new, mntners_current, source)
             if not valid:
                 self._generate_failure_message(result, mntners_current, rpsl_obj_new)
 
@@ -232,7 +240,7 @@ class AuthValidator:
                     f"Checking auth for related object {related_object_class} / "
                     f"{related_pk} with mntners {related_mntner_list}"
                 )
-                valid, mntner_objs_related = self._check_mntners(related_mntner_list, source)
+                valid, mntner_objs_related = self._check_mntners(rpsl_obj_new, related_mntner_list, source)
                 if not valid:
                     self._generate_failure_message(
                         result, related_mntner_list, rpsl_obj_new, related_object_class, related_pk
@@ -261,12 +269,24 @@ class AuthValidator:
                         "Object submitted with dummy hash values, but multiple or no passwords "
                         "submitted. Either submit only full hashes, or a single password."
                     )
-            elif not rpsl_obj_new.verify_auth(self.passwords, self.keycert_obj_pk):
+            elif not any(
+                [
+                    rpsl_obj_new.verify_auth(self.passwords, self.keycert_obj_pk),
+                    self._mntner_matches_internal_auth(rpsl_obj_new, rpsl_obj_new.pk(), source),
+                ]
+            ):
                 result.error_messages.add("Authorisation failed for the auth methods on this mntner object.")
 
         return result
 
     def check_override(self) -> bool:
+        if self._internal_authenticated_user and self._internal_authenticated_user.override:
+            logger.info(
+                "Authenticated by valid override from internally authenticated "
+                f"user {self._internal_authenticated_user}"
+            )
+            return True
+
         override_hash = get_setting("auth.override_password")
         if override_hash:
             for override in self.overrides:
@@ -284,7 +304,9 @@ class AuthValidator:
             logger.info("Ignoring override password, auth.override_password not set.")
         return False
 
-    def _check_mntners(self, mntner_pk_list: List[str], source: str) -> Tuple[bool, List[RPSLMntner]]:
+    def _check_mntners(
+        self, rpsl_obj_new: RPSLObject, mntner_pk_list: List[str], source: str
+    ) -> Tuple[bool, List[RPSLMntner]]:
         """
         Check whether authentication passes for a list of maintainers.
 
@@ -309,7 +331,8 @@ class AuthValidator:
             mntner_objs += retrieved_mntner_objs
 
         for mntner_name in mntner_pk_list:
-            if mntner_name in self._pre_approved:
+            matches_internal_auth = self._mntner_matches_internal_auth(rpsl_obj_new, mntner_name, source)
+            if mntner_name in self._pre_approved or matches_internal_auth:
                 return True, mntner_objs
 
         for mntner_obj in mntner_objs:
@@ -317,6 +340,20 @@ class AuthValidator:
                 return True, mntner_objs
 
         return False, mntner_objs
+
+    def _mntner_matches_internal_auth(self, rpsl_obj_new: RPSLObject, rpsl_pk: str, source: str) -> bool:
+        if not self._internal_authenticated_user:
+            return False
+        if rpsl_obj_new.pk() == rpsl_pk and rpsl_obj_new.source() == source:
+            user_mntner_set = self._internal_authenticated_user.mntners_user_management
+        else:
+            user_mntner_set = self._internal_authenticated_user.mntners
+        return any(
+            [
+                rpsl_pk == mntner.rpsl_mntner_pk and source == mntner.rpsl_mntner_source
+                for mntner in user_mntner_set
+            ]
+        )
 
     def _generate_failure_message(
         self,
@@ -446,6 +483,7 @@ class RulesValidator:
 
     def validate(self, rpsl_obj: RPSLObject, request_type: UpdateRequestType) -> ValidatorResult:
         result = ValidatorResult()
+
         if (
             request_type == UpdateRequestType.CREATE
             and rpsl_obj.rpsl_object_class == "mntner"
@@ -454,9 +492,32 @@ class RulesValidator:
             result.error_messages.add(
                 f"A suspended mntner with primary key {rpsl_obj.pk()} already exists for {rpsl_obj.source()}"
             )
+
+        if isinstance(rpsl_obj, RPSLMntner):
+            is_migrated = self._check_mntner_migrated(rpsl_obj.pk(), rpsl_obj.source())
+            has_internal_auth = rpsl_obj.has_internal_auth()
+            if is_migrated and not has_internal_auth:
+                result.error_messages.add(
+                    f"This maintainer is migrated and must include the {RPSL_MNTNER_AUTH_INTERNAL} method."
+                )
+            elif not is_migrated and has_internal_auth:
+                result.error_messages.add(
+                    "This maintainer is not migrated, and therefore can not use the"
+                    f" {RPSL_MNTNER_AUTH_INTERNAL} method."
+                )
+
         return result
 
     @functools.lru_cache(maxsize=50)
     def _check_suspended_mntner_with_same_pk(self, pk: str, source: str) -> bool:
         q = RPSLDatabaseSuspendedQuery().object_classes(["mntner"]).rpsl_pk(pk).sources([source]).first_only()
         return bool(list(self.database_handler.execute_query(q)))
+
+    @functools.lru_cache(maxsize=50)
+    def _check_mntner_migrated(self, pk: str, source: str) -> bool:
+        session = saorm.Session(bind=self.database_handler._connection)
+        query = session.query(AuthMntner).filter(
+            AuthMntner.rpsl_mntner_pk == pk,
+            AuthMntner.rpsl_mntner_source == source,
+        )
+        return bool(query.count())

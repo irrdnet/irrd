@@ -8,6 +8,7 @@ from ordered_set import OrderedSet
 from irrd.conf import get_setting
 from irrd.rpsl.rpsl_objects import RPSLMntner
 from irrd.storage.database_handler import DatabaseHandler
+from irrd.storage.models import AuthUser
 from irrd.storage.queries import RPSLDatabaseQuery
 from irrd.utils import email
 
@@ -31,6 +32,7 @@ class ChangeSubmissionHandler:
         self,
         object_texts_blob: str,
         pgp_fingerprint: Optional[str] = None,
+        internal_authenticated_user: Optional[AuthUser] = None,
         request_meta: Optional[Dict[str, Optional[str]]] = None,
     ):
         self.database_handler = DatabaseHandler()
@@ -38,7 +40,7 @@ class ChangeSubmissionHandler:
         self._pgp_key_id = self._resolve_pgp_key_id(pgp_fingerprint) if pgp_fingerprint else None
 
         reference_validator = ReferenceValidator(self.database_handler)
-        auth_validator = AuthValidator(self.database_handler, self._pgp_key_id)
+        auth_validator = AuthValidator(self.database_handler, self._pgp_key_id, internal_authenticated_user)
         change_requests = parse_change_requests(
             object_texts_blob, self.database_handler, auth_validator, reference_validator
         )

@@ -1,5 +1,5 @@
 from irrd.conf import AUTH_SET_CREATION_COMMON_KEY
-from irrd.rpsl.passwords import PASSWORD_HASHERS_ALL
+from irrd.rpsl.auth import PASSWORD_HASHERS_ALL
 from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING, RPSLSet
 from irrd.vendor.dotted.collection import DottedDict
 
@@ -13,6 +13,7 @@ KNOWN_CONFIG_KEYS = DottedDict(
         "piddir": {},
         "user": {},
         "group": {},
+        "secret_key": {},
         "server": {
             "http": {
                 "interface": {},
@@ -21,6 +22,7 @@ KNOWN_CONFIG_KEYS = DottedDict(
                 "event_stream_access_list": {},
                 "workers": {},
                 "forwarded_allowed_ips": {},
+                "url": {},
             },
             "whois": {
                 "interface": {},
@@ -41,6 +43,8 @@ KNOWN_CONFIG_KEYS = DottedDict(
             "override_password": {},
             "authenticate_parents_route_creation": {},
             "gnupg_keyring": {},
+            "irrd_internal_migration_enabled": {},
+            "webui_auth_failure_rate_limit": {},
             "set_creation": {
                 rpsl_object_class: {"prefix_required": {}, "autnum_authentication": {}}
                 for rpsl_object_class in [

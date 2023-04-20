@@ -1,0 +1,7 @@
+There has been a change in the settings for your account
+{{ user.email }} on the IRRD instance on {{ url }}:
+
+{{ msg }}
+
+If you did not request this change, contact the operators
+of this instance immediately.

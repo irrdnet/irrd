@@ -1,6 +1,7 @@
 import logging
 import random
 import signal
+import sys
 import threading
 import time
 from collections import defaultdict
@@ -135,6 +136,10 @@ class Preloader:
         """
         while not self._memory_loaded:
             time.sleep(1)  # pragma: no cover
+        logger.critical(
+            f"preload requested routes for {origins=} {sources=} {ip_version=}:"
+            f" {self._origin_route4_store=} {self._origin_route6_store=}"
+        )
         if ip_version and ip_version not in [4, 6]:
             raise ValueError(f"Invalid IP version: {ip_version}")
         if not origins or not sources:
@@ -171,7 +176,8 @@ class Preloader:
             time.sleep(1)  # pragma: no cover
 
         # Create a bit of randomness in when workers will update
-        time.sleep(random.random())
+        if not getattr(sys, "_called_from_test", None):
+            time.sleep(random.random())  # pragma: no cover
 
         new_origin_route4_store = dict()
         new_origin_route6_store = dict()

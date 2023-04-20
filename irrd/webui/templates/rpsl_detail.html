@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>
+        {{ object.rpsl_pk }}
+        {% if object %}
+            <a class="btn btn-primary"
+               href="{{ url_for('ui:rpsl_update', source=object.source, object_class=object.object_class, rpsl_pk=object.rpsl_pk) }}">
+                Edit
+            </a>
+        {% endif %}
+    </h2>
+    {% if object %}
+        <pre>{{ object.object_text_display }}</pre>
+        {% if object.hashes_hidden %}
+            <p><em>
+                As you are not (sufficiently) authorised on this mntner, any password hashes have been removed.
+            </em></p>
+        {% endif %}
+    {% else %}
+        <p>No object found with this key.</p>
+    {% endif %}
+{% endblock %}

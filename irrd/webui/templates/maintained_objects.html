@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>My objects</h2>
+    {% if objects %}
+        <p>
+            The following objects are maintained by maintainers for which you have access.
+        </p>
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <th scope="col">PK</th>
+                <th scope="col">Class</th>
+                <th scope="col">mnt-by</th>
+                <th scope="col">Last update</th>
+                <th scope="col">Source</th>
+                <th scope="col"></th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for object in objects %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('ui:rpsl_detail', source=object.source, object_class=object.object_class, rpsl_pk=object.rpsl_pk) }}">
+                            {{ object.rpsl_pk }}
+                        </a>
+                    </td>
+                    <td>{{ object.object_class }}</td>
+                    <td>
+                        {% for mntner in object.parsed_data['mnt-by'] %}
+                            <a href="{{ url_for('ui:rpsl_detail', source=object.source, object_class='mntner', rpsl_pk=mntner) }}">
+                                {{ mntner }}</a>{{ ", " if not loop.last else "" }}
+                        {% endfor %}
+                    </td>
+                    <td>{{ object.updated|datetime_format }}</td>
+                    <td>{{ object.source }}</td>
+                    <td>
+                        <a href="{{ url_for('ui:rpsl_update', source=object.source, object_class=object.object_class, rpsl_pk=object.rpsl_pk) }}">
+                            [Edit]
+                        </a>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        You do not have access to any maintainers.
+    {% endif %}
+{% endblock %}

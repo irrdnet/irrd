@@ -601,7 +601,7 @@ class TestSingleChangeRequestHandling:
             "authentication."
         ]
 
-        auth_pgp, auth_hash = splitline_unicodesafe(result_mntner.rpsl_obj_new.parsed_data["auth"])
+        auth_pgp, auth_hash = splitline_unicodesafe("\n".join(result_mntner.rpsl_obj_new.parsed_data["auth"]))
         assert auth_pgp == "PGPKey-80F238C6"
         assert auth_hash.startswith("BCRYPT-PW ")
         assert bcrypt.verify("crypt-password", auth_hash[10:])

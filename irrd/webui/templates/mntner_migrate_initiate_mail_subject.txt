@@ -1,0 +1,1 @@
+Confirm the migration of mntner {{ auth_mntner.rpsl_mntner_pk }} in {{ auth_mntner.rpsl_mntner_source }}

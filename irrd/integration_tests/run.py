@@ -838,9 +838,15 @@ class TestIntegration:
 
         base_config = {
             "irrd": {
+                "secret_key": "secretsecretsecretsecretsecretsecretsecretsecretsecretsecret",
                 "access_lists": {"localhost": ["::/32", "127.0.0.1"]},
                 "server": {
-                    "http": {"status_access_list": "localhost", "interface": "::1", "port": 8080},
+                    "http": {
+                        "status_access_list": "localhost",
+                        "interface": "::1",
+                        "port": 8080,
+                        "url": "https://localhost:8080/",
+                    },
                     "whois": {"interface": "::1", "max_connections": 10, "port": 8043},
                 },
                 "rpki": {

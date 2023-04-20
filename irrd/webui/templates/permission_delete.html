@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>Remove permission for {{ permission.user.email }} on {{ permission.mntner.rpsl_mntner_pk }}</h2>
+    <div class="row">
+        {% if refused_last_permission %}
+            <div class="alert alert-danger">
+                You can not remove this permission on this mntner,
+                because it is the last one remaining.
+            </div>
+        {% else %}
+            <div class="col-lg-12">
+                {{ form_html }}
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

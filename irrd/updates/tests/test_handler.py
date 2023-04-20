@@ -33,6 +33,9 @@ def prepare_mocks(monkeypatch, config_override):
             },
         }
     )
+    monkeypatch.setattr(
+        "irrd.updates.validators.RulesValidator._check_mntner_migrated", lambda slf, pk, source: False
+    )
 
     mock_scopefilter = Mock(spec=ScopeFilterValidator)
     monkeypatch.setattr("irrd.updates.parser.ScopeFilterValidator", lambda: mock_scopefilter)

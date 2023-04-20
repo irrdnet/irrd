@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>Two-factor authentication status</h2>
+    <p>
+        Your account is {{ "" if has_mfa else "not" }} configured
+        to use two-factor authentication.
+    </p>
+    <p>
+        IRRD supports Webauthn security tokens (SoloKeys, YubiKey, Passkey, etc)
+        and one time password (TOTP).
+    </p>
+    <h3>Security tokens</h3>
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Added</th>
+            <th scope="col">Last used</th>
+            <th scope="col"></th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for webauthn in webauthns %}
+            <tr>
+                <td>{{ webauthn.name }}</td>
+                <td>{{ webauthn.created|datetime_format }}</td>
+                <td>{{ webauthn.last_used|datetime_format }}</td>
+                <td>
+                    <a href="{{ url_for('ui:auth:webauthn_remove', webauthn=webauthn.pk) }}">
+                        [Remove]
+                    </a>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ url_for('ui:auth:webauthn_register') }}" class="btn btn-primary btn-block">
+        Register a new security token
+    </a>
+
+
+    <h3 class="mt-3">One time password (TOTP)</h3>
+    <p><em>Security tokens are safer than one time passwords.</em></p>
+    {% if has_totp %}
+        <p>One time password is enabled for your account.</p>
+        <a href="{{ url_for('ui:auth:totp_remove') }}" class="btn btn-primary btn-block">
+            Remove one time password
+        </a>
+
+    {% else %}
+        <p>One time password is not enabled for your account.</p>
+        <a href="{{ url_for('ui:auth:totp_register') }}" class="btn btn-primary btn-block">
+            Enable one time password
+        </a>
+    {% endif %}
+
+{% endblock %}
