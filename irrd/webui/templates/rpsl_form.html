@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>Change/create/delete object(s){% if status %}: {{ status }}{% endif %}</h2>
+    {% if report %}
+        <pre>{{ report }}</pre>
+    {% endif %}
+    {% if not status or status != 'SUCCESS' %}
+        <div class="row">
+            <div class="col-lg-9">
+                <form action="{{ url_for("ui:rpsl_update") }}" method="post">
+                    <input id="csrf_token" name="csrf_token" type="hidden" value="{{ csrf_token }}">
+                    <div class="mb-3">
+                        <label for="data" class="visually-hidden">RPSL text</label>
+                        <textarea id="data" autocorrect="off"
+                                  autofocus name="data"
+                                  class="form-control font-monospace"
+                                  style="height: 70vh"
+                                  placeholder="">{{ existing_data }}</textarea>
+                    </div>
+                    <div class="mb-3 d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">Submit</button>
+                    </div>
+                </form>
+            </div>
+            <div class="col-lg-3">
+                <p>
+                    In this form, you can submit changes to RPSL objects in plain text.
+                    This form is identical to email submissions, which means you
+                    can use the pseudo-attributes <code>delete</code> for deletions
+                    or <code>password</code> for password authentication.
+                    PGP is not supported.
+                    See the <a href="TODO">IRRD documentation</a> for more details.
+                </p>
+                {% if user and user.override %}
+                    <p>
+                        You have override permissions for all authoritative
+                        objects in this IRRD instance.
+                    </p>
+                {% elif mntner_perms %}
+                    <p>
+                        Your user is already authorised for the following
+                        maintainers without needing to enter their password:
+                    </p>
+                    {% for source, mntners in mntner_perms.items() %}
+                        In {{ source }}:
+                        <ul>
+                            {% for mntner, user_management in mntners %}
+                                <li>
+                                    {{ mntner }}
+                                    {% if not user_management %}(you can not update this mntner itself){% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

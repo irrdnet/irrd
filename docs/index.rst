@@ -34,11 +34,6 @@ older versions lead to the IRRd v4 project.
 .. _Internetstiftelsen: https://internetstiftelsen.se/
 .. _Older versions: https://github.com/irrdnet/irrd-legacy
 
-.. warning::
-    IRRd 4.2.x versions prior to 4.2.3 had a security issue that exposed password
-    hashes in some cases. All 4.2.x users are urged to
-    update to 4.2.3 or later.
-    See the :doc:`4.2.3 release notes </releases/4.2.3>` for further details.
 
 For administrators
 ------------------
@@ -54,6 +49,7 @@ This documentation is mainly for administrators of IRRd deployments.
    admins/availability-and-migration
    admins/migrating-legacy-irrd
    admins/status_page
+   admins/webui
    admins/faq
 
 

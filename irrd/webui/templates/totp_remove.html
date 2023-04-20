@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>Remove one time password (TOTP)</h2>
+    <div class="row">
+        <div class="col-lg-9">
+            {{ form_html }}
+        </div>
+        <div class="col-lg-3 alert alert-info">
+            You are about to remove the one time password (TOTP) from your account.
+            Note that you are strongly recommended to have at least one
+            two-factor authentication method on your account.
+        </div>
+    </div>
+{% endblock %}

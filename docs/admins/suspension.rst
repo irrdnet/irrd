@@ -155,3 +155,4 @@ You can use a shortened `mntner` syntax, like so::
     suspension: suspend
     mntner:     EXAMPLE-MNT
     source:     EXAMPLE
+

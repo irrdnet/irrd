@@ -584,7 +584,8 @@ class TestEmailParser:
 
 
 class TestSendEmail:
-    def test_send_email(self, monkeypatch):
+    def test_send_email(self, monkeypatch, config_override):
+        config_override({"email": {"from": "irrd@example.net"}})
         mock_smtp = Mock()
         monkeypatch.setattr("irrd.utils.email.SMTP", lambda server: mock_smtp)
         send_email("Sasha <sasha@example.com>", "subject", "body")
@@ -599,7 +600,7 @@ class TestSendEmail:
         assert mock_smtp.mock_calls[1][0] == "quit"
 
     def test_send_email_with_recipient_override(self, monkeypatch, config_override):
-        config_override({"email": {"recipient_override": "override@example.com"}})
+        config_override({"email": {"recipient_override": "override@example.com", "from": "irrd@example.net"}})
         mock_smtp = Mock()
         monkeypatch.setattr("irrd.utils.email.SMTP", lambda server: mock_smtp)
         send_email("Sasha <sasha@example.com>", "subject", "body")

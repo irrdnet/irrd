@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>IRRD {{ irrd_version }}</h2>
+    <p>
+        {% if auth_sources %}
+            This IRRD instance is authoritative for {{ ', '.join(auth_sources) }},
+            and mirrors {{ ', '.join(mirrored_sources) }}.
+        {% else %}
+            This IRRD instance is not authoritative for any sources,
+            and mirrors {{ ', '.join(mirrored_sources) }}.
+        {% endif %}
+    </p>
+    <h3>Key resources</h3>
+    <dl>
+        <dt>
+            <a href="https://irrd.readthedocs.io/en/stable/">IRRD documentation</a> (external)</dt>
+        <dd>
+            Make sure the version you are reading matches with the version of this instance.
+        </dd>
+        <dt>
+            <a href="{{ url_for('ui:rpsl_update') }}">Object submission</a></dt>
+        <dd> to submit updates
+            to RPSL objects. This uses the same format as email submissions.
+        </dd>
+        <dt>
+            <a href="/graphql">GraphQL query interface</a></dt>
+        <dd>
+            This is the newest and most flexible query option, supporting complex RPSL queries
+            that can combine any set of criteria and supports related object queries,
+            where you can explore the graph of IRR data. RPSL attributes are returned in a
+            structured format, which means you do not need to parse RPSL objects in most cases.
+        </dd>
+    </dl>
+    {% if irrd_internal_migration_enabled %}
+        <h3>Migrating a maintainer</h3>
+        <p>
+            If you have access to an existing maintainer, you can migrate it
+            to IRRD internal authentication through this portal, after creating an account.
+            The benefits of IRRD internal authentication are:
+        </p>
+        <ul>
+            <li>
+                You can grant access to other users to edit objects maintained by this maintainer.
+            </li>
+            <li>
+                For each user, you can choose whether they are able to add other users
+                and update the maintainer object itself.
+            </li>
+            <li>
+                You can create API keys for your maintainer with limited permissions,
+                rather than include your password in emails.
+            </li>
+            <li>
+                This is safer than traditional RPSL authentication, because you can allow users
+                or processes to update objects, without allowing them to change the access settings.
+            </li>
+            <li>
+                Logins on this interface can be protected with two-factor authentication.
+            </li>
+            <li>
+                You can submit object updates in this interface after logging in,
+                without entering further maintainer passwords.
+            </li>
+            <li>
+                Existing authentication methods will keep working and can be mixed,
+                although you are encouraged to remove them.
+            </li>
+            <li>
+                Password hashes are no longer included in RPSL objects.
+            </li>
+        </ul>
+    {% endif %}
+
+    <h3>Other web services</h3>
+    <dl>
+        <dt>
+            Classic whois query interface on <code>/v1/whois/</code>
+        </dt>
+        <dd>
+            For example, use
+            <a href="/v1/whois/?q=!v"><code>/v1/whois/?q=!v</code></a>
+            for a whois query for the current version. The queries and output
+            are the same as you would run on port 43.
+        </dd>
+        <dt>
+            WebSocket-based event stream
+        </dt>
+        <dd>
+            An event stream over WebSocket with push messages for all changes
+            to IRR objects and an initial download to synchronise state.
+            This is typically restricted to a limited set of users.
+        </dd>
+        <dt>
+            Source status page on <a href="/v1/status/"><code>/v1/status/</code></a>
+        </dt>
+        <dd>
+            This page provides an overview of IRRD's configured sources and their status.
+            Access to this may be restricted.
+        </dd>
+    </dl>
+
+
+{% endblock %}

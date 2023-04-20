@@ -3,6 +3,7 @@ import enum
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql as pg
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
+from sqlalchemy.orm import relationship
 
 from irrd.routepref.status import RoutePreferenceStatus
 from irrd.rpki.status import RPKIStatus
@@ -85,6 +86,8 @@ class RPSLDatabaseObject(Base):  # type: ignore
 
     created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
     updated = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
+
+    auth_mntner = relationship("AuthMntner", uselist=False, backref="rpsl_mntner_obj")
 
     @declared_attr
     def __table_args__(cls):  # noqa
@@ -258,6 +261,185 @@ class ROADatabaseObject(Base):  # type: ignore
 
     def __repr__(self):
         return f"<{self.prefix}/{self.asn}>"
+
+
+class AuthPermission(Base):  # type: ignore
+    __tablename__ = "auth_permission"
+
+    pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)
+    user_id = sa.Column(pg.UUID, sa.ForeignKey("auth_user.pk", ondelete="RESTRICT"), index=True)
+    mntner_id = sa.Column(pg.UUID, sa.ForeignKey("auth_mntner.pk", ondelete="RESTRICT"), index=True)
+
+    # This may not scale well
+    user_management = sa.Column(sa.Boolean, default=False, nullable=False)
+
+    created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
+    updated = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
+
+    @declared_attr
+    def __table_args__(cls):  # noqa
+        args = [
+            sa.UniqueConstraint("user_id", "mntner_id", name="auth_permission_user_mntner_unique"),
+        ]
+        return tuple(args)
+
+    def __repr__(self):
+        return f"AuthPermission<{self.pk}, user {self.user_id}, mntner {self.mntner_id}>"
+
+
+class AuthUser(Base):  # type: ignore
+    __tablename__ = "auth_user"
+
+    pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)
+    email = sa.Column(sa.String, index=True, unique=True, nullable=False)
+    name = sa.Column(sa.String, nullable=False)
+    password = sa.Column(sa.String, nullable=False)
+
+    totp_secret = sa.Column(sa.String, nullable=True)
+    totp_last_used = sa.Column(sa.String, nullable=True)
+
+    active = sa.Column(sa.Boolean, default=False, nullable=False)
+    override = sa.Column(sa.Boolean, default=False, nullable=False)
+    # api_tokens = relationship("AuthApiToken", backref="user")
+
+    permissions = relationship(
+        "AuthPermission",
+        backref=sa.orm.backref("user", uselist=False),
+    )
+    webauthns = relationship(
+        "AuthWebAuthn",
+        backref=sa.orm.backref("user", uselist=False),
+    )
+    mntners = relationship(
+        "AuthMntner",
+        backref="users",
+        secondary=(
+            "join(AuthPermission, AuthMntner, and_(AuthMntner.pk==AuthPermission.mntner_id,"
+            " AuthMntner.migration_token.is_(None)))"
+        ),
+    )
+    mntners_user_management = relationship(
+        "AuthMntner",
+        secondary=(
+            "join(AuthPermission, AuthMntner, and_(AuthMntner.pk==AuthPermission.mntner_id,"
+            " AuthMntner.migration_token.is_(None),AuthPermission.user_management==True))"
+        ),
+    )
+    mntners_no_user_management = relationship(
+        "AuthMntner",
+        secondary=(
+            "join(AuthPermission, AuthMntner, and_(AuthMntner.pk==AuthPermission.mntner_id,"
+            " AuthMntner.migration_token.is_(None),AuthPermission.user_management==False))"
+        ),
+    )
+
+    created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
+    updated = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
+
+    def __repr__(self):
+        return f"AuthUser<{self.pk}, {self.email}>"
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.pk == other.pk
+        raise NotImplementedError
+
+    @property
+    def has_totp(self) -> bool:
+        return bool(self.totp_secret)
+
+    @property
+    def has_webauthn(self) -> bool:
+        return bool(self.webauthns)
+
+    @property
+    def has_mfa(self) -> bool:
+        return self.has_webauthn or self.has_totp
+
+    # getter methods are for compatibility with imia UserLike object
+    def get_display_name(self) -> str:  # pragma: no cover
+        return self.name
+
+    def get_id(self) -> str:
+        return self.email
+
+    def get_hashed_password(self) -> str:
+        return self.password
+
+    def get_scopes(self) -> list:  # pragma: no cover
+        return []
+
+
+class AuthWebAuthn(Base):  # type: ignore
+    __tablename__ = "auth_webauthn"
+
+    pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)
+    user_id = sa.Column(pg.UUID, sa.ForeignKey("auth_user.pk", ondelete="RESTRICT"), index=True)
+    name = sa.Column(sa.String, nullable=False)
+    credential_id = sa.Column(sa.LargeBinary, nullable=False)
+    credential_public_key = sa.Column(sa.LargeBinary, nullable=False)
+    credential_sign_count = sa.Column(sa.Integer, nullable=False)
+    created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
+    last_used = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
+
+
+# class AuthApiToken(Base):  # type: ignore
+#     __tablename__ = "auth_api_token"
+#
+#     token = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)
+#     user_id = sa.Column(pg.UUID, sa.ForeignKey("auth_user.pk", ondelete="RESTRICT"))
+#     # IP range?
+#     # submission method
+#
+#     created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
+#     updated = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
+#
+#     def __repr__(self):
+#         return f"<{self.pk}/{self.email}"
+
+
+class AuthMntner(Base):  # type: ignore
+    __tablename__ = "auth_mntner"
+
+    pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)
+    rpsl_mntner_pk = sa.Column(sa.String, index=True, nullable=False)
+    rpsl_mntner_obj_id = sa.Column(
+        pg.UUID,
+        sa.ForeignKey("rpsl_objects.pk", ondelete="RESTRICT"),
+        index=True,
+        unique=True,
+        nullable=False,
+    )
+    rpsl_mntner_source = sa.Column(sa.String, index=True, nullable=False)
+
+    migration_token = sa.Column(sa.String, nullable=True)
+
+    # permissions = relationship("AuthPermission", backref='mntner')
+    permissions = relationship(
+        "AuthPermission",
+        backref=sa.orm.backref("mntner", uselist=False),
+    )
+
+    created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
+    updated = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
+
+    @property
+    def migration_complete(self) -> bool:
+        return self.migration_token is None
+
+    @declared_attr
+    def __table_args__(cls):  # noqa
+        args = [
+            sa.UniqueConstraint(
+                "rpsl_mntner_obj_id",
+                "rpsl_mntner_source",
+                name="auth_mntner_rpsl_mntner_obj_id_source_unique",
+            ),
+        ]
+        return tuple(args)
+
+    def __repr__(self):
+        return f"AuthMntner<{self.pk}, {self.rpsl_mntner_pk}>"
 
 
 # Before you update this, please check the storage documentation for changing lookup fields.

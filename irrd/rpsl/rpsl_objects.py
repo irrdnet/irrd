@@ -4,11 +4,13 @@ from typing import List, Optional, Set, Union
 from irrd.conf import (
     AUTH_SET_CREATION_COMMON_KEY,
     PASSWORD_HASH_DUMMY_VALUE,
+    RPSL_MNTNER_AUTH_INTERNAL,
     get_setting,
 )
 from irrd.utils.pgp import get_gpg_instance
 
 from ..utils.validators import ValidationError, parse_as_number
+from .auth import PASSWORD_REPLACEMENT_HASH, verify_auth_lines
 from .fields import (
     RPSLASBlockField,
     RPSLASNumberField,
@@ -30,7 +32,6 @@ from .fields import (
     RPSLURLField,
 )
 from .parser import RPSLObject, UnknownRPSLObjectClassException
-from .passwords import PASSWORD_REPLACEMENT_HASH, get_password_hashers
 
 RPSL_ROUTE_OBJECT_CLASS_FOR_IP_VERSION = {
     4: "route",
@@ -435,27 +436,7 @@ class RPSLMntner(RPSLObject):
             )
 
     def verify_auth(self, passwords: List[str], keycert_obj_pk: Optional[str] = None) -> bool:
-        """
-        Verify whether one of a given list of passwords matches
-        any of the auth hashes in this object, or match the
-        keycert object PK.
-        """
-        hashers = get_password_hashers(permit_legacy=True)
-        for auth in self.parsed_data.get("auth", []):
-            if keycert_obj_pk and auth.upper() == keycert_obj_pk.upper():
-                return True
-            if " " not in auth:
-                continue
-            scheme, hash = auth.split(" ", 1)
-            hasher = hashers.get(scheme.upper())
-            if hasher:
-                for password in passwords:
-                    try:
-                        if hasher.verify(password, hash):
-                            return True
-                    except ValueError:
-                        pass
-        return False
+        return verify_auth_lines(self.parsed_data["auth"], passwords, keycert_obj_pk)
 
     def has_dummy_auth_value(self) -> bool:
         """
@@ -475,7 +456,15 @@ class RPSLMntner(RPSLObject):
         hash = hash_key + " " + hash_function.hash(password)
         auths = self._auth_lines(password_hashes=False)
         auths.append(hash)
-        self._update_attribute_value("auth", auths)
+        self._update_attribute_value("auth", auths, flatten=False)
+
+    def add_irrd_internal_auth(self) -> None:
+        """
+        Add IRRD-INTERNAL-AUTH to the auth lines.
+        Used when migrating a mntner.
+        """
+        auths = [RPSL_MNTNER_AUTH_INTERNAL] + self.parsed_data.get("auth", [])
+        self._update_attribute_value("auth", auths, flatten=False)
 
     def _auth_lines(self, password_hashes=True) -> List[Union[str, List[str]]]:
         """
@@ -488,6 +477,9 @@ class RPSLMntner(RPSLObject):
         if password_hashes is True:
             return [auth.split(" ", 1) for auth in lines if " " in auth]
         return [auth for auth in lines if " " not in auth]
+
+    def has_internal_auth(self) -> bool:
+        return RPSL_MNTNER_AUTH_INTERNAL in self.parsed_data["auth"]
 
 
 class RPSLPeeringSet(RPSLSet):

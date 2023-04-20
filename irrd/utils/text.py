@@ -2,7 +2,7 @@ import re
 from typing import Iterator, List, Optional, Set, TextIO, Union
 
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
-from irrd.rpsl.passwords import PASSWORD_HASHERS_ALL
+from irrd.rpsl.auth import PASSWORD_HASHERS_ALL
 
 re_remove_passwords = re.compile(r"(%s)[^\n]+" % "|".join(PASSWORD_HASHERS_ALL.keys()), flags=re.IGNORECASE)
 re_remove_last_modified = re.compile(r"^last-modified: [^\n]+\n", flags=re.MULTILINE)

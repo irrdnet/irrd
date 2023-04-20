@@ -116,6 +116,7 @@ class TestPreloading:
                 f"TEST2{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65547": {"2001:db8::/32"},
             },
         )
+        time.sleep(1)
 
         sources = ["TEST1", "TEST2"]
         assert preloader.routes_for_origins([], sources) == set()

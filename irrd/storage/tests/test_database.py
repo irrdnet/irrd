@@ -5,16 +5,14 @@ from unittest.mock import Mock
 import pytest
 from IPy import IP
 from pytest import raises
-from sqlalchemy.exc import ProgrammingError
 
 from irrd.routepref.status import RoutePreferenceStatus
 from irrd.rpki.status import RPKIStatus
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.utils.test_utils import flatten_mock_calls
 
-from .. import get_engine
 from ..database_handler import DatabaseHandler
-from ..models import DatabaseOperation, JournalEntryOrigin, RPSLDatabaseObject
+from ..models import DatabaseOperation, JournalEntryOrigin
 from ..preload import Preloader
 from ..queries import (
     DatabaseStatusQuery,
@@ -26,43 +24,16 @@ from ..queries import (
 )
 
 """
-These tests for the database use a live PostgreSQL database,
-as it's rather complicated to mock, and mocking would not make it
-a very useful test. Using in-memory SQLite is not an option due to
-using specific PostgreSQL features.
-
-To improve performance, these tests do not run full migrations.
-
 The tests also cover both database_handler.py and queries.py, as they
 closely interact with the database.
 """
 
 
 @pytest.fixture()
-def irrd_database(monkeypatch):
-    engine = get_engine()
-    # RPSLDatabaseObject.metadata.drop_all(engine)
-    try:
-        engine.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
-    except ProgrammingError as pe:  # pragma: no cover
-        print(f"WARNING: unable to create extension pgcrypto on the database. Queries may fail: {pe}")
-
-    table_name = RPSLDatabaseObject.__tablename__
-    if engine.dialect.has_table(engine, table_name):  # pragma: no cover
-        raise Exception(
-            f"The database on URL {engine.url} already has a table named {table_name} - refusing "
-            "to overwrite existing database."
-        )
-    RPSLDatabaseObject.metadata.create_all(engine)
-
+def irrd_db_mock_preload(irrd_db, monkeypatch):
     monkeypatch.setattr(
         "irrd.storage.database_handler.Preloader", lambda enable_queries: Mock(spec=Preloader)
     )
-
-    yield None
-
-    engine.dispose()
-    RPSLDatabaseObject.metadata.drop_all(engine)
 
 
 # noinspection PyTypeChecker
@@ -98,7 +69,7 @@ class TestDatabaseHandlerLive:
     This test covers mainly DatabaseHandler and DatabaseStatusTracker.
     """
 
-    def test_readonly(self, monkeypatch, irrd_database, config_override):
+    def test_readonly(self, monkeypatch, irrd_db_mock_preload, config_override):
         monkeypatch.setattr("irrd.storage.database_handler.MAX_RECORDS_BUFFER_BEFORE_INSERT", 1)
 
         rpsl_object_route_v4 = Mock(
@@ -134,7 +105,7 @@ class TestDatabaseHandlerLive:
             self.dh.upsert_rpsl_object(rpsl_object_route_v4, JournalEntryOrigin.auth_change)
         assert "readonly" in str(ex)
 
-    def test_duplicate_key_different_class(self, monkeypatch, irrd_database, config_override):
+    def test_duplicate_key_different_class(self, monkeypatch, irrd_db_mock_preload, config_override):
         monkeypatch.setattr("irrd.storage.database_handler.MAX_RECORDS_BUFFER_BEFORE_INSERT", 1)
         # tests for #560
 
@@ -182,7 +153,7 @@ class TestDatabaseHandlerLive:
 
         self.dh.close()
 
-    def test_object_writing_and_status_checking(self, monkeypatch, irrd_database, config_override):
+    def test_object_writing_and_status_checking(self, monkeypatch, irrd_db_mock_preload, config_override):
         config_override(
             {
                 "sources": {
@@ -478,7 +449,7 @@ class TestDatabaseHandlerLive:
             ["", ({"route"},), {}],
         ]
 
-    def test_disable_journaling(self, monkeypatch, irrd_database):
+    def test_disable_journaling(self, monkeypatch, irrd_db_mock_preload):
         monkeypatch.setenv("IRRD_SOURCES_TEST_AUTHORITATIVE", "1")
         monkeypatch.setenv("IRRD_SOURCES_TEST_KEEP_JOURNAL", "1")
 
@@ -529,7 +500,7 @@ class TestDatabaseHandlerLive:
 
         self.dh.close()
 
-    def test_roa_handling_and_query(self, irrd_database):
+    def test_roa_handling_and_query(self, irrd_db_mock_preload):
         self.dh = DatabaseHandler()
         self.dh.insert_roa_object(
             ip_version=4, prefix_str="192.0.2.0/24", asn=64496, max_length=28, trust_anchor="TEST TA"
@@ -595,7 +566,7 @@ class TestDatabaseHandlerLive:
 
         self.dh.close()
 
-    def test_rpki_status_storage(self, monkeypatch, irrd_database, database_handler_with_route):
+    def test_rpki_status_storage(self, monkeypatch, irrd_db_mock_preload, database_handler_with_route):
         monkeypatch.setenv("IRRD_SOURCES_TEST_KEEP_JOURNAL", "1")
         dh = database_handler_with_route
 
@@ -693,7 +664,7 @@ class TestDatabaseHandlerLive:
         dh.delete_journal_entries_before_date(datetime.utcnow(), "TEST")
         assert not list(dh.execute_query(RPSLDatabaseJournalQuery()))
 
-    def test_scopefilter_status_storage(self, monkeypatch, irrd_database, database_handler_with_route):
+    def test_scopefilter_status_storage(self, monkeypatch, irrd_db_mock_preload, database_handler_with_route):
         monkeypatch.setenv("IRRD_SOURCES_TEST_KEEP_JOURNAL", "1")
         dh = database_handler_with_route
         route_rpsl_objs = [
@@ -779,7 +750,9 @@ class TestDatabaseHandlerLive:
         )
         assert len(list(dh.execute_query(RPSLDatabaseJournalQuery()))) == 2  # no new entry since last test
 
-    def test_route_preference_status_storage(self, monkeypatch, irrd_database, database_handler_with_route):
+    def test_route_preference_status_storage(
+        self, monkeypatch, irrd_db_mock_preload, database_handler_with_route
+    ):
         monkeypatch.setenv("IRRD_SOURCES_TEST_KEEP_JOURNAL", "1")
         dh = database_handler_with_route
         existing_pk = list(dh.execute_query(RPSLDatabaseQuery()))[0]["pk"]
@@ -878,7 +851,9 @@ class TestDatabaseHandlerLive:
         variable_fields = ["pk", "timestamp", "created", "updated", "last_error_timestamp"]
         return [{k: v for k, v in result.items() if k not in variable_fields} for result in list(results)]
 
-    def test_suspension(self, monkeypatch, irrd_database, database_handler_with_route, config_override):
+    def test_suspension(
+        self, monkeypatch, irrd_db_mock_preload, database_handler_with_route, config_override
+    ):
         monkeypatch.setenv("IRRD_SOURCES_TEST_KEEP_JOURNAL", "1")
         dh = database_handler_with_route
         route_object = next(dh.execute_query(RPSLDatabaseQuery()))
@@ -907,7 +882,7 @@ class TestDatabaseHandlerLive:
 
 # noinspection PyTypeChecker
 class TestRPSLDatabaseQueryLive:
-    def test_matching_filters(self, irrd_database, database_handler_with_route):
+    def test_matching_filters(self, irrd_db_mock_preload, database_handler_with_route):
         self.dh = database_handler_with_route
 
         # Each of these filters should match
@@ -933,7 +908,7 @@ class TestRPSLDatabaseQueryLive:
         self._assert_match(RPSLDatabaseQuery().scopefilter_status([ScopeFilterStatus.in_scope]))
         self._assert_match(RPSLDatabaseQuery().route_preference_status([RoutePreferenceStatus.visible]))
 
-    def test_chained_filters(self, irrd_database, database_handler_with_route):
+    def test_chained_filters(self, irrd_db_mock_preload, database_handler_with_route):
         self.dh = database_handler_with_route
 
         q = (
@@ -954,7 +929,7 @@ class TestRPSLDatabaseQueryLive:
         self._assert_match(RPSLDatabaseQuery().pk(pk))
         self._assert_match(RPSLDatabaseQuery().pks([pk]))
 
-    def test_non_matching_filters(self, irrd_database, database_handler_with_route):
+    def test_non_matching_filters(self, irrd_db_mock_preload, database_handler_with_route):
         self.dh = database_handler_with_route
         # None of these should match
         self._assert_no_match(RPSLDatabaseQuery().pk(str(uuid.uuid4())))
@@ -977,7 +952,7 @@ class TestRPSLDatabaseQueryLive:
         self._assert_no_match(RPSLDatabaseQuery().scopefilter_status([ScopeFilterStatus.out_scope_as]))
         self._assert_no_match(RPSLDatabaseQuery().route_preference_status([RoutePreferenceStatus.suppressed]))
 
-    def test_ordering_sources(self, irrd_database, database_handler_with_route):
+    def test_ordering_sources(self, irrd_db_mock_preload, database_handler_with_route):
         self.dh = database_handler_with_route
         rpsl_object_2 = Mock(
             pk=lambda: "192.0.2.1/32,AS65537",
@@ -1034,7 +1009,7 @@ class TestRPSLDatabaseQueryLive:
         response_sources = [r["source"] for r in self.dh.execute_query(query)]
         assert response_sources == ["OTHER-SOURCE"]
 
-    def test_text_search_person_role(self, irrd_database):
+    def test_text_search_person_role(self, irrd_db_mock_preload):
         rpsl_object_person = Mock(
             pk=lambda: "PERSON",
             rpsl_object_class="person",
@@ -1076,7 +1051,7 @@ class TestRPSLDatabaseQueryLive:
 
         self.dh.close()
 
-    def test_more_less_specific_filters(self, irrd_database, database_handler_with_route):
+    def test_more_less_specific_filters(self, irrd_db_mock_preload, database_handler_with_route):
         self.dh = database_handler_with_route
         rpsl_route_more_specific_25_1 = Mock(
             pk=lambda: "192.0.2.0/25,AS65537",

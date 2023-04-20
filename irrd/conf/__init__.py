@@ -7,7 +7,9 @@ import sys
 import time
 from pathlib import Path
 from typing import Any, List, Optional
+from urllib.parse import urlparse
 
+import limits
 import yaml
 from IPy import IP
 
@@ -22,6 +24,8 @@ RPKI_IRR_PSEUDO_SOURCE = "RPKI"
 ROUTEPREF_IMPORT_TIME = 3600
 AUTH_SET_CREATION_COMMON_KEY = "COMMON"
 SOCKET_DEFAULT_TIMEOUT = 30
+RPSL_MNTNER_AUTH_INTERNAL = "IRRD-INTERNAL-AUTH"
+MIN_SECRET_KEY_LENGTH = 30
 
 
 LOGGING = {
@@ -41,13 +45,19 @@ LOGGING = {
         "gnupg": {
             "level": "INFO",
         },
-        # Must be specified explicitly to disable tracing middleware,
+        "faker.factory": {
+            "level": "INFO",
+        },
+        # uvicorn.error be specified explicitly to disable tracing middleware,
         # which adds substantial overhead
         "uvicorn.error": {
             "level": "INFO",
         },
         "sqlalchemy": {
             "level": "WARNING",
+        },
+        "multipart": {
+            "level": "INFO",
         },
         "": {
             "handlers": ["console"],
@@ -245,6 +255,11 @@ class Configuration:
         if not self._check_is_str(config, "piddir") or not os.path.isdir(config["piddir"]):
             errors.append("Setting piddir is required and must point to an existing directory.")
 
+        if not self._check_is_str(config, "secret_key") or len(config["secret_key"]) < MIN_SECRET_KEY_LENGTH:
+            errors.append(
+                f"Setting secret_key is required and must be at least {MIN_SECRET_KEY_LENGTH} characters."
+            )
+
         if not str(config.get("route_object_preference.update_timer", "0")).isnumeric():
             errors.append("Setting route_object_preference.update_timer must be a number.")
 
@@ -261,6 +276,10 @@ class Configuration:
             config, "email.recipient_override", required=False
         ) or "@" not in config.get("email.recipient_override", "@"):
             errors.append("Setting email.recipient_override must be an email address if set.")
+
+        url_parsed = urlparse(config.get("server.http.url"))
+        if not url_parsed.scheme or not url_parsed.netloc:
+            errors.append("Setting server.http.url is missing or invalid.")
 
         string_not_required = [
             "email.footer",
@@ -282,6 +301,15 @@ class Configuration:
         if not self._check_is_str(config, "auth.gnupg_keyring"):
             errors.append("Setting auth.gnupg_keyring is required.")
 
+        if not isinstance(config.get("auth.irrd_internal_migration_enabled", False), bool):
+            errors.append("Setting auth.irrd_internal_migration_enabled must be a bool.")
+
+        try:
+            if config.get("auth.webui_auth_failure_rate_limit"):
+                limits.parse(config.get("auth.webui_auth_failure_rate_limit", ""))
+        except ValueError:
+            errors.append("Setting auth.webui_auth_failure_rate_limit is missing or invalid.")
+
         from irrd.updates.parser_state import RPSLSetAutnumAuthenticationMode
 
         valid_auth = [mode.value for mode in RPSLSetAutnumAuthenticationMode]
@@ -297,7 +325,7 @@ class Configuration:
                     f" {valid_auth} if set"
                 )
 
-        from irrd.rpsl.passwords import PasswordHasherAvailability
+        from irrd.rpsl.auth import PasswordHasherAvailability
 
         valid_hasher_availability = [avl.value for avl in PasswordHasherAvailability]
         for hasher_name, setting in config.get("auth.password_hashers", {}).items():

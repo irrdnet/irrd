@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>Migrate mntner</h2>
+    {% if irrd_internal_migration_enabled %}
+        <div class="row">
+            <div class="col-lg-9">
+                {{ form_html }}
+            </div>
+            <div class="col-lg-3 alert alert-info">
+                After you complete this step correctly, IRRD will
+                send a confirmation link to all admin-c contact
+                listed for this mntner.
+                You need to open this link to complete the migration.
+            </div>
+        </div>
+    {% else %}
+        <p>Migrating mntners is not enabled on this instance.</p>
+    {% endif %}
+{% endblock %}
