@@ -50,7 +50,7 @@ class TestTOTPAuthenticate(WebRequestTest):
         response = test_client.post(
             self.url,
             data={"token": pyotp.TOTP(SAMPLE_USER_TOTP_TOKEN).now()},
-            follow_redirects=False,
+            follow_redirects=True,
         )
         assert response.url.path == "/ui/user/"
 
