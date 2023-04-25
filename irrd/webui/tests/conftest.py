@@ -67,7 +67,7 @@ class WebRequestTest:
         response = test_client.post(
             "/ui/auth/login/",
             data={"email": user.email, "password": password},
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 302
 
@@ -81,7 +81,7 @@ class WebRequestTest:
         response = test_client.post(
             "/ui/auth/mfa-authenticate/",
             data={"token": pyotp.TOTP(SAMPLE_USER_TOTP_TOKEN).now()},
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 302
 

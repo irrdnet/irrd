@@ -50,7 +50,7 @@ class TestTOTPAuthenticate(WebRequestTest):
         response = test_client.post(
             self.url,
             data={"token": pyotp.TOTP(SAMPLE_USER_TOTP_TOKEN).now()},
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.url.path == "/ui/user/"
 
@@ -60,7 +60,7 @@ class TestTOTPAuthenticate(WebRequestTest):
         response = test_client.post(
             self.url,
             data={"token": 3},
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 200
         assert "Incorrect token." in response.text
@@ -71,7 +71,7 @@ class TestTOTPAuthenticate(WebRequestTest):
         response = test_client.post(
             self.url,
             data={},
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 200
         assert "This field is required" in response.text
@@ -131,7 +131,7 @@ class TestWebAuthnAuthenticate(WebRequestTest):
         response = test_client.post(self.verify_url, data=verification_body)
         assert response.json()["verified"]
 
-        response = test_client.get("/ui/user/", allow_redirects=False)
+        response = test_client.get("/ui/user/", follow_redirects=False)
         assert response.status_code == 200
 
     def test_invalid_authenticate(self, test_client, irrd_db_session_with_user):
@@ -168,7 +168,7 @@ class TestWebAuthnAuthenticate(WebRequestTest):
         response = test_client.post(self.verify_url, data=verification_body)
         assert not response.json()["verified"]
 
-        response = test_client.get("/ui/user/", allow_redirects=False)
+        response = test_client.get("/ui/user/", follow_redirects=False)
         assert response.status_code != 200
 
 
@@ -298,7 +298,7 @@ class TestWebAuthnRemove(WebRequestTest):
         self._login_if_needed(test_client, user)
 
         response = test_client.post(
-            self.url, data={"current_password": SAMPLE_USER_PASSWORD}, allow_redirects=False
+            self.url, data={"current_password": SAMPLE_USER_PASSWORD}, follow_redirects=False
         )
         assert response.status_code == 302
 
@@ -312,7 +312,7 @@ class TestWebAuthnRemove(WebRequestTest):
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
 
-        response = test_client.post(self.url, data={"current_password": "invalid"}, allow_redirects=False)
+        response = test_client.post(self.url, data={"current_password": "invalid"}, follow_redirects=False)
         assert response.status_code == 200
         assert "Incorrect password." in response.text
 
@@ -350,7 +350,7 @@ class TestTOTPRegister(WebRequestTest):
         response = test_client.post(
             self.url,
             data={"token": pyotp.TOTP(secret).now(), "current_password": SAMPLE_USER_PASSWORD},
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 302
 
@@ -367,7 +367,7 @@ class TestTOTPRegister(WebRequestTest):
         response = test_client.post(
             self.url,
             data={"token": "invalid", "current_password": SAMPLE_USER_PASSWORD},
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 200
         assert "Incorrect token" in response.text
@@ -384,7 +384,7 @@ class TestTOTPRegister(WebRequestTest):
         response = test_client.post(
             self.url,
             data={"token": pyotp.TOTP(secret).now(), "current_password": "invalid"},
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 200
         assert "Incorrect password" in response.text
@@ -399,7 +399,7 @@ class TestTOTPRegister(WebRequestTest):
         self.get_secret(test_client, session_provider, user)
 
         response = test_client.post(
-            self.url, data={"current_password": SAMPLE_USER_PASSWORD}, allow_redirects=False
+            self.url, data={"current_password": SAMPLE_USER_PASSWORD}, follow_redirects=False
         )
         assert response.status_code == 200
         assert "This field is required" in response.text
@@ -427,7 +427,7 @@ class TestTOTPRemove(WebRequestTest):
         self._login_if_needed(test_client, user)
 
         response = test_client.post(
-            self.url, data={"current_password": SAMPLE_USER_PASSWORD}, allow_redirects=False
+            self.url, data={"current_password": SAMPLE_USER_PASSWORD}, follow_redirects=False
         )
         assert response.status_code == 302
 
@@ -441,7 +441,7 @@ class TestTOTPRemove(WebRequestTest):
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
 
-        response = test_client.post(self.url, data={"current_password": "invalid"}, allow_redirects=False)
+        response = test_client.post(self.url, data={"current_password": "invalid"}, follow_redirects=False)
         assert response.status_code == 200
         assert "Incorrect password." in response.text
 

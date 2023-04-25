@@ -35,7 +35,7 @@ class TestPermissionAdd(WebRequestTest):
         response = test_client.post(
             self.url,
             data={"new_user_email": user2.email, "confirm": "1", "current_password": SAMPLE_USER_PASSWORD},
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 302
 
@@ -52,7 +52,7 @@ class TestPermissionAdd(WebRequestTest):
         response = test_client.post(
             self.url,
             data={"new_user_email": user2.email, "confirm": "1", "current_password": SAMPLE_USER_PASSWORD},
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 200
         permission_count = session_provider.run_sync(session_provider.session.query(AuthPermission).count)
@@ -73,7 +73,7 @@ class TestPermissionAdd(WebRequestTest):
                 "user_management": "1",
                 "current_password": SAMPLE_USER_PASSWORD,
             },
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 302
 
@@ -101,7 +101,7 @@ class TestPermissionAdd(WebRequestTest):
                 "user_management": "1",
                 "current_password": "incorrect",
             },
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 200
 
@@ -123,7 +123,7 @@ class TestPermissionAdd(WebRequestTest):
                 "user_management": "1",
                 "current_password": SAMPLE_USER_PASSWORD,
             },
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 200
 
@@ -179,7 +179,7 @@ class TestPermissionDelete(WebRequestTest):
                 "confirm": "1",
                 "current_password": SAMPLE_USER_PASSWORD,
             },
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 302
 
@@ -204,7 +204,7 @@ class TestPermissionDelete(WebRequestTest):
                 "confirm_self_delete": "1",
                 "current_password": SAMPLE_USER_PASSWORD,
             },
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 302
 
@@ -229,7 +229,7 @@ class TestPermissionDelete(WebRequestTest):
                 "confirm": "1",
                 "current_password": SAMPLE_USER_PASSWORD,
             },
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 200
 
@@ -249,7 +249,7 @@ class TestPermissionDelete(WebRequestTest):
                 "confirm": "1",
                 "current_password": "incorrect",
             },
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 200
 
@@ -317,7 +317,7 @@ class TestMntnerMigrateInitiate(WebRequestTest):
                 "mntner_password": SAMPLE_MNTNER_BCRYPT,
                 "confirm": "1",
             },
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 302
 
@@ -344,7 +344,7 @@ class TestMntnerMigrateInitiate(WebRequestTest):
                 "mntner_password": SAMPLE_MNTNER_BCRYPT + "-invalid",
                 "confirm": "1",
             },
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 200
         assert "Invalid password" in response.text
@@ -367,7 +367,7 @@ class TestMntnerMigrateInitiate(WebRequestTest):
                 "mntner_password": SAMPLE_MNTNER_BCRYPT,
                 "confirm": "1",
             },
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 200
         assert "already migrated" in response.text
@@ -384,7 +384,7 @@ class TestMntnerMigrateInitiate(WebRequestTest):
                 "mntner_source": self.mntner_obj.source(),
                 "mntner_password": SAMPLE_MNTNER_BCRYPT + "-invalid",
             },
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 200
         assert "This field is required" in response.text
@@ -404,7 +404,7 @@ class TestMntnerMigrateInitiate(WebRequestTest):
                 "mntner_password": SAMPLE_MNTNER_BCRYPT,
                 "confirm": "1",
             },
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 200
         assert "Unable to find" in response.text
@@ -444,7 +444,7 @@ class TestMntnerMigrateComplete(WebRequestTest):
                 "mntner_password": SAMPLE_MNTNER_BCRYPT,
                 "confirm": "1",
             },
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 302
 
@@ -466,7 +466,7 @@ class TestMntnerMigrateComplete(WebRequestTest):
                 "mntner_password": SAMPLE_MNTNER_BCRYPT + "-invalid",
                 "confirm": "1",
             },
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 200
         assert "Invalid password" in response.text
@@ -486,7 +486,7 @@ class TestMntnerMigrateComplete(WebRequestTest):
                 "mntner_password": SAMPLE_MNTNER_BCRYPT,
                 "confirm": "1",
             },
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 404
 
@@ -496,7 +496,7 @@ class TestMntnerMigrateComplete(WebRequestTest):
                 "mntner_password": SAMPLE_MNTNER_BCRYPT,
                 "confirm": "1",
             },
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 404
 
@@ -514,7 +514,7 @@ class TestMntnerMigrateComplete(WebRequestTest):
             data={
                 "mntner_password": SAMPLE_MNTNER_BCRYPT,
             },
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 200
         assert "This field is required" in response.text
