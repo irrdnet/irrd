@@ -51,7 +51,7 @@ class WebRequestTest:
             return
         self.pre_login(session_provider, user)
         response = test_client.get(self.url)
-        assert response.url.startswith("http://testserver/ui/auth/login/")
+        assert response.url.path == "/ui/auth/login/"
 
     def test_mfa_requirement(self, test_client, irrd_db_session_with_user):
         session_provider, user = irrd_db_session_with_user
@@ -61,13 +61,13 @@ class WebRequestTest:
         self.pre_login(session_provider, user)
         self._login(test_client, user)
         response = test_client.get("/ui/user/")
-        assert response.url.startswith("http://testserver/ui/auth/mfa-authenticate/")
+        assert response.url.path == "/ui/auth/mfa-authenticate/"
 
     def _login(self, test_client, user, password=SAMPLE_USER_PASSWORD):
         response = test_client.post(
             "/ui/auth/login/",
             data={"email": user.email, "password": password},
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 302
 
@@ -81,7 +81,7 @@ class WebRequestTest:
         response = test_client.post(
             "/ui/auth/mfa-authenticate/",
             data={"token": pyotp.TOTP(SAMPLE_USER_TOTP_TOKEN).now()},
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 302
 

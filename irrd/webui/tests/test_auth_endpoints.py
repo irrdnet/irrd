@@ -27,7 +27,7 @@ class TestLogin:
         response = test_client.post(
             self.url,
             data={"email": user.email, "password": "incorrect"},
-            allow_redirects=False,
+            follow_redirects=False,
         )
         # This might already hit the limit from previous tests
         assert response.status_code in [200, 403]
@@ -35,7 +35,7 @@ class TestLogin:
         response = test_client.post(
             self.url,
             data={"email": user.email, "password": "incorrect"},
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 403
 
@@ -44,14 +44,14 @@ class TestLogin:
         response = test_client.post(
             self.url,
             data={"email": user.email, "password": SAMPLE_USER_PASSWORD},
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 302
         assert response.headers["Location"].endswith("/ui/auth/mfa-authenticate/")
 
         # Check that MFA is still pending
         response = test_client.get("/ui/user/")
-        assert response.url.startswith("http://testserver/ui/auth/mfa-authenticate/")
+        assert response.url.path == "/ui/auth/mfa-authenticate/"
 
     def test_login_valid_no_mfa(self, test_client, irrd_db_session_with_user):
         session_provider, user = irrd_db_session_with_user
@@ -61,21 +61,21 @@ class TestLogin:
         response = test_client.post(
             self.url,
             data={"email": user.email, "password": SAMPLE_USER_PASSWORD},
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 302
         assert response.headers["Location"].endswith("/ui/")
 
         # Check that MFA is not pending
         response = test_client.get("/ui/user/")
-        assert response.url.startswith("http://testserver/ui/user/")
+        assert response.url.path == "/ui/user/"
 
     def test_login_invalid(self, test_client, irrd_db_session_with_user):
         session_provider, user = irrd_db_session_with_user
         response = test_client.post(
             self.url,
             data={"email": user.email, "password": "incorrect"},
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 200
         assert "Invalid account" in response.text
@@ -110,7 +110,7 @@ class TestCreateAccount:
         response = test_client.post(
             self.url,
             data={"email": new_user_email, "name": "name"},
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 302
 
@@ -132,7 +132,7 @@ class TestCreateAccount:
         response = test_client.post(
             self.url,
             data={"email": user.email, "name": "name"},
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 200
         assert "account with this email" in response.text
@@ -150,7 +150,7 @@ class TestCreateAccount:
         response = test_client.post(
             self.url,
             data={},
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 200
         assert "This field is required" in response.text
@@ -177,7 +177,7 @@ class TestResetPasswordRequest:
         response = test_client.post(
             self.url,
             data={"email": user.email},
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 302
 
@@ -192,7 +192,7 @@ class TestResetPasswordRequest:
         response = test_client.post(
             self.url,
             data={"email": "invalid-user@example.com"},
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 302
         assert not smtpd.messages
@@ -220,7 +220,7 @@ class TestChangePassword(WebRequestTest):
                 "new_password_confirmation": new_password,
                 "current_password": SAMPLE_USER_PASSWORD,
             },
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 302
         self._login(test_client, user, new_password)
@@ -241,7 +241,7 @@ class TestChangePassword(WebRequestTest):
                 "new_password_confirmation": new_password,
                 "current_password": SAMPLE_USER_PASSWORD,
             },
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 200
         assert "too long" in response.text
@@ -262,7 +262,7 @@ class TestChangePassword(WebRequestTest):
                 "new_password_confirmation": new_password,
                 "current_password": "invalid",
             },
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 200
         assert "Incorrect password." in response.text
@@ -284,7 +284,7 @@ class TestChangePassword(WebRequestTest):
                 "new_password_confirmation": new_password2,
                 "current_password": SAMPLE_USER_PASSWORD,
             },
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 200
         assert "do not match" in response.text
@@ -303,7 +303,7 @@ class TestChangePassword(WebRequestTest):
                 "new_password_confirmation": "a",
                 "current_password": SAMPLE_USER_PASSWORD,
             },
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 200
         assert "not strong enough" in response.text
@@ -323,7 +323,7 @@ class TestChangePassword(WebRequestTest):
                 "new_password": new_password,
                 "new_password_confirmation": new_password,
             },
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 200
         assert "This field is required." in response.text
@@ -355,7 +355,7 @@ class TestChangeProfile(WebRequestTest):
                 "name": new_name,
                 "current_password": SAMPLE_USER_PASSWORD,
             },
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 302
 
@@ -383,7 +383,7 @@ class TestChangeProfile(WebRequestTest):
                 "name": new_name,
                 "current_password": "invalid",
             },
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 200
         assert "Incorrect password." in response.text
@@ -406,7 +406,7 @@ class TestChangeProfile(WebRequestTest):
                 "name": "new name",
                 "current_password": SAMPLE_USER_PASSWORD,
             },
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 200
         assert "Invalid email address" in response.text
@@ -449,7 +449,7 @@ class TestSetPassword(WebRequestTest):
         response = test_client.post(
             url,
             data={"new_password": new_password, "new_password_confirmation": new_password},
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 302
         self._login(test_client, user, new_password)
@@ -465,7 +465,7 @@ class TestSetPassword(WebRequestTest):
         response = test_client.post(
             url,
             data={"new_password": new_password, "new_password_confirmation": new_password},
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 302
         self._login(test_client, user, new_password)
@@ -481,7 +481,7 @@ class TestSetPassword(WebRequestTest):
         response = test_client.post(
             url,
             data={"new_password": new_password, "new_password_confirmation": new_password2},
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 200
         assert "do not match" in response.text
@@ -496,7 +496,7 @@ class TestSetPassword(WebRequestTest):
         response = test_client.post(
             url,
             data={"new_password": "a", "new_password_confirmation": "a"},
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 200
         assert "not strong enough" in response.text
@@ -514,7 +514,7 @@ class TestSetPassword(WebRequestTest):
             data={
                 "new_password": new_password,
             },
-            allow_redirects=False,
+            follow_redirects=False,
         )
         assert response.status_code == 200
         assert "This field is required." in response.text

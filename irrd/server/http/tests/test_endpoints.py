@@ -189,7 +189,7 @@ class TestObjectSubmissionEndpoint:
         mock_handler.send_notification_target_reports.assert_called_once()
         mock_handler.reset_mock()
 
-        response_delete = client.delete("/v1/submit/", data=ujson.dumps(data))
+        response_delete = client.request("DELETE", "/v1/submit/", data=ujson.dumps(data))
         assert response_delete.status_code == 200
         assert response_delete.text == '{"response":true}'
         mock_handler.load_change_submission.assert_called_once_with(
@@ -200,13 +200,13 @@ class TestObjectSubmissionEndpoint:
         mock_handler.send_notification_target_reports.assert_called_once()
         mock_handler.reset_mock()
 
-        response_invalid_format = client.post("/v1/submit/", data='{"invalid": true}')
+        response_invalid_format = client.post("/v1/submit/", content='{"invalid": true}')
         assert response_invalid_format.status_code == 400
         assert "field required" in response_invalid_format.text
         mock_handler.load_change_submission.assert_not_called()
         mock_handler.send_notification_target_reports.assert_not_called()
 
-        response_invalid_json = client.post("/v1/submit/", data="invalid")
+        response_invalid_json = client.post("/v1/submit/", content="invalid")
         assert response_invalid_json.status_code == 400
         assert "expect" in response_invalid_json.text.lower()
         mock_handler.load_change_submission.assert_not_called()
@@ -235,10 +235,10 @@ class TestSuspensionSubmissionEndpoint:
         )
         mock_handler.reset_mock()
 
-        response_invalid_format = client.post("/v1/suspension/", data='{"invalid": true}')
+        response_invalid_format = client.post("/v1/suspension/", content='{"invalid": true}')
         assert response_invalid_format.status_code == 400
         assert "field required" in response_invalid_format.text
 
-        response_invalid_json = client.post("/v1/suspension/", data="invalid")
+        response_invalid_json = client.post("/v1/suspension/", content="invalid")
         assert response_invalid_json.status_code == 400
         assert "expect" in response_invalid_json.text.lower()
