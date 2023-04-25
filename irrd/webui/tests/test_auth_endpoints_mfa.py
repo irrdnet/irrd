@@ -52,7 +52,7 @@ class TestTOTPAuthenticate(WebRequestTest):
             data={"token": pyotp.TOTP(SAMPLE_USER_TOTP_TOKEN).now()},
             allow_redirects=False,
         )
-        assert response.url.endswith("/ui/user/")
+        assert response.url.path == "/ui/user/"
 
     def test_invalid_totp(self, test_client, irrd_db_session_with_user):
         session_provider, user = irrd_db_session_with_user

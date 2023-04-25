@@ -25,11 +25,11 @@ def authentication_required(_func=None, mfa_check=True):
                 next_redir = quote_plus(next_redir, safe="/")
 
             if not request.auth.is_authenticated:
-                redir_url = request.url_for("ui:auth:login") + "?next=" + next_redir
+                redir_url = request.url_for("ui:auth:login").replace_query_params(next=next_redir)
                 return RedirectResponse(redir_url, status_code=302)
 
             if mfa_check and not request.session.get(MFA_COMPLETE_SESSION_KEY):
-                redir_url = request.url_for("ui:auth:mfa_authenticate") + "?next=" + next_redir
+                redir_url = request.url_for("ui:auth:mfa_authenticate").replace_query_params(next=next_redir)
                 return RedirectResponse(redir_url, status_code=302)
 
             return await func(*args, **kwargs)

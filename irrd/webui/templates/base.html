@@ -8,7 +8,7 @@
 </head>
 
 {% macro nav_link(endpoint, name) %}
-    {% if request.url.__str__().startswith(url_for(endpoint)) %}
+    {% if request.url == url_for(endpoint) %}
         <li class="nav-item"><a class="nav-link active" aria-current="page"
                                 href="{{ url_for(endpoint) }}">{{ name }}</a></li>
     {% else %}

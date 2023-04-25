@@ -51,7 +51,7 @@ class TestLogin:
 
         # Check that MFA is still pending
         response = test_client.get("/ui/user/")
-        assert response.url.startswith("http://testserver/ui/auth/mfa-authenticate/")
+        assert response.url.path == "/ui/auth/mfa-authenticate/"
 
     def test_login_valid_no_mfa(self, test_client, irrd_db_session_with_user):
         session_provider, user = irrd_db_session_with_user
@@ -68,7 +68,7 @@ class TestLogin:
 
         # Check that MFA is not pending
         response = test_client.get("/ui/user/")
-        assert response.url.startswith("http://testserver/ui/user/")
+        assert response.url.path == "/ui/user/"
 
     def test_login_invalid(self, test_client, irrd_db_session_with_user):
         session_provider, user = irrd_db_session_with_user
