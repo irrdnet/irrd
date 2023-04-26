@@ -19,8 +19,7 @@ def mock_email_dh(monkeypatch):
 
 
 class TestHandleEmailSubmission:
-    default_email = textwrap.dedent(
-        """
+    default_email = textwrap.dedent("""
         From sasha@localhost  Thu Jan  5 10:04:48 2018
         Received: from [127.0.0.1] (localhost.localdomain [127.0.0.1])
           by hostname (Postfix) with ESMTPS id 740AD310597
@@ -37,8 +36,7 @@ class TestHandleEmailSubmission:
         Mime-Version: 1.0
 
         aut-num: AS12345
-        """
-    ).strip()
+        """).strip()
 
     def test_valid_plain(self, mock_email_dh, tmp_gpg_dir):
         mock_email, mock_dh = mock_email_dh
@@ -54,8 +52,7 @@ class TestHandleEmailSubmission:
     def test_invalid_no_text_plain(self, mock_email_dh, tmp_gpg_dir):
         mock_email, mock_dh = mock_email_dh
 
-        email = textwrap.dedent(
-            """
+        email = textwrap.dedent("""
         From sasha@localhost  Thu Jan  5 10:04:48 2018
         Received: from [127.0.0.1] (localhost.localdomain [127.0.0.1])
           by hostname (Postfix) with ESMTPS id 740AD310597
@@ -78,8 +75,7 @@ class TestHandleEmailSubmission:
 
         <html><head><meta http-equiv="Content-Type" content="text/html charset=us-ascii"></head><body style="word-wrap: break-word; -webkit-nbsp-mode: space; -webkit-line-break: after-white-space;" class=""><b class="">test 1 2 3</b><div class=""><br class=""></div></body></html>
         --Apple-Mail=_01FE5B2D-C7F3-4DDD-AB42-B92C88CFBF0F--
-        """
-        ).strip()
+        """).strip()
         assert handle_email_submission(email) is None
 
         assert mock_email.mock_calls[0][0] == ""

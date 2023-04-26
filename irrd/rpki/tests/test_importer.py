@@ -195,10 +195,7 @@ class TestROAImportProcess:
             "rpki_max_length": 26,
             "source": "RPKI",
         }
-        assert (
-            roa_importer.roa_objs[0]._rpsl_object.render_rpsl_text()
-            == textwrap.dedent(
-                """
+        assert roa_importer.roa_objs[0]._rpsl_object.render_rpsl_text() == textwrap.dedent("""
             route:          192.0.2.0/24
             descr:          RPKI ROA for 192.0.2.0/24 / AS64496
             remarks:        This AS64496 route object represents routing data retrieved
@@ -207,10 +204,7 @@ class TestROAImportProcess:
             max-length:     26
             origin:         AS64496
             source:         RPKI  # Trust Anchor: APNIC RPKI Root
-            """
-            ).strip()
-            + "\n"
-        )
+            """).strip() + "\n"
 
     def test_invalid_rpki_json(self, monkeypatch, mock_scopefilter):
         mock_dh = Mock(spec=DatabaseHandler)

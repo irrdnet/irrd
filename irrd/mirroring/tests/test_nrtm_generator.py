@@ -57,10 +57,7 @@ class TestNRTMGenerator:
         generator, mock_dh = prepare_generator
         result = generator.generate("TEST", "3", 110, 190, mock_dh)
 
-        assert (
-            result
-            == textwrap.dedent(
-                """
+        assert result == textwrap.dedent("""
         %START Version: 3 TEST 110-190
 
         ADD 120
@@ -72,18 +69,13 @@ class TestNRTMGenerator:
 
         object 2 🌈
 
-        %END TEST"""
-            ).strip()
-        )
+        %END TEST""").strip()
 
     def test_generate_serial_range_v1(self, prepare_generator):
         generator, mock_dh = prepare_generator
         result = generator.generate("TEST", "1", 110, 190, mock_dh)
 
-        assert (
-            result
-            == textwrap.dedent(
-                """
+        assert result == textwrap.dedent("""
         %START Version: 1 TEST 110-190
 
         ADD
@@ -95,18 +87,13 @@ class TestNRTMGenerator:
 
         object 2 🌈
 
-        %END TEST"""
-            ).strip()
-        )
+        %END TEST""").strip()
 
     def test_generate_until_last(self, prepare_generator, config_override):
         generator, mock_dh = prepare_generator
         result = generator.generate("TEST", "3", 110, None, mock_dh)
 
-        assert (
-            result
-            == textwrap.dedent(
-                """
+        assert result == textwrap.dedent("""
         %START Version: 3 TEST 110-200
 
         ADD 120
@@ -118,9 +105,7 @@ class TestNRTMGenerator:
 
         object 2 🌈
 
-        %END TEST"""
-            ).strip()
-        )
+        %END TEST""").strip()
 
     def test_serial_range_start_higher_than_low(self, prepare_generator):
         generator, mock_dh = prepare_generator
@@ -208,10 +193,7 @@ class TestNRTMGenerator:
 
         result = generator.generate("TEST", "3", 110, 190, mock_dh)
 
-        assert (
-            result
-            == textwrap.dedent(
-                """
+        assert result == textwrap.dedent("""
         %START Version: 3 TEST 110-190
 
         ADD 120
@@ -223,9 +205,7 @@ class TestNRTMGenerator:
 
         object 2 🌈
 
-        %END TEST"""
-            ).strip()
-        )
+        %END TEST""").strip()
 
     def test_range_limit_exceeded(self, prepare_generator, config_override):
         generator, mock_dh = prepare_generator
@@ -248,10 +228,7 @@ class TestNRTMGenerator:
         generator, mock_dh = prepare_generator
         result = generator.generate("TEST", "3", 110, 190, mock_dh, False)
 
-        assert (
-            result
-            == textwrap.dedent(
-                """
+        assert result == textwrap.dedent("""
         %START Version: 3 TEST 110-190
 
         ADD 120
@@ -263,6 +240,4 @@ class TestNRTMGenerator:
 
         object 2 🌈
 
-        %END TEST"""
-            ).strip()
-        )
+        %END TEST""").strip()

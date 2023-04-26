@@ -133,8 +133,7 @@ class TestStatusGenerator:
         mock_database_handler.execute_query = lambda query, flush_rpsl_buffer=True: next(mock_query_result)
 
         status_report = StatusGenerator().generate_status()
-        expected_report = textwrap.dedent(
-            f"""
+        expected_report = textwrap.dedent(f"""
             IRRD version {__version__}
             Listening on ::0 port {get_setting('server.whois.port')}
             
@@ -244,7 +243,6 @@ class TestStatusGenerator:
                 Route object preference: None
             
             Remote information:
-                No NRTM host configured.\n\n"""
-        ).lstrip()
+                No NRTM host configured.\n\n""").lstrip()
 
         assert expected_report == status_report
