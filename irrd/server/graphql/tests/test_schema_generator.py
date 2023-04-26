@@ -7,9 +7,7 @@ def test_schema_generator():
     assert generator.graphql_types["RPSLAsBlock"]["descr"] == "[String!]"
     assert generator.graphql_types["RPSLAsBlock"]["techCObjs"] == "[RPSLContactUnion!]"
     assert generator.graphql_types["RPSLRtrSet"]["rtr-set"] == "String"
-    assert (
-        generator.type_defs
-        == """enum RPKIStatus {
+    assert generator.type_defs == """enum RPKIStatus {
     valid
     invalid
     not_found
@@ -570,4 +568,3 @@ type RPSLRtrSet implements RPSLObject {
 }
 
 union RPSLContactUnion = RPSLPerson | RPSLRole"""
-    )

@@ -51,8 +51,7 @@ class TestChangeSubmissionHandler:
         mock_dq, mock_dh, mock_email = prepare_mocks
         mock_dh.execute_query = lambda query: []
 
-        rpsl_text = textwrap.dedent(
-            """
+        rpsl_text = textwrap.dedent("""
         person:         Placeholder Person Object
         address:        The Netherlands
         phone:          +31 20 000 0000
@@ -85,8 +84,7 @@ class TestChangeSubmissionHandler:
         changed:        changed@example.com 20190701 # comment
         source:         TEST
         remarks:        remark
-        """
-        )
+        """)
 
         handler = ChangeSubmissionHandler().load_text_blob(rpsl_text)
         assert handler.status() == "SUCCESS"
@@ -112,8 +110,7 @@ class TestChangeSubmissionHandler:
         assert mock_dh.mock_calls[3][0] == "commit"
         assert mock_dh.mock_calls[4][0] == "close"
 
-        assert handler.submitter_report_human() == textwrap.dedent(
-            """
+        assert handler.submitter_report_human() == textwrap.dedent("""
         SUMMARY OF UPDATE:
 
         Number of objects found:                    3
@@ -154,14 +151,12 @@ class TestChangeSubmissionHandler:
         INFO: Address range 80.16.151.184 - 80.016.151.191 was reformatted as 80.16.151.184 - 80.16.151.191
         
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-        )
+        """)
 
     def test_parse_valid_new_person_existing_mntner_pgp_key(self, prepare_mocks):
         mock_dq, mock_dh, mock_email = prepare_mocks
 
-        person_text = textwrap.dedent(
-            """
+        person_text = textwrap.dedent("""
         person:         Placeholder Person Object
         address:        The Netherlands
         phone:          +31 20 000 0000
@@ -170,11 +165,9 @@ class TestChangeSubmissionHandler:
         e-mail:         email@example.com
         changed:        changed@example.com 20190701 # comment
         source:         TEST
-        """
-        )
+        """)
 
-        mntner_text = textwrap.dedent(
-            """
+        mntner_text = textwrap.dedent("""
         mntner:         TEST-MNT
         admin-c:        PERSON-TEST
         upd-to:         upd-to@example.com
@@ -183,8 +176,7 @@ class TestChangeSubmissionHandler:
         mnt-by:         TEST-MNT
         changed:        changed@example.com 20190701 # comment
         source:         TEST
-        """
-        )
+        """)
         rpsl_text = person_text + "\n\n" + mntner_text
 
         query_responses = iter(
@@ -226,8 +218,7 @@ class TestChangeSubmissionHandler:
         assert mock_dh.mock_calls[2][0] == "commit"
         assert mock_dh.mock_calls[3][0] == "close"
 
-        assert handler.submitter_report_human() == textwrap.dedent(
-            """
+        assert handler.submitter_report_human() == textwrap.dedent("""
         > Message-ID: test
         > From: example@example.com
         
@@ -254,11 +245,9 @@ class TestChangeSubmissionHandler:
         Modify succeeded: [mntner] TEST-MNT
 
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-        )
+        """)
 
-        expected_notification = textwrap.dedent(
-            """
+        expected_notification = textwrap.dedent("""
             This is to notify you of changes in the TEST database
             or object authorisation failures.
             
@@ -309,8 +298,7 @@ class TestChangeSubmissionHandler:
             
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        """
-        ).lstrip()
+        """).lstrip()
         handler.send_notification_target_reports()
         assert flatten_mock_calls(mock_email) == [
             ["", ("mnt-nfy@example.com", "Notification of TEST database changes", expected_notification), {}]
@@ -319,8 +307,7 @@ class TestChangeSubmissionHandler:
     def test_parse_invalid_new_objects_pgp_key_does_not_exist(self, prepare_mocks):
         mock_dq, mock_dh, mock_email = prepare_mocks
 
-        person_text = textwrap.dedent(
-            """
+        person_text = textwrap.dedent("""
         person:         Placeholder Person Object
         address:        The Netherlands
         phone:          +31 20 000 0000
@@ -329,11 +316,9 @@ class TestChangeSubmissionHandler:
         e-mail:         email@example.com
         changed:        changed@example.com 20190701 # comment
         source:         TEST
-        """
-        )
+        """)
 
-        mntner_text = textwrap.dedent(
-            """
+        mntner_text = textwrap.dedent("""
         mntner:         TEST-MNT
         admin-c:        PERSON-TEST
         upd-to:         unread@ripe.net
@@ -341,8 +326,7 @@ class TestChangeSubmissionHandler:
         mnt-by:         TEST-MNT
         changed:        changed@example.com 20190701 # comment
         source:         TEST
-        """
-        )
+        """)
         rpsl_text = person_text + "\n\n" + mntner_text
 
         query_responses = iter(
@@ -382,8 +366,7 @@ class TestChangeSubmissionHandler:
     def test_parse_valid_delete(self, prepare_mocks):
         mock_dq, mock_dh, mock_email = prepare_mocks
 
-        rpsl_person = textwrap.dedent(
-            """
+        rpsl_person = textwrap.dedent("""
         person:         Placeholder Person Object
         address:        The Netherlands
         phone:          +31 20 00000000
@@ -393,8 +376,7 @@ class TestChangeSubmissionHandler:
         notify:         notify@example.com
         changed:        changed@example.com 20190701 # comment
         source:         TEST
-        """
-        )
+        """)
 
         query_responses = iter(
             [
@@ -426,8 +408,7 @@ class TestChangeSubmissionHandler:
         assert mock_dh.mock_calls[1][0] == "commit"
         assert mock_dh.mock_calls[2][0] == "close"
 
-        assert handler.submitter_report_human() == textwrap.dedent(
-            """
+        assert handler.submitter_report_human() == textwrap.dedent("""
             SUMMARY OF UPDATE:
 
             Number of objects found:                    1
@@ -447,8 +428,7 @@ class TestChangeSubmissionHandler:
             Delete succeeded: [person] PERSON-TEST
 
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-        )
+        """)
 
         assert handler.submitter_report_json() == {
             "request_meta": {},
@@ -500,8 +480,7 @@ class TestChangeSubmissionHandler:
             ],
         }
 
-        expected_notification = textwrap.dedent(
-            """
+        expected_notification = textwrap.dedent("""
             This is to notify you of changes in the TEST database
             or object authorisation failures.
             
@@ -533,8 +512,7 @@ class TestChangeSubmissionHandler:
             
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        """
-        ).lstrip()
+        """).lstrip()
         handler.send_notification_target_reports()
 
         # Notification recipients are kept in unordered data types at times, so call order may vary.
@@ -553,8 +531,7 @@ class TestChangeSubmissionHandler:
         mock_dq, mock_dh, mock_email = prepare_mocks
         mock_dh.execute_query = lambda query: []
 
-        rpsl_text = textwrap.dedent(
-            """
+        rpsl_text = textwrap.dedent("""
         mntner:         TEST-MNT
         admin-c:        PERSON-TEST
         upd-to:         unread@ripe.net
@@ -587,8 +564,7 @@ class TestChangeSubmissionHandler:
         e-mail:         email@example.com
         changed:        changed@example.com 20190701 # comment
         source:         TEST
-        """
-        )
+        """)
 
         handler = ChangeSubmissionHandler().load_text_blob(rpsl_text)
         assert handler.status() == "FAILED"
@@ -621,8 +597,7 @@ class TestChangeSubmissionHandler:
             ["close", (), {}],
         ]
 
-        assert handler.submitter_report_human() == textwrap.dedent(
-            """
+        assert handler.submitter_report_human() == textwrap.dedent("""
         SUMMARY OF UPDATE:
         
         Number of objects found:                    3
@@ -687,8 +662,7 @@ class TestChangeSubmissionHandler:
         ERROR: Object OTHER-MNT referenced in field mnt-by not found in database TEST - must reference mntner.
         
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-        )
+        """)
 
         assert handler.submitter_report_json() == {
             "request_meta": {},
@@ -809,9 +783,7 @@ class TestChangeSubmissionHandler:
         )
         mock_dh.execute_query = lambda query: next(query_results)
 
-        rpsl_text = (
-            textwrap.dedent(
-                """
+        rpsl_text = textwrap.dedent("""
         person:         Placeholder Person Object
         address:        The Netherlands
         phone:          +31 20 000 0000
@@ -820,10 +792,7 @@ class TestChangeSubmissionHandler:
         e-mail:         email@example.com
         changed:        changed@example.com 20190701 # comment
         source:         TEST
-        """
-            ).strip()
-            + "\n"
-        )
+        """).strip() + "\n"
 
         submission_object = RPSLChangeSubmission.parse_obj(
             {
@@ -850,8 +819,7 @@ class TestChangeSubmissionHandler:
             ["close", (), {}],
         ]
 
-        assert handler.submitter_report_human() == textwrap.dedent(
-            """
+        assert handler.submitter_report_human() == textwrap.dedent("""
             SUMMARY OF UPDATE:
             
             Number of objects found:                    1
@@ -882,11 +850,9 @@ class TestChangeSubmissionHandler:
             ERROR: Authorisation for person PERSON-TEST failed: must be authenticated by one of: TEST-MNT
             
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-        )
+        """)
 
-        expected_notification = textwrap.dedent(
-            """
+        expected_notification = textwrap.dedent("""
             This is to notify you of changes in the TEST database
             or object authorisation failures.
             
@@ -918,8 +884,7 @@ class TestChangeSubmissionHandler:
             
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        """
-        ).lstrip()
+        """).lstrip()
         handler.send_notification_target_reports()
         assert flatten_mock_calls(mock_email) == [
             ["", ("upd-to@example.net", "Notification of TEST database changes", expected_notification), {}],
@@ -941,8 +906,7 @@ class TestChangeSubmissionHandler:
         )
         mock_dh.execute_query = lambda query: next(query_results)
 
-        rpsl_text = textwrap.dedent(
-            """
+        rpsl_text = textwrap.dedent("""
         person:         Placeholder Person Object
         address:        The Netherlands
         phone:          +31 20 000 0000
@@ -975,8 +939,7 @@ class TestChangeSubmissionHandler:
         changed:        changed@example.com 20190701 # comment
         source:         TEST
         remarks:        remark
-        """
-        )
+        """)
 
         handler = ChangeSubmissionHandler().load_text_blob(rpsl_text)
         assert handler.status() == "FAILED"
@@ -1003,8 +966,7 @@ class TestChangeSubmissionHandler:
             ["close", (), {}],
         ]
 
-        assert handler.submitter_report_human() == textwrap.dedent(
-            """
+        assert handler.submitter_report_human() == textwrap.dedent("""
         SUMMARY OF UPDATE:
 
         Number of objects found:                    3
@@ -1070,8 +1032,7 @@ class TestChangeSubmissionHandler:
         INFO: Address range 80.16.151.184 - 80.016.151.191 was reformatted as 80.16.151.184 - 80.16.151.191
 
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-        )
+        """)
 
     def test_parse_invalid_object_delete_syntax(self, prepare_mocks):
         mock_dq, mock_dh, mock_email = prepare_mocks
@@ -1100,8 +1061,7 @@ class TestChangeSubmissionHandler:
         assert mock_dh.mock_calls[0][0] == "commit"
         assert mock_dh.mock_calls[1][0] == "close"
 
-        assert handler.submitter_report_human() == textwrap.dedent(
-            """
+        assert handler.submitter_report_human() == textwrap.dedent("""
         SUMMARY OF UPDATE:
         
         Number of objects found:                    1
@@ -1132,8 +1092,7 @@ class TestChangeSubmissionHandler:
         ERROR: Can not delete object: no object found for this key in this database.
  
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-        )
+        """)
 
     def test_load_suspension_submission(self, prepare_mocks, monkeypatch):
         mock_dq, mock_dh, mock_email = prepare_mocks

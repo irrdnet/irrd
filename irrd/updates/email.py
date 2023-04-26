@@ -42,14 +42,12 @@ def handle_email_submission(email_txt: str) -> Optional[ChangeSubmissionHandler]
                 f"Unable to extract message body from e-mail {msg.message_id} from {msg.message_from}"
             )
             subject = f"FAILED: {msg.message_subject}"
-            reply_content = textwrap.dedent(
-                f"""
+            reply_content = textwrap.dedent(f"""
             Unfortunately, your message with ID {msg.message_id}
             could not be processed, as no text/plain part could be found.
             
             Please try to resend your message as plain text email.
-            """
-            )
+            """)
         else:
             handler = ChangeSubmissionHandler().load_text_blob(
                 msg.body, pgp_fingerprint=msg.pgp_fingerprint, request_meta=request_meta
@@ -72,12 +70,10 @@ def handle_email_submission(email_txt: str) -> Optional[ChangeSubmissionHandler]
             exc_info=exc,
         )
         subject = f"ERROR: {msg.message_subject}"
-        reply_content = textwrap.dedent(
-            f"""
+        reply_content = textwrap.dedent(f"""
         Unfortunately, your message with ID {msg.message_id}
         could not be processed, due to an internal error.
-        """
-        )
+        """)
 
     try:
         email.send_email(msg.message_from, subject, reply_content)
