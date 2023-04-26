@@ -59,7 +59,7 @@ webauthn = "1.8.0"
 pyotp = "2.8.0"
 click = "8.1.3"
 zxcvbn = "4.4.28"
-wtforms-bootstrap5 = {git = "https://github.com/mxsasha/wtforms-bootstrap5.git", rev = "compat-38"}
+wtforms-bootstrap5 = "0.2.3"
 email-validator = "2.0.0post2"
 
 [tool.poetry.group.dev.dependencies]
@@ -74,7 +74,7 @@ pytest-freezegun = "^0.4.2"
 mypy = { version = "^1.0.1", markers = "platform_python_implementation == 'CPython'" }
 ruff = "^0.0.252"
 isort = "^5.12.0"
-black = "23.1.0"
+black = "^23.1.0"
 poethepoet = "^0.18.1"
 factory-boy = "^3.2.1"
 smtpdfix = "^0.4.2"
