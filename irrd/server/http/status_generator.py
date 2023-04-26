@@ -1,5 +1,4 @@
 import logging
-import socket
 import textwrap
 from typing import Optional
 
@@ -177,7 +176,7 @@ class StatusGenerator:
                     Remote status query unsupported or query failed
                     """
                 )
-            except (socket.timeout, ConnectionError):
+            except OSError:
                 return textwrap.dedent(
                     f"""
                     NRTM host: {nrtm_host} port {nrtm_port}
