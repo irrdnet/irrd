@@ -11,6 +11,8 @@ def test_validate_as_number():
     assert parse_as_number("as4294967295") == ("AS4294967295", 4294967295)
     assert parse_as_number("012345", permit_plain=True) == ("AS12345", 12345)
     assert parse_as_number(12345, permit_plain=True) == ("AS12345", 12345)
+    assert parse_as_number("AS1.10") == ("AS65546", 65546)
+    assert parse_as_number("1.10", permit_plain=True) == ("AS65546", 65546)
 
     with raises(ValidationError) as ve:
         parse_as_number("12345")
@@ -24,6 +26,25 @@ def test_validate_as_number():
         parse_as_number("AS4294967296")
     assert "valid range is" in str(ve.value)
 
+    with raises(ValidationError) as ve:
+        parse_as_number("AS1.2.3")
+    assert "number is not valid asdot format" in str(ve.value)
+
+    with raises(ValidationError) as ve:
+        parse_as_number("AS.10")
+    assert "high order value missing" in str(ve.value)
+
+    with raises(ValidationError) as ve:
+        parse_as_number("AS65546.10")
+    assert "high order value out of range" in str(ve.value)
+
+    with raises(ValidationError) as ve:
+        parse_as_number("AS1.")
+    assert "low order value missing" in str(ve.value)
+
+    with raises(ValidationError) as ve:
+        parse_as_number("AS1.65546")
+    assert "low order value out of range" in str(ve.value)
 
 def test_validate_rpsl_change_submission():
     result = RPSLChangeSubmission.parse_obj(

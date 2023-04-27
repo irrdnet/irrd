@@ -14,10 +14,31 @@ def parse_as_number(value: Union[str, int], permit_plain=False) -> Tuple[str, in
 
         start_index = 2 if value.startswith("AS") else 0
 
-        if not value[start_index:].isnumeric():
+        if '.' in value[start_index:]:
+            if value[start_index:].count('.') > 1:
+                raise ValidationError(f"Invalid AS number {value}: number is not valid asdot format")
+
+            high, low = [int(i) if i.isnumeric() else i for i in value[start_index:].split('.')]
+
+            if not high:
+                raise ValidationError(f"Invalid AS number {value}: high order value missing")
+
+            if  not low:
+                raise ValidationError(f"Invalid AS number {value}: low order value missing")
+
+            if high > 65535:
+                raise ValidationError(f"Invalid AS number {value}: high order value out of range")
+
+            if low > 65535:
+                raise ValidationError(f"Invalid AS number {value}: low order value out of range")
+
+            value_int = high * 65536 + low
+
+        elif not value[start_index:].isnumeric():
             raise ValidationError(f"Invalid AS number {value}: number part is not numeric")
 
-        value_int = int(value[start_index:])
+        else:
+            value_int = int(value[start_index:])
     else:
         value_int = value
 
