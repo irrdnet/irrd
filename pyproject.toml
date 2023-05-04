@@ -130,11 +130,10 @@ follow_imports = "skip"
 
 [tool.poe.tasks]
 black = "black irrd"
-ruff = "ruff irrd"
-ruff-fix = "ruff irrd --fix"
+ruff = "ruff irrd --fix"
 isort = "isort irrd"
 mypy = "mypy irrd"
-lint = ["black", "ruff", "isort"]
+lint = ["black", "ruff", "isort", "mypy"]
 test = "pytest --cov-report term-missing:skip-covered --cov=irrd --basetemp=.tmpdirs/ irrd"
 
 [tool.coverage.report]
