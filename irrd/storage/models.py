@@ -270,7 +270,6 @@ class AuthPermission(Base):  # type: ignore
     user_id = sa.Column(pg.UUID, sa.ForeignKey("auth_user.pk", ondelete="RESTRICT"), index=True)
     mntner_id = sa.Column(pg.UUID, sa.ForeignKey("auth_mntner.pk", ondelete="RESTRICT"), index=True)
 
-    # This may not scale well
     user_management = sa.Column(sa.Boolean, default=False, nullable=False)
 
     created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
@@ -300,7 +299,6 @@ class AuthUser(Base):  # type: ignore
 
     active = sa.Column(sa.Boolean, default=False, nullable=False)
     override = sa.Column(sa.Boolean, default=False, nullable=False)
-    # api_tokens = relationship("AuthApiToken", backref="user")
 
     permissions = relationship(
         "AuthPermission",
@@ -383,19 +381,34 @@ class AuthWebAuthn(Base):  # type: ignore
     last_used = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
 
 
-# class AuthApiToken(Base):  # type: ignore
-#     __tablename__ = "auth_api_token"
-#
-#     token = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)
-#     user_id = sa.Column(pg.UUID, sa.ForeignKey("auth_user.pk", ondelete="RESTRICT"))
-#     # IP range?
-#     # submission method
-#
-#     created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
-#     updated = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
-#
-#     def __repr__(self):
-#         return f"<{self.pk}/{self.email}"
+class AuthApiToken(Base):  # type: ignore
+    __tablename__ = "auth_api_token"
+
+    pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)
+    token = sa.Column(
+        pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), unique=True, index=True
+    )
+    name = sa.Column(sa.String, nullable=False)
+    creator_id = sa.Column(pg.UUID, sa.ForeignKey("auth_user.pk", ondelete="RESTRICT"), index=True)
+    mntner_id = sa.Column(pg.UUID, sa.ForeignKey("auth_mntner.pk", ondelete="RESTRICT"), index=True)
+    creator = relationship(
+        "AuthUser",
+        backref=sa.orm.backref("api_tokens_created"),
+    )
+    mntner = relationship(
+        "AuthMntner",
+        backref=sa.orm.backref("api_tokens"),
+    )
+
+    ip_restriction = sa.Column(pg.CIDR, nullable=True)
+    enabled_webapi = sa.Column(sa.Boolean(), default=True, nullable=False)
+    enabled_email = sa.Column(sa.Boolean(), default=True, nullable=False)
+
+    created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
+    updated = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
+
+    def __repr__(self):
+        return f"<{self.token}/{self.name}/{self.maintainer}"
 
 
 class AuthMntner(Base):  # type: ignore
@@ -414,7 +427,6 @@ class AuthMntner(Base):  # type: ignore
 
     migration_token = sa.Column(sa.String, nullable=True)
 
-    # permissions = relationship("AuthPermission", backref='mntner')
     permissions = relationship(
         "AuthPermission",
         backref=sa.orm.backref("mntner", uselist=False),

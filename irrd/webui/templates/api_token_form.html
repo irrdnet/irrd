@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+    {% if api_token %}
+        <h2>Update API '{{ api_token.name }}' token on {{ mntner.rpsl_mntner_pk }}</h2>
+    {% else %}
+        <h2>Add an API token on {{ mntner.rpsl_mntner_pk }}</h2>
+    {% endif %}
+    <div class="row">
+        <div class="col-lg-9">
+            {{ form_html }}
+        </div>
+        <div class="col-lg-3 alert alert-info">
+        </div>
+    </div>
+{% endblock %}

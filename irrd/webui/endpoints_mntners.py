@@ -6,11 +6,12 @@ from typing import Optional
 import wtforms
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
-from starlette_wtf import StarletteForm, csrf_protect
+from starlette_wtf import StarletteForm, csrf_protect, csrf_token
 
 from irrd.conf import get_setting
 from irrd.rpsl.rpsl_objects import RPSLMntner
 from irrd.storage.models import (
+    AuthApiToken,
     AuthMntner,
     AuthPermission,
     AuthUser,
@@ -25,6 +26,151 @@ from irrd.webui.helpers import client_ip, message, rate_limit_post, send_templat
 from irrd.webui.rendering import render_form, template_context_render
 
 logger = logging.getLogger(__name__)
+
+
+class ApiTokenForm(StarletteForm):
+    name = wtforms.StringField(
+        "Name of the new token",
+        validators=[wtforms.validators.DataRequired()],
+        description="For your own reference.",
+    )
+    # TODO: cidr validator
+    ip_restriction = wtforms.StringField("Restrict to IP range (CIDR, optional)")
+    enabled_webapi = wtforms.BooleanField("Enable this token for HTTPS API submissions")
+    enabled_email = wtforms.BooleanField("Enable this token for email submissions")
+    submit = wtforms.SubmitField("Save API token")
+
+    def validate_ip_restriction(form, field):
+        if not field.data:
+            field.data = None
+
+
+@csrf_protect
+@session_provider_manager
+@authentication_required
+async def api_token_add(request: Request, session_provider: ORMSessionProvider) -> Response:
+    """
+    Create a new API token.
+    """
+    query = session_provider.session.query(AuthMntner).join(AuthPermission)
+    query = query.filter(
+        AuthMntner.pk == request.path_params["mntner"],
+        AuthPermission.user_id == str(request.auth.user.pk),
+    )
+    mntner = await session_provider.run(query.one)
+
+    if not mntner or not mntner.migration_complete:
+        return Response(status_code=404)
+
+    form = await ApiTokenForm.from_formdata(request=request)
+    if not form.is_submitted() or not await form.validate():
+        form_html = render_form(form)
+        return template_context_render(
+            "api_token_form.html", request, {"form_html": form_html, "api_token": None, "mntner": mntner}
+        )
+
+    new_token = AuthApiToken(
+        mntner_id=str(mntner.pk),
+        creator_id=str(request.auth.user.pk),
+        name=form.data["name"],
+        ip_restriction=form.data["ip_restriction"],
+        enabled_webapi=form.data["enabled_webapi"],
+        enabled_email=form.data["enabled_email"],
+    )
+    session_provider.session.add(new_token)
+    message_text = f"An API key for '{new_token.name}' on {mntner.rpsl_mntner_pk} has been added."
+    message(request, message_text)
+    await notify_mntner(session_provider, request.auth.user, mntner, explanation=message_text)
+    logger.info(
+        f"{client_ip(request)}{request.auth.user.email}: added API token {new_token.pk} on mntner"
+        f" {mntner.rpsl_mntner_pk}"
+    )
+
+    return RedirectResponse(request.url_for("ui:user_permissions"), status_code=302)
+
+
+@csrf_protect
+@session_provider_manager
+@authentication_required
+async def api_token_edit(request: Request, session_provider: ORMSessionProvider) -> Response:
+    """
+    Edit an existing API token
+    """
+    query = session_provider.session.query(AuthApiToken)
+    query = query.filter(
+        AuthApiToken.pk == request.path_params["token_pk"],
+        AuthApiToken.mntner_id.in_([perm.mntner_id for perm in request.auth.user.permissions]),
+    )
+    api_token = await session_provider.run(query.one)
+
+    if not api_token:
+        return Response(status_code=404)
+
+    form = await ApiTokenForm.from_formdata(request=request, obj=api_token)
+    if not form.is_submitted() or not await form.validate():
+        form_html = render_form(form)
+        return template_context_render(
+            "api_token_form.html",
+            request,
+            {"form_html": form_html, "api_token": api_token, "mntner": api_token.mntner},
+        )
+
+    api_token.name = form.data["name"]
+    api_token.ip_restriction = form.data["ip_restriction"]
+    api_token.enabled_webapi = form.data["enabled_webapi"]
+    api_token.enabled_email = form.data["enabled_email"]
+    session_provider.session.add(api_token)
+    message_text = f"The API key for '{api_token.name}' on {api_token.mntner.rpsl_mntner_pk} was modified."
+    message(request, message_text)
+    logger.info(
+        f"{client_ip(request)}{request.auth.user.email}: updated API token {api_token.pk} on mntner"
+        f" {api_token.mntner.rpsl_mntner_pk}"
+    )
+
+    return RedirectResponse(request.url_for("ui:user_permissions"), status_code=302)
+
+
+@csrf_protect
+@session_provider_manager
+@authentication_required
+async def api_token_delete(request: Request, session_provider: ORMSessionProvider) -> Response:
+    """
+    Delete an API token
+    """
+    query = session_provider.session.query(AuthApiToken)
+    query = query.filter(
+        AuthApiToken.pk == request.path_params["token_pk"],
+        AuthApiToken.mntner_id.in_([perm.mntner_id for perm in request.auth.user.permissions]),
+    )
+    api_token = await session_provider.run(query.one)
+
+    if not api_token:
+        return Response(status_code=404)
+
+    if request.method == "GET":
+        return template_context_render(
+            "api_token_delete.html",
+            request,
+            {
+                "api_token": api_token,
+                "csrf_token": csrf_token(request),
+            },
+        )
+
+    session_provider.session.query(AuthApiToken).filter(
+        AuthApiToken.pk == request.path_params["token_pk"]
+    ).delete()
+    message_text = (
+        f"The API token named '{api_token.name}' on {api_token.mntner.rpsl_mntner_pk} has been deleted."
+    )
+    message(request, message_text)
+    await notify_mntner(session_provider, request.auth.user, api_token.mntner, explanation=message_text)
+    logger.info(
+        f"{client_ip(request)}{request.auth.user.email}: removed API token {api_token.pk} on mntner"
+        f" {api_token.mntner.rpsl_mntner_pk}"
+    )
+
+    return RedirectResponse(request.url_for("ui:user_permissions"), status_code=302)
 
 
 class PermissionAddForm(CurrentPasswordForm):
