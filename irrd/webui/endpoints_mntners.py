@@ -21,6 +21,7 @@ from irrd.storage.models import (
 )
 from irrd.storage.orm_provider import ORMSessionProvider, session_provider_manager
 from irrd.utils.email import send_email
+from irrd.utils.text import clean_ip_value_error
 from irrd.webui.auth.decorators import authentication_required
 from irrd.webui.auth.users import CurrentPasswordForm
 from irrd.webui.helpers import client_ip, message, rate_limit_post, send_template_email
@@ -46,13 +47,12 @@ class ApiTokenForm(StarletteForm):
 
     def validate_ip_restriction(self, field):
         if not field.data:
-            self.ip_restriction_parsed = None
+            field.data = None
             return
         try:
-            self.ip_restriction_parsed = [str(IP(data)) for data in field.data.split(",")]
-            field.data = ",".join(self.ip_restriction_parsed)
-        except ValueError:
-            raise wtforms.ValidationError("Invalid IP or CIDR ranges.")
+            field.data = ",".join([str(IP(data)) for data in field.data.split(",")])
+        except ValueError as ve:
+            raise wtforms.ValidationError(f"Invalid IP or CIDR ranges: {clean_ip_value_error(ve)}")
 
 
 @csrf_protect
@@ -83,7 +83,7 @@ async def api_token_add(request: Request, session_provider: ORMSessionProvider) 
         mntner_id=str(mntner.pk),
         creator_id=str(request.auth.user.pk),
         name=form.data["name"],
-        ip_restriction=form.ip_restriction_parsed,
+        ip_restriction=form.data["ip_restriction"],
         enabled_webapi=form.data["enabled_webapi"],
         enabled_email=form.data["enabled_email"],
     )
@@ -116,13 +116,7 @@ async def api_token_edit(request: Request, session_provider: ORMSessionProvider)
     if not api_token:
         return Response(status_code=404)
 
-    form = await ApiTokenForm.from_formdata(
-        request=request,
-        name=api_token.name,
-        enabled_webapi=api_token.enabled_webapi,
-        enabled_email=api_token.enabled_email,
-        ip_restriction=api_token.ip_restriction_display(),
-    )
+    form = await ApiTokenForm.from_formdata(request=request, obj=api_token)
     if not form.is_submitted() or not await form.validate():
         form_html = render_form(form)
         return template_context_render(
@@ -132,7 +126,7 @@ async def api_token_edit(request: Request, session_provider: ORMSessionProvider)
         )
 
     api_token.name = form.data["name"]
-    api_token.ip_restriction = form.ip_restriction_parsed
+    api_token.ip_restriction = form.data["ip_restriction"]
     api_token.enabled_webapi = form.data["enabled_webapi"]
     api_token.enabled_email = form.data["enabled_email"]
     session_provider.session.add(api_token)

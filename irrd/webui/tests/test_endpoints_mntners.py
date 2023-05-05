@@ -38,7 +38,11 @@ class TestApiTokenAdd(WebRequestTest):
         api_token_name = "token name"
         response = test_client.post(
             self.url,
-            data={"name": api_token_name, "enabled_webapi": "1", "ip_restriction": " 192.0.2.1 ,192.0.02.2"},
+            data={
+                "name": api_token_name,
+                "enabled_webapi": "1",
+                "ip_restriction": " 192.0.2.1 ,192.0.02.0/24",
+            },
             follow_redirects=False,
         )
         assert response.status_code == 302
@@ -48,8 +52,7 @@ class TestApiTokenAdd(WebRequestTest):
         assert new_api_token.creator == user
         assert new_api_token.name == api_token_name
         assert new_api_token.enabled_webapi
-        print(new_api_token.ip_restriction)
-        assert new_api_token.ip_restriction == ["192.0.2.1/32", "192.0.2.2/32"]
+        assert new_api_token.ip_restriction == "192.0.2.1,192.0.2.0/24"
         assert not new_api_token.enabled_email
         assert len(smtpd.messages) == 3
         assert new_api_token.name in smtpd.messages[1].as_string()
