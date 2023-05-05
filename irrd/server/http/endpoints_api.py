@@ -86,6 +86,10 @@ class ObjectSubmissionEndpoint(HTTPEndpoint):
 
         request_meta["HTTP-client-IP"] = request.client.host
         request_meta["HTTP-User-Agent"] = request.headers.get("User-Agent")
+        try:
+            remote_ip = IP(request.client.host)
+        except ValueError:
+            remote_ip = None
 
         handler = ChangeSubmissionHandler()
         await sync_to_async(handler.load_change_submission)(
@@ -93,7 +97,7 @@ class ObjectSubmissionEndpoint(HTTPEndpoint):
             origin=AuthoritativeChangeOrigin.webapi,
             delete=delete,
             request_meta=request_meta,
-            remote_ip=IP(request.client.host),
+            remote_ip=remote_ip,
         )
         await sync_to_async(handler.send_notification_target_reports)()
         return JSONResponse(handler.submitter_report_json())
