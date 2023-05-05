@@ -37,6 +37,13 @@ class JournalEntryOrigin(enum.Enum):
     route_preference = "ROUTE_PREFERENCE"
 
 
+class AuthoritativeChangeOrigin(enum.Enum):
+    webui = "WEBUI"
+    webapi = "WEBAPI"
+    email = "EMAIL"
+    other = "OTHER"
+
+
 Base = declarative_base()
 
 

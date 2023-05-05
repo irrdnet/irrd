@@ -67,6 +67,7 @@ class RPSLChangeSubmission(pydantic.main.BaseModel):
     objects: List[RPSLChangeSubmissionObject]
     passwords: List[str] = []
     override: Optional[str]
+    api_keys: List[str] = []
     delete_reason: str = "(No reason provided)"
 
 

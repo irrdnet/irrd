@@ -5,7 +5,7 @@ import pytest
 
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.scopefilter.validators import ScopeFilterValidator
-from irrd.storage.models import JournalEntryOrigin
+from irrd.storage.models import AuthoritativeChangeOrigin, JournalEntryOrigin
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
 from irrd.utils.test_utils import flatten_mock_calls
 
@@ -86,7 +86,7 @@ class TestChangeSubmissionHandler:
         remarks:        remark
         """)
 
-        handler = ChangeSubmissionHandler().load_text_blob(rpsl_text)
+        handler = ChangeSubmissionHandler().load_text_blob(rpsl_text, AuthoritativeChangeOrigin.email)
         assert handler.status() == "SUCCESS"
 
         assert flatten_mock_calls(mock_dq) == [
@@ -192,6 +192,7 @@ class TestChangeSubmissionHandler:
 
         handler = ChangeSubmissionHandler().load_text_blob(
             rpsl_text,
+            AuthoritativeChangeOrigin.email,
             pgp_fingerprint="8626 1D8DBEBD A4F5 4692  D64D A838 3BA7 80F2 38C6",
             request_meta={"Message-ID": "test", "From": "example@example.com"},
         )
@@ -342,7 +343,9 @@ class TestChangeSubmissionHandler:
         mock_dh.execute_query = lambda query: next(query_responses)
 
         handler = ChangeSubmissionHandler().load_text_blob(
-            rpsl_text, pgp_fingerprint="8626 1D8DBEBD A4F5 4692  D64D A838 3BA7 80F2 38C6"
+            rpsl_text,
+            AuthoritativeChangeOrigin.email,
+            pgp_fingerprint="8626 1D8DBEBD A4F5 4692  D64D A838 3BA7 80F2 38C6",
         )
         assert handler.status() == "FAILED", handler.submitter_report_human()
 
@@ -388,7 +391,7 @@ class TestChangeSubmissionHandler:
         mock_dh.execute_query = lambda query: next(query_responses)
 
         handler = ChangeSubmissionHandler().load_text_blob(
-            rpsl_person + "delete: delete\npassword: crypt-password\n"
+            rpsl_person + "delete: delete\npassword: crypt-password\n", AuthoritativeChangeOrigin.email
         )
         assert handler.status() == "SUCCESS"
 
@@ -566,7 +569,7 @@ class TestChangeSubmissionHandler:
         source:         TEST
         """)
 
-        handler = ChangeSubmissionHandler().load_text_blob(rpsl_text)
+        handler = ChangeSubmissionHandler().load_text_blob(rpsl_text, AuthoritativeChangeOrigin.email)
         assert handler.status() == "FAILED"
 
         assert flatten_mock_calls(mock_dq) == [
@@ -803,7 +806,9 @@ class TestChangeSubmissionHandler:
             }
         )
 
-        handler = ChangeSubmissionHandler().load_change_submission(submission_object)
+        handler = ChangeSubmissionHandler().load_change_submission(
+            submission_object, origin=AuthoritativeChangeOrigin.webapi
+        )
         assert handler.status() == "FAILED"
 
         assert flatten_mock_calls(mock_dq) == [
@@ -941,7 +946,7 @@ class TestChangeSubmissionHandler:
         remarks:        remark
         """)
 
-        handler = ChangeSubmissionHandler().load_text_blob(rpsl_text)
+        handler = ChangeSubmissionHandler().load_text_blob(rpsl_text, AuthoritativeChangeOrigin.email)
         assert handler.status() == "FAILED"
 
         assert flatten_mock_calls(mock_dq) == [
@@ -1054,7 +1059,9 @@ class TestChangeSubmissionHandler:
             }
         )
 
-        handler = ChangeSubmissionHandler().load_change_submission(submission_object, delete=True)
+        handler = ChangeSubmissionHandler().load_change_submission(
+            submission_object, origin=AuthoritativeChangeOrigin.webapi, delete=True
+        )
         assert handler.status() == "FAILED"
 
         assert flatten_mock_calls(mock_dq) == []

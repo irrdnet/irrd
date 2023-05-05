@@ -4,6 +4,7 @@ from typing import Optional
 
 from irrd.utils import email
 
+from ..storage.models import AuthoritativeChangeOrigin
 from .handler import ChangeSubmissionHandler
 
 logger = logging.getLogger(__name__)
@@ -50,7 +51,10 @@ def handle_email_submission(email_txt: str) -> Optional[ChangeSubmissionHandler]
             """)
         else:
             handler = ChangeSubmissionHandler().load_text_blob(
-                msg.body, pgp_fingerprint=msg.pgp_fingerprint, request_meta=request_meta
+                msg.body,
+                AuthoritativeChangeOrigin.email,
+                pgp_fingerprint=msg.pgp_fingerprint,
+                request_meta=request_meta,
             )
             logger.info(f"Processed e-mail {msg.message_id} from {msg.message_from}: {handler.status()}")
             logger.debug(

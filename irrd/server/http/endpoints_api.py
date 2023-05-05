@@ -5,6 +5,7 @@ from json import JSONDecodeError
 
 import pydantic
 from asgiref.sync import sync_to_async
+from IPy import IP
 from starlette.endpoints import HTTPEndpoint
 from starlette.requests import Request
 from starlette.responses import JSONResponse, PlainTextResponse, Response
@@ -13,6 +14,7 @@ from irrd.server.access_check import is_client_permitted
 from irrd.updates.handler import ChangeSubmissionHandler
 from irrd.utils.validators import RPSLChangeSubmission, RPSLSuspensionSubmission
 
+from ...storage.models import AuthoritativeChangeOrigin
 from ..whois.query_parser import WhoisQueryParser
 from ..whois.query_response import WhoisQueryResponseType
 from .status_generator import StatusGenerator
@@ -87,7 +89,11 @@ class ObjectSubmissionEndpoint(HTTPEndpoint):
 
         handler = ChangeSubmissionHandler()
         await sync_to_async(handler.load_change_submission)(
-            data=data, delete=delete, request_meta=request_meta
+            data=data,
+            origin=AuthoritativeChangeOrigin.webapi,
+            delete=delete,
+            request_meta=request_meta,
+            remote_ip=IP(request.client.host),
         )
         await sync_to_async(handler.send_notification_target_reports)()
         return JSONResponse(handler.submitter_report_json())

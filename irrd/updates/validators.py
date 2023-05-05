@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, List, Optional, Set, Tuple, Union
 
 import sqlalchemy.orm as saorm
+from IPy import IP
 from ordered_set import OrderedSet
 from passlib.hash import md5_crypt
 
@@ -11,7 +12,7 @@ from irrd.conf import RPSL_MNTNER_AUTH_INTERNAL, get_setting
 from irrd.rpsl.parser import RPSLObject
 from irrd.rpsl.rpsl_objects import RPSLMntner, RPSLSet, rpsl_object_from_text
 from irrd.storage.database_handler import DatabaseHandler
-from irrd.storage.models import AuthMntner, AuthUser
+from irrd.storage.models import AuthMntner, AuthoritativeChangeOrigin, AuthUser
 from irrd.storage.queries import RPSLDatabaseQuery, RPSLDatabaseSuspendedQuery
 
 from .parser_state import RPSLSetAutnumAuthenticationMode, UpdateRequestType
@@ -164,17 +165,23 @@ class AuthValidator:
 
     passwords: List[str]
     overrides: List[str]
+    api_keys: List[str]
     keycert_obj_pk: Optional[str] = None
 
     def __init__(
         self,
         database_handler: DatabaseHandler,
+        origin: AuthoritativeChangeOrigin = AuthoritativeChangeOrigin.other,
         keycert_obj_pk=None,
         internal_authenticated_user: Optional[AuthUser] = None,
+        remote_ip: Optional[IP] = None,
     ) -> None:
         self.database_handler = database_handler
         self.passwords = []
         self.overrides = []
+        self.api_keys = []
+        self.origin = origin
+        self.remote_ip = remote_ip
         self._mntner_db_cache: Set[RPSLMntner] = set()
         self._pre_approved: Set[str] = set()
         self.keycert_obj_pk = keycert_obj_pk

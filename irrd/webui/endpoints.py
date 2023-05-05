@@ -6,7 +6,7 @@ from starlette.responses import Response
 from starlette_wtf import csrf_protect, csrf_token
 
 from irrd.conf import get_setting
-from irrd.storage.models import AuthUser, RPSLDatabaseObject
+from irrd.storage.models import AuthoritativeChangeOrigin, AuthUser, RPSLDatabaseObject
 from irrd.storage.orm_provider import ORMSessionProvider, session_provider_manager
 from irrd.storage.queries import RPSLDatabaseQuery
 from irrd.updates.handler import ChangeSubmissionHandler
@@ -154,6 +154,7 @@ async def rpsl_update(
         def save():
             return ChangeSubmissionHandler().load_text_blob(
                 object_texts_blob=form_data["data"],
+                origin=AuthoritativeChangeOrigin.webui,
                 request_meta=request_meta,
                 internal_authenticated_user=active_user,
             )
