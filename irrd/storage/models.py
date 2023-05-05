@@ -400,7 +400,7 @@ class AuthApiToken(Base):  # type: ignore
         backref=sa.orm.backref("api_tokens"),
     )
 
-    ip_restriction = sa.Column(pg.CIDR, nullable=True)
+    ip_restriction = sa.Column(pg.ARRAY(pg.CIDR), nullable=True)
     enabled_webapi = sa.Column(sa.Boolean(), default=True, nullable=False)
     enabled_email = sa.Column(sa.Boolean(), default=True, nullable=False)
 
@@ -408,7 +408,10 @@ class AuthApiToken(Base):  # type: ignore
     updated = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
 
     def __repr__(self):
-        return f"<{self.token}/{self.name}/{self.maintainer}"
+        return f"<{self.token}/{self.name}/{self.mntner.rpsl_mntner_pk}"
+
+    def ip_restriction_display(self) -> str:
+        return ", ".join(self.ip_restriction) if self.ip_restriction else ""
 
 
 class AuthMntner(Base):  # type: ignore

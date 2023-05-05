@@ -71,7 +71,7 @@
                     <tr>
                         <td>{{ api_token.name }}</td>
                         <td>{{ api_token.creator.name }}</td>
-                        <td>{{ api_token.ip_restriction }}</td>
+                        <td>{{ api_token.ip_restriction_display() }}</td>
                         <td>{{ "Yes" if api_token.enabled_webapi else "No" }}</td>
                         <td>{{ "Yes" if api_token.enabled_email else "No" }}</td>
                         <td>

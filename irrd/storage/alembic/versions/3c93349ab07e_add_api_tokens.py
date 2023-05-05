@@ -1,8 +1,8 @@
 """add_api_tokens
 
-Revision ID: a75d0bd6c9f2
+Revision ID: 3c93349ab07e
 Revises: 5bbbc2989aa6
-Create Date: 2023-05-04 21:09:08.591476
+Create Date: 2023-05-05 12:48:50.096432
 
 """
 import sqlalchemy as sa
@@ -10,7 +10,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = "a75d0bd6c9f2"
+revision = "3c93349ab07e"
 down_revision = "5bbbc2989aa6"
 branch_labels = None
 depends_on = None
@@ -28,7 +28,7 @@ def upgrade():
         sa.Column("name", sa.String(), nullable=False),
         sa.Column("creator_id", postgresql.UUID(), nullable=True),
         sa.Column("mntner_id", postgresql.UUID(), nullable=True),
-        sa.Column("ip_restriction", postgresql.CIDR(), nullable=True),
+        sa.Column("ip_restriction", postgresql.ARRAY(postgresql.CIDR()), nullable=True),
         sa.Column("enabled_webapi", sa.Boolean(), nullable=False),
         sa.Column("enabled_email", sa.Boolean(), nullable=False),
         sa.Column("created", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
