@@ -48,6 +48,7 @@ class TestApiTokenAdd(WebRequestTest):
         assert new_api_token.creator == user
         assert new_api_token.name == api_token_name
         assert new_api_token.enabled_webapi
+        print(new_api_token.ip_restriction)
         assert new_api_token.ip_restriction == ["192.0.2.1/32", "192.0.2.2/32"]
         assert not new_api_token.enabled_email
         assert len(smtpd.messages) == 3
