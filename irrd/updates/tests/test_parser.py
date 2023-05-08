@@ -490,7 +490,10 @@ class TestSingleChangeRequestHandling:
         auth_validator = AuthValidator(mock_dh)
 
         result_inetnum = parse_change_requests(
-            SAMPLE_INETNUM + "password: crypt-password\napi-key: key", mock_dh, auth_validator, reference_validator
+            SAMPLE_INETNUM + "password: crypt-password\napi-key: key",
+            mock_dh,
+            auth_validator,
+            reference_validator,
         )[0]
         assert result_inetnum._check_auth()
         assert not result_inetnum.error_messages
