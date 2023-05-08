@@ -108,10 +108,10 @@ commands:
 
       - restore_cache:
           keys:
-            - v2-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
+            - v3-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
               "poetry.lock" }}
             # fallback to using the latest cache if no exact match is found
-            - v2-dependencies-{{ .Environment.CIRCLE_JOB }}
+            - v3-dependencies-{{ .Environment.CIRCLE_JOB }}
 
       - run:
           name: install python dependencies
@@ -123,7 +123,7 @@ commands:
       - save_cache:
           paths:
             - /mnt/ramdisk/.venv
-          key: v2-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
+          key: v3-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
             "poetry.lock" }}
 
   wait_for_postgres:

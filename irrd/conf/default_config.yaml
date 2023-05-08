@@ -47,6 +47,8 @@ irrd:
     auth:
         gnupg_keyring: null
         authenticate_parents_route_creation: true
+        irrd_internal_migration_enabled: false
+        webui_auth_failure_rate_limit: "30/hour"
         set_creation:
             COMMON:
                 prefix_required: true

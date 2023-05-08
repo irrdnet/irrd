@@ -237,15 +237,12 @@ class RPSLObjectFromROA(RPSLObject):
         remarks_fill = RPSL_ATTRIBUTE_TEXT_WIDTH * " "
         remarks = get_setting("rpki.pseudo_irr_remarks").replace("\n", "\n" + remarks_fill).strip()
         remarks = remarks.format(asn=self.asn, prefix=self.prefix_str)
-        rpsl_object_text = (
-            f"""
+        rpsl_object_text = f"""
 {object_class_display}{self.prefix_str}
 descr:          RPKI ROA for {self.prefix_str} / AS{self.asn}
 remarks:        {remarks}
 max-length:     {self.max_length}
 origin:         AS{self.asn}
 source:         {RPKI_IRR_PSEUDO_SOURCE}  # Trust Anchor: {self.trust_anchor}
-""".strip()
-            + "\n"
-        )
+""".strip() + "\n"
         return rpsl_object_text

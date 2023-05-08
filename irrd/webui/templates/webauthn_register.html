@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>Register new security token</h2>
+    <div class="row">
+        <div class="col-lg-12">
+            <code>{{ webauthn_options_json }}</code>
+            <div id="error-box" class="alert alert-danger" role="alert" style="display: none">
+                Registration did not succeed.
+                This may be because you cancelled authentication, used an unsupported key,
+                or used a key that is already configured.
+            </div>
+            <hr>
+            <div class="mb-3">
+                <label class="form-label" for="name">Token name (optional, for your own reference)</label>
+                <input class="form-control" id="name" name="name" required type="text" value="">
+            </div>
+            <div class="mb-3">
+                <button id="webauthn-register" class="btn btn-primary btn-block">
+                    Register new token
+                </button>
+            </div>
+        </div>
+    </div>
+    <script src="/static/js/simplewebauthn-browser-es5-umd.js"></script>
+    <script>
+        document.getElementById('webauthn-register').addEventListener('click', async () => {
+            document.getElementById('error-box').style.display = "none";
+            const {startRegistration} = SimpleWebAuthnBrowser;
+
+            const opts = {{ webauthn_options_json|safe }};
+            let regResp;
+            try {
+                regResp = await startRegistration(opts);
+            } catch (err) {
+                document.getElementById('error-box').style.display = "block";
+                return;
+            }
+            const registrationResp = await fetch(
+                "{{ url_for('ui:auth:webauthn_verify_registration_response') }}",
+                {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({
+                        'name': document.getElementById('name').value,
+                        'registration_response': JSON.stringify(regResp),
+                    }),
+                }
+            );
+            const registrationResult = await registrationResp.json();
+            if (registrationResult.success) {
+                window.location.href = "{{ url_for('ui:auth:mfa_status') }}";
+            } else {
+                document.getElementById('error-box').style.display = "block";
+            }
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,11 @@
+You are receiving this email because you are an admin-c for {{ auth_mntner.rpsl_mntner_pk }}
+
+The user {{ user.email }} has requested to migrate mntner
+{{ auth_mntner.rpsl_mntner_pk }} in {{ auth_mntner.rpsl_mntner_source }}
+to IRRD's internal authentication. The mentioned user will have full
+access to this mntner object, and can add permissions for other users.
+
+Existing authentication methods will be kept after this migration.
+
+To proceed with this migration, the same user must go to the following page:
+{{ url_for("ui:mntner_migrate_complete", pk=auth_mntner.pk, token=auth_mntner.migration_token ) }}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>Authorise another user on {{ mntner.rpsl_mntner_pk }}</h2>
+    <div class="row">
+        <div class="col-lg-9">
+            {{ form_html }}
+        </div>
+        <div class="col-lg-3 alert alert-info">
+            <p>
+                You are about to authorise a user on mntner {{ mntner.rpsl_mntner_pk }}.
+                This user will be able to edit any RPSL objects that have this mntner in
+                their mnt-by. The user must have already created their account.
+            </p>
+            <p>
+                If you assign user management permissions, this user can also
+                change the {{ mntner.rpsl_mntner_pk }} object itself,
+                and add or remove other users.
+            </p>
+        </div>
+    </div>
+{% endblock %}

@@ -1,9 +1,10 @@
 import itertools
+from unittest import mock
 from unittest.mock import Mock
 
 import pytest
 
-from irrd.conf import AUTH_SET_CREATION_COMMON_KEY
+from irrd.conf import AUTH_SET_CREATION_COMMON_KEY, RPSL_MNTNER_AUTH_INTERNAL
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseSuspendedQuery
@@ -20,7 +21,9 @@ from irrd.utils.rpsl_samples import (
 )
 from irrd.utils.test_utils import flatten_mock_calls
 from irrd.utils.text import remove_auth_hashes
+from irrd.vendor.mock_alchemy.mocking import UnifiedAlchemyMagicMock
 
+from ...storage.models import AuthMntner, AuthUser
 from ..validators import AuthValidator, RulesValidator
 
 VALID_PW = "override-password"
@@ -64,6 +67,23 @@ class TestAuthValidator:
         result = validator.process_auth(person, rpsl_obj_current=person)
         assert result.is_valid(), result.error_messages
         assert result.used_override
+
+    def test_override_internal_auth(self, prepare_mocks, config_override):
+        validator, mock_dq, mock_dh = prepare_mocks
+        mock_dh.execute_query = lambda q: []
+        person = rpsl_object_from_text(SAMPLE_PERSON)
+
+        user = AuthUser(override=True)
+        validator = AuthValidator(mock_dh, keycert_obj_pk=None, internal_authenticated_user=user)
+
+        result = validator.process_auth(person, None)
+        assert result.is_valid(), result.error_messages
+        assert result.used_override
+
+        user.override = False
+        result = validator.process_auth(person, None)
+        assert not result.is_valid()
+        assert not result.used_override
 
     def test_override_invalid_or_missing(self, prepare_mocks, config_override):
         # This test mostly ignores the regular process that happens
@@ -264,6 +284,38 @@ class TestAuthValidator:
             "Object submitted with dummy hash values, but multiple or no passwords "
             "submitted. Either submit only full hashes, or a single password."
         }
+
+    def test_modify_mntner_internal_auth(self, prepare_mocks, config_override):
+        validator, mock_dq, mock_dh = prepare_mocks
+        mntner = rpsl_object_from_text(SAMPLE_MNTNER)
+        person = rpsl_object_from_text(SAMPLE_PERSON)
+        mock_dh.execute_query = lambda q: []
+
+        mock_mntners = [AuthMntner(rpsl_mntner_pk="TEST-MNT", rpsl_mntner_source="TEST")]
+
+        # Modifying the mntner itself requires user management, this should work
+        user = AuthUser(mntners_user_management=mock_mntners)
+        validator = AuthValidator(mock_dh, keycert_obj_pk=None, internal_authenticated_user=user)
+        result = validator.process_auth(mntner, mntner)
+        assert result.is_valid()
+
+        # Modifying mntner should fail without user_management
+        user = AuthUser(mntners=mock_mntners)
+        validator = AuthValidator(mock_dh, keycert_obj_pk=None, internal_authenticated_user=user)
+        result = validator.process_auth(mntner, mntner)
+        assert not result.is_valid()
+
+        # Modifying different object should succeed without user_management, matching mntner PK
+        user = AuthUser(mntners=mock_mntners)
+        validator = AuthValidator(mock_dh, keycert_obj_pk=None, internal_authenticated_user=user)
+        result = validator.process_auth(person, person)
+        assert result.is_valid()
+
+        # Mntner with entirely different PK should not work
+        user = AuthUser(mntners=[AuthMntner(rpsl_mntner_pk="INVALID-MNT", rpsl_mntner_source="TEST")])
+        validator = AuthValidator(mock_dh, keycert_obj_pk=None, internal_authenticated_user=user)
+        result = validator.process_auth(person, person)
+        assert not result.is_valid()
 
     def test_related_route_exact_inetnum(self, prepare_mocks, config_override):
         validator, mock_dq, mock_dh = prepare_mocks
@@ -651,8 +703,11 @@ class TestRulesValidator:
         validator = RulesValidator(mock_dh)
         yield validator, mock_dsq, mock_dh
 
-    def test_mntner_create(self, prepare_mocks):
+    def test_check_suspended_mntner_with_same_pk(self, prepare_mocks, monkeypatch):
         validator, mock_dsq, mock_dh = prepare_mocks
+        monkeypatch.setattr(
+            "irrd.updates.validators.RulesValidator._check_mntner_migrated", lambda slf, pk, source: False
+        )
 
         person = rpsl_object_from_text(SAMPLE_PERSON)
         mntner = rpsl_object_from_text(SAMPLE_MNTNER)
@@ -688,3 +743,61 @@ class TestRulesValidator:
             ["sources", (["TEST"],), {}],
             ["first_only", (), {}],
         ]
+
+    def test_check_mntner_migrated(self, prepare_mocks, monkeypatch):
+        validator, mock_dsq, mock_dh = prepare_mocks
+        mock_dh._connection = None
+        monkeypatch.setattr(
+            "irrd.updates.validators.RulesValidator._check_suspended_mntner_with_same_pk",
+            lambda slf, pk, source: False,
+        )
+        mock_sa_session = UnifiedAlchemyMagicMock(
+            data=[
+                (
+                    [
+                        mock.call.query(AuthMntner),
+                        mock.call.filter(
+                            AuthMntner.rpsl_mntner_pk == "TEST-MNT", AuthMntner.rpsl_mntner_source == "TEST"
+                        ),
+                    ],
+                    [AuthMntner(rpsl_mntner_pk="TEST-MNT")],
+                )
+            ]
+        )
+        monkeypatch.setattr("irrd.updates.validators.saorm.Session", lambda bind: mock_sa_session)
+
+        person = rpsl_object_from_text(SAMPLE_PERSON)
+        mntner = rpsl_object_from_text(SAMPLE_MNTNER)
+        mntner_internal = rpsl_object_from_text(SAMPLE_MNTNER + f"auth: {RPSL_MNTNER_AUTH_INTERNAL}")
+
+        mock_sa_session.count = lambda: False
+        assert validator.validate(person, UpdateRequestType.CREATE).is_valid()
+        assert validator.validate(mntner, UpdateRequestType.MODIFY).is_valid()
+
+        mock_sa_session.filter.assert_has_calls(
+            [
+                mock.call(AuthMntner.rpsl_mntner_pk == "TEST-MNT", AuthMntner.rpsl_mntner_source == "TEST"),
+            ]
+        )
+
+        validator._check_mntner_migrated.cache_clear()
+        mock_sa_session.count = lambda: True
+        assert validator.validate(person, UpdateRequestType.CREATE).is_valid()
+        invalid = validator.validate(mntner, UpdateRequestType.CREATE)
+        assert not invalid.is_valid()
+        assert invalid.error_messages == {
+            "This maintainer is migrated and must include the IRRD-INTERNAL-AUTH method."
+        }
+
+        validator._check_mntner_migrated.cache_clear()
+        mock_sa_session.count = lambda: True
+        assert validator.validate(mntner_internal, UpdateRequestType.MODIFY).is_valid()
+
+        validator._check_mntner_migrated.cache_clear()
+        mock_sa_session.count = lambda: False
+        assert validator.validate(person, UpdateRequestType.CREATE).is_valid()
+        invalid = validator.validate(mntner_internal, UpdateRequestType.CREATE)
+        assert not invalid.is_valid()
+        assert invalid.error_messages == {
+            "This maintainer is not migrated, and therefore can not use the IRRD-INTERNAL-AUTH method."
+        }

@@ -16,7 +16,7 @@ from ...whois.query_response import (
     WhoisQueryResponseType,
 )
 from ..app import app
-from ..endpoints import StatusEndpoint, WhoisQueryEndpoint
+from ..endpoints_api import StatusEndpoint, WhoisQueryEndpoint
 from ..status_generator import StatusGenerator
 
 
@@ -53,7 +53,7 @@ class TestStatusEndpoint:
 
         mock_database_status_generator = Mock(spec=StatusGenerator)
         monkeypatch.setattr(
-            "irrd.server.http.endpoints.StatusGenerator", lambda: mock_database_status_generator
+            "irrd.server.http.endpoints_api.StatusGenerator", lambda: mock_database_status_generator
         )
         mock_database_status_generator.generate_status = lambda: "status"
 
@@ -85,7 +85,7 @@ class TestWhoisQueryEndpoint:
     def test_query_endpoint(self, monkeypatch):
         mock_query_parser = Mock(spec=WhoisQueryParser)
         monkeypatch.setattr(
-            "irrd.server.http.endpoints.WhoisQueryParser",
+            "irrd.server.http.endpoints_api.WhoisQueryParser",
             lambda client_ip, client_str, preloader, database_handler: mock_query_parser,
         )
         app = Mock(
@@ -157,7 +157,7 @@ class TestWhoisQueryEndpoint:
 class TestObjectSubmissionEndpoint:
     def test_endpoint(self, monkeypatch):
         mock_handler = Mock(spec=ChangeSubmissionHandler)
-        monkeypatch.setattr("irrd.server.http.endpoints.ChangeSubmissionHandler", lambda: mock_handler)
+        monkeypatch.setattr("irrd.server.http.endpoints_api.ChangeSubmissionHandler", lambda: mock_handler)
         mock_handler.submitter_report_json = lambda: {"response": True}
 
         client = TestClient(app)
@@ -189,7 +189,7 @@ class TestObjectSubmissionEndpoint:
         mock_handler.send_notification_target_reports.assert_called_once()
         mock_handler.reset_mock()
 
-        response_delete = client.delete("/v1/submit/", data=ujson.dumps(data))
+        response_delete = client.request("DELETE", "/v1/submit/", data=ujson.dumps(data))
         assert response_delete.status_code == 200
         assert response_delete.text == '{"response":true}'
         mock_handler.load_change_submission.assert_called_once_with(
@@ -200,13 +200,13 @@ class TestObjectSubmissionEndpoint:
         mock_handler.send_notification_target_reports.assert_called_once()
         mock_handler.reset_mock()
 
-        response_invalid_format = client.post("/v1/submit/", data='{"invalid": true}')
+        response_invalid_format = client.post("/v1/submit/", content='{"invalid": true}')
         assert response_invalid_format.status_code == 400
         assert "field required" in response_invalid_format.text
         mock_handler.load_change_submission.assert_not_called()
         mock_handler.send_notification_target_reports.assert_not_called()
 
-        response_invalid_json = client.post("/v1/submit/", data="invalid")
+        response_invalid_json = client.post("/v1/submit/", content="invalid")
         assert response_invalid_json.status_code == 400
         assert "expect" in response_invalid_json.text.lower()
         mock_handler.load_change_submission.assert_not_called()
@@ -216,7 +216,7 @@ class TestObjectSubmissionEndpoint:
 class TestSuspensionSubmissionEndpoint:
     def test_endpoint(self, monkeypatch):
         mock_handler = Mock(spec=ChangeSubmissionHandler)
-        monkeypatch.setattr("irrd.server.http.endpoints.ChangeSubmissionHandler", lambda: mock_handler)
+        monkeypatch.setattr("irrd.server.http.endpoints_api.ChangeSubmissionHandler", lambda: mock_handler)
         mock_handler.submitter_report_json = lambda: {"response": True}
 
         client = TestClient(app)
@@ -235,10 +235,10 @@ class TestSuspensionSubmissionEndpoint:
         )
         mock_handler.reset_mock()
 
-        response_invalid_format = client.post("/v1/suspension/", data='{"invalid": true}')
+        response_invalid_format = client.post("/v1/suspension/", content='{"invalid": true}')
         assert response_invalid_format.status_code == 400
         assert "field required" in response_invalid_format.text
 
-        response_invalid_json = client.post("/v1/suspension/", data="invalid")
+        response_invalid_json = client.post("/v1/suspension/", content="invalid")
         assert response_invalid_json.status_code == 400
         assert "expect" in response_invalid_json.text.lower()

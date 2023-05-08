@@ -1,5 +1,4 @@
 import logging
-import socket
 import textwrap
 from typing import Optional
 
@@ -40,12 +39,10 @@ class StatusGenerator:
         Generate the header of the report, containing basic info like version
         and time until the next mirror update.
         """
-        return textwrap.dedent(
-            f"""
+        return textwrap.dedent(f"""
         IRRD version {__version__}
         Listening on {get_setting('server.whois.interface')} port {get_setting('server.whois.port')}
-        """
-        ).lstrip()
+        """).lstrip()
 
     def _generate_statistics_table(self) -> str:
         """
@@ -121,8 +118,7 @@ class StatusGenerator:
             remote_information = self._generate_remote_status_info(nrtm_host, nrtm_port, source)
             remote_information = textwrap.indent(remote_information, " " * 16)
 
-            result_txt += textwrap.dedent(
-                f"""
+            result_txt += textwrap.dedent(f"""
             Status for {source}
             -------------------
             Local information:
@@ -143,8 +139,7 @@ class StatusGenerator:
                 Route object preference: {route_object_preference}
 
             Remote information:{remote_information}
-            """
-            )
+            """)
         return result_txt
 
     def _generate_remote_status_info(self, nrtm_host: Optional[str], nrtm_port: int, source: str) -> str:
@@ -161,32 +156,24 @@ class StatusGenerator:
                 mirrorable, mirror_serial_oldest, mirror_serial_newest, mirror_export_serial = source_status
                 mirrorable_str = "Yes" if mirrorable else "No"
 
-                return textwrap.dedent(
-                    f"""
+                return textwrap.dedent(f"""
                     NRTM host: {nrtm_host} port {nrtm_port}
                     Mirrorable: {mirrorable_str}
                     Oldest journal serial number: {mirror_serial_oldest}
                     Newest journal serial number: {mirror_serial_newest}
                     Last export at serial number: {mirror_export_serial}
-                    """
-                )
+                    """)
             except ValueError:
-                return textwrap.dedent(
-                    f"""
+                return textwrap.dedent(f"""
                     NRTM host: {nrtm_host} port {nrtm_port}
                     Remote status query unsupported or query failed
-                    """
-                )
-            except (socket.timeout, ConnectionError):
-                return textwrap.dedent(
-                    f"""
+                    """)
+            except OSError:
+                return textwrap.dedent(f"""
                     NRTM host: {nrtm_host} port {nrtm_port}
                     Unable to reach remote server for status query
-                    """
-                )
+                    """)
         else:
-            return textwrap.dedent(
-                """
+            return textwrap.dedent("""
                 No NRTM host configured.
-                """
-            )
+                """)

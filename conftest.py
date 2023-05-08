@@ -6,9 +6,17 @@ import os
 import pytest
 from typing import Dict, Any
 
+import redis
+from sqlalchemy.exc import ProgrammingError
+
 from irrd import conf
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
-from irrd.utils.rpsl_samples import SAMPLE_KEY_CERT
+from irrd.storage import get_engine
+from irrd.storage.database_handler import DatabaseHandler
+from irrd.storage.models import RPSLDatabaseObject, JournalEntryOrigin
+from irrd.storage.orm_provider import ORMSessionProvider
+from irrd.utils.factories import set_factory_session, AuthUserFactory
+from irrd.utils.rpsl_samples import SAMPLE_KEY_CERT, SAMPLE_MNTNER, SAMPLE_PERSON, SAMPLE_ROLE
 from irrd.vendor.dotted.collection import DottedDict
 
 
@@ -52,7 +60,7 @@ def preload_gpg_key():
 
 def pytest_configure(config):
     """
-    This function is called by py.test, and will set a flag to
+    This function is called by py.test, and will set flags to
     indicate tests are running. This is used by the configuration
     checker to not require a full working config for most tests.
     Can be checked with:
@@ -61,6 +69,7 @@ def pytest_configure(config):
     """
     import sys
     sys._called_from_test = True
+    os.environ["TESTING"] = "true"
 
 
 @pytest.fixture(autouse=True)
@@ -71,3 +80,74 @@ def reset_config():
     """
     conf.config_init(None)
     conf.testing_overrides = None
+
+
+@pytest.fixture(scope="package")
+def irrd_database_create_destroy():
+    """
+    Some tests use a live PostgreSQL database, as it's rather complicated
+    to mock, and mocking would not make them less useful.
+    Using in-memory SQLite is not an option due to using specific
+    PostgreSQL features.
+
+    To improve performance, these tests do not run full migrations, but
+    the database is only created once per session, and truncated between tests.
+    """
+    if not conf.is_config_initialised():
+        conf.config_init(None)
+        conf.testing_overrides = None
+
+    engine = get_engine()
+    try:
+        engine.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
+    except ProgrammingError as pe:  # pragma: no cover
+        print(f"WARNING: unable to create extension pgcrypto on the database. Queries may fail: {pe}")
+
+    table_name = RPSLDatabaseObject.__tablename__
+    if engine.has_table(engine, table_name):  # pragma: no cover
+        if engine.url.database not in ["irrd_test", "circle_test"]:
+            print(
+                f"The database on URL {engine.url} already has a table named {table_name} - "
+                "delete existing database and all data in it?"
+            )
+            confirm = input(f"Type '{engine.url.database}' to confirm deletion\n> ")
+            if confirm != engine.url.database:
+                pytest.exit("Not overwriting database, terminating test run")
+        RPSLDatabaseObject.metadata.drop_all(engine)
+
+    RPSLDatabaseObject.metadata.create_all(engine)
+
+    yield engine
+
+    engine.dispose()
+    RPSLDatabaseObject.metadata.drop_all(engine)
+
+
+@pytest.fixture(scope="function")
+def irrd_db(irrd_database_create_destroy):
+    engine = irrd_database_create_destroy
+    dh = DatabaseHandler()
+    for table in engine.table_names():
+        dh.execute_statement(f"TRUNCATE {table} CASCADE")
+    dh.commit()
+    dh.close()
+
+
+@pytest.fixture(scope="function")
+def irrd_db_session_with_user(irrd_db):
+    dh = DatabaseHandler()
+    dh.upsert_rpsl_object(rpsl_object_from_text(SAMPLE_MNTNER), origin=JournalEntryOrigin.unknown)
+    dh.upsert_rpsl_object(rpsl_object_from_text(SAMPLE_PERSON), origin=JournalEntryOrigin.unknown)
+    dh.upsert_rpsl_object(rpsl_object_from_text(SAMPLE_ROLE), origin=JournalEntryOrigin.unknown)
+    dh.commit()
+    dh.close()
+
+    provider = ORMSessionProvider()
+    set_factory_session(provider.session)
+    user = AuthUserFactory()
+    provider.session.commit()
+    provider.session.connection().execute("COMMIT")
+
+    yield provider, user
+
+    provider.commit_close()

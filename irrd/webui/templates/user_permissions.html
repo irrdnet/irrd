@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>Maintainer permissions</h2>
+
+    {% if user.override %}
+        <p>
+            You have override access and can update any authoritative object.
+        </p>
+    {% endif %}
+
+    {% for permission in user.permissions %}
+        <h3 class="mt-4">mntner {{ permission.mntner.rpsl_mntner_pk }}</h3>
+        {% if permission.mntner.migration_complete %}
+            {% if permission.user_management %}
+                <p>
+                    You have user management permissions on this mntner,
+                    which means you can add or remove access for other users.
+                    You can also update any objects maintained by this maintainer.
+                </p>
+            {% else %}
+                <p>
+                    You do not have user management permissions on this mntner,
+                    which means you can only update objects maintained by this
+                    maintainer, except this mntner object itself.
+                </p>
+            {% endif %}
+            <h5>All users with access to {{ permission.mntner.rpsl_mntner_pk }}</h5>
+            <table class="table mb-4">
+                <thead>
+                <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">User management</th>
+                    {% if permission.user_management %}
+                        <th></th>
+                    {% endif %}
+
+                </tr>
+                </thead>
+                <tbody>
+                {% for mntner_perm in permission.mntner.permissions %}
+                    <tr>
+                        <td>{{ mntner_perm.user.name }}</td>
+                        <td>{{ mntner_perm.user.email }}</td>
+                        <td>{{ "Yes" if mntner_perm.user_management else "No" }}</td>
+                        {% if permission.user_management %}
+                            <td>
+                                <a href="{{ url_for("ui:permission_delete", permission=mntner_perm.pk) }}">Remove
+                                    access</a>
+                            </td>
+                        {% endif %}
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% if permission.user_management %}
+                <a href="{{ url_for("ui:permission_add", mntner=permission.mntner_id) }}">
+                    Add access for another user
+                </a>
+            {% endif %}
+        {% else %}
+            The migration for this mntner is not yet complete.
+        {% endif %}
+    {% endfor %}
+{% endblock %}

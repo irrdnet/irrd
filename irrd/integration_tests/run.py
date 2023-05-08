@@ -808,9 +808,7 @@ class TestIntegration:
         os.mkdir(self.piddir1)
         os.mkdir(self.piddir2)
 
-        print(
-            textwrap.dedent(
-                f"""
+        print(textwrap.dedent(f"""
             Preparing to start IRRd for integration test.
             
             IRRd #1 running on HTTP port {self.port_http1}, whois port {self.port_whois1}
@@ -824,9 +822,7 @@ class TestIntegration:
             Database URL: {self.database_url2}
             PID file: {self.pidfile2}
             Logfile: {self.logfile2}
-        """
-            )
-        )
+        """))
 
         with open(self.roa_source1, "w") as roa_file:
             ujson.dump(
@@ -838,9 +834,15 @@ class TestIntegration:
 
         base_config = {
             "irrd": {
+                "secret_key": "secretsecretsecretsecretsecretsecretsecretsecretsecretsecret",
                 "access_lists": {"localhost": ["::/32", "127.0.0.1"]},
                 "server": {
-                    "http": {"status_access_list": "localhost", "interface": "::1", "port": 8080},
+                    "http": {
+                        "status_access_list": "localhost",
+                        "interface": "::1",
+                        "port": 8080,
+                        "url": "https://localhost:8080/",
+                    },
                     "whois": {"interface": "::1", "max_connections": 10, "port": 8043},
                 },
                 "rpki": {
@@ -963,9 +965,7 @@ class TestIntegration:
         with a specific config path. Request is the raw RPSL update, possibly
         signed with inline PGP.
         """
-        email = (
-            textwrap.dedent(
-                """
+        email = textwrap.dedent("""
             From submitter@example.com@localhost  Thu Jan  5 10:04:48 2018
             Received: from [127.0.0.1] (localhost.localdomain [127.0.0.1])
               by hostname (Postfix) with ESMTPS id 740AD310597
@@ -981,11 +981,7 @@ class TestIntegration:
             Content-Type: text/plain; charset=utf-8
             Mime-Version: 1.0
 
-        """
-            )
-            .lstrip()
-            .encode("utf-8")
-        )
+        """).lstrip().encode("utf-8")
         email += base64.b64encode(request.encode("utf-8"))
 
         script = IRRD_ROOT_PATH + "/irrd/scripts/submit_email.py"

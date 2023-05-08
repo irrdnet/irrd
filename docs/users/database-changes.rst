@@ -11,13 +11,17 @@ Additionally, notifications may be sent on attempted or successful changes.
 
 Submission format
 -----------------
-There are two ways to submit changes directly to IRRd:
+There are three ways to submit changes directly to IRRd:
 
 * By sending an e-mail with the RPSL objects. This method supports BCRYPT-PW,
   MD5-PW, CRYPT-PW and PGPKEY authentication. You will receive a reply by
   e-mail with the result.
 * Over HTTPS, through a REST API. This method supports BCRYPT-PW, MD5-PW and
   CRYPT-PW authentication. You receive the results in the HTTP response.
+* Over HTTPS, through a web form. This method supports BCRYPT-PW, MD5-PW,
+  CRYPT-PW and IRRD-INTERNAL-AUTH authentication.
+
+Your IRRD operator may restrict which password hashing methods are available.
 
 All objects submitted are validated for the presence, count and syntax,
 though the syntax validation is limited for some attributes.
@@ -173,6 +177,18 @@ For PGP authentication, sign your message with a PGP/MIME signature
 or inline PGP. You can combine PGP signatures and passwords, and each method
 will be considered for each authentication check.
 
+Submission through web interface
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+In the same format as e-mail, you can submit your changes through
+a web interface on ``/ui/rpsl/update/``. This provides direct
+feedback and is more secure when using HTTPS. It does not support
+PGP.
+
+If your IRRD operator has enabled
+:doc:`maintainer migration </admins/webui>` to IRRD internal authentication,
+this web interface will process authentication automatically if you are
+logged in and are authorised on one or more maintainers.
+
 .. _database-changes-irr-rpsl-submit:
 
 Submission through irr_rpsl_submit
@@ -237,6 +253,10 @@ Notifications to maintainers or the address in the ``notify`` attribute are
 If an invalid override password is used, or if no override password was
 configured, the invalid use is logged, and authentication and notification
 proceeds as usual, **as if no override password was provided.**
+
+As a more secure alternative, you can use override access through the
+:doc:`web interface </admins/webui>` where specific users can
+be granted override access.
 
 .. note::
     New `mntner` objects can only be created using the override password.

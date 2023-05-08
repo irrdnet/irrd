@@ -382,6 +382,10 @@ class TestRPSLMntner:
         assert obj.render_rpsl_text() == rpsl_text
         assert obj.references_strong_inbound() == {"mnt-by"}
 
+        obj.add_irrd_internal_auth()
+        assert obj.has_internal_auth()
+        assert rpsl_object_from_text(obj.render_rpsl_text()).has_internal_auth()
+
     def test_parse_invalid_partial_dummy_hash(self, config_override):
         config_override({"auth": {"password_hashers": {"crypt-pw": "enabled"}}})
         rpsl_text = object_sample_mapping[RPSLMntner().rpsl_object_class]

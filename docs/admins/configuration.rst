@@ -19,6 +19,8 @@ a key ``roa_source`` under a key ``rpki``.
    :local:
    :depth: 2
 
+
+
 Example configuration file
 --------------------------
 
@@ -41,6 +43,8 @@ This sample shows most configuration options
         piddir: /var/run/
         user: irrd
         group: irrd
+        # required, but no default included for safety
+        secret_key: null
 
         access_lists:
             http_database_status:
@@ -55,6 +59,7 @@ This sample shows most configuration options
                 status_access_list: http_database_status
                 interface: '::0'
                 port: 8080
+                url: "https://irrd.example.com/"
             whois:
                 interface: '::0'
                 max_connections: 50
@@ -63,6 +68,7 @@ This sample shows most configuration options
         auth:
             gnupg_keyring: /home/irrd/gnupg-keyring/
             override_password: {hash}
+            webui_auth_failure_rate_limit: "30/hour"
             password_hashers:
                 md5-pw: legacy
 
@@ -220,6 +226,13 @@ General settings
   need for IRRd to bind to port 80 or 443.
   |br| **Default**: not defined, IRRd does not drop privileges.
   |br| **Change takes effect**: after full IRRd restart.
+* ``secret_key``: a random secret string. **The secrecy of this key protects
+  all web authentication.** If rotated, all sessions and password resets
+  are invalidated, requiring users to log in or request new password
+  reset links. Second factor authentication is *not* attached to this key.
+  Minimum 30 characters.
+  |br| **Default**: not defined, but required.
+  |br| **Change takes effect**: after full IRRd restart.
 
 
 Servers
@@ -248,6 +261,13 @@ Servers
   :doc:`event stream </users/queries/event-stream>` initial download and WebSocket
   stream. If not defined, all access is denied.
   |br| **Default**: not defined, all access denied for event stream.
+  |br| **Change takes effect**: after SIGHUP.
+* ``server.http.url``: the external URL on which users will reach the
+  IRRD instance. This is used for WebAuthn security tokens.
+  **Changing this URL after users have configured security tokens
+  will invalidate all tokens ** - an intentional anti-phishing
+  design feature of WebAuthn. The scheme must be included.
+  |br| **Default**: not defined, but required.
   |br| **Change takes effect**: after SIGHUP.
 * ``server.whois.max_connections``: the maximum number of simultaneous whois
   connections permitted. Note that each permitted connection will result in
@@ -319,6 +339,19 @@ Authentication and validation
 * ``auth.gnupg_keyring``: the full path to the gnupg keyring.
   |br| **Default**: not defined, but required.
   |br| **Change takes effect**: after full IRRd restart.
+* ``auth.irrd_internal_migration_enabled``: whether users can initiate a migration
+  their mntners to IRRD-INTERNAL-AUTH authentication through the web interface.
+  If this is disabled after some mntners have already been migrated, those
+  will remain available and usable - this setting only affects new migrations.
+  |br| **Default**: disabled.
+  |br| **Change takes effect**: after SIGHUP, for all subsequent attempts to
+  initiate a migration.
+* ``auth.webui_auth_failure_rate_limit``: the rate limit for failed
+  authentication attempts through the web interface. This includes logins,
+  but also other cases that request passwords. This is a moving window
+  in the format of the limits_ library.
+  |br| **Default**: ``30/hour``.
+  |br| **Change takes effect**: after full IRRd restart.
 * ``auth.password_hashers``: which password hashers to allow in mntner objects.
   This is a dictionary with the hashers (``crypt-pw``, ``md5-pw``, ``bcrypt-pw``) as
   possible keys, and ``enabled``, ``legacy``, or ``disabled`` as possible values.
@@ -348,6 +381,8 @@ Authentication and validation
     not be simply reset, or PGP authentications may fail.
     However, you can use the ``irrd_load_pgp_keys`` command to refill the keyring
     in ``auth.gnupg_keyring``.
+
+.. _limits: https://limits.readthedocs.io/en/latest/index.html
 
 .. _conf-auth-set-creation:
 

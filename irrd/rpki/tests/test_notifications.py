@@ -82,10 +82,7 @@ class TestNotifyRPKIInvalidOwners:
         expected_recipients = {"person@xample.com", "person2@example.com", "mnt-nfy@example.com"}
         assert actual_recipients == expected_recipients
         assert mock_email.mock_calls[0][1][1] == "route(6) objects in TEST marked RPKI invalid"
-        assert (
-            mock_email.mock_calls[0][1][2]
-            == textwrap.dedent(
-                """
+        assert mock_email.mock_calls[0][1][2] == textwrap.dedent("""
             This is to notify that 1 route(6) objects for which you are a
             contact have been marked as RPKI invalid. This concerns
             objects in the TEST database.
@@ -124,9 +121,7 @@ class TestNotifyRPKIInvalidOwners:
             mnt-by:         DOESNOTEXIST-MNT
             
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """
-            ).strip()
-        )
+        """).strip()
 
     def test_notify_disabled(self, monkeypatch, config_override):
         config_override(

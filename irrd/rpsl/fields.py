@@ -8,10 +8,10 @@ from IPy import IP
 from irrd.utils.text import clean_ip_value_error
 from irrd.utils.validators import ValidationError, parse_as_number
 
-from .parser_state import RPSLFieldParseResult, RPSLParserMessages
-from .passwords import get_password_hashers
-
 # The IPv4/IPv6 regexes are for initial screening - not full validators
+from ..conf import RPSL_MNTNER_AUTH_INTERNAL
+from .auth import get_password_hashers
+from .parser_state import RPSLFieldParseResult, RPSLParserMessages
 
 re_ipv4_prefix = re.compile(r"^\d+\.\d+\.\d+\.\d+/\d+$")
 re_ipv6_prefix = re.compile(r"^[A-F\d:]+/\d+$", re.IGNORECASE)
@@ -633,12 +633,14 @@ class RPSLAuthField(RPSLTextField):
         valid_beginnings = [hasher + " " for hasher in hashers.keys()]
         has_valid_beginning = any(value.upper().startswith(b) for b in valid_beginnings)
         is_valid_hash = has_valid_beginning and value.count(" ") == 1 and not value.count(",")
-        if is_valid_hash or re_pgpkey.match(value.upper()):
+
+        if is_valid_hash or re_pgpkey.match(value.upper()) or value == RPSL_MNTNER_AUTH_INTERNAL:
             return RPSLFieldParseResult(value)
 
         hashers = ", ".join(hashers.keys())
         messages.error(
-            f"Invalid auth attribute: {value}: supported options are {hashers} and PGPKEY-xxxxxxxx"
+            f"Invalid auth attribute: {value}: supported options are {hashers}, PGPKEY-xxxxxxxx and"
+            f" {RPSL_MNTNER_AUTH_INTERNAL} for migrated objects"
         )
         return None
 

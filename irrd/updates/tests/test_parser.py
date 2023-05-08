@@ -604,7 +604,7 @@ class TestSingleChangeRequestHandling:
             "authentication."
         ]
 
-        auth_pgp, auth_hash = splitline_unicodesafe(result_mntner.rpsl_obj_new.parsed_data["auth"])
+        auth_pgp, auth_hash = splitline_unicodesafe("\n".join(result_mntner.rpsl_obj_new.parsed_data["auth"]))
         assert auth_pgp == "PGPKey-80F238C6"
         assert auth_hash.startswith("BCRYPT-PW ")
         assert bcrypt.verify("crypt-password", auth_hash[10:])
@@ -1292,10 +1292,7 @@ class TestSingleChangeRequestHandling:
         )
         mock_dh.execute_query = lambda query: next(query_results)
 
-        assert (
-            result_inetnum.notification_target_report()
-            == textwrap.dedent(
-                """
+        assert result_inetnum.notification_target_report() == textwrap.dedent("""
             Delete succeeded for object below: [inetnum] 192.0.2.0 - 192.0.2.255:
             
             inetnum:        192.0.2.0 - 192.0.2.255
@@ -1312,15 +1309,9 @@ class TestSingleChangeRequestHandling:
             source:         TEST
             remarks:        remark
             remarks:        MD5-pw DummyValue  # Filtered for security
-        """
-            ).strip()
-            + "\n"
-        )
+        """).strip() + "\n"
 
-        assert (
-            result_as_set.notification_target_report()
-            == textwrap.dedent(
-                """
+        assert result_as_set.notification_target_report() == textwrap.dedent("""
             Create succeeded for object below: [as-set] AS65537:AS-SETTEST:
             
             as-set:         AS65537:AS-SETTEST
@@ -1335,19 +1326,13 @@ class TestSingleChangeRequestHandling:
             changed:        changed@example.com 20190701 # comment
             source:         TEST
             remarks:        remark
-        """
-            ).strip()
-            + "\n"
-        )
+        """).strip() + "\n"
 
         inetnum_modify = SAMPLE_INETNUM.replace("PERSON-TEST", "NEW-TEST")
         result_inetnum_modify = parse_change_requests(inetnum_modify, mock_dh, AuthValidator(mock_dh), None)[
             0
         ]
-        assert (
-            result_inetnum_modify.notification_target_report()
-            == textwrap.dedent(
-                """
+        assert result_inetnum_modify.notification_target_report() == textwrap.dedent("""
             Modify succeeded for object below: [inetnum] 192.0.2.0 - 192.0.2.255:
             
             @@ -4,11 +4,10 @@
@@ -1380,17 +1365,11 @@ class TestSingleChangeRequestHandling:
             changed:        changed@example.com 20190701 # comment
             source:         TEST
             remarks:        remark
-        """
-            ).strip()
-            + "\n"
-        )
+        """).strip() + "\n"
 
         # Fake the result to look like an authentication failure
         result_inetnum_modify.status = UpdateRequestStatus.ERROR_AUTH
-        assert (
-            result_inetnum_modify.notification_target_report()
-            == textwrap.dedent(
-                """
+        assert result_inetnum_modify.notification_target_report() == textwrap.dedent("""
             Modify FAILED AUTHORISATION for object below: [inetnum] 192.0.2.0 - 192.0.2.255:
             
             @@ -4,11 +4,10 @@
@@ -1423,10 +1402,7 @@ class TestSingleChangeRequestHandling:
             changed:        changed@example.com 20190701 # comment
             source:         TEST
             remarks:        remark
-        """
-            ).strip()
-            + "\n"
-        )
+        """).strip() + "\n"
 
         with pytest.raises(ValueError) as ve:
             result_unknown.notification_target_report()
@@ -1455,18 +1431,13 @@ class TestSuspensionRequest:
         monkeypatch.setattr("irrd.updates.parser.reactivate_for_mntner", mock_reactivate_for_mntner)
         mock_auth_validator.check_override.return_value = True
 
-        default_request = (
-            textwrap.dedent(
-                """
+        default_request = textwrap.dedent("""
             override: override-pw
             
             suspension: suspend
             mntner: MNT-SUSPEND
             source: TEST
-            """
-            ).strip()
-            + "\n"
-        )
+            """).strip() + "\n"
 
         return (
             mock_dh,

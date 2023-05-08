@@ -21,8 +21,7 @@ def upgrade():
     op.execute(CreateSequence(Sequence("rpsl_database_journal_serial_global_seq", start=1000000)))
     op.add_column("rpsl_database_journal", sa.Column("serial_global", sa.BigInteger(), nullable=True))
 
-    op.execute(
-        """
+    op.execute("""
     UPDATE rpsl_database_journal SET
         serial_global = rpsl_database_journal_new.serial_global_new
         FROM rpsl_database_journal AS rpsl_database_journal_old
@@ -36,8 +35,7 @@ def upgrade():
             ) ORDER BY timestamp
         ) AS rpsl_database_journal_new USING (pk)
         WHERE rpsl_database_journal.pk = rpsl_database_journal_old.pk
-    """
-    )
+    """)
 
     op.alter_column(
         "rpsl_database_journal",

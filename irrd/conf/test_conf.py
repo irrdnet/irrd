@@ -60,6 +60,8 @@ class TestConfiguration:
                 "database_url": "db-url",
                 "redis_url": "redis-url",
                 "piddir": str(tmpdir),
+                "secret_key": "sssssssssssssssssssssssssssssss",
+                "server": {"http": {"url": "https://example.com/"}},
                 "email": {"from": "example@example.com", "smtp": "192.0.2.1"},
                 "route_object_preference": {
                     "update_timer": 10,
@@ -175,6 +177,8 @@ class TestConfiguration:
                 "database_url": "db-url",
                 "redis_url": "redis-url",
                 "piddir": str(tmpdir),
+                "secret_key": "sssssssssssssssssssssssssssssss",
+                "server": {"http": {"url": "https://example.com/"}},
                 "email": {"from": "example@example.com", "smtp": "192.0.2.1"},
                 "rpki": {
                     "roa_source": None,
@@ -196,6 +200,8 @@ class TestConfiguration:
                     "database_url": "db-url",
                     "redis_url": "redis-url",
                     "piddir": str(tmpdir),
+                    "secret_key": "sssssssssssssssssssssssssssssss",
+                    "server": {"http": {"url": "https://example.com/"}},
                     "email": {"from": "example@example.com", "smtp": "192.0.2.1"},
                     "access_lists": {
                         "valid-list": {
@@ -242,11 +248,13 @@ class TestConfiguration:
                 "database_readonly": True,
                 "piddir": str(tmpdir + "/does-not-exist"),
                 "user": "a",
+                "secret_key": "sssssssssssss",
                 "server": {
                     "whois": {
                         "access_list": "doesnotexist",
                     },
                     "http": {
+                        "url": "💩",
                         "status_access_list": ["foo"],
                     },
                 },
@@ -258,6 +266,8 @@ class TestConfiguration:
                     "bad-list": {"192.0.2.2.1"},
                 },
                 "auth": {
+                    "irrd_internal_migration_enabled": "invalid",
+                    "webui_auth_failure_rate_limit": "invalid",
                     "set_creation": {
                         "as-set": {
                             "prefix_required": "not-a-bool",
@@ -328,12 +338,15 @@ class TestConfiguration:
         assert "Setting database_url is required." in str(ce.value)
         assert "Setting redis_url is required." in str(ce.value)
         assert "Setting piddir is required and must point to an existing directory." in str(ce.value)
+        assert "Setting secret_key is required and must be at least 30 characters." in str(ce.value)
         assert "Setting email.from is required and must be an email address." in str(ce.value)
         assert "Setting email.smtp is required." in str(ce.value)
         assert "Setting email.footer must be a string, if defined." in str(ce.value)
         assert "Setting email.recipient_override must be an email address if set." in str(ce.value)
         assert "Settings user and group must both be defined, or neither." in str(ce.value)
         assert "Setting auth.gnupg_keyring is required." in str(ce.value)
+        assert "Setting auth.irrd_internal_migration_enabled must be a bool." in str(ce.value)
+        assert "Setting auth.webui_auth_failure_rate_limit is missing or invalid." in str(ce.value)
         assert "Unknown setting key: auth.set_creation.not-a-real-set.prefix_required" in str(ce.value)
         assert "Setting auth.set_creation.as-set.prefix_required must be a bool" in str(ce.value)
         assert "Setting auth.set_creation.as-set.autnum_authentication must be one of" in str(ce.value)
@@ -342,6 +355,7 @@ class TestConfiguration:
         assert "Access lists doesnotexist, invalid-list referenced in settings, but not defined." in str(
             ce.value
         )
+        assert "Setting server.http.url is missing or invalid." in str(ce.value)
         assert "Setting server.http.status_access_list must be a string, if defined." in str(ce.value)
         assert "Invalid item in access list bad-list: IPv4 Address with more than 4 bytes." in str(ce.value)
         assert "Invalid item in prefix scopefilter: invalid-prefix" in str(ce.value)
