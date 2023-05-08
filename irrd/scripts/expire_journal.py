@@ -37,13 +37,17 @@ def expire_journal(skip_confirmation: bool, expire_before: datetime, source: str
         return 1
 
     if not skip_confirmation:
-        print(textwrap.dedent(f"""
+        print(
+            textwrap.dedent(
+                f"""
                 Found {affected_object_count} journal entries to delete from the journal for {source}.
                 This is the only record of history kept by IRRd itself.
                 After deletion, this can not be recovered.
                 
                 To confirm deleting these entries for {source}, type 'yes':
-                """).strip())
+                """
+            ).strip()
+        )
         confirmation = input("> ")
         if confirmation != "yes":
             print("Deletion cancelled.")

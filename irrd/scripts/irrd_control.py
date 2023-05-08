@@ -62,7 +62,9 @@ def user_mfa_clear(email, session_provider: ORMSessionProvider):
         + (["TOTP"] if user.has_totp else [])
     )
 
-    click.echo(textwrap.dedent(f"""
+    click.echo(
+        textwrap.dedent(
+            f"""
     You are about to remove multi-factor authentication for user:
     {user.name} ({user.email})
     
@@ -74,7 +76,9 @@ def user_mfa_clear(email, session_provider: ORMSessionProvider):
     It is your own responsibility to determine that the legitimate
     user has lost access to their two-factor methods.
     The user will be notified of this change.
-    """))
+    """
+        )
+    )
     click.confirm(f"Are you sure you want to remove two-factor authentication for {email}?", abort=True)
     for webauthn in user.webauthns:
         session_provider.session.delete(webauthn)
@@ -112,12 +116,16 @@ def user_change_override(email: str, enable: bool, session_provider: ORMSessionP
         raise click.ClickException("User already has no override permission.")
 
     if enable:
-        click.echo(textwrap.dedent(f"""
+        click.echo(
+            textwrap.dedent(
+                f"""
         You are about to assign override permission for user:
         {user.name} ({user.email})
     
         This will allow the user to edit any object in the database.
-        """))
+        """
+            )
+        )
         click.confirm(f"Are you sure you want to assign this permission to {email}?", abort=True)
 
     user.override = enable

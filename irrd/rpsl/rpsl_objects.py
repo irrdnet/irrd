@@ -1,7 +1,11 @@
 from collections import OrderedDict
 from typing import List, Optional, Set, Union
 
-from irrd.conf import AUTH_SET_CREATION_COMMON_KEY, get_setting
+from irrd.conf import (
+    AUTH_SET_CREATION_COMMON_KEY,
+    RPSL_MNTNER_AUTH_INTERNAL,
+    get_setting,
+)
 from irrd.utils.pgp import get_gpg_instance
 
 from ..utils.validators import ValidationError, parse_as_number

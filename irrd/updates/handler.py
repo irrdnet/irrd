@@ -213,7 +213,8 @@ class ChangeSubmissionHandler:
         number_failed_modify = len([r for r in failed if r.request_type == UpdateRequestType.MODIFY])
         number_failed_delete = len([r for r in failed if r.request_type == UpdateRequestType.DELETE])
 
-        user_report = self._request_meta_str() + textwrap.dedent(f"""
+        user_report = self._request_meta_str() + textwrap.dedent(
+            f"""
         SUMMARY OF UPDATE:
 
         Number of objects found:                  {len(self.results):3}
@@ -229,7 +230,8 @@ class ChangeSubmissionHandler:
         DETAILED EXPLANATION:
         
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """)
+        """
+        )
         for result in self.results:
             user_report += "---\n"
             user_report += result.submitter_report_human()
@@ -283,20 +285,24 @@ class ChangeSubmissionHandler:
         header = get_setting("email.notification_header", "").format(sources_str=sources_str)
         header += "\nThis message is auto-generated.\n"
         header += "The request was made with the following details:\n"
-        header_saved = textwrap.dedent("""
+        header_saved = textwrap.dedent(
+            """
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Some objects in which you are referenced have been created,
             deleted or changed.
             
-        """)
+        """
+        )
 
-        header_failed = textwrap.dedent("""
+        header_failed = textwrap.dedent(
+            """
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             Some objects in which you are referenced were requested
             to be created, deleted or changed, but *failed* the 
             proper authorisation for any of the referenced maintainers.
             
-        """)
+        """
+        )
 
         for recipient, reports_per_status in reports_per_recipient.items():
             user_report = header + self._request_meta_str()

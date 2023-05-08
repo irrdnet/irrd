@@ -365,10 +365,12 @@ async def mntner_migrate_complete(request: Request, session_provider: ORMSession
         form.rpsl_mntner_obj, origin=JournalEntryOrigin.unknown
     )
 
-    msg = textwrap.dedent("""
+    msg = textwrap.dedent(
+        """
         The maintainer has been migrated to IRRD internal authentication.
         Existing authentication methods have been kept. 
-    """)
+    """
+    )
     await notify_mntner(session_provider, request.auth.user, auth_mntner, explanation=msg)
 
     message(request, f"The mntner {auth_mntner.rpsl_mntner_pk} has been migrated.")
@@ -395,18 +397,22 @@ async def notify_mntner(session_provider, user: AuthUser, mntner: AuthMntner, ex
 
     subject = f"Notification of {mntner.rpsl_mntner_source} database changes"
     body = get_setting("email.notification_header", "").format(sources_str=mntner.rpsl_mntner_source)
-    body += textwrap.dedent(f"""
+    body += textwrap.dedent(
+        f"""
         This message is auto-generated.
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         Internal authentication was changed for
         mntner {mntner.rpsl_mntner_pk} in source {mntner.rpsl_mntner_source}
         by user {user.name} ({user.email}).
-    """)
+    """
+    )
     body += f"\n{explanation.strip()}\n"
-    body += textwrap.dedent("""
+    body += textwrap.dedent(
+        """
         Note that this change is not visible in the RPSL object,
         as these authentication settings are stored internally in IRRD.
-    """)
+    """
+    )
     for recipient in recipients:
         send_email(recipient, subject, body)
 

@@ -641,7 +641,8 @@ def format_as_text(response):
     Format an IRRd HTTP response into a human-friendly text.
     """
     summary = response["summary"]
-    user_report = textwrap.dedent(f"""
+    user_report = textwrap.dedent(
+        f"""
     SUMMARY OF UPDATE:
 
     Number of objects found:                  {summary["objects_found"]:3}
@@ -657,7 +658,8 @@ def format_as_text(response):
     DETAILED EXPLANATION:
 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    """)
+    """
+    )
     for object_result in response["objects"]:
         user_report += "---\n"
         user_report += format_report_object(object_result)
@@ -774,7 +776,8 @@ def setup_argparse():
         except IndexError as error:
             raise ValueError() from error
 
-    description = textwrap.dedent("""\
+    description = textwrap.dedent(
+        """\
         Read RPSL submissions from stdin and return a response on stdout.
         Errors or debug info are printed to stderr. This program accepts
         the arguments for irrdv3's version of irr_rpsl_submit but ignores
@@ -801,7 +804,8 @@ def setup_argparse():
             16 - unexpected response
             32 - an unidentified error
 
-    """)
+    """
+    )
 
     parser = argparse.ArgumentParser(
         add_help=False,
