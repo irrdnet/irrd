@@ -516,12 +516,12 @@ class TestSingleChangeRequestHandling:
             "notify@example.com",
         }
 
-        auth_validator = AuthValidator(mock_dh, "PGPKEY-80F238C6")
+        auth_validator = AuthValidator(mock_dh, keycert_obj_pk="PGPKEY-80F238C6")
         result_inetnum = parse_change_requests(SAMPLE_INETNUM, mock_dh, auth_validator, reference_validator)[
             0
         ]
-        assert result_inetnum._check_auth()
         assert not result_inetnum.error_messages
+        assert result_inetnum._check_auth()
 
     def test_check_auth_valid_create_mntner_referencing_self(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
