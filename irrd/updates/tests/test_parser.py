@@ -584,10 +584,13 @@ class TestSingleChangeRequestHandling:
 
         # Submit the mntner with dummy password values as would be returned by queries,
         # but a password attribute that is valid for the current DB object.
-        data = SAMPLE_MNTNER.replace("LEuuhsBJNFV0Q", get_setting('auth.password_hash_dummy_value'))
-        data = data.replace("$1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.", get_setting('auth.password_hash_dummy_value'))
+        data = SAMPLE_MNTNER.replace("LEuuhsBJNFV0Q", get_setting("auth.password_hash_dummy_value"))
         data = data.replace(
-            "$2b$12$RMrlONJ0tasnpo.zHDF.yuYm/Gb1ARmIjP097ZoIWBn9YLIM2ao5W", get_setting('auth.password_hash_dummy_value')
+            "$1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.", get_setting("auth.password_hash_dummy_value")
+        )
+        data = data.replace(
+            "$2b$12$RMrlONJ0tasnpo.zHDF.yuYm/Gb1ARmIjP097ZoIWBn9YLIM2ao5W",
+            get_setting("auth.password_hash_dummy_value"),
         )
         result_mntner = parse_change_requests(
             data + "password: crypt-password", mock_dh, auth_validator, reference_validator
@@ -630,7 +633,7 @@ class TestSingleChangeRequestHandling:
 
         # Submit the mntner with dummy password values as would be returned by queries,
         # but a password attribute that is valid for the current DB object.
-        data = SAMPLE_MNTNER.replace("LEuuhsBJNFV0Q", get_setting('auth.password_hash_dummy_value'))
+        data = SAMPLE_MNTNER.replace("LEuuhsBJNFV0Q", get_setting("auth.password_hash_dummy_value"))
         result_mntner = parse_change_requests(
             data + "password: md5-password", mock_dh, auth_validator, reference_validator
         )[0]
@@ -652,11 +655,14 @@ class TestSingleChangeRequestHandling:
 
         # Submit the mntner with dummy password values as would be returned by queries,
         # but multiple password attributes, which means we wouldn't know which password to set.
-        data = SAMPLE_MNTNER.replace("LEuuhsBJNFV0Q", get_setting('auth.password_hash_dummy_value'))
+        data = SAMPLE_MNTNER.replace("LEuuhsBJNFV0Q", get_setting("auth.password_hash_dummy_value"))
         data = data.replace(
-            "$2b$12$RMrlONJ0tasnpo.zHDF.yuYm/Gb1ARmIjP097ZoIWBn9YLIM2ao5W", get_setting('auth.password_hash_dummy_value')
+            "$2b$12$RMrlONJ0tasnpo.zHDF.yuYm/Gb1ARmIjP097ZoIWBn9YLIM2ao5W",
+            get_setting("auth.password_hash_dummy_value"),
         )
-        data = data.replace("$1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.", get_setting('auth.password_hash_dummy_value'))
+        data = data.replace(
+            "$1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.", get_setting("auth.password_hash_dummy_value")
+        )
         result_mntner = parse_change_requests(
             data + "password: md5-password\npassword: other-password",
             mock_dh,
