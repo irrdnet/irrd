@@ -1,6 +1,8 @@
 import enum
+from typing import List, Optional
 
 import sqlalchemy as sa
+from IPy import IP
 from sqlalchemy.dialects import postgresql as pg
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy.orm import relationship
@@ -416,7 +418,27 @@ class AuthApiToken(Base):  # type: ignore
     updated = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
 
     def __repr__(self):
-        return f"<{self.token}/{self.name}/{self.mntner.rpsl_mntner_pk}"
+        return f"<{self.token}/{self.name}/{self.mntner.rpsl_mntner_pk if self.mntner else None}>"
+
+    def ip_restriction_parsed(self) -> Optional[List[IP]]:
+        if not self.ip_restriction:
+            return None
+        return [IP(ip) for ip in self.ip_restriction.split(",")]
+
+    def valid_for(self, origin: AuthoritativeChangeOrigin, remote_ip: IP):
+        if not any(
+            [
+                self.enabled_webapi and origin == AuthoritativeChangeOrigin.webapi,
+                self.enabled_email and origin == AuthoritativeChangeOrigin.email,
+            ]
+        ):
+            return False
+        if self.ip_restriction:
+            for ip in self.ip_restriction.split(","):
+                if remote_ip in IP(ip):
+                    return True
+            return False
+        return True
 
 
 class AuthMntner(Base):  # type: ignore

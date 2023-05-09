@@ -23,7 +23,13 @@ from irrd.utils.test_utils import flatten_mock_calls
 from irrd.utils.text import remove_auth_hashes
 from irrd.vendor.mock_alchemy.mocking import UnifiedAlchemyMagicMock
 
-from ...storage.models import AuthMntner, AuthUser
+from ...storage.models import (
+    AuthApiToken,
+    AuthMntner,
+    AuthoritativeChangeOrigin,
+    AuthUser,
+)
+from ...utils.factories import AuthApiTokenFactory
 from ..validators import AuthValidator, RulesValidator
 
 VALID_PW = "override-password"
@@ -46,7 +52,7 @@ class TestAuthValidator:
             }
         )
 
-        validator = AuthValidator(mock_dh, None)
+        validator = AuthValidator(mock_dh, AuthoritativeChangeOrigin.webapi)
         yield validator, mock_dq, mock_dh
 
     def test_override_valid(self, prepare_mocks, config_override):
@@ -141,6 +147,48 @@ class TestAuthValidator:
             ["object_classes", (["mntner"],), {}],
             ["rpsl_pks", ({"TEST-MNT"},), {}],
         ]
+
+    def test_valid_new_person_api_key(self, prepare_mocks, monkeypatch):
+        validator, mock_dq, mock_dh = prepare_mocks
+        person = rpsl_object_from_text(SAMPLE_PERSON)
+        mock_sa_session = UnifiedAlchemyMagicMock(
+            data=[
+                (
+                    [
+                        mock.call.query(AuthMntner),
+                        mock.call.filter(
+                            AuthMntner.rpsl_mntner_pk == "TEST-MNT", AuthMntner.rpsl_mntner_source == "TEST"
+                        ),
+                    ],
+                    [AuthMntner(rpsl_mntner_pk="TEST-MNT")],
+                )
+            ]
+        )
+        mock_api_key = AuthApiTokenFactory.build()
+        print(mock_api_key)
+        mock_sa_session.all = lambda: [mock_api_key]
+        monkeypatch.setattr("irrd.updates.validators.saorm.Session", lambda bind: mock_sa_session)
+
+        mock_dh._connection = None
+        mock_dh.execute_query = lambda q: [
+            {"object_class": "mntner", "object_text": SAMPLE_MNTNER},
+        ]
+
+        validator.api_keys = ["key"]
+        result = validator.process_auth(person, None)
+        assert result.is_valid(), result.error_messages
+        assert not result.used_override
+        assert result.mntners_notify[0].pk() == "TEST-MNT"
+
+        mock_sa_session.filter.assert_has_calls(
+            [
+                mock.call(
+                    AuthMntner.rpsl_mntner_pk == "TEST-MNT",
+                    AuthMntner.rpsl_mntner_source == "TEST",
+                    AuthApiToken.token.in_(["key"]),
+                ),
+            ]
+        )
 
     def test_existing_person_mntner_change(self, prepare_mocks):
         validator, mock_dq, mock_dh = prepare_mocks

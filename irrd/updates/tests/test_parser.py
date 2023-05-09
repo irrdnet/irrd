@@ -490,15 +490,13 @@ class TestSingleChangeRequestHandling:
         auth_validator = AuthValidator(mock_dh)
 
         result_inetnum = parse_change_requests(
-            SAMPLE_INETNUM + "password: crypt-password\napi-key: key",
+            SAMPLE_INETNUM + "password: crypt-password",
             mock_dh,
             auth_validator,
             reference_validator,
         )[0]
         assert result_inetnum._check_auth()
         assert not result_inetnum.error_messages
-        assert auth_validator.passwords == ["crypt-password"]
-        assert auth_validator.api_keys == ["key"]
 
         assert flatten_mock_calls(mock_dq) == [
             ["sources", (["TEST"],), {}],
@@ -663,11 +661,15 @@ class TestSingleChangeRequestHandling:
         )
         data = data.replace("$1$fgW84Y9r$kKEn9MUq8PChNKpQhO6BM.", PASSWORD_HASH_DUMMY_VALUE)
         result_mntner = parse_change_requests(
-            data + "password: md5-password\npassword: other-password",
+            data + "password: md5-password\npassword: other-password\napi-key: key",
             mock_dh,
             auth_validator,
             reference_validator,
         )[0]
+        # This also tests whether API keys are passed to the validator.
+        assert auth_validator.passwords == ["md5-password", "other-password"]
+        assert auth_validator.api_keys == ["key"]
+
         auth_validator.pre_approve([result_mntner.rpsl_obj_new])
         result_mntner._check_auth()
         assert not result_mntner.is_valid()
