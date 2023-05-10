@@ -64,14 +64,15 @@
                     <th scope="col">Email access</th>
                     <th scope="col"></th>
                     <th scope="col"></th>
+                    <th scope="col"></th>
                 </tr>
                 </thead>
                 <tbody>
                 {% for api_token in permission.mntner.api_tokens %}
                     <tr>
                         <td>{{ api_token.name }}</td>
-                        <td>{{ api_token.creator.name }}</td>
-                        <td>{{ api_token.ip_restriction.replace(",", ", ") }}</td>
+                        <td>{{ api_token.creator.name }} &lt;{{ api_token.creator.email }}&gt;</td>
+                        <td>{{ api_token.ip_restriction.__str__().replace(",", ", ") }}</td>
                         <td>{{ "Yes" if api_token.enabled_webapi else "No" }}</td>
                         <td>{{ "Yes" if api_token.enabled_email else "No" }}</td>
                         <td>
@@ -82,6 +83,15 @@
                             <a href="{{ url_for("ui:api_token_delete", token_pk=api_token.pk) }}">Remove
                                 token</a>
                         </td>
+                        <td>
+                            <a data-bs-toggle="collapse" href="#token-{{ api_token.pk }}" role="button"
+                               aria-expanded="false" aria-controls="token-{{ api_token.pk }}">
+                                Show secret
+                            </a>
+                        </td>
+                    </tr>
+                    <tr class="collapse" id="token-{{ api_token.pk }}">
+                        <td colspan="8" class="text-end">Secret: <code>{{ api_token.token }}</code></td>
                     </tr>
                 {% else %}
                     <tr>
