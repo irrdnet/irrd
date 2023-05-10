@@ -1,5 +1,4 @@
 import enum
-from typing import List, Optional
 
 import sqlalchemy as sa
 from IPy import IP
@@ -419,11 +418,6 @@ class AuthApiToken(Base):  # type: ignore
 
     def __repr__(self):
         return f"<{self.token}/{self.name}/{self.mntner.rpsl_mntner_pk if self.mntner else None}>"
-
-    def ip_restriction_parsed(self) -> Optional[List[IP]]:
-        if not self.ip_restriction:
-            return None
-        return [IP(ip) for ip in self.ip_restriction.split(",")]
 
     def valid_for(self, origin: AuthoritativeChangeOrigin, remote_ip: IP):
         if not any(
