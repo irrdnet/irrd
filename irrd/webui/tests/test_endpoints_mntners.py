@@ -74,6 +74,27 @@ class TestApiTokenAdd(WebRequestTest):
         assert not new_api_token
         assert "Invalid IP" in response.text
 
+    def test_invalid_ip_restriction_with_email(self, test_client, irrd_db_session_with_user):
+        session_provider, user = irrd_db_session_with_user
+        self.pre_login(session_provider, user)
+        self._login_if_needed(test_client, user)
+
+        api_token_name = "token name"
+        response = test_client.post(
+            self.url,
+            data={
+                "name": api_token_name,
+                "enabled_email": "1",
+                "ip_restriction": " 192.0.2.1 ,192.0.02.0/24",
+            },
+            follow_redirects=False,
+        )
+        assert response.status_code == 200
+
+        new_api_token = session_provider.run_sync(session_provider.session.query(AuthApiToken).one)
+        assert not new_api_token
+        assert "can not be combined" in response.text
+
     def test_object_not_exists(self, test_client, irrd_db_session_with_user):
         session_provider, user = irrd_db_session_with_user
         self._login_if_needed(test_client, user)

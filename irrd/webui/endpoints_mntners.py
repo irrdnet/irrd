@@ -54,6 +54,16 @@ class ApiTokenForm(StarletteForm):
         except ValueError as ve:
             raise wtforms.ValidationError(f"Invalid IP or CIDR ranges: {clean_ip_value_error(ve)}")
 
+    async def validate(self, **kwargs):
+        if not await super().validate():  # pragma: no cover
+            return False
+
+        if self.enabled_email.data and self.ip_restriction.data:
+            self.enabled_email.errors.append("Email submissions can not be combined with an IP restriction.")
+            return False
+
+        return True
+
 
 @csrf_protect
 @session_provider_manager

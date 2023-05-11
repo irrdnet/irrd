@@ -52,6 +52,10 @@ The expected request body is a JSON object, with a number of keys:
   a list, which will be translated into RPSL by IRRd.
 * ``passwords``: an optional list of passwords to use for authentication.
   Each password will be considered for each object to be changed.
+* ``api_keys``: an optional list of API keys to use for authentication.
+  Each key will be considered for each object to be changed.
+  Keys can be created on migrated maintainers in the web interface, if
+  enabled in your instance.
 * ``delete_reason``: an optional string with the reason for object deletion.
 * ``override``: an optional string containing the override password.
 
@@ -160,8 +164,8 @@ To delete an object, submit the current version of the object with a
     [other object data]
     delete: <your deletion reason>
 
-For authentication, you can include ``password`` attributes anywhere
-in the submission, on their own or as part of objects, e.g.::
+For authentication, you can include ``password`` or ``api-key`` attributes
+anywhere in the submission, on their own or as part of objects, e.g.::
 
     route: 192.0.2.0/24
     origin: AS65536
@@ -170,8 +174,11 @@ in the submission, on their own or as part of objects, e.g.::
     password: <password for MNT-EXAMPLE>
 
 
-You may submit multiple passwords, and each password will be considered
+You may submit multiple passwords or keys, and each will be considered
 for each authentication check.
+
+API keys can be created on migrated maintainers in the web interface, if
+enabled in your instance.
 
 For PGP authentication, sign your message with a PGP/MIME signature
 or inline PGP. You can combine PGP signatures and passwords, and each method
