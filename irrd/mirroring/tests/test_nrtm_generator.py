@@ -66,7 +66,7 @@ class TestNRTMGenerator:
         ADD 120
 
         object 1 🦄
-        auth: CRYPT-PW DummyValue  # Filtered for security
+        auth: CRYPT-PW DummyValue
 
         DEL 180
 
@@ -89,7 +89,7 @@ class TestNRTMGenerator:
         ADD
 
         object 1 🦄
-        auth: CRYPT-PW DummyValue  # Filtered for security
+        auth: CRYPT-PW DummyValue
 
         DEL
 
@@ -112,7 +112,7 @@ class TestNRTMGenerator:
         ADD 120
 
         object 1 🦄
-        auth: CRYPT-PW DummyValue  # Filtered for security
+        auth: CRYPT-PW DummyValue
 
         DEL 180
 
@@ -217,7 +217,7 @@ class TestNRTMGenerator:
         ADD 120
 
         object 1 🦄
-        auth: CRYPT-PW DummyValue  # Filtered for security
+        auth: CRYPT-PW DummyValue
 
         DEL 180
 

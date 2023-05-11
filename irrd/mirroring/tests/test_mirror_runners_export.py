@@ -58,7 +58,7 @@ class TestSourceExportRunner:
         with gzip.open(export_filename) as fh:
             assert (
                 fh.read().decode("utf-8")
-                == "object 1 🦄\nauth: CRYPT-PW DummyValue  # Filtered for security\n\nobject 2 🌈\n\n# EOF\n"
+                == "object 1 🦄\nauth: CRYPT-PW DummyValue\n\nobject 2 🌈\n\n# EOF\n"
             )
 
         assert flatten_mock_calls(mock_dh) == [
@@ -191,7 +191,7 @@ class TestSourceExportRunner:
         with gzip.open(export_filename) as fh:
             assert (
                 fh.read().decode("utf-8")
-                == "object 1 🦄\nauth: CRYPT-PW DummyValue  # Filtered for security\n\nobject 2 🌈\n\n# EOF\n"
+                == "object 1 🦄\nauth: CRYPT-PW DummyValue\n\nobject 2 🌈\n\n# EOF\n"
             )
 
         assert "Starting a source export for TEST" in caplog.text

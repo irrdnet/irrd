@@ -21,7 +21,7 @@ EXPECTED_RPSL_GRAPHQL_OUTPUT = [
     {
         "rpslPk": "192.0.2.0/25,AS65547",
         "objectClass": "route",
-        "objectText": "object text\nauth: CRYPT-PW DummyValue  # Filtered for security",
+        "objectText": "object text\nauth: CRYPT-PW DummyValue",
         "operation": DatabaseOperation.add_or_update,
         "rpkiStatus": RPKIStatus.not_found,
         "scopefilterStatus": ScopeFilterStatus.out_scope_as,
@@ -203,7 +203,7 @@ class TestGraphQLResolvers:
         assert result == [
             {
                 "objectClass": "mntner",
-                "auth": ["CRYPT-Pw DummyValue  # Filtered for security"],
+                "auth": ["CRYPT-Pw DummyValue"],
             }
         ]
 
@@ -353,7 +353,7 @@ class TestGraphQLResolvers:
         result = list(resolvers.resolve_rpsl_object_journal(mock_rpsl_object, info))
         assert len(result) == 1
         assert result[0]["origin"] == "auth_change"
-        assert "CRYPT-PW DummyValue  # Filtered for security" in result[0]["objectText"]
+        assert "CRYPT-PW DummyValue" in result[0]["objectText"]
         assert flatten_mock_calls(mock_journal_query) == [
             ["sources", (["source"],), {}],
             ["rpsl_pk", ("pk",), {}],

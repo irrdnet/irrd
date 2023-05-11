@@ -268,8 +268,8 @@ When querying for a `mntner` object, any lines with password hashes are
 masked for security reasons. For example::
 
     mntner: EXAMPLE-MNT
-    auth: BCRYPT-PW DummyValue  # Filtered for security
-    auth: MD5-PW DummyValue  # Filtered for security
+    auth: BCRYPT-PW DummyValue
+    auth: MD5-PW DummyValue
     auth: PGPKEY-12345678
 
 When you submit a new `mntner` object, it must include at least one valid

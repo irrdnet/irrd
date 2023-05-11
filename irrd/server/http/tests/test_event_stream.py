@@ -92,9 +92,9 @@ class TestEventStreamInitialDownloadEndpoint:
         assert rpsl_obj["pk"] == "TEST-MNT"
         assert rpsl_obj["parsed_data"]["auth"] == [
             "PGPKey-80F238C6",
-            "CRYPT-Pw DummyValue  # Filtered for security",
-            "MD5-pw DummyValue  # Filtered for security",
-            "bcrypt-pw DummyValue  # Filtered for security",
+            "CRYPT-Pw DummyValue",
+            "MD5-pw DummyValue",
+            "bcrypt-pw DummyValue",
         ]
         assert "DummyValue" in rpsl_obj["object_text"]
 

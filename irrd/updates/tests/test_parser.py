@@ -1311,7 +1311,7 @@ class TestSingleChangeRequestHandling:
             changed:        changed@example.com 20190701 # comment
             source:         TEST
             remarks:        remark
-            remarks:        MD5-pw DummyValue  # Filtered for security
+            remarks:        MD5-pw DummyValue
         """
             ).strip()
             + "\n"
@@ -1363,7 +1363,7 @@ class TestSingleChangeRequestHandling:
              changed:        changed@example.com 20190701 # comment
              source:         TEST
              remarks:        remark
-            -remarks:        MD5-pw DummyValue  # Filtered for security
+            -remarks:        MD5-pw DummyValue
             
             New version of this object:
             
@@ -1406,7 +1406,7 @@ class TestSingleChangeRequestHandling:
              changed:        changed@example.com 20190701 # comment
              source:         TEST
              remarks:        remark
-            -remarks:        MD5-pw DummyValue  # Filtered for security
+            -remarks:        MD5-pw DummyValue
 
             *Rejected* new version of this object:
             
