@@ -57,7 +57,7 @@ irrd:
             crypt-pw: legacy
             md5-pw: enabled
             bcrypt-pw: enabled
-        password_hash_dummy_value: "DummyValue  # Filtered for security"
+        password_hash_dummy_value: "DummyValue"
             
     email:
         footer: ''
