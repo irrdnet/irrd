@@ -87,3 +87,11 @@ the following steps:
 
 A migrated maintainer must have ``IRRD-INTERNAL-AUTH`` as one of
 the ``auth`` methods. This is added as part of the migration process.
+
+API tokens
+----------
+All linked users can add API tokens for a maintainer. Tokens can have
+a restriction on submission methods or IP ranges. Each token has a
+secret, that can be passed in ``api_keys`` in an HTTP call,
+or the pseudo-attribute ``api-key`` in email submissions.
+API keys can not be used to update their own maintainer.

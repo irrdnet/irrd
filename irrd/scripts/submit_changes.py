@@ -15,6 +15,8 @@ import argparse
 import sys
 from pathlib import Path
 
+from irrd.storage.models import AuthoritativeChangeOrigin
+
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from irrd.conf import CONFIG_PATH_DEFAULT, config_init
@@ -22,7 +24,7 @@ from irrd.updates.handler import ChangeSubmissionHandler
 
 
 def main(data):
-    handler = ChangeSubmissionHandler().load_text_blob(data)
+    handler = ChangeSubmissionHandler().load_text_blob(data, AuthoritativeChangeOrigin.other)
     print(handler.submitter_report_human())
 
 

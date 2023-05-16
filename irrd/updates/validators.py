@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, List, Optional, Set, Tuple, Union
 
 import sqlalchemy.orm as saorm
+from IPy import IP
 from ordered_set import OrderedSet
 from passlib.hash import md5_crypt
 
@@ -11,7 +12,12 @@ from irrd.conf import RPSL_MNTNER_AUTH_INTERNAL, get_setting
 from irrd.rpsl.parser import RPSLObject
 from irrd.rpsl.rpsl_objects import RPSLMntner, RPSLSet, rpsl_object_from_text
 from irrd.storage.database_handler import DatabaseHandler
-from irrd.storage.models import AuthMntner, AuthUser
+from irrd.storage.models import (
+    AuthApiToken,
+    AuthMntner,
+    AuthoritativeChangeOrigin,
+    AuthUser,
+)
 from irrd.storage.queries import RPSLDatabaseQuery, RPSLDatabaseSuspendedQuery
 
 from .parser_state import RPSLSetAutnumAuthenticationMode, UpdateRequestType
@@ -164,17 +170,23 @@ class AuthValidator:
 
     passwords: List[str]
     overrides: List[str]
+    api_keys: List[str]
     keycert_obj_pk: Optional[str] = None
 
     def __init__(
         self,
         database_handler: DatabaseHandler,
+        origin: AuthoritativeChangeOrigin = AuthoritativeChangeOrigin.other,
         keycert_obj_pk=None,
         internal_authenticated_user: Optional[AuthUser] = None,
+        remote_ip: Optional[IP] = None,
     ) -> None:
         self.database_handler = database_handler
         self.passwords = []
         self.overrides = []
+        self.api_keys = []
+        self.origin = origin
+        self.remote_ip = remote_ip
         self._mntner_db_cache: Set[RPSLMntner] = set()
         self._pre_approved: Set[str] = set()
         self.keycert_obj_pk = keycert_obj_pk
@@ -273,6 +285,7 @@ class AuthValidator:
                 [
                     rpsl_obj_new.verify_auth(self.passwords, self.keycert_obj_pk),
                     self._mntner_matches_internal_auth(rpsl_obj_new, rpsl_obj_new.pk(), source),
+                    # API keys are not checked here, as they can never be used on RPSLMntner
                 ]
             ):
                 result.error_messages.add("Authorisation failed for the auth methods on this mntner object.")
@@ -332,7 +345,8 @@ class AuthValidator:
 
         for mntner_name in mntner_pk_list:
             matches_internal_auth = self._mntner_matches_internal_auth(rpsl_obj_new, mntner_name, source)
-            if mntner_name in self._pre_approved or matches_internal_auth:
+            matches_api_key = self._mntner_matches_api_key(rpsl_obj_new, mntner_name, source)
+            if mntner_name in self._pre_approved or matches_internal_auth or matches_api_key:
                 return True, mntner_objs
 
         for mntner_obj in mntner_objs:
@@ -348,12 +362,38 @@ class AuthValidator:
             user_mntner_set = self._internal_authenticated_user.mntners_user_management
         else:
             user_mntner_set = self._internal_authenticated_user.mntners
-        return any(
+        match = any(
             [
                 rpsl_pk == mntner.rpsl_mntner_pk and source == mntner.rpsl_mntner_source
                 for mntner in user_mntner_set
             ]
         )
+        if match:
+            logger.info(
+                f"Authenticated through internally authenticated user {self._internal_authenticated_user}"
+            )
+        return match
+
+    def _mntner_matches_api_key(self, rpsl_obj_new: RPSLObject, rpsl_pk: str, source: str) -> bool:
+        if not self.api_keys or isinstance(rpsl_obj_new, RPSLMntner):
+            return False
+
+        session = saorm.Session(bind=self.database_handler._connection)
+        query = (
+            session.query(AuthApiToken)
+            .join(AuthMntner)
+            .filter(
+                AuthMntner.rpsl_mntner_pk == rpsl_pk,
+                AuthMntner.rpsl_mntner_source == source,
+                AuthApiToken.token.in_(self.api_keys),
+            )
+        )
+        for api_token in query.all():
+            if api_token.valid_for(self.origin, self.remote_ip):
+                logger.info(f"Authenticated through API token {api_token.pk} on mntner {rpsl_pk}")
+                return True
+
+        return False
 
     def _generate_failure_message(
         self,

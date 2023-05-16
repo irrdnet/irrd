@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>Remove API token '{{ api_token.name }}' on {{ api_token.mntner.rpsl_mntner_pk }}</h2>
+    <div class="row">
+        <form method="POST">
+            <input id="csrf_token" name="csrf_token" type="hidden" value="{{ csrf_token }}">
+            <input class="btn btn-primary" id="submit" name="submit" type="submit" value="Confirm removal of this API token">
+        </form>
+    </div>
+    </div>
+{% endblock %}

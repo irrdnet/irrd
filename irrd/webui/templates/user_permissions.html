@@ -53,11 +53,61 @@
                 {% endfor %}
                 </tbody>
             </table>
+            <h5>API tokens for {{ permission.mntner.rpsl_mntner_pk }}</h5>
+            <table class="table mb-4">
+                <thead>
+                <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Creator</th>
+                    <th scope="col">IP restriction</th>
+                    <th scope="col">HTTPS API access</th>
+                    <th scope="col">Email access</th>
+                    <th scope="col"></th>
+                    <th scope="col"></th>
+                    <th scope="col"></th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for api_token in permission.mntner.api_tokens %}
+                    <tr>
+                        <td>{{ api_token.name }}</td>
+                        <td>{{ api_token.creator.name }} &lt;{{ api_token.creator.email }}&gt;</td>
+                        <td>{{ api_token.ip_restriction.__str__().replace(",", ", ") }}</td>
+                        <td>{{ "Yes" if api_token.enabled_webapi else "No" }}</td>
+                        <td>{{ "Yes" if api_token.enabled_email else "No" }}</td>
+                        <td>
+                            <a href="{{ url_for("ui:api_token_edit", token_pk=api_token.pk) }}">Edit
+                                token</a>
+                        </td>
+                        <td>
+                            <a href="{{ url_for("ui:api_token_delete", token_pk=api_token.pk) }}">Remove
+                                token</a>
+                        </td>
+                        <td>
+                            <a data-bs-toggle="collapse" href="#token-{{ api_token.pk }}" role="button"
+                               aria-expanded="false" aria-controls="token-{{ api_token.pk }}">
+                                Show secret
+                            </a>
+                        </td>
+                    </tr>
+                    <tr class="collapse" id="token-{{ api_token.pk }}">
+                        <td colspan="8" class="text-end">Secret: <code>{{ api_token.token }}</code></td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="8"><em>No API tokens configured.</em></td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
             {% if permission.user_management %}
-                <a href="{{ url_for("ui:permission_add", mntner=permission.mntner_id) }}">
+                <a href="{{ url_for("ui:permission_add", mntner=permission.mntner_id) }}" class="btn btn-primary">
                     Add access for another user
                 </a>
             {% endif %}
+            <a href="{{ url_for("ui:api_token_add", mntner=permission.mntner_id) }}" class="btn btn-primary">
+                Add a new API token
+            </a>
         {% else %}
             The migration for this mntner is not yet complete.
         {% endif %}
