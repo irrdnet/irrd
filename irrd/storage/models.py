@@ -429,7 +429,7 @@ class AuthApiToken(Base):  # type: ignore
             return False
         if self.ip_restriction:
             for ip in self.ip_restriction.split(","):
-                if remote_ip in IP(ip):
+                if remote_ip and remote_ip in IP(ip):
                     return True
             return False
         return True
