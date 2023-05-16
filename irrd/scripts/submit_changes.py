@@ -24,7 +24,7 @@ from irrd.updates.handler import ChangeSubmissionHandler
 
 
 def main(data):
-    handler = ChangeSubmissionHandler().load_text_blob(data, AuthoritativeChangeOrigin.email)
+    handler = ChangeSubmissionHandler().load_text_blob(data, AuthoritativeChangeOrigin.other)
     print(handler.submitter_report_human())
 
 

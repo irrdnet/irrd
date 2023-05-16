@@ -110,7 +110,7 @@ class RPSLDatabaseObject(Base):  # type: ignore
             ),
             sa.Index("ix_rpsl_objects_ip_last_ip_first", "ip_last", "ip_first"),
             sa.Index("ix_rpsl_objects_asn_first_asn_last", "asn_first", "asn_last"),
-            # sa.Index("ix_rpsl_objects_prefix_gist", sa.text("prefix inet_ops"), postgresql_using="gist"),
+            sa.Index("ix_rpsl_objects_prefix_gist", sa.text("prefix inet_ops"), postgresql_using="gist"),
         ]
         for name in lookup_field_names():
             index_name = "ix_rpsl_objects_parsed_data_" + name.replace("-", "_")
@@ -263,7 +263,7 @@ class ROADatabaseObject(Base):  # type: ignore
             sa.UniqueConstraint(
                 "prefix", "asn", "max_length", "trust_anchor", name="roa_object_prefix_asn_maxlength_unique"
             ),
-            # sa.Index("ix_roa_objects_prefix_gist", sa.text("prefix inet_ops"), postgresql_using="gist"),
+            sa.Index("ix_roa_objects_prefix_gist", sa.text("prefix inet_ops"), postgresql_using="gist"),
         ]
         return tuple(args)
 
@@ -419,7 +419,7 @@ class AuthApiToken(Base):  # type: ignore
     def __repr__(self):
         return f"<{self.token}/{self.name}/{self.mntner.rpsl_mntner_pk if self.mntner else None}>"
 
-    def valid_for(self, origin: AuthoritativeChangeOrigin, remote_ip: IP):
+    def valid_for(self, origin: AuthoritativeChangeOrigin, remote_ip: IP) -> bool:
         if not any(
             [
                 self.enabled_webapi and origin == AuthoritativeChangeOrigin.webapi,
