@@ -28,6 +28,7 @@ asgiref==3.6.0         # ASGI utilities
 pydantic==1.10.5        # Input validation
 typing-extensions==4.5.0
 py-radix-sr==1.0.0post1
+cryptography==39.0.2  # Pinned to allow PyPy3.7 compat
 
 # Database connections and management
 psycopg2-binary==2.9.5; platform_python_implementation == "CPython"
