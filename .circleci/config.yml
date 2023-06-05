@@ -11,8 +11,7 @@ workflows:
   test-regular:
     # This workflow is about 400 credits
     when:
-      condition:
-        - not: << pipeline.parameters.build_extensive >>
+        not: << pipeline.parameters.build_extensive >>
     jobs:
       - unit_tests_cpython:
           name: unit-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
