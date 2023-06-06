@@ -22,10 +22,12 @@ may be supported for longer in support contracts or specific agreements.
      - Supported
    * - Main branch
      - Yes
+   * - 4.3.x
+     - Yes
    * - 4.2.x
      - Yes
    * - 4.1.x
-     - Yes
+     - No
    * - 4.0.x
      - No
 
