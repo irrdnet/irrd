@@ -2,6 +2,16 @@
 Release notes for IRRd 4.3.0
 ============================
 
+.. note::
+   4.3.0 was initially released on June 6th, 2023, but was yanked due
+   to a packaging error on June 9th, leading to the release of
+   IRRd 4.3.0post1. The main visible issue from the error was that the
+   documentation of 4.4 was published as 4.3.0.
+   If you had previously installed 4.3.0 through PyPI/pip, you can
+   keep running on that version, or update to 4.3.0post1 without
+   needing restarts or migrations, as the 4.3.0 and 4.3.0post1 PyPI
+   packages have identical code.
+
 IRRd 4.3's major new features are:
 
 * Granular options for stricter authentication checks for related
