@@ -14,7 +14,12 @@ from irrd.storage.models import JournalEntryOrigin
 from irrd.storage.queries import RPSLDatabaseQuery
 from irrd.utils.text import remove_auth_hashes, splitline_unicodesafe
 
-from .parser_state import SuspensionRequestType, UpdateRequestStatus, UpdateRequestType
+from .parser_state import (
+    AuthMethod,
+    SuspensionRequestType,
+    UpdateRequestStatus,
+    UpdateRequestType,
+)
 from .suspension import reactivate_for_mntner, suspend_for_mntner
 from .validators import AuthValidator, ReferenceValidator, RulesValidator
 
@@ -69,7 +74,7 @@ class ChangeRequest:
         self.reference_validator = reference_validator
         self.rpsl_text_submitted = rpsl_text_submitted
         self.mntners_notify = []
-        self.used_override = False
+        self.auth_method = AuthMethod.NONE
         self._cached_roa_validity: Optional[bool] = None
         self.roa_validator = SingleRouteROAValidator(database_handler)
         self.scopefilter_validator = ScopeFilterValidator()
@@ -247,7 +252,7 @@ class ChangeRequest:
         """
         targets: Set[str] = set()
         status_qualifies_notification = self.is_valid() or self.status == UpdateRequestStatus.ERROR_AUTH
-        if self.used_override or not status_qualifies_notification:
+        if self.auth_method.used_override() or not status_qualifies_notification:
             return targets
 
         mntner_attr = "upd-to" if self.status == UpdateRequestStatus.ERROR_AUTH else "mnt-nfy"
@@ -296,7 +301,7 @@ class ChangeRequest:
             logger.debug(f"{id(self)}: Authentication check failed: {list(auth_result.error_messages)}")
             return False
 
-        self.used_override = auth_result.used_override
+        self.auth_method = auth_result.auth_method
 
         logger.debug(f"{id(self)}: Authentication check succeeded")
         return True
@@ -536,7 +541,8 @@ class SuspensionRequest:
         return set()
 
     def validate(self) -> bool:
-        if not self.auth_validator.check_override():
+        valid_override, method = self.auth_validator.check_override()
+        if not valid_override:
             self.status = UpdateRequestStatus.ERROR_AUTH
             self.error_messages.append("Invalid authentication: override password invalid or missing")
             logger.debug(f"{id(self)}: Authentication check failed: override did not pass")

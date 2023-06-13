@@ -19,7 +19,7 @@ from irrd.webui.auth.users import (
     validate_password_strength,
 )
 from irrd.webui.helpers import (
-    client_ip,
+    client_ip_str,
     message,
     rate_limit_post,
     send_authentication_change_mail,
@@ -62,13 +62,13 @@ async def login(request: Request):
 
         user_token = await get_login_manager().login(request, email, password)
         if user_token:
-            logger.info(f"{client_ip(request)}{email}: successfully logged in")
+            logger.info(f"{client_ip_str(request)}{email}: successfully logged in")
             if not user_token.user.has_mfa:
                 default_next = "ui:index"
                 request.session[MFA_COMPLETE_SESSION_KEY] = True
             return RedirectResponse(clean_next_url(request, default_next), status_code=302)
         else:
-            logger.info(f"{client_ip(request)}user failed login due to invalid account or password")
+            logger.info(f"{client_ip_str(request)}user failed login due to invalid account or password")
             return template_context_render(
                 "login.html",
                 request,
@@ -130,7 +130,7 @@ async def create_account(request: Request, session_provider: ORMSessionProvider)
     token = PasswordResetToken(new_user).generate_token()
     send_template_email(form.email.data, "create_account", request, {"user_pk": new_user.pk, "token": token})
     message(request, f"You have been sent an email to confirm your account on {form.email.data}.")
-    logger.info(f"{client_ip(request)}{form.email.data}: created new account, confirmation pending")
+    logger.info(f"{client_ip_str(request)}{form.email.data}: created new account, confirmation pending")
     return RedirectResponse(request.url_for("ui:index"), status_code=302)
 
 
@@ -164,7 +164,7 @@ async def reset_password_request(request: Request, session_provider: ORMSessionP
         request,
         f"You have been sent an email to reset your password on {form.email.data}, if this account exists.",
     )
-    logger.info(f"{client_ip(request)}{form.email.data}: password reset email requested")
+    logger.info(f"{client_ip_str(request)}{form.email.data}: password reset email requested")
     return RedirectResponse(request.url_for("ui:index"), status_code=302)
 
 
@@ -209,7 +209,7 @@ async def change_password(request: Request, session_provider: ORMSessionProvider
     request.auth.user.password = password_handler.hash(form.new_password.data)
     session_provider.session.add(request.auth.user)
     message(request, "Your password has been changed.")
-    logger.info(f"{client_ip(request)}{request.auth.user.email}: password changed successfully")
+    logger.info(f"{client_ip_str(request)}{request.auth.user.email}: password changed successfully")
     send_authentication_change_mail(request.auth.user, request, "Your password was changed.")
     return RedirectResponse(request.url_for("ui:index"), status_code=302)
 
@@ -245,7 +245,7 @@ async def change_profile(request: Request, session_provider: ORMSessionProvider)
     session_provider.session.add(request.auth.user)
     message(request, "Your name/e-mail address have been changed.")
     logger.info(
-        f"{client_ip(request)}{request.auth.user.email}: name/email changed successfully (old email"
+        f"{client_ip_str(request)}{request.auth.user.email}: name/email changed successfully (old email"
         f" {old_email}"
     )
     send_authentication_change_mail(
@@ -308,7 +308,7 @@ async def set_password(request: Request, session_provider: ORMSessionProvider) -
     user.password = password_handler.hash(form.new_password.data)
     session_provider.session.add(user)
     message(request, "Your password has been changed.")
-    logger.info(f"{client_ip(request)}{user.email}: password (re)set successfully")
+    logger.info(f"{client_ip_str(request)}{user.email}: password (re)set successfully")
     if not initial:
         send_authentication_change_mail(user, request, "Your password was reset.")
     return RedirectResponse(request.url_for("ui:auth:login"), status_code=302)

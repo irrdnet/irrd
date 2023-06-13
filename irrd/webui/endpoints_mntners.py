@@ -16,6 +16,7 @@ from irrd.storage.models import (
     AuthMntner,
     AuthPermission,
     AuthUser,
+    ChangeLog,
     JournalEntryOrigin,
     RPSLDatabaseObject,
 )
@@ -24,7 +25,13 @@ from irrd.utils.email import send_email
 from irrd.utils.text import clean_ip_value_error
 from irrd.webui.auth.decorators import authentication_required
 from irrd.webui.auth.users import CurrentPasswordForm
-from irrd.webui.helpers import client_ip, message, rate_limit_post, send_template_email
+from irrd.webui.helpers import (
+    client_ip,
+    client_ip_str,
+    message,
+    rate_limit_post,
+    send_template_email,
+)
 from irrd.webui.rendering import render_form, template_context_render
 
 logger = logging.getLogger(__name__)
@@ -102,8 +109,19 @@ async def api_token_add(request: Request, session_provider: ORMSessionProvider) 
     message(request, message_text)
     await notify_mntner(session_provider, request.auth.user, mntner, explanation=message_text)
     logger.info(
-        f"{client_ip(request)}{request.auth.user.email}: added API token {new_token.pk} on mntner"
+        f"{client_ip_str(request)}{request.auth.user.email}: added API token {new_token.pk} on mntner"
         f" {mntner.rpsl_mntner_pk}"
+    )
+    session_provider.session.add(
+        ChangeLog(
+            auth_by_user_id=str(request.auth.user.pk),
+            auth_by_user_email=request.auth.user.email,
+            auth_through_mntner_id=str(mntner.pk),
+            auth_through_rpsl_mntner_pk=str(mntner.rpsl_pk),
+            from_ip=client_ip(request),
+            auth_change_descr=f"added API token {new_token.pk}",
+            auth_affected_mntner=str(mntner.pk),
+        )
     )
 
     return RedirectResponse(request.url_for("ui:user_permissions"), status_code=302)
@@ -143,8 +161,19 @@ async def api_token_edit(request: Request, session_provider: ORMSessionProvider)
     message_text = f"The API key for '{api_token.name}' on {api_token.mntner.rpsl_mntner_pk} was modified."
     message(request, message_text)
     logger.info(
-        f"{client_ip(request)}{request.auth.user.email}: updated API token {api_token.pk} on mntner"
+        f"{client_ip_str(request)}{request.auth.user.email}: updated API token {api_token.pk} on mntner"
         f" {api_token.mntner.rpsl_mntner_pk}"
+    )
+    session_provider.session.add(
+        ChangeLog(
+            auth_by_user_id=str(request.auth.user.pk),
+            auth_by_user_email=request.auth.user.email,
+            auth_through_mntner_id=str(api_token.mntner.pk),
+            auth_through_rpsl_mntner_pk=str(api_token.mntner.rpsl_pk),
+            from_ip=client_ip(request),
+            auth_change_descr=f"modified API token {api_token.pk}",
+            auth_affected_mntner=str(api_token.mntner.pk),
+        )
     )
 
     return RedirectResponse(request.url_for("ui:user_permissions"), status_code=302)
@@ -186,8 +215,19 @@ async def api_token_delete(request: Request, session_provider: ORMSessionProvide
     message(request, message_text)
     await notify_mntner(session_provider, request.auth.user, api_token.mntner, explanation=message_text)
     logger.info(
-        f"{client_ip(request)}{request.auth.user.email}: removed API token {api_token.pk} on mntner"
+        f"{client_ip_str(request)}{request.auth.user.email}: removed API token {api_token.pk} on mntner"
         f" {api_token.mntner.rpsl_mntner_pk}"
+    )
+    session_provider.session.add(
+        ChangeLog(
+            auth_by_user_id=str(request.auth.user.pk),
+            auth_by_user_email=request.auth.user.email,
+            auth_through_mntner_id=str(api_token.mntner.pk),
+            auth_through_rpsl_mntner_pk=str(api_token.mntner.rpsl_pk),
+            from_ip=client_ip(request),
+            auth_change_descr=f"removed API token {api_token.pk}",
+            auth_affected_mntner=str(api_token.mntner.pk),
+        )
     )
 
     return RedirectResponse(request.url_for("ui:user_permissions"), status_code=302)
@@ -277,8 +317,23 @@ async def permission_add(request: Request, session_provider: ORMSessionProvider)
     message(request, message_text)
     await notify_mntner(session_provider, request.auth.user, mntner, explanation=message_text)
     logger.info(
-        f"{client_ip(request)}{request.auth.user.email}: added permission {new_permission.pk} on mntner"
+        f"{client_ip_str(request)}{request.auth.user.email}: added permission {new_permission.pk} on mntner"
         f" {mntner.rpsl_mntner_pk} for user {form.new_user.email}"
+    )
+    session_provider.session.add(
+        ChangeLog(
+            auth_by_user_id=str(request.auth.user.pk),
+            auth_by_user_email=request.auth.user.email,
+            auth_through_mntner_id=str(mntner.pk),
+            auth_through_rpsl_mntner_pk=str(mntner.rpsl_pk),
+            from_ip=client_ip(request),
+            auth_change_descr=(
+                f"added permission for {new_permission.user.email}"
+                f" {'with' if new_permission.user_management else 'without'} user management"
+            ),
+            auth_affected_user=str(new_permission.user.pk),
+            auth_affected_mntner=str(mntner.pk),
+        )
     )
 
     return RedirectResponse(request.url_for("ui:user_permissions"), status_code=302)
@@ -341,8 +396,23 @@ async def permission_delete(request: Request, session_provider: ORMSessionProvid
     ).delete()
     message(request, message_text)
     logger.info(
-        f"{client_ip(request)}{request.auth.user.email}: removed permission {permission.pk} on mntner"
+        f"{client_ip_str(request)}{request.auth.user.email}: removed permission {permission.pk} on mntner"
         f" {permission.mntner.rpsl_mntner_pk} for user {permission.user.email}"
+    )
+    session_provider.session.add(
+        ChangeLog(
+            auth_by_user_id=str(request.auth.user.pk),
+            auth_by_user_email=request.auth.user.email,
+            auth_through_mntner_id=str(permission.mntner.pk),
+            auth_through_rpsl_mntner_pk=str(permission.mntner.rpsl_pk),
+            from_ip=client_ip(request),
+            auth_change_descr=(
+                f"deleted permission for {permission.user.email}"
+                f" {'with' if permission.user_management.data else 'without'} user management"
+            ),
+            auth_affected_user=str(permission.user.pk),
+            auth_affected_mntner=str(permission.mntner.pk),
+        )
     )
 
     return RedirectResponse(request.url_for("ui:user_permissions"), status_code=302)
@@ -402,7 +472,8 @@ class MntnerMigrateInitiateForm(StarletteForm):
         self.rpsl_mntner_db_pk = mntner_obj.pk
         self.rpsl_mntner = RPSLMntner(mntner_obj.object_text, strict_validation=False)
 
-        if not self.rpsl_mntner.verify_auth(passwords=[self.mntner_password.data]):
+        valid, scheme = self.rpsl_mntner.verify_auth(passwords=[self.mntner_password.data])
+        if not valid:
             logger.info(
                 f"invalid password provided for mntner {self.rpsl_mntner.pk()} "
                 " while attempting to start migration"
@@ -453,8 +524,19 @@ async def mntner_migrate_initiate(request: Request, session_provider: ORMSession
     await send_mntner_migrate_initiate_mail(session_provider, request, new_auth_mntner, form.rpsl_mntner)
     message(request, "The mntner's admin-c's have been sent a confirmation email to complete the migration.")
     logger.info(
-        f"{client_ip(request)}{request.auth.user.email}: initiated migration of {form.rpsl_mntner.pk()},"
+        f"{client_ip_str(request)}{request.auth.user.email}: initiated migration of {form.rpsl_mntner.pk()},"
         " pending confirmation"
+    )
+    session_provider.session.add(
+        ChangeLog(
+            auth_by_user_id=str(request.auth.user.pk),
+            auth_by_user_email=request.auth.user.email,
+            auth_through_mntner_id=str(new_auth_mntner.pk),
+            auth_through_rpsl_mntner_pk=str(new_auth_mntner.rpsl_pk),
+            from_ip=client_ip(request),
+            auth_change_descr="maintainer migration initiated",
+            auth_affected_mntner=str(new_auth_mntner.pk),
+        )
     )
     return RedirectResponse(request.url_for("ui:user_permissions"), status_code=302)
 
@@ -482,7 +564,8 @@ class MntnerMigrateCompleteForm(StarletteForm):
         self.rpsl_mntner_obj = RPSLMntner(
             self.auth_mntner.rpsl_mntner_obj.object_text, strict_validation=False
         )
-        if not self.rpsl_mntner_obj.verify_auth(passwords=[self.mntner_password.data]):
+        valid, scheme = self.rpsl_mntner_obj.verify_auth(passwords=[self.mntner_password.data])
+        if not valid:
             logger.info(
                 f"invalid password provided for mntner {self.auth_mntner.rpsl_mntner_pk} while attempting to"
                 " confirm migration"
@@ -539,7 +622,19 @@ async def mntner_migrate_complete(request: Request, session_provider: ORMSession
 
     message(request, f"The mntner {auth_mntner.rpsl_mntner_pk} has been migrated.")
     logger.info(
-        f"{client_ip(request)}{request.auth.user.email}: completed migration of {auth_mntner.rpsl_mntner_pk}"
+        f"{client_ip_str(request)}{request.auth.user.email}: completed migration of"
+        f" {auth_mntner.rpsl_mntner_pk}"
+    )
+    session_provider.session.add(
+        ChangeLog(
+            auth_by_user_id=str(request.auth.user.pk),
+            auth_by_user_email=request.auth.user.email,
+            auth_through_mntner_id=str(auth_mntner.pk),
+            auth_through_rpsl_mntner_pk=str(auth_mntner.rpsl_pk),
+            from_ip=client_ip(request),
+            auth_change_descr="maintainer migration completed",
+            auth_affected_mntner=str(auth_mntner.pk),
+        )
     )
     return RedirectResponse(request.url_for("ui:user_permissions"), status_code=302)
 

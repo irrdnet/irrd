@@ -478,6 +478,54 @@ class AuthMntner(Base):  # type: ignore
         return f"AuthMntner<{self.pk}, {self.rpsl_mntner_pk}>"
 
 
+class ChangeLog(Base):  # type: ignore
+    __tablename__ = "ChangeLog"
+
+    # TODO: check indexes
+    pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)
+    auth_by_user_id = sa.Column(pg.UUID, sa.ForeignKey("auth_user.pk", ondelete="SET NULL"), nullable=True)
+    auth_by_user_email = sa.Column(sa.String, nullable=True)
+    auth_by_api_key = sa.Column(
+        pg.UUID, sa.ForeignKey("auth_api_token.pk", ondelete="SET NULL"), nullable=True
+    )
+    auth_by_api_key_id = sa.Column(pg.UUID, nullable=True)
+    auth_through_mntner_id = sa.Column(
+        pg.UUID, sa.ForeignKey("auth_mntner.pk", ondelete="SET NULL"), index=True, nullable=True
+    )
+    auth_through_rpsl_mntner_pk = sa.Column(sa.String, nullable=True)
+    auth_by_rpsl_mntner_password = sa.Column(sa.Boolean, default=False)
+    auth_by_rpsl_mntner_pgp_key = sa.Column(sa.String, default=False)
+    auth_by_override = sa.Column(sa.Boolean, default=False)
+
+    from_email = sa.Column(sa.String, nullable=True)
+    from_ip = sa.Column(pg.INET, nullable=True)
+
+    journal_entry = sa.Column(
+        pg.UUID, sa.ForeignKey("rpsl_database_journal.pk", ondelete="SET NULL"), nullable=True
+    )
+    journal_serial_nrtm = sa.Column(sa.Integer, nullable=False)
+
+    auth_change_descr = sa.Column(sa.String, nullable=True)
+    auth_affected_user = sa.Column(pg.UUID, sa.ForeignKey("auth_user.pk", ondelete="SET NULL"), nullable=True)
+    auth_affected_mntner = sa.Column(
+        pg.UUID, sa.ForeignKey("auth_mntner.pk", ondelete="SET NULL"), index=True, nullable=True
+    )
+
+    rpsl_target_operation = sa.Column(sa.Enum(DatabaseOperation), nullable=True)
+    rpsl_target_obj_id = sa.Column(
+        pg.UUID, sa.ForeignKey("rpsl_objects.pk", ondelete="SET NULL"), nullable=True
+    )
+    rpsl_target_pk = sa.Column(sa.String, index=True, nullable=True)
+    rpsl_target_source = sa.Column(sa.String, nullable=True)
+    rpsl_target_object_class = sa.Column(sa.String, nullable=True)
+    rpsl_target_object_text = sa.Column(sa.Text, nullable=True)
+
+    timestamp = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
+
+    def __repr__(self):
+        return f"<{self.pk}>"
+
+
 # Before you update this, please check the storage documentation for changing lookup fields.
 expected_lookup_field_names = {
     "admin-c",
