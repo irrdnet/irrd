@@ -34,7 +34,7 @@ def upgrade():
         sa.Column("from_email", sa.String(), nullable=True),
         sa.Column("from_ip", postgresql.INET(), nullable=True),
         sa.Column("journal_entry", postgresql.UUID(), nullable=True),
-        sa.Column("journal_serial_nrtm", sa.Integer(), nullable=False),
+        sa.Column("journal_serial_nrtm", sa.Integer(), nullable=True),
         sa.Column("auth_change_descr", sa.String(), nullable=True),
         sa.Column("auth_affected_user", postgresql.UUID(), nullable=True),
         sa.Column("auth_affected_mntner", postgresql.UUID(), nullable=True),

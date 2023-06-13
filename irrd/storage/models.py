@@ -503,7 +503,7 @@ class ChangeLog(Base):  # type: ignore
     journal_entry = sa.Column(
         pg.UUID, sa.ForeignKey("rpsl_database_journal.pk", ondelete="SET NULL"), nullable=True
     )
-    journal_serial_nrtm = sa.Column(sa.Integer, nullable=False)
+    journal_serial_nrtm = sa.Column(sa.Integer, nullable=True)
 
     auth_change_descr = sa.Column(sa.String, nullable=True)
     auth_affected_user = sa.Column(pg.UUID, sa.ForeignKey("auth_user.pk", ondelete="SET NULL"), nullable=True)
