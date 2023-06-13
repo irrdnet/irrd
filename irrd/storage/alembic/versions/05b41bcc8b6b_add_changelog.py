@@ -18,7 +18,7 @@ depends_on = None
 
 def upgrade():
     op.create_table(
-        "ChangeLog",
+        "change_log",
         sa.Column(
             "pk", postgresql.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), nullable=False
         ),
@@ -59,16 +59,16 @@ def upgrade():
         sa.PrimaryKeyConstraint("pk"),
     )
     op.create_index(
-        op.f("ix_ChangeLog_auth_affected_mntner"), "ChangeLog", ["auth_affected_mntner"], unique=False
+        op.f("ix_ChangeLog_auth_affected_mntner"), "change_log", ["auth_affected_mntner"], unique=False
     )
     op.create_index(
-        op.f("ix_ChangeLog_auth_through_mntner_id"), "ChangeLog", ["auth_through_mntner_id"], unique=False
+        op.f("ix_ChangeLog_auth_through_mntner_id"), "change_log", ["auth_through_mntner_id"], unique=False
     )
-    op.create_index(op.f("ix_ChangeLog_rpsl_target_pk"), "ChangeLog", ["rpsl_target_pk"], unique=False)
+    op.create_index(op.f("ix_ChangeLog_rpsl_target_pk"), "change_log", ["rpsl_target_pk"], unique=False)
 
 
 def downgrade():
-    op.drop_index(op.f("ix_ChangeLog_rpsl_target_pk"), table_name="ChangeLog")
-    op.drop_index(op.f("ix_ChangeLog_auth_through_mntner_id"), table_name="ChangeLog")
-    op.drop_index(op.f("ix_ChangeLog_auth_affected_mntner"), table_name="ChangeLog")
-    op.drop_table("ChangeLog")
+    op.drop_index(op.f("ix_ChangeLog_rpsl_target_pk"), table_name="change_log")
+    op.drop_index(op.f("ix_ChangeLog_auth_through_mntner_id"), table_name="change_log")
+    op.drop_index(op.f("ix_ChangeLog_auth_affected_mntner"), table_name="change_log")
+    op.drop_table("change_log")

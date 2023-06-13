@@ -479,7 +479,7 @@ class AuthMntner(Base):  # type: ignore
 
 
 class ChangeLog(Base):  # type: ignore
-    __tablename__ = "ChangeLog"
+    __tablename__ = "change_log"
 
     # TODO: check indexes
     pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)
