@@ -58,7 +58,7 @@ class ValidatorResult:
         if self.auth_through_auth_mntner:
             kwargs["auth_through_mntner_id"] = str(self.auth_through_auth_mntner.pk)
         if self.auth_method == AuthMethod.MNTNER_PASSWORD:
-            kwargs["auth_by_rpsl_mntner_pgp_key"] = True
+            kwargs["auth_by_rpsl_mntner_password"] = True
         if self.auth_method == AuthMethod.MNTNER_PGP_KEY:
             kwargs["auth_by_rpsl_mntner_pgp_key"] = True
         if self.auth_method in [AuthMethod.OVERRIDE_PASSWORD, AuthMethod.OVERRIDE_INTERNAL_AUTH]:

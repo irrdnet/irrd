@@ -1,4 +1,5 @@
 import itertools
+import uuid
 from unittest import mock
 from unittest.mock import Mock
 
@@ -30,14 +31,38 @@ from ...storage.models import (
     AuthoritativeChangeOrigin,
     AuthUser,
 )
-from ...utils.factories import AuthApiTokenFactory
-from ..validators import AuthValidator, RulesValidator
+from ...utils.factories import AuthApiTokenFactory, AuthMntnerFactory, AuthUserFactory
+from ..validators import AuthValidator, RulesValidator, ValidatorResult
 
 VALID_PW = "override-password"
 INVALID_PW = "not-override-password"
 VALID_PW_HASH = "$1$J6KycItM$MbPaBU6iFSGFV299Rk7Di0"
 MNTNER_OBJ_CRYPT_PW = SAMPLE_MNTNER.replace("MD5", "")
 MNTNER_OBJ_MD5_PW = SAMPLE_MNTNER.replace("CRYPT", "")
+
+
+def test_validator_result():
+    user = AuthUserFactory.build(pk=uuid.uuid4())
+    api_key = AuthApiTokenFactory.build(pk=uuid.uuid4())
+    mntner = AuthMntnerFactory.build(pk=uuid.uuid4(), rpsl_mntner_obj_id=None)
+
+    result = ValidatorResult(
+        auth_through_internal_user=user,
+        auth_through_api_key=api_key,
+        auth_through_auth_mntner=mntner,
+        auth_through_mntner="TEST-MNT",
+    ).to_change_log()
+    assert result.auth_by_user_id == str(user.pk)
+    assert result.auth_by_user_email == user.email
+    assert result.auth_by_api_key_id == str(api_key.pk)
+    assert result.auth_by_api_key_id_fixed == str(api_key.pk)
+    assert result.auth_through_rpsl_mntner_pk == "TEST-MNT"
+
+    assert (
+        ValidatorResult(auth_method=AuthMethod.MNTNER_PASSWORD).to_change_log().auth_by_rpsl_mntner_password
+    )
+    assert ValidatorResult(auth_method=AuthMethod.MNTNER_PGP_KEY).to_change_log().auth_by_rpsl_mntner_pgp_key
+    assert ValidatorResult(auth_method=AuthMethod.OVERRIDE_PASSWORD).to_change_log().auth_by_override
 
 
 class TestAuthValidator:
