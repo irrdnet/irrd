@@ -1,7 +1,7 @@
 import functools
 import logging
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, List, Optional, Set, Tuple, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple, Union
 
 import sqlalchemy.orm as saorm
 from IPy import IP
@@ -17,6 +17,7 @@ from irrd.storage.models import (
     AuthMntner,
     AuthoritativeChangeOrigin,
     AuthUser,
+    ChangeLog,
 )
 from irrd.storage.queries import RPSLDatabaseQuery, RPSLDatabaseSuspendedQuery
 
@@ -40,10 +41,29 @@ class ValidatorResult:
     auth_method: AuthMethod = AuthMethod.NONE
     auth_through_mntner: Optional[str] = None
     auth_through_auth_mntner: Optional[AuthMntner] = None
-    auth_through_api_key_id: Optional[str] = None
+    auth_through_api_key: Optional[AuthApiToken] = None
+    auth_through_internal_user: Optional[AuthUser] = None
 
     def is_valid(self):
         return len(self.error_messages) == 0
+
+    def to_change_log(self) -> ChangeLog:
+        kwargs: Dict[str, Union[str, bool, None]] = {"auth_through_rpsl_mntner_pk": self.auth_through_mntner}
+        if self.auth_through_internal_user:
+            kwargs["auth_by_user_id"] = str(self.auth_through_internal_user.pk)
+            kwargs["auth_by_user_email"] = self.auth_through_internal_user.email
+        if self.auth_through_api_key:
+            kwargs["auth_by_api_key_id"] = str(self.auth_through_api_key.pk)
+            kwargs["auth_by_api_key_id_fixed"] = str(self.auth_through_api_key.pk)
+        if self.auth_through_auth_mntner:
+            kwargs["auth_through_mntner_id"] = str(self.auth_through_auth_mntner.pk)
+        if self.auth_method == AuthMethod.MNTNER_PASSWORD:
+            kwargs["auth_by_rpsl_mntner_pgp_key"] = True
+        if self.auth_method == AuthMethod.MNTNER_PGP_KEY:
+            kwargs["auth_by_rpsl_mntner_pgp_key"] = True
+        if self.auth_method in [AuthMethod.OVERRIDE_PASSWORD, AuthMethod.OVERRIDE_INTERNAL_AUTH]:
+            kwargs["auth_by_override"] = True
+        return ChangeLog(**kwargs)
 
 
 @dataclass
@@ -53,7 +73,7 @@ class MntnerCheckResult:
     auth_method: AuthMethod = AuthMethod.NONE
     mntner_pk: Optional[str] = None
     auth_mntner: Optional[AuthMntner] = None
-    api_key_id: Optional[str] = None
+    api_key: Optional[AuthApiToken] = None
 
 
 class ReferenceValidator:
@@ -237,6 +257,8 @@ class AuthValidator:
         valid_override, method = self.check_override()
         if valid_override:
             result.auth_method = method
+            if method == AuthMethod.OVERRIDE_INTERNAL_AUTH:
+                result.auth_through_internal_user = self._internal_authenticated_user
             logger.info("Found valid override password.")
             return result
 
@@ -310,8 +332,10 @@ class AuthValidator:
         if changelog_mntner_result:
             result.auth_method = changelog_mntner_result.auth_method
             result.auth_through_mntner = changelog_mntner_result.mntner_pk
-            result.auth_through_api_key_id = changelog_mntner_result.api_key_id
+            result.auth_through_api_key = changelog_mntner_result.api_key
             result.auth_through_auth_mntner = changelog_mntner_result.auth_mntner
+            if result.auth_method == AuthMethod.MNTNER_INTERNAL_AUTH:
+                result.auth_through_internal_user = self._internal_authenticated_user
 
         return result
 
@@ -391,7 +415,7 @@ class AuthValidator:
                     auth_method=AuthMethod.MNTNER_API_KEY,
                     auth_mntner=api_key.mntner,
                     mntner_pk=mntner_name,
-                    api_key_id=str(api_key.pk),
+                    api_key=api_key.pk,
                 )
 
         for mntner_obj in mntner_objs:

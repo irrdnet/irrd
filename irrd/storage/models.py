@@ -485,10 +485,10 @@ class ChangeLog(Base):  # type: ignore
     pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)
     auth_by_user_id = sa.Column(pg.UUID, sa.ForeignKey("auth_user.pk", ondelete="SET NULL"), nullable=True)
     auth_by_user_email = sa.Column(sa.String, nullable=True)
-    auth_by_api_key = sa.Column(
+    auth_by_api_key_id = sa.Column(
         pg.UUID, sa.ForeignKey("auth_api_token.pk", ondelete="SET NULL"), nullable=True
     )
-    auth_by_api_key_id = sa.Column(pg.UUID, nullable=True)
+    auth_by_api_key_id_fixed = sa.Column(pg.UUID, nullable=True)
     auth_through_mntner_id = sa.Column(
         pg.UUID, sa.ForeignKey("auth_mntner.pk", ondelete="SET NULL"), index=True, nullable=True
     )
@@ -500,10 +500,10 @@ class ChangeLog(Base):  # type: ignore
     from_email = sa.Column(sa.String, nullable=True)
     from_ip = sa.Column(pg.INET, nullable=True)
 
-    journal_entry = sa.Column(
-        pg.UUID, sa.ForeignKey("rpsl_database_journal.pk", ondelete="SET NULL"), nullable=True
-    )
-    journal_serial_nrtm = sa.Column(sa.Integer, nullable=True)
+    # journal_entry = sa.Column(
+    #     pg.UUID, sa.ForeignKey("rpsl_database_journal.pk", ondelete="SET NULL"), nullable=True
+    # )
+    # journal_serial_nrtm = sa.Column(sa.Integer, nullable=True)
 
     auth_change_descr = sa.Column(sa.String, nullable=True)
     auth_affected_user = sa.Column(pg.UUID, sa.ForeignKey("auth_user.pk", ondelete="SET NULL"), nullable=True)
@@ -511,7 +511,9 @@ class ChangeLog(Base):  # type: ignore
         pg.UUID, sa.ForeignKey("auth_mntner.pk", ondelete="SET NULL"), index=True, nullable=True
     )
 
+    # TODO: make this a request type
     rpsl_target_operation = sa.Column(sa.Enum(DatabaseOperation), nullable=True)
+    # TODO: do we have this?
     rpsl_target_obj_id = sa.Column(
         pg.UUID, sa.ForeignKey("rpsl_objects.pk", ondelete="SET NULL"), nullable=True
     )
