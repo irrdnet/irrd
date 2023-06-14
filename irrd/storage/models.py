@@ -497,6 +497,7 @@ class ChangeLog(Base):  # type: ignore
     auth_by_rpsl_mntner_pgp_key = sa.Column(sa.String, default=False)
     auth_by_override = sa.Column(sa.Boolean, default=False)
 
+    # TODO: fill these
     from_email = sa.Column(sa.String, nullable=True)
     from_ip = sa.Column(pg.INET, nullable=True)
 
