@@ -1,4 +1,4 @@
-"""add_changelog
+"""add_change_log
 
 Revision ID: 05b41bcc8b6b
 Revises: 500027f85a55
@@ -59,16 +59,16 @@ def upgrade():
         sa.PrimaryKeyConstraint("pk"),
     )
     op.create_index(
-        op.f("ix_ChangeLog_auth_affected_mntner"), "change_log", ["auth_affected_mntner"], unique=False
+        op.f("ix_change_log_auth_affected_mntner"), "change_log", ["auth_affected_mntner"], unique=False
     )
     op.create_index(
-        op.f("ix_ChangeLog_auth_through_mntner_id"), "change_log", ["auth_through_mntner_id"], unique=False
+        op.f("ix_change_log_auth_through_mntner_id"), "change_log", ["auth_through_mntner_id"], unique=False
     )
-    op.create_index(op.f("ix_ChangeLog_rpsl_target_pk"), "change_log", ["rpsl_target_pk"], unique=False)
+    op.create_index(op.f("ix_change_log_rpsl_target_pk"), "change_log", ["rpsl_target_pk"], unique=False)
 
 
 def downgrade():
-    op.drop_index(op.f("ix_ChangeLog_rpsl_target_pk"), table_name="change_log")
-    op.drop_index(op.f("ix_ChangeLog_auth_through_mntner_id"), table_name="change_log")
-    op.drop_index(op.f("ix_ChangeLog_auth_affected_mntner"), table_name="change_log")
+    op.drop_index(op.f("ix_change_log_rpsl_target_pk"), table_name="change_log")
+    op.drop_index(op.f("ix_change_log_auth_through_mntner_id"), table_name="change_log")
+    op.drop_index(op.f("ix_change_log_auth_affected_mntner"), table_name="change_log")
     op.drop_table("change_log")
