@@ -50,7 +50,11 @@ class AuthMethod(Enum):
     MNTNER_PGP_KEY = auto()
     MNTNER_INTERNAL_AUTH = auto()
     MNTNER_API_KEY = auto()
+    MNTNER_IN_SAME_REQUEST = auto()
     NONE = auto()
+
+    def __bool__(self):
+        return self != AuthMethod.NONE
 
     def used_override(self) -> bool:
         return self in [AuthMethod.OVERRIDE_PASSWORD, AuthMethod.OVERRIDE_INTERNAL_AUTH]

@@ -36,8 +36,10 @@ class ValidatorResult:
     info_messages: Set[str] = field(default_factory=OrderedSet)  # type: ignore
     # mntners that may need to be notified
     mntners_notify: List[RPSLMntner] = field(default_factory=list)
+    # Details of how authentication was provided
     auth_method: AuthMethod = AuthMethod.NONE
     auth_through_mntner: Optional[str] = None
+    auth_through_auth_mntner: Optional[AuthMntner] = None
     auth_through_api_key_id: Optional[str] = None
 
     def is_valid(self):
@@ -50,6 +52,7 @@ class MntnerCheckResult:
     associated_mntners: List[RPSLMntner] = field(default_factory=list)
     auth_method: AuthMethod = AuthMethod.NONE
     mntner_pk: Optional[str] = None
+    auth_mntner: Optional[AuthMntner] = None
     api_key_id: Optional[str] = None
 
 
@@ -199,7 +202,6 @@ class AuthValidator:
         self.remote_ip = remote_ip
         self._mntner_db_cache: Set[RPSLMntner] = set()
         self._pre_approved: Set[str] = set()
-        self._last_auth_method = AuthMethod.NONE
         self.keycert_obj_pk = keycert_obj_pk
         self._internal_authenticated_user = internal_authenticated_user
 
@@ -309,7 +311,7 @@ class AuthValidator:
             result.auth_method = changelog_mntner_result.auth_method
             result.auth_through_mntner = changelog_mntner_result.mntner_pk
             result.auth_through_api_key_id = changelog_mntner_result.api_key_id
-            self._last_auth_method = changelog_mntner_result.auth_method
+            result.auth_through_auth_mntner = changelog_mntner_result.auth_mntner
 
         return result
 
@@ -366,29 +368,30 @@ class AuthValidator:
 
         for mntner_name in mntner_pk_list:
             if mntner_name in self._pre_approved:
-                # TODO: explain this hack
                 return MntnerCheckResult(
                     valid=True,
                     associated_mntners=mntner_objs,
-                    auth_method=self._last_auth_method,
+                    auth_method=AuthMethod.MNTNER_IN_SAME_REQUEST,
                     mntner_pk=mntner_name,
                 )
-            matches_internal_auth = self._mntner_matches_internal_auth(rpsl_obj_new, mntner_name, source)
-            if matches_internal_auth:
+            internal_auth_match = self._mntner_matches_internal_auth(rpsl_obj_new, mntner_name, source)
+            if internal_auth_match:
                 return MntnerCheckResult(
                     valid=True,
                     associated_mntners=mntner_objs,
                     auth_method=AuthMethod.MNTNER_INTERNAL_AUTH,
+                    auth_mntner=internal_auth_match,
                     mntner_pk=mntner_name,
                 )
-            matches_api_key, key_id = self._mntner_matches_api_key(rpsl_obj_new, mntner_name, source)
-            if matches_api_key:
+            api_key = self._api_key_match_for_mntner(rpsl_obj_new, mntner_name, source)
+            if api_key:
                 return MntnerCheckResult(
                     valid=True,
                     associated_mntners=mntner_objs,
                     auth_method=AuthMethod.MNTNER_API_KEY,
+                    auth_mntner=api_key.mntner,
                     mntner_pk=mntner_name,
-                    api_key_id=key_id,
+                    api_key_id=str(api_key.pk),
                 )
 
         for mntner_obj in mntner_objs:
@@ -405,30 +408,28 @@ class AuthValidator:
 
         return MntnerCheckResult(valid=False, associated_mntners=mntner_objs)
 
-    def _mntner_matches_internal_auth(self, rpsl_obj_new: RPSLObject, rpsl_pk: str, source: str) -> bool:
+    def _mntner_matches_internal_auth(
+        self, rpsl_obj_new: RPSLObject, rpsl_pk: str, source: str
+    ) -> Optional[AuthMntner]:
         if not self._internal_authenticated_user:
-            return False
+            return None
         if rpsl_obj_new.pk() == rpsl_pk and rpsl_obj_new.source() == source:
             user_mntner_set = self._internal_authenticated_user.mntners_user_management
         else:
             user_mntner_set = self._internal_authenticated_user.mntners
-        match = any(
-            [
-                rpsl_pk == mntner.rpsl_mntner_pk and source == mntner.rpsl_mntner_source
-                for mntner in user_mntner_set
-            ]
-        )
-        if match:
-            logger.info(
-                f"Authenticated through internally authenticated user {self._internal_authenticated_user}"
-            )
-        return match
+        for mntner in user_mntner_set:
+            if rpsl_pk == mntner.rpsl_mntner_pk and source == mntner.rpsl_mntner_source:
+                logger.info(
+                    f"Authenticated through internally authenticated user {self._internal_authenticated_user}"
+                )
+                return mntner
+        return None
 
-    def _mntner_matches_api_key(
+    def _api_key_match_for_mntner(
         self, rpsl_obj_new: RPSLObject, rpsl_pk: str, source: str
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> Optional[AuthApiToken]:
         if not self.api_keys or isinstance(rpsl_obj_new, RPSLMntner):
-            return False, None
+            return None
 
         session = saorm.Session(bind=self.database_handler._connection)
         query = (
@@ -443,9 +444,9 @@ class AuthValidator:
         for api_token in query.all():
             if api_token.valid_for(self.origin, self.remote_ip):
                 logger.info(f"Authenticated through API token {api_token.pk} on mntner {rpsl_pk}")
-                return True, str(api_token.pk)
+                return api_token
 
-        return False, None
+        return None
 
     def _generate_failure_message(
         self,
