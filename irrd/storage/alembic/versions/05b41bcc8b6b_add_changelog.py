@@ -54,7 +54,7 @@ def upgrade():
         sa.ForeignKeyConstraint(["auth_by_api_key_id"], ["auth_api_token.pk"], ondelete="SET NULL"),
         sa.ForeignKeyConstraint(["auth_by_user_id"], ["auth_user.pk"], ondelete="SET NULL"),
         sa.ForeignKeyConstraint(["auth_through_mntner_id"], ["auth_mntner.pk"], ondelete="SET NULL"),
-        sa.ForeignKeyConstraint(["journal_entry"], ["rpsl_database_journal.pk"], ondelete="SET NULL"),
+        # sa.ForeignKeyConstraint(["journal_entry"], ["rpsl_database_journal.pk"], ondelete="SET NULL"),
         sa.ForeignKeyConstraint(["rpsl_target_obj_id"], ["rpsl_objects.pk"], ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("pk"),
     )
