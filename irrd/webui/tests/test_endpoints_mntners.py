@@ -1,12 +1,197 @@
 import uuid
 
-from irrd.storage.models import AuthPermission
-from irrd.utils.factories import SAMPLE_USER_PASSWORD, AuthUserFactory
+from irrd.conf import RPSL_MNTNER_AUTH_INTERNAL
+from irrd.rpsl.rpsl_objects import rpsl_object_from_text
+from irrd.storage.models import AuthApiToken, AuthPermission
+from irrd.utils.factories import (
+    SAMPLE_USER_PASSWORD,
+    AuthApiTokenFactory,
+    AuthUserFactory,
+)
+from irrd.utils.rpsl_samples import SAMPLE_MNTNER, SAMPLE_MNTNER_BCRYPT
 
-from ...conf import RPSL_MNTNER_AUTH_INTERNAL
-from ...rpsl.rpsl_objects import rpsl_object_from_text
-from ...utils.rpsl_samples import SAMPLE_MNTNER, SAMPLE_MNTNER_BCRYPT
 from .conftest import WebRequestTest, create_permission
+
+
+class TestApiTokenAdd(WebRequestTest):
+    url_template = "/ui/api_token/add/{uuid}/"
+
+    def pre_login(self, session_provider, user, user_management=True):
+        self.permission = create_permission(session_provider, user, user_management=user_management)
+        self.url = self.url_template.format(uuid=self.permission.mntner.pk)
+
+    def test_render_form(self, test_client, irrd_db_session_with_user):
+        session_provider, user = irrd_db_session_with_user
+        self.pre_login(session_provider, user)
+        self._login_if_needed(test_client, user)
+
+        response = test_client.get(self.url)
+        assert response.status_code == 200
+        assert "TEST-MNT" in response.text
+
+    def test_valid_new_token(self, test_client_with_smtp, irrd_db_session_with_user):
+        test_client, smtpd = test_client_with_smtp
+        session_provider, user = irrd_db_session_with_user
+        self.pre_login(session_provider, user)
+        self._login_if_needed(test_client, user)
+
+        api_token_name = "token name"
+        response = test_client.post(
+            self.url,
+            data={
+                "name": api_token_name,
+                "enabled_webapi": "1",
+                "ip_restriction": " 192.0.2.1 ,192.0.02.0/24",
+            },
+            follow_redirects=False,
+        )
+        assert response.status_code == 302
+
+        new_api_token = session_provider.run_sync(session_provider.session.query(AuthApiToken).one)
+        assert new_api_token.token
+        assert new_api_token.creator == user
+        assert new_api_token.name == api_token_name
+        assert new_api_token.enabled_webapi
+        assert new_api_token.ip_restriction == "192.0.2.1,192.0.2.0/24"
+        assert not new_api_token.enabled_email
+        assert len(smtpd.messages) == 3
+        assert new_api_token.name in smtpd.messages[1].as_string()
+
+    def test_invalid_cidr_range(self, test_client, irrd_db_session_with_user):
+        session_provider, user = irrd_db_session_with_user
+        self.pre_login(session_provider, user)
+        self._login_if_needed(test_client, user)
+
+        api_token_name = "token name"
+        response = test_client.post(
+            self.url,
+            data={"name": api_token_name, "ip_restriction": "192.0.2.1.1"},
+            follow_redirects=False,
+        )
+        assert response.status_code == 200
+
+        new_api_token = session_provider.run_sync(session_provider.session.query(AuthApiToken).one)
+        assert not new_api_token
+        assert "Invalid IP" in response.text
+
+    def test_invalid_ip_restriction_with_email(self, test_client, irrd_db_session_with_user):
+        session_provider, user = irrd_db_session_with_user
+        self.pre_login(session_provider, user)
+        self._login_if_needed(test_client, user)
+
+        api_token_name = "token name"
+        response = test_client.post(
+            self.url,
+            data={
+                "name": api_token_name,
+                "enabled_email": "1",
+                "ip_restriction": " 192.0.2.1 ,192.0.02.0/24",
+            },
+            follow_redirects=False,
+        )
+        assert response.status_code == 200
+
+        new_api_token = session_provider.run_sync(session_provider.session.query(AuthApiToken).one)
+        assert not new_api_token
+        assert "can not be combined" in response.text
+
+    def test_object_not_exists(self, test_client, irrd_db_session_with_user):
+        session_provider, user = irrd_db_session_with_user
+        self._login_if_needed(test_client, user)
+        response = test_client.get(self.url_template.format(uuid=uuid.uuid4()))
+        assert response.status_code == 404
+
+
+class TestApiTokenEdit(WebRequestTest):
+    url_template = "/ui/api_token/edit/{uuid}/"
+
+    def pre_login(self, session_provider, user, user_management=True):
+        self.permission = create_permission(session_provider, user, user_management=user_management)
+        self.api_token = AuthApiTokenFactory(
+            mntner_id=str(self.permission.mntner.pk), creator_id=str(user.pk)
+        )
+        self.url = self.url_template.format(uuid=self.api_token.pk)
+
+    def test_render_form(self, test_client, irrd_db_session_with_user):
+        session_provider, user = irrd_db_session_with_user
+        self.pre_login(session_provider, user)
+        self._login_if_needed(test_client, user)
+
+        response = test_client.get(self.url)
+        assert response.status_code == 200
+        assert "TEST-MNT" in response.text
+
+    def test_valid_edit(self, test_client, irrd_db_session_with_user):
+        session_provider, user = irrd_db_session_with_user
+        self.pre_login(session_provider, user)
+        self._login_if_needed(test_client, user)
+
+        api_token_name = "new name"
+        old_api_token_token = self.api_token.token
+        response = test_client.post(
+            self.url,
+            data={"name": api_token_name, "enabled_email": "1"},
+            follow_redirects=False,
+        )
+        assert response.status_code == 302
+
+        session_provider.session.refresh(self.api_token)
+        assert self.api_token.token == old_api_token_token
+        assert self.api_token.creator == user
+        assert self.api_token.name == api_token_name
+        assert not self.api_token.enabled_webapi
+        assert self.api_token.enabled_email
+
+    def test_object_not_exists(self, test_client, irrd_db_session_with_user):
+        session_provider, user = irrd_db_session_with_user
+        self._login_if_needed(test_client, user)
+        response = test_client.get(self.url_template.format(uuid=uuid.uuid4()))
+        assert response.status_code == 404
+
+
+class TestApiTokenDelete(WebRequestTest):
+    url_template = "/ui/api_token/delete/{uuid}/"
+
+    def pre_login(self, session_provider, user, user_management=True):
+        self.permission = create_permission(session_provider, user, user_management=user_management)
+        self.api_token = AuthApiTokenFactory(
+            mntner_id=str(self.permission.mntner.pk), creator_id=str(user.pk)
+        )
+        self.url = self.url_template.format(uuid=self.api_token.pk)
+
+    def test_render_form(self, test_client, irrd_db_session_with_user):
+        session_provider, user = irrd_db_session_with_user
+        self.pre_login(session_provider, user)
+        self._login_if_needed(test_client, user)
+
+        response = test_client.get(self.url)
+        assert response.status_code == 200
+        assert "TEST-MNT" in response.text
+
+    def test_valid_delete(self, test_client_with_smtp, irrd_db_session_with_user):
+        test_client, smtpd = test_client_with_smtp
+        session_provider, user = irrd_db_session_with_user
+        self.pre_login(session_provider, user)
+        self._login_if_needed(test_client, user)
+        api_token_name = self.api_token.name
+
+        response = test_client.post(
+            self.url,
+            follow_redirects=False,
+        )
+        assert response.status_code == 302
+
+        deleted_api_token = session_provider.run_sync(session_provider.session.query(AuthApiToken).one)
+        assert deleted_api_token is None
+
+        assert len(smtpd.messages) == 3
+        assert api_token_name in smtpd.messages[1].as_string()
+
+    def test_object_not_exists(self, test_client, irrd_db_session_with_user):
+        session_provider, user = irrd_db_session_with_user
+        self._login_if_needed(test_client, user)
+        response = test_client.get(self.url_template.format(uuid=uuid.uuid4()))
+        assert response.status_code == 404
 
 
 class TestPermissionAdd(WebRequestTest):

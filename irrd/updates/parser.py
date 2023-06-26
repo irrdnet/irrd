@@ -564,6 +564,7 @@ def parse_change_requests(
     results: List[Union[ChangeRequest, SuspensionRequest]] = []
     passwords = []
     overrides = []
+    api_keys = []
 
     requests_text = requests_text.replace("\r", "")
     for object_text in requests_text.split("\n\n"):
@@ -586,6 +587,9 @@ def parse_change_requests(
             elif line.startswith("override:"):
                 override = line.split(":", maxsplit=1)[1].strip()
                 overrides.append(override)
+            elif line.startswith("api-key:"):
+                api_key = line.split(":", maxsplit=1)[1].strip()
+                api_keys.append(api_key)
             elif line.startswith("delete:"):
                 delete_reason = line.split(":", maxsplit=1)[1].strip()
             elif line.startswith("suspension:"):
@@ -616,4 +620,5 @@ def parse_change_requests(
     if auth_validator:
         auth_validator.passwords = passwords
         auth_validator.overrides = overrides
+        auth_validator.api_keys = api_keys
     return results

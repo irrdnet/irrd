@@ -65,8 +65,10 @@ The fields are:
 * ``max_serial_global``: the journal serial number of the most recent
   change that was included in this data. Note that this is not an NRTM
   serial - this serial is global for the entire journal of this IRRd instance.
+  May be ``null`` if there have been no changes.
 * ``last_change_timestamp``: the timestamp of the most recent change
-  that was included in this data.
+  that was included in this data. May be ``null`` if there have been
+  no changes.
 * ``generated_at`` and ``generated_on``: the timestamp at which the data
   was generated and the hostname of the generator.
 

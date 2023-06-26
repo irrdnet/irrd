@@ -2,6 +2,7 @@ import factory.alchemy
 from webauthn import base64url_to_bytes
 
 from irrd.storage.models import (
+    AuthApiToken,
     AuthMntner,
     AuthPermission,
     AuthUser,
@@ -73,3 +74,13 @@ class AuthPermissionFactory(factory.alchemy.SQLAlchemyModelFactory):
     class Meta:
         model = AuthPermission
         sqlalchemy_session_persistence = "commit"
+
+
+class AuthApiTokenFactory(factory.alchemy.SQLAlchemyModelFactory):
+    class Meta:
+        model = AuthApiToken
+        sqlalchemy_session_persistence = "commit"
+
+    name = factory.Sequence(lambda n: "API token %s" % n)
+    enabled_webapi = True
+    enabled_email = True

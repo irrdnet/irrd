@@ -5,6 +5,7 @@ from starlette.requests import HTTPConnection
 from starlette.testclient import TestClient
 
 from irrd.storage.database_handler import DatabaseHandler
+from irrd.storage.models import AuthoritativeChangeOrigin
 from irrd.storage.preload import Preloader
 from irrd.updates.handler import ChangeSubmissionHandler
 from irrd.utils.validators import RPSLChangeSubmission, RPSLSuspensionSubmission
@@ -183,8 +184,10 @@ class TestObjectSubmissionEndpoint:
         assert response_post.text == '{"response":true}'
         mock_handler.load_change_submission.assert_called_once_with(
             data=expected_data,
+            origin=AuthoritativeChangeOrigin.webapi,
             delete=False,
             request_meta={"HTTP-client-IP": "testclient", "HTTP-User-Agent": "testclient", "meta": 2},
+            remote_ip=None,
         )
         mock_handler.send_notification_target_reports.assert_called_once()
         mock_handler.reset_mock()
@@ -194,8 +197,10 @@ class TestObjectSubmissionEndpoint:
         assert response_delete.text == '{"response":true}'
         mock_handler.load_change_submission.assert_called_once_with(
             data=expected_data,
+            origin=AuthoritativeChangeOrigin.webapi,
             delete=True,
             request_meta={"HTTP-client-IP": "testclient", "HTTP-User-Agent": "testclient"},
+            remote_ip=None,
         )
         mock_handler.send_notification_target_reports.assert_called_once()
         mock_handler.reset_mock()
