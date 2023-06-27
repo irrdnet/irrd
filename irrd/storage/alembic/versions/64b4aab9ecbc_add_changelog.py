@@ -1,8 +1,8 @@
-"""add_change_log
+"""add_changelog
 
-Revision ID: 05b41bcc8b6b
+Revision ID: 64b4aab9ecbc
 Revises: 500027f85a55
-Create Date: 2023-06-13 15:36:21.889426
+Create Date: 2023-06-27 17:00:15.424222
 
 """
 import sqlalchemy as sa
@@ -10,13 +10,16 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = "05b41bcc8b6b"
+revision = "64b4aab9ecbc"
 down_revision = "500027f85a55"
 branch_labels = None
 depends_on = None
 
 
 def upgrade():
+    databaseoperation = postgresql.ENUM("add_or_update", "delete", name="databaseoperation", create_type=False)
+    databaseoperation.create(op.get_bind(), checkfirst=True)
+
     op.create_table(
         "change_log",
         sa.Column(
@@ -33,14 +36,12 @@ def upgrade():
         sa.Column("auth_by_override", sa.Boolean(), nullable=True),
         sa.Column("from_email", sa.String(), nullable=True),
         sa.Column("from_ip", postgresql.INET(), nullable=True),
-        # sa.Column("journal_entry", postgresql.UUID(), nullable=True),
-        # sa.Column("journal_serial_nrtm", sa.Integer(), nullable=True),
         sa.Column("auth_change_descr", sa.String(), nullable=True),
         sa.Column("auth_affected_user", postgresql.UUID(), nullable=True),
         sa.Column("auth_affected_mntner", postgresql.UUID(), nullable=True),
         sa.Column(
             "rpsl_target_operation",
-            sa.Enum("add_or_update", "delete", name="databaseoperation"),
+            databaseoperation,
             nullable=True,
         ),
         sa.Column("rpsl_target_obj_id", postgresql.UUID(), nullable=True),
@@ -54,7 +55,6 @@ def upgrade():
         sa.ForeignKeyConstraint(["auth_by_api_key_id"], ["auth_api_token.pk"], ondelete="SET NULL"),
         sa.ForeignKeyConstraint(["auth_by_user_id"], ["auth_user.pk"], ondelete="SET NULL"),
         sa.ForeignKeyConstraint(["auth_through_mntner_id"], ["auth_mntner.pk"], ondelete="SET NULL"),
-        # sa.ForeignKeyConstraint(["journal_entry"], ["rpsl_database_journal.pk"], ondelete="SET NULL"),
         sa.ForeignKeyConstraint(["rpsl_target_obj_id"], ["rpsl_objects.pk"], ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("pk"),
     )
