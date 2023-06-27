@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>Changes for {{ mntner.rpsl_mntner_pk }}</h2>
+    {% if change_logs %}
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <th scope="col">Time</th>
+                <th scope="col">Change</th>
+                <th scope="col">Authentication</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for log in change_logs %}
+                <tr>
+                    <td>{{ log.timestamp|datetime_format }}</td>
+                    <td>
+                        {% if log.rpsl_target_pk %}
+                            {{ log.rpsl_target_operation }} of
+                            {{ log.rpsl_target_object_class }} {{ log.rpsl_target_pk }} in
+                            {{ log.rpsl_target_source }}
+                        {% elif log.auth_change_descr %}
+                            {{ log.auth_change_descr }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if log.auth_by_user_email %}
+                            web by user {{ log.auth_by_user_email }}
+                        {% endif %}
+                        {% if log.auth_by_api_key_id_fixed %}
+                            API key {{ log.auth_by_api_key_id_fixed }}
+                        {% endif %}
+                        {% if log.auth_by_rpsl_mntner_password %}
+                            password on the RPSL Mntner
+                        {% endif %}
+                        {% if log.auth_by_rpsl_mntner_pgp_key %}
+                            PGP key in the RPSL mntner
+                        {% endif %}
+                        {% if log.auth_by_override %}
+                            override access
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        There have been no changes since the migration of this mntner.
+    {% endif %}
+{% endblock %}

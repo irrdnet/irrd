@@ -172,7 +172,9 @@ class ChangeRequest:
             change_log.rpsl_target_pk = self.rpsl_obj_new.pk()
             change_log.rpsl_target_source = self.rpsl_obj_new.source()
             change_log.rpsl_target_object_class = self.rpsl_obj_new.rpsl_object_class
-            change_log.rpsl_target_object_text = self.rpsl_obj_new.render_rpsl_text()
+            if self.rpsl_obj_current:
+                change_log.rpsl_target_object_text_old = self.rpsl_obj_current.render_rpsl_text()
+            change_log.rpsl_target_object_text_new = self.rpsl_obj_new.render_rpsl_text()
             session.add(change_log)
             session.flush()
 

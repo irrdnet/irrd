@@ -493,8 +493,8 @@ class ChangeLog(Base):  # type: ignore
         pg.UUID, sa.ForeignKey("auth_mntner.pk", ondelete="SET NULL"), index=True, nullable=True
     )
     auth_through_rpsl_mntner_pk = sa.Column(sa.String, nullable=True)
-    auth_by_rpsl_mntner_password = sa.Column(sa.Boolean, default=False)
-    auth_by_rpsl_mntner_pgp_key = sa.Column(sa.String, default=False)
+    auth_by_rpsl_mntner_password = sa.Column(sa.Boolean, nullable=False, default=False)
+    auth_by_rpsl_mntner_pgp_key = sa.Column(sa.Boolean, nullable=False, default=False)
     auth_by_override = sa.Column(sa.Boolean, default=False)
 
     # TODO: fill these
@@ -513,6 +513,7 @@ class ChangeLog(Base):  # type: ignore
     )
 
     # TODO: make this a request type
+    # TODO: fill this
     rpsl_target_operation = sa.Column(sa.Enum(DatabaseOperation), nullable=True)
     # TODO: do we have this?
     rpsl_target_obj_id = sa.Column(
@@ -521,7 +522,8 @@ class ChangeLog(Base):  # type: ignore
     rpsl_target_pk = sa.Column(sa.String, index=True, nullable=True)
     rpsl_target_source = sa.Column(sa.String, nullable=True)
     rpsl_target_object_class = sa.Column(sa.String, nullable=True)
-    rpsl_target_object_text = sa.Column(sa.Text, nullable=True)
+    rpsl_target_object_text_old = sa.Column(sa.Text, nullable=True)
+    rpsl_target_object_text_new = sa.Column(sa.Text, nullable=True)
 
     timestamp = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
 
