@@ -10,6 +10,7 @@ from irrd.routepref.status import RoutePreferenceStatus
 from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import lookup_field_names
 from irrd.scopefilter.status import ScopeFilterStatus
+from irrd.updates.parser_state import UpdateRequestType
 
 
 class DatabaseOperation(enum.Enum):
@@ -497,14 +498,8 @@ class ChangeLog(Base):  # type: ignore
     auth_by_rpsl_mntner_pgp_key = sa.Column(sa.Boolean, nullable=False, default=False)
     auth_by_override = sa.Column(sa.Boolean, default=False)
 
-    # TODO: fill these
     from_email = sa.Column(sa.String, nullable=True)
     from_ip = sa.Column(pg.INET, nullable=True)
-
-    # journal_entry = sa.Column(
-    #     pg.UUID, sa.ForeignKey("rpsl_database_journal.pk", ondelete="SET NULL"), nullable=True
-    # )
-    # journal_serial_nrtm = sa.Column(sa.Integer, nullable=True)
 
     auth_change_descr = sa.Column(sa.String, nullable=True)
     auth_affected_user = sa.Column(pg.UUID, sa.ForeignKey("auth_user.pk", ondelete="SET NULL"), nullable=True)
@@ -512,13 +507,7 @@ class ChangeLog(Base):  # type: ignore
         pg.UUID, sa.ForeignKey("auth_mntner.pk", ondelete="SET NULL"), index=True, nullable=True
     )
 
-    # TODO: make this a request type
-    # TODO: fill this
-    rpsl_target_operation = sa.Column(sa.Enum(DatabaseOperation), nullable=True)
-    # TODO: do we have this?
-    rpsl_target_obj_id = sa.Column(
-        pg.UUID, sa.ForeignKey("rpsl_objects.pk", ondelete="SET NULL"), nullable=True
-    )
+    rpsl_target_request_type = sa.Column(sa.Enum(UpdateRequestType), nullable=True)
     rpsl_target_pk = sa.Column(sa.String, index=True, nullable=True)
     rpsl_target_source = sa.Column(sa.String, nullable=True)
     rpsl_target_object_class = sa.Column(sa.String, nullable=True)

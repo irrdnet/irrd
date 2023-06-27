@@ -50,7 +50,8 @@ class ChangeRequest:
         database_handler: DatabaseHandler,
         auth_validator: AuthValidator,
         reference_validator: ReferenceValidator,
-        delete_reason=Optional[str],
+        delete_reason: Optional[str],
+        request_meta: Dict[str, Optional[str]],
     ) -> None:
         """
         Initialise a new change request for a single RPSL object.
@@ -79,6 +80,7 @@ class ChangeRequest:
         self.roa_validator = SingleRouteROAValidator(database_handler)
         self.scopefilter_validator = ScopeFilterValidator()
         self.rules_validator = RulesValidator(database_handler)
+        self.request_meta = request_meta
 
         try:
             self.rpsl_obj_new = rpsl_object_from_text(rpsl_text_submitted, strict_validation=True)
@@ -168,7 +170,10 @@ class ChangeRequest:
         if self._auth_result:
             session = saorm.Session(bind=self.database_handler._connection)
             change_log = self._auth_result.to_change_log()
-            # change_log.rpsl_target_operation = self.request_type.DELETE
+            # TODO: extract constant
+            change_log.from_ip = self.request_meta.get("HTTP-Client-IP", None)
+            change_log.from_email = self.request_meta.get("From", None)
+            change_log.rpsl_target_request_type = self.request_type
             change_log.rpsl_target_pk = self.rpsl_obj_new.pk()
             change_log.rpsl_target_source = self.rpsl_obj_new.source()
             change_log.rpsl_target_object_class = self.rpsl_obj_new.rpsl_object_class
@@ -569,6 +574,7 @@ def parse_change_requests(
     database_handler: DatabaseHandler,
     auth_validator: AuthValidator,
     reference_validator: ReferenceValidator,
+    request_meta: Dict[str, Optional[str]],
 ) -> List[Union[ChangeRequest, SuspensionRequest]]:
     """
     Parse change requests, a text of RPSL objects along with metadata like
@@ -633,6 +639,7 @@ def parse_change_requests(
                     auth_validator,
                     reference_validator,
                     delete_reason=delete_reason,
+                    request_meta=request_meta,
                 )
             )
 

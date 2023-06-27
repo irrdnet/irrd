@@ -16,7 +16,7 @@
                     <td>{{ log.timestamp|datetime_format }}</td>
                     <td>
                         {% if log.rpsl_target_pk %}
-                            {{ log.rpsl_target_operation }} of
+                            {{ log.rpsl_target_request_type }} of
                             {{ log.rpsl_target_object_class }} {{ log.rpsl_target_pk }} in
                             {{ log.rpsl_target_source }}
                         {% elif log.auth_change_descr %}
