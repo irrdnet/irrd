@@ -17,7 +17,9 @@ depends_on = None
 
 
 def upgrade():
-    databaseoperation = postgresql.ENUM("add_or_update", "delete", name="databaseoperation", create_type=False)
+    databaseoperation = postgresql.ENUM(
+        "add_or_update", "delete", name="databaseoperation", create_type=False
+    )
     databaseoperation.create(op.get_bind(), checkfirst=True)
 
     op.create_table(
