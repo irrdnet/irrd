@@ -387,7 +387,7 @@ jobs:
       - run:
           name: hack sphinx_immaterial
           command: |
-            sed -i 's/max_workers=32/max_workers=1/' /mnt/ramdisk/.venv/lib/py*/site-packages/sphinx_immaterial/google_fonts.py
+            sed -i 's/max_workers=33/max_workers=2/' /mnt/ramdisk/.venv/lib/py*/site-packages/sphinx_immaterial/google_fonts.py
 
       - run:
           name: build docs
