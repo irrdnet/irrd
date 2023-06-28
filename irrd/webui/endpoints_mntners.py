@@ -120,7 +120,7 @@ async def api_token_add(request: Request, session_provider: ORMSessionProvider) 
             auth_through_rpsl_mntner_pk=str(mntner.rpsl_mntner_pk),
             from_ip=client_ip(request),
             auth_change_descr=f"added API token {new_token.pk}",
-            auth_affected_mntner=str(mntner.pk),
+            auth_affected_mntner_id=str(mntner.pk),
         )
     )
 
@@ -172,7 +172,7 @@ async def api_token_edit(request: Request, session_provider: ORMSessionProvider)
             auth_through_rpsl_mntner_pk=str(api_token.mntner.rpsl_mntner_pk),
             from_ip=client_ip(request),
             auth_change_descr=f"modified API token {api_token.pk}",
-            auth_affected_mntner=str(api_token.mntner.pk),
+            auth_affected_mntner_id=str(api_token.mntner.pk),
         )
     )
 
@@ -226,7 +226,7 @@ async def api_token_delete(request: Request, session_provider: ORMSessionProvide
             auth_through_rpsl_mntner_pk=str(api_token.mntner.rpsl_mntner_pk),
             from_ip=client_ip(request),
             auth_change_descr=f"removed API token {api_token.pk}",
-            auth_affected_mntner=str(api_token.mntner.pk),
+            auth_affected_mntner_id=str(api_token.mntner.pk),
         )
     )
 
@@ -332,7 +332,7 @@ async def permission_add(request: Request, session_provider: ORMSessionProvider)
                 f" {'with' if new_permission.user_management else 'without'} user management"
             ),
             auth_affected_user=str(new_permission.user.pk),
-            auth_affected_mntner=str(mntner.pk),
+            auth_affected_mntner_id=str(mntner.pk),
         )
     )
 
@@ -411,7 +411,7 @@ async def permission_delete(request: Request, session_provider: ORMSessionProvid
                 f" {'with' if permission.user_management else 'without'} user management"
             ),
             auth_affected_user=str(permission.user.pk),
-            auth_affected_mntner=str(permission.mntner.pk),
+            auth_affected_mntner_id=str(permission.mntner.pk),
         )
     )
 
@@ -535,7 +535,7 @@ async def mntner_migrate_initiate(request: Request, session_provider: ORMSession
             auth_through_rpsl_mntner_pk=str(new_auth_mntner.rpsl_mntner_pk),
             from_ip=client_ip(request),
             auth_change_descr="maintainer migration initiated",
-            auth_affected_mntner=str(new_auth_mntner.pk),
+            auth_affected_mntner_id=str(new_auth_mntner.pk),
         )
     )
     return RedirectResponse(request.url_for("ui:user_permissions"), status_code=302)
@@ -633,7 +633,7 @@ async def mntner_migrate_complete(request: Request, session_provider: ORMSession
             auth_through_rpsl_mntner_pk=str(auth_mntner.rpsl_mntner_pk),
             from_ip=client_ip(request),
             auth_change_descr="maintainer migration completed",
-            auth_affected_mntner=str(auth_mntner.pk),
+            auth_affected_mntner_id=str(auth_mntner.pk),
         )
     )
     return RedirectResponse(request.url_for("ui:user_permissions"), status_code=302)
