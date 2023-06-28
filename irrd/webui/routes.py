@@ -2,13 +2,14 @@ from starlette.routing import Mount, Route
 
 from irrd.webui.auth.routes import AUTH_ROUTES
 from irrd.webui.endpoints import (
+    change_log_entry,
+    change_log_mntner,
     index,
     maintained_objects,
     rpsl_detail,
     rpsl_update,
     user_permissions,
 )
-from irrd.webui.endpoints_changelog import change_log_entry, change_log_mntner
 from irrd.webui.endpoints_mntners import (
     api_token_add,
     api_token_delete,
