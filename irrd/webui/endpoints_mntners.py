@@ -331,7 +331,7 @@ async def permission_add(request: Request, session_provider: ORMSessionProvider)
                 f"added permission for {new_permission.user.email},"
                 f" {'with' if new_permission.user_management else 'without'} user management"
             ),
-            auth_affected_user=str(new_permission.user.pk),
+            auth_affected_user_id=str(new_permission.user.pk),
             auth_affected_mntner_id=str(mntner.pk),
         )
     )
@@ -410,7 +410,7 @@ async def permission_delete(request: Request, session_provider: ORMSessionProvid
                 f"deleted permission for {permission.user.email}"
                 f" {'with' if permission.user_management else 'without'} user management"
             ),
-            auth_affected_user=str(permission.user.pk),
+            auth_affected_user_id=str(permission.user.pk),
             auth_affected_mntner_id=str(permission.mntner.pk),
         )
     )
