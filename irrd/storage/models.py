@@ -501,7 +501,6 @@ class ChangeLog(Base):  # type: ignore
     from_ip = sa.Column(pg.INET, nullable=True)
 
     auth_change_descr = sa.Column(sa.String, nullable=True)
-    # TODO: rename to use ID
     auth_affected_user_id = sa.Column(
         pg.UUID, sa.ForeignKey("auth_user.pk", ondelete="SET NULL"), nullable=True
     )
