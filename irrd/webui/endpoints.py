@@ -140,7 +140,7 @@ async def rpsl_update(
     elif request.method == "POST":
         form_data = await request.form()
         request_meta = {
-            "HTTP-client-IP": request.client.host if request.client else "",
+            "HTTP-Client-IP": request.client.host if request.client else "",
             "HTTP-User-Agent": request.headers.get("User-Agent"),
         }
 

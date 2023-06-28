@@ -111,7 +111,7 @@ class RPSLDatabaseObject(Base):  # type: ignore
             ),
             sa.Index("ix_rpsl_objects_ip_last_ip_first", "ip_last", "ip_first"),
             sa.Index("ix_rpsl_objects_asn_first_asn_last", "asn_first", "asn_last"),
-            sa.Index("ix_rpsl_objects_prefix_gist", sa.text("prefix inet_ops"), postgresql_using="gist"),
+            # sa.Index("ix_rpsl_objects_prefix_gist", sa.text("prefix inet_ops"), postgresql_using="gist"),
         ]
         for name in lookup_field_names():
             index_name = "ix_rpsl_objects_parsed_data_" + name.replace("-", "_")
@@ -264,7 +264,7 @@ class ROADatabaseObject(Base):  # type: ignore
             sa.UniqueConstraint(
                 "prefix", "asn", "max_length", "trust_anchor", name="roa_object_prefix_asn_maxlength_unique"
             ),
-            sa.Index("ix_roa_objects_prefix_gist", sa.text("prefix inet_ops"), postgresql_using="gist"),
+            # sa.Index("ix_roa_objects_prefix_gist", sa.text("prefix inet_ops"), postgresql_using="gist"),
         ]
         return tuple(args)
 
@@ -482,7 +482,6 @@ class AuthMntner(Base):  # type: ignore
 class ChangeLog(Base):  # type: ignore
     __tablename__ = "change_log"
 
-    # TODO: check indexes
     pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)
     auth_by_user_id = sa.Column(pg.UUID, sa.ForeignKey("auth_user.pk", ondelete="SET NULL"), nullable=True)
     auth_by_user_email = sa.Column(sa.String, nullable=True)
@@ -493,7 +492,7 @@ class ChangeLog(Base):  # type: ignore
     auth_through_mntner_id = sa.Column(
         pg.UUID, sa.ForeignKey("auth_mntner.pk", ondelete="SET NULL"), index=True, nullable=True
     )
-    auth_through_rpsl_mntner_pk = sa.Column(sa.String, nullable=True)
+    auth_through_rpsl_mntner_pk = sa.Column(sa.String, index=True, nullable=True)
     auth_by_rpsl_mntner_password = sa.Column(sa.Boolean, nullable=False, default=False)
     auth_by_rpsl_mntner_pgp_key = sa.Column(sa.Boolean, nullable=False, default=False)
     auth_by_override = sa.Column(sa.Boolean, default=False)
@@ -502,9 +501,20 @@ class ChangeLog(Base):  # type: ignore
     from_ip = sa.Column(pg.INET, nullable=True)
 
     auth_change_descr = sa.Column(sa.String, nullable=True)
-    auth_affected_user = sa.Column(pg.UUID, sa.ForeignKey("auth_user.pk", ondelete="SET NULL"), nullable=True)
-    auth_affected_mntner = sa.Column(
+    # TODO: rename to use ID
+    auth_affected_user_id = sa.Column(
+        pg.UUID, sa.ForeignKey("auth_user.pk", ondelete="SET NULL"), nullable=True
+    )
+    auth_affected_mntner_id = sa.Column(
         pg.UUID, sa.ForeignKey("auth_mntner.pk", ondelete="SET NULL"), index=True, nullable=True
+    )
+    auth_affected_mntner = relationship(
+        "AuthMntner",
+        foreign_keys="ChangeLog.auth_affected_mntner_id",
+    )
+    auth_affected_user = relationship(
+        "AuthUser",
+        foreign_keys="ChangeLog.auth_affected_user_id",
     )
 
     rpsl_target_request_type = sa.Column(sa.Enum(UpdateRequestType), nullable=True)
@@ -517,7 +527,18 @@ class ChangeLog(Base):  # type: ignore
     timestamp = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
 
     def __repr__(self):
-        return f"<{self.pk}>"
+        return f"<{self.pk}/{self.description()}>"
+
+    def description(self) -> str:
+        if self.rpsl_target_pk:
+            return (
+                f"{self.rpsl_target_request_type.value} of"
+                f" {self.rpsl_target_object_class} {self.rpsl_target_pk} in {self.rpsl_target_source}"
+            )
+        elif self.auth_change_descr:
+            return self.auth_change_descr
+        else:
+            return "<unknown>"
 
 
 # Before you update this, please check the storage documentation for changing lookup fields.

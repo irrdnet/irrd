@@ -111,5 +111,9 @@
         {% else %}
             The migration for this mntner is not yet complete.
         {% endif %}
+    {% else %}
+        You do not have access to any maintainers.
+        You can <a href="{{ url_for("ui:mntner_migrate_initiate") }}">migrate a maintainer</a>,
+        or ask an authorised user to add you to a maintainer.
     {% endfor %}
 {% endblock %}

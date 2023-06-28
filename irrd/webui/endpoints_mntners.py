@@ -328,7 +328,7 @@ async def permission_add(request: Request, session_provider: ORMSessionProvider)
             auth_through_rpsl_mntner_pk=str(mntner.rpsl_mntner_pk),
             from_ip=client_ip(request),
             auth_change_descr=(
-                f"added permission for {new_permission.user.email}"
+                f"added permission for {new_permission.user.email},"
                 f" {'with' if new_permission.user_management else 'without'} user management"
             ),
             auth_affected_user=str(new_permission.user.pk),

@@ -20,15 +20,45 @@ async def change_log_mntner(request: Request, session_provider: ORMSessionProvid
     if not mntner or not mntner.migration_complete:
         return Response(status_code=404)
 
-    query = session_provider.session.query(ChangeLog).filter(
-        (ChangeLog.auth_through_mntner_id == str(mntner.pk))
-        | (
-            (ChangeLog.auth_through_rpsl_mntner_pk == str(mntner.rpsl_mntner_pk))
-            & (ChangeLog.rpsl_target_source == mntner.rpsl_mntner_source)
+    query = (
+        session_provider.session.query(ChangeLog)
+        .filter(
+            (ChangeLog.auth_through_mntner_id == str(mntner.pk))
+            | (
+                (ChangeLog.auth_through_rpsl_mntner_pk == mntner.rpsl_mntner_pk)
+                & (ChangeLog.rpsl_target_source == mntner.rpsl_mntner_source)
+            )
         )
+        .order_by(ChangeLog.timestamp.desc())
     )
     change_logs = await session_provider.run(query.all)
 
     return template_context_render(
         "change_log_mntner.html", request, {"mntner": mntner, "change_logs": change_logs}
     )
+
+
+@session_provider_manager
+@authentication_required
+async def change_log_entry(request: Request, session_provider: ORMSessionProvider) -> Response:
+    mntners = list(request.auth.user.mntners)
+    if not mntners:
+        return Response(status_code=404)
+
+    query = session_provider.session.query(ChangeLog)
+    query = query.filter(
+        ChangeLog.pk == request.path_params["entry"],
+        AuthPermission.user_id == str(request.auth.user.pk),
+        AuthPermission.user_management == True,  # noqa
+    ).filter(
+        (ChangeLog.auth_through_mntner_id.in_([str(mntner.pk) for mntner in mntners]))
+        | (
+            ChangeLog.auth_through_rpsl_mntner_pk.in_([mntner.rpsl_mntner_pk for mntner in mntners])
+            & ChangeLog.rpsl_target_source.in_([mntner.rpsl_mntner_source for mntner in mntners])
+        )
+    )
+    entry = await session_provider.run(query.one)
+    if not entry:
+        return Response(status_code=404)
+
+    return template_context_render("change_log_entry.html", request, {"entry": entry})

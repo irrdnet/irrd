@@ -8,7 +8,7 @@ from irrd.webui.endpoints import (
     rpsl_update,
     user_permissions,
 )
-from irrd.webui.endpoints_changelog import change_log_mntner
+from irrd.webui.endpoints_changelog import change_log_entry, change_log_mntner
 from irrd.webui.endpoints_mntners import (
     api_token_add,
     api_token_delete,
@@ -56,5 +56,6 @@ UI_ROUTES = [
         methods=["GET", "POST"],
     ),
     Route("/change-log/{mntner:uuid}/", change_log_mntner, name="change_log_mntner"),
+    Route("/change-log/entry/{entry:uuid}/", change_log_entry, name="change_log_entry"),
     Mount("/auth", name="auth", routes=AUTH_ROUTES),
 ]

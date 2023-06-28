@@ -13,15 +13,13 @@
             <tbody>
             {% for log in change_logs %}
                 <tr>
-                    <td>{{ log.timestamp|datetime_format }}</td>
                     <td>
-                        {% if log.rpsl_target_pk %}
-                            {{ log.rpsl_target_request_type }} of
-                            {{ log.rpsl_target_object_class }} {{ log.rpsl_target_pk }} in
-                            {{ log.rpsl_target_source }}
-                        {% elif log.auth_change_descr %}
-                            {{ log.auth_change_descr }}
-                        {% endif %}
+                        <a href="{{ url_for("ui:change_log_entry", entry=log.pk) }}">
+                            {{ log.timestamp|datetime_format }}
+                        </a>
+                    </td>
+                    <td>
+                        {{ log.description() }}
                     </td>
                     <td>
                         {% if log.auth_by_user_email %}
@@ -31,13 +29,19 @@
                             API key {{ log.auth_by_api_key_id_fixed }}
                         {% endif %}
                         {% if log.auth_by_rpsl_mntner_password %}
-                            password on the RPSL Mntner
+                            password on the RPSL mntner
                         {% endif %}
                         {% if log.auth_by_rpsl_mntner_pgp_key %}
-                            PGP key in the RPSL mntner
+                            PGP key on the RPSL mntner
                         {% endif %}
                         {% if log.auth_by_override %}
                             override access
+                        {% endif %}
+                        {% if log.from_ip %}
+                            (from IP {{ log.from_ip }})
+                        {% endif %}
+                        {% if log.from_email %}
+                            (from e-mail {{ log.from_email }})
                         {% endif %}
                     </td>
                 </tr>
