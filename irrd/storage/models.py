@@ -536,7 +536,7 @@ class ChangeLog(Base):  # type: ignore
             )
         elif self.auth_change_descr:
             return self.auth_change_descr
-        else:
+        else:  # pragma: no cover
             return "<unknown>"
 
 

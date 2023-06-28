@@ -367,6 +367,7 @@ class TestChangeLogEntry(WebRequestTest):
 
     def test_object_not_exists(self, test_client, irrd_db_session_with_user):
         session_provider, user = irrd_db_session_with_user
+        self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
         response = test_client.get(self.url_template.format(uuid=uuid.uuid4()))
         assert response.status_code == 404
