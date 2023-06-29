@@ -55,7 +55,7 @@ def verify_auth_lines(
     hashers = get_password_hashers(permit_legacy=True)
     for auth in auth_lines:
         if keycert_obj_pk and auth.upper() == keycert_obj_pk.upper():
-            return True, keycert_obj_pk.upper()
+            return keycert_obj_pk.upper()
         if " " not in auth:
             continue
         scheme, hash = auth.split(" ", 1)
@@ -65,7 +65,7 @@ def verify_auth_lines(
             for password in passwords:
                 try:
                     if hasher.verify(password, hash):
-                        return True, scheme
+                        return scheme
                 except ValueError:
                     pass
-    return False, None
+    return None
