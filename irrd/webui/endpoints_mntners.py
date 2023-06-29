@@ -472,8 +472,8 @@ class MntnerMigrateInitiateForm(StarletteForm):
         self.rpsl_mntner_db_pk = mntner_obj.pk
         self.rpsl_mntner = RPSLMntner(mntner_obj.object_text, strict_validation=False)
 
-        valid, scheme = self.rpsl_mntner.verify_auth(passwords=[self.mntner_password.data])
-        if not valid:
+        valid_scheme = self.rpsl_mntner.verify_auth(passwords=[self.mntner_password.data])
+        if not valid_scheme:
             logger.info(
                 f"invalid password provided for mntner {self.rpsl_mntner.pk()} "
                 " while attempting to start migration"
@@ -564,8 +564,8 @@ class MntnerMigrateCompleteForm(StarletteForm):
         self.rpsl_mntner_obj = RPSLMntner(
             self.auth_mntner.rpsl_mntner_obj.object_text, strict_validation=False
         )
-        valid, scheme = self.rpsl_mntner_obj.verify_auth(passwords=[self.mntner_password.data])
-        if not valid:
+        valid_scheme = self.rpsl_mntner_obj.verify_auth(passwords=[self.mntner_password.data])
+        if not valid_scheme:
             logger.info(
                 f"invalid password provided for mntner {self.auth_mntner.rpsl_mntner_pk} while attempting to"
                 " confirm migration"

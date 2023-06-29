@@ -111,7 +111,7 @@ class RPSLDatabaseObject(Base):  # type: ignore
             ),
             sa.Index("ix_rpsl_objects_ip_last_ip_first", "ip_last", "ip_first"),
             sa.Index("ix_rpsl_objects_asn_first_asn_last", "asn_first", "asn_last"),
-            # sa.Index("ix_rpsl_objects_prefix_gist", sa.text("prefix inet_ops"), postgresql_using="gist"),
+            sa.Index("ix_rpsl_objects_prefix_gist", sa.text("prefix inet_ops"), postgresql_using="gist"),
         ]
         for name in lookup_field_names():
             index_name = "ix_rpsl_objects_parsed_data_" + name.replace("-", "_")
@@ -264,7 +264,7 @@ class ROADatabaseObject(Base):  # type: ignore
             sa.UniqueConstraint(
                 "prefix", "asn", "max_length", "trust_anchor", name="roa_object_prefix_asn_maxlength_unique"
             ),
-            # sa.Index("ix_roa_objects_prefix_gist", sa.text("prefix inet_ops"), postgresql_using="gist"),
+            sa.Index("ix_roa_objects_prefix_gist", sa.text("prefix inet_ops"), postgresql_using="gist"),
         ]
         return tuple(args)
 

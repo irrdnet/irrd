@@ -49,7 +49,7 @@ def test_validator_result():
     result = ValidatorResult(
         auth_through_internal_user=user,
         auth_through_api_key=api_key,
-        auth_through_auth_mntner=mntner,
+        auth_through_internal_mntner=mntner,
         auth_through_mntner="TEST-MNT",
     ).to_change_log()
     assert result.auth_by_user_id == str(user.pk)
@@ -209,7 +209,7 @@ class TestAuthValidator:
         assert result.mntners_notify[0].pk() == "TEST-MNT"
         assert result.auth_method == AuthMethod.MNTNER_API_KEY
         assert result.auth_through_mntner == "TEST-MNT"
-        assert result.auth_through_auth_mntner.rpsl_mntner_pk == "TEST-MNT"
+        assert result.auth_through_internal_mntner.rpsl_mntner_pk == "TEST-MNT"
 
         mock_sa_session.filter.assert_has_calls(
             [
@@ -404,7 +404,7 @@ class TestAuthValidator:
         assert result.is_valid()
         assert result.auth_method == AuthMethod.MNTNER_INTERNAL_AUTH
         assert result.auth_through_mntner == "TEST-MNT"
-        assert result.auth_through_auth_mntner == mock_mntners[0]
+        assert result.auth_through_internal_mntner == mock_mntners[0]
 
         # Modifying mntner should fail without user_management
         user = AuthUser(mntners=mock_mntners)

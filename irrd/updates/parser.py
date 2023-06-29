@@ -16,6 +16,7 @@ from irrd.storage.models import JournalEntryOrigin
 from irrd.storage.queries import RPSLDatabaseQuery
 from irrd.utils.text import remove_auth_hashes, splitline_unicodesafe
 
+from .. import META_KEY_HTTP_CLIENT_IP
 from .parser_state import SuspensionRequestType, UpdateRequestStatus, UpdateRequestType
 from .suspension import reactivate_for_mntner, suspend_for_mntner
 from .validators import (
@@ -171,7 +172,7 @@ class ChangeRequest:
             session = saorm.Session(bind=self.database_handler._connection)
             change_log = self._auth_result.to_change_log()
             # TODO: extract constant
-            change_log.from_ip = self.request_meta.get("HTTP-Client-IP", None)
+            change_log.from_ip = self.request_meta.get(META_KEY_HTTP_CLIENT_IP, None)
             change_log.from_email = self.request_meta.get("From", None)
             change_log.rpsl_target_request_type = self.request_type
             change_log.rpsl_target_pk = self.rpsl_obj_new.pk()
@@ -560,8 +561,8 @@ class SuspensionRequest:
         return set()
 
     def validate(self) -> bool:
-        valid_override, method = self.auth_validator.check_override()
-        if not valid_override:
+        override_method = self.auth_validator.check_override()
+        if not override_method:
             self.status = UpdateRequestStatus.ERROR_AUTH
             self.error_messages.append("Invalid authentication: override password invalid or missing")
             logger.debug(f"{id(self)}: Authentication check failed: override did not pass")

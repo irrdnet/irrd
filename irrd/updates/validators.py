@@ -40,7 +40,7 @@ class ValidatorResult:
     # Details of how authentication was provided
     auth_method: AuthMethod = AuthMethod.NONE
     auth_through_mntner: Optional[str] = None
-    auth_through_auth_mntner: Optional[AuthMntner] = None
+    auth_through_internal_mntner: Optional[AuthMntner] = None
     auth_through_api_key: Optional[AuthApiToken] = None
     auth_through_internal_user: Optional[AuthUser] = None
 
@@ -48,21 +48,23 @@ class ValidatorResult:
         return len(self.error_messages) == 0
 
     def to_change_log(self) -> ChangeLog:
-        kwargs: Dict[str, Union[str, bool, None]] = {"auth_through_rpsl_mntner_pk": self.auth_through_mntner}
+        kwargs: Dict[str, Union[str, bool, None]] = {
+            "auth_through_rpsl_mntner_pk": self.auth_through_mntner,
+            "auth_by_rpsl_mntner_password": self.auth_method == AuthMethod.MNTNER_PASSWORD,
+            "auth_by_rpsl_mntner_pgp_key": self.auth_method == AuthMethod.MNTNER_PGP_KEY,
+            "auth_by_override": self.auth_method in [
+                AuthMethod.OVERRIDE_PASSWORD,
+                AuthMethod.OVERRIDE_INTERNAL_AUTH,
+            ],
+        }
         if self.auth_through_internal_user:
             kwargs["auth_by_user_id"] = str(self.auth_through_internal_user.pk)
             kwargs["auth_by_user_email"] = self.auth_through_internal_user.email
         if self.auth_through_api_key:
             kwargs["auth_by_api_key_id"] = str(self.auth_through_api_key.pk)
             kwargs["auth_by_api_key_id_fixed"] = str(self.auth_through_api_key.pk)
-        if self.auth_through_auth_mntner:
-            kwargs["auth_through_mntner_id"] = str(self.auth_through_auth_mntner.pk)
-        if self.auth_method == AuthMethod.MNTNER_PASSWORD:
-            kwargs["auth_by_rpsl_mntner_password"] = True
-        if self.auth_method == AuthMethod.MNTNER_PGP_KEY:
-            kwargs["auth_by_rpsl_mntner_pgp_key"] = True
-        if self.auth_method in [AuthMethod.OVERRIDE_PASSWORD, AuthMethod.OVERRIDE_INTERNAL_AUTH]:
-            kwargs["auth_by_override"] = True
+        if self.auth_through_internal_mntner:
+            kwargs["auth_through_mntner_id"] = str(self.auth_through_internal_mntner.pk)
         return ChangeLog(**kwargs)
 
 
@@ -254,10 +256,10 @@ class AuthValidator:
         source = rpsl_obj_new.source()
         result = ValidatorResult()
 
-        valid_override, method = self.check_override()
-        if valid_override:
-            result.auth_method = method
-            if method == AuthMethod.OVERRIDE_INTERNAL_AUTH:
+        override_method = self.check_override()
+        if override_method:
+            result.auth_method = override_method
+            if override_method == AuthMethod.OVERRIDE_INTERNAL_AUTH:
                 result.auth_through_internal_user = self._internal_authenticated_user
             logger.info("Found valid override password.")
             return result
@@ -321,38 +323,38 @@ class AuthValidator:
                     )
             elif not any(
                 [
-                    rpsl_obj_new.verify_auth(self.passwords, self.keycert_obj_pk)[0],
+                    rpsl_obj_new.verify_auth(self.passwords, self.keycert_obj_pk),
                     self._mntner_matches_internal_auth(rpsl_obj_new, rpsl_obj_new.pk(), source),
                     # API keys are not checked here, as they can never be used on RPSLMntner
                 ]
             ):
                 result.error_messages.add("Authorisation failed for the auth methods on this mntner object.")
 
-        changelog_mntner_result = current_mntners_result or related_mntners_result or new_mntners_result
-        if changelog_mntner_result:
-            result.auth_method = changelog_mntner_result.auth_method
-            result.auth_through_mntner = changelog_mntner_result.mntner_pk
-            result.auth_through_api_key = changelog_mntner_result.api_key
-            result.auth_through_auth_mntner = changelog_mntner_result.auth_mntner
+        mntner_result_for_change_log = current_mntners_result or related_mntners_result or new_mntners_result
+        if mntner_result_for_change_log:
+            result.auth_method = mntner_result_for_change_log.auth_method
+            result.auth_through_mntner = mntner_result_for_change_log.mntner_pk
+            result.auth_through_api_key = mntner_result_for_change_log.api_key
+            result.auth_through_internal_mntner = mntner_result_for_change_log.auth_mntner
             if result.auth_method == AuthMethod.MNTNER_INTERNAL_AUTH:
                 result.auth_through_internal_user = self._internal_authenticated_user
 
         return result
 
-    def check_override(self) -> Tuple[bool, AuthMethod]:
+    def check_override(self) -> Optional[AuthMethod]:
         if self._internal_authenticated_user and self._internal_authenticated_user.override:
             logger.info(
                 "Authenticated by valid override from internally authenticated "
                 f"user {self._internal_authenticated_user}"
             )
-            return True, AuthMethod.OVERRIDE_INTERNAL_AUTH
+            return AuthMethod.OVERRIDE_INTERNAL_AUTH
 
         override_hash = get_setting("auth.override_password")
         if override_hash:
             for override in self.overrides:
                 try:
                     if md5_crypt.verify(override, override_hash):
-                        return True, AuthMethod.OVERRIDE_PASSWORD
+                        return AuthMethod.OVERRIDE_PASSWORD
                     else:
                         logger.info("Found invalid override password, ignoring.")
                 except ValueError as ve:
@@ -362,7 +364,7 @@ class AuthValidator:
                     )
         elif self.overrides:
             logger.info("Ignoring override password, auth.override_password not set.")
-        return False, AuthMethod.NONE
+        return AuthMethod.NONE
 
     def _check_mntners(
         self, rpsl_obj_new: RPSLObject, mntner_pk_list: List[str], source: str
@@ -419,10 +421,11 @@ class AuthValidator:
                 )
 
         for mntner_obj in mntner_objs:
-            valid, scheme = mntner_obj.verify_auth(self.passwords, self.keycert_obj_pk)
-            if valid:
-                assert scheme
-                auth_method = AuthMethod.MNTNER_PGP_KEY if "PGPKEY" in scheme else AuthMethod.MNTNER_PASSWORD
+            valid_scheme = mntner_obj.verify_auth(self.passwords, self.keycert_obj_pk)
+            if valid_scheme:
+                auth_method = (
+                    AuthMethod.MNTNER_PGP_KEY if "PGPKEY" in valid_scheme else AuthMethod.MNTNER_PASSWORD
+                )
                 return MntnerCheckResult(
                     valid=True,
                     associated_mntners=mntner_objs,

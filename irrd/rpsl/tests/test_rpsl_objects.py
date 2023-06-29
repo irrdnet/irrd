@@ -405,13 +405,13 @@ class TestRPSLMntner:
             rpsl_text + "auth: UNKNOWN_HASH foo\nauth: MD5-PW 💩", strict_validation=False
         )
 
-        assert obj.verify_auth(["crypt-password"]) == (True, "CRYPT-PW")
-        assert obj.verify_auth(["md5-password"]) == (True, "MD5-PW")
-        assert obj.verify_auth(["bcrypt-password"]) == (True, "BCRYPT-PW")
-        assert obj.verify_auth(["md5-password"], "PGPKey-80F238C6") == (True, "PGPKEY-80F238C6")
-        assert obj.verify_auth(["other-password"]) == (False, None)
-        assert obj.verify_auth([KEY_CERT_SIGNED_MESSAGE_CORRUPT]) == (False, None)
-        assert obj.verify_auth([KEY_CERT_SIGNED_MESSAGE_WRONG_KEY]) == (False, None)
+        assert obj.verify_auth(["crypt-password"]) == "CRYPT-PW"
+        assert obj.verify_auth(["md5-password"]) == "MD5-PW"
+        assert obj.verify_auth(["bcrypt-password"]) == "BCRYPT-PW"
+        assert obj.verify_auth(["md5-password"], "PGPKey-80F238C6") == "PGPKEY-80F238C6"
+        assert obj.verify_auth(["other-password"]) is None
+        assert obj.verify_auth([KEY_CERT_SIGNED_MESSAGE_CORRUPT]) is None
+        assert obj.verify_auth([KEY_CERT_SIGNED_MESSAGE_WRONG_KEY]) is None
 
 
 class TestRPSLPeeringSet:

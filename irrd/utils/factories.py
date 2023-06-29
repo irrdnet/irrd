@@ -66,7 +66,8 @@ class AuthMntnerFactory(factory.alchemy.SQLAlchemyModelFactory):
         rpsl_mntner = (
             AuthMntnerFactory._meta.sqlalchemy_session.query(RPSLDatabaseObject)
             .filter(RPSLDatabaseObject.object_class == "mntner")
-            .one()
+            .order_by(RPSLDatabaseObject.created.desc())
+            .first()
         )
         return str(rpsl_mntner.pk)
 

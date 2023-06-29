@@ -5,6 +5,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 from starlette_wtf import csrf_protect, csrf_token
 
+from irrd import META_KEY_HTTP_CLIENT_IP
 from irrd.conf import get_setting
 from irrd.storage.models import (
     AuthMntner,
@@ -147,7 +148,7 @@ async def rpsl_update(
     elif request.method == "POST":
         form_data = await request.form()
         request_meta = {
-            "HTTP-Client-IP": request.client.host if request.client else "",
+            META_KEY_HTTP_CLIENT_IP: request.client.host if request.client else "",
             "HTTP-User-Agent": request.headers.get("User-Agent"),
         }
 
@@ -215,20 +216,19 @@ async def change_log_mntner(request: Request, session_provider: ORMSessionProvid
 @session_provider_manager
 @authentication_required
 async def change_log_entry(request: Request, session_provider: ORMSessionProvider) -> Response:
-    mntners = list(request.auth.user.mntners)
+    mntners = list(request.auth.user.mntners_user_management)
     if not mntners:
         return Response(status_code=404)
 
     query = session_provider.session.query(ChangeLog)
     query = query.filter(
-        ChangeLog.pk == request.path_params["entry"],
-        AuthPermission.user_id == str(request.auth.user.pk),
-        AuthPermission.user_management == True,  # noqa
-    ).filter(
-        (ChangeLog.auth_through_mntner_id.in_([str(mntner.pk) for mntner in mntners]))
-        | (
-            ChangeLog.auth_through_rpsl_mntner_pk.in_([mntner.rpsl_mntner_pk for mntner in mntners])
-            & ChangeLog.rpsl_target_source.in_([mntner.rpsl_mntner_source for mntner in mntners])
+        (ChangeLog.pk == request.path_params["entry"])
+        & (
+            (ChangeLog.auth_through_mntner_id.in_([str(mntner.pk) for mntner in mntners]))
+            | (
+                ChangeLog.auth_through_rpsl_mntner_pk.in_([mntner.rpsl_mntner_pk for mntner in mntners])
+                & ChangeLog.rpsl_target_source.in_([mntner.rpsl_mntner_source for mntner in mntners])
+            )
         )
     )
     entry = await session_provider.run(query.one)

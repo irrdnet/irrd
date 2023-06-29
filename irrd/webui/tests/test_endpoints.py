@@ -7,9 +7,12 @@ import pytest
 from irrd.updates.handler import ChangeSubmissionHandler
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
 from irrd.webui import datetime_format
+from ...rpsl.rpsl_objects import rpsl_object_from_text
+from ...storage.database_handler import DatabaseHandler
+from ...storage.models import JournalEntryOrigin
 
 from ...updates.parser_state import UpdateRequestType
-from ...utils.factories import AuthApiTokenFactory, ChangeLogFactory
+from ...utils.factories import AuthApiTokenFactory, ChangeLogFactory, AuthMntnerFactory
 from .conftest import WebRequestTest, create_permission
 
 
@@ -307,6 +310,23 @@ class TestChangeLogMntner(WebRequestTest):
         self._login_if_needed(test_client, user)
         session_provider.session.delete(self.permission)
         session_provider.session.commit()
+
+        response = test_client.get(self.url)
+        assert response.status_code == 404
+
+    def test_wrong_permissions(self, test_client, irrd_db_session_with_user):
+        session_provider, user = irrd_db_session_with_user
+        self.pre_login(session_provider, user)
+        self._login_if_needed(test_client, user)
+        session_provider.session.delete(self.permission)
+        session_provider.session.commit()
+
+        # Creating a second mntner with separate permissions is kind of tricky
+        dh = DatabaseHandler()
+        dh.upsert_rpsl_object(rpsl_object_from_text(SAMPLE_MNTNER.replace("TEST", "TEST2")), origin=JournalEntryOrigin.unknown)
+        dh.commit()
+        dh.close()
+        create_permission(session_provider, user, user_management=True, mntner=AuthMntnerFactory(rpsl_mntner_source="TEST2"))
 
         response = test_client.get(self.url)
         assert response.status_code == 404

@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from typing import List, Optional, Set, Tuple, Union
+from typing import List, Optional, Set, Union
 
 from irrd.conf import (
     AUTH_SET_CREATION_COMMON_KEY,
@@ -435,9 +435,7 @@ class RPSLMntner(RPSLObject):
                 "Either all password auth hashes in a submitted mntner must be dummy objects, or none."
             )
 
-    def verify_auth(
-        self, passwords: List[str], keycert_obj_pk: Optional[str] = None
-    ) -> Tuple[bool, Optional[str]]:
+    def verify_auth(self, passwords: List[str], keycert_obj_pk: Optional[str] = None) -> Optional[str]:
         return verify_auth_lines(self.parsed_data["auth"], passwords, keycert_obj_pk)
 
     def has_dummy_auth_value(self) -> bool:
