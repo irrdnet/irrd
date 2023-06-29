@@ -11,37 +11,39 @@
             </tr>
             </thead>
             <tbody>
-            {% for log in change_logs %}
+            {% for entry in change_logs %}
                 <tr>
                     <td>
-                        <a href="{{ url_for("ui:change_log_entry", entry=log.pk) }}">
-                            {{ log.timestamp|datetime_format }}
+                        <a href="{{ url_for("ui:change_log_entry", entry=entry.pk) }}">
+                            {{ entry.timestamp|datetime_format }}
                         </a>
                     </td>
                     <td>
-                        {{ log.description() }}
+                        {{ entry.description() }}
                     </td>
                     <td>
-                        {% if log.auth_by_user_email %}
-                            web by user {{ log.auth_by_user_email }}
+                        {% if entry.auth_by_user_email %}
+                            web by user {{ entry.auth_by_user_email }}
                         {% endif %}
-                        {% if log.auth_by_api_key_id_fixed %}
-                            API key {{ log.auth_by_api_key_id_fixed }}
+                        {% if entry.auth_by_api_key %}
+                            API key {{ entry.auth_by_api_key.name }} ({{ entry.auth_by_api_key.pk }})
+                        {% elif entry.auth_by_api_key_id_fixed %}
+                            API key {{ entry.auth_by_api_key_id_fixed }}
                         {% endif %}
-                        {% if log.auth_by_rpsl_mntner_password %}
+                        {% if entry.auth_by_rpsl_mntner_password %}
                             password on the RPSL mntner
                         {% endif %}
-                        {% if log.auth_by_rpsl_mntner_pgp_key %}
+                        {% if entry.auth_by_rpsl_mntner_pgp_key %}
                             PGP key on the RPSL mntner
                         {% endif %}
-                        {% if log.auth_by_override %}
+                        {% if entry.auth_by_override %}
                             override access
                         {% endif %}
-                        {% if log.from_ip %}
-                            (from IP {{ log.from_ip }})
+                        {% if entry.from_ip %}
+                            (from IP {{ entry.from_ip }})
                         {% endif %}
-                        {% if log.from_email %}
-                            (from e-mail {{ log.from_email }})
+                        {% if entry.from_email %}
+                            (from e-mail {{ entry.from_email }})
                         {% endif %}
                     </td>
                 </tr>

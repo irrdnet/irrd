@@ -32,7 +32,7 @@
                 {{ nav_link('ui:rpsl_update', 'Submit update') }}
 
                 {% if request.auth.is_authenticated %}
-                    {{ nav_link('ui:user_permissions', 'Maintainer permissions') }}
+                    {{ nav_link('ui:user_permissions', 'Maintainers & permissions') }}
                     {{ nav_link('ui:maintained_objects', 'My objects') }}
                     {% if irrd_internal_migration_enabled %}
                         {{ nav_link('ui:mntner_migrate_initiate', 'Migrate a mntner') }}

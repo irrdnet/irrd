@@ -21,7 +21,9 @@
             {% if entry.auth_by_user_email %}
                 web by user {{ entry.auth_by_user_email }}
             {% endif %}
-            {% if entry.auth_by_api_key_id_fixed %}
+            {% if entry.auth_by_api_key %}
+                API key {{ entry.auth_by_api_key.name }} ({{ entry.auth_by_api_key.pk }})
+            {% elif entry.auth_by_api_key_id_fixed %}
                 API key {{ entry.auth_by_api_key_id_fixed }}
             {% endif %}
             {% if entry.auth_by_rpsl_mntner_password %}

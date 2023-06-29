@@ -109,8 +109,8 @@ async def api_token_add(request: Request, session_provider: ORMSessionProvider) 
     message(request, message_text)
     await notify_mntner(session_provider, request.auth.user, mntner, explanation=message_text)
     logger.info(
-        f"{client_ip_str(request)}{request.auth.user.email}: added API token {new_token.pk} on mntner"
-        f" {mntner.rpsl_mntner_pk}"
+        f'{client_ip_str(request)}{request.auth.user.email}: added API token "{new_token.name}"'
+        f" ({new_token.pk}) on mntner {mntner.rpsl_mntner_pk}"
     )
     session_provider.session.add(
         ChangeLog(
@@ -119,7 +119,7 @@ async def api_token_add(request: Request, session_provider: ORMSessionProvider) 
             auth_through_mntner_id=str(mntner.pk),
             auth_through_rpsl_mntner_pk=str(mntner.rpsl_mntner_pk),
             from_ip=client_ip(request),
-            auth_change_descr=f"added API token {new_token.pk}",
+            auth_change_descr=f'added API token "{new_token.name}" ({new_token.pk})',
             auth_affected_mntner_id=str(mntner.pk),
         )
     )
@@ -161,8 +161,8 @@ async def api_token_edit(request: Request, session_provider: ORMSessionProvider)
     message_text = f"The API key for '{api_token.name}' on {api_token.mntner.rpsl_mntner_pk} was modified."
     message(request, message_text)
     logger.info(
-        f"{client_ip_str(request)}{request.auth.user.email}: updated API token {api_token.pk} on mntner"
-        f" {api_token.mntner.rpsl_mntner_pk}"
+        f'{client_ip_str(request)}{request.auth.user.email}: updated API token "{api_token.name}"'
+        f" ({api_token.pk}) on mntner {api_token.mntner.rpsl_mntner_pk}"
     )
     session_provider.session.add(
         ChangeLog(
@@ -171,7 +171,7 @@ async def api_token_edit(request: Request, session_provider: ORMSessionProvider)
             auth_through_mntner_id=str(api_token.mntner.pk),
             auth_through_rpsl_mntner_pk=str(api_token.mntner.rpsl_mntner_pk),
             from_ip=client_ip(request),
-            auth_change_descr=f"modified API token {api_token.pk}",
+            auth_change_descr=f'modified API token "{api_token.name}" ({api_token.pk})',
             auth_affected_mntner_id=str(api_token.mntner.pk),
         )
     )
@@ -215,8 +215,8 @@ async def api_token_delete(request: Request, session_provider: ORMSessionProvide
     message(request, message_text)
     await notify_mntner(session_provider, request.auth.user, api_token.mntner, explanation=message_text)
     logger.info(
-        f"{client_ip_str(request)}{request.auth.user.email}: removed API token {api_token.pk} on mntner"
-        f" {api_token.mntner.rpsl_mntner_pk}"
+        f'{client_ip_str(request)}{request.auth.user.email}: removed API token "{api_token.name}"'
+        f" ({api_token.pk}) on mntner {api_token.mntner.rpsl_mntner_pk}"
     )
     session_provider.session.add(
         ChangeLog(
@@ -225,7 +225,7 @@ async def api_token_delete(request: Request, session_provider: ORMSessionProvide
             auth_through_mntner_id=str(api_token.mntner.pk),
             auth_through_rpsl_mntner_pk=str(api_token.mntner.rpsl_mntner_pk),
             from_ip=client_ip(request),
-            auth_change_descr=f"removed API token {api_token.pk}",
+            auth_change_descr=f'removed API token "{api_token.name}" ({api_token.pk})',
             auth_affected_mntner_id=str(api_token.mntner.pk),
         )
     )

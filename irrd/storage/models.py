@@ -488,9 +488,17 @@ class ChangeLog(Base):  # type: ignore
     auth_by_api_key_id = sa.Column(
         pg.UUID, sa.ForeignKey("auth_api_token.pk", ondelete="SET NULL"), nullable=True
     )
+    auth_by_api_key = relationship(
+        "AuthApiToken",
+        foreign_keys="ChangeLog.auth_by_api_key_id",
+    )
     auth_by_api_key_id_fixed = sa.Column(pg.UUID, nullable=True)
     auth_through_mntner_id = sa.Column(
         pg.UUID, sa.ForeignKey("auth_mntner.pk", ondelete="SET NULL"), index=True, nullable=True
+    )
+    auth_through_mntner = relationship(
+        "AuthMntner",
+        foreign_keys="ChangeLog.auth_through_mntner_id",
     )
     auth_through_rpsl_mntner_pk = sa.Column(sa.String, index=True, nullable=True)
     auth_by_rpsl_mntner_password = sa.Column(sa.Boolean, nullable=False, default=False)
