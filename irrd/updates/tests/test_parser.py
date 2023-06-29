@@ -1612,7 +1612,7 @@ class TestSuspensionRequest:
         monkeypatch.setattr("irrd.updates.parser.suspend_for_mntner", mock_suspend_for_mntner)
         mock_reactivate_for_mntner = Mock(suspend_for_mntner)
         monkeypatch.setattr("irrd.updates.parser.reactivate_for_mntner", mock_reactivate_for_mntner)
-        mock_auth_validator.check_override.return_value = (True, AuthMethod.OVERRIDE_PASSWORD)
+        mock_auth_validator.check_override.return_value = AuthMethod.OVERRIDE_PASSWORD
 
         default_request = textwrap.dedent("""
             override: override-pw
@@ -1792,7 +1792,7 @@ class TestSuspensionRequest:
         mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request = (
             prepare_suspension_request_test
         )
-        mock_auth_validator.check_override.return_value = (False, None)
+        mock_auth_validator.check_override.return_value = None
 
         (r, *_) = parse_change_requests(default_request, mock_dh, mock_auth_validator, None, {})
 
