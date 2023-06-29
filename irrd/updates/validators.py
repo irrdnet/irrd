@@ -248,7 +248,7 @@ class AuthValidator:
         to be notified.
 
         If a valid override password is provided, changes are immediately approved.
-        On the result object, method is set to override, but mntners_notify is
+        On the result object, method is set to override, but associated_mntners is
         not filled, as mntner resolving does not take place.
         """
         source = rpsl_obj_new.source()
