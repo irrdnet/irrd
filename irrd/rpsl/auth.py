@@ -44,25 +44,28 @@ PASSWORD_REPLACEMENT_HASH = ("BCRYPT-PW", bcrypt)
 
 def verify_auth_lines(
     auth_lines: List[str], passwords: List[str], keycert_obj_pk: Optional[str] = None
-) -> bool:
+) -> Optional[str]:
     """
     Verify whether one of a given list of passwords matches
     any of the auth lines in the provided list, or match the
     keycert object PK.
+    Returns None for auth failed, a scheme or PGP key PK
+    for success.
     """
     hashers = get_password_hashers(permit_legacy=True)
     for auth in auth_lines:
         if keycert_obj_pk and auth.upper() == keycert_obj_pk.upper():
-            return True
+            return keycert_obj_pk.upper()
         if " " not in auth:
             continue
         scheme, hash = auth.split(" ", 1)
-        hasher = hashers.get(scheme.upper())
+        scheme = scheme.upper()
+        hasher = hashers.get(scheme)
         if hasher:
             for password in passwords:
                 try:
                     if hasher.verify(password, hash):
-                        return True
+                        return scheme
                 except ValueError:
                     pass
-    return False
+    return None

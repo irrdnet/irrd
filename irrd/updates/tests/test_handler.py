@@ -10,6 +10,7 @@ from irrd.utils.rpsl_samples import SAMPLE_MNTNER
 from irrd.utils.test_utils import flatten_mock_calls
 
 from ...utils.validators import RPSLChangeSubmission, RPSLSuspensionSubmission
+from ...vendor.mock_alchemy.mocking import UnifiedAlchemyMagicMock
 from ..handler import ChangeSubmissionHandler
 from ..parser_state import SuspensionRequestType
 
@@ -47,9 +48,11 @@ class TestChangeSubmissionHandler:
     # NOTE: the scope of this test also includes ChangeRequest, ReferenceValidator and AuthValidator -
     # this is more of an update handler integration test.
 
-    def test_parse_valid_new_objects_with_override(self, prepare_mocks):
+    def test_parse_valid_new_objects_with_override(self, prepare_mocks, monkeypatch):
         mock_dq, mock_dh, mock_email = prepare_mocks
         mock_dh.execute_query = lambda query: []
+        mock_sa_session = UnifiedAlchemyMagicMock()
+        monkeypatch.setattr("irrd.updates.validators.saorm.Session", lambda bind: mock_sa_session)
 
         rpsl_text = textwrap.dedent("""
         person:         Placeholder Person Object
@@ -153,8 +156,10 @@ class TestChangeSubmissionHandler:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """)
 
-    def test_parse_valid_new_person_existing_mntner_pgp_key(self, prepare_mocks):
+    def test_parse_valid_new_person_existing_mntner_pgp_key(self, prepare_mocks, monkeypatch):
         mock_dq, mock_dh, mock_email = prepare_mocks
+        mock_sa_session = UnifiedAlchemyMagicMock()
+        monkeypatch.setattr("irrd.updates.validators.saorm.Session", lambda bind: mock_sa_session)
 
         person_text = textwrap.dedent("""
         person:         Placeholder Person Object
@@ -366,8 +371,10 @@ class TestChangeSubmissionHandler:
         assert mock_dh.mock_calls[0][0] == "commit"
         assert mock_dh.mock_calls[1][0] == "close"
 
-    def test_parse_valid_delete(self, prepare_mocks):
+    def test_parse_valid_delete(self, prepare_mocks, monkeypatch):
         mock_dq, mock_dh, mock_email = prepare_mocks
+        mock_sa_session = UnifiedAlchemyMagicMock()
+        monkeypatch.setattr("irrd.updates.validators.saorm.Session", lambda bind: mock_sa_session)
 
         rpsl_person = textwrap.dedent("""
         person:         Placeholder Person Object

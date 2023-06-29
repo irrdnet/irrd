@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timezone
 from unittest.mock import create_autospec
 
@@ -7,6 +8,11 @@ from irrd.updates.handler import ChangeSubmissionHandler
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
 from irrd.webui import datetime_format
 
+from ...rpsl.rpsl_objects import rpsl_object_from_text
+from ...storage.database_handler import DatabaseHandler
+from ...storage.models import JournalEntryOrigin
+from ...updates.parser_state import UpdateRequestType
+from ...utils.factories import AuthApiTokenFactory, AuthMntnerFactory, ChangeLogFactory
 from .conftest import WebRequestTest, create_permission
 
 
@@ -252,3 +258,140 @@ class TestRpslUpdateWithInitial(WebRequestTest):
         assert response.status_code == 200
         assert "TEST-MNT" in response.text
         assert "DUMMYVALUE" in response.text.upper()
+
+
+class TestChangeLogMntner(WebRequestTest):
+    url_template = "/ui/change-log/{uuid}/"
+
+    def pre_login(self, session_provider, user, user_management=True):
+        self.permission = create_permission(session_provider, user, user_management=user_management)
+        self.url = self.url_template.format(uuid=self.permission.mntner.pk)
+
+    def test_render(self, test_client, irrd_db_session_with_user):
+        session_provider, user = irrd_db_session_with_user
+        self.pre_login(session_provider, user)
+        self._login_if_needed(test_client, user)
+
+        ChangeLogFactory(
+            auth_through_mntner_id=str(self.permission.mntner.pk),
+            auth_change_descr="auth change descr",
+        )
+        api_token = AuthApiTokenFactory()
+        ChangeLogFactory(
+            auth_through_rpsl_mntner_pk=str(self.permission.mntner.rpsl_mntner_pk),
+            rpsl_target_pk="TARGET-PK",
+            rpsl_target_object_class="person",
+            rpsl_target_source=self.permission.mntner.rpsl_mntner_source,
+            auth_by_api_key_id_fixed=str(api_token.pk),
+            from_ip="127.0.0.1",
+            rpsl_target_request_type=UpdateRequestType.MODIFY,
+        )
+
+        response = test_client.get(self.url)
+        assert response.status_code == 200
+        assert self.permission.mntner.rpsl_mntner_pk in response.text
+        assert "auth change descr" in response.text
+        assert str(api_token.pk) in response.text
+        assert "127.0.0.1" in response.text
+        assert "modify of person TARGET-PK" in response.text
+
+    def test_no_entries(self, test_client, irrd_db_session_with_user):
+        session_provider, user = irrd_db_session_with_user
+        self.pre_login(session_provider, user)
+        self._login_if_needed(test_client, user)
+
+        response = test_client.get(self.url)
+        assert response.status_code == 200
+        assert self.permission.mntner.rpsl_mntner_pk in response.text
+
+    def test_no_permissions(self, test_client, irrd_db_session_with_user):
+        session_provider, user = irrd_db_session_with_user
+        self.pre_login(session_provider, user)
+        self._login_if_needed(test_client, user)
+        session_provider.session.delete(self.permission)
+        session_provider.session.commit()
+
+        response = test_client.get(self.url)
+        assert response.status_code == 404
+
+    def test_wrong_permissions(self, test_client, irrd_db_session_with_user):
+        session_provider, user = irrd_db_session_with_user
+        self.pre_login(session_provider, user)
+        self._login_if_needed(test_client, user)
+        session_provider.session.delete(self.permission)
+        session_provider.session.commit()
+
+        # Creating a second mntner with separate permissions is kind of tricky
+        dh = DatabaseHandler()
+        dh.upsert_rpsl_object(
+            rpsl_object_from_text(SAMPLE_MNTNER.replace("TEST", "TEST2")), origin=JournalEntryOrigin.unknown
+        )
+        dh.commit()
+        dh.close()
+        create_permission(
+            session_provider, user, user_management=True, mntner=AuthMntnerFactory(rpsl_mntner_source="TEST2")
+        )
+
+        response = test_client.get(self.url)
+        assert response.status_code == 404
+
+
+class TestChangeLogEntry(WebRequestTest):
+    url_template = "/ui/change-log/entry/{uuid}/"
+
+    def pre_login(self, session_provider, user, user_management=True):
+        self.permission = create_permission(session_provider, user, user_management=user_management)
+        self.change_log = ChangeLogFactory(
+            auth_through_mntner_id=str(self.permission.mntner.pk),
+            auth_change_descr="auth change descr",
+        )
+        self.url = self.url_template.format(uuid=self.change_log.pk)
+
+    def test_render(self, test_client, irrd_db_session_with_user):
+        session_provider, user = irrd_db_session_with_user
+        self.pre_login(session_provider, user)
+        self._login_if_needed(test_client, user)
+
+        response = test_client.get(self.url)
+        assert response.status_code == 200
+        assert "auth change descr" in response.text
+
+    def test_render_rpsl_change(self, test_client, irrd_db_session_with_user):
+        session_provider, user = irrd_db_session_with_user
+        self.pre_login(session_provider, user)
+
+        api_token = AuthApiTokenFactory()
+        change_log = ChangeLogFactory(
+            auth_through_rpsl_mntner_pk=str(self.permission.mntner.rpsl_mntner_pk),
+            rpsl_target_pk="TARGET-PK",
+            rpsl_target_object_class="person",
+            rpsl_target_source=self.permission.mntner.rpsl_mntner_source,
+            auth_by_api_key_id_fixed=str(api_token.pk),
+            from_ip="127.0.0.1",
+            rpsl_target_request_type=UpdateRequestType.MODIFY,
+        )
+        self.url = self.url_template.format(uuid=change_log.pk)
+        self._login_if_needed(test_client, user)
+
+        response = test_client.get(self.url)
+        assert response.status_code == 200
+        assert str(api_token.pk) in response.text
+        assert "127.0.0.1" in response.text
+        assert "modify of person TARGET-PK" in response.text
+
+    def test_no_permissions(self, test_client, irrd_db_session_with_user):
+        session_provider, user = irrd_db_session_with_user
+        self.pre_login(session_provider, user)
+        self._login_if_needed(test_client, user)
+        session_provider.session.delete(self.permission)
+        session_provider.session.commit()
+
+        response = test_client.get(self.url)
+        assert response.status_code == 404
+
+    def test_object_not_exists(self, test_client, irrd_db_session_with_user):
+        session_provider, user = irrd_db_session_with_user
+        self.pre_login(session_provider, user)
+        self._login_if_needed(test_client, user)
+        response = test_client.get(self.url_template.format(uuid=uuid.uuid4()))
+        assert response.status_code == 404

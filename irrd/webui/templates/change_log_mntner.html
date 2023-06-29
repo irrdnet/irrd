@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>Changes for {{ mntner.rpsl_mntner_pk }}</h2>
+    {% if change_logs %}
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <th scope="col">Time</th>
+                <th scope="col">Change</th>
+                <th scope="col">Authentication</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for entry in change_logs %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for("ui:change_log_entry", entry=entry.pk) }}">
+                            {{ entry.timestamp|datetime_format }}
+                        </a>
+                    </td>
+                    <td>
+                        {{ entry.description() }}
+                    </td>
+                    <td>
+                        {% if entry.auth_by_user_email %}
+                            web by user {{ entry.auth_by_user_email }}
+                        {% endif %}
+                        {% if entry.auth_by_api_key %}
+                            API key {{ entry.auth_by_api_key.name }} ({{ entry.auth_by_api_key.pk }})
+                        {% elif entry.auth_by_api_key_id_fixed %}
+                            API key {{ entry.auth_by_api_key_id_fixed }}
+                        {% endif %}
+                        {% if entry.auth_by_rpsl_mntner_password %}
+                            password on the RPSL mntner
+                        {% endif %}
+                        {% if entry.auth_by_rpsl_mntner_pgp_key %}
+                            PGP key on the RPSL mntner
+                        {% endif %}
+                        {% if entry.auth_by_override %}
+                            override access
+                        {% endif %}
+                        {% if entry.from_ip %}
+                            (from IP {{ entry.from_ip }})
+                        {% endif %}
+                        {% if entry.from_email %}
+                            (from e-mail {{ entry.from_email }})
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        There have been no changes since the migration of this mntner.
+    {% endif %}
+{% endblock %}

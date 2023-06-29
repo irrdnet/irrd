@@ -1,4 +1,4 @@
-from enum import Enum, unique
+from enum import Enum, auto, unique
 
 from irrd.conf import AUTH_SET_CREATION_COMMON_KEY, get_setting
 
@@ -41,3 +41,20 @@ class RPSLSetAutnumAuthenticationMode(Enum):
         if not setting:
             setting = get_setting(f"auth.set_creation.{AUTH_SET_CREATION_COMMON_KEY}.autnum_authentication")
         return getattr(RPSLSetAutnumAuthenticationMode, setting.upper())
+
+
+class AuthMethod(Enum):
+    OVERRIDE_PASSWORD = auto()
+    OVERRIDE_INTERNAL_AUTH = auto()
+    MNTNER_PASSWORD = auto()
+    MNTNER_PGP_KEY = auto()
+    MNTNER_INTERNAL_AUTH = auto()
+    MNTNER_API_KEY = auto()
+    MNTNER_IN_SAME_REQUEST = auto()
+    NONE = auto()
+
+    def __bool__(self):
+        return self != AuthMethod.NONE
+
+    def used_override(self) -> bool:
+        return self in [AuthMethod.OVERRIDE_PASSWORD, AuthMethod.OVERRIDE_INTERNAL_AUTH]

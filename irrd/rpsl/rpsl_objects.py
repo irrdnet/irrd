@@ -435,7 +435,7 @@ class RPSLMntner(RPSLObject):
                 "Either all password auth hashes in a submitted mntner must be dummy objects, or none."
             )
 
-    def verify_auth(self, passwords: List[str], keycert_obj_pk: Optional[str] = None) -> bool:
+    def verify_auth(self, passwords: List[str], keycert_obj_pk: Optional[str] = None) -> Optional[str]:
         return verify_auth_lines(self.parsed_data["auth"], passwords, keycert_obj_pk)
 
     def has_dummy_auth_value(self) -> bool:

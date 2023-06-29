@@ -46,7 +46,11 @@ class ChangeSubmissionHandler:
             self.database_handler, origin, self._pgp_key_id, internal_authenticated_user
         )
         change_requests = parse_change_requests(
-            object_texts_blob, self.database_handler, auth_validator, reference_validator
+            object_texts_blob,
+            self.database_handler,
+            auth_validator,
+            reference_validator,
+            self.request_meta,
         )
 
         self._handle_change_requests(change_requests, reference_validator, auth_validator)
@@ -90,7 +94,12 @@ class ChangeSubmissionHandler:
             assert object_text  # enforced by pydantic
             change_requests.append(
                 ChangeRequest(
-                    object_text, self.database_handler, auth_validator, reference_validator, delete_reason
+                    object_text,
+                    self.database_handler,
+                    auth_validator,
+                    reference_validator,
+                    delete_reason,
+                    self.request_meta,
                 )
             )
 

@@ -103,7 +103,7 @@ Here is an example of a JSON response::
 
     {
         "request_meta": {
-            "HTTP-client-IP": "127.0.0.1",
+            "HTTP-Client-IP": "127.0.0.1",
             "HTTP-User-Agent": "user-agent"
         },
         "summary": {

@@ -14,6 +14,7 @@ from irrd.server.access_check import is_client_permitted
 from irrd.updates.handler import ChangeSubmissionHandler
 from irrd.utils.validators import RPSLChangeSubmission, RPSLSuspensionSubmission
 
+from ... import META_KEY_HTTP_CLIENT_IP
 from ...storage.models import AuthoritativeChangeOrigin
 from ..whois.query_parser import WhoisQueryParser
 from ..whois.query_response import WhoisQueryResponseType
@@ -84,7 +85,7 @@ class ObjectSubmissionEndpoint(HTTPEndpoint):
         except (JSONDecodeError, KeyError):
             request_meta = {}
 
-        request_meta["HTTP-client-IP"] = request.client.host
+        request_meta[META_KEY_HTTP_CLIENT_IP] = request.client.host
         request_meta["HTTP-User-Agent"] = request.headers.get("User-Agent")
         try:
             remote_ip = IP(request.client.host)
@@ -113,7 +114,7 @@ class SuspensionSubmissionEndpoint(HTTPEndpoint):
             return PlainTextResponse(str(error), status_code=400)
 
         request_meta = {
-            "HTTP-client-IP": request.client.host,
+            META_KEY_HTTP_CLIENT_IP: request.client.host,
             "HTTP-User-Agent": request.headers.get("User-Agent"),
         }
         handler = ChangeSubmissionHandler()

@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>Change: {{ entry.description() }}</h2>
+    <dl class="row">
+        <dt class="col-sm-3">
+            Time:
+        </dt>
+        <dd class="col-sm-9">
+            {{ entry.timestamp|datetime_format }}
+        </dd>
+        <dt class="col-sm-3">
+            Authenticated through:
+        </dt>
+        <dd class="col-sm-9">
+            {{ entry.auth_through_rpsl_mntner_pk }}
+        </dd>
+        <dt class="col-sm-3">
+            Authentication method:
+        </dt>
+        <dd class="col-sm-9">
+            {% if entry.auth_by_user_email %}
+                web by user {{ entry.auth_by_user_email }}
+            {% endif %}
+            {% if entry.auth_by_api_key %}
+                API key {{ entry.auth_by_api_key.name }} ({{ entry.auth_by_api_key.pk }})
+            {% elif entry.auth_by_api_key_id_fixed %}
+                API key {{ entry.auth_by_api_key_id_fixed }}
+            {% endif %}
+            {% if entry.auth_by_rpsl_mntner_password %}
+                password on the RPSL mntner
+            {% endif %}
+            {% if entry.auth_by_rpsl_mntner_pgp_key %}
+                PGP key on the RPSL mntner
+            {% endif %}
+            {% if entry.auth_by_override %}
+                override access
+            {% endif %}
+        </dd>
+
+        {% if entry.from_email %}
+            <dt class="col-sm-3">
+                From email:
+            </dt>
+            <dd class="col-sm-9">
+                {{ entry.from_email }}
+            </dd>
+        {% endif %}
+        {% if entry.from_ip %}
+            <dt class="col-sm-3">
+                From IP:
+            </dt>
+            <dd class="col-sm-9">
+                {{ entry.from_ip }}
+            </dd>
+        {% endif %}
+
+        {% if entry.rpsl_target_pk %}
+            <h2>Modified object</h2>
+            <dt class="col-sm-3">
+                Primary key:
+            </dt>
+            <dd class="col-sm-9">
+                {{ entry.rpsl_target_pk }}
+            </dd>
+            <dt class="col-sm-3">
+                Source:
+            </dt>
+            <dd class="col-sm-9">
+                {{ entry.rpsl_target_source }}
+            </dd>
+            <dt class="col-sm-3">
+                Object class:
+            </dt>
+            <dd class="col-sm-9">
+                {{ entry.rpsl_target_object_class }}
+            </dd>
+            {% if entry.rpsl_target_object_text_old %}
+                <dt class="col-sm-3">
+                    Old object text:
+                </dt>
+                <dd class="col-sm-9">
+                    <pre>{{ entry.rpsl_target_object_text_old }}</pre>
+                </dd>
+            {% endif %}
+            {% if entry.rpsl_target_object_text_new %}
+                <dt class="col-sm-3">
+                    New object text:
+                </dt>
+                <dd class="col-sm-9">
+                    <pre>{{ entry.rpsl_target_object_text_new }}</pre>
+                </dd>
+            {% endif %}
+        {% elif entry.auth_change_descr %}
+            <h2>Authentication change</h2>
+            <dt class="col-sm-3">
+                Change:
+            </dt>
+            <dd class="col-sm-9">
+                {{ entry.auth_change_descr }}
+            </dd>
+            {% if entry.auth_affected_user %}
+                <dt class="col-sm-3">
+                    Affected user:
+                </dt>
+                <dd class="col-sm-9">
+                    {{ entry.auth_affected_user.email }}
+                </dd>
+            {% endif %}
+            {% if entry.auth_affected_mntner %}
+                <dt class="col-sm-3">
+                    Affected internal mntner:
+                </dt>
+                <dd class="col-sm-9">
+                    {{ entry.auth_affected_mntner.rpsl_mntner_pk }}
+                </dd>
+            {% endif %}
+        {% endif %}
+    </dl>
+
+{% endblock %}

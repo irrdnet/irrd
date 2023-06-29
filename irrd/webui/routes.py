@@ -2,6 +2,8 @@ from starlette.routing import Mount, Route
 
 from irrd.webui.auth.routes import AUTH_ROUTES
 from irrd.webui.endpoints import (
+    change_log_entry,
+    change_log_mntner,
     index,
     maintained_objects,
     rpsl_detail,
@@ -54,5 +56,7 @@ UI_ROUTES = [
         name="api_token_delete",
         methods=["GET", "POST"],
     ),
+    Route("/change-log/{mntner:uuid}/", change_log_mntner, name="change_log_mntner"),
+    Route("/change-log/entry/{entry:uuid}/", change_log_entry, name="change_log_entry"),
     Mount("/auth", name="auth", routes=AUTH_ROUTES),
 ]

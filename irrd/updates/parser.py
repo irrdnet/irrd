@@ -2,6 +2,8 @@ import difflib
 import logging
 from typing import Dict, List, Optional, Set, Union
 
+import sqlalchemy.orm as saorm
+
 from irrd.conf import get_setting
 from irrd.rpki.status import RPKIStatus
 from irrd.rpki.validators import SingleRouteROAValidator
@@ -14,9 +16,15 @@ from irrd.storage.models import JournalEntryOrigin
 from irrd.storage.queries import RPSLDatabaseQuery
 from irrd.utils.text import remove_auth_hashes, splitline_unicodesafe
 
+from .. import META_KEY_HTTP_CLIENT_IP
 from .parser_state import SuspensionRequestType, UpdateRequestStatus, UpdateRequestType
 from .suspension import reactivate_for_mntner, suspend_for_mntner
-from .validators import AuthValidator, ReferenceValidator, RulesValidator
+from .validators import (
+    AuthValidator,
+    ReferenceValidator,
+    RulesValidator,
+    ValidatorResult,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +41,6 @@ class ChangeRequest:
     rpsl_obj_current: Optional[RPSLObject] = None
     status = UpdateRequestStatus.PROCESSING
     request_type: Optional[UpdateRequestType] = None
-    mntners_notify: List[RPSLMntner]
 
     error_messages: List[str]
     info_messages: List[str]
@@ -44,7 +51,8 @@ class ChangeRequest:
         database_handler: DatabaseHandler,
         auth_validator: AuthValidator,
         reference_validator: ReferenceValidator,
-        delete_reason=Optional[str],
+        delete_reason: Optional[str],
+        request_meta: Dict[str, Optional[str]],
     ) -> None:
         """
         Initialise a new change request for a single RPSL object.
@@ -68,12 +76,12 @@ class ChangeRequest:
         self.auth_validator = auth_validator
         self.reference_validator = reference_validator
         self.rpsl_text_submitted = rpsl_text_submitted
-        self.mntners_notify = []
-        self.used_override = False
+        self._auth_result: Optional[ValidatorResult] = None
         self._cached_roa_validity: Optional[bool] = None
         self.roa_validator = SingleRouteROAValidator(database_handler)
         self.scopefilter_validator = ScopeFilterValidator()
         self.rules_validator = RulesValidator(database_handler)
+        self.request_meta = request_meta
 
         try:
             self.rpsl_obj_new = rpsl_object_from_text(rpsl_text_submitted, strict_validation=True)
@@ -159,6 +167,24 @@ class ChangeRequest:
                 f"{id(self)}: Saving change for {self.rpsl_obj_new}: inserting/updating current object"
             )
             self.database_handler.upsert_rpsl_object(self.rpsl_obj_new, JournalEntryOrigin.auth_change)
+
+        if self._auth_result:
+            session = saorm.Session(bind=self.database_handler._connection)
+            change_log = self._auth_result.to_change_log()
+            # TODO: extract constant
+            change_log.from_ip = self.request_meta.get(META_KEY_HTTP_CLIENT_IP, None)
+            change_log.from_email = self.request_meta.get("From", None)
+            change_log.rpsl_target_request_type = self.request_type
+            change_log.rpsl_target_pk = self.rpsl_obj_new.pk()
+            change_log.rpsl_target_source = self.rpsl_obj_new.source()
+            change_log.rpsl_target_object_class = self.rpsl_obj_new.rpsl_object_class
+            if self.rpsl_obj_current:
+                change_log.rpsl_target_object_text_old = self.rpsl_obj_current.render_rpsl_text()
+            if self.request_type != UpdateRequestType.DELETE:
+                change_log.rpsl_target_object_text_new = self.rpsl_obj_new.render_rpsl_text()
+            session.add(change_log)
+            session.flush()
+
         self.status = UpdateRequestStatus.SAVED
 
     def is_valid(self) -> bool:
@@ -247,13 +273,15 @@ class ChangeRequest:
         """
         targets: Set[str] = set()
         status_qualifies_notification = self.is_valid() or self.status == UpdateRequestStatus.ERROR_AUTH
-        if self.used_override or not status_qualifies_notification:
+        used_override = self._auth_result and self._auth_result.auth_method.used_override()
+        if used_override or not status_qualifies_notification:
             return targets
 
         mntner_attr = "upd-to" if self.status == UpdateRequestStatus.ERROR_AUTH else "mnt-nfy"
-        for mntner in self.mntners_notify:
-            for email in mntner.parsed_data.get(mntner_attr, []):
-                targets.add(email)
+        if self._auth_result:
+            for mntner in self._auth_result.mntners_notify:
+                for email in mntner.parsed_data.get(mntner_attr, []):
+                    targets.add(email)
 
         if self.rpsl_obj_current:
             for email in self.rpsl_obj_current.parsed_data.get("notify", []):
@@ -286,17 +314,14 @@ class ChangeRequest:
 
     def _check_auth(self) -> bool:
         assert self.rpsl_obj_new
-        auth_result = self.auth_validator.process_auth(self.rpsl_obj_new, self.rpsl_obj_current)
-        self.info_messages += auth_result.info_messages
-        self.mntners_notify = auth_result.mntners_notify
+        self._auth_result = self.auth_validator.process_auth(self.rpsl_obj_new, self.rpsl_obj_current)
+        self.info_messages += self._auth_result.info_messages
 
-        if not auth_result.is_valid():
+        if not self._auth_result.is_valid():
             self.status = UpdateRequestStatus.ERROR_AUTH
-            self.error_messages += auth_result.error_messages
-            logger.debug(f"{id(self)}: Authentication check failed: {list(auth_result.error_messages)}")
+            self.error_messages += self._auth_result.error_messages
+            logger.debug(f"{id(self)}: Authentication check failed: {list(self._auth_result.error_messages)}")
             return False
-
-        self.used_override = auth_result.used_override
 
         logger.debug(f"{id(self)}: Authentication check succeeded")
         return True
@@ -536,7 +561,8 @@ class SuspensionRequest:
         return set()
 
     def validate(self) -> bool:
-        if not self.auth_validator.check_override():
+        override_method = self.auth_validator.check_override()
+        if not override_method:
             self.status = UpdateRequestStatus.ERROR_AUTH
             self.error_messages.append("Invalid authentication: override password invalid or missing")
             logger.debug(f"{id(self)}: Authentication check failed: override did not pass")
@@ -550,6 +576,7 @@ def parse_change_requests(
     database_handler: DatabaseHandler,
     auth_validator: AuthValidator,
     reference_validator: ReferenceValidator,
+    request_meta: Dict[str, Optional[str]],
 ) -> List[Union[ChangeRequest, SuspensionRequest]]:
     """
     Parse change requests, a text of RPSL objects along with metadata like
@@ -614,6 +641,7 @@ def parse_change_requests(
                     auth_validator,
                     reference_validator,
                     delete_reason=delete_reason,
+                    request_meta=request_meta,
                 )
             )
 

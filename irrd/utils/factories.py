@@ -7,6 +7,7 @@ from irrd.storage.models import (
     AuthPermission,
     AuthUser,
     AuthWebAuthn,
+    ChangeLog,
     RPSLDatabaseObject,
 )
 from irrd.webui.auth.users import password_handler
@@ -65,7 +66,8 @@ class AuthMntnerFactory(factory.alchemy.SQLAlchemyModelFactory):
         rpsl_mntner = (
             AuthMntnerFactory._meta.sqlalchemy_session.query(RPSLDatabaseObject)
             .filter(RPSLDatabaseObject.object_class == "mntner")
-            .one()
+            .order_by(RPSLDatabaseObject.created.desc())
+            .first()
         )
         return str(rpsl_mntner.pk)
 
@@ -84,3 +86,9 @@ class AuthApiTokenFactory(factory.alchemy.SQLAlchemyModelFactory):
     name = factory.Sequence(lambda n: "API token %s" % n)
     enabled_webapi = True
     enabled_email = True
+
+
+class ChangeLogFactory(factory.alchemy.SQLAlchemyModelFactory):
+    class Meta:
+        model = ChangeLog
+        sqlalchemy_session_persistence = "commit"

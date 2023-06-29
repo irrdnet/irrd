@@ -41,7 +41,7 @@ def rate_limit_post(_func=None, any_response_code=False):
                 limiter = request.app.state.rate_limiter
                 permitted = await limiter.test(rate_limit, RATE_LIMIT_POST_200_NAMESPACE, request.client.host)
                 if not permitted:
-                    logger.info(f"{client_ip(request)}rejecting request due to rate limiting")
+                    logger.info(f"{client_ip_str(request)}rejecting request due to rate limiting")
                     return Response("Request denied due to rate limiting", status_code=403)
 
                 response = await func(*args, **kwargs)
@@ -90,7 +90,7 @@ def send_template_email(
     )
     body = templates.get_template(f"{template_key}_mail.txt").render(request=request, **template_kwargs)
     send_email(recipient, subject, body)
-    logger.info(f"{client_ip(request)}email sent to {recipient}: {subject}")
+    logger.info(f"{client_ip_str(request)}email sent to {recipient}: {subject}")
 
 
 def send_authentication_change_mail(
@@ -127,8 +127,16 @@ def filter_auth_hash_non_mntner(user: Optional[AuthUser], rpsl_object: RPSLDatab
     return remove_auth_hashes(rpsl_object.object_text)
 
 
-def client_ip(request: Optional[Request]) -> str:
+def client_ip_str(request: Optional[Request]) -> str:
+    """Small wrapper to wrap client IP in a loggable str."""
+    ip = client_ip(request)
+    if ip:
+        return f"{ip}: "
+    return ""  # pragma: no cover
+
+
+def client_ip(request: Optional[Request]) -> Optional[str]:
     """Small wrapper to get the client IP from a request."""
     if request and request.client:
-        return f"{request.client.host}: "
-    return ""  # pragma: no cover
+        return request.client.host if request.client.host != "testclient" else "127.0.0.1"
+    return None

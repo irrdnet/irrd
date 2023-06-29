@@ -28,7 +28,7 @@ def notify_rpki_invalid_owners(
     if not get_setting("rpki.notify_invalid_enabled"):
         return 0
 
-    rpsl_objs = []
+    rpsl_objs: List[RPSLObject] = []
     for obj in rpsl_dicts_now_invalid:
         source = obj["source"]
         authoritative = get_setting(f"sources.{source}.authoritative")

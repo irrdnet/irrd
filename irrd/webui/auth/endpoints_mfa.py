@@ -30,7 +30,7 @@ from irrd.webui.auth.decorators import authentication_required
 from irrd.webui.auth.endpoints import clean_next_url
 from irrd.webui.auth.users import CurrentPasswordForm
 from irrd.webui.helpers import (
-    client_ip,
+    client_ip_str,
     message,
     rate_limit_post,
     send_authentication_change_mail,
@@ -139,7 +139,7 @@ async def mfa_authenticate(request: Request, session_provider: ORMSessionProvide
         totp = pyotp.totp.TOTP(request.auth.user.totp_secret)
         form = await TOTPAuthenticateForm.from_formdata(request=request)
         if form.is_submitted():
-            logger.info(f"{client_ip(request)}{request.auth.user.email}: attempting to log in with TOTP")
+            logger.info(f"{client_ip_str(request)}{request.auth.user.email}: attempting to log in with TOTP")
             if await form.validate(totp=totp, last_used=request.auth.user.totp_last_used):
                 try:
                     del request.session[WN_CHALLENGE_SESSION_KEY]
@@ -149,7 +149,7 @@ async def mfa_authenticate(request: Request, session_provider: ORMSessionProvide
                 request.auth.user.totp_last_used = form.token.data
                 session_provider.session.add(request.auth.user)
                 logger.info(
-                    f"{client_ip(request)}{request.auth.user.email}: completed"
+                    f"{client_ip_str(request)}{request.auth.user.email}: completed"
                     " TOTP authentication successfully"
                 )
                 return RedirectResponse(next_url, status_code=302)
@@ -196,7 +196,7 @@ async def webauthn_verify_authentication_response(
     except Exception as err:
         logger.info(
             (
-                f"{client_ip(request)}{request.auth.user.email}: unable to verify security token"
+                f"{client_ip_str(request)}{request.auth.user.email}: unable to verify security token"
                 f" authentication response: {err}"
             ),
             exc_info=err,
@@ -210,7 +210,7 @@ async def webauthn_verify_authentication_response(
     del request.session[WN_CHALLENGE_SESSION_KEY]
     request.session[MFA_COMPLETE_SESSION_KEY] = True
     logger.info(
-        f"{client_ip(request)}{request.auth.user.email}: authenticated successfully with security token"
+        f"{client_ip_str(request)}{request.auth.user.email}: authenticated successfully with security token"
         f" {authn.pk}"
     )
     return JSONResponse({"verified": True})
@@ -269,7 +269,7 @@ async def webauthn_verify_registration_response(
     except Exception as err:
         logger.info(
             (
-                f"{client_ip(request)}{request.auth.user.email}: unable to verify security"
+                f"{client_ip_str(request)}{request.auth.user.email}: unable to verify security"
                 f"token registration response: {err}"
             ),
             exc_info=err,
@@ -286,7 +286,7 @@ async def webauthn_verify_registration_response(
     session_provider.session.add(new_auth)
     del request.session[WN_CHALLENGE_SESSION_KEY]
     message(request, "Your security token has been added to your account. You may need to re-authenticate.")
-    logger.info(f"{client_ip(request)}{request.auth.user.email}: added security token {new_auth.pk}")
+    logger.info(f"{client_ip_str(request)}{request.auth.user.email}: added security token {new_auth.pk}")
     send_authentication_change_mail(request.auth.user, request, "A security token was added to your account.")
 
     return JSONResponse({"success": True})
@@ -320,7 +320,7 @@ async def webauthn_remove(request: Request, session_provider: ORMSessionProvider
 
     session_provider.session.delete(target)
     message(request, "The security token has been removed.")
-    logger.info(f"{client_ip(request)}{request.auth.user.email}: removed security token {target.pk}")
+    logger.info(f"{client_ip_str(request)}{request.auth.user.email}: removed security token {target.pk}")
     send_authentication_change_mail(
         request.auth.user, request, "A security token was removed from your account."
     )
@@ -369,7 +369,7 @@ async def totp_register(request: Request, session_provider: ORMSessionProvider) 
     request.auth.user.totp_secret = totp_secret
     session_provider.session.add(request.auth.user)
     message(request, "One time passwords have been enabled. You may need to re-authenticate.")
-    logger.info(f"{client_ip(request)}{request.auth.user.email}: configured new TOTP on account")
+    logger.info(f"{client_ip_str(request)}{request.auth.user.email}: configured new TOTP on account")
     send_authentication_change_mail(
         request.auth.user, request, "One time password was added to your account."
     )
@@ -396,7 +396,7 @@ async def totp_remove(request: Request, session_provider: ORMSessionProvider) ->
     request.auth.user.totp_secret = None
     session_provider.session.add(request.auth.user)
     message(request, "The one time password been removed.")
-    logger.info(f"{client_ip(request)}{request.auth.user.email}: removed TOTP from account")
+    logger.info(f"{client_ip_str(request)}{request.auth.user.email}: removed TOTP from account")
     send_authentication_change_mail(
         request.auth.user, request, "One time password was removed from your account."
     )

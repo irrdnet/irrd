@@ -108,8 +108,15 @@
             <a href="{{ url_for("ui:api_token_add", mntner=permission.mntner_id) }}" class="btn btn-primary">
                 Add a new API token
             </a>
+            <a href="{{ url_for("ui:change_log_mntner", mntner=permission.mntner_id) }}" class="btn btn-primary">
+                Change log for this mntner
+            </a>
         {% else %}
             The migration for this mntner is not yet complete.
         {% endif %}
+    {% else %}
+        You do not have access to any maintainers.
+        You can <a href="{{ url_for("ui:mntner_migrate_initiate") }}">migrate a maintainer</a>,
+        or ask an authorised user to add you to a maintainer.
     {% endfor %}
 {% endblock %}

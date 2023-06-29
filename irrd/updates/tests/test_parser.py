@@ -24,7 +24,12 @@ from irrd.utils.test_utils import flatten_mock_calls
 from irrd.utils.text import splitline_unicodesafe
 
 from ..parser import parse_change_requests
-from ..parser_state import SuspensionRequestType, UpdateRequestStatus, UpdateRequestType
+from ..parser_state import (
+    AuthMethod,
+    SuspensionRequestType,
+    UpdateRequestStatus,
+    UpdateRequestType,
+)
 from ..validators import (
     AuthValidator,
     ReferenceValidator,
@@ -76,7 +81,7 @@ class TestSingleChangeRequestHandling:
 
         auth_validator = AuthValidator(mock_dh)
         result_inetnum, result_as_set, result_unknown, result_invalid = parse_change_requests(
-            self._request_text(), mock_dh, auth_validator, None
+            self._request_text(), mock_dh, auth_validator, None, {}
         )
 
         assert result_inetnum.status == UpdateRequestStatus.PROCESSING, result_inetnum.error_messages
@@ -139,9 +144,9 @@ class TestSingleChangeRequestHandling:
         mock_dh.execute_query = lambda query: []
 
         auth_validator = AuthValidator(mock_dh)
-        result = parse_change_requests(SAMPLE_MNTNER.replace("TEST", "TEST2"), mock_dh, auth_validator, None)[
-            0
-        ]
+        result = parse_change_requests(
+            SAMPLE_MNTNER.replace("TEST", "TEST2"), mock_dh, auth_validator, None, {}
+        )[0]
 
         assert result.status == UpdateRequestStatus.ERROR_NON_AUTHORITIVE
         assert not result.is_valid()
@@ -158,7 +163,7 @@ class TestSingleChangeRequestHandling:
         auth_validator.process_auth = lambda new, cur: invalid_auth_result
 
         invalid_create_text = SAMPLE_AS_SET.replace("AS65537:AS-SETTEST", "AS-SETTEST")
-        result = parse_change_requests(invalid_create_text, mock_dh, auth_validator, None)[0]
+        result = parse_change_requests(invalid_create_text, mock_dh, auth_validator, None, {})[0]
 
         assert not result.validate()
         assert result.status == UpdateRequestStatus.ERROR_PARSING
@@ -167,7 +172,7 @@ class TestSingleChangeRequestHandling:
 
         # Test again with an UPDATE (which then fails on auth to stop)
         mock_dh.execute_query = lambda query: [{"object_text": SAMPLE_AS_SET}]
-        result = parse_change_requests(invalid_create_text, mock_dh, auth_validator, None)[0]
+        result = parse_change_requests(invalid_create_text, mock_dh, auth_validator, None, {})[0]
         assert not result.validate()
         assert result.error_messages == ["error catch"]
 
@@ -181,7 +186,7 @@ class TestSingleChangeRequestHandling:
         invalid_auth_result.error_messages.add("error catch")
         auth_validator.process_auth = lambda new, cur: invalid_auth_result
 
-        result = parse_change_requests(SAMPLE_AS_SET, mock_dh, auth_validator, None)[0]
+        result = parse_change_requests(SAMPLE_AS_SET, mock_dh, auth_validator, None, {})[0]
         invalid_rules_result = ValidatorResult()
         invalid_rules_result.error_messages.add("rules fault")
         result.rules_validator.validate.return_value = invalid_rules_result
@@ -195,7 +200,9 @@ class TestSingleChangeRequestHandling:
         mock_dq, mock_dh = prepare_mocks
         mock_dh.execute_query = lambda query: []
 
-        result_inetnum = parse_change_requests(self._request_text(), mock_dh, AuthValidator(mock_dh), None)[0]
+        result_inetnum = parse_change_requests(
+            self._request_text(), mock_dh, AuthValidator(mock_dh), None, {}
+        )[0]
 
         assert result_inetnum.status == UpdateRequestStatus.ERROR_PARSING
         assert not result_inetnum.is_valid()
@@ -229,7 +236,13 @@ class TestSingleChangeRequestHandling:
 
         validator = ReferenceValidator(mock_dh)
 
-        result_inetnum = parse_change_requests(SAMPLE_INETNUM, mock_dh, AuthValidator(mock_dh), validator)[0]
+        result_inetnum = parse_change_requests(
+            SAMPLE_INETNUM,
+            mock_dh,
+            AuthValidator(mock_dh),
+            validator,
+            {},
+        )[0]
         assert result_inetnum._check_references()
         assert result_inetnum.is_valid()
         assert flatten_mock_calls(mock_dq) == [
@@ -254,7 +267,13 @@ class TestSingleChangeRequestHandling:
         mock_dh.execute_query = lambda query: next(query_results)
         validator = ReferenceValidator(mock_dh)
 
-        result_inetnum = parse_change_requests(SAMPLE_INETNUM, mock_dh, AuthValidator(mock_dh), validator)[0]
+        result_inetnum = parse_change_requests(
+            SAMPLE_INETNUM,
+            mock_dh,
+            AuthValidator(mock_dh),
+            validator,
+            {},
+        )[0]
         assert not result_inetnum._check_references()
         assert not result_inetnum.is_valid()
         assert not result_inetnum.notification_targets()
@@ -293,12 +312,22 @@ class TestSingleChangeRequestHandling:
         validator = ReferenceValidator(mock_dh)
 
         preload = parse_change_requests(
-            SAMPLE_PERSON + "\n" + SAMPLE_MNTNER, mock_dh, AuthValidator(mock_dh), validator
+            SAMPLE_PERSON + "\n" + SAMPLE_MNTNER,
+            mock_dh,
+            AuthValidator(mock_dh),
+            validator,
+            {},
         )
         mock_dq.reset_mock()
         validator.preload(preload)
 
-        result_inetnum = parse_change_requests(SAMPLE_INETNUM, mock_dh, AuthValidator(mock_dh), validator)[0]
+        result_inetnum = parse_change_requests(
+            SAMPLE_INETNUM,
+            mock_dh,
+            AuthValidator(mock_dh),
+            validator,
+            {},
+        )[0]
         assert result_inetnum._check_references()
         assert result_inetnum.is_valid()
         assert flatten_mock_calls(mock_dq) == [
@@ -327,7 +356,11 @@ class TestSingleChangeRequestHandling:
         mock_dh.execute_query = lambda query: next(query_results)
 
         result = parse_change_requests(
-            SAMPLE_ROUTE + "delete: delete", mock_dh, AuthValidator(mock_dh), validator
+            SAMPLE_ROUTE + "delete: delete",
+            mock_dh,
+            AuthValidator(mock_dh),
+            validator,
+            {},
         )[0]
         result._check_references()
         assert result.is_valid(), result.error_messages
@@ -363,7 +396,11 @@ class TestSingleChangeRequestHandling:
         mock_dh.execute_query = lambda query: next(query_results)
 
         result = parse_change_requests(
-            SAMPLE_PERSON + "delete: delete", mock_dh, AuthValidator(mock_dh), validator
+            SAMPLE_PERSON + "delete: delete",
+            mock_dh,
+            AuthValidator(mock_dh),
+            validator,
+            {},
         )[0]
         result._check_references()
         assert not result.is_valid()
@@ -406,6 +443,7 @@ class TestSingleChangeRequestHandling:
             mock_dh,
             AuthValidator(mock_dh),
             validator,
+            {},
         )
         validator.preload(results)
         result_inetnum = results[1]
@@ -444,7 +482,11 @@ class TestSingleChangeRequestHandling:
         validator = ReferenceValidator(mock_dh)
         mock_dh.execute_query = lambda query: []
         result_inetnum = parse_change_requests(
-            SAMPLE_INETNUM + "delete: delete", mock_dh, AuthValidator(mock_dh), validator
+            SAMPLE_INETNUM + "delete: delete",
+            mock_dh,
+            AuthValidator(mock_dh),
+            validator,
+            {},
         )
         validator.preload(result_inetnum)
         mock_dq.reset_mock()
@@ -465,7 +507,11 @@ class TestSingleChangeRequestHandling:
         mock_dh.execute_query = lambda query: next(query_results)
 
         result = parse_change_requests(
-            SAMPLE_PERSON + "delete: delete" + "\n", mock_dh, AuthValidator(mock_dh), validator
+            SAMPLE_PERSON + "delete: delete" + "\n",
+            mock_dh,
+            AuthValidator(mock_dh),
+            validator,
+            {},
         )[0]
         result._check_references()
         assert result.is_valid(), result.error_messages
@@ -494,6 +540,7 @@ class TestSingleChangeRequestHandling:
             mock_dh,
             auth_validator,
             reference_validator,
+            {},
         )[0]
         assert result_inetnum._check_auth()
         assert not result_inetnum.error_messages
@@ -509,7 +556,11 @@ class TestSingleChangeRequestHandling:
 
         auth_validator = AuthValidator(mock_dh)
         result_inetnum = parse_change_requests(
-            SAMPLE_INETNUM + "password: md5-password", mock_dh, auth_validator, reference_validator
+            SAMPLE_INETNUM + "password: md5-password",
+            mock_dh,
+            auth_validator,
+            reference_validator,
+            {},
         )[0]
         assert result_inetnum._check_auth()
         assert not result_inetnum.error_messages
@@ -520,9 +571,13 @@ class TestSingleChangeRequestHandling:
         }
 
         auth_validator = AuthValidator(mock_dh, keycert_obj_pk="PGPKEY-80F238C6")
-        result_inetnum = parse_change_requests(SAMPLE_INETNUM, mock_dh, auth_validator, reference_validator)[
-            0
-        ]
+        result_inetnum = parse_change_requests(
+            SAMPLE_INETNUM,
+            mock_dh,
+            auth_validator,
+            reference_validator,
+            {},
+        )[0]
         assert not result_inetnum.error_messages
         assert result_inetnum._check_auth()
 
@@ -535,7 +590,11 @@ class TestSingleChangeRequestHandling:
         auth_validator = AuthValidator(mock_dh)
 
         result_mntner = parse_change_requests(
-            SAMPLE_MNTNER + "override: override-password", mock_dh, auth_validator, reference_validator
+            SAMPLE_MNTNER + "override: override-password",
+            mock_dh,
+            auth_validator,
+            reference_validator,
+            {},
         )[0]
         auth_validator.pre_approve([result_mntner.rpsl_obj_new])
 
@@ -557,7 +616,11 @@ class TestSingleChangeRequestHandling:
         auth_validator = AuthValidator(mock_dh)
 
         result_mntner = parse_change_requests(
-            SAMPLE_MNTNER + "override: invalid-password", mock_dh, auth_validator, reference_validator
+            SAMPLE_MNTNER + "override: invalid-password",
+            mock_dh,
+            auth_validator,
+            reference_validator,
+            {},
         )[0]
         auth_validator.pre_approve([result_mntner.rpsl_obj_new])
 
@@ -593,7 +656,11 @@ class TestSingleChangeRequestHandling:
             "$2b$12$RMrlONJ0tasnpo.zHDF.yuYm/Gb1ARmIjP097ZoIWBn9YLIM2ao5W", PASSWORD_HASH_DUMMY_VALUE
         )
         result_mntner = parse_change_requests(
-            data + "password: crypt-password", mock_dh, auth_validator, reference_validator
+            data + "password: crypt-password",
+            mock_dh,
+            auth_validator,
+            reference_validator,
+            {},
         )[0]
         auth_validator.pre_approve([result_mntner.rpsl_obj_new])
         assert result_mntner._check_auth()
@@ -635,7 +702,11 @@ class TestSingleChangeRequestHandling:
         # but a password attribute that is valid for the current DB object.
         data = SAMPLE_MNTNER.replace("LEuuhsBJNFV0Q", PASSWORD_HASH_DUMMY_VALUE)
         result_mntner = parse_change_requests(
-            data + "password: md5-password", mock_dh, auth_validator, reference_validator
+            data + "password: md5-password",
+            mock_dh,
+            auth_validator,
+            reference_validator,
+            {},
         )[0]
         auth_validator.pre_approve([result_mntner.rpsl_obj_new])
         assert not result_mntner.is_valid()
@@ -665,6 +736,7 @@ class TestSingleChangeRequestHandling:
             mock_dh,
             auth_validator,
             reference_validator,
+            {},
         )[0]
         # This also tests whether API keys are passed to the validator.
         assert auth_validator.passwords == ["md5-password", "other-password"]
@@ -689,7 +761,11 @@ class TestSingleChangeRequestHandling:
 
         # This password is valid for the new object, but invalid for the current version in the DB
         result_mntner = parse_change_requests(
-            SAMPLE_MNTNER + "password: crypt-password", mock_dh, auth_validator, reference_validator
+            SAMPLE_MNTNER + "password: crypt-password",
+            mock_dh,
+            auth_validator,
+            reference_validator,
+            {},
         )[0]
         assert not result_mntner._check_auth()
         assert result_mntner.error_messages == [
@@ -720,7 +796,11 @@ class TestSingleChangeRequestHandling:
         auth_validator = AuthValidator(mock_dh)
 
         result_inetnum = parse_change_requests(
-            SAMPLE_INETNUM + "password: wrong-pw", mock_dh, auth_validator, reference_validator
+            SAMPLE_INETNUM + "password: wrong-pw",
+            mock_dh,
+            auth_validator,
+            reference_validator,
+            {},
         )[0]
         assert not result_inetnum._check_auth()
         assert "Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed" in result_inetnum.error_messages[0]
@@ -753,7 +833,11 @@ class TestSingleChangeRequestHandling:
         auth_validator = AuthValidator(mock_dh)
 
         result_inetnum = parse_change_requests(
-            SAMPLE_INETNUM + "password: md5-password", mock_dh, auth_validator, reference_validator
+            SAMPLE_INETNUM + "password: md5-password",
+            mock_dh,
+            auth_validator,
+            reference_validator,
+            {},
         )[0]
         assert not result_inetnum._check_auth(), result_inetnum
         assert "Authorisation for inetnum 192.0.2.0 - 192.0.2.255 failed" in result_inetnum.error_messages[0]
@@ -784,7 +868,11 @@ class TestSingleChangeRequestHandling:
         auth_validator = AuthValidator(mock_dh)
 
         result_inetnum = parse_change_requests(
-            SAMPLE_INETNUM + "override: override-password", mock_dh, auth_validator, reference_validator
+            SAMPLE_INETNUM + "override: override-password",
+            mock_dh,
+            auth_validator,
+            reference_validator,
+            {},
         )[0]
         assert result_inetnum._check_auth()
         assert not result_inetnum.error_messages
@@ -802,7 +890,11 @@ class TestSingleChangeRequestHandling:
         auth_validator = AuthValidator(mock_dh)
 
         result_inetnum = parse_change_requests(
-            SAMPLE_INETNUM + "override: wrong-override", mock_dh, auth_validator, reference_validator
+            SAMPLE_INETNUM + "override: wrong-override",
+            mock_dh,
+            auth_validator,
+            reference_validator,
+            {},
         )[0]
         assert not result_inetnum._check_auth()
         assert result_inetnum.error_messages == [
@@ -828,7 +920,11 @@ class TestSingleChangeRequestHandling:
         auth_validator = AuthValidator(mock_dh)
 
         result_inetnum = parse_change_requests(
-            SAMPLE_INETNUM + "override: override-password", mock_dh, auth_validator, reference_validator
+            SAMPLE_INETNUM + "override: override-password",
+            mock_dh,
+            auth_validator,
+            reference_validator,
+            {},
         )[0]
         assert not result_inetnum._check_auth()
         assert result_inetnum.error_messages == [
@@ -853,7 +949,11 @@ class TestSingleChangeRequestHandling:
         auth_validator = AuthValidator(mock_dh)
 
         result_inetnum = parse_change_requests(
-            SAMPLE_INETNUM + "override: override-password", mock_dh, auth_validator, reference_validator
+            SAMPLE_INETNUM + "override: override-password",
+            mock_dh,
+            auth_validator,
+            reference_validator,
+            {},
         )[0]
         assert not result_inetnum._check_auth()
         assert result_inetnum.error_messages == [
@@ -881,7 +981,11 @@ class TestSingleChangeRequestHandling:
         auth_validator = AuthValidator(mock_dh)
 
         result_route = parse_change_requests(
-            SAMPLE_ROUTE + "password: md5-password", mock_dh, auth_validator, reference_validator
+            SAMPLE_ROUTE + "password: md5-password",
+            mock_dh,
+            auth_validator,
+            reference_validator,
+            {},
         )[0]
         assert result_route._check_auth()
         assert not result_route.error_messages
@@ -922,7 +1026,11 @@ class TestSingleChangeRequestHandling:
         auth_validator = AuthValidator(mock_dh)
 
         result_route = parse_change_requests(
-            SAMPLE_ROUTE + "password: md5-password", mock_dh, auth_validator, reference_validator
+            SAMPLE_ROUTE + "password: md5-password",
+            mock_dh,
+            auth_validator,
+            reference_validator,
+            {},
         )[0]
         assert not result_route._check_auth()
         assert (
@@ -973,7 +1081,11 @@ class TestSingleChangeRequestHandling:
         auth_validator = AuthValidator(mock_dh)
 
         result_route = parse_change_requests(
-            SAMPLE_ROUTE6 + "password: md5-password", mock_dh, auth_validator, reference_validator
+            SAMPLE_ROUTE6 + "password: md5-password",
+            mock_dh,
+            auth_validator,
+            reference_validator,
+            {},
         )[0]
         assert result_route._check_auth()
         assert result_route._check_auth()  # should be cached, no extra db queries
@@ -1020,7 +1132,11 @@ class TestSingleChangeRequestHandling:
         auth_validator = AuthValidator(mock_dh)
 
         result_route = parse_change_requests(
-            SAMPLE_ROUTE + "password: md5-password", mock_dh, auth_validator, reference_validator
+            SAMPLE_ROUTE + "password: md5-password",
+            mock_dh,
+            auth_validator,
+            reference_validator,
+            {},
         )[0]
         assert result_route._check_auth()
         assert not result_route.error_messages
@@ -1071,7 +1187,11 @@ class TestSingleChangeRequestHandling:
         auth_validator = AuthValidator(mock_dh)
 
         result_route = parse_change_requests(
-            SAMPLE_ROUTE + "password: md5-password", mock_dh, auth_validator, reference_validator
+            SAMPLE_ROUTE + "password: md5-password",
+            mock_dh,
+            auth_validator,
+            reference_validator,
+            {},
         )[0]
         assert result_route._check_auth()
         assert not result_route.error_messages
@@ -1118,7 +1238,11 @@ class TestSingleChangeRequestHandling:
         auth_validator = AuthValidator(mock_dh)
 
         result_route = parse_change_requests(
-            SAMPLE_ROUTE + "password: md5-password", mock_dh, auth_validator, reference_validator
+            SAMPLE_ROUTE + "password: md5-password",
+            mock_dh,
+            auth_validator,
+            reference_validator,
+            {},
         )[0]
         assert result_route._check_auth()
         assert not result_route.error_messages
@@ -1157,7 +1281,13 @@ class TestSingleChangeRequestHandling:
         # New object, RPKI invalid, RPKI-aware mode disabled
         mock_dh.execute_query = lambda query: []
         mock_roa_validator.validate_route = lambda prefix, asn, source: RPKIStatus.invalid
-        result_route = parse_change_requests(SAMPLE_ROUTE, mock_dh, auth_validator, reference_validator)[0]
+        result_route = parse_change_requests(
+            SAMPLE_ROUTE,
+            mock_dh,
+            auth_validator,
+            reference_validator,
+            {},
+        )[0]
         assert result_route._check_conflicting_roa()
         assert not result_route.error_messages
 
@@ -1166,23 +1296,39 @@ class TestSingleChangeRequestHandling:
         # New object, RPKI-aware mode enabled but object not RPKI relevant
         mock_dh.execute_query = lambda query: []
         mock_roa_validator.validate_route = lambda prefix, asn, source: RPKIStatus.invalid
-        result_inetnum = parse_change_requests(SAMPLE_INETNUM, mock_dh, auth_validator, reference_validator)[
-            0
-        ]
+        result_inetnum = parse_change_requests(
+            SAMPLE_INETNUM,
+            mock_dh,
+            auth_validator,
+            reference_validator,
+            {},
+        )[0]
         assert result_inetnum._check_conflicting_roa()
         assert not result_inetnum.error_messages
 
         # New object, RPKI not_found
         mock_dh.execute_query = lambda query: []
         mock_roa_validator.validate_route = lambda prefix, asn, source: RPKIStatus.not_found
-        result_route = parse_change_requests(SAMPLE_ROUTE, mock_dh, auth_validator, reference_validator)[0]
+        result_route = parse_change_requests(
+            SAMPLE_ROUTE,
+            mock_dh,
+            auth_validator,
+            reference_validator,
+            {},
+        )[0]
         assert result_route._check_conflicting_roa()
         assert not result_route.error_messages
 
         # New object, RPKI invalid
         mock_dh.execute_query = lambda query: []
         mock_roa_validator.validate_route = lambda prefix, asn, source: RPKIStatus.invalid
-        result_route = parse_change_requests(SAMPLE_ROUTE, mock_dh, auth_validator, reference_validator)[0]
+        result_route = parse_change_requests(
+            SAMPLE_ROUTE,
+            mock_dh,
+            auth_validator,
+            reference_validator,
+            {},
+        )[0]
         assert not result_route._check_conflicting_roa()
         assert result_route.error_messages[0].startswith(
             "RPKI ROAs were found that conflict with this object."
@@ -1191,7 +1337,13 @@ class TestSingleChangeRequestHandling:
         # Update object, RPKI invalid
         mock_dh.execute_query = lambda query: [{"object_text": SAMPLE_ROUTE}]
         mock_roa_validator.validate_route = lambda prefix, asn, source: RPKIStatus.invalid
-        result_route = parse_change_requests(SAMPLE_ROUTE, mock_dh, auth_validator, reference_validator)[0]
+        result_route = parse_change_requests(
+            SAMPLE_ROUTE,
+            mock_dh,
+            auth_validator,
+            reference_validator,
+            {},
+        )[0]
         assert not result_route._check_conflicting_roa()
         assert not result_route._check_conflicting_roa()  # Should use cache
         assert result_route.error_messages[0].startswith(
@@ -1202,7 +1354,13 @@ class TestSingleChangeRequestHandling:
         mock_dh.execute_query = lambda query: [{"object_text": SAMPLE_ROUTE}]
         mock_roa_validator.validate_route = lambda prefix, asn, source: RPKIStatus.invalid
         obj_text = SAMPLE_ROUTE + "delete: delete"
-        result_route = parse_change_requests(obj_text, mock_dh, auth_validator, reference_validator)[0]
+        result_route = parse_change_requests(
+            obj_text,
+            mock_dh,
+            auth_validator,
+            reference_validator,
+            {},
+        )[0]
         assert result_route._check_conflicting_roa()
 
     def test_scopefilter_validation(self, prepare_mocks, monkeypatch, config_override):
@@ -1216,7 +1374,13 @@ class TestSingleChangeRequestHandling:
         # New object, in scope
         mock_dh.execute_query = lambda query: []
         mock_scopefilter_validator.validate_rpsl_object = lambda obj: (ScopeFilterStatus.in_scope, "")
-        result_route = parse_change_requests(SAMPLE_ROUTE, mock_dh, auth_validator, reference_validator)[0]
+        result_route = parse_change_requests(
+            SAMPLE_ROUTE,
+            mock_dh,
+            auth_validator,
+            reference_validator,
+            {},
+        )[0]
         assert result_route._check_scopefilter()
         assert not result_route.error_messages
 
@@ -1226,7 +1390,13 @@ class TestSingleChangeRequestHandling:
             ScopeFilterStatus.out_scope_as,
             "out of scope AS",
         )
-        result_route = parse_change_requests(SAMPLE_ROUTE, mock_dh, auth_validator, reference_validator)[0]
+        result_route = parse_change_requests(
+            SAMPLE_ROUTE,
+            mock_dh,
+            auth_validator,
+            reference_validator,
+            {},
+        )[0]
         assert not result_route._check_scopefilter()
         assert result_route.error_messages[0] == "Contains out of scope information: out of scope AS"
 
@@ -1236,7 +1406,13 @@ class TestSingleChangeRequestHandling:
             ScopeFilterStatus.out_scope_prefix,
             "out of scope prefix",
         )
-        result_route = parse_change_requests(SAMPLE_ROUTE, mock_dh, auth_validator, reference_validator)[0]
+        result_route = parse_change_requests(
+            SAMPLE_ROUTE,
+            mock_dh,
+            auth_validator,
+            reference_validator,
+            {},
+        )[0]
         assert result_route._check_scopefilter()
         assert not result_route.error_messages
         assert result_route.info_messages[1] == "Contains out of scope information: out of scope prefix"
@@ -1248,7 +1424,13 @@ class TestSingleChangeRequestHandling:
             "out of scope AS",
         )
         obj_text = SAMPLE_ROUTE + "delete: delete"
-        result_route = parse_change_requests(obj_text, mock_dh, auth_validator, reference_validator)[0]
+        result_route = parse_change_requests(
+            obj_text,
+            mock_dh,
+            auth_validator,
+            reference_validator,
+            {},
+        )[0]
         assert result_route._check_scopefilter()
 
     def test_user_report(self, prepare_mocks):
@@ -1263,7 +1445,7 @@ class TestSingleChangeRequestHandling:
         mock_dh.execute_query = lambda query: next(query_results)
 
         result_inetnum, result_as_set, result_unknown, result_invalid = parse_change_requests(
-            self._request_text(), mock_dh, AuthValidator(mock_dh), None
+            self._request_text(), mock_dh, AuthValidator(mock_dh), None, {}
         )
         report_inetnum = result_inetnum.submitter_report_human()
         report_as_set = result_as_set.submitter_report_human()
@@ -1330,9 +1512,9 @@ class TestSingleChangeRequestHandling:
         """).strip() + "\n"
 
         inetnum_modify = SAMPLE_INETNUM.replace("PERSON-TEST", "NEW-TEST")
-        result_inetnum_modify = parse_change_requests(inetnum_modify, mock_dh, AuthValidator(mock_dh), None)[
-            0
-        ]
+        result_inetnum_modify = parse_change_requests(
+            inetnum_modify, mock_dh, AuthValidator(mock_dh), None, {}
+        )[0]
         assert result_inetnum_modify.notification_target_report() == textwrap.dedent("""
             Modify succeeded for object below: [inetnum] 192.0.2.0 - 192.0.2.255:
             
@@ -1430,7 +1612,7 @@ class TestSuspensionRequest:
         monkeypatch.setattr("irrd.updates.parser.suspend_for_mntner", mock_suspend_for_mntner)
         mock_reactivate_for_mntner = Mock(suspend_for_mntner)
         monkeypatch.setattr("irrd.updates.parser.reactivate_for_mntner", mock_reactivate_for_mntner)
-        mock_auth_validator.check_override.return_value = True
+        mock_auth_validator.check_override.return_value = AuthMethod.OVERRIDE_PASSWORD
 
         default_request = textwrap.dedent("""
             override: override-pw
@@ -1453,7 +1635,7 @@ class TestSuspensionRequest:
             prepare_suspension_request_test
         )
 
-        (r, *_) = parse_change_requests(default_request, mock_dh, mock_auth_validator, None)
+        (r, *_) = parse_change_requests(default_request, mock_dh, mock_auth_validator, None, {})
 
         assert r.request_type == SuspensionRequestType.SUSPEND
         assert r.status == UpdateRequestStatus.PROCESSING, r.error_messages
@@ -1496,7 +1678,7 @@ class TestSuspensionRequest:
         )
 
         request = default_request.replace("suspend", "reactivate")
-        (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None)
+        (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None, {})
 
         assert r.request_type == SuspensionRequestType.REACTIVATE
         assert r.status == UpdateRequestStatus.PROCESSING, r.error_messages
@@ -1522,7 +1704,7 @@ class TestSuspensionRequest:
         )
 
         request = default_request.replace("suspend", "reactivate")
-        (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None)
+        (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None, {})
 
         mock_reactivate_for_mntner.side_effect = ValueError("failure")
         r.save()
@@ -1537,7 +1719,7 @@ class TestSuspensionRequest:
         )
         config_override({"sources": {"TEST": {"suspension_enabled": False}}})
 
-        (r, *_) = parse_change_requests(default_request, mock_dh, mock_auth_validator, None)
+        (r, *_) = parse_change_requests(default_request, mock_dh, mock_auth_validator, None, {})
 
         assert r.request_type == SuspensionRequestType.SUSPEND
         assert r.status == UpdateRequestStatus.ERROR_NON_AUTHORITIVE
@@ -1555,7 +1737,7 @@ class TestSuspensionRequest:
         )
 
         request = default_request.replace("suspend", "invalid")
-        (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None)
+        (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None, {})
 
         assert not r.request_type
         assert r.status == UpdateRequestStatus.ERROR_PARSING
@@ -1570,7 +1752,7 @@ class TestSuspensionRequest:
         )
 
         request = "suspension: suspend\nmntner: TEST"
-        (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None)
+        (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None, {})
 
         assert r.status == UpdateRequestStatus.ERROR_PARSING
         assert r.error_messages == [
@@ -1584,7 +1766,7 @@ class TestSuspensionRequest:
         )
 
         request = "suspension: suspend\nsource: TEST"
-        (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None)
+        (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None, {})
 
         assert r.status == UpdateRequestStatus.ERROR_UNKNOWN_CLASS
         assert r.error_messages == [
@@ -1598,7 +1780,7 @@ class TestSuspensionRequest:
         )
 
         request = "override: override-pw\n\nsuspension: suspend\n" + SAMPLE_INETNUM
-        (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None)
+        (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None, {})
 
         assert r.status == UpdateRequestStatus.ERROR_PARSING
         assert r.error_messages == [
@@ -1610,9 +1792,9 @@ class TestSuspensionRequest:
         mock_dh, mock_auth_validator, mock_suspend_for_mntner, mock_reactivate_for_mntner, default_request = (
             prepare_suspension_request_test
         )
-        mock_auth_validator.check_override.return_value = False
+        mock_auth_validator.check_override.return_value = None
 
-        (r, *_) = parse_change_requests(default_request, mock_dh, mock_auth_validator, None)
+        (r, *_) = parse_change_requests(default_request, mock_dh, mock_auth_validator, None, {})
 
         assert not r.is_valid()
         assert r.status == UpdateRequestStatus.ERROR_AUTH

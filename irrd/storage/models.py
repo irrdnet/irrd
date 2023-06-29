@@ -10,6 +10,7 @@ from irrd.routepref.status import RoutePreferenceStatus
 from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import lookup_field_names
 from irrd.scopefilter.status import ScopeFilterStatus
+from irrd.updates.parser_state import UpdateRequestType
 
 
 class DatabaseOperation(enum.Enum):
@@ -476,6 +477,75 @@ class AuthMntner(Base):  # type: ignore
 
     def __repr__(self):
         return f"AuthMntner<{self.pk}, {self.rpsl_mntner_pk}>"
+
+
+class ChangeLog(Base):  # type: ignore
+    __tablename__ = "change_log"
+
+    pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)
+    auth_by_user_id = sa.Column(pg.UUID, sa.ForeignKey("auth_user.pk", ondelete="SET NULL"), nullable=True)
+    auth_by_user_email = sa.Column(sa.String, nullable=True)
+    auth_by_api_key_id = sa.Column(
+        pg.UUID, sa.ForeignKey("auth_api_token.pk", ondelete="SET NULL"), nullable=True
+    )
+    auth_by_api_key = relationship(
+        "AuthApiToken",
+        foreign_keys="ChangeLog.auth_by_api_key_id",
+    )
+    auth_by_api_key_id_fixed = sa.Column(pg.UUID, nullable=True)
+    auth_through_mntner_id = sa.Column(
+        pg.UUID, sa.ForeignKey("auth_mntner.pk", ondelete="SET NULL"), index=True, nullable=True
+    )
+    auth_through_mntner = relationship(
+        "AuthMntner",
+        foreign_keys="ChangeLog.auth_through_mntner_id",
+    )
+    auth_through_rpsl_mntner_pk = sa.Column(sa.String, index=True, nullable=True)
+    auth_by_rpsl_mntner_password = sa.Column(sa.Boolean, nullable=False, default=False)
+    auth_by_rpsl_mntner_pgp_key = sa.Column(sa.Boolean, nullable=False, default=False)
+    auth_by_override = sa.Column(sa.Boolean, default=False)
+
+    from_email = sa.Column(sa.String, nullable=True)
+    from_ip = sa.Column(pg.INET, nullable=True)
+
+    auth_change_descr = sa.Column(sa.String, nullable=True)
+    auth_affected_user_id = sa.Column(
+        pg.UUID, sa.ForeignKey("auth_user.pk", ondelete="SET NULL"), nullable=True
+    )
+    auth_affected_mntner_id = sa.Column(
+        pg.UUID, sa.ForeignKey("auth_mntner.pk", ondelete="SET NULL"), index=True, nullable=True
+    )
+    auth_affected_mntner = relationship(
+        "AuthMntner",
+        foreign_keys="ChangeLog.auth_affected_mntner_id",
+    )
+    auth_affected_user = relationship(
+        "AuthUser",
+        foreign_keys="ChangeLog.auth_affected_user_id",
+    )
+
+    rpsl_target_request_type = sa.Column(sa.Enum(UpdateRequestType), nullable=True)
+    rpsl_target_pk = sa.Column(sa.String, index=True, nullable=True)
+    rpsl_target_source = sa.Column(sa.String, nullable=True)
+    rpsl_target_object_class = sa.Column(sa.String, nullable=True)
+    rpsl_target_object_text_old = sa.Column(sa.Text, nullable=True)
+    rpsl_target_object_text_new = sa.Column(sa.Text, nullable=True)
+
+    timestamp = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
+
+    def __repr__(self):
+        return f"<{self.pk}/{self.description()}>"
+
+    def description(self) -> str:
+        if self.rpsl_target_pk:
+            return (
+                f"{self.rpsl_target_request_type.value} of"
+                f" {self.rpsl_target_object_class} {self.rpsl_target_pk} in {self.rpsl_target_source}"
+            )
+        elif self.auth_change_descr:
+            return self.auth_change_descr
+        else:  # pragma: no cover
+            return "<unknown>"
 
 
 # Before you update this, please check the storage documentation for changing lookup fields.

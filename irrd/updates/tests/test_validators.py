@@ -1,4 +1,5 @@
 import itertools
+import uuid
 from unittest import mock
 from unittest.mock import Mock
 
@@ -9,7 +10,7 @@ from irrd.conf import AUTH_SET_CREATION_COMMON_KEY, RPSL_MNTNER_AUTH_INTERNAL
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseSuspendedQuery
-from irrd.updates.parser_state import UpdateRequestType
+from irrd.updates.parser_state import AuthMethod, UpdateRequestType
 from irrd.utils.rpsl_samples import (
     SAMPLE_AS_SET,
     SAMPLE_FILTER_SET,
@@ -30,14 +31,38 @@ from ...storage.models import (
     AuthoritativeChangeOrigin,
     AuthUser,
 )
-from ...utils.factories import AuthApiTokenFactory
-from ..validators import AuthValidator, RulesValidator
+from ...utils.factories import AuthApiTokenFactory, AuthMntnerFactory, AuthUserFactory
+from ..validators import AuthValidator, RulesValidator, ValidatorResult
 
 VALID_PW = "override-password"
 INVALID_PW = "not-override-password"
 VALID_PW_HASH = "$1$J6KycItM$MbPaBU6iFSGFV299Rk7Di0"
 MNTNER_OBJ_CRYPT_PW = SAMPLE_MNTNER.replace("MD5", "")
 MNTNER_OBJ_MD5_PW = SAMPLE_MNTNER.replace("CRYPT", "")
+
+
+def test_validator_result():
+    user = AuthUserFactory.build(pk=uuid.uuid4())
+    api_key = AuthApiTokenFactory.build(pk=uuid.uuid4())
+    mntner = AuthMntnerFactory.build(pk=uuid.uuid4(), rpsl_mntner_obj_id=None)
+
+    result = ValidatorResult(
+        auth_through_internal_user=user,
+        auth_through_api_key=api_key,
+        auth_through_internal_mntner=mntner,
+        auth_through_mntner="TEST-MNT",
+    ).to_change_log()
+    assert result.auth_by_user_id == str(user.pk)
+    assert result.auth_by_user_email == user.email
+    assert result.auth_by_api_key_id == str(api_key.pk)
+    assert result.auth_by_api_key_id_fixed == str(api_key.pk)
+    assert result.auth_through_rpsl_mntner_pk == "TEST-MNT"
+
+    assert (
+        ValidatorResult(auth_method=AuthMethod.MNTNER_PASSWORD).to_change_log().auth_by_rpsl_mntner_password
+    )
+    assert ValidatorResult(auth_method=AuthMethod.MNTNER_PGP_KEY).to_change_log().auth_by_rpsl_mntner_pgp_key
+    assert ValidatorResult(auth_method=AuthMethod.OVERRIDE_PASSWORD).to_change_log().auth_by_override
 
 
 class TestAuthValidator:
@@ -68,12 +93,14 @@ class TestAuthValidator:
         validator.overrides = [VALID_PW]
         result = validator.process_auth(person, None)
         assert result.is_valid(), result.error_messages
-        assert result.used_override
+        assert result.auth_method == AuthMethod.OVERRIDE_PASSWORD
+        assert result.auth_method
+        assert result.auth_method.used_override()
 
         person = rpsl_object_from_text(SAMPLE_PERSON)
         result = validator.process_auth(person, rpsl_obj_current=person)
         assert result.is_valid(), result.error_messages
-        assert result.used_override
+        assert result.auth_method == AuthMethod.OVERRIDE_PASSWORD
 
     def test_override_internal_auth(self, prepare_mocks, config_override):
         validator, mock_dq, mock_dh = prepare_mocks
@@ -85,12 +112,13 @@ class TestAuthValidator:
 
         result = validator.process_auth(person, None)
         assert result.is_valid(), result.error_messages
-        assert result.used_override
+        assert result.auth_method == AuthMethod.OVERRIDE_INTERNAL_AUTH
 
         user.override = False
         result = validator.process_auth(person, None)
         assert not result.is_valid()
-        assert not result.used_override
+        assert result.auth_method == AuthMethod.NONE
+        assert not result.auth_method.used_override()
 
     def test_override_invalid_or_missing(self, prepare_mocks, config_override):
         # This test mostly ignores the regular process that happens
@@ -102,7 +130,7 @@ class TestAuthValidator:
         validator.overrides = [VALID_PW]
         result = validator.process_auth(person, None)
         assert not result.is_valid()
-        assert not result.used_override
+        assert result.auth_method == AuthMethod.NONE
 
         config_override(
             {
@@ -112,12 +140,12 @@ class TestAuthValidator:
         validator.overrides = []
         result = validator.process_auth(person, None)
         assert not result.is_valid()
-        assert not result.used_override
+        assert result.auth_method == AuthMethod.NONE
 
         validator.overrides = [INVALID_PW]
         result = validator.process_auth(person, None)
         assert not result.is_valid()
-        assert not result.used_override
+        assert result.auth_method == AuthMethod.NONE
 
         config_override(
             {
@@ -127,7 +155,7 @@ class TestAuthValidator:
         person = rpsl_object_from_text(SAMPLE_PERSON)
         result = validator.process_auth(person, None)
         assert not result.is_valid()
-        assert not result.used_override
+        assert result.auth_method == AuthMethod.NONE
 
     def test_valid_new_person(self, prepare_mocks):
         validator, mock_dq, mock_dh = prepare_mocks
@@ -139,7 +167,7 @@ class TestAuthValidator:
         validator.passwords = [SAMPLE_MNTNER_MD5]
         result = validator.process_auth(person, None)
         assert result.is_valid(), result.error_messages
-        assert not result.used_override
+        assert result.auth_method == AuthMethod.MNTNER_PASSWORD
         assert len(result.mntners_notify) == 1
         assert result.mntners_notify[0].pk() == "TEST-MNT"
 
@@ -152,6 +180,7 @@ class TestAuthValidator:
     def test_valid_new_person_api_key(self, prepare_mocks, monkeypatch):
         validator, mock_dq, mock_dh = prepare_mocks
         person = rpsl_object_from_text(SAMPLE_PERSON)
+        mock_mntner = AuthMntner(rpsl_mntner_pk="TEST-MNT")
         mock_sa_session = UnifiedAlchemyMagicMock(
             data=[
                 (
@@ -161,11 +190,11 @@ class TestAuthValidator:
                             AuthMntner.rpsl_mntner_pk == "TEST-MNT", AuthMntner.rpsl_mntner_source == "TEST"
                         ),
                     ],
-                    [AuthMntner(rpsl_mntner_pk="TEST-MNT")],
+                    [mock_mntner],
                 )
             ]
         )
-        mock_api_key = AuthApiTokenFactory.build()
+        mock_api_key = AuthApiTokenFactory.build(mntner=mock_mntner)
         monkeypatch.setattr("irrd.updates.validators.saorm.Session", lambda bind: mock_sa_session)
 
         mock_dh._connection = None
@@ -177,8 +206,10 @@ class TestAuthValidator:
         validator.api_keys = ["key"]
         result = validator.process_auth(person, None)
         assert result.is_valid(), result.error_messages
-        assert not result.used_override
         assert result.mntners_notify[0].pk() == "TEST-MNT"
+        assert result.auth_method == AuthMethod.MNTNER_API_KEY
+        assert result.auth_through_mntner == "TEST-MNT"
+        assert result.auth_through_internal_mntner.rpsl_mntner_pk == "TEST-MNT"
 
         mock_sa_session.filter.assert_has_calls(
             [
@@ -242,7 +273,7 @@ class TestAuthValidator:
         result = validator.process_auth(person_new, rpsl_obj_current=person_old)
 
         assert result.is_valid(), result.error_messages
-        assert not result.used_override
+        assert result.auth_method == AuthMethod.MNTNER_PASSWORD
         assert {m.pk() for m in result.mntners_notify} == {"TEST-MNT", "TEST-OLD-MNT"}
 
         assert flatten_mock_calls(mock_dq, flatten_objects=True) == [
@@ -280,7 +311,7 @@ class TestAuthValidator:
 
         result = validator.process_auth(person, None)
         assert result.is_valid(), result.error_messages
-        assert not result.used_override
+        assert result.auth_method == AuthMethod.MNTNER_IN_SAME_REQUEST
         assert len(result.mntners_notify) == 1
         assert result.mntners_notify[0].pk() == "TEST-MNT"
 
@@ -294,7 +325,8 @@ class TestAuthValidator:
         validator.passwords = [SAMPLE_MNTNER_MD5]
         result = validator.process_auth(mntner, None)
         assert not result.is_valid()
-        assert not result.used_override
+        assert result.auth_method == AuthMethod.NONE
+        assert not result.auth_method
         assert result.error_messages == {"New mntner objects must be added by an administrator."}
 
         assert flatten_mock_calls(mock_dq, flatten_objects=True) == [
@@ -312,7 +344,7 @@ class TestAuthValidator:
 
         result = validator.process_auth(mntner, None)
         assert result.is_valid(), result.error_messages
-        assert result.used_override
+        assert result.auth_method == AuthMethod.OVERRIDE_PASSWORD
 
     def test_modify_mntner(self, prepare_mocks, config_override):
         validator, mock_dq, mock_dh = prepare_mocks
@@ -370,6 +402,9 @@ class TestAuthValidator:
         validator = AuthValidator(mock_dh, keycert_obj_pk=None, internal_authenticated_user=user)
         result = validator.process_auth(mntner, mntner)
         assert result.is_valid()
+        assert result.auth_method == AuthMethod.MNTNER_INTERNAL_AUTH
+        assert result.auth_through_mntner == "TEST-MNT"
+        assert result.auth_through_internal_mntner == mock_mntners[0]
 
         # Modifying mntner should fail without user_management
         user = AuthUser(mntners=mock_mntners)
