@@ -2,8 +2,8 @@ from typing import List, Optional, Tuple, Union
 
 import pydantic
 
-from irrd.updates.parser_state import SuspensionRequestType
 from irrd.conf import get_setting
+from irrd.updates.parser_state import SuspensionRequestType
 
 
 def parse_as_number(value: Union[str, int], permit_plain=False) -> Tuple[str, int]:
