@@ -19,12 +19,12 @@ def parse_as_number(value: Union[str, int], permit_plain=False) -> Tuple[str, in
             if value[start_index:].count('.') > 1:
                 raise ValidationError(f"Invalid AS number {value}: number is not valid asdot format")
 
-            high, low = [int(i) if i.isnumeric() else i for i in value[start_index:].split('.')]
+            high, low = [int(i) if i.isnumeric() else None for i in value[start_index:].split('.')]
 
-            if not high:
+            if high is None:
                 raise ValidationError(f"Invalid AS number {value}: high order value missing")
 
-            if not low:
+            if low is None:
                 raise ValidationError(f"Invalid AS number {value}: low order value missing")
 
             if high > 65535:
