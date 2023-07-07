@@ -15,11 +15,11 @@ def parse_as_number(value: Union[str, int], permit_plain=False) -> Tuple[str, in
 
         start_index = 2 if value.startswith("AS") else 0
 
-        if get_setting("compatibility.asdot_queries") is True and '.' in value[start_index:]:
-            if value[start_index:].count('.') > 1:
+        if get_setting("compatibility.asdot_queries") is True and "." in value[start_index:]:
+            if value[start_index:].count(".") > 1:
                 raise ValidationError(f"Invalid AS number {value}: number is not valid asdot format")
 
-            high, low = [int(i) if i.isnumeric() else None for i in value[start_index:].split('.')]
+            high, low = [int(i) if i.isnumeric() else None for i in value[start_index:].split(".")]
 
             if high is None:
                 raise ValidationError(f"Invalid AS number {value}: high order value missing")
