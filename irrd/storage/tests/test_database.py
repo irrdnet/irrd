@@ -215,6 +215,7 @@ class TestDatabaseHandlerLive:
         self.dh.upsert_rpsl_object(rpsl_object_route_v6, JournalEntryOrigin.auth_change, source_serial=43)
 
         self.dh.commit()
+        initial_tx_timestamp = self.dh.timestamp_last_committed_transaction()
         self.dh.refresh_connection()
 
         # There should be two entries with MNT-CORRECT in the db now.
@@ -441,6 +442,8 @@ class TestDatabaseHandlerLive:
         assert not len(list(self.dh.execute_query(RPSLDatabaseQuery().sources(["TEST"]))))
         assert not len(list(self.dh.execute_query(DatabaseStatusQuery().sources(["TEST"]))))
         assert len(list(self.dh.execute_query(RPSLDatabaseQuery().sources(["TEST2"])))) == 1
+
+        assert self.dh.timestamp_last_committed_transaction() > initial_tx_timestamp
 
         self.dh.close()
 

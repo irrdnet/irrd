@@ -586,7 +586,7 @@ class DatabaseHandler:
             table.c.prefix,
             table.c.object_text,
         )
-        results = self._connection.execute(stmt)
+        results = self.execute_statement(stmt)
 
         if not self._check_single_row_match(results, user_identifier=f"{rpsl_pk}/{source}"):
             return None
@@ -816,6 +816,10 @@ class DatabaseHandler:
             f"force_reload flag set for {source}, serial synchronisation will be {synchronised_serials} for "
             "current settings, actual reload process wll take place in next scheduled importer run"
         )
+
+    def timestamp_last_committed_transaction(self) -> datetime:
+        result = self.execute_statement("SELECT timestamp FROM pg_last_committed_xact()")
+        return result.fetchone()["timestamp"]
 
     def record_serial_newest_mirror(self, source: str, serial: int) -> None:
         """

@@ -197,6 +197,7 @@ jobs:
           POSTGRES_USER: root
           POSTGRES_DB: circle_test
           POSTGRES_HOST_AUTH_METHOD: trust
+        command: postgres -c track_commit_timestamp=true
 
       - image: cimg/redis:<< parameters.redis_version >>
 #      - image: cimg/rust:1.65
@@ -233,6 +234,7 @@ jobs:
           POSTGRES_USER: root
           POSTGRES_DB: circle_test
           POSTGRES_HOST_AUTH_METHOD: trust
+        command: postgres -c track_commit_timestamp=true
 
       - image: cimg/redis:<< parameters.redis_version >>
 #      - image: cimg/rust:1.65
@@ -271,6 +273,7 @@ jobs:
           POSTGRES_USER: root
           POSTGRES_DB: circle_test
           POSTGRES_HOST_AUTH_METHOD: trust
+        command: postgres -c track_commit_timestamp=true
 
       - image: cimg/redis:<< parameters.redis_version >>
 #      - image: cimg/rust:1.65
@@ -310,6 +313,7 @@ jobs:
           POSTGRES_USER: root
           POSTGRES_DB: circle_test
           POSTGRES_HOST_AUTH_METHOD: trust
+        command: postgres -c track_commit_timestamp=true
 
       - image: cimg/redis:<< parameters.redis_version >>
 #      - image: cimg/rust:1.65
