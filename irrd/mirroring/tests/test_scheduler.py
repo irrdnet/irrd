@@ -307,8 +307,8 @@ class TestScheduledTaskProcess:
 class MockRunner:
     run_sleep = True
 
-    def __init__(self, source):
-        assert source in ["TEST", "TEST2", "TEST3", "TEST4", "RPKI", "scopefilter", "routepref"]
+    def __init__(self, source=None):
+        assert source in ["TEST", "TEST2", "TEST3", "TEST4", None]
 
     def run(self):
         global thread_run_count
