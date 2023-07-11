@@ -9,6 +9,7 @@ KNOWN_CONFIG_KEYS = DottedDict(
     {
         "database_url": {},
         "database_readonly": {},
+        "standby": {},
         "redis_url": {},
         "piddir": {},
         "user": {},

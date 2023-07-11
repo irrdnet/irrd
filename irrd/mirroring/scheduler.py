@@ -10,6 +10,7 @@ from setproctitle import setproctitle
 
 from irrd.conf import get_setting
 from irrd.conf.defaults import DEFAULT_SOURCE_EXPORT_TIMER, DEFAULT_SOURCE_IMPORT_TIMER
+from irrd.mirroring.jobs import TransactionTimePreloadSignaller
 
 from .mirror_runners_export import SourceExportRunner
 from .mirror_runners_import import (
@@ -74,8 +75,12 @@ class MirrorScheduler:
         self.previous_scopefilter_prefixes = None
         self.previous_scopefilter_asns = None
         self.previous_scopefilter_excluded = None
+        self.transaction_time_preload_signaller = TransactionTimePreloadSignaller()
 
     def run(self) -> None:
+        if get_setting("standby"):
+            self.transaction_time_preload_signaller.run()
+
         if get_setting("database_readonly"):
             return
 
