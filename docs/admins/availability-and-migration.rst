@@ -47,19 +47,115 @@ This document mainly discusses three kinds of IRRd instances:
     that processes authoritative changes, and is the single source of truth,
     at one point in time. IRRd does not support having multiple active instances.
 
-This document suggest three different approaches for configuring this,
-each with their own upsides and downsides.
+.. warning::
+    Previous versions of IRRd and this documentation suggested standby servers
+    with NRTM as an option. This option is strongly recommended against, due to
+    incompatibility with :doc:`object suppression </admins/object-suppression>`
+    along with other issues regarding mirror synchronisation.
+    The ``sources.{name}.export_destination_unfiltered`` and
+    ``sources.{name}.export_destination`` settings are deprecated.
 
 
-Option 1: using exports and NRTM for migrations and standby instances
----------------------------------------------------------------------
-The first option is to use the same :doc:`mirroring </users/mirroring>`
-features as any other kind of IRR data mirroring. This means using the files
-placed in ``sources.{name}.export_destination`` by the active instance
-as the ``sources.{name}.import_source`` for the standby instances,
-and having standby's follow the active NRTM stream.
-If you are migrating from a legacy version of IRRd, this is most likely your
-only option.
+Using PostgreSQL replication for standby and query-only instances
+-----------------------------------------------------------------
+The best option to run either standby or query-only instance is using
+PostgreSQL replication. All persistent IRRD data is stored in the
+PostgreSQL database, and will therefore be included.
+PostgreSQL replication will also ensure all journal entries and
+serials remain the same after a switch.
+:doc:`Suppressed objects </admins/object-suppression>`, e.g. by RPKI
+validation, are included in the replication as well.
+
+There are several important requirements for this setup:
+
+* The standby must run a PostgreSQL streaming replication from the
+  active instance. Logical replication is not supported.
+* The PostgreSQL configurations must have ``track_commit_timestamp``
+  enabled.
+* On the standby, you run the IRRD instance with the ``database_readonly``
+  and ``standby`` parameters set.
+* The standby instance must use its own Redis instance. Do not use
+  Redis replication.
+* It is recommended that all PostgreSQL instances only host the IRRd
+  database. Streaming replication will always include all databases,
+  and commits received on the standby in any database will trigger
+  a local preloaded data refresh.
+
+As replication replicates the entire database, any IRR registries
+mirrored on the active instance, are also mirrored on the standby,
+through the PostgreSQL replication process.
+
+Consistency in object suppression settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+If you query IRRD's configuration on a standby, e.g. with the ``!J``
+query, it will reflect the local configuration regarding
+:doc:`object suppression settings </admins/object-suppression>`.
+However, the standby does not use these settings: its database is
+read only, and instead the suppression is applied by the active
+instance and then replicated.
+
+For consistency in this query output, and reduced risk of configuration
+inconsistencies after promoting a standby, you are encouraged to keep
+the object suppression settings identical on all instances, even
+if some are (currently) not used.
+
+Promoting a standby instance to active
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The general plan for promoting an IRRDv4 instance is:
+
+* Hold all update emails.
+* Ensure PostgreSQL replication is up to date.
+* Promote the PostgreSQL replica to become a main server.
+* Disable the ``database_readonly`` and ``standby`` settings in IRRd.
+* Make sure your IRRD configuration on the standby is up to date
+  compared to the old active (ideally, manage this continuously).
+* Set the authoritative sources to ``authoritative: true`` in the config
+  of the promoted instance.
+* Start the IRRd instance.
+* Redirect queries to the new instance.
+* Run the ``irrd_load_pgp_keys`` command to load all PGP keys from
+  authoritative sources into the local keychain, allowing them to be used
+  for authentication.
+* Redirect update emails to the new instance.
+* Ensure published exports are now taken from the new instance.
+
+.. warning::
+    If users use IRRD internal authentication, by logging in through
+    the web interface, ensure you use a consistent URL where you
+    direct to the current active instance by DNS records. WebAuthn
+    tokens are tied to the URL as seen by the browser, and will
+    become unusable after a URL change.
+
+Upgrading IRRD
+~~~~~~~~~~~~~~
+When upgrading your IRRD instances, first upgrade the active instance,
+then the standby instances. If you need to run ``irrd_database_upgrade``
+as part of the upgrade, only do so on the active instance.
+
+You are encouraged to test upgrades yourself before applying them
+in production.
+
+Increased preload data refresh on standby instances
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+There is one inefficiency in the replication process: like an active
+instance, a standby instance will keep certain data in memory and/or
+Redis for performance reasons. This data needs to be refreshed if
+certain data changes in the SQL database.
+
+On an active instance, the preloaded data is refreshed only when
+relevant RPSL objects have changed. On a replica, this information
+is not available. Therefore, standby instances refresh this data
+after any change to the SQL database. Therefore, you may see more
+load on the preload process than is typical on an active instance.
+Refreshes are batched, so only a single one will run at a time.
+
+
+Migration from legacy IRRD
+--------------------------
+To migrate from a legacy IRRD version, you can use the same
+:doc:`mirroring </users/mirroring>` features as any other kind of IRR
+data mirroring. In addition to usual mirroring, you should enable
+``strict_import_keycert_objects`` for the source.
 
 This is a bit different from "regular" mirroring, where the mirror
 is never meant to be promoted to an active instance, and instances may be run by entirely
@@ -77,7 +173,6 @@ regular mirror for other registries.
    will only import one object per primary key from files. if you have
    multiple objects in your file with the same key, IRRd will
    only import the last one.
-
 
 Object validation
 ~~~~~~~~~~~~~~~~~
@@ -97,11 +192,51 @@ even in non-strict mode. These objects are logged. **While running IRRd 4
 as a mirror, you should check the logs for any such objects - they will
 disappear when you make IRRd 4 your authoritative instance.**
 
-GPG keychain imports
-~~~~~~~~~~~~~~~~~~~~
-In short: standby instances should have ``strict_import_keycert_objects``
-enabled.
+Serials
+~~~~~~~
+Each instance potentially creates its own set of NRTM serials when
+importing changes over NRTM.
+This means that when switching to a different instance, mirrors would
+have to refresh their data.
 
+IRRd can run a mirror in synchronised serial mode. This is used by some
+deployments to spread their query load over multiple read-only instances.
+For further details, see the
+:ref:`NRTM serial handling documentation <mirroring-nrtm-serials>`.
+
+.. warning::
+   When not using synchronised serials, NRTM users must never be switched
+   (e.g. by DNS changes or load balancers) to different instances, without
+   reloading their local copy. Otherwise they may silently lose updates.
+
+   Without synchronised serials, the RPSL export, CURRENTSERIAL file, and NRTM
+   feed used by a mirror must all come from the same source instance.
+
+
+Promoting a IRRD mirror of legacy IRRD to active
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+If you use IRR mirroring with exports and NRTM, the general plan for switching
+from a legacy IRRD to a new IRRDv4 instance would be:
+
+* Hold all update emails.
+* Ensure an NRTM update has run so that the instances are in sync
+  (it may be worthwhile to lower ``import_timer``)
+* Remove the mirror configuration from the promoted instance for
+  the authoritative sources.
+* Set the authoritative sources to ``authoritative: true`` in the config
+  of the promoted instance.
+* Redirect queries to the new instance.
+* Redirect update emails to the new instance.
+* Ensure published exports are now taken from the new instance.
+* If you were not using synchronised serials, all instances mirroring from
+  your instance, must reload their local copy.
+
+It is recommended that you test existing tools and queries against the
+new IRRDv4 instance before promoting it to be active.
+
+
+Background: GPG keychain imports
+--------------------------------
 IRRd uses GnuPG to validate PGP signatures used to authenticate authoritative
 changes. This means that all `key-cert` objects need to be inserted into the
 GnuPG keychain before users can submit PGP signed updates.
@@ -122,149 +257,3 @@ local keychain with the ``irrd_load_pgp_keys`` command.
 The ``irrd_load_pgp_keys`` command may fail to import certain keys if they use
 an unsupported format. It is safe to run multiple times, even if some or all
 keys are already in the keychain, and safe to run while IRRd is running.
-
-Password hashes
-~~~~~~~~~~~~~~~
-Password authentication depends on password hashes in `mntner` objects.
-To improve security, these password hashes are not included in exports or
-NRTM streams for regular mirrors in IRRDv4.
-
-However, when an IRRd mirror is a standby
-instance that may need to take an active role later, it needs all password
-hashes. To support this, you need to configure a special mirroring process
-on the current active instance:
-
-* Set ``sources.{name}.export_destination_unfiltered`` to a path where IRRd
-  will store exports that include full password hashes. Other than including
-  full hashes, this works the same as ``sources.{name}.export_destination``.
-  Then, distribute those files to your standby instance, and point
-  ``import_source`` to their location.
-* Set ``sources.{name}.nrtm_access_list_unfiltered`` to an access list defined
-  in the configuration file. Any IP on this access list will receive
-  full password hashes when doing NRTM requests. Other than that, NRTM works
-  identical to filtered queries. Set this to the IPs of your standby instances.
-
-On the standby instance, you do not need any specific configuration.
-However, if you used previously imported `mntner` objects without full hashes
-on the standby, you need to do a full reload of the data on the standby to
-ensure it has full hashes for all objects.
-
-If you are migrating from a different IRR server, check that password
-hashes are not filtered.
-
-Serials
-~~~~~~~
-Each IRRd instance potentially creates its own set of NRTM serials when
-importing changes over NRTM.
-This means that when switching to a different instance, mirrors would
-have to refresh their data.
-
-IRRd can run a mirror in synchronised serial mode. This is used by some
-deployments to spread their query load over multiple read-only instances.
-For further details, see the
-:ref:`NRTM serial handling documentation <mirroring-nrtm-serials>`.
-
-.. warning::
-   When not using synchronised serials, NRTM users must never be switched
-   (e.g. by DNS changes or load balancers) to different instances, without
-   reloading their local copy. Otherwise they may silently lose updates.
-
-   Without synchronised serials, the RPSL export, CURRENTSERIAL file, and NRTM
-   feed used by a mirror must all come from the same source instance.
-
-RPKI and scope filter
-~~~~~~~~~~~~~~~~~~~~~
-:doc:`RPKI-aware mode </admins/rpki>` and the
-:doc:`scope filter </admins/scopefilter>` make invalid or out of scope
-objects invisible locally. These are not included in any exports, and if
-an existing object becomes invalid or out of scope, a deletion is added
-to the NRTM journal.
-
-IRRd retains invalid or out of scope objects, and they may become visible again
-if their status is changed by a configuration or ROA change.
-However, a standby or query-only instance using exports and NRTM will never see
-objects that are invalid or out of scope on the active instance, as they are
-not included in mirroring.
-Upon promoting a standby instance to an active instance, these
-objects are lost permanently.
-
-For the same reasons, standby and query-only instances that receive their
-data over NRTM can not be queried for RPKI invalid or out of scope objects,
-as they never see these objects.
-
-Promoting a standby to the active instance
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-If you use IRR mirroring with exports and NRTM, the general plan for promoting
-an IRRDv4 instance would be:
-
-* Hold all update emails.
-* Ensure an NRTM update has run so that the instances are in sync
-  (it may be worthwhile to lower ``import_timer``)
-* Remove the mirror configuration from the promoted instance for
-  the authoritative sources.
-* Set the authoritative sources to ``authoritative: true`` in the config
-  of the promoted instance.
-* Redirect queries to the new instance.
-* Redirect update emails to the new instance.
-* Ensure published exports are now taken from the new instance.
-* If you were not using synchronised serials, all instances mirroring from
-  your instance, must reload their local copy.
-
-If this is part of a planned migration from a previous version, it is
-recommended that you test existing tools and queries against the new IRRDv4
-instance before promoting it to be active.
-
-
-Option 2: PostgreSQL replication
--------------------------------------------
-
-.. danger::
-   Since adding this section, an issue was discovered with using PostgreSQL
-   replication: the `local preload store may not be updated`_ causing
-   potential stale responses to queries.
-
- .. _local preload store may not be updated: https://github.com/irrdnet/irrd/issues/656
-
-Except for configuration, IRRd stores all its data in the PostgreSQL database.
-Redis is used for passing derived data and commands.
-
-You could run two IRRd instances, each on their own PostgreSQL instance, which
-use PostgreSQL replication as the synchronisation mechanism. In the standby
-IRRd, configure the instance as ``database_readonly`` to prevent local changes.
-Note that this prevents the IRRd instance from making any changes of any kind
-to the local database.
-
-For Redis, you need to connect all instances to the same Redis instance,
-or use `Redis replication`_.
-
-Using PostgreSQL replication solves some of the issues mentioned for other
-options, but may have other limitations or issues that are out of scope
-for IRRd itself.
-
-.. _Redis replication: https://redis.io/topics/replication
-
-GPG keychain imports with PostgreSQL replication
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-When you use PostgreSQL replication, the same issue occurs with the GPG
-keychain as with NRTM: in order to authenticate updates to authoritative
-changes, the PGP keys need to be loaded into the local keychain, which does
-not happen for mirrors.
-
-When using PostgreSQL replication, IRRd is not aware of how the objects in the
-database are being changed. Therefore, you need to run the
-``irrd_load_pgp_keys`` command before making a standby instance the active
-instance to make sure PGP authentication keeps working.
-
-
-Option 3: rebuilding from a periodic SQL dump
----------------------------------------------
-You can make a SQL dump of the PostgreSQL database and load it on another IRRd
-instance. This is one of the simplest methods. However, it has one significant
-danger: if changes happened in the old active instance, after the dump was made,
-the dump is loaded into a new instance, which is then promoted to active, the
-changes are not in the dump. This is expected. Worse is that new
-changes made in the new active instance will reuse the same serials, and may
-not be picked up by NRTM mirrors unless they refresh their copy.
-
-The same concerns for the GPG keychain with PostgreSQL replication apply
-to this method as well.

@@ -268,6 +268,9 @@ class Configuration:
             config.get("server.http.status_access_list"),
         }
 
+        if config.get("standby") and not config.get("database_readonly"):
+            errors.append("Setting standby can only be set combined with database_readonly.")
+
         if not self._check_is_str(config, "email.from") or "@" not in config.get("email.from", ""):
             errors.append("Setting email.from is required and must be an email address.")
         if not self._check_is_str(config, "email.smtp"):

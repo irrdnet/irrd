@@ -233,11 +233,11 @@ class TestConfiguration:
             }
         )
 
-        save_yaml_config({}, run_init=False)
+        save_yaml_config({"irrd": {"standby": True}}, run_init=False)
         os.kill(os.getpid(), signal.SIGHUP)
         assert list(get_setting("sources_default")) == ["TESTDB2", "TESTDB", "RPKI"]
         assert "Errors found in configuration, continuing with current settings" in caplog.text
-        assert 'Could not find root item "irrd"' in caplog.text
+        assert 'Setting standby can only be set' in caplog.text
 
     def test_load_invalid_config(self, save_yaml_config, tmpdir):
         config = {
