@@ -30,6 +30,8 @@ IRRd instances in a number of cases:
 * You are using one IRRd instance as the active instance, and would like to
   have a second on standby to promote to the active instance with the
   most recent data.
+* You have a large volume of queries and want to distribute load over
+  multiple instances.
 
 This document mainly discusses three kinds of IRRd instances:
 
@@ -64,13 +66,14 @@ PostgreSQL database, and will therefore be included.
 PostgreSQL replication will also ensure all journal entries and
 serials remain the same after a switch.
 :doc:`Suppressed objects </admins/object-suppression>`, e.g. by RPKI
-validation, are included in the replication as well.
+validation, and suspended objects,
+are correctly included in the replication as well.
 
 There are several important requirements for this setup:
 
 * The standby must run a PostgreSQL streaming replication from the
   active instance. Logical replication is not supported.
-* The PostgreSQL configurations must have ``track_commit_timestamp``
+* The PostgreSQL configuration must have ``track_commit_timestamp``
   enabled.
 * On the standby, you run the IRRD instance with the ``database_readonly``
   and ``standby`` parameters set.
@@ -109,8 +112,9 @@ The general plan for promoting an IRRDv4 instance is:
 * Disable the ``database_readonly`` and ``standby`` settings in IRRd.
 * Make sure your IRRD configuration on the standby is up to date
   compared to the old active (ideally, manage this continuously).
-* Set the authoritative sources to ``authoritative: true`` in the config
-  of the promoted instance.
+  Make sure the ``authoritative`` setting is enabled on your authoritative
+  source, and mirroring settings for any mirrored sources, e.g.
+  ``nrtm_host`` are correct.
 * Start the IRRd instance.
 * Redirect queries to the new instance.
 * Run the ``irrd_load_pgp_keys`` command to load all PGP keys from
@@ -121,22 +125,29 @@ The general plan for promoting an IRRDv4 instance is:
 
 .. warning::
     If users use IRRD internal authentication, by logging in through
-    the web interface, ensure you use a consistent URL where you
+    the web interface, ensure you have a consistent URL, i.e.
     direct to the current active instance by DNS records. WebAuthn
     tokens are tied to the URL as seen by the browser, and will
-    become unusable after a URL change.
+    become unusable if you change the URL.
 
 Upgrading IRRD
 ~~~~~~~~~~~~~~
 When upgrading your IRRD instances, first upgrade the active instance,
 then the standby instances. If you need to run ``irrd_database_upgrade``
-as part of the upgrade, only do so on the active instance.
+as part of the upgrade, only do so on the active instance. PostgreSQL
+replication will include the schema changes and update standby
+databases.
 
-You are encouraged to test upgrades yourself before applying them
+.. note::
+    During the time between the database upgrade and upgrading the IRRD
+    version on a standby instance, queries on the standby instance may fail.
+    This depends on the exact changes between versions.
+
+You are encouraged to always test upgrades yourself before applying them
 in production.
 
-Increased preload data refresh on standby instances
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Preload data refresh on standby instances
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 There is one inefficiency in the replication process: like an active
 instance, a standby instance will keep certain data in memory and/or
 Redis for performance reasons. This data needs to be refreshed if
@@ -148,6 +159,52 @@ is not available. Therefore, standby instances refresh this data
 after any change to the SQL database. Therefore, you may see more
 load on the preload process than is typical on an active instance.
 Refreshes are batched, so only a single one will run at a time.
+
+Due to small differences in the timing of the preload process,
+there may be an additional delay in updating responses to some
+queries on the standby compared to the active instance, in the
+order of 15-60 seconds.
+This concerns the whois queries ``!g``, ``!6``, ``!a`` and in some cases ``!i``,
+and the GraphQL queries ``asnPrefixes`` and ``asSetPrefixes``.
+
+
+Query-only instances using NRTM
+-------------------------------
+If you want to distribute the query load, but will never promote the
+secondaries to active instances, you can use the PostgreSQL replication
+method described above, or NRTM mirroring.
+Consider carefully whether you really only need a query-only
+instance, or may need to use it as a standby instance later. Promoting
+an NRTM query-only instance to an active instance is unsupported.
+
+When others mirror from your instance using NRTM, you need to be aware
+of serial synchronisation. There are two options:
+
+* Direct all NRTM queries to your active instance. Publish the RPSL export
+  and CURRENTSERIAL file from that instance.
+* Use synchronised serials, allowing NRTM queries to be sent to any query-only
+  instance. Publish the RPSL export and CURRENTSERIAL file from the active
+  instance.
+
+For further details, see the
+:ref:`NRTM serial handling documentation <mirroring-nrtm-serials>`.
+
+.. warning::
+   When **not** using synchronised serials, NRTM users must never be switched
+   (e.g. by DNS changes or load balancers) to different instances, without
+   reloading their local copy. Otherwise they may silently lose updates.
+
+
+Loading from a PostgreSQL backup
+--------------------------------
+You can initialise an IRRD instance from a database backup, either as
+part of a recovery or a planned migration. Key steps:
+
+* If the backup was made with an older IRRD version, run
+  ``irrd_database_upgrade`` to upgrade the schema.
+* Run the ``irrd_load_pgp_keys`` command to load all PGP keys from
+  authoritative sources into the local keychain, allowing them to be used
+  for authentication.
 
 
 Migration from legacy IRRD
@@ -199,22 +256,8 @@ importing changes over NRTM.
 This means that when switching to a different instance, mirrors would
 have to refresh their data.
 
-IRRd can run a mirror in synchronised serial mode. This is used by some
-deployments to spread their query load over multiple read-only instances.
-For further details, see the
-:ref:`NRTM serial handling documentation <mirroring-nrtm-serials>`.
-
-.. warning::
-   When not using synchronised serials, NRTM users must never be switched
-   (e.g. by DNS changes or load balancers) to different instances, without
-   reloading their local copy. Otherwise they may silently lose updates.
-
-   Without synchronised serials, the RPSL export, CURRENTSERIAL file, and NRTM
-   feed used by a mirror must all come from the same source instance.
-
-
-Promoting a IRRD mirror of legacy IRRD to active
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Promoting a IRRD mirror of a legacy instance to active
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 If you use IRR mirroring with exports and NRTM, the general plan for switching
 from a legacy IRRD to a new IRRDv4 instance would be:
 
@@ -235,8 +278,11 @@ It is recommended that you test existing tools and queries against the
 new IRRDv4 instance before promoting it to be active.
 
 
-Background: GPG keychain imports
---------------------------------
+Background and design considerations
+------------------------------------
+
+GPG keychain imports
+~~~~~~~~~~~~~~~~~~~~
 IRRd uses GnuPG to validate PGP signatures used to authenticate authoritative
 changes. This means that all `key-cert` objects need to be inserted into the
 GnuPG keychain before users can submit PGP signed updates.
@@ -257,3 +303,22 @@ local keychain with the ``irrd_load_pgp_keys`` command.
 The ``irrd_load_pgp_keys`` command may fail to import certain keys if they use
 an unsupported format. It is safe to run multiple times, even if some or all
 keys are already in the keychain, and safe to run while IRRd is running.
+
+Suppressed objects
+~~~~~~~~~~~~~~~~~~
+:doc:`Suppressed objects </admins/object-suppression>` are invisible
+to normal queries and to the NRTM feed, but not deleted. They may
+become visible again at any point in the future, e.g. by someone
+creating a ROA or a change in another object.
+
+Suppressed objects are included in the PostgreSQL database, but not
+in any RPSL exports. Therefore, the RPSL exports can not be used
+as a full copy of the database. Otherwise all suppressed objects
+would be lost upon promotion of a standby instance, which has
+seemingly no effect if they remain suppressed, but also means they
+can not become visible later.
+
+In a PostgreSQL replication setup, only the active instance will run
+the object suppression tasks. Standby instances replicate the state
+of the database including suppression status and e.g. the ROA
+table.
