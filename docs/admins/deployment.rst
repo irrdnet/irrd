@@ -99,8 +99,6 @@ size of the RPSL text imported.
 
     The PostgreSQL database is the only source of IRRd's data.
     This means you need to run regular backups of the database.
-    It is also possible to restore data from recent exports,
-    but changes made since the most recent export will be lost.
 
 .. _deployment-redis-configuration:
 
