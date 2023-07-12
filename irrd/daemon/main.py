@@ -142,10 +142,8 @@ def run_irrd(mirror_frequency: int, config_file_path: str, uid: Optional[int], g
 
     mirror_scheduler = MirrorScheduler()
 
-    preload_manager = None
-    if not get_setting(f"database_readonly"):
-        preload_manager = PreloadStoreManager(name="irrd-preload-store-manager")
-        preload_manager.start()
+    preload_manager = PreloadStoreManager(name="irrd-preload-store-manager")
+    preload_manager.start()
 
     uvicorn_process = ExceptionLoggingProcess(
         target=run_http_server, name="irrd-http-server-listener", args=(config_file_path,)
