@@ -79,6 +79,15 @@ There are several important requirements for this setup:
   and ``standby`` parameters set.
 * The standby instance must use its own Redis instance. Do not use
   Redis replication.
+* ``rpki.roa_source`` must be consistent between active and standby
+  configurations.
+* You are recommended to keep other settings, like ``scopefilter``,
+  ``sources.{name}.route_object_preference``,
+  ``sources.{name}.object_class_filter`` consistent between active
+  and standby. Note that you can not set
+  ``sources.{name}.authoritative``, ``sources.{name}.nrtm_host``, or
+  ``sources.{name}.import_source`` on a standby instance, as these
+  conflict with ``database_readonly``.
 * It is recommended that all PostgreSQL instances only host the IRRd
   database. Streaming replication will always include all databases,
   and commits received on the standby in any database will trigger
@@ -102,6 +111,10 @@ inconsistencies after promoting a standby, you are encouraged to keep
 the object suppression settings identical on all instances, even
 if some are (currently) not used.
 
+For RPKI, ``rpki.roa_source`` must be consistent between active and
+standby, because that setting determines whether the query parser
+considers ``RPKI`` a valid source.
+
 Promoting a standby instance to active
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The general plan for promoting an IRRDv4 instance is:
@@ -122,6 +135,9 @@ The general plan for promoting an IRRDv4 instance is:
   for authentication.
 * Redirect update emails to the new instance.
 * Ensure published exports are now taken from the new instance.
+* Check the mirroring status to ensure the new active instance
+  has access to all exports and NRTM streams (some other operators
+  restrict NRTM access to certain IPs).
 
 .. warning::
     If users use IRRD internal authentication, by logging in through
