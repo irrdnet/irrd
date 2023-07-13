@@ -96,7 +96,7 @@ class TestDatabaseHandlerLive:
 
         config_override(
             {
-                "database_readonly": True,
+                "readonly_standby": True,
             }
         )
 

@@ -196,19 +196,11 @@ General settings
   for improved performance
   |br| **Default**: not defined, but required.
   |br| **Change takes effect**: after full IRRd restart.
-* ``database_readonly``: a boolean for whether this instance is
-  database read only, i.e. IRRd will never write any changes to the SQL database
-  in any circumstance. This can be used for
-  :doc:`availability with PostgreSQL replication </admins/availability-and-migration>`.
-  This setting means that this IRRd instance will never run the RPKI or scope
-  filter validators, and can not be used if any source has ``authoritative``,
-  ``import_source`` or ``nrtm_host`` set.
-  |br| **Default**: ``false``.
-  |br| **Change takes effect**: after full IRRd restart.
-* ``standby``: a boolean for whether this instance is
-  in standby mode. See
+* ``readonly_standby``: a boolean for whether this instance is
+  in read-only standby mode. See
   :doc:`availability with PostgreSQL replication </admins/availability-and-migration>`
-  for further details. Requires ``database_readonly`` to be set.
+  for further details. Can not be used if any source has ``authoritative``,
+  ``import_source`` or ``nrtm_host`` set.
   **Do not enable this setting without reading the further documentation on standby setups.**
   |br| **Default**: ``false``.
   |br| **Change takes effect**: after full IRRd restart.

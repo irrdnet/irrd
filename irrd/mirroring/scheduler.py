@@ -75,13 +75,13 @@ class MirrorScheduler:
         self.previous_scopefilter_prefixes = None
         self.previous_scopefilter_asns = None
         self.previous_scopefilter_excluded = None
+        # This signaller is special in that it does not run in a separate
+        # process and keeps state in the instance.
         self.transaction_time_preload_signaller = TransactionTimePreloadSignaller()
 
     def run(self) -> None:
-        if get_setting("standby"):
+        if get_setting("readonly_standby"):
             self.transaction_time_preload_signaller.run()
-
-        if get_setting("database_readonly"):
             return
 
         if get_setting("rpki.roa_source"):

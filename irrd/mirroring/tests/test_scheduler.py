@@ -16,11 +16,15 @@ class TestMirrorScheduler:
         monkeypatch.setattr(
             "irrd.mirroring.scheduler.TransactionTimePreloadSignaller", mock_preload_signaller
         )
+        monkeypatch.setattr("irrd.mirroring.scheduler.ScheduledTaskProcess", MockScheduledTaskProcess)
+        monkeypatch.setattr("irrd.mirroring.scheduler.RPSLMirrorImportUpdateRunner", MockRunner)
+        global thread_run_count
+        thread_run_count = 0
 
         config_override(
             {
                 "standby": True,
-                "database_readonly": True,
+                "readonly_standby": True,
             }
         )
 
@@ -31,27 +35,6 @@ class TestMirrorScheduler:
         scheduler.run()
         assert flatten_mock_calls(mock_preload_signaller) == [["run", (), {}], ["run", (), {}]]
 
-    def test_scheduler_database_readonly(self, monkeypatch, config_override):
-        monkeypatch.setattr("irrd.mirroring.scheduler.TransactionTimePreloadSignaller", object)
-        monkeypatch.setattr("irrd.mirroring.scheduler.ScheduledTaskProcess", MockScheduledTaskProcess)
-        global thread_run_count
-        thread_run_count = 0
-
-        config_override(
-            {
-                "database_readonly": True,
-                "sources": {
-                    "TEST": {
-                        "import_source": "url",
-                        "import_timer": 0,
-                    }
-                },
-            }
-        )
-
-        monkeypatch.setattr("irrd.mirroring.scheduler.RPSLMirrorImportUpdateRunner", MockRunner)
-        scheduler = MirrorScheduler()
-        scheduler.run()
         assert thread_run_count == 0
 
     def test_scheduler_runs_rpsl_import(self, monkeypatch, config_override):

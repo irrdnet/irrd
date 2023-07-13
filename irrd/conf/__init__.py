@@ -268,9 +268,6 @@ class Configuration:
             config.get("server.http.status_access_list"),
         }
 
-        if config.get("standby") and not config.get("database_readonly"):
-            errors.append("Setting standby can only be set combined with database_readonly.")
-
         if not self._check_is_str(config, "email.from") or "@" not in config.get("email.from", ""):
             errors.append("Setting email.from is required and must be an email address.")
         if not self._check_is_str(config, "email.smtp"):
@@ -399,12 +396,12 @@ class Configuration:
                     "nrtm_host or import_source are set."
                 )
 
-            if config.get("database_readonly") and (
+            if config.get("readonly_standby") and (
                 details.get("authoritative") or details.get("nrtm_host") or details.get("import_source")
             ):
                 errors.append(
                     f"Source {name} can not have authoritative, import_source or nrtm_host set "
-                    "when database_readonly is enabled."
+                    "when readonly_standby is enabled."
                 )
 
             number_fields = [

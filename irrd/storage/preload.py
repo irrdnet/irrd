@@ -99,7 +99,7 @@ class Preloader:
                 callback=self._load_routes_into_memory, pubsub=self._pubsub, sleep_time=5, daemon=True
             )
             self._pubsub_thread.start()
-            if get_setting("database_readonly"):  # pragma: no cover
+            if get_setting("readonly_standby"):  # pragma: no cover
                 # If this instance is readonly, another IRRd process will be updating
                 # the store, and likely has already done so, meaning we can try to load
                 # from Redis right away instead of waiting for a signal.

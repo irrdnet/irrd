@@ -92,10 +92,10 @@ class DatabaseHandler:
 
         If readonly is True, this instance will expect read queries only.
         No transaction will be started, all queries will use autocommit.
-        Readonly is always true if database_readonly is set in the config.
+        Readonly is always true if readonly_standby is set in the config.
         """
         self.status_tracker = None
-        if get_setting("database_readonly"):
+        if get_setting("readonly_standby"):
             self.readonly = True
         else:
             self.readonly = readonly

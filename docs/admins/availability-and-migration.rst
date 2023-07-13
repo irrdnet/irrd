@@ -74,9 +74,9 @@ There are several important requirements for this setup:
 * The standby must run a PostgreSQL streaming replication from the
   active instance. Logical replication is not supported.
 * The PostgreSQL configuration must have ``track_commit_timestamp``
-  enabled.
-* On the standby, you run the IRRD instance with the ``database_readonly``
-  and ``standby`` parameters set.
+  and ``hot_standby_feedback`` enabled.
+* On the standby, you run the IRRD instance with the ``readonly_standby``
+  parameters set.
 * The standby instance must use its own Redis instance. Do not use
   Redis replication.
 * ``rpki.roa_source`` must be consistent between active and standby
@@ -87,11 +87,15 @@ There are several important requirements for this setup:
   and standby. Note that you can not set
   ``sources.{name}.authoritative``, ``sources.{name}.nrtm_host``, or
   ``sources.{name}.import_source`` on a standby instance, as these
-  conflict with ``database_readonly``.
+  conflict with ``readonly_standby``.
 * It is recommended that all PostgreSQL instances only host the IRRd
   database. Streaming replication will always include all databases,
   and commits received on the standby in any database will trigger
   a local preloaded data refresh.
+* Although the details of PostgreSQL are out of scope for
+  this documentation, the use of replication slots is recommended.
+  Make sure to drop a replication slot if you decommission a
+  standby server, to prevent infinite PostgreSQL WAL growth.
 
 As replication replicates the entire database, any IRR registries
 mirrored on the active instance, are also mirrored on the standby,
@@ -122,7 +126,7 @@ The general plan for promoting an IRRDv4 instance is:
 * Hold all update emails.
 * Ensure PostgreSQL replication is up to date.
 * Promote the PostgreSQL replica to become a main server.
-* Disable the ``database_readonly`` and ``standby`` settings in IRRd.
+* Disable the ``readonly_standby`` setting in IRRd.
 * Make sure your IRRD configuration on the standby is up to date
   compared to the old active (ideally, manage this continuously).
   Make sure the ``authoritative`` setting is enabled on your authoritative

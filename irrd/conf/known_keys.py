@@ -8,8 +8,7 @@ from irrd.vendor.dotted.collection import DottedDict
 KNOWN_CONFIG_KEYS = DottedDict(
     {
         "database_url": {},
-        "database_readonly": {},
-        "standby": {},
+        "readonly_standby": {},
         "redis_url": {},
         "piddir": {},
         "user": {},

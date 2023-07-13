@@ -75,13 +75,13 @@ class TestUserMfaClear:
         assert "No user found" in result.output
         assert not smtpd_override.messages
 
-    def test_database_readonly(self, irrd_db_session_with_user, config_override, smtpd_override):
-        config_override({"database_readonly": True})
+    def test_readonly_standby(self, irrd_db_session_with_user, config_override, smtpd_override):
+        config_override({"readonly_standby": True})
 
         runner = CliRunner()
         result = runner.invoke(user_mfa_clear, ["user.email"])
         assert result.exit_code == 1
-        assert "database_readonly" in result.output
+        assert "readonly_standby" in result.output
         assert not smtpd_override.messages
 
 
@@ -162,11 +162,11 @@ class TestUserChangeOverride:
         assert result.exit_code == 1
         assert "has no two-factor" in result.output
 
-    def test_database_readonly(self, irrd_db_session_with_user, config_override):
-        config_override({"database_readonly": True})
+    def test_readonly_standby(self, irrd_db_session_with_user, config_override):
+        config_override({"readonly_standby": True})
         session_provider, user = irrd_db_session_with_user
 
         runner = CliRunner()
         result = runner.invoke(user_change_override, [user.email, "--enable"], input="y")
         assert result.exit_code == 1
-        assert "database_readonly" in result.output
+        assert "readonly_standby" in result.output
