@@ -1,47 +1,57 @@
 import threading
 import time
+from unittest.mock import create_autospec
 
+from irrd.mirroring.jobs import TransactionTimePreloadSignaller
+
+from ...utils.test_utils import flatten_mock_calls
 from ..scheduler import MAX_SIMULTANEOUS_RUNS, MirrorScheduler, ScheduledTaskProcess
 
 thread_run_count = 0
 
 
 class TestMirrorScheduler:
-    def test_scheduler_database_readonly(self, monkeypatch, config_override):
+    def test_scheduler_standby_preload_signaller(self, monkeypatch, config_override):
+        mock_preload_signaller = create_autospec(TransactionTimePreloadSignaller)
+        monkeypatch.setattr(
+            "irrd.mirroring.scheduler.TransactionTimePreloadSignaller", mock_preload_signaller
+        )
+        monkeypatch.setattr("irrd.mirroring.scheduler.ScheduledTaskProcess", MockScheduledTaskProcess)
+        monkeypatch.setattr("irrd.mirroring.scheduler.RPSLMirrorImportUpdateRunner", MockRunner)
+        global thread_run_count
+        thread_run_count = 0
+
+        config_override(
+            {
+                "standby": True,
+                "readonly_standby": True,
+            }
+        )
+
+        scheduler = MirrorScheduler()
+        assert flatten_mock_calls(mock_preload_signaller) == [["", (), {}]]
+        mock_preload_signaller.reset_mock()
+        scheduler.run()
+        scheduler.run()
+        assert flatten_mock_calls(mock_preload_signaller) == [["run", (), {}], ["run", (), {}]]
+
+        assert thread_run_count == 0
+
+    def test_scheduler_runs_rpsl_import(self, monkeypatch, config_override):
+        monkeypatch.setattr("irrd.mirroring.scheduler.TransactionTimePreloadSignaller", object)
         monkeypatch.setattr("irrd.mirroring.scheduler.ScheduledTaskProcess", MockScheduledTaskProcess)
         global thread_run_count
         thread_run_count = 0
 
         config_override(
             {
-                "database_readonly": True,
+                "rpki": {"roa_source": None},
                 "sources": {
                     "TEST": {
                         "import_source": "url",
                         "import_timer": 0,
                     }
                 },
-            }
-        )
-
-        monkeypatch.setattr("irrd.mirroring.scheduler.RPSLMirrorImportUpdateRunner", MockRunner)
-        scheduler = MirrorScheduler()
-        scheduler.run()
-        assert thread_run_count == 0
-
-    def test_scheduler_runs_rpsl_import(self, monkeypatch, config_override):
-        monkeypatch.setattr("irrd.mirroring.scheduler.ScheduledTaskProcess", MockScheduledTaskProcess)
-        global thread_run_count
-        thread_run_count = 0
-
-        config_override(
-            {
-                "sources": {
-                    "TEST": {
-                        "import_source": "url",
-                        "import_timer": 0,
-                    }
-                }
             }
         )
 
@@ -66,12 +76,14 @@ class TestMirrorScheduler:
         assert len(scheduler.processes.items()) == 0
 
     def test_scheduler_limits_simultaneous_runs(self, monkeypatch, config_override):
+        monkeypatch.setattr("irrd.mirroring.scheduler.TransactionTimePreloadSignaller", object)
         monkeypatch.setattr("irrd.mirroring.scheduler.ScheduledTaskProcess", MockScheduledTaskProcess)
         global thread_run_count
         thread_run_count = 0
 
         config_override(
             {
+                "rpki": {"roa_source": None},
                 "sources": {
                     "TEST": {
                         "import_source": "url",
@@ -89,7 +101,7 @@ class TestMirrorScheduler:
                         "import_source": "url",
                         "import_timer": 0,
                     },
-                }
+                },
             }
         )
 
@@ -103,6 +115,7 @@ class TestMirrorScheduler:
         assert thread_run_count == MAX_SIMULTANEOUS_RUNS
 
     def test_scheduler_runs_roa_import(self, monkeypatch, config_override):
+        monkeypatch.setattr("irrd.mirroring.scheduler.TransactionTimePreloadSignaller", object)
         monkeypatch.setattr("irrd.mirroring.scheduler.ScheduledTaskProcess", MockScheduledTaskProcess)
         global thread_run_count
         thread_run_count = 0
@@ -121,6 +134,7 @@ class TestMirrorScheduler:
         assert thread_run_count == 1
 
     def test_scheduler_runs_scopefilter(self, monkeypatch, config_override):
+        monkeypatch.setattr("irrd.mirroring.scheduler.TransactionTimePreloadSignaller", object)
         monkeypatch.setattr("irrd.mirroring.scheduler.ScheduledTaskProcess", MockScheduledTaskProcess)
         global thread_run_count
         thread_run_count = 0
@@ -185,6 +199,7 @@ class TestMirrorScheduler:
         assert thread_run_count == 3
 
     def test_scheduler_runs_route_preference(self, monkeypatch, config_override):
+        monkeypatch.setattr("irrd.mirroring.scheduler.TransactionTimePreloadSignaller", object)
         monkeypatch.setattr("irrd.mirroring.scheduler.ScheduledTaskProcess", MockScheduledTaskProcess)
         global thread_run_count
         thread_run_count = 0
@@ -210,18 +225,20 @@ class TestMirrorScheduler:
         assert thread_run_count == 1
 
     def test_scheduler_import_ignores_timer_not_expired(self, monkeypatch, config_override):
+        monkeypatch.setattr("irrd.mirroring.scheduler.TransactionTimePreloadSignaller", object)
         monkeypatch.setattr("irrd.mirroring.scheduler.ScheduledTaskProcess", MockScheduledTaskProcess)
         global thread_run_count
         thread_run_count = 0
 
         config_override(
             {
+                "rpki": {"roa_source": None},
                 "sources": {
                     "TEST": {
                         "import_source": "url",
                         "import_timer": 100,
                     }
-                }
+                },
             }
         )
 
@@ -239,18 +256,20 @@ class TestMirrorScheduler:
         assert thread_run_count == 1
 
     def test_scheduler_runs_export(self, monkeypatch, config_override):
+        monkeypatch.setattr("irrd.mirroring.scheduler.TransactionTimePreloadSignaller", object)
         monkeypatch.setattr("irrd.mirroring.scheduler.ScheduledTaskProcess", MockScheduledTaskProcess)
         global thread_run_count
         thread_run_count = 0
 
         config_override(
             {
+                "rpki": {"roa_source": None},
                 "sources": {
                     "TEST": {
                         "export_destination": "url",
                         "export_timer": 0,
                     }
-                }
+                },
             }
         )
 
@@ -272,12 +291,13 @@ class TestMirrorScheduler:
 
         config_override(
             {
+                "rpki": {"roa_source": None},
                 "sources": {
                     "TEST": {
                         "export_destination": "url",
                         "export_timer": 100,
                     }
-                }
+                },
             }
         )
 
@@ -307,8 +327,8 @@ class TestScheduledTaskProcess:
 class MockRunner:
     run_sleep = True
 
-    def __init__(self, source):
-        assert source in ["TEST", "TEST2", "TEST3", "TEST4", "RPKI", "scopefilter", "routepref"]
+    def __init__(self, source=None):
+        assert source in ["TEST", "TEST2", "TEST3", "TEST4", None]
 
     def run(self):
         global thread_run_count

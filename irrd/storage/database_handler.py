@@ -92,10 +92,10 @@ class DatabaseHandler:
 
         If readonly is True, this instance will expect read queries only.
         No transaction will be started, all queries will use autocommit.
-        Readonly is always true if database_readonly is set in the config.
+        Readonly is always true if readonly_standby is set in the config.
         """
         self.status_tracker = None
-        if get_setting("database_readonly"):
+        if get_setting("readonly_standby"):
             self.readonly = True
         else:
             self.readonly = readonly
@@ -586,7 +586,7 @@ class DatabaseHandler:
             table.c.prefix,
             table.c.object_text,
         )
-        results = self._connection.execute(stmt)
+        results = self.execute_statement(stmt)
 
         if not self._check_single_row_match(results, user_identifier=f"{rpsl_pk}/{source}"):
             return None
@@ -816,6 +816,10 @@ class DatabaseHandler:
             f"force_reload flag set for {source}, serial synchronisation will be {synchronised_serials} for "
             "current settings, actual reload process wll take place in next scheduled importer run"
         )
+
+    def timestamp_last_committed_transaction(self) -> datetime:
+        result = self.execute_statement("SELECT timestamp FROM pg_last_committed_xact()")
+        return result.fetchone()["timestamp"]
 
     def record_serial_newest_mirror(self, source: str, serial: int) -> None:
         """

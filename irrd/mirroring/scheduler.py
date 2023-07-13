@@ -4,12 +4,13 @@ import multiprocessing
 import signal
 import time
 from collections import defaultdict
-from typing import Dict
+from typing import Dict, Optional
 
 from setproctitle import setproctitle
 
-from irrd.conf import RPKI_IRR_PSEUDO_SOURCE, get_setting
+from irrd.conf import get_setting
 from irrd.conf.defaults import DEFAULT_SOURCE_EXPORT_TIMER, DEFAULT_SOURCE_IMPORT_TIMER
+from irrd.mirroring.jobs import TransactionTimePreloadSignaller
 
 from .mirror_runners_export import SourceExportRunner
 from .mirror_runners_import import (
@@ -57,7 +58,7 @@ class ScheduledTaskProcess(multiprocessing.Process):
 
 class MirrorScheduler:
     """
-    Scheduler for mirroring processes.
+    Scheduler for periodic processes, mainly mirroring.
 
     For each time run() is called, will start a process for each mirror database
     unless a process is still running for that database (which is likely to be
@@ -74,14 +75,18 @@ class MirrorScheduler:
         self.previous_scopefilter_prefixes = None
         self.previous_scopefilter_asns = None
         self.previous_scopefilter_excluded = None
+        # This signaller is special in that it does not run in a separate
+        # process and keeps state in the instance.
+        self.transaction_time_preload_signaller = TransactionTimePreloadSignaller()
 
     def run(self) -> None:
-        if get_setting("database_readonly"):
+        if get_setting("readonly_standby"):
+            self.transaction_time_preload_signaller.run()
             return
 
         if get_setting("rpki.roa_source"):
             import_timer = int(get_setting("rpki.roa_import_timer"))
-            self.run_if_relevant(RPKI_IRR_PSEUDO_SOURCE, ROAImportRunner, import_timer)
+            self.run_if_relevant(None, ROAImportRunner, import_timer)
 
         if get_setting("sources") and any(
             [
@@ -90,10 +95,10 @@ class MirrorScheduler:
             ]
         ):
             import_timer = int(get_setting("route_object_preference.update_timer"))
-            self.run_if_relevant("routepref", RoutePreferenceUpdateRunner, import_timer)
+            self.run_if_relevant(None, RoutePreferenceUpdateRunner, import_timer)
 
         if self._check_scopefilter_change():
-            self.run_if_relevant("scopefilter", ScopeFilterUpdateRunner, 0)
+            self.run_if_relevant(None, ScopeFilterUpdateRunner, 0)
 
         sources_started = 0
         for source in get_setting("sources", {}).keys():
@@ -150,15 +155,23 @@ class MirrorScheduler:
             return True
         return False
 
-    def run_if_relevant(self, source: str, runner_class, timer: int) -> bool:
-        process_name = f"{runner_class.__name__}-{source}"
+    def run_if_relevant(self, source: Optional[str], runner_class, timer: int) -> bool:
+        process_name = runner_class.__name__
+        if source:
+            process_name += f"-{source}"
         current_time = time.time()
         has_expired = (self.last_started_time[process_name] + timer) < current_time
         if not has_expired or process_name in self.processes:
             return False
 
-        logger.debug(f"Started new process {process_name} for mirror import/export for {source}")
-        initiator = runner_class(source=source)
+        kwargs = {}
+        msg = f"Started new scheduled process {process_name}"
+        if source:
+            msg += f"for mirror import/export for {source}"
+            kwargs["source"] = source
+        logger.debug(msg)
+
+        initiator = runner_class(**kwargs)
         process = ScheduledTaskProcess(runner=initiator, name=process_name)
         self.processes[process_name] = process
         process.start()

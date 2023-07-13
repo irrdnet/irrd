@@ -57,8 +57,8 @@ def main():  # pragma: no cover
     args = parser.parse_args()
 
     config_init(args.config_file_path)
-    if get_setting("database_readonly"):
-        print("Unable to run, because database_readonly is set")
+    if get_setting("readonly_standby"):
+        print("Unable to run, because readonly_standby is set")
         sys.exit(-1)
 
     sys.exit(set_last_modified())

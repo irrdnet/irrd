@@ -196,13 +196,12 @@ General settings
   for improved performance
   |br| **Default**: not defined, but required.
   |br| **Change takes effect**: after full IRRd restart.
-* ``database_readonly``: a boolean for whether this instance is
-  database read only, i.e. IRRd will never write any changes to the SQL database
-  in any circumstance. This can be used for
-  :doc:`availability with PostgreSQL replication </admins/availability-and-migration>`.
-  This setting means that this IRRd instance will never run the RPKI or scope
-  filter validators, and can not be used if any source has ``authoritative``,
+* ``readonly_standby``: a boolean for whether this instance is
+  in read-only standby mode. See
+  :doc:`availability with PostgreSQL replication </admins/availability-and-migration>`
+  for further details. Can not be used if any source has ``authoritative``,
   ``import_source`` or ``nrtm_host`` set.
+  **Do not enable this setting without reading the further documentation on standby setups.**
   |br| **Default**: ``false``.
   |br| **Change takes effect**: after full IRRd restart.
 * ``redis_url``: a URL to a Redis instance, e.g.
@@ -664,6 +663,7 @@ Sources
   Sharing password hashes externally is a security risk, the unfiltered data
   is intended only to support
   :doc:`availability and data migration </admins/availability-and-migration>`.
+  **This setting is deprecated and will be removed in IRRD 4.5.**
   |br| **Default**: not defined, no exports made.
   |br| **Change takes effect**: after SIGHUP, at the next ``export_timer``.
 * ``sources.{name}.export_timer``: the time between two full exports of all
@@ -686,6 +686,8 @@ Sources
   Unfiltered means full password hashes are included.
   Sharing password hashes externally is a security risk, the unfiltered data
   is intended only to support
+  :doc:`availability and data migration </admins/availability-and-migration>`.
+  **This setting is deprecated and will be removed in IRRD 4.5.**
   |br| **Default**: not defined, all access denied. Clients in
   ``nrtm_access_list``, if defined, have filtered access.
   |br| **Change takes effect**: after SIGHUP, upon next request.

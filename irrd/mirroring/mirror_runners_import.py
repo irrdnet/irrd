@@ -279,10 +279,6 @@ class ROAImportRunner(FileImportRunnerBase):
     in the configuration.
     """
 
-    # API consistency with other importers, source is actually ignored
-    def __init__(self, source=None):
-        pass
-
     def run(self):
         self.database_handler = DatabaseHandler()
 
@@ -354,10 +350,6 @@ class ScopeFilterUpdateRunner:
     This runner does not actually import anything, the scope filter
     is in the configuration.
     """
-
-    # API consistency with other importers, source is actually ignored
-    def __init__(self, source=None):
-        pass
 
     def run(self):
         self.database_handler = DatabaseHandler()

@@ -242,7 +242,7 @@ class TestConfiguration:
     def test_load_invalid_config(self, save_yaml_config, tmpdir):
         config = {
             "irrd": {
-                "database_readonly": True,
+                "readonly_standby": True,
                 "piddir": str(tmpdir + "/does-not-exist"),
                 "user": "a",
                 "secret_key": "sssssssssssss",
@@ -379,12 +379,12 @@ class TestConfiguration:
             in str(ce.value)
         )
         assert (
-            "Source TESTDB can not have authoritative, import_source or nrtm_host set when database_readonly"
+            "Source TESTDB can not have authoritative, import_source or nrtm_host set when readonly_standby"
             " is enabled."
             in str(ce.value)
         )
         assert (
-            "Source TESTDB3 can not have authoritative, import_source or nrtm_host set when database_readonly"
+            "Source TESTDB3 can not have authoritative, import_source or nrtm_host set when readonly_standby"
             " is enabled."
             in str(ce.value)
         )

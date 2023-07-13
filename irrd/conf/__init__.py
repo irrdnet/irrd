@@ -396,12 +396,12 @@ class Configuration:
                     "nrtm_host or import_source are set."
                 )
 
-            if config.get("database_readonly") and (
+            if config.get("readonly_standby") and (
                 details.get("authoritative") or details.get("nrtm_host") or details.get("import_source")
             ):
                 errors.append(
                     f"Source {name} can not have authoritative, import_source or nrtm_host set "
-                    "when database_readonly is enabled."
+                    "when readonly_standby is enabled."
                 )
 
             number_fields = [

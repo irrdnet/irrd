@@ -20,10 +20,10 @@ from irrd.webui import UI_DEFAULT_DATETIME_FORMAT
 logger = logging.getLogger(__name__)
 
 
-def check_database_readonly(f):
+def check_readonly_standby(f):
     def new_func(*args, **kwargs):
-        if get_setting("database_readonly"):
-            raise click.ClickException("Unable to run this command, because database_readonly is set.")
+        if get_setting("readonly_standby"):
+            raise click.ClickException("Unable to run this command, because readonly_standby is set.")
         return f(*args, **kwargs)
 
     return update_wrapper(new_func, f)
@@ -43,7 +43,7 @@ def cli(config):
 
 @cli.command()
 @click.argument("email")
-@check_database_readonly
+@check_readonly_standby
 @session_provider_manager_sync
 def user_mfa_clear(email, session_provider: ORMSessionProvider):
     """
@@ -92,7 +92,7 @@ def user_mfa_clear(email, session_provider: ORMSessionProvider):
 @cli.command()
 @click.argument("email")
 @click.option("--enable/--disable", default=True)
-@check_database_readonly
+@check_readonly_standby
 @session_provider_manager_sync
 def user_change_override(email: str, enable: bool, session_provider: ORMSessionProvider):
     """
