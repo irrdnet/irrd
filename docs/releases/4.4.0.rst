@@ -10,6 +10,54 @@ as of 27 June 2023 and therefore no longer supported.
 .. _end of life: https://endoflife.date/python
 
 
+IRRD internal authentication
+----------------------------
+IRRD 4.4 contains a new web interface (on ``/ui/``)
+that allows users to migrate their authoritative maintainers
+to an IRRD internal authentication method. It also offers more secure
+alternatives to email submissions and override access.
+
+You can allow migrations with the
+``auth.irrd_internal_migration_enabled`` setting.
+By default, this is disabled.
+Even with migration disabled, users can use the object submission
+interface to submit in the same format as email, by including the
+``password`` or ``override`` pseudo-attributes.
+
+Independent of whether regular users can migrate their account
+(``auth.irrd_internal_migration_enabled``), you can
+use the web interface to provide more secure override access.
+
+For full details, see the
+:doc:`web interface and internal authentication documentation </admins/webui/>`
+
+This new feature adds two new required settings, with no default set:
+
+* ``secret_key``, which must be a random secret string, used to protect
+  session data and tokens in emails.
+* ``server.http.url``, which must be the external URL on which users will
+  reach the IRRD instance, used for WebAuthn second factor authentication.
+  This must match the URL as seen from the browser's perspective,
+  and changing it will invalidate all WebAuthn tokens.
+
+
+New recommendations on availability and replication
+---------------------------------------------------
+Historically, operators have used different methods for synchronising
+an active instance of IRRD with a standby, or doing migrations.
+Some of these had issues around serial synchronisation, object suppression, or
+update frequency.
+
+There is now one recommended method for synchronisation between IRRD 4 instances,
+and new documentation on
+:doc:`availability with PostgreSQL replication </admins/availability-and-migration>`.
+
+The ``database_readonly`` setting was removed, in favour of a new
+``readonly_standby`` setting. The settings are similar but have some differences,
+and this is an intentional breaking change as you will need specific
+PostgreSQL configuration for this to work correctly.
+
+
 Upgrading to IRRd 4.4.0 from 4.3.x
 ----------------------------------
 TODO
