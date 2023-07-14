@@ -138,7 +138,8 @@ app = Starlette(
 
 def set_middleware(app):
     testing = os.environ.get("TESTING", False)
-    logger.info("Running in testing mode, disabling CSRF.")
+    if testing:
+        logger.info("Running in testing mode, disabling CSRF.")
     app.user_middleware = [
         Middleware(MemoryTrimMiddleware),
         Middleware(SessionMiddleware, secret_key=secret_key_derive("web.session_middleware")),
