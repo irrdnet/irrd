@@ -1,4 +1,5 @@
 import enum
+from typing import Optional
 
 import sqlalchemy as sa
 from IPy import IP
@@ -8,7 +9,7 @@ from sqlalchemy.orm import relationship
 
 from irrd.routepref.status import RoutePreferenceStatus
 from irrd.rpki.status import RPKIStatus
-from irrd.rpsl.rpsl_objects import lookup_field_names
+from irrd.rpsl.rpsl_objects import RPSLObject, lookup_field_names
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.updates.parser_state import UpdateRequestType
 
@@ -270,6 +271,46 @@ class ROADatabaseObject(Base):  # type: ignore
 
     def __repr__(self):
         return f"<{self.prefix}/{self.asn}>"
+
+
+class ProtectedRPSLName(Base):  # type: ignore
+    """
+    SQLAlchemy ORM object for RPSL database objects.
+
+    This stores nic-hdl/mntner name of person, role or mntner
+    objects that have been deleted, to prevent reuse. #616.
+    """
+
+    __tablename__ = "protected_rpsl_name"
+
+    # TODO: maybe move this to RPSLObject
+    PROTECTED_ATTRIBUTE = {
+        "person": "nic-hdl",
+        "role": "nic-hdl",
+        "mntner": "mntner",
+    }
+
+    pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)
+    rpsl_pk = sa.Column(sa.String, index=True, nullable=False)
+    source = sa.Column(sa.String, index=True, nullable=False)
+    object_class = sa.Column(sa.String, nullable=False, index=True)
+
+    # The name that is protected depends on the object class
+    protected_name = sa.Column(sa.String, index=True, nullable=False)
+
+    created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
+
+    @staticmethod
+    def protected_name_for_object(rpsl_object: RPSLObject) -> Optional[str]:
+        try:
+            return rpsl_object.parsed_data[
+                ProtectedRPSLName.PROTECTED_ATTRIBUTE[rpsl_object.rpsl_object_class]
+            ]
+        except KeyError:
+            return None
+
+    def __repr__(self):
+        return f"<ProtectedRPSLName/{self.protected_name}/{self.source}/{self.pk}>"
 
 
 class AuthPermission(Base):  # type: ignore

@@ -24,6 +24,7 @@ from .event_stream import EventStreamPublisher
 from .models import (
     DatabaseOperation,
     JournalEntryOrigin,
+    ProtectedRPSLName,
     ROADatabaseObject,
     RPSLDatabaseJournal,
     RPSLDatabaseObject,
@@ -558,6 +559,7 @@ class DatabaseHandler:
         rpsl_pk: Optional[str] = None,
         object_class: Optional[str] = None,
         source_serial: Optional[int] = None,
+        protect_rpsl_name: bool = False,
     ) -> None:
         """
         Delete an RPSL object from the database.
@@ -565,6 +567,8 @@ class DatabaseHandler:
         The origin indicates the origin of this change, see JournalEntryOrigin
         for the various options.
         """
+        if protect_rpsl_name and not rpsl_object:  # pragma: no cover:
+            raise ValueError("Deletion with protect_rpsl_name requires an rpsl_object.")
         self._check_write_permitted()
         self._flush_rpsl_object_writing_buffer()
         table = RPSLDatabaseObject.__table__
@@ -602,6 +606,18 @@ class DatabaseHandler:
             source_serial=source_serial,
         )
         self.changed_objects_tracker.object_modified_dict(result, origin)
+
+        if protect_rpsl_name and rpsl_object:
+            protected_name = ProtectedRPSLName.protected_name_for_object(rpsl_object)
+            if protected_name:
+                self.execute_statement(
+                    ProtectedRPSLName.__table__.insert().values(
+                        rpsl_pk=rpsl_object.pk(),
+                        source=rpsl_object.source(),
+                        object_class=rpsl_object.rpsl_object_class,
+                        protected_name=protected_name,
+                    )
+                )
 
     def suspend_rpsl_object(self, pk_uuid: str) -> None:
         """

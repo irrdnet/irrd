@@ -160,7 +160,9 @@ class ChangeRequest:
         if self.request_type == UpdateRequestType.DELETE and self.rpsl_obj_current is not None:
             logger.info(f"{id(self)}: Saving change for {self.rpsl_obj_new}: deleting current object")
             self.database_handler.delete_rpsl_object(
-                rpsl_object=self.rpsl_obj_current, origin=JournalEntryOrigin.auth_change
+                rpsl_object=self.rpsl_obj_current,
+                origin=JournalEntryOrigin.auth_change,
+                protect_rpsl_name=True,
             )
         else:
             logger.info(
