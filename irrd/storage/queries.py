@@ -13,6 +13,7 @@ from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import lookup_field_names
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.storage.models import (
+    ProtectedRPSLName,
     ROADatabaseObject,
     RPSLDatabaseJournal,
     RPSLDatabaseObject,
@@ -625,3 +626,24 @@ class ROADatabaseObjectQuery(BaseDatabaseQuery):
         fltr = sa.and_(self.columns.prefix.op(">>=")(str(ip)))
         self.statement = self.statement.where(fltr)
         return self
+
+
+class ProtectedRPSLNameQuery(BaseRPSLObjectDatabaseQuery):
+    """
+    RPSL data query builder for retrieving protected names.
+    """
+
+    table = ProtectedRPSLName.__table__
+    columns = ProtectedRPSLName.__table__.c
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.statement = sa.select(self.columns)
+
+    def protected_name(self, protected_name: str):
+        fltr = self.columns.protected_name == protected_name
+        return self._filter(fltr)
+
+    def source(self, source: str):
+        fltr = self.columns.source == source
+        return self._filter(fltr)

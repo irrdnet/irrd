@@ -1,5 +1,4 @@
 import enum
-from typing import Optional
 
 import sqlalchemy as sa
 from IPy import IP
@@ -9,7 +8,7 @@ from sqlalchemy.orm import relationship
 
 from irrd.routepref.status import RoutePreferenceStatus
 from irrd.rpki.status import RPKIStatus
-from irrd.rpsl.rpsl_objects import RPSLObject, lookup_field_names
+from irrd.rpsl.rpsl_objects import lookup_field_names
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.updates.parser_state import UpdateRequestType
 
@@ -283,13 +282,6 @@ class ProtectedRPSLName(Base):  # type: ignore
 
     __tablename__ = "protected_rpsl_name"
 
-    # TODO: maybe move this to RPSLObject
-    PROTECTED_ATTRIBUTE = {
-        "person": "nic-hdl",
-        "role": "nic-hdl",
-        "mntner": "mntner",
-    }
-
     pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)
     rpsl_pk = sa.Column(sa.String, index=True, nullable=False)
     source = sa.Column(sa.String, index=True, nullable=False)
@@ -299,15 +291,6 @@ class ProtectedRPSLName(Base):  # type: ignore
     protected_name = sa.Column(sa.String, index=True, nullable=False)
 
     created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
-
-    @staticmethod
-    def protected_name_for_object(rpsl_object: RPSLObject) -> Optional[str]:
-        try:
-            return rpsl_object.parsed_data[
-                ProtectedRPSLName.PROTECTED_ATTRIBUTE[rpsl_object.rpsl_object_class]
-            ]
-        except KeyError:
-            return None
 
     def __repr__(self):
         return f"<ProtectedRPSLName/{self.protected_name}/{self.source}/{self.pk}>"

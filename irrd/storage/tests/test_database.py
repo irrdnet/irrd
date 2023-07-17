@@ -16,6 +16,7 @@ from ..models import DatabaseOperation, JournalEntryOrigin
 from ..preload import Preloader
 from ..queries import (
     DatabaseStatusQuery,
+    ProtectedRPSLNameQuery,
     ROADatabaseObjectQuery,
     RPSLDatabaseJournalQuery,
     RPSLDatabaseObjectStatisticsQuery,
@@ -881,6 +882,33 @@ class TestDatabaseHandlerLive:
 
         dh.delete_suspended_rpsl_objects([suspended_objs[0]["pk"]])
         assert len(list(dh.execute_query(RPSLDatabaseSuspendedQuery()))) == 0
+
+    def test_protect_rpsl_name(self, irrd_db_mock_preload):
+        rpsl_object_person = Mock(
+            pk=lambda: "PERSON",
+            source=lambda: "TEST",
+            rpsl_object_class="person",
+            parsed_data={"person": "my person-name", "source": "TEST"},
+            render_rpsl_text=lambda last_modified: "object-text",
+            ip_version=lambda: None,
+            ip_first=None,
+            ip_last=None,
+            prefix=None,
+            prefix_length=None,
+            asn_first=None,
+            asn_last=None,
+            rpki_status=RPKIStatus.not_found,
+            scopefilter_status=ScopeFilterStatus.in_scope,
+            route_preference_status=RoutePreferenceStatus.visible,
+        )
+        self.dh = DatabaseHandler()
+        self.dh.upsert_rpsl_object(rpsl_object_person, JournalEntryOrigin.auth_change)
+        self.dh.delete_rpsl_object(
+            rpsl_object=rpsl_object_person, origin=JournalEntryOrigin.auth_change, protect_rpsl_name=True
+        )
+        query = ProtectedRPSLNameQuery().protected_name("PERSON").source("TEST")
+        assert list(self.dh.execute_query(query))
+        self.dh.close()
 
 
 # noinspection PyTypeChecker

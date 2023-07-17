@@ -607,17 +607,20 @@ class DatabaseHandler:
         )
         self.changed_objects_tracker.object_modified_dict(result, origin)
 
-        if protect_rpsl_name and rpsl_object:
-            protected_name = ProtectedRPSLName.protected_name_for_object(rpsl_object)
-            if protected_name:
-                self.execute_statement(
-                    ProtectedRPSLName.__table__.insert().values(
-                        rpsl_pk=rpsl_object.pk(),
-                        source=rpsl_object.source(),
-                        object_class=rpsl_object.rpsl_object_class,
-                        protected_name=protected_name,
-                    )
+        # TODO: move this list of classes
+        if (
+            protect_rpsl_name
+            and rpsl_object
+            and rpsl_object.rpsl_object_class in ["person", "role", "mntner"]
+        ):
+            self.execute_statement(
+                ProtectedRPSLName.__table__.insert().values(
+                    rpsl_pk=rpsl_object.pk(),
+                    source=rpsl_object.source(),
+                    object_class=rpsl_object.rpsl_object_class,
+                    protected_name=rpsl_object.pk(),
                 )
+            )
 
     def suspend_rpsl_object(self, pk_uuid: str) -> None:
         """
