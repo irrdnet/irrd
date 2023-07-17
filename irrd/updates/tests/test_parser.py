@@ -133,7 +133,11 @@ class TestSingleChangeRequestHandling:
             [
                 "delete_rpsl_object",
                 (),
-                {"rpsl_object": result_inetnum.rpsl_obj_current, "origin": JournalEntryOrigin.auth_change},
+                {
+                    "rpsl_object": result_inetnum.rpsl_obj_current,
+                    "protect_rpsl_name": True,
+                    "origin": JournalEntryOrigin.auth_change,
+                },
             ],
             ["upsert_rpsl_object", (result_as_set.rpsl_obj_new, JournalEntryOrigin.auth_change), {}],
         ]
