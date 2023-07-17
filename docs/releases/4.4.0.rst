@@ -14,19 +14,20 @@ IRRD internal authentication
 ----------------------------
 IRRD 4.4 contains a new web interface (on ``/ui/``)
 that allows users to migrate their authoritative maintainers
-to an IRRD internal authentication method. It also offers more secure
-alternatives to email submissions and override access.
+to an IRRD internal authentication method. This allows removal of
+hashes from RPSL `mntner` objects and much more granular access
+control.
 
-You can allow migrations with the
+The new web interface also offers
+more secure alternatives to email submissions and override access,
+independent of whether you choose to allow maintainer migrations.
+
+You can allow maintainer migrations with the
 ``auth.irrd_internal_migration_enabled`` setting.
 By default, this is disabled.
 Even with migration disabled, users can use the object submission
 interface to submit in the same format as email, by including the
 ``password`` or ``override`` pseudo-attributes.
-
-Independent of whether regular users can migrate their account
-(``auth.irrd_internal_migration_enabled``), you can
-use the web interface to provide more secure override access.
 
 For full details, see the
 :doc:`web interface and internal authentication documentation </admins/webui/>`
@@ -50,13 +51,20 @@ update frequency.
 
 There is now one recommended method for synchronisation between IRRD 4 instances,
 and new documentation on
-:doc:`availability with PostgreSQL replication </admins/availability-and-migration>`.
+:doc:`availability with PostgreSQL replication </admins/availability-and-migration>`
+including specific required PostgreSQL settings.
 
 The ``database_readonly`` setting was removed, in favour of a new
-``readonly_standby`` setting. The settings are similar but have some differences,
-and this is an intentional breaking change as you will need specific
-PostgreSQL configuration for this to work correctly.
+``readonly_standby`` setting. These settings are similar but have some
+differences, and this is an intentional breaking change as you will need
+specific PostgreSQL configuration for this to work correctly.
 
+If you use any kind of availability/standby setup, you should review
+this documentation and switch to the new recommended setup.
+
+Note that, although most of the work is done by PostgreSQL,
+IRRD 4.4 does have new internal handling to support this replication
+method. This means you can not apply this to IRRD prior to 4.4.
 
 Upgrading to IRRd 4.4.0 from 4.3.x
 ----------------------------------
