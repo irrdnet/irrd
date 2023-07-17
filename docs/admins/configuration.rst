@@ -226,9 +226,10 @@ General settings
   |br| **Default**: not defined, IRRd does not drop privileges.
   |br| **Change takes effect**: after full IRRd restart.
 * ``secret_key``: a random secret string. **The secrecy of this key protects
-  all web authentication.** If rotated, all sessions and password resets
+  all web authentication.** If rotated, all sessions and tokens in emails
   are invalidated, requiring users to log in or request new password
-  reset links. Second factor authentication is *not* attached to this key.
+  reset links. Rotation will **not** invalidate existing user passwords
+  (only reset links), second factor authentication, or API tokens.
   Minimum 30 characters.
   |br| **Default**: not defined, but required.
   |br| **Change takes effect**: after full IRRd restart.

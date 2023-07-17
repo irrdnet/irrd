@@ -88,6 +88,7 @@ There are several important requirements for this setup:
   ``sources.{name}.authoritative``, ``sources.{name}.nrtm_host``, or
   ``sources.{name}.import_source`` on a standby instance, as these
   conflict with ``readonly_standby``.
+* All instances must run the same IRRD version.
 * It is recommended that all PostgreSQL instances only host the IRRd
   database. Streaming replication will always include all databases,
   and commits received on the standby in any database will trigger

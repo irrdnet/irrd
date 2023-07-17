@@ -4,19 +4,18 @@ Web interface and internal authentication
 Along with HTTP based API calls, GraphQL and the status page, IRRD contains
 a web interface that allows users to migrate their authoritative maintainers
 to an IRRD internal authentication method. It also offers more secure
-override access.
+alternatives to email submissions and override access.
 
 The web interface contains a RPSL submission form, accepting
 the same format as emails, to make object changes. This form accepts
 the new internal authentication as well as passwords, and is meant
-as a more practical and more secure alternative.
+as a more practical and more secure alternative to emails.
 
 The submission form and internal authentication only affect
 objects in authoritative sources.
 
 IRRD internal authentication
 ----------------------------
-
 Traditional maintainer objects authenticate with a list of passwords
 and/or PGP keys in the maintainer object. In IRRD internal authentication,
 the permissions are kept in a separate storage, i.e. not in RPSL
@@ -27,7 +26,8 @@ objects. The major features of internal over traditional are:
   In traditional authentication, anyone with maintainer access can
   essentially take over the maintainer.
 * Users can create API keys with limited permissions, rather than include
-  a password in emails.
+  a password (that allows a full take-over) in emails.
+  API keys are also random, where user passwords are often easier to guess.
 * Users can submit object updates after logging in, without needing
   to pass further authentication.
 * Internal authentication can be combined with traditional, but
@@ -35,12 +35,18 @@ objects. The major features of internal over traditional are:
 * Logins on the web interface can be protected with two-factor
   authentication.
 * Hashes of (new) user passwords are no longer part of RPSL objects.
+* Users with user management permission can see a log of actions
+  taken on their objects or maintainer, and who performed these actions.
+  This log includes changes made through any submission method.
 * User passwords can not be used directly for authentication of
   e.g. email updates.
 
 You can allow migrations with the
 ``auth.irrd_internal_migration_enabled`` setting.
 By default, this is disabled.
+Even with migration disabled, users can use the object submission
+interface to submit in the same format as email, by including the
+``password`` or ``override`` pseudo-attributes.
 
 Override access
 ---------------
@@ -74,13 +80,14 @@ the ``irrdctl user-mfa-clear`` command.
 
 Maintainer migration
 --------------------
-Migrating a maintainer can be done by any registered user, and involves
+Migrating a maintainer can be done by any registered user when
+``auth.irrd_internal_migration_enabled`` is enabled, and involves
 the following steps:
 
 * The user requests migration with the maintainer name and one of the
   current valid passwords on the maintainer.
-* IRRD will mail all admin-c contacts on the maintainer with a
-  confirmation link.
+* IRRD will mail all `admin-c` contacts on the maintainer with the
+  confirmation link (all will receive the same link).
 * The same user must open the confirmation link, and confirm again with
   a current valid password.
 * The maintainer is now migrated. Existing methods are kept.
