@@ -19,7 +19,11 @@ from irrd.storage.models import (
     AuthUser,
     ChangeLog,
 )
-from irrd.storage.queries import RPSLDatabaseQuery, RPSLDatabaseSuspendedQuery
+from irrd.storage.queries import (
+    ProtectedRPSLNameQuery,
+    RPSLDatabaseQuery,
+    RPSLDatabaseSuspendedQuery,
+)
 
 from .parser_state import AuthMethod, RPSLSetAutnumAuthenticationMode, UpdateRequestType
 
@@ -180,12 +184,10 @@ class ReferenceValidator:
         )
         return result
 
-    def check_references_from_others_for_protected_name(
-        self, rpsl_obj: RPSLObject, used_override=False
-    ) -> ValidatorResult:
+    def check_protected_name(self, rpsl_obj: RPSLObject, used_override=False) -> ValidatorResult:
         """
-        Check for any references to this object in the DB.
-        Used for protected names.
+        Check for any references to this object in the DB,
+        and check the ProtectedRPSLName table.
         """
         result = ValidatorResult()
         if used_override:
@@ -206,6 +208,18 @@ class ReferenceValidator:
             message_target=message_target,
             message_format=message_format,
         )
+        query = ProtectedRPSLNameQuery().protected_name(rpsl_obj.pk()).source(rpsl_obj.source())
+        is_protected = bool(list(self.database_handler.execute_query(query)))
+        if is_protected:
+            if used_override:
+                result.info_messages.add(
+                    f"NOTE: object {rpsl_obj.pk()} has a protected name, creation permitted due to override."
+                )
+            else:
+                result.error_messages.add(
+                    f"Object {rpsl_obj.pk()} has a protected name that can not be reused."
+                    " Create the object under a different name."
+                )
         return result
 
     def _check_references_from_others(

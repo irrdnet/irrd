@@ -195,6 +195,7 @@ class TestChangeSubmissionHandler:
                 [{"object_text": mntner_text}],
                 [{"object_text": mntner_text}],
                 [],
+                [],
             ]
         )
         mock_dh.execute_query = lambda query: next(query_responses)

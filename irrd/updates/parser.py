@@ -363,7 +363,7 @@ class ChangeRequest:
         """ """
         override = self._auth_result.auth_method.used_override() if self._auth_result else False
         if self.request_type == UpdateRequestType.CREATE and self.rpsl_obj_new is not None:
-            references_result = self.reference_validator.check_references_from_others_for_protected_name(
+            references_result = self.reference_validator.check_protected_name(
                 self.rpsl_obj_new, used_override=override
             )
             self.info_messages += references_result.info_messages
