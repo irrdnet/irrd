@@ -215,6 +215,8 @@ class TestChangeSubmissionHandler:
             ["sources", (["TEST"],), {}],
             ["object_classes", (["mntner"],), {}],
             ["rpsl_pks", ({"TEST-MNT"},), {}],
+            ["sources", (["TEST"],), {}],
+            ["lookup_attrs_in", ({"admin-c", "tech-c", "zone-c"}, ["PERSON-TEST"]), {}],
         ]
 
         assert mock_dh.mock_calls[0][0] == "upsert_rpsl_object"
