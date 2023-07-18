@@ -453,7 +453,7 @@ class TestSingleChangeRequestHandling:
         assert result.info_messages == [
             (
                 "NOTE: object PERSON-TEST still referenced by inetnum 192.0.2.0 - 192.0.2.255."
-                " Delete permitted due to override."
+                " Delete permitted due to override. This creates a broken reference."
             ),
         ]
 

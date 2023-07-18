@@ -10,8 +10,12 @@ from passlib.hash import md5_crypt
 
 from irrd.conf import RPSL_MNTNER_AUTH_INTERNAL, get_setting
 from irrd.rpsl.parser import RPSLObject
-from irrd.rpsl.rpsl_objects import RPSLMntner, RPSLSet, rpsl_object_from_text, \
-    PROTECTED_NAME_OBJECT_CLASSES
+from irrd.rpsl.rpsl_objects import (
+    PROTECTED_NAME_OBJECT_CLASSES,
+    RPSLMntner,
+    RPSLSet,
+    rpsl_object_from_text,
+)
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.models import (
     AuthApiToken,
@@ -183,7 +187,7 @@ class ReferenceValidator:
             message_target = result.info_messages
             message_format = (
                 "NOTE: object {rpsl_pk} still referenced by {referring_object_class} {referring_rpsl_pk}."
-                " Delete permitted due to override."
+                " Delete permitted due to override. This creates a broken reference."
             )
         else:
             message_target = result.error_messages
