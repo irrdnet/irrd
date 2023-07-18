@@ -14,7 +14,11 @@ from irrd.conf import get_setting
 from irrd.routepref.status import RoutePreferenceStatus
 from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.parser import RPSLObject
-from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING, RPKI_RELEVANT_OBJECT_CLASSES
+from irrd.rpsl.rpsl_objects import (
+    OBJECT_CLASS_MAPPING,
+    PROTECTED_NAME_OBJECT_CLASSES,
+    RPKI_RELEVANT_OBJECT_CLASSES,
+)
 from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.utils.misc import chunked_iterable
 from irrd.vendor import postgres_copy
@@ -607,11 +611,10 @@ class DatabaseHandler:
         )
         self.changed_objects_tracker.object_modified_dict(result, origin)
 
-        # TODO: move this list of classes
         if (
             protect_rpsl_name
             and rpsl_object
-            and rpsl_object.rpsl_object_class in ["person", "role", "mntner"]
+            and rpsl_object.rpsl_object_class in PROTECTED_NAME_OBJECT_CLASSES
         ):
             self.execute_statement(
                 ProtectedRPSLName.__table__.insert().values(

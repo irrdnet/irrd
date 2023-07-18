@@ -310,9 +310,10 @@ class ChangeRequest:
         if not auth_valid:
             return False
         references_valid = self._check_references()
+        protected_name_valid = self._check_protected_names()
         rpki_valid = self._check_conflicting_roa()
         scopefilter_valid = self._check_scopefilter()
-        return references_valid and rpki_valid and scopefilter_valid
+        return all([references_valid, rpki_valid, scopefilter_valid, protected_name_valid])
 
     def _check_auth(self) -> bool:
         assert self.rpsl_obj_new
@@ -354,6 +355,29 @@ class ChangeRequest:
             return False
 
         logger.debug(f"{id(self)}: Reference check succeeded")
+        return True
+
+    def _check_protected_names(self) -> bool:
+        """ """
+        override = self._auth_result.auth_method.used_override() if self._auth_result else False
+        if self.request_type == UpdateRequestType.CREATE and self.rpsl_obj_new is not None and not override:
+            references_result = self.reference_validator.check_references_from_others(
+                self.rpsl_obj_new, for_protected_name=True
+            )
+            self.info_messages += references_result.info_messages
+
+            if not references_result.is_valid():
+                self.error_messages += references_result.error_messages
+                logger.debug(
+                    f"{id(self)}: Protected name check failed: {list(references_result.error_messages)}"
+                )
+                if (
+                    self.is_valid()
+                ):  # Only change the status if this object was valid prior, so this is the first failure
+                    self.status = UpdateRequestStatus.ERROR_PROTECTED_NAME
+                return False
+
+            logger.debug(f"{id(self)}: Protected name check succeeded")
         return True
 
     def _check_conflicting_roa(self) -> bool:

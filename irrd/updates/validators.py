@@ -164,13 +164,15 @@ class ReferenceValidator:
 
         return False
 
-    def check_references_from_others(self, rpsl_obj: RPSLObject) -> ValidatorResult:
+    def check_references_from_others(self, rpsl_obj: RPSLObject, for_protected_name=False) -> ValidatorResult:
         """
         Check for any references to this object in the DB.
-        Used for validating deletions.
+        Used for validating deletions and protected names.
 
         Checks self._preloaded_deleted, because a reference from an object
         that is also about to be deleted, is acceptable.
+
+        If for_protected_name is set, produces a modified error message.
         """
         result = ValidatorResult()
         if not rpsl_obj.references_strong_inbound():
@@ -186,10 +188,16 @@ class ReferenceValidator:
                 query_result["source"],
             ) in self._preloaded_deleted
             if not reference_to_be_deleted:
-                result.error_messages.add(
-                    f"Object {rpsl_obj.pk()} to be deleted, but still referenced "
-                    f"by {query_result['object_class']} {query_result['rpsl_pk']}"
-                )
+                if for_protected_name:
+                    result.error_messages.add(
+                        f"Object {rpsl_obj.pk()} to be created, but existing references exist "
+                        f"from {query_result['object_class']} {query_result['rpsl_pk']}"
+                    )
+                else:
+                    result.error_messages.add(
+                        f"Object {rpsl_obj.pk()} to be deleted, but still referenced "
+                        f"by {query_result['object_class']} {query_result['rpsl_pk']}"
+                    )
         return result
 
 

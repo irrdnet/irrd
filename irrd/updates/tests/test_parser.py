@@ -528,6 +528,63 @@ class TestSingleChangeRequestHandling:
             ["lookup_attrs_in", ({"tech-c", "zone-c", "admin-c"}, ["PERSON-TEST"]), {}],
         ]
 
+    def test_check_protected_name_existing_reference(self, prepare_mocks):
+        # Create a person object, where there is an existing reference to the person.
+        # This should not be permitted per #611
+        mock_dq, mock_dh = prepare_mocks
+
+        validator = ReferenceValidator(mock_dh)
+        query_results = itertools.cycle(
+            [
+                [],  # No existing object, i.e. CREATE
+                [
+                    {
+                        "object_text": SAMPLE_INETNUM,
+                        "object_class": "inetnum",
+                        "rpsl_pk": "192.0.2.0 - 192.0.2.255",
+                        "source": "TEST",
+                    }
+                ],
+            ]
+        )
+        mock_dh.execute_query = lambda query: next(query_results)
+
+        result = parse_change_requests(
+            SAMPLE_PERSON,
+            mock_dh,
+            AuthValidator(mock_dh),
+            validator,
+            {},
+        )[0]
+        result._check_protected_names()
+        assert not result.is_valid()
+        assert result.error_messages == [
+            (
+                "Object PERSON-TEST to be created, but existing references exist from inetnum 192.0.2.0 -"
+                " 192.0.2.255"
+            ),
+        ]
+
+        assert flatten_mock_calls(mock_dq) == [
+            ["sources", (["TEST"],), {}],
+            ["object_classes", (["person"],), {}],
+            ["rpsl_pk", ("PERSON-TEST",), {}],
+            ["sources", (["TEST"],), {}],
+            ["lookup_attrs_in", ({"tech-c", "zone-c", "admin-c"}, ["PERSON-TEST"]), {}],
+        ]
+
+        # Again, with override, should be permitted
+        result = parse_change_requests(
+            SAMPLE_PERSON,
+            mock_dh,
+            AuthValidator(mock_dh),
+            validator,
+            {},
+        )[0]
+        result._auth_result = ValidatorResult(auth_method=AuthMethod.OVERRIDE_INTERNAL_AUTH)
+        result._check_protected_names()
+        assert result.is_valid()
+
     def test_check_auth_valid_update_mntner(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
 

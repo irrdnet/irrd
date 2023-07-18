@@ -38,6 +38,8 @@ RPSL_ROUTE_OBJECT_CLASS_FOR_IP_VERSION = {
     6: "route6",
 }
 
+PROTECTED_NAME_OBJECT_CLASSES = ["person", "role", "mntner"]
+
 
 def rpsl_object_from_text(text, strict_validation=True, default_source: Optional[str] = None) -> RPSLObject:
     rpsl_object_class = text.split(":", maxsplit=1)[0].strip()
