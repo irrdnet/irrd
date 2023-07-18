@@ -102,6 +102,10 @@ class TestChangeSubmissionHandler:
             ["sources", (["TEST"],), {}],
             ["object_classes", (["inetnum"],), {}],
             ["rpsl_pk", ("80.16.151.184 - 80.16.151.191",), {}],
+            ["sources", (["TEST"],), {}],
+            ["lookup_attrs_in", ({"admin-c", "tech-c", "zone-c"}, ["PERSON-TEST"]), {}],
+            ["sources", (["TEST"],), {}],
+            ["lookup_attrs_in", ({"mnt-by"}, ["TEST-MNT"]), {}],
         ]
 
         assert mock_dh.mock_calls[0][0] == "upsert_rpsl_object"
@@ -592,11 +596,17 @@ class TestChangeSubmissionHandler:
             ["object_classes", (["person"],), {}],
             ["rpsl_pk", ("PERSON-TEST",), {}],
             ["sources", (["TEST"],), {}],
+            ["lookup_attrs_in", ({"mnt-by"}, ["TEST-MNT"]), {}],
+            ["sources", (["TEST"],), {}],
             ["object_classes", (["mntner"],), {}],
             ["rpsl_pk", ("OTHER-MNT",), {}],
             ["sources", (["TEST"],), {}],
+            ["lookup_attrs_in", ({"admin-c", "tech-c", "zone-c"}, ["PERSON-TEST"]), {}],
+            ["sources", (["TEST"],), {}],
             ["object_classes", (["role", "person"],), {}],
             ["rpsl_pk", ("PERSON-TEST",), {}],
+            ["sources", (["TEST"],), {}],
+            ["lookup_attrs_in", ({"mnt-by"}, ["TEST-MNT"]), {}],
             ["sources", (["TEST"],), {}],
             ["object_classes", (["role", "person"],), {}],
             ["rpsl_pk", ("PERSON-TEST",), {}],
