@@ -337,10 +337,12 @@ class ChangeRequest:
         they now become invalid. For other operations, only the validity
         of references from the new object to others matter.
         """
+        override = self._auth_result.auth_method.used_override() if self._auth_result else False
         if self.request_type == UpdateRequestType.DELETE and self.rpsl_obj_current is not None:
             assert self.rpsl_obj_new
             references_result = self.reference_validator.check_references_from_others_for_deletion(
-                self.rpsl_obj_current
+                rpsl_obj=self.rpsl_obj_current,
+                used_override=override,
             )
         else:
             assert self.rpsl_obj_new

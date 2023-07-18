@@ -10,7 +10,8 @@ from passlib.hash import md5_crypt
 
 from irrd.conf import RPSL_MNTNER_AUTH_INTERNAL, get_setting
 from irrd.rpsl.parser import RPSLObject
-from irrd.rpsl.rpsl_objects import RPSLMntner, RPSLSet, rpsl_object_from_text
+from irrd.rpsl.rpsl_objects import RPSLMntner, RPSLSet, rpsl_object_from_text, \
+    PROTECTED_NAME_OBJECT_CLASSES
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.models import (
     AuthApiToken,
@@ -168,19 +169,32 @@ class ReferenceValidator:
 
         return False
 
-    def check_references_from_others_for_deletion(self, rpsl_obj: RPSLObject) -> ValidatorResult:
+    def check_references_from_others_for_deletion(
+        self, rpsl_obj: RPSLObject, used_override=False
+    ) -> ValidatorResult:
         """
         Check for any references to this object in the DB.
         Used for validating deletions.
+        When using override and removing a protected object,
+        the check may be bypassed.
         """
         result = ValidatorResult()
-        self._check_references_from_others(
-            rpsl_obj=rpsl_obj,
-            message_target=result.error_messages,
-            message_format=(
+        if used_override and rpsl_obj.rpsl_object_class in PROTECTED_NAME_OBJECT_CLASSES:
+            message_target = result.info_messages
+            message_format = (
+                "NOTE: object {rpsl_pk} still referenced by {referring_object_class} {referring_rpsl_pk}."
+                " Delete permitted due to override."
+            )
+        else:
+            message_target = result.error_messages
+            message_format = (
                 "Object {rpsl_pk} to be deleted, but still referenced by"
                 " {referring_object_class} {referring_rpsl_pk}"
-            ),
+            )
+        self._check_references_from_others(
+            rpsl_obj=rpsl_obj,
+            message_target=message_target,
+            message_format=message_format,
         )
         return result
 

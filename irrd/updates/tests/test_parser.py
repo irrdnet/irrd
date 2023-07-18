@@ -420,6 +420,51 @@ class TestSingleChangeRequestHandling:
             ["lookup_attrs_in", ({"tech-c", "zone-c", "admin-c"}, ["PERSON-TEST"]), {}],
         ]
 
+    def test_check_references_valid_deleting_person_with_refs_in_db_with_override(self, prepare_mocks):
+        # Delete an object which is still referred by other objects in the DB.
+        mock_dq, mock_dh = prepare_mocks
+
+        validator = ReferenceValidator(mock_dh)
+        query_results = iter(
+            [
+                [{"object_text": SAMPLE_PERSON}],
+                [
+                    {
+                        "object_text": SAMPLE_INETNUM,
+                        "object_class": "inetnum",
+                        "rpsl_pk": "192.0.2.0 - 192.0.2.255",
+                        "source": "TEST",
+                    }
+                ],
+            ]
+        )
+        mock_dh.execute_query = lambda query: next(query_results)
+
+        result = parse_change_requests(
+            SAMPLE_PERSON + "delete: delete",
+            mock_dh,
+            AuthValidator(mock_dh),
+            validator,
+            {},
+        )[0]
+        result._auth_result = ValidatorResult(auth_method=AuthMethod.OVERRIDE_INTERNAL_AUTH)
+        result._check_references()
+        assert result.is_valid()
+        assert result.info_messages == [
+            (
+                "NOTE: object PERSON-TEST still referenced by inetnum 192.0.2.0 - 192.0.2.255."
+                " Delete permitted due to override."
+            ),
+        ]
+
+        assert flatten_mock_calls(mock_dq) == [
+            ["sources", (["TEST"],), {}],
+            ["object_classes", (["person"],), {}],
+            ["rpsl_pk", ("PERSON-TEST",), {}],
+            ["sources", (["TEST"],), {}],
+            ["lookup_attrs_in", ({"tech-c", "zone-c", "admin-c"}, ["PERSON-TEST"]), {}],
+        ]
+
     def test_check_references_invalid_deleting_object_with_refs_in_update_message(self, prepare_mocks):
         # Delete an object that is referred by a new object in the same update.
         mock_dq, mock_dh = prepare_mocks
