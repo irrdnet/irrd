@@ -559,10 +559,8 @@ class TestSingleChangeRequestHandling:
         result._check_protected_names()
         assert not result.is_valid()
         assert result.error_messages == [
-            (
-                "Object PERSON-TEST to be created, but existing references exist from inetnum 192.0.2.0 -"
-                " 192.0.2.255"
-            ),
+            "Object PERSON-TEST to be created, but existing references exist from"
+            " inetnum 192.0.2.0 - 192.0.2.255"
         ]
 
         assert flatten_mock_calls(mock_dq) == [
@@ -584,6 +582,10 @@ class TestSingleChangeRequestHandling:
         result._auth_result = ValidatorResult(auth_method=AuthMethod.OVERRIDE_INTERNAL_AUTH)
         result._check_protected_names()
         assert result.is_valid()
+        assert result.info_messages == [
+            "NOTE: existing references to PERSON-TEST exist from"
+            " inetnum 192.0.2.0 - 192.0.2.255, permitted due to override"
+        ]
 
     def test_check_auth_valid_update_mntner(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks

@@ -339,7 +339,9 @@ class ChangeRequest:
         """
         if self.request_type == UpdateRequestType.DELETE and self.rpsl_obj_current is not None:
             assert self.rpsl_obj_new
-            references_result = self.reference_validator.check_references_from_others(self.rpsl_obj_current)
+            references_result = self.reference_validator.check_references_from_others_for_deletion(
+                self.rpsl_obj_current
+            )
         else:
             assert self.rpsl_obj_new
             references_result = self.reference_validator.check_references_to_others(self.rpsl_obj_new)
@@ -360,9 +362,9 @@ class ChangeRequest:
     def _check_protected_names(self) -> bool:
         """ """
         override = self._auth_result.auth_method.used_override() if self._auth_result else False
-        if self.request_type == UpdateRequestType.CREATE and self.rpsl_obj_new is not None and not override:
-            references_result = self.reference_validator.check_references_from_others(
-                self.rpsl_obj_new, for_protected_name=True
+        if self.request_type == UpdateRequestType.CREATE and self.rpsl_obj_new is not None:
+            references_result = self.reference_validator.check_references_from_others_for_protected_name(
+                self.rpsl_obj_new, used_override=override
             )
             self.info_messages += references_result.info_messages
 
