@@ -372,6 +372,24 @@ These requirements do not apply when you change or delete existing objects.
 When looking for corresponding `aut-num` objects,
 IRRd only looks in the same IRR source.
 
+.. _auth-protected-names:
+
+Protected names
+^^^^^^^^^^^^^^^
+There is some special handling of names of `mntner`, `person` and `role`
+objects, as these often contain personal data and/or have authentication
+consequences:
+
+* If an object is deleted, it is not possible to recreate an object under
+  the same primary key again later, by any user.
+* It is not possible to create an object under a primary key that is already
+  referenced by other, existing objects. This mainly occurs when legacy data
+  has been imported into IRRD with broken references.
+* The two rules above do not apply when override access is used.
+* When using override access, it is allowed to delete an object of these
+  types even when there are existing references to the object.
+
+
 Object templates
 ----------------
 

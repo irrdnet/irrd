@@ -66,6 +66,15 @@ Note that, although most of the work is done by PostgreSQL,
 IRRD 4.4 does have new internal handling to support this replication
 method. This means you can not apply this to IRRD prior to 4.4.
 
+
+Protected names
+---------------
+There is new special handling of names of `mntner`, `person` and `role`
+objects, as these often contain personal data and/or have authentication
+consequences. See the :ref:`protected names documentation <auth-protected-names>`
+for details. This only affects authoritative databases.
+
+
 Upgrading to IRRd 4.4.0 from 4.3.x
 ----------------------------------
 TODO
