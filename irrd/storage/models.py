@@ -272,6 +272,30 @@ class ROADatabaseObject(Base):  # type: ignore
         return f"<{self.prefix}/{self.asn}>"
 
 
+class ProtectedRPSLName(Base):  # type: ignore
+    """
+    SQLAlchemy ORM object for recording protected names.
+
+    This stores nic-hdl/mntner name of person, role or mntner
+    objects that have been deleted, to prevent reuse. #616.
+    """
+
+    __tablename__ = "protected_rpsl_name"
+
+    pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)
+    rpsl_pk = sa.Column(sa.String, index=True, nullable=False)
+    source = sa.Column(sa.String, index=True, nullable=False)
+    object_class = sa.Column(sa.String, nullable=False, index=True)
+
+    # The name that is protected depends on the object class
+    protected_name = sa.Column(sa.String, index=True, nullable=False)
+
+    created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
+
+    def __repr__(self):
+        return f"<ProtectedRPSLName/{self.protected_name}/{self.source}/{self.pk}>"
+
+
 class AuthPermission(Base):  # type: ignore
     __tablename__ = "auth_permission"
 

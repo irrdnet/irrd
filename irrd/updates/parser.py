@@ -160,7 +160,9 @@ class ChangeRequest:
         if self.request_type == UpdateRequestType.DELETE and self.rpsl_obj_current is not None:
             logger.info(f"{id(self)}: Saving change for {self.rpsl_obj_new}: deleting current object")
             self.database_handler.delete_rpsl_object(
-                rpsl_object=self.rpsl_obj_current, origin=JournalEntryOrigin.auth_change
+                rpsl_object=self.rpsl_obj_current,
+                origin=JournalEntryOrigin.auth_change,
+                protect_rpsl_name=True,
             )
         else:
             logger.info(
@@ -308,9 +310,10 @@ class ChangeRequest:
         if not auth_valid:
             return False
         references_valid = self._check_references()
+        protected_name_valid = self._check_protected_names()
         rpki_valid = self._check_conflicting_roa()
         scopefilter_valid = self._check_scopefilter()
-        return references_valid and rpki_valid and scopefilter_valid
+        return all([references_valid, rpki_valid, scopefilter_valid, protected_name_valid])
 
     def _check_auth(self) -> bool:
         assert self.rpsl_obj_new
@@ -334,9 +337,13 @@ class ChangeRequest:
         they now become invalid. For other operations, only the validity
         of references from the new object to others matter.
         """
+        override = self._auth_result.auth_method.used_override() if self._auth_result else False
         if self.request_type == UpdateRequestType.DELETE and self.rpsl_obj_current is not None:
             assert self.rpsl_obj_new
-            references_result = self.reference_validator.check_references_from_others(self.rpsl_obj_current)
+            references_result = self.reference_validator.check_references_from_others_for_deletion(
+                rpsl_obj=self.rpsl_obj_current,
+                used_override=override,
+            )
         else:
             assert self.rpsl_obj_new
             references_result = self.reference_validator.check_references_to_others(self.rpsl_obj_new)
@@ -352,6 +359,31 @@ class ChangeRequest:
             return False
 
         logger.debug(f"{id(self)}: Reference check succeeded")
+        return True
+
+    def _check_protected_names(self) -> bool:
+        """
+        Check whether an object creation uses a protected name (#616).
+        """
+        if self.request_type == UpdateRequestType.CREATE and self.rpsl_obj_new is not None:
+            override = self._auth_result.auth_method.used_override() if self._auth_result else False
+            references_result = self.reference_validator.check_protected_name(
+                self.rpsl_obj_new, used_override=override
+            )
+            self.info_messages += references_result.info_messages
+
+            if not references_result.is_valid():
+                self.error_messages += references_result.error_messages
+                logger.debug(
+                    f"{id(self)}: Protected name check failed: {list(references_result.error_messages)}"
+                )
+                if (
+                    self.is_valid()
+                ):  # Only change the status if this object was valid prior, so this is the first failure
+                    self.status = UpdateRequestStatus.ERROR_PROTECTED_NAME
+                return False
+
+            logger.debug(f"{id(self)}: Protected name check succeeded")
         return True
 
     def _check_conflicting_roa(self) -> bool:

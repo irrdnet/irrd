@@ -10,7 +10,12 @@ from passlib.hash import md5_crypt
 
 from irrd.conf import RPSL_MNTNER_AUTH_INTERNAL, get_setting
 from irrd.rpsl.parser import RPSLObject
-from irrd.rpsl.rpsl_objects import RPSLMntner, RPSLSet, rpsl_object_from_text
+from irrd.rpsl.rpsl_objects import (
+    PROTECTED_NAME_OBJECT_CLASSES,
+    RPSLMntner,
+    RPSLSet,
+    rpsl_object_from_text,
+)
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.models import (
     AuthApiToken,
@@ -19,7 +24,11 @@ from irrd.storage.models import (
     AuthUser,
     ChangeLog,
 )
-from irrd.storage.queries import RPSLDatabaseQuery, RPSLDatabaseSuspendedQuery
+from irrd.storage.queries import (
+    ProtectedRPSLNameQuery,
+    RPSLDatabaseQuery,
+    RPSLDatabaseSuspendedQuery,
+)
 
 from .parser_state import AuthMethod, RPSLSetAutnumAuthenticationMode, UpdateRequestType
 
@@ -164,10 +173,88 @@ class ReferenceValidator:
 
         return False
 
-    def check_references_from_others(self, rpsl_obj: RPSLObject) -> ValidatorResult:
+    def check_references_from_others_for_deletion(
+        self, rpsl_obj: RPSLObject, used_override=False
+    ) -> ValidatorResult:
         """
         Check for any references to this object in the DB.
         Used for validating deletions.
+        When using override and removing a protected object,
+        the check may be bypassed.
+        """
+        result = ValidatorResult()
+        if used_override and rpsl_obj.rpsl_object_class in PROTECTED_NAME_OBJECT_CLASSES:
+            message_target = result.info_messages
+            message_format = (
+                "NOTE: object {rpsl_pk} still referenced by {referring_object_class} {referring_rpsl_pk}."
+                " Delete permitted due to override. This creates a broken reference."
+            )
+        else:
+            message_target = result.error_messages
+            message_format = (
+                "Object {rpsl_pk} to be deleted, but still referenced by"
+                " {referring_object_class} {referring_rpsl_pk}"
+            )
+        self._check_references_from_others(
+            rpsl_obj=rpsl_obj,
+            message_target=message_target,
+            message_format=message_format,
+        )
+        return result
+
+    def check_protected_name(self, rpsl_obj: RPSLObject, used_override=False) -> ValidatorResult:
+        """
+        Check whether the object violates protected name rules (#616)
+
+        Checks for existing (currently broken) references to the object,
+        and whether the name is in the protected name table.
+        If used_override is set, violations are permitted and this generates
+        an info message instead of an error.
+        """
+        result = ValidatorResult()
+        if used_override:
+            message_target = result.info_messages
+            message_format = (
+                "NOTE: existing references to {rpsl_pk} exist"
+                " from {referring_object_class} {referring_rpsl_pk}, permitted due to override"
+            )
+        else:
+            message_target = result.error_messages
+            message_format = (
+                "Object {rpsl_pk} to be created, but existing references exist"
+                " from {referring_object_class} {referring_rpsl_pk}"
+            )
+
+        self._check_references_from_others(
+            rpsl_obj=rpsl_obj,
+            message_target=message_target,
+            message_format=message_format,
+        )
+        query = (
+            ProtectedRPSLNameQuery()
+            .protected_name(rpsl_obj.pk())
+            .object_classes([rpsl_obj.rpsl_object_class])
+            .source(rpsl_obj.source())
+        )
+        is_protected = bool(list(self.database_handler.execute_query(query)))
+        if is_protected:
+            if used_override:
+                result.info_messages.add(
+                    f"NOTE: object {rpsl_obj.pk()} has a protected name, creation permitted due to override."
+                )
+            else:
+                result.error_messages.add(
+                    f"Object {rpsl_obj.pk()} has a protected name that can not be reused."
+                    " Create the object under a different name."
+                )
+        return result
+
+    def _check_references_from_others(
+        self, rpsl_obj: RPSLObject, message_target: Set[str], message_format: str
+    ) -> ValidatorResult:
+        """
+        Check for any references to this object in the DB.
+        Used for validating deletions and protected names.
 
         Checks self._preloaded_deleted, because a reference from an object
         that is also about to be deleted, is acceptable.
@@ -186,9 +273,12 @@ class ReferenceValidator:
                 query_result["source"],
             ) in self._preloaded_deleted
             if not reference_to_be_deleted:
-                result.error_messages.add(
-                    f"Object {rpsl_obj.pk()} to be deleted, but still referenced "
-                    f"by {query_result['object_class']} {query_result['rpsl_pk']}"
+                message_target.add(
+                    message_format.format(
+                        rpsl_pk=rpsl_obj.pk(),
+                        referring_object_class=query_result["object_class"],
+                        referring_rpsl_pk=query_result["rpsl_pk"],
+                    )
                 )
         return result
 

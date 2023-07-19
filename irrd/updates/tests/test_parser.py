@@ -133,7 +133,11 @@ class TestSingleChangeRequestHandling:
             [
                 "delete_rpsl_object",
                 (),
-                {"rpsl_object": result_inetnum.rpsl_obj_current, "origin": JournalEntryOrigin.auth_change},
+                {
+                    "rpsl_object": result_inetnum.rpsl_obj_current,
+                    "protect_rpsl_name": True,
+                    "origin": JournalEntryOrigin.auth_change,
+                },
             ],
             ["upsert_rpsl_object", (result_as_set.rpsl_obj_new, JournalEntryOrigin.auth_change), {}],
         ]
@@ -416,6 +420,53 @@ class TestSingleChangeRequestHandling:
             ["lookup_attrs_in", ({"tech-c", "zone-c", "admin-c"}, ["PERSON-TEST"]), {}],
         ]
 
+    def test_check_references_valid_deleting_person_with_refs_in_db_with_override(self, prepare_mocks):
+        # Delete an object which is still referred by other objects in the DB,
+        # but using override while removing a protected class, which should
+        # be permitted per #616
+        mock_dq, mock_dh = prepare_mocks
+
+        validator = ReferenceValidator(mock_dh)
+        query_results = iter(
+            [
+                [{"object_text": SAMPLE_PERSON}],
+                [
+                    {
+                        "object_text": SAMPLE_INETNUM,
+                        "object_class": "inetnum",
+                        "rpsl_pk": "192.0.2.0 - 192.0.2.255",
+                        "source": "TEST",
+                    }
+                ],
+            ]
+        )
+        mock_dh.execute_query = lambda query: next(query_results)
+
+        result = parse_change_requests(
+            SAMPLE_PERSON + "delete: delete",
+            mock_dh,
+            AuthValidator(mock_dh),
+            validator,
+            {},
+        )[0]
+        result._auth_result = ValidatorResult(auth_method=AuthMethod.OVERRIDE_INTERNAL_AUTH)
+        result._check_references()
+        assert result.is_valid()
+        assert result.info_messages == [
+            (
+                "NOTE: object PERSON-TEST still referenced by inetnum 192.0.2.0 - 192.0.2.255."
+                " Delete permitted due to override. This creates a broken reference."
+            ),
+        ]
+
+        assert flatten_mock_calls(mock_dq) == [
+            ["sources", (["TEST"],), {}],
+            ["object_classes", (["person"],), {}],
+            ["rpsl_pk", ("PERSON-TEST",), {}],
+            ["sources", (["TEST"],), {}],
+            ["lookup_attrs_in", ({"tech-c", "zone-c", "admin-c"}, ["PERSON-TEST"]), {}],
+        ]
+
     def test_check_references_invalid_deleting_object_with_refs_in_update_message(self, prepare_mocks):
         # Delete an object that is referred by a new object in the same update.
         mock_dq, mock_dh = prepare_mocks
@@ -522,6 +573,76 @@ class TestSingleChangeRequestHandling:
             ["rpsl_pk", ("PERSON-TEST",), {}],
             ["sources", (["TEST"],), {}],
             ["lookup_attrs_in", ({"tech-c", "zone-c", "admin-c"}, ["PERSON-TEST"]), {}],
+        ]
+
+    def test_check_protected_name_existing_reference(self, prepare_mocks):
+        # Create a person object, where there is an existing reference to the person.
+        # This should not be permitted per #611
+        mock_dq, mock_dh = prepare_mocks
+
+        validator = ReferenceValidator(mock_dh)
+        query_result_list = [
+            [],  # No existing object, i.e. CREATE
+            [
+                {
+                    "object_text": SAMPLE_INETNUM,
+                    "object_class": "inetnum",
+                    "rpsl_pk": "192.0.2.0 - 192.0.2.255",
+                    "source": "TEST",
+                }
+            ],
+            ["protected query result"],
+        ]
+        query_results = itertools.cycle(query_result_list)
+        mock_dh.execute_query = lambda query: next(query_results)
+
+        result = parse_change_requests(
+            SAMPLE_PERSON,
+            mock_dh,
+            AuthValidator(mock_dh),
+            validator,
+            {},
+        )[0]
+        result._check_protected_names()
+        assert not result.is_valid()
+        assert result.error_messages == [
+            (
+                "Object PERSON-TEST to be created, but existing references exist from"
+                " inetnum 192.0.2.0 - 192.0.2.255"
+            ),
+            (
+                "Object PERSON-TEST has a protected name that can not be reused."
+                " Create the object under a different name."
+            ),
+        ]
+
+        assert flatten_mock_calls(mock_dq) == [
+            ["sources", (["TEST"],), {}],
+            ["object_classes", (["person"],), {}],
+            ["rpsl_pk", ("PERSON-TEST",), {}],
+            ["sources", (["TEST"],), {}],
+            ["lookup_attrs_in", ({"tech-c", "zone-c", "admin-c"}, ["PERSON-TEST"]), {}],
+        ]
+
+        # Again, with override, should be permitted
+        query_results = itertools.cycle(query_result_list)
+        mock_dh.execute_query = lambda query: next(query_results)
+        result = parse_change_requests(
+            SAMPLE_PERSON,
+            mock_dh,
+            AuthValidator(mock_dh),
+            validator,
+            {},
+        )[0]
+        result._auth_result = ValidatorResult(auth_method=AuthMethod.OVERRIDE_INTERNAL_AUTH)
+        result._check_protected_names()
+        assert result.is_valid()
+        assert result.info_messages == [
+            (
+                "NOTE: existing references to PERSON-TEST exist from"
+                " inetnum 192.0.2.0 - 192.0.2.255, permitted due to override"
+            ),
+            "NOTE: object PERSON-TEST has a protected name, creation permitted due to override.",
         ]
 
     def test_check_auth_valid_update_mntner(self, prepare_mocks):

@@ -24,6 +24,7 @@ class UpdateRequestStatus(Enum):
     ERROR_AUTH = "error: update not authorised"
     ERROR_RULES = "error: other rules not met"
     ERROR_REFERENCE = "error: reference to object that does not exist"
+    ERROR_PROTECTED_NAME = "error: creation of an object under a protected name"
     ERROR_ROA = "error: conflict with existing ROA"
     ERROR_SCOPEFILTER = "error: not in scope"
     ERROR_NON_AUTHORITIVE = "error: attempt to update object in non-authoritive database"
