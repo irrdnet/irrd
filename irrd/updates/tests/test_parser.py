@@ -421,7 +421,9 @@ class TestSingleChangeRequestHandling:
         ]
 
     def test_check_references_valid_deleting_person_with_refs_in_db_with_override(self, prepare_mocks):
-        # Delete an object which is still referred by other objects in the DB.
+        # Delete an object which is still referred by other objects in the DB,
+        # but using override while removing a protected class, which should
+        # be permitted per #616
         mock_dq, mock_dh = prepare_mocks
 
         validator = ReferenceValidator(mock_dh)

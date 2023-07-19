@@ -204,8 +204,12 @@ class ReferenceValidator:
 
     def check_protected_name(self, rpsl_obj: RPSLObject, used_override=False) -> ValidatorResult:
         """
-        Check for any references to this object in the DB,
-        and check the ProtectedRPSLName table.
+        Check whether the object violates protected name rules (#616)
+
+        Checks for existing (currently broken) references to the object,
+        and whether the name is in the protected name table.
+        If used_override is set, violations are permitted and this generates
+        an info message instead of an error.
         """
         result = ValidatorResult()
         if used_override:
@@ -226,7 +230,12 @@ class ReferenceValidator:
             message_target=message_target,
             message_format=message_format,
         )
-        query = ProtectedRPSLNameQuery().protected_name(rpsl_obj.pk()).source(rpsl_obj.source())
+        query = (
+            ProtectedRPSLNameQuery()
+            .protected_name(rpsl_obj.pk())
+            .object_classes([rpsl_obj.rpsl_object_class])
+            .source(rpsl_obj.source())
+        )
         is_protected = bool(list(self.database_handler.execute_query(query)))
         if is_protected:
             if used_override:

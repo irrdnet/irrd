@@ -362,9 +362,11 @@ class ChangeRequest:
         return True
 
     def _check_protected_names(self) -> bool:
-        """ """
-        override = self._auth_result.auth_method.used_override() if self._auth_result else False
+        """
+        Check whether an object creation uses a protected name (#616).
+        """
         if self.request_type == UpdateRequestType.CREATE and self.rpsl_obj_new is not None:
+            override = self._auth_result.auth_method.used_override() if self._auth_result else False
             references_result = self.reference_validator.check_protected_name(
                 self.rpsl_obj_new, used_override=override
             )

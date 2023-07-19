@@ -571,8 +571,6 @@ class DatabaseHandler:
         The origin indicates the origin of this change, see JournalEntryOrigin
         for the various options.
         """
-        if protect_rpsl_name and not rpsl_object:  # pragma: no cover:
-            raise ValueError("Deletion with protect_rpsl_name requires an rpsl_object.")
         self._check_write_permitted()
         self._flush_rpsl_object_writing_buffer()
         table = RPSLDatabaseObject.__table__
@@ -618,10 +616,10 @@ class DatabaseHandler:
         ):
             self.execute_statement(
                 ProtectedRPSLName.__table__.insert().values(
-                    rpsl_pk=rpsl_object.pk(),
-                    source=rpsl_object.source(),
-                    object_class=rpsl_object.rpsl_object_class,
-                    protected_name=rpsl_object.pk(),
+                    rpsl_pk=result["rpsl_pk"],
+                    source=result["source"],
+                    object_class=result["object_class"],
+                    protected_name=result["rpsl_pk"],
                 )
             )
 

@@ -274,7 +274,7 @@ class ROADatabaseObject(Base):  # type: ignore
 
 class ProtectedRPSLName(Base):  # type: ignore
     """
-    SQLAlchemy ORM object for RPSL database objects.
+    SQLAlchemy ORM object for recording protected names.
 
     This stores nic-hdl/mntner name of person, role or mntner
     objects that have been deleted, to prevent reuse. #616.
