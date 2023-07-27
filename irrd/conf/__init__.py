@@ -95,10 +95,11 @@ class Configuration:
         Load the default config and load and check the user provided config.
         If a logfile was specified, direct logs there.
         """
-        from .known_keys import KNOWN_CONFIG_KEYS, KNOWN_SOURCES_KEYS
+        from .known_keys import KNOWN_CONFIG_KEYS, KNOWN_SOURCES_KEYS, KNOWN_FLEXIBLE_KEYS
 
         self.known_config_keys = KNOWN_CONFIG_KEYS
         self.known_sources_keys = KNOWN_SOURCES_KEYS
+        self.known_flexible_keys = KNOWN_FLEXIBLE_KEYS
         self.user_config_path = user_config_path if user_config_path else CONFIG_PATH_DEFAULT
         default_config_path = str(Path(__file__).resolve().parents[0] / "default_config.yaml")
         with open(default_config_path) as default_config:
@@ -151,7 +152,7 @@ class Configuration:
             components = setting_name.split(".")
             if len(components) == 3 and components[2] not in self.known_sources_keys:
                 raise ValueError(f"Unknown setting {setting_name}")
-        elif not setting_name.startswith("access_lists"):
+        elif not any([setting_name.startswith(k) for k in self.known_flexible_keys]):
             if self.known_config_keys.get(setting_name) is None:
                 raise ValueError(f"Unknown setting {setting_name}")
 
@@ -240,7 +241,7 @@ class Configuration:
                     _validate_subconfig(subkey, value2)
 
         for key, value in config.items():
-            if key in ["sources", "access_lists"]:
+            if key in ["sources"] + self.known_flexible_keys:
                 continue
             if self.known_config_keys.get(key) is None:
                 errors.append(f"Unknown setting key: {key}")
@@ -431,6 +432,12 @@ class Configuration:
                     "unless email.recipient_override is also set. "
                     "Read documentation carefully."
                 )
+
+        for alias_name, aliased_sources in config.get("source_aliases", {}).items():
+            for aliased_source in aliased_sources:
+                if aliased_source not in known_sources:
+                    errors.append(f"Source alias {alias_name} contains reference to unknown source {aliased_source}.")
+        known_sources.update(config.get("source_aliases", {}).keys())
 
         unknown_default_sources = set(config.get("sources_default", [])).difference(known_sources)
         if unknown_default_sources:

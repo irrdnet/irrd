@@ -95,7 +95,7 @@ class TestConfiguration:
                         "bcrypt-pw": "legacy",
                     },
                 },
-                "sources_default": ["TESTDB2", "TESTDB"],
+                "sources_default": ["TESTDB2", "TESTDB", "SOURCE_ALIAS"],
                 "sources": {
                     "TESTDB": {
                         "authoritative": True,
@@ -117,6 +117,9 @@ class TestConfiguration:
                     # RPKI source permitted, rpki.roa_source not set
                     "RPKI": {},
                 },
+                "source_aliases": {
+                    "SOURCE_ALIAS": ["TESTDB", "TESTDB2"],
+                },
                 "log": {"level": "DEBUG", "logfile_path": logfile},
             }
         }
@@ -127,7 +130,7 @@ class TestConfiguration:
         save_yaml_config(config, run_init=False)
 
         # Unchanged, no reload performed
-        assert list(get_setting("sources_default")) == ["TESTDB2", "TESTDB"]
+        assert list(get_setting("sources_default")) == ["TESTDB2", "TESTDB", "SOURCE_ALIAS"]
 
         os.kill(os.getpid(), signal.SIGHUP)
         assert list(get_setting("sources_default")) == ["TESTDB2"]
@@ -320,6 +323,9 @@ class TestConfiguration:
                     "lowercase": {},
                     "invalid char": {},
                 },
+                "source_aliases": {
+                    "SOURCE_ALIAS": ["TESTDB-NOTEXIST"],
+                },
                 "log": {
                     "level": "INVALID",
                     "logging_config_path": "path",
@@ -401,6 +407,7 @@ class TestConfiguration:
         assert "Invalid source name: invalid char" in str(ce.value)
         assert "but rpki.notify_invalid_enabled is not set" in str(ce.value)
         assert "Setting sources_default contains unknown sources: DOESNOTEXIST-DB" in str(ce.value)
+        assert "Source alias SOURCE_ALIAS contains reference to unknown source TESTDB-NOTEXIST" in str(ce.value)
         assert "Invalid log.level: INVALID" in str(ce.value)
         assert "Setting log.logging_config_path can not be combined" in str(ce.value)
         assert "Unknown setting key: unknown_setting" in str(ce.value)
