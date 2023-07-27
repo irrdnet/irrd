@@ -407,7 +407,9 @@ class TestConfiguration:
         assert "Invalid source name: invalid char" in str(ce.value)
         assert "but rpki.notify_invalid_enabled is not set" in str(ce.value)
         assert "Setting sources_default contains unknown sources: DOESNOTEXIST-DB" in str(ce.value)
-        assert "Source alias SOURCE_ALIAS contains reference to unknown source TESTDB-NOTEXIST" in str(ce.value)
+        assert "Source alias SOURCE_ALIAS contains reference to unknown source TESTDB-NOTEXIST" in str(
+            ce.value
+        )
         assert "Invalid log.level: INVALID" in str(ce.value)
         assert "Setting log.logging_config_path can not be combined" in str(ce.value)
         assert "Unknown setting key: unknown_setting" in str(ce.value)

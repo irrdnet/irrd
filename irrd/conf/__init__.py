@@ -95,7 +95,11 @@ class Configuration:
         Load the default config and load and check the user provided config.
         If a logfile was specified, direct logs there.
         """
-        from .known_keys import KNOWN_CONFIG_KEYS, KNOWN_SOURCES_KEYS, KNOWN_FLEXIBLE_KEYS
+        from .known_keys import (
+            KNOWN_CONFIG_KEYS,
+            KNOWN_FLEXIBLE_KEYS,
+            KNOWN_SOURCES_KEYS,
+        )
 
         self.known_config_keys = KNOWN_CONFIG_KEYS
         self.known_sources_keys = KNOWN_SOURCES_KEYS
@@ -436,7 +440,9 @@ class Configuration:
         for alias_name, aliased_sources in config.get("source_aliases", {}).items():
             for aliased_source in aliased_sources:
                 if aliased_source not in known_sources:
-                    errors.append(f"Source alias {alias_name} contains reference to unknown source {aliased_source}.")
+                    errors.append(
+                        f"Source alias {alias_name} contains reference to unknown source {aliased_source}."
+                    )
         known_sources.update(config.get("source_aliases", {}).keys())
 
         unknown_default_sources = set(config.get("sources_default", [])).difference(known_sources)

@@ -81,9 +81,7 @@ KNOWN_CONFIG_KEYS = DottedDict(
     }
 )
 
-KNOWN_FLEXIBLE_KEYS = [
-    "access_lists", "source_aliases"
-]
+KNOWN_FLEXIBLE_KEYS = ["access_lists", "source_aliases"]
 
 KNOWN_SOURCES_KEYS = {
     "authoritative",
