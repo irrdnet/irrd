@@ -60,7 +60,6 @@ class QuerySourceManager:
     def sources_resolved(self) -> List[str]:
         return self._resolve_sources(self.sources)
 
-    @lru_cache(maxsize=100)
     def _resolve_sources(self, sources: List[str]):
         return sources  # TODO
 
