@@ -54,11 +54,11 @@ class QuerySourceManager:
 
     @property
     def all_valid_sources_resolved(self) -> List[str]:
-        return self.all_valid_sources
+        return self._resolve_sources(self.all_valid_sources)
 
     @property
     def sources_resolved(self) -> List[str]:
-        return self.sources
+        return self._resolve_sources(self.sources)
 
     @lru_cache(maxsize=100)
     def _resolve_sources(self, sources: List[str]):

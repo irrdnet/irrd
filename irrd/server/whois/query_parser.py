@@ -501,7 +501,7 @@ class WhoisQueryParser:
             raise InvalidQueryException(f"Invalid NRTM version: {version}")
 
         source = source.upper()
-        if source not in self.query_resolver.all_valid_sources:
+        if source not in self.query_resolver.source_manager.all_valid_real_sources:
             raise InvalidQueryException(f"Unknown source: {source}")
 
         in_access_list = is_client_permitted(self.client_ip, f"sources.{source}.nrtm_access_list", log=False)
