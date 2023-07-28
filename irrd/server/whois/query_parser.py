@@ -366,7 +366,7 @@ class WhoisQueryParser:
             return json.dumps(
                 {
                     "sources": self.query_resolver.source_manager.all_valid_real_sources,
-                    "aliases": self.query_resolver.source_manager.all_valid_aliases,
+                    "aliases": {k: list(v) for k, v in self.query_resolver.source_manager.all_valid_aliases.items()},
                 }
             )
 
