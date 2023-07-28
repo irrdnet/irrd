@@ -402,7 +402,7 @@ class QueryResolver:
         """Database status. If sources is None, return all valid sources."""
         if sources is None:
             sources = self.source_manager.all_valid_real_sources
-        invalid_sources = [s for s in sources if s not in self.source_manager.all_valid_real_sources]
+        invalid_sources = [s for s in sources if s not in self.source_manager.all_valid_sources]
         query = DatabaseStatusQuery().sources(sources)
         query_results = self._execute_query(query)
 
@@ -430,6 +430,13 @@ class QueryResolver:
             results[source]["last_update"] = query_result["updated"].astimezone(timezone("UTC")).isoformat()
             results[source]["synchronised_serials"] = is_serial_synchronised(self.database_handler, source)
 
+        results.update(
+            {
+                s: self.source_manager.all_valid_aliases[s]
+                for s in sources
+                if s in self.source_manager.all_valid_aliases
+            }
+        )
         for invalid_source in invalid_sources:
             results[invalid_source.upper()] = OrderedDict({"error": "Unknown source"})
         return results
