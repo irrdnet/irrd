@@ -48,6 +48,7 @@ def prepare_resolver(monkeypatch, config_override):
         {
             "rpki": {"roa_source": None},
             "sources": {"TEST1": {}, "TEST2": {}},
+            "source_aliases": {"ALIAS": ["TEST1", "TEST2"]},
             "sources_default": [],
         }
     )
@@ -118,12 +119,16 @@ class TestQueryResolver:
     def test_set_sources(self, prepare_resolver):
         mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
 
+        assert resolver.source_manager.all_valid_real_sources == ["TEST1", "TEST2"]
+        assert resolver.source_manager.all_valid_sources == ["TEST1", "TEST2", "ALIAS"]
+
         resolver.set_query_sources(None)
-        # TODO test aliases
-        assert resolver.source_manager.sources_resolved == resolver.source_manager.all_valid_sources_resolved
+        assert resolver.source_manager.sources_resolved == resolver.source_manager.all_valid_real_sources
 
         resolver.set_query_sources(["TEST1"])
         assert resolver.source_manager.sources_resolved == ["TEST1"]
+        resolver.set_query_sources(["TEST1", "ALIAS"])
+        assert resolver.source_manager.sources_resolved == ["TEST1", "TEST2"]
 
         # With RPKI-aware mode disabled, RPKI is not a valid source
         with pytest.raises(InvalidQueryException):
@@ -380,7 +385,7 @@ class TestQueryResolver:
         assert flatten_mock_calls(mock_preloader.routes_for_origins) == [
             [
                 "",
-                ({"AS65547", "AS65548"}, resolver.source_manager.all_valid_sources_resolved),
+                ({"AS65547", "AS65548"}, resolver.source_manager.all_valid_real_sources),
                 {"ip_version": 4},
             ],
         ]
@@ -394,7 +399,7 @@ class TestQueryResolver:
         assert flatten_mock_calls(mock_preloader.routes_for_origins) == [
             [
                 "",
-                ({"AS65547", "AS65548"}, resolver.source_manager.all_valid_sources_resolved),
+                ({"AS65547", "AS65548"}, resolver.source_manager.all_valid_real_sources),
                 {"ip_version": None},
             ],
         ]

@@ -4,6 +4,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from IPy import IP
+from ordered_set import OrderedSet
 from pytz import timezone
 
 from irrd.conf import RPKI_IRR_PSEUDO_SOURCE, get_setting
@@ -37,9 +38,9 @@ class RouteLookupType(Enum):
 class QuerySourceManager:
     def __init__(self):
         self.all_valid_real_sources = list(get_setting("sources", {}).keys())
-        self.all_valid_sources = self.all_valid_real_sources + list(get_setting("source_aliases", {}).keys())
         if get_setting("rpki.roa_source"):
-            self.all_valid_sources.append(RPKI_IRR_PSEUDO_SOURCE)
+            self.all_valid_real_sources.append(RPKI_IRR_PSEUDO_SOURCE)
+        self.all_valid_sources = self.all_valid_real_sources + list(get_setting("source_aliases", {}).keys())
         self.sources_default = list(get_setting("sources_default", []))
         self.sources: List[str] = self.sources_default if self.sources_default else self.all_valid_sources
 
@@ -52,15 +53,15 @@ class QuerySourceManager:
         self.sources = sources
 
     @property
-    def all_valid_sources_resolved(self) -> List[str]:
-        return self._resolve_sources(self.all_valid_sources)
-
-    @property
     def sources_resolved(self) -> List[str]:
-        return self._resolve_sources(self.sources)
+        sources: OrderedSet[str] = OrderedSet()
+        for source in self.sources:
+            if source in self.all_valid_real_sources:
+                sources.add(source)
+            if source in get_setting("source_aliases", {}):
+                sources.update(get_setting(f"source_aliases.{source}"))
 
-    def _resolve_sources(self, sources: List[str]):
-        return sources  # TODO
+        return list(sources)
 
 
 class QueryResolver:
@@ -386,8 +387,8 @@ class QueryResolver:
     ) -> "OrderedDict[str, OrderedDict[str, Any]]":
         """Database status. If sources is None, return all valid sources."""
         if sources is None:
-            sources = self.source_manager.all_valid_sources_resolved
-        invalid_sources = [s for s in sources if s not in self.source_manager.all_valid_sources_resolved]
+            sources = self.source_manager.all_valid_real_sources
+        invalid_sources = [s for s in sources if s not in self.source_manager.all_valid_real_sources]
         query = DatabaseStatusQuery().sources(sources)
         query_results = self._execute_query(query)
 
