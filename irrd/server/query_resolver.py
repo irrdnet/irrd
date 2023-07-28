@@ -36,6 +36,12 @@ class RouteLookupType(Enum):
 
 
 class QuerySourceManager:
+    """
+    The QuerySourceManager manages the source availability and selection.
+    Other than looking at the sources setting, this considers whether RPKI
+    is enabled and any configured aliases.
+    """
+
     def __init__(self):
         self.all_valid_real_sources = list(get_setting("sources", {}).keys())
         if get_setting("rpki.roa_source"):
@@ -46,7 +52,9 @@ class QuerySourceManager:
         self.sources: List[str] = self.sources_default if self.sources_default else self.all_valid_sources
 
     def set_query_sources(self, sources: Optional[List[str]]) -> None:
-        """Set the sources for future queries. If sources is None, default source list is set."""
+        """Set the sources for future queries.
+        If sources is None, default source list is set.
+        May include alias names."""
         if sources is None:
             sources = self.sources_default if self.sources_default else self.all_valid_sources
         elif not all([source in self.all_valid_sources for source in sources]):
@@ -55,6 +63,11 @@ class QuerySourceManager:
 
     @property
     def sources_resolved(self) -> List[str]:
+        """
+        Returns a list of all resolved source names, i.e. real names
+        with aliases resolved into their individual sources.
+        Names are guaranteed to be unique.
+        """
         sources: OrderedSet[str] = OrderedSet()
         for source in self.sources:
             if source in self.all_valid_real_sources:
