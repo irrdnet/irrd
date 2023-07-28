@@ -267,14 +267,12 @@ class WhoisQueryParser:
         directly here instead of in the query resolver.
         """
         if parameter == "-*":
-            sources = (
-                self.query_resolver.sources_default
-                if self.query_resolver.sources_default
-                else self.query_resolver.all_valid_sources
-            )
+            sources = self.query_resolver.source_manager.all_valid_real_sources
         else:
             sources = [s.upper() for s in parameter.split(",")]
-        invalid_sources = [s for s in sources if s not in self.query_resolver.all_valid_sources]
+        invalid_sources = [
+            s for s in sources if s not in self.query_resolver.source_manager.all_valid_real_sources
+        ]
         query = DatabaseStatusQuery().sources(sources)
         query_results = self.database_handler.execute_query(query, refresh_on_error=True)
 
@@ -361,7 +359,7 @@ class WhoisQueryParser:
            !sripe,nttcom limits sources to ripe and nttcom
         """
         if parameter == "-lc":
-            return ",".join(self.query_resolver.sources)
+            return ",".join(self.query_resolver.source_manager.sources)
 
         sources = parameter.upper().split(",")
         self.query_resolver.set_query_sources(sources)

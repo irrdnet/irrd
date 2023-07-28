@@ -1,4 +1,5 @@
 import uuid
+from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
@@ -610,8 +611,7 @@ class TestWhoisQueryParserIRRD:
 
     def test_database_serial_range(self, monkeypatch, prepare_parser):
         mock_query_resolver, mock_dh, parser = prepare_parser
-        mock_query_resolver.sources_default = ["TEST1", "TEST2"]
-        mock_query_resolver.all_valid_sources = ["TEST1", "TEST2"]
+        mock_query_resolver.source_manager = SimpleNamespace(all_valid_real_sources=["TEST1", "TEST2"])
 
         mock_dsq = Mock()
         monkeypatch.setattr("irrd.server.whois.query_parser.DatabaseStatusQuery", lambda: mock_dsq)
@@ -834,7 +834,7 @@ class TestWhoisQueryParserIRRD:
 
     def test_sources_list(self, prepare_parser, config_override):
         mock_query_resolver, mock_dh, parser = prepare_parser
-        mock_query_resolver.sources = ["TEST1"]
+        mock_query_resolver.source_manager = SimpleNamespace(sources=["TEST1"])
         mock_query_resolver.set_query_sources = Mock()
 
         response = parser.handle_query("!stest1")

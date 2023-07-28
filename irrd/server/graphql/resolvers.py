@@ -6,7 +6,6 @@ import graphql
 from graphql import GraphQLError, GraphQLResolveInfo
 from IPy import IP
 
-from irrd.conf import RPKI_IRR_PSEUDO_SOURCE, get_setting
 from irrd.routepref.status import RoutePreferenceStatus
 from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING, lookup_field_names
@@ -15,7 +14,7 @@ from irrd.server.access_check import is_client_permitted
 from irrd.storage.queries import RPSLDatabaseJournalQuery, RPSLDatabaseQuery
 from irrd.utils.text import remove_auth_hashes, snake_to_camel_case
 
-from ..query_resolver import QueryResolver
+from ..query_resolver import QueryResolver, QuerySourceManager
 from .schema_generator import SchemaGenerator
 
 """
@@ -94,15 +93,11 @@ def resolve_rpsl_objects(_, info: GraphQLResolveInfo, **kwargs):
     else:
         query.route_preference_status([RoutePreferenceStatus.visible])
 
-    all_valid_sources = set(get_setting("sources", {}).keys())
-    if get_setting("rpki.roa_source"):
-        all_valid_sources.add(RPKI_IRR_PSEUDO_SOURCE)
-    sources_default = set(get_setting("sources_default", []))
+    source_manager = QuerySourceManager()
 
     if "sources" in kwargs:
-        query.sources(kwargs["sources"])
-    elif sources_default and sources_default != all_valid_sources:
-        query.sources(list(sources_default))
+        source_manager.set_query_sources(kwargs["sources"])
+    query.sources(source_manager.sources_resolved)
 
     # All other parameters are generic lookup fields, like `members`
     for attr, value in kwargs.items():

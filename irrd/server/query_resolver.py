@@ -1,6 +1,7 @@
 import logging
 from collections import OrderedDict
 from enum import Enum
+from functools import lru_cache
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from IPy import IP
@@ -34,6 +35,36 @@ class RouteLookupType(Enum):
     MORE_SPECIFIC_WITHOUT_EXACT = "MORE_SPECIFIC_WITHOUT_EXACT"
 
 
+class QuerySourceManager:
+    def __init__(self):
+        self.all_valid_real_sources = list(get_setting("sources", {}).keys())
+        self.all_valid_sources = self.all_valid_real_sources + list(get_setting("source_aliases", {}).keys())
+        if get_setting("rpki.roa_source"):
+            self.all_valid_sources.append(RPKI_IRR_PSEUDO_SOURCE)
+        self.sources_default = list(get_setting("sources_default", []))
+        self.sources: List[str] = self.sources_default if self.sources_default else self.all_valid_sources
+
+    def set_query_sources(self, sources: Optional[List[str]]) -> None:
+        """Set the sources for future queries. If sources is None, default source list is set."""
+        if sources is None:
+            sources = self.sources_default if self.sources_default else self.all_valid_sources
+        elif not all([source in self.all_valid_sources for source in sources]):
+            raise InvalidQueryException("One or more selected sources are unavailable.")
+        self.sources = sources
+
+    @property
+    def all_valid_sources_resolved(self) -> List[str]:
+        return self.all_valid_sources
+
+    @property
+    def sources_resolved(self) -> List[str]:
+        return self.sources
+
+    @lru_cache(maxsize=100)
+    def _resolve_sources(self, sources: List[str]):
+        return sources  # TODO
+
+
 class QueryResolver:
     """
     Resolver for all RPSL queries.
@@ -47,11 +78,7 @@ class QueryResolver:
     _current_set_root_object_class: Optional[str]
 
     def __init__(self, preloader: Preloader, database_handler: DatabaseHandler) -> None:
-        self.all_valid_sources = list(get_setting("sources", {}).keys())
-        self.sources_default = list(get_setting("sources_default", []))
-        self.sources: List[str] = self.sources_default if self.sources_default else self.all_valid_sources
-        if get_setting("rpki.roa_source"):
-            self.all_valid_sources.append(RPKI_IRR_PSEUDO_SOURCE)
+        self.source_manager = QuerySourceManager()
         self.object_class_filter: List[str] = []
         self.rpki_aware = bool(get_setting("rpki.roa_source"))
         self.rpki_invalid_filter_enabled = self.rpki_aware
@@ -64,12 +91,7 @@ class QueryResolver:
         self.sql_trace = False
 
     def set_query_sources(self, sources: Optional[List[str]]) -> None:
-        """Set the sources for future queries. If sources is None, default source list is set."""
-        if sources is None:
-            sources = self.sources_default if self.sources_default else self.all_valid_sources
-        elif not all([source in self.all_valid_sources for source in sources]):
-            raise InvalidQueryException("One or more selected sources are unavailable.")
-        self.sources = sources
+        self.source_manager.set_query_sources(sources)
 
     def disable_rpki_filter(self) -> None:
         self.rpki_invalid_filter_enabled = False
@@ -126,7 +148,9 @@ class QueryResolver:
         Resolve all route(6)s prefixes for an origin, returning a set
         of all prefixes. Origin must be in 'ASxxx' format.
         """
-        prefixes = self.preloader.routes_for_origins([origin], self.sources, ip_version=ip_version)
+        prefixes = self.preloader.routes_for_origins(
+            [origin], self.source_manager.sources_resolved, ip_version=ip_version
+        )
         return prefixes
 
     def routes_for_as_set(
@@ -140,7 +164,9 @@ class QueryResolver:
         self._current_excluded_sets = exclude_sets if exclude_sets else set()
         self._current_set_maximum_depth = 0
         members = self._recursive_set_resolve({set_name})
-        return self.preloader.routes_for_origins(members, self.sources, ip_version=ip_version)
+        return self.preloader.routes_for_origins(
+            members, self.source_manager.sources_resolved, ip_version=ip_version
+        )
 
     def members_for_set_per_source(
         self, parameter: str, exclude_sets: Optional[Set[str]] = None, depth=0, recursive=False
@@ -249,7 +275,11 @@ class QueryResolver:
             try:
                 as_number_formatted, _ = parse_as_number(sub_member)
                 if self._current_set_root_object_class == "route-set":
-                    set_members.update(self.preloader.routes_for_origins([as_number_formatted], self.sources))
+                    set_members.update(
+                        self.preloader.routes_for_origins(
+                            [as_number_formatted], self.source_manager.sources_resolved
+                        )
+                    )
                     resolved_as_members.add(sub_member)
                 else:
                     set_members.add(sub_member)
@@ -358,8 +388,8 @@ class QueryResolver:
     ) -> "OrderedDict[str, OrderedDict[str, Any]]":
         """Database status. If sources is None, return all valid sources."""
         if sources is None:
-            sources = self.sources_default if self.sources_default else self.all_valid_sources
-        invalid_sources = [s for s in sources if s not in self.all_valid_sources]
+            sources = self.source_manager.all_valid_sources_resolved
+        invalid_sources = [s for s in sources if s not in self.source_manager.all_valid_sources_resolved]
         query = DatabaseStatusQuery().sources(sources)
         query_results = self._execute_query(query)
 
@@ -410,8 +440,8 @@ class QueryResolver:
     def _prepare_query(self, column_names=None, ordered_by_sources=True) -> RPSLDatabaseQuery:
         """Prepare an RPSLDatabaseQuery by applying relevant sources/class filters."""
         query = RPSLDatabaseQuery(column_names, ordered_by_sources)
-        if self.sources:
-            query.sources(self.sources)
+        if self.source_manager.sources_resolved:
+            query.sources(self.source_manager.sources_resolved)
         if self.object_class_filter:
             query.object_classes(self.object_class_filter)
         if self.rpki_invalid_filter_enabled:
