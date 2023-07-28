@@ -316,8 +316,7 @@ class TestWhoisQueryParserRIPE:
 
     def test_nrtm_request(self, prepare_parser, monkeypatch, config_override):
         mock_query_resolver, mock_dh, parser = prepare_parser
-        mock_query_resolver.all_valid_sources = ["TEST1"]
-
+        mock_query_resolver.source_manager = SimpleNamespace(all_valid_real_sources=["TEST1"])
         mock_nrg = Mock()
         monkeypatch.setattr("irrd.server.whois.query_parser.NRTMGenerator", lambda: mock_nrg)
         mock_nrg.generate = (
