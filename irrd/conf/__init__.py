@@ -438,6 +438,10 @@ class Configuration:
                 )
 
         for alias_name, aliased_sources in config.get("source_aliases", {}).items():
+            if alias_name in known_sources:
+                errors.append(
+                    f"Source alias name {alias_name} conflicts with an already configured real source."
+                )
             for aliased_source in aliased_sources:
                 if aliased_source not in known_sources:
                     errors.append(

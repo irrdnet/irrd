@@ -325,6 +325,7 @@ class TestConfiguration:
                 },
                 "source_aliases": {
                     "SOURCE_ALIAS": ["TESTDB-NOTEXIST"],
+                    "TESTDB2": ["TESTDB"],
                 },
                 "log": {
                     "level": "INVALID",
@@ -410,6 +411,7 @@ class TestConfiguration:
         assert "Source alias SOURCE_ALIAS contains reference to unknown source TESTDB-NOTEXIST" in str(
             ce.value
         )
+        assert "Source alias name TESTDB2 conflicts with an already configured real source" in str(ce.value)
         assert "Invalid log.level: INVALID" in str(ce.value)
         assert "Setting log.logging_config_path can not be combined" in str(ce.value)
         assert "Unknown setting key: unknown_setting" in str(ce.value)
