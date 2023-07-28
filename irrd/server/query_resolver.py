@@ -40,7 +40,8 @@ class QuerySourceManager:
         self.all_valid_real_sources = list(get_setting("sources", {}).keys())
         if get_setting("rpki.roa_source"):
             self.all_valid_real_sources.append(RPKI_IRR_PSEUDO_SOURCE)
-        self.all_valid_sources = self.all_valid_real_sources + list(get_setting("source_aliases", {}).keys())
+        self.all_valid_aliases = get_setting("source_aliases", {})
+        self.all_valid_sources = self.all_valid_real_sources + list(self.all_valid_aliases.keys())
         self.sources_default = list(get_setting("sources_default", []))
         self.sources: List[str] = self.sources_default if self.sources_default else self.all_valid_sources
 

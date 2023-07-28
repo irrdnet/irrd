@@ -1,3 +1,4 @@
+import json
 import logging
 import re
 from typing import Optional
@@ -355,11 +356,19 @@ class WhoisQueryParser:
     def handle_irrd_sources_list(self, parameter: str) -> Optional[str]:
         """
         !s query - set used sources
-           !s-lc returns all enabled sources, space separated
+           !s-lc returns all active sources, space separated
+           !s-all returns all available sources in JSON including details on aliases
            !sripe,nttcom limits sources to ripe and nttcom
         """
         if parameter == "-lc":
             return ",".join(self.query_resolver.source_manager.sources)
+        if parameter == "-all":
+            return json.dumps(
+                {
+                    "sources": self.query_resolver.source_manager.all_valid_real_sources,
+                    "aliases": self.query_resolver.source_manager.all_valid_aliases,
+                }
+            )
 
         sources = parameter.upper().split(",")
         self.query_resolver.set_query_sources(sources)

@@ -1,3 +1,4 @@
+import json
 import uuid
 from types import SimpleNamespace
 from unittest.mock import Mock
@@ -833,7 +834,11 @@ class TestWhoisQueryParserIRRD:
 
     def test_sources_list(self, prepare_parser, config_override):
         mock_query_resolver, mock_dh, parser = prepare_parser
-        mock_query_resolver.source_manager = SimpleNamespace(sources=["TEST1"])
+        mock_query_resolver.source_manager = SimpleNamespace(
+            sources=["TEST1", "ALIAS"],
+            all_valid_real_sources=["TEST1"],
+            all_valid_aliases={"ALIAS": ["TEST1"]},
+        )
         mock_query_resolver.set_query_sources = Mock()
 
         response = parser.handle_query("!stest1")
@@ -845,7 +850,12 @@ class TestWhoisQueryParserIRRD:
         response = parser.handle_query("!s-lc")
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
-        assert response.result == "TEST1"
+        assert response.result == "TEST1,ALIAS"
+
+        response = parser.handle_query("!s-all")
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert json.loads(response.result) == {"sources": ["TEST1"], "aliases": {"ALIAS": ["TEST1"]}}
 
     def test_irrd_version(self, prepare_parser):
         mock_query_resolver, mock_dh, parser = prepare_parser
