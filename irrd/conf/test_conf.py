@@ -95,7 +95,7 @@ class TestConfiguration:
                         "bcrypt-pw": "legacy",
                     },
                 },
-                "sources_default": ["TESTDB2", "TESTDB", "SOURCE_ALIAS"],
+                "sources_default": ["TESTDB2", "TESTDB", "SOURCE-ALIAS"],
                 "sources": {
                     "TESTDB": {
                         "authoritative": True,
@@ -118,7 +118,7 @@ class TestConfiguration:
                     "RPKI": {},
                 },
                 "source_aliases": {
-                    "SOURCE_ALIAS": ["TESTDB", "TESTDB2"],
+                    "SOURCE-ALIAS": ["TESTDB", "TESTDB2"],
                 },
                 "log": {"level": "DEBUG", "logfile_path": logfile},
             }
@@ -130,7 +130,7 @@ class TestConfiguration:
         save_yaml_config(config, run_init=False)
 
         # Unchanged, no reload performed
-        assert list(get_setting("sources_default")) == ["TESTDB2", "TESTDB", "SOURCE_ALIAS"]
+        assert list(get_setting("sources_default")) == ["TESTDB2", "TESTDB", "SOURCE-ALIAS"]
 
         os.kill(os.getpid(), signal.SIGHUP)
         assert list(get_setting("sources_default")) == ["TESTDB2"]
@@ -324,8 +324,9 @@ class TestConfiguration:
                     "invalid char": {},
                 },
                 "source_aliases": {
-                    "SOURCE_ALIAS": ["TESTDB-NOTEXIST"],
+                    "SOURCE-ALIAS": ["TESTDB-NOTEXIST"],
                     "TESTDB2": ["TESTDB"],
+                    "invalid name": ["TESTDB"],
                 },
                 "log": {
                     "level": "INVALID",
@@ -408,10 +409,11 @@ class TestConfiguration:
         assert "Invalid source name: invalid char" in str(ce.value)
         assert "but rpki.notify_invalid_enabled is not set" in str(ce.value)
         assert "Setting sources_default contains unknown sources: DOESNOTEXIST-DB" in str(ce.value)
-        assert "Source alias SOURCE_ALIAS contains reference to unknown source TESTDB-NOTEXIST" in str(
+        assert "Source alias SOURCE-ALIAS contains reference to unknown source TESTDB-NOTEXIST" in str(
             ce.value
         )
         assert "Source alias name TESTDB2 conflicts with an already configured real source" in str(ce.value)
+        assert "Invalid source alias name: invalid name" in str(ce.value)
         assert "Invalid log.level: INVALID" in str(ce.value)
         assert "Setting log.logging_config_path can not be combined" in str(ce.value)
         assert "Unknown setting key: unknown_setting" in str(ce.value)
