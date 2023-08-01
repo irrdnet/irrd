@@ -75,6 +75,16 @@ consequences. See the :ref:`protected names documentation <auth-protected-names>
 for details. This only affects authoritative databases.
 
 
+Source aliases
+--------------
+Operators can now configure source aliases. A source alias can be used
+in queries, and translates to a specific set of regular sources
+configured in the same IRRD instance. These are configured under the
+``source_aliases`` setting. Returned objects are not modified - the
+alias relates only to the query. The database status under ``!J`` whois
+and the ``databaseStatus`` GraphQL queries is extended with alias
+information.
+
 Upgrading to IRRd 4.4.0 from 4.3.x
 ----------------------------------
 TODO

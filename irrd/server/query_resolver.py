@@ -433,7 +433,7 @@ class QueryResolver:
 
         results.update(
             {
-                s: OrderedDict(source_type="alias", sources=list(self.source_manager.all_valid_aliases[s]))
+                s: OrderedDict(source_type="alias", aliased_sources=list(self.source_manager.all_valid_aliases[s]))
                 for s in sources
                 if s in self.source_manager.all_valid_aliases
             }

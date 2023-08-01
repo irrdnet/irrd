@@ -818,7 +818,7 @@ class TestQueryResolver:
                         ]
                     ),
                 ),
-                ("ALIAS", OrderedDict(source_type="alias", sources=["TEST1", "TEST2"])),
+                ("ALIAS", OrderedDict(source_type="alias", aliased_sources=["TEST1", "TEST2"])),
             ]
         )
         assert flatten_mock_calls(mock_dsq) == [["sources", (["TEST1", "TEST2", "ALIAS"],), {}]]

@@ -89,8 +89,11 @@ IRRd style queries
 * ``!J`` returns status information for each source. This can be used to check
   the mirroring status, which databases are authoritative, whether certain
   object classes are excluded, and various other settings.
-  The query syntax is identical to ``!j``, the output is JSON data, with the
-  following keys for each valid source:
+  The query syntax is identical to ``!j``, the output is JSON data.
+
+Each entry has a ``source_type`` which is either ``regular`` or ``alias``.
+Alias sources have a ``aliased_sources`` key listing the sources for which they
+are an alias. Other sources have the the following keys for each valid source:
 
   * ``authoritative``: true if this source is authoritative in this IRRd
     instance, i.e. whether local changes are allowed. False if the source
