@@ -80,7 +80,6 @@ class SchemaGenerator:
                 lastUpdate: String
                 synchronisedSerials: Boolean!
                 aliased_sources: [String!]
-
             }
 
             type RPSLJournalEntry {
