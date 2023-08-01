@@ -74,7 +74,7 @@ pytest-freezegun = "^0.4.2"
 mypy = { version = "^1.0.1", markers = "platform_python_implementation == 'CPython'" }
 ruff = "^0.0.252"
 isort = "^5.12.0"
-black = "^23.1.0"
+black = "23.3.0"
 poethepoet = "^0.18.1"
 factory-boy = "^3.2.1"
 smtpdfix = "^0.4.2"
