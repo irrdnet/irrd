@@ -746,6 +746,7 @@ class TestQueryResolver:
                     "TEST2": {"rpki_excluded": True, "keep_journal": True},
                 },
                 "sources_default": [],
+                "source_aliases": ["TEST1"],
             }
         )
         mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
@@ -778,6 +779,7 @@ class TestQueryResolver:
             "TEST1",
             OrderedDict(
                 [
+                    ("source_type", "regular"),
                     ("authoritative", True),
                     ("object_class_filter", ["route"]),
                     ("rpki_rov_filter", True),
@@ -800,6 +802,7 @@ class TestQueryResolver:
                     "TEST2",
                     OrderedDict(
                         [
+                            ("source_type", "regular"),
                             ("authoritative", False),
                             ("object_class_filter", None),
                             ("rpki_rov_filter", False),
@@ -815,9 +818,10 @@ class TestQueryResolver:
                         ]
                     ),
                 ),
+                ("ALIAS", OrderedDict(source_type="alias", sources=["TEST1", "TEST2"])),
             ]
         )
-        assert flatten_mock_calls(mock_dsq) == [["sources", (["TEST1", "TEST2"],), {}]]
+        assert flatten_mock_calls(mock_dsq) == [["sources", (["TEST1", "TEST2", "ALIAS"],), {}]]
         mock_dsq.reset_mock()
 
         mock_query_result = mock_query_result[:1]

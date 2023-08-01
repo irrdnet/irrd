@@ -401,7 +401,7 @@ class QueryResolver:
     ) -> "OrderedDict[str, OrderedDict[str, Any]]":
         """Database status. If sources is None, return all valid sources."""
         if sources is None:
-            sources = self.source_manager.all_valid_real_sources
+            sources = self.source_manager.all_valid_sources
         invalid_sources = [s for s in sources if s not in self.source_manager.all_valid_sources]
         query = DatabaseStatusQuery().sources(sources)
         query_results = self._execute_query(query)
@@ -410,6 +410,7 @@ class QueryResolver:
         for query_result in query_results:
             source = query_result["source"].upper()
             results[source] = OrderedDict()
+            results[source]["source_type"] = "regular"
             results[source]["authoritative"] = get_setting(f"sources.{source}.authoritative", False)
             object_class_filter = get_setting(f"sources.{source}.object_class_filter")
             results[source]["object_class_filter"] = (
@@ -432,7 +433,7 @@ class QueryResolver:
 
         results.update(
             {
-                s: self.source_manager.all_valid_aliases[s]
+                s: OrderedDict(source_type="alias", sources=list(self.source_manager.all_valid_aliases[s]))
                 for s in sources
                 if s in self.source_manager.all_valid_aliases
             }
