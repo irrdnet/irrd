@@ -65,6 +65,7 @@ class SchemaGenerator:
             }
 
             type DatabaseStatus {
+                source_type: String!
                 source: String!
                 authoritative: Boolean!
                 objectClassFilter: [String!]
@@ -78,6 +79,7 @@ class SchemaGenerator:
                 serialNewestMirror: Int
                 lastUpdate: String
                 synchronisedSerials: Boolean!
+                aliased_sources: [String!]
             }
 
             type RPSLJournalEntry {

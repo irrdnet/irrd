@@ -41,6 +41,7 @@ enum RoutePreferenceStatus {
             }
 
             type DatabaseStatus {
+                source_type: String!
                 source: String!
                 authoritative: Boolean!
                 objectClassFilter: [String!]
@@ -54,6 +55,7 @@ enum RoutePreferenceStatus {
                 serialNewestMirror: Int
                 lastUpdate: String
                 synchronisedSerials: Boolean!
+                aliased_sources: [String!]
             }
 
             type RPSLJournalEntry {

@@ -48,6 +48,7 @@ def prepare_resolver(monkeypatch, config_override):
         {
             "rpki": {"roa_source": None},
             "sources": {"TEST1": {}, "TEST2": {}},
+            "source_aliases": {"ALIAS": ["TEST1", "TEST2"]},
             "sources_default": [],
         }
     )
@@ -118,11 +119,16 @@ class TestQueryResolver:
     def test_set_sources(self, prepare_resolver):
         mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
 
+        assert resolver.source_manager.all_valid_real_sources == ["TEST1", "TEST2"]
+        assert resolver.source_manager.all_valid_sources == ["TEST1", "TEST2", "ALIAS"]
+
         resolver.set_query_sources(None)
-        assert resolver.sources == resolver.all_valid_sources
+        assert resolver.source_manager.sources_resolved == resolver.source_manager.all_valid_real_sources
 
         resolver.set_query_sources(["TEST1"])
-        assert resolver.sources == ["TEST1"]
+        assert resolver.source_manager.sources_resolved == ["TEST1"]
+        resolver.set_query_sources(["TEST1", "ALIAS"])
+        assert resolver.source_manager.sources_resolved == ["TEST1", "TEST2"]
 
         # With RPKI-aware mode disabled, RPKI is not a valid source
         with pytest.raises(InvalidQueryException):
@@ -138,7 +144,7 @@ class TestQueryResolver:
             }
         )
         resolver = QueryResolver(mock_preloader, mock_dh)
-        assert list(resolver.sources_default) == ["TEST2", "TEST1"]
+        assert list(resolver.source_manager.sources_default) == ["TEST2", "TEST1"]
 
     def test_restrict_object_class(self, prepare_resolver):
         mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
@@ -286,7 +292,7 @@ class TestQueryResolver:
         mock_dq.reset_mock()
 
         resolver.set_query_sources(["RPKI"])
-        assert resolver.sources == ["RPKI"]
+        assert resolver.source_manager.sources_resolved == ["RPKI"]
 
     def test_route_search_exact_with_scopefilter(self, prepare_resolver, config_override):
         mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
@@ -377,7 +383,11 @@ class TestQueryResolver:
         mock_preloader.routes_for_origins = Mock(return_value=[])
         result = resolver.routes_for_as_set("AS65547", 4)
         assert flatten_mock_calls(mock_preloader.routes_for_origins) == [
-            ["", ({"AS65547", "AS65548"}, resolver.all_valid_sources), {"ip_version": 4}],
+            [
+                "",
+                ({"AS65547", "AS65548"}, resolver.source_manager.all_valid_real_sources),
+                {"ip_version": 4},
+            ],
         ]
         assert not result
 
@@ -387,7 +397,11 @@ class TestQueryResolver:
         assert resolver._current_set_root_object_class == "as-set"
         assert result == {"192.0.2.0/25", "192.0.2.128/25"}
         assert flatten_mock_calls(mock_preloader.routes_for_origins) == [
-            ["", ({"AS65547", "AS65548"}, resolver.all_valid_sources), {"ip_version": None}],
+            [
+                "",
+                ({"AS65547", "AS65548"}, resolver.source_manager.all_valid_real_sources),
+                {"ip_version": None},
+            ],
         ]
 
         assert not mock_dq.mock_calls
@@ -732,6 +746,7 @@ class TestQueryResolver:
                     "TEST2": {"rpki_excluded": True, "keep_journal": True},
                 },
                 "sources_default": [],
+                "source_aliases": ["TEST1"],
             }
         )
         mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
@@ -764,6 +779,7 @@ class TestQueryResolver:
             "TEST1",
             OrderedDict(
                 [
+                    ("source_type", "regular"),
                     ("authoritative", True),
                     ("object_class_filter", ["route"]),
                     ("rpki_rov_filter", True),
@@ -786,6 +802,7 @@ class TestQueryResolver:
                     "TEST2",
                     OrderedDict(
                         [
+                            ("source_type", "regular"),
                             ("authoritative", False),
                             ("object_class_filter", None),
                             ("rpki_rov_filter", False),
@@ -801,9 +818,10 @@ class TestQueryResolver:
                         ]
                     ),
                 ),
+                ("ALIAS", OrderedDict(source_type="alias", aliased_sources=["TEST1", "TEST2"])),
             ]
         )
-        assert flatten_mock_calls(mock_dsq) == [["sources", (["TEST1", "TEST2"],), {}]]
+        assert flatten_mock_calls(mock_dsq) == [["sources", (["TEST1", "TEST2", "ALIAS"],), {}]]
         mock_dsq.reset_mock()
 
         mock_query_result = mock_query_result[:1]

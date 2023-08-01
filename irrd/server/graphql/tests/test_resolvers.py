@@ -105,6 +105,8 @@ def prepare_resolver(monkeypatch):
 
 class TestGraphQLResolvers:
     def test_resolve_rpsl_objects(self, prepare_resolver, config_override):
+        config_override({"sources": {"TEST1": {}}})
+
         info, mock_database_query, mock_query_resolver = prepare_resolver
 
         with pytest.raises(ValueError):
@@ -159,7 +161,7 @@ class TestGraphQLResolvers:
         assert info.context["sql_trace"]
 
         mock_database_query.reset_mock()
-        config_override({"sources_default": ["TEST1"]})
+        config_override({"sources_default": ["TEST1"], "sources": {"TEST1": {}}})
         result = list(
             resolvers.resolve_rpsl_objects(
                 None,

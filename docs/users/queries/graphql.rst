@@ -158,18 +158,21 @@ It returns an array of ``DatabaseStatus`` GraphQL objects, which are also
 defined in the schema::
 
     type DatabaseStatus {
-      source: String!
-      authoritative: Boolean!
-      objectClassFilter: [String!]
-      rpkiRovFilter: Boolean!
-      scopefilterEnabled: Boolean!
-      localJournalKept: Boolean!
-      serialOldestJournal: Int
-      serialNewestJournal: Int
-      serialLastExport: Int
-      serialNewestMirror: Int
-      lastUpdate: String
-      synchronisedSerials: Boolean!
+        source_type: String!
+        source: String!
+        authoritative: Boolean!
+        objectClassFilter: [String!]
+        rpkiRovFilter: Boolean!
+        scopefilterEnabled: Boolean!
+        routePreference: Int
+        localJournalKept: Boolean!
+        serialOldestJournal: Int
+        serialNewestJournal: Int
+        serialLastExport: Int
+        serialNewestMirror: Int
+        lastUpdate: String
+        synchronisedSerials: Boolean!
+        aliased_sources: [String!]
     }
 
 These are all the fields that can be queried, and their return types.
@@ -178,6 +181,7 @@ An example query that returns all current fields for all sources::
 
     query {
       databaseStatus {
+        source_type
         source
         authoritative
         objectClassFilter
@@ -190,6 +194,7 @@ An example query that returns all current fields for all sources::
         serialNewestMirror
         lastUpdate
         synchronisedSerials
+        aliased_sources
       }
     }
 
@@ -199,6 +204,7 @@ Which might return::
       "data": {
         "databaseStatus": [
           {
+            "source_type": "regular",
             "source": "NTTCOM",
             "authoritative": false,
             "objectClassFilter": null,
@@ -210,7 +216,8 @@ Which might return::
             "serialLastExport": null,
             "serialNewestMirror": 1228527,
             "lastUpdate": "2020-09-26T15:22:13.977916+00:00",
-            "synchronisedSerials": false
+            "synchronisedSerials": false,
+            "aliased_sources": null
           }
         ]
       },
@@ -244,7 +251,9 @@ Or a set of sources::
     will accept this as well. This works for all array types, i.e. those
     defined with ``[...]``.
 
-The fields have the following meaning:
+Each entry has a ``source_type`` which is either ``regular`` or ``alias``.
+Alias sources have an ``aliased_sources`` field listing the sources for which they
+are an alias. Other sources have the the following fields for each valid source:
 
 * ``source``: the name of the source
 * ``authoritative``: true if this source is authoritative in this IRRd

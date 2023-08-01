@@ -1,4 +1,5 @@
 import uuid
+from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
@@ -315,8 +316,7 @@ class TestWhoisQueryParserRIPE:
 
     def test_nrtm_request(self, prepare_parser, monkeypatch, config_override):
         mock_query_resolver, mock_dh, parser = prepare_parser
-        mock_query_resolver.all_valid_sources = ["TEST1"]
-
+        mock_query_resolver.source_manager = SimpleNamespace(all_valid_real_sources=["TEST1"])
         mock_nrg = Mock()
         monkeypatch.setattr("irrd.server.whois.query_parser.NRTMGenerator", lambda: mock_nrg)
         mock_nrg.generate = (
@@ -610,8 +610,7 @@ class TestWhoisQueryParserIRRD:
 
     def test_database_serial_range(self, monkeypatch, prepare_parser):
         mock_query_resolver, mock_dh, parser = prepare_parser
-        mock_query_resolver.sources_default = ["TEST1", "TEST2"]
-        mock_query_resolver.all_valid_sources = ["TEST1", "TEST2"]
+        mock_query_resolver.source_manager = SimpleNamespace(all_valid_real_sources=["TEST1", "TEST2"])
 
         mock_dsq = Mock()
         monkeypatch.setattr("irrd.server.whois.query_parser.DatabaseStatusQuery", lambda: mock_dsq)
@@ -834,7 +833,11 @@ class TestWhoisQueryParserIRRD:
 
     def test_sources_list(self, prepare_parser, config_override):
         mock_query_resolver, mock_dh, parser = prepare_parser
-        mock_query_resolver.sources = ["TEST1"]
+        mock_query_resolver.source_manager = SimpleNamespace(
+            sources=["TEST1", "ALIAS"],
+            all_valid_real_sources=["TEST1"],
+            all_valid_aliases={"ALIAS": ["TEST1"]},
+        )
         mock_query_resolver.set_query_sources = Mock()
 
         response = parser.handle_query("!stest1")
@@ -846,7 +849,7 @@ class TestWhoisQueryParserIRRD:
         response = parser.handle_query("!s-lc")
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
-        assert response.result == "TEST1"
+        assert response.result == "TEST1,ALIAS"
 
     def test_irrd_version(self, prepare_parser):
         mock_query_resolver, mock_dh, parser = prepare_parser

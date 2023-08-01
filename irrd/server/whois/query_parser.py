@@ -267,14 +267,12 @@ class WhoisQueryParser:
         directly here instead of in the query resolver.
         """
         if parameter == "-*":
-            sources = (
-                self.query_resolver.sources_default
-                if self.query_resolver.sources_default
-                else self.query_resolver.all_valid_sources
-            )
+            sources = self.query_resolver.source_manager.all_valid_real_sources
         else:
             sources = [s.upper() for s in parameter.split(",")]
-        invalid_sources = [s for s in sources if s not in self.query_resolver.all_valid_sources]
+        invalid_sources = [
+            s for s in sources if s not in self.query_resolver.source_manager.all_valid_real_sources
+        ]
         query = DatabaseStatusQuery().sources(sources)
         query_results = self.database_handler.execute_query(query, refresh_on_error=True)
 
@@ -357,11 +355,11 @@ class WhoisQueryParser:
     def handle_irrd_sources_list(self, parameter: str) -> Optional[str]:
         """
         !s query - set used sources
-           !s-lc returns all enabled sources, space separated
+           !s-lc returns all active sources, space separated
            !sripe,nttcom limits sources to ripe and nttcom
         """
         if parameter == "-lc":
-            return ",".join(self.query_resolver.sources)
+            return ",".join(self.query_resolver.source_manager.sources)
 
         sources = parameter.upper().split(",")
         self.query_resolver.set_query_sources(sources)
@@ -503,7 +501,7 @@ class WhoisQueryParser:
             raise InvalidQueryException(f"Invalid NRTM version: {version}")
 
         source = source.upper()
-        if source not in self.query_resolver.all_valid_sources:
+        if source not in self.query_resolver.source_manager.all_valid_real_sources:
             raise InvalidQueryException(f"Unknown source: {source}")
 
         in_access_list = is_client_permitted(self.client_ip, f"sources.{source}.nrtm_access_list", log=False)

@@ -108,6 +108,10 @@ This sample shows most configuration options
             - MIRROR-SECOND
             - MIRROR-FIRST
             - RPKI
+        source_aliases:
+            EXAMPLE:
+                - RPKI
+                - AUTHDATABASE
 
         sources:
             AUTHDATABASE:
@@ -592,6 +596,17 @@ Sources
   the default selection. If ``rpki.roa_source`` is defined, this may also
   include ``RPKI``, which contains pseudo-IRR objects generated from ROAs.
   |br| **Default**: not defined. All sources are enabled, but results are not
+  ordered by source.
+  |br| **Change takes effect**: after SIGHUP, for all subsequent queries.
+* ``source_aliases``: a set of source names that are aliases to real sources.
+  Under ``source_aliases.{name}``, list the sources that should be included
+  in that alias. The alias can then be used as any other source name,
+  including listing in ``sources_default``. Ordering is preserved.
+  Aliases can not be nested. Alias names have the same requirements
+  as source names,
+  If ``rpki.roa_source`` is defined, this may also
+  include ``RPKI``, which contains pseudo-IRR objects generated from ROAs.
+  |br| **Default**: no aliases defined.
   ordered by source.
   |br| **Change takes effect**: after SIGHUP, for all subsequent queries.
 * ``sources.{name}``: settings for a particular source. The name must be
