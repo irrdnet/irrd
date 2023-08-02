@@ -31,7 +31,7 @@ ENV_URL = {"IRR_RPSL_SUBMIT_URL": IRRD_URL}
 ENV_HOST = {"IRR_RPSL_SUBMIT_HOST": IRRD_HOST}
 
 REGEX_NO_OBJECTS = re.compile("Empty input! Specify at least on RPSL object")
-REGEX_TOO_MANY = re.compile("There was more than one RPSL object")
+REGEX_MIXED_DELETE = re.compile("did not have a delete: line")
 REGEX_ONE_OF = re.compile("one of the arguments -h -u is required")
 REGEX_NO_H_WITH_U = re.compile("argument -h: not allowed with argument -u")
 REGEX_UNRESOLVABLE = re.compile("Could not resolve")
@@ -64,7 +64,10 @@ RPSL_EXTRA_WHITESPACE = (
     "\n\nroute: 1.2.3.4\norigin: AS65414\n\n\n\nroute: 5.6.8.9\norigin: AS65414\n\n\n\n\n\n"
 )
 RPSL_DELETE = f"role: Badgers\ndelete: {DELETE_REASON}"
-RPSL_DELETE_WITH_TWO_OBJECTS = f"person: Biff Badger\n\nrole: Badgers\ndelete: {DELETE_REASON}"
+RPSL_DELETE_WITH_TWO_OBJECTS = (
+    f"person: Biff Badger\ndelete: {DELETE_REASON}\n\nrole: Badgers\ndelete: {DELETE_REASON}"
+)
+RPSL_DELETE_WITH_TWO_MIXED_OBJECTS = f"person: Biff Badger\n\nrole: Badgers\ndelete: {DELETE_REASON}"
 RPSL_WITH_OVERRIDE = f"mnter: Biff\noverride: {OVERRIDE}"
 RPSL_WITH_TWO_DIFF_OVERRIDES = f"{RPSL_MINIMAL}override: {PASSWORD1}\n\n{RPSL_MINIMAL}override: {PASSWORD2}"
 RPSL_WITH_ONE_PASSWORD = f"{RPSL_MINIMAL}password: {PASSWORD1}\n"
@@ -356,7 +359,26 @@ class Test200CreateRequestBody(MyBase):
         self.assertEqual(request_body["delete_reason"], "")
         self.assertEqual(len(request_body["objects"]), 2)
 
+    def test_create_request_body_two_mixed_objects_delete(self):
+        """
+        Every object in a delete operation must have a delete line,
+        so this test tries it with one object with a delete line
+        and one object without. This should throw an exception.
+        """
+        passed = False
+        try:
+            irr_rpsl_submit.create_request_body(RPSL_DELETE_WITH_TWO_MIXED_OBJECTS)
+        except irr_rpsl_submit.XNotAllDeletes:
+            passed = True
+
+        self.assertTrue(passed)
+
     def test_create_request_body_two_objects_delete(self):
+        """
+        Every object in a delete operation must have a delete line,
+        so this test tries it with all objects with a delete line.
+        It should not throw an exception.
+        """
         request_body = irr_rpsl_submit.create_request_body(RPSL_DELETE_WITH_TWO_OBJECTS)
         for key in REQUEST_BODY_KEYS:
             self.assertTrue(key in request_body)
@@ -387,7 +409,7 @@ class Test200CreateRequestBody(MyBase):
         self.assertEqual(len(request_body["objects"]), 2)
 
 
-class Test200CreateRequesty(MyBase):
+class Test200CreateRequest(MyBase):
     def test_create_http_request_metadata(self):
         args = irr_rpsl_submit.get_arguments(["-h", UNRESOVABLE_HOST, "-m", "Biff=Badger"])
         request = irr_rpsl_submit.create_http_request(RPSL_MINIMAL, args)
@@ -544,7 +566,7 @@ class Test400RunNoNetwork(MyBase):
 
     def test_delete_with_extra_objects(self):
         options = ["-u", "http://abc.xyz.example.com"]
-        sys.stdin = io.StringIO(RPSL_DELETE_WITH_TWO_OBJECTS)
+        sys.stdin = io.StringIO(RPSL_DELETE_WITH_TWO_MIXED_OBJECTS)
         with pytest.raises(SystemExit) as pytest_wrapped_e:
             irr_rpsl_submit.run(options)
         self.assertEqual(pytest_wrapped_e.type, SystemExit)
@@ -772,16 +794,16 @@ class Test900Command(MyBase):
         )
         self.assertRegex(result.stderr, REGEX_NO_OBJECTS)
 
-    def test_030_multiple_object_delete(self):
-        result = Runner.run(["-u", IRRD_URL], ENV_EMPTY, RPSL_DELETE_WITH_TWO_OBJECTS)
+    def test_030_mixed_object_delete(self):
+        result = Runner.run(["-u", IRRD_URL], ENV_EMPTY, RPSL_DELETE_WITH_TWO_MIXED_OBJECTS)
         self.assertEqual(
             result.returncode,
             EXIT_INPUT_ERROR,
-            f"RPSL delete with multiple objects exits with {EXIT_INPUT_ERROR}",
+            f"RPSL delete with mixed objects exits with {EXIT_INPUT_ERROR}",
         )
-        self.assertRegex(result.stderr, REGEX_TOO_MANY)
+        self.assertRegex(result.stderr, REGEX_MIXED_DELETE)
 
-    def test_040_unresovlable_host(self):
+    def test_040_unresolvable_host(self):
         table = [
             ["-u", UNRESOVABLE_URL],
             ["-h", UNRESOVABLE_HOST],
@@ -823,13 +845,3 @@ class Test900Command(MyBase):
                 f"Bad response URL {row[1]} exits with {EXIT_NETWORK_ERROR}",
             )
             self.assertRegex(result.stderr, REGEX_BAD_RESPONSE)
-
-
-class Test990Command(unittest.TestCase):
-    """
-    These tests run irr_rpsl_submit.py as a program. As such, none
-    of these tests contribute to coverage since the work is done in
-    a separate process.
-    """
-
-    pass

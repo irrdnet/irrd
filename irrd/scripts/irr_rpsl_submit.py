@@ -278,15 +278,15 @@ class XResponse(XBasic):
         return "Response error"
 
 
-class XTooManyObjects(XInput):
+class XNotAllDeletes(XInput):
     """
-    Raised when there a delete operation gets more than one RPSL object.
-    IRRdv4 requires that any delete operation have exactly one object
-    in the request.
+    Raised when there a delete operation has at least one RPSL object
+    that does not have a delete: line. All objects in a DELETE operation
+    must have a delete: line.
     """
 
     def __init__(self):
-        super().__init__("There was more than one RPSL object. " + "A delete must have exactly one object.")
+        super().__init__("At least one object in the delete query did not have a delete: line")
 
 
 def run(options):
@@ -549,8 +549,6 @@ def create_http_request(requests_text, args):
 
     if not request_body["objects"]:
         raise XNoObjects("No RPSL objects were found after processing input.")
-    if is_delete and len(request_body["objects"]) > 1:
-        raise XTooManyObjects()
 
     method = "DELETE" if is_delete else "POST"
     http_data = json.dumps(request_body).encode("utf-8")
@@ -581,13 +579,19 @@ def create_request_body(rpsl: str):
     passwords = []
     override = None
     rpsl_texts = []
+
     delete_reason = ""
+    delete_object_count = 0
+    delete_line_re = re.compile(r"^delete:", re.M)
 
     rpsl = rpsl.replace("\r", "")
     for object_text in rpsl.split("\n\n"):
         object_text = object_text.strip()
         if not object_text:
             continue
+
+        if re.search(r"^delete:", object_text, flags=re.MULTILINE):
+            delete_object_count += 1
 
         rpsl_text = ""
 
@@ -612,12 +616,16 @@ def create_request_body(rpsl: str):
         if rpsl_text:
             rpsl_texts.append(rpsl_text)
 
+    if delete_object_count > 0 and delete_object_count != len(rpsl_texts):
+        raise XNotAllDeletes()
+
     result = {
         "objects": [{"object_text": rpsl_text} for rpsl_text in rpsl_texts],
         "passwords": passwords,
         "override": override,
         "delete_reason": delete_reason,
     }
+
     return result
 
 
