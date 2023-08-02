@@ -6,7 +6,7 @@ from irrd.conf import get_setting
 from irrd.updates.parser_state import SuspensionRequestType
 
 
-def parse_as_number(value: Union[str, int], permit_plain=False) -> Tuple[str, int]:
+def parse_as_number(value: Union[str, int], permit_plain=False, asdot_permitted=False) -> Tuple[str, int]:
     """Validate and clean an AS number. Returns it in ASxxxx and numeric format."""
     if isinstance(value, str):
         value = value.upper()
@@ -15,16 +15,19 @@ def parse_as_number(value: Union[str, int], permit_plain=False) -> Tuple[str, in
 
         start_index = 2 if value.startswith("AS") else 0
 
-        if get_setting("compatibility.asdot_queries") is True and "." in value[start_index:]:
-            if value[start_index:].count(".") > 1:
+        if asdot_permitted and get_setting("compatibility.asdot_queries") and "." in value[start_index:]:
+            try:
+                high_str, low_str = value[start_index:].split(".")
+            except ValueError:
                 raise ValidationError(f"Invalid AS number {value}: number is not valid asdot format")
 
-            high, low = [int(i) if i.isnumeric() else None for i in value[start_index:].split(".")]
-
-            if high is None:
+            try:
+                high = int(high_str)
+            except ValueError:
                 raise ValidationError(f"Invalid AS number {value}: high order value missing")
-
-            if low is None:
+            try:
+                low = int(low_str)
+            except ValueError:
                 raise ValidationError(f"Invalid AS number {value}: low order value missing")
 
             if high > 65535:
@@ -36,10 +39,10 @@ def parse_as_number(value: Union[str, int], permit_plain=False) -> Tuple[str, in
             value_int = high * 65536 + low
 
         else:
-            if not value[start_index:].isnumeric():
-                raise ValidationError(f"Invalid AS number {value}: number part is not numeric")
-            else:
+            try:
                 value_int = int(value[start_index:])
+            except ValueError:
+                raise ValidationError(f"Invalid AS number {value}: number part is not numeric")
 
     else:
         value_int = value

@@ -222,7 +222,7 @@ class WhoisQueryParser:
         of all originating prefixes, not including duplicates.
         """
         try:
-            origin_formatted, _ = parse_as_number(origin)
+            origin_formatted, _ = parse_as_number(origin, asdot_permitted=True)
         except ValidationError as ve:
             raise InvalidQueryException(str(ve))
 

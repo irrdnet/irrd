@@ -941,5 +941,10 @@ Compatibility
   performance impact on very large responses.
   |br| **Default**: ``false``, IPv6 members included.
   |br| **Change takes effect**: after SIGHUP, for all subsequent queries.
+* ``compatibility.asdot_queries``: if set to ``true``, origin queries will
+  also accept queries in the (long deprecated) asdot format for AS numbers.
+  In other places, like object attributes, asdot remains invalid.
+  |br| **Default**: ``false``, asdot not valid.
+  |br| **Change takes effect**: after SIGHUP, for all subsequent queries.
 
 .. _RFC8416: https://tools.ietf.org/html/rfc8416
