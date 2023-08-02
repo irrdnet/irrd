@@ -27,11 +27,11 @@ def parse_as_number(value: Union[str, int], permit_plain=False, asdot_permitted=
             try:
                 high = int(high_str)
             except ValueError:
-                raise ValidationError(f"Invalid AS number {value}: high order value missing")
+                raise ValidationError(f"Invalid AS number {value}: high order value missing or invalid")
             try:
                 low = int(low_str)
             except ValueError:
-                raise ValidationError(f"Invalid AS number {value}: low order value missing")
+                raise ValidationError(f"Invalid AS number {value}: low order value missing or invalid")
 
             if high > 65535:
                 raise ValidationError(f"Invalid AS number {value}: high order value out of range")
