@@ -23,19 +23,15 @@ class TransactionTimePreloadSignaller:
             current_time = self.database_handler.timestamp_last_committed_transaction()
             if not self.last_time or self.last_time != current_time:
                 logger.debug(
-                    (
-                        f"Signalling preload reload: last transaction completed {current_time}, previous"
-                        f" known last transaction was {self.last_time}"
-                    ),
+                    f"Signalling preload reload: last transaction completed {current_time}, previous"
+                    f" known last transaction was {self.last_time}",
                 )
                 self.preloader.signal_reload()
                 self.last_time = current_time
         except Exception as exc:
             logger.error(
-                (
-                    "An exception occurred while attempting to check transaction timing, signalling preload"
-                    f" reload anyways: {exc}"
-                ),
+                "An exception occurred while attempting to check transaction timing, signalling preload"
+                f" reload anyways: {exc}",
                 exc_info=exc,
             )
             try:

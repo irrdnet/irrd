@@ -22,10 +22,8 @@ def handle_email_submission(email_txt: str) -> Optional[ChangeSubmissionHandler]
         }
     except Exception as exc:
         logger.critical(
-            (
-                f"An exception occurred while attempting to parse the following update e-mail: {email_txt}\n"
-                f"--- traceback for {exc} follows:"
-            ),
+            f"An exception occurred while attempting to parse the following update e-mail: {email_txt}\n"
+            f"--- traceback for {exc} follows:",
             exc_info=exc,
         )
         return None
@@ -67,10 +65,8 @@ def handle_email_submission(email_txt: str) -> Optional[ChangeSubmissionHandler]
 
     except Exception as exc:
         logger.critical(
-            (
-                f"An exception occurred while attempting to process the following update: {email_txt}\n"
-                f"--- traceback for {exc} follows:"
-            ),
+            f"An exception occurred while attempting to process the following update: {email_txt}\n"
+            f"--- traceback for {exc} follows:",
             exc_info=exc,
         )
         subject = f"ERROR: {msg.message_subject}"
@@ -85,10 +81,8 @@ def handle_email_submission(email_txt: str) -> Optional[ChangeSubmissionHandler]
             handler.send_notification_target_reports()
     except Exception as exc:
         logger.critical(
-            (
-                "An exception occurred while attempting to send a reply to an update: "
-                f"{subject}\n{reply_content}\n --- traceback for {exc} follows:"
-            ),
+            "An exception occurred while attempting to send a reply to an update: "
+            f"{subject}\n{reply_content}\n --- traceback for {exc} follows:",
             exc_info=exc,
         )
 

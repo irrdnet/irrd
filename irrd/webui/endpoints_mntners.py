@@ -248,10 +248,8 @@ class PermissionAddForm(CurrentPasswordForm):
         validators=[wtforms.validators.DataRequired()],
     )
     user_management = wtforms.BooleanField(
-        (
-            "Give this user access to user management, including adding and removing other users (including"
-            " myself)"
-        ),
+        "Give this user access to user management, including adding and removing other users (including"
+        " myself)",
     )
     submit = wtforms.SubmitField("Authorise this user")
 

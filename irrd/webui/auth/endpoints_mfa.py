@@ -195,10 +195,8 @@ async def webauthn_verify_authentication_response(
         )
     except Exception as err:
         logger.info(
-            (
-                f"{client_ip_str(request)}{request.auth.user.email}: unable to verify security token"
-                f" authentication response: {err}"
-            ),
+            f"{client_ip_str(request)}{request.auth.user.email}: unable to verify security token"
+            f" authentication response: {err}",
             exc_info=err,
         )
         return JSONResponse({"verified": False})
@@ -268,10 +266,8 @@ async def webauthn_verify_registration_response(
         )
     except Exception as err:
         logger.info(
-            (
-                f"{client_ip_str(request)}{request.auth.user.email}: unable to verify security"
-                f"token registration response: {err}"
-            ),
+            f"{client_ip_str(request)}{request.auth.user.email}: unable to verify security"
+            f"token registration response: {err}",
             exc_info=err,
         )
         return JSONResponse({"success": False})
