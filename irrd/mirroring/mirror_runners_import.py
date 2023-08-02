@@ -79,10 +79,8 @@ class RPSLMirrorImportUpdateRunner:
             )
         except Exception as exc:
             logger.error(
-                (
-                    "An exception occurred while attempting a mirror update or initial import "
-                    f"for {self.source}: {exc}"
-                ),
+                "An exception occurred while attempting a mirror update or initial import "
+                f"for {self.source}: {exc}",
                 exc_info=exc,
             )
         finally:

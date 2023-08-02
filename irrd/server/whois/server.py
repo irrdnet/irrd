@@ -131,10 +131,8 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
             self.database_handler = DatabaseHandler(readonly=True)
         except Exception as e:
             logger.critical(
-                (
-                    "Whois worker failed to initialise preloader or database, "
-                    f"unable to start, terminating IRRd, traceback follows: {e}"
-                ),
+                "Whois worker failed to initialise preloader or database, "
+                f"unable to start, terminating IRRd, traceback follows: {e}",
                 exc_info=e,
             )
             main_pid = os.getenv(ENV_MAIN_PROCESS_PID)

@@ -251,10 +251,8 @@ async def change_profile(request: Request, session_provider: ORMSessionProvider)
     send_authentication_change_mail(
         request.auth.user,
         request,
-        (
-            "Your name and/or email address were updated. The current email address on your account is"
-            f" {request.auth.user.email}."
-        ),
+        "Your name and/or email address were updated. The current email address on your account is"
+        f" {request.auth.user.email}.",
         recipient_override=old_email,
     )
     return RedirectResponse(request.url_for("ui:index"), status_code=302)

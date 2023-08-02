@@ -72,10 +72,8 @@ async def startup():
         app.state.rate_limiter = limits.aio.strategies.MovingWindowRateLimiter(app.state.rate_limiter_storage)
     except Exception as e:
         logger.critical(
-            (
-                "HTTP worker failed to initialise preloader, database or rate limiter, "
-                f"unable to start, terminating IRRd, traceback follows: {e}"
-            ),
+            "HTTP worker failed to initialise preloader, database or rate limiter, "
+            f"unable to start, terminating IRRd, traceback follows: {e}",
             exc_info=e,
         )
         main_pid = os.getenv(ENV_MAIN_PROCESS_PID)

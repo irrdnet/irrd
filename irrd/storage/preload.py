@@ -63,10 +63,8 @@ class PersistentPubSubWorkerThread(redis.client.PubSubWorkerThread):  # type: ig
                 self.should_resubscribe = True
             except Exception as exc:  # pragma: no cover
                 logger.error(
-                    (
-                        "Error while loading in-memory preload, attempting reconnect and reload in 5s,"
-                        f"traceback follows: {exc}"
-                    ),
+                    "Error while loading in-memory preload, attempting reconnect and reload in 5s,"
+                    f"traceback follows: {exc}",
                     exc_info=exc,
                 )
                 time.sleep(5)
