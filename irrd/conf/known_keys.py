@@ -77,6 +77,7 @@ KNOWN_CONFIG_KEYS = DottedDict(
         "compatibility": {
             "inetnum_search_disabled": {},
             "ipv4_only_route_set_members": {},
+            "asdot_queries": {},
         },
     }
 )

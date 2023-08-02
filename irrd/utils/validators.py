@@ -2,11 +2,15 @@ from typing import List, Optional, Tuple, Union
 
 import pydantic
 
+from irrd.conf import get_setting
 from irrd.updates.parser_state import SuspensionRequestType
 
 
-def parse_as_number(value: Union[str, int], permit_plain=False) -> Tuple[str, int]:
-    """Validate and clean an AS number. Returns it in ASxxxx and numeric format."""
+def parse_as_number(value: Union[str, int], permit_plain=False, asdot_permitted=False) -> Tuple[str, int]:
+    """
+    Validate and clean an AS number. Returns it in ASxxxx and numeric format.
+    asdot is permitted (#790) if asdot_permitted is passed and compatibility.asdot_queries is set
+    """
     if isinstance(value, str):
         value = value.upper()
         if not permit_plain and not value.startswith("AS"):
@@ -14,10 +18,35 @@ def parse_as_number(value: Union[str, int], permit_plain=False) -> Tuple[str, in
 
         start_index = 2 if value.startswith("AS") else 0
 
-        if not value[start_index:].isnumeric():
-            raise ValidationError(f"Invalid AS number {value}: number part is not numeric")
+        if asdot_permitted and get_setting("compatibility.asdot_queries") and "." in value[start_index:]:
+            try:
+                high_str, low_str = value[start_index:].split(".")
+            except ValueError:
+                raise ValidationError(f"Invalid AS number {value}: number is not valid asdot format")
 
-        value_int = int(value[start_index:])
+            try:
+                high = int(high_str)
+            except ValueError:
+                raise ValidationError(f"Invalid AS number {value}: high order value missing or invalid")
+            try:
+                low = int(low_str)
+            except ValueError:
+                raise ValidationError(f"Invalid AS number {value}: low order value missing or invalid")
+
+            if high > 65535:
+                raise ValidationError(f"Invalid AS number {value}: high order value out of range")
+
+            if low > 65535:
+                raise ValidationError(f"Invalid AS number {value}: low order value out of range")
+
+            value_int = high * 65536 + low
+
+        else:
+            try:
+                value_int = int(value[start_index:])
+            except ValueError:
+                raise ValidationError(f"Invalid AS number {value}: number part is not numeric")
+
     else:
         value_int = value
 

@@ -397,7 +397,7 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         self._check_query_frozen()
         if extract_asn_ip:
             try:
-                _, asn = parse_as_number(value)
+                _, asn = parse_as_number(value, asdot_permitted=True)
                 return self.object_classes(["as-block", "as-set", "aut-num"]).asn_less_specific(asn)
             except ValidationError:
                 pass

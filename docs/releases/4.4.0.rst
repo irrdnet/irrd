@@ -85,6 +85,11 @@ alias relates only to the query. The database status under the ``!J`` whois
 and the ``databaseStatus`` GraphQL queries is extended with alias
 information.
 
+Other changes
+-------------
+* A ``compatibility.asdot_queries`` setting was added, which allows
+  the use of the (long deprecated) asdot format in origin queries.
+
 Upgrading to IRRd 4.4.0 from 4.3.x
 ----------------------------------
 TODO
