@@ -7,7 +7,10 @@ from irrd.updates.parser_state import SuspensionRequestType
 
 
 def parse_as_number(value: Union[str, int], permit_plain=False, asdot_permitted=False) -> Tuple[str, int]:
-    """Validate and clean an AS number. Returns it in ASxxxx and numeric format."""
+    """
+    Validate and clean an AS number. Returns it in ASxxxx and numeric format.
+    asdot is permitted (#790) if asdot_permitted is passed and compatibility.asdot_queries is set
+    """
     if isinstance(value, str):
         value = value.upper()
         if not permit_plain and not value.startswith("AS"):
