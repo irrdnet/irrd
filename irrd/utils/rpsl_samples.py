@@ -604,6 +604,31 @@ source:         TEST
 remarks:        remark
 """
 
+SAMPLE_IRT = """irt:            TEST-IRT
+address:        address
+e-mail:         email@example.com
+abuse-mailbox:  email@example.com
+admin-c:        PERSON-TEST
+tech-c:         PERSON-TEST
+mnt-by:         TEST-MNT
+changed:        changed@example.com 20190701 # comment
+remarks:        remark
+source:         TEST
+"""
+
+SAMPLE_ORGANISATION = """organisation:   TEST-ORG
+org-name:       Test Corporation
+country:        DE
+address:        address
+e-mail:         email@example.com
+admin-c:        PERSON-TEST
+tech-c:         PERSON-TEST
+mnt-by:         TEST-MNT
+changed:        changed@example.com 20190701 # comment
+remarks:        remark
+source:         TEST
+"""
+
 SAMPLE_UNKNOWN_CLASS = """foo-block:          192.0.2.0/24
 origin:         AS65537
 mnt-by:         TEST-MNT
@@ -809,6 +834,8 @@ object_sample_mapping = {
     "route-set": SAMPLE_ROUTE_SET,
     "route6": SAMPLE_ROUTE6,
     "rtr-set": SAMPLE_RTR_SET,
+    "irt": SAMPLE_IRT,
+    "organisation": SAMPLE_ORGANISATION,
 }
 
 TEMPLATE_ROUTE_OBJECT = """route:          [mandatory]  [single]    [primary/look-up key]

@@ -47,6 +47,8 @@ from ..rpsl_objects import (
     RPSLRoute6,
     RPSLRouteSet,
     RPSLRtrSet,
+    RPSLIrt,
+    RPSLOrganisation,
     rpsl_object_from_text,
 )
 
@@ -556,6 +558,50 @@ class TestRPSLRtrSet:
         assert not obj.messages.errors()
         assert obj.pk() == "RTRS-SETTEST"
         assert obj.parsed_data["rtr-set"] == "RTRS-SETTEST"
+        assert obj.referred_strong_objects() == [
+            ("admin-c", ["role", "person"], ["PERSON-TEST"]),
+            ("tech-c", ["role", "person"], ["PERSON-TEST"]),
+            ("mnt-by", ["mntner"], ["TEST-MNT"]),
+        ]
+        assert obj.references_strong_inbound() == set()
+        assert obj.render_rpsl_text() == rpsl_text
+
+
+class TestRPSLIrt:
+    def test_has_mapping(self):
+        obj = RPSLIrt()
+        assert OBJECT_CLASS_MAPPING[obj.rpsl_object_class] == obj.__class__
+
+    def test_parse(self):
+        rpsl_text = object_sample_mapping[RPSLIrt().rpsl_object_class]
+        obj = rpsl_object_from_text(rpsl_text)
+        assert obj.__class__ == RPSLIrt
+
+        assert not obj.messages.errors()
+        assert obj.pk() == "TEST-IRT"
+        assert obj.parsed_data["irt"] == "TEST-IRT"
+        assert obj.referred_strong_objects() == [
+            ("admin-c", ["role", "person"], ["PERSON-TEST"]),
+            ("tech-c", ["role", "person"], ["PERSON-TEST"]),
+            ("mnt-by", ["mntner"], ["TEST-MNT"]),
+        ]
+        assert obj.references_strong_inbound() == set()
+        assert obj.render_rpsl_text() == rpsl_text
+
+
+class TestRPSLOrganisation:
+    def test_has_mapping(self):
+        obj = RPSLOrganisation()
+        assert OBJECT_CLASS_MAPPING[obj.rpsl_object_class] == obj.__class__
+
+    def test_parse(self):
+        rpsl_text = object_sample_mapping[RPSLOrganisation().rpsl_object_class]
+        obj = rpsl_object_from_text(rpsl_text)
+        assert obj.__class__ == RPSLOrganisation
+
+        assert not obj.messages.errors()
+        assert obj.pk() == "TEST-ORG"
+        assert obj.parsed_data["org-name"] == "Test Corporation"
         assert obj.referred_strong_objects() == [
             ("admin-c", ["role", "person"], ["PERSON-TEST"]),
             ("tech-c", ["role", "person"], ["PERSON-TEST"]),

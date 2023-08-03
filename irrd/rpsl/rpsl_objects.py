@@ -749,6 +749,65 @@ class RPSLRtrSet(RPSLSet):
     )
 
 
+class RPSLIrt(RPSLObject):
+    fields = OrderedDict(
+        [
+            ("irt", RPSLGenericNameField(primary_key=True, lookup_key=True)),
+            ("address", RPSLTextField(multiple=True)),
+            ("phone", RPSLTextField(optional=True, multiple=True)),
+            ("fax-no", RPSLTextField(optional=True, multiple=True)),
+            ("e-mail", RPSLEmailField(multiple=True)),
+            ("abuse-mailbox", RPSLEmailField(multiple=True)),
+            (
+                "admin-c",
+                RPSLReferenceField(
+                    lookup_key=True, optional=True, multiple=True, referring=["role", "person"]
+                ),
+            ),
+            (
+                "tech-c",
+                RPSLReferenceField(
+                    lookup_key=True, optional=True, multiple=True, referring=["role", "person"]
+                ),
+            ),
+            ("remarks", RPSLTextField(optional=True, multiple=True)),
+            ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
+            ("changed", RPSLChangedField(optional=True, multiple=True)),
+            ("source", RPSLGenericNameField()),
+        ]
+    )
+
+
+class RPSLOrganisation(RPSLObject):
+    fields = OrderedDict(
+        [
+            ("organisation", RPSLGenericNameField(primary_key=True, lookup_key=True)),
+            ("org-name", RPSLTextField()),
+            ("country", RPSLTextField(multiple=True)),
+            ("address", RPSLTextField(multiple=True)),
+            ("phone", RPSLTextField(optional=True, multiple=True)),
+            ("fax-no", RPSLTextField(optional=True, multiple=True)),
+            ("e-mail", RPSLEmailField(multiple=True)),
+            (
+                "admin-c",
+                RPSLReferenceField(
+                    lookup_key=True, optional=True, multiple=True, referring=["role", "person"]
+                ),
+            ),
+            (
+                "tech-c",
+                RPSLReferenceField(
+                    lookup_key=True, optional=True, multiple=True, referring=["role", "person"]
+                ),
+            ),
+            ("remarks", RPSLTextField(optional=True, multiple=True)),
+            ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
+            ("changed", RPSLChangedField(optional=True, multiple=True)),
+            ("source", RPSLGenericNameField()),
+        ]
+    )
+
+
 OBJECT_CLASS_MAPPING = {
     "as-block": RPSLAsBlock,
     "as-set": RPSLAsSet,
@@ -767,6 +826,8 @@ OBJECT_CLASS_MAPPING = {
     "route-set": RPSLRouteSet,
     "route6": RPSLRoute6,
     "rtr-set": RPSLRtrSet,
+    "irt": RPSLIrt,
+    "organisation": RPSLOrganisation,
 }
 
 RPKI_RELEVANT_OBJECT_CLASSES = [
