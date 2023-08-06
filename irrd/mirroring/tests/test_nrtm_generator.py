@@ -249,7 +249,7 @@ class TestNRTMGenerator:
                 "sources": {
                     "TEST": {
                         "keep_journal": True,
-                        "nrtm_response_header": "%NRTM response header"
+                        "nrtm_response_header": "%NRTM response header",
                     }
                 }
             }
