@@ -241,3 +241,33 @@ class TestNRTMGenerator:
         object 2 🌈
 
         %END TEST""").strip()
+
+    def test_nrtm_response_header(self, prepare_generator, config_override):
+        generator, mock_dh = prepare_generator
+        config_override(
+            {
+                "sources": {
+                    "TEST": {
+                        "keep_journal": True,
+                        "nrtm_response_header": "%NRTM response header"
+                    }
+                }
+            }
+        )
+
+        result = generator.generate("TEST", "3", 110, 190, mock_dh)
+
+        assert result == textwrap.dedent("""
+        %NRTM response header
+        %START Version: 3 TEST 110-190
+
+        ADD 120
+
+        object 1 🦄
+        auth: CRYPT-PW DummyValue  # Filtered for security
+
+        DEL 180
+
+        object 2 🌈
+
+        %END TEST""").strip()

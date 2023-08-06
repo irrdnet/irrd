@@ -717,6 +717,11 @@ Sources
   and will take that into account.
   |br| **Default**: not defined, no limits on NRTM query size.
   |br| **Change takes effect**: after SIGHUP, upon next request.
+* ``sources.{name}.nrtm_response_header``: the content in NRTM response
+  header. This can have multiple lines.  When adding this to the configuration, 
+  use the `|` style to preserve newlines.
+  |br| **Default**: not defined.
+  |br| **Change takes effect**: after SIGHUP, upon next request.
 * ``sources.{name}.strict_import_keycert_objects``: a setting used when
   migrating authoritative data that may contain `key-cert` objects.
   See the :doc:`data migration guide </admins/availability-and-migration>`
