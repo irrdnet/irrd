@@ -249,7 +249,8 @@ class TestNRTMGenerator:
                 "sources": {
                     "TEST": {
                         "keep_journal": True,
-                        "nrtm_response_header": "%NRTM response header",
+                        "nrtm_response_header": """NRTM response header line1
+NRTM response header line2""",
                     }
                 }
             }
@@ -258,7 +259,8 @@ class TestNRTMGenerator:
         result = generator.generate("TEST", "3", 110, 190, mock_dh)
 
         assert result == textwrap.dedent("""
-        %NRTM response header
+        %NRTM response header line1
+        %NRTM response header line2
         %START Version: 3 TEST 110-190
 
         ADD 120
