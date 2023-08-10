@@ -11,7 +11,8 @@ from irrd.utils.test_utils import flatten_mock_calls
 
 from ..database_handler import DatabaseHandler
 from ..preload import (
-    REDIS_KEY_ORIGIN_SOURCE_SEPARATOR,
+    REDIS_KEY_PK_SOURCE_SEPARATOR,
+    REDIS_PRELOAD_ALL_MESSAGE,
     Preloader,
     PreloadStoreManager,
     PreloadUpdater,
@@ -63,7 +64,7 @@ class TestPreloading:
         assert len(preload_manager._threads) == 1
         mock_preload_updater.reset_mock()
 
-        preload_manager.perform_reload()
+        preload_manager.perform_reload(REDIS_PRELOAD_ALL_MESSAGE)
 
         assert mock_preload_updater.mock_calls[0][0] == "().is_alive"
         assert mock_preload_updater.mock_calls[1][0] == ""
@@ -74,7 +75,7 @@ class TestPreloading:
         mock_preload_updater.reset_mock()
 
         # Two threads already running, do nothing
-        preload_manager.perform_reload()
+        preload_manager.perform_reload(REDIS_PRELOAD_ALL_MESSAGE)
 
         assert mock_preload_updater.mock_calls[0][0] == "().is_alive"
         assert mock_preload_updater.mock_calls[1][0] == "().is_alive"
@@ -109,11 +110,11 @@ class TestPreloading:
 
         preload_manager.update_route_store(
             {
-                f"TEST2{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65546": {"192.0.2.0/25"},
-                f"TEST1{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65547": {"192.0.2.128/25", "198.51.100.0/25"},
+                f"TEST2{REDIS_KEY_PK_SOURCE_SEPARATOR}AS65546": {"192.0.2.0/25"},
+                f"TEST1{REDIS_KEY_PK_SOURCE_SEPARATOR}AS65547": {"192.0.2.128/25", "198.51.100.0/25"},
             },
             {
-                f"TEST2{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65547": {"2001:db8::/32"},
+                f"TEST2{REDIS_KEY_PK_SOURCE_SEPARATOR}AS65547": {"2001:db8::/32"},
             },
         )
         time.sleep(1)
@@ -209,13 +210,13 @@ class TestPreloadUpdater:
                 "update_route_store",
                 (
                     {
-                        f"TEST1{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65546": {"192.0.2.0/25"},
-                        f"TEST1{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65547": {
+                        f"TEST1{REDIS_KEY_PK_SOURCE_SEPARATOR}AS65546": {"192.0.2.0/25"},
+                        f"TEST1{REDIS_KEY_PK_SOURCE_SEPARATOR}AS65547": {
                             "192.0.2.128/25",
                             "198.51.100.0/25",
                         },
                     },
-                    {f"TEST2{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65547": {"2001:db8::/32"}},
+                    {f"TEST2{REDIS_KEY_PK_SOURCE_SEPARATOR}AS65547": {"2001:db8::/32"}},
                 ),
                 {},
             ]

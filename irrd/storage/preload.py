@@ -22,10 +22,10 @@ SENTINEL_HASH_CREATED = b"SENTINEL_HASH_CREATED"
 REDIS_ORIGIN_ROUTE4_STORE_KEY = b"irrd-preload-origin-route4"
 REDIS_ORIGIN_ROUTE6_STORE_KEY = b"irrd-preload-origin-route6"
 REDIS_PRELOAD_RELOAD_CHANNEL = "irrd-preload-reload-channel"
+REDIS_PRELOAD_ALL_MESSAGE = "unknown-classes-changed-preload-all"
 REDIS_PRELOAD_COMPLETE_CHANNEL = "irrd-preload-complete-channel"
-REDIS_ORIGIN_LIST_SEPARATOR = ","
-REDIS_KEY_ORIGIN_SOURCE_SEPARATOR = "_"
-MAX_MEMORY_LIFETIME = 60
+REDIS_CONTENTS_LIST_SEPARATOR = ","
+REDIS_KEY_PK_SOURCE_SEPARATOR = "_"
 
 logger = logging.getLogger(__name__)
 
@@ -114,9 +114,12 @@ class Preloader:
         If object_classes_changed is provided, a reload is only performed
         if those classes are relevant to the data in the preload store.
         """
-        relevant_object_classes = {"route", "route6"}
-        if object_classes_changed is None or object_classes_changed.intersection(relevant_object_classes):
-            self._redis_conn.publish(REDIS_PRELOAD_RELOAD_CHANNEL, "reload")
+        message = (
+            REDIS_CONTENTS_LIST_SEPARATOR.join(object_classes_changed)
+            if object_classes_changed
+            else REDIS_PRELOAD_ALL_MESSAGE
+        )
+        self._redis_conn.publish(REDIS_PRELOAD_RELOAD_CHANNEL, message)
 
     def routes_for_origins(
         self, origins: Union[List[str], Set[str]], sources: List[str], ip_version: Optional[int] = None
@@ -152,7 +155,7 @@ class Preloader:
                     and origin in self._origin_route4_store[source]
                 ):
                     prefix_sets.update(
-                        self._origin_route4_store[source][origin].split(REDIS_ORIGIN_LIST_SEPARATOR)
+                        self._origin_route4_store[source][origin].split(REDIS_CONTENTS_LIST_SEPARATOR)
                     )
                 if (
                     (not ip_version or ip_version == 6)
@@ -160,7 +163,7 @@ class Preloader:
                     and origin in self._origin_route6_store[source]
                 ):
                     prefix_sets.update(
-                        self._origin_route6_store[source][origin].split(REDIS_ORIGIN_LIST_SEPARATOR)
+                        self._origin_route6_store[source][origin].split(REDIS_CONTENTS_LIST_SEPARATOR)
                     )
 
         return prefix_sets
@@ -184,7 +187,7 @@ class Preloader:
             for key, routes in self._redis_conn.hgetall(redis_key).items():
                 if key == SENTINEL_HASH_CREATED:
                     continue
-                source, origin = key.decode("ascii").split(REDIS_KEY_ORIGIN_SOURCE_SEPARATOR)
+                source, origin = key.decode("ascii").split(REDIS_KEY_PK_SOURCE_SEPARATOR)
                 if source not in target:
                     target[source] = dict()
                 target[source][origin] = routes.decode("ascii")
@@ -234,13 +237,14 @@ class PreloadStoreManager(ExceptionLoggingProcess):
         self.terminate = False  # Used to exit main() in tests
 
         while not self.terminate:
-            self.perform_reload()
+            self.perform_reload(REDIS_PRELOAD_ALL_MESSAGE)
             try:
                 self._pubsub.subscribe(REDIS_PRELOAD_RELOAD_CHANNEL)
                 for item in self._pubsub.listen():
                     if item["type"] == "message":
-                        logger.debug("Reload requested through redis channel")
-                        self.perform_reload()
+                        message = item["data"].decode("ascii")
+                        logger.debug(f"Reload requested through redis channel for {message}")
+                        self.perform_reload(message)
                         if self.terminate:
                             return
             except redis.ConnectionError as rce:  # pragma: no cover
@@ -260,7 +264,7 @@ class PreloadStoreManager(ExceptionLoggingProcess):
                 f"queries may have outdated results until full reload is completed (max 30s): {rce}"
             )
 
-    def perform_reload(self) -> None:
+    def perform_reload(self, message: str) -> None:
         """
         Perform a (re)load.
         Should be called after changes to the DB have been committed.
@@ -274,6 +278,13 @@ class PreloadStoreManager(ExceptionLoggingProcess):
         change that prompted this reload call will already be processed
         by the thread that is currently waiting.
         """
+        update_routes = message == REDIS_PRELOAD_ALL_MESSAGE or set(
+            message.split(REDIS_CONTENTS_LIST_SEPARATOR)
+        ).intersection({"route", "route6"})
+
+        if not update_routes:
+            return
+
         self._remove_dead_threads()
         if len(self._threads) > 1:
             # Another thread is already scheduled to follow the current one
@@ -291,10 +302,10 @@ class PreloadStoreManager(ExceptionLoggingProcess):
             pipeline.delete(REDIS_ORIGIN_ROUTE4_STORE_KEY, REDIS_ORIGIN_ROUTE6_STORE_KEY)
             # The redis store can't store sets, only strings
             origin_route4_str_dict = {
-                k: REDIS_ORIGIN_LIST_SEPARATOR.join(v) for k, v in new_origin_route4_store.items()
+                k: REDIS_CONTENTS_LIST_SEPARATOR.join(v) for k, v in new_origin_route4_store.items()
             }
             origin_route6_str_dict = {
-                k: REDIS_ORIGIN_LIST_SEPARATOR.join(v) for k, v in new_origin_route6_store.items()
+                k: REDIS_CONTENTS_LIST_SEPARATOR.join(v) for k, v in new_origin_route6_store.items()
             }
             # Redis can't handle empty dicts, but the dict needs to be present
             # in order not to block queries.
@@ -313,7 +324,7 @@ class PreloadStoreManager(ExceptionLoggingProcess):
                 f"attempting new reload in 5s: {rce}"
             )
             time.sleep(5)
-            self.perform_reload()
+            self.perform_reload(REDIS_PRELOAD_ALL_MESSAGE)
             return False
 
     def _remove_dead_threads(self) -> None:
@@ -392,7 +403,7 @@ class PreloadUpdater(threading.Thread):
 
         for result in dh.execute_query(q):
             prefix = result["ip_first"]
-            key = result["source"] + REDIS_KEY_ORIGIN_SOURCE_SEPARATOR + "AS" + str(result["asn_first"])
+            key = result["source"] + REDIS_KEY_PK_SOURCE_SEPARATOR + "AS" + str(result["asn_first"])
             length = result["prefix_length"]
 
             if result["ip_version"] == 4:
