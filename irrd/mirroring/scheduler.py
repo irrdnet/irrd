@@ -167,7 +167,7 @@ class MirrorScheduler:
         kwargs = {}
         msg = f"Started new scheduled process {process_name}"
         if source:
-            msg += f"for mirror import/export for {source}"
+            msg += f" for mirror import/export for {source}"
             kwargs["source"] = source
         logger.debug(msg)
 
