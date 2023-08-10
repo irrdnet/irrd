@@ -330,6 +330,19 @@ class QueryResolver:
         """
         members: Set[str] = set()
         sets_already_resolved: Set[str] = set()
+        leaf_members = set()
+
+        # TODO: root object class / source
+        sources = self.source_manager.sources_resolved if not limit_source else [limit_source]
+        # return self.preloader.as_set_members(set_names, sources)
+        for set_name in set_names:
+            set_members = self.preloader.as_set_members(set_name, sources)
+            if set_members is None:
+                leaf_members.add(set_name)
+            else:
+                members.update(set_members)
+
+        return members, leaf_members
 
         columns = ["parsed_data", "rpsl_pk", "source", "object_class"]
         query = self._prepare_query(column_names=columns)

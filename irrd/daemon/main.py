@@ -193,7 +193,7 @@ def run_irrd(mirror_frequency: int, config_file_path: str, uid: Optional[int], g
         # This loops every second to prevent long blocking on SIGTERM.
         mirror_scheduler.update_process_state()
         if sleeps >= mirror_frequency:
-            mirror_scheduler.run()
+            # mirror_scheduler.run()
             sleeps = 0
         time.sleep(1)
         sleeps += 1
