@@ -336,7 +336,7 @@ class QueryResolver:
         sources = self.source_manager.sources_resolved if not limit_source else [limit_source]
         # return self.preloader.as_set_members(set_names, sources)
         for set_name in set_names:
-            set_members = self.preloader.as_set_members(set_name, sources)
+            set_members = self.preloader.set_members(set_name, sources)
             if set_members is None:
                 leaf_members.add(set_name)
             else:
