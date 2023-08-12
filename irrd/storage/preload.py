@@ -489,12 +489,12 @@ class PreloadUpdater(threading.Thread):
             logger.info(f"Completed updating preload route store from thread {self}")
 
     def _update_sets(self, dh):
-        as_set_store = self._update_as_sets(dh, "as-set", ["aut-num"], "aut-num")
+        as_set_store = self._update_as_sets(dh, "as-set", ["aut-num"])
 
         if self.preloader.update_as_set_store(as_set_store):
             logger.info(f"Completed updating preload as-set store from thread {self}")
 
-        route_set_store = self._update_as_sets(dh, "route-set", ["route", "route6"], "route")
+        route_set_store = self._update_as_sets(dh, "route-set", ["route", "route6"])
 
         if self.preloader.update_route_set_store(route_set_store):
             logger.info(f"Completed updating preload route-set store from thread {self}")
@@ -503,7 +503,7 @@ class PreloadUpdater(threading.Thread):
             logger.info(f"Completed signal update preload for all from thread {self}")
 
     # TODO: rename
-    def _update_as_sets(self, dh, set_class, member_classes, member_attr):
+    def _update_as_sets(self, dh, set_class, member_classes):
         q = (
             RPSLDatabaseQuery(
                 column_names=["rpsl_pk", "parsed_data", "source"],
@@ -531,7 +531,7 @@ class PreloadUpdater(threading.Thread):
 
         q = (
             RPSLDatabaseQuery(
-                column_names=["rpsl_pk", "parsed_data", "source"],
+                column_names=["rpsl_pk", "parsed_data", "source", "object_class"],
                 enable_ordering=False,
             )
             .lookup_attrs_in(["member-of"], list(sets_with_mbrs_by_ref))
@@ -551,7 +551,7 @@ class PreloadUpdater(threading.Thread):
                     set(row["parsed_data"]["mnt-by"])
                 ):
                     key = row["source"] + REDIS_KEY_PK_SOURCE_SEPARATOR + member_of
-                    member_store[key].add(row["parsed_data"][member_attr])
+                    member_store[key].add(row["parsed_data"][row["object_class"]])
 
         logger.info(f"Completed sub preload {set_class} store from thread {self}")
 

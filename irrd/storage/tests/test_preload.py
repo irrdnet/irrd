@@ -211,6 +211,7 @@ class TestPreloadUpdater:
                 ],
                 [
                     {
+                        "object_class": "aut-num",
                         "parsed_data": {
                             "aut-num": "AS65531",
                             "member-of": ["AS-SET1", "AS-SET-NOT-EXIST"],
@@ -219,6 +220,7 @@ class TestPreloadUpdater:
                         "source": "TEST1",
                     },
                     {
+                        "object_class": "aut-num",
                         "parsed_data": {
                             "aut-num": "AS65532",
                             "member-of": ["AS-SET-ANY"],
@@ -227,6 +229,7 @@ class TestPreloadUpdater:
                         "source": "TEST1",
                     },
                     {
+                        "object_class": "aut-num",
                         "parsed_data": {
                             "aut-num": "AS65533",
                             "member-of": ["AS-SET1"],
@@ -235,6 +238,7 @@ class TestPreloadUpdater:
                         "source": "TEST1",
                     },
                     {
+                        "object_class": "aut-num",
                         "parsed_data": {
                             "aut-num": "AS65534",
                             "member-of": "AS-SET1",
@@ -252,8 +256,18 @@ class TestPreloadUpdater:
                 ],
                 [
                     {
+                        "object_class": "route",
                         "parsed_data": {
                             "route": "192.0.2.128/25",
+                            "member-of": ["RS-SET1"],
+                            "mnt-by": ["TEST-MNT"],
+                        },
+                        "source": "TEST1",
+                    },
+                    {
+                        "object_class": "route6",
+                        "parsed_data": {
+                            "route6": "2001:db8::/32",
                             "member-of": ["RS-SET1"],
                             "mnt-by": ["TEST-MNT"],
                         },
@@ -285,7 +299,7 @@ class TestPreloadUpdater:
             ["scopefilter_status", ([ScopeFilterStatus.in_scope],), {}],
             ["route_preference_status", ([RoutePreferenceStatus.visible],), {}],
             ["lookup_attrs_in", (["member-of"], ["RS-SET1"]), {}],
-            ["object_classes", (["route"],), {}],
+            ["object_classes", (["route", "route6"],), {}],
             ["rpki_status", ([RPKIStatus.not_found, RPKIStatus.valid],), {}],
             ["scopefilter_status", ([ScopeFilterStatus.in_scope],), {}],
             ["route_preference_status", ([RoutePreferenceStatus.visible],), {}],
@@ -320,7 +334,7 @@ class TestPreloadUpdater:
                 "update_route_set_store",
                 (
                     {
-                        "TEST1_RS-SET1": {"192.0.2.0/25", "192.0.2.128/25"},
+                        "TEST1_RS-SET1": {"192.0.2.0/25", "192.0.2.128/25", "2001:db8::/32"},
                     },
                 ),
                 {},
