@@ -520,7 +520,9 @@ class PreloadUpdater(threading.Thread):
 
         for row in dh.execute_query(q):
             key = row["source"] + REDIS_KEY_PK_SOURCE_SEPARATOR + str(row["rpsl_pk"])
-            member_store[key] = set(row["parsed_data"].get("members", []) + row["parsed_data"].get("mp-members", []))
+            member_store[key] = set(
+                row["parsed_data"].get("members", []) + row["parsed_data"].get("mp-members", [])
+            )
             mbrs_by_ref = set(row["parsed_data"].get("mbrs-by-ref", []))
             if mbrs_by_ref:
                 mbrs_by_ref_per_set[(row["source"], row["rpsl_pk"])] = mbrs_by_ref
