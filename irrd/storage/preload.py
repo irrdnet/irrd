@@ -489,12 +489,12 @@ class PreloadUpdater(threading.Thread):
             logger.info(f"Completed updating preload route store from thread {self}")
 
     def _update_sets(self, dh):
-        as_set_store = self._update_as_sets(dh, "as-set", "aut-num", "aut-num")
+        as_set_store = self._update_as_sets(dh, "as-set", ["aut-num"], "aut-num")
 
         if self.preloader.update_as_set_store(as_set_store):
             logger.info(f"Completed updating preload as-set store from thread {self}")
 
-        route_set_store = self._update_as_sets(dh, "route-set", "route", "route")
+        route_set_store = self._update_as_sets(dh, "route-set", ["route", "route6"], "route")
 
         if self.preloader.update_route_set_store(route_set_store):
             logger.info(f"Completed updating preload route-set store from thread {self}")
@@ -503,7 +503,7 @@ class PreloadUpdater(threading.Thread):
             logger.info(f"Completed signal update preload for all from thread {self}")
 
     # TODO: rename
-    def _update_as_sets(self, dh, set_class, member_class, member_attr):
+    def _update_as_sets(self, dh, set_class, member_classes, member_attr):
         q = (
             RPSLDatabaseQuery(
                 column_names=["rpsl_pk", "parsed_data", "source"],
@@ -535,7 +535,7 @@ class PreloadUpdater(threading.Thread):
                 enable_ordering=False,
             )
             .lookup_attrs_in(["member-of"], list(sets_with_mbrs_by_ref))
-            .object_classes([member_class])
+            .object_classes(member_classes)
             .rpki_status([RPKIStatus.not_found, RPKIStatus.valid])
             .scopefilter_status([ScopeFilterStatus.in_scope])
             .route_preference_status([RoutePreferenceStatus.visible])
