@@ -541,7 +541,7 @@ class PreloadUpdater(threading.Thread):
             .route_preference_status([RoutePreferenceStatus.visible])
         )
         for row in dh.execute_query(q):
-            for member_of in row["parsed_data"]["member-of"]:
+            for member_of in row["parsed_data"].get("member-of", []):
                 try:
                     expected_mntners = mbrs_by_ref_per_set[(row["source"], member_of)]
                 except KeyError:
