@@ -502,6 +502,7 @@ class PreloadUpdater(threading.Thread):
         if self.preloader.signal_redis_store_updated():
             logger.info(f"Completed signal update preload for all from thread {self}")
 
+    # TODO: rename
     def _update_as_sets(self, dh, set_class, member_class, member_attr):
         q = (
             RPSLDatabaseQuery(
@@ -526,7 +527,7 @@ class PreloadUpdater(threading.Thread):
 
         logger.info(f"Completed retrieval preload {set_class} store from thread {self}")
 
-        sets_with_mbrs_by_ref = {key[1] for key in mbrs_by_ref_per_set.keys()}
+        sets_with_mbrs_by_ref = [key[1] for key in mbrs_by_ref_per_set.keys()]
 
         q = (
             RPSLDatabaseQuery(
