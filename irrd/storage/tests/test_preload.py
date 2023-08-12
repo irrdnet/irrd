@@ -250,7 +250,7 @@ class TestPreloadUpdater:
                 [
                     {
                         "rpsl_pk": "RS-SET1",
-                        "parsed_data": {"members": ["192.0.2.0/25"], "mbrs-by-ref": ["TEST-MNT"]},
+                        "parsed_data": {"members": ["192.0.2.0/25"], "mp-members": ["2001:db8:1::/48"], "mbrs-by-ref": ["TEST-MNT"],},
                         "source": "TEST1",
                     },
                 ],
@@ -267,7 +267,7 @@ class TestPreloadUpdater:
                     {
                         "object_class": "route6",
                         "parsed_data": {
-                            "route6": "2001:db8::/32",
+                            "route6": "2001:db8:2::/48",
                             "member-of": ["RS-SET1"],
                             "mnt-by": ["TEST-MNT"],
                         },
@@ -334,7 +334,7 @@ class TestPreloadUpdater:
                 "update_route_set_store",
                 (
                     {
-                        "TEST1_RS-SET1": {"192.0.2.0/25", "192.0.2.128/25", "2001:db8::/32"},
+                        "TEST1_RS-SET1": {"192.0.2.0/25", "192.0.2.128/25", "2001:db8:1::/48", "2001:db8:2::/48"},
                     },
                 ),
                 {},
