@@ -418,6 +418,57 @@ class TestWhoisQueryParserRIPE:
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert response.result == "expected-test-error"
 
+    def test_nrtm_information_query(self, prepare_parser, monkeypatch, config_override):
+        mock_query_resolver, mock_dh, parser = prepare_parser
+        mock_dsq = Mock()
+        monkeypatch.setattr("irrd.server.whois.query_parser.DatabaseStatusQuery", lambda: mock_dsq)
+
+        mock_query_result = [
+            {
+                "source": "TEST1",
+                "serial_oldest_journal": 10,
+                "serial_newest_journal": 20,
+            },
+            {
+                "source": "TEST2",
+                "serial_oldest_journal": 1,
+                "serial_newest_journal": 5,
+            },
+            {
+                "source": "TEST3",
+                "serial_oldest_journal": None,
+                "serial_newest_journal": None,
+            },
+        ]
+        mock_dh.execute_query = lambda query, refresh_on_error=False: mock_query_result
+
+        config_override(
+            {
+                "sources": {
+                    "TEST1": {
+                        "nrtm_access_list": "nrtm_access",
+                    },
+                    "TEST2": {},
+                    "TEST3": {
+                        "nrtm_access_list": "nrtm_access",
+                    },
+                },
+                "access_lists": {
+                    "nrtm_access": ["0/0", "0::/0"],
+                },
+                "sources_default": [],
+            }
+        )
+        response = parser.handle_query("-q unknow")
+        assert response.response_type == WhoisQueryResponseType.ERROR_USER
+        assert response.mode == WhoisQueryResponseMode.RIPE
+        assert response.result == "Unrecognised parameter: unknow"
+
+        response = parser.handle_query("-q sources")
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.RIPE
+        assert response.result == "TEST1:3:X:10-20\nTEST2:3:N:1-5\nTEST3:3:X:Unknown"
+
     def test_text_search(self, prepare_parser):
         mock_query_resolver, mock_dh, parser = prepare_parser
         mock_query_resolver.rpsl_text_search = Mock(return_value=MOCK_DATABASE_RESPONSE)
