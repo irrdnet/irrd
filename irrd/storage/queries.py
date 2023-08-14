@@ -215,10 +215,7 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
                 counter = self._lookup_attr_counter
                 self._lookup_attr_counter += 1
                 if attr_value is True:
-                    value_filters.append(
-                        sa.text(
-                            f"parsed_data ? :lookup_attr_name{counter}"
-                    ))
+                    value_filters.append(sa.text(f"parsed_data ? :lookup_attr_name{counter}"))
                     statement_params[f"lookup_attr_name{counter}"] = attr_name
                 else:
                     value_filters.append(
