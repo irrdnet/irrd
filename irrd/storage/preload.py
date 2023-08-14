@@ -532,14 +532,12 @@ class PreloadUpdater(threading.Thread):
 
         logger.info(f"Completed retrieval preload {set_class} store from thread {self}")
 
-        sets_with_mbrs_by_ref = [key[1] for key in mbrs_by_ref_per_set.keys()]
-
         q = (
             RPSLDatabaseQuery(
                 column_names=["rpsl_pk", "parsed_data", "source", "object_class"],
                 enable_ordering=False,
             )
-            .lookup_attrs_in(["member-of"], list(sets_with_mbrs_by_ref))
+            .lookup_attr("member-of", True)
             .object_classes(member_classes)
             .rpki_status([RPKIStatus.not_found, RPKIStatus.valid])
             .scopefilter_status([ScopeFilterStatus.in_scope])

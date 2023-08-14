@@ -921,6 +921,7 @@ class TestRPSLDatabaseQueryLive:
         self._assert_match(RPSLDatabaseQuery().sources(["TEST", "X"]))
         self._assert_match(RPSLDatabaseQuery().object_classes(["route"]))
         self._assert_match(RPSLDatabaseQuery().lookup_attr("mnt-by", "MNT-test"))  # intentional case mismatch
+        self._assert_match(RPSLDatabaseQuery().lookup_attr("mnt-by", True))
         self._assert_match(RPSLDatabaseQuery().ip_exact(IP("192.0.2.0/24")))
         self._assert_match(RPSLDatabaseQuery().asn(65537))
         self._assert_match(RPSLDatabaseQuery().asns_first([65538, 65537]))
@@ -969,6 +970,7 @@ class TestRPSLDatabaseQueryLive:
         self._assert_no_match(RPSLDatabaseQuery().sources(["TEST3"]))
         self._assert_no_match(RPSLDatabaseQuery().object_classes(["route6"]))
         self._assert_no_match(RPSLDatabaseQuery().lookup_attr("mnt-by", "MNT-NOTEXIST"))
+        self._assert_no_match(RPSLDatabaseQuery().lookup_attr("member-of", True))
         self._assert_no_match(RPSLDatabaseQuery().ip_exact(IP("192.0.2.0/25")))
         self._assert_no_match(RPSLDatabaseQuery().asn(23455))
         self._assert_no_match(RPSLDatabaseQuery().asns_first([65538, 65539]))
