@@ -460,6 +460,13 @@ class TestQueryResolver:
             ["set_members", ("AS-NOTEXIST", ["ROOT"], ["route-set", "as-set"]), {}],
         ]
 
+        result = resolver.members_for_set("AS-FIRSTLEVEL", recursive=True, exclude_sets={"AS-FIRSTLEVEL"})
+        assert result == ["AS65544", "AS65545", "AS65547"]
+        result = resolver.members_for_set("AS-FIRSTLEVEL", recursive=True, exclude_sets={"AS-SECONDLEVEL"})
+        assert result == ["AS65547"]
+        result = resolver.members_for_set("AS-FIRSTLEVEL", recursive=True, exclude_sets={"AS-THIRDLEVEL"})
+        assert result == ["AS65544", "AS65547"]
+
     def test_route_set_members(self, prepare_resolver):
         mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
         mock_set_members = {
