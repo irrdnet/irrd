@@ -222,7 +222,7 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
                         sa.text(f"parsed_data->:lookup_attr_name{counter} ? :lookup_attr_value{counter}")
                     )
                     statement_params[f"lookup_attr_name{counter}"] = attr_name
-                    statement_params[f"lookup_attr_value{counter}"] = attr_value.upper()
+                    statement_params[f"lookup_attr_value{counter}"] = attr_value.upper()  # type: ignore
         fltr = sa.or_(*value_filters)
         self.statement = self.statement.where(fltr).params(**statement_params)
 
