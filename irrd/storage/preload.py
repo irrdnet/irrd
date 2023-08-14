@@ -465,7 +465,7 @@ class PreloadUpdater(threading.Thread):
             dh = mock_database_handler
 
         self._update_routes(dh)
-        self._update_sets(dh)
+        self._update_all_sets(dh)
 
         dh.close()
 
@@ -492,13 +492,13 @@ class PreloadUpdater(threading.Thread):
         if self.preloader.update_route_store(new_origin_route4_store, new_origin_route6_store):
             logger.info(f"Completed updating preload route store from thread {self}")
 
-    def _update_sets(self, dh):
-        as_set_store = self._update_as_sets(dh, "as-set", ["aut-num"])
+    def _update_all_sets(self, dh):
+        as_set_store = self._update_set(dh, "as-set", ["aut-num"])
 
         if self.preloader.update_as_set_store(as_set_store):
             logger.info(f"Completed updating preload as-set store from thread {self}")
 
-        route_set_store = self._update_as_sets(dh, "route-set", ["route", "route6"])
+        route_set_store = self._update_set(dh, "route-set", ["route", "route6"])
 
         if self.preloader.update_route_set_store(route_set_store):
             logger.info(f"Completed updating preload route-set store from thread {self}")
@@ -506,8 +506,7 @@ class PreloadUpdater(threading.Thread):
         if self.preloader.signal_redis_store_updated():
             logger.info(f"Completed signal update preload for all from thread {self}")
 
-    # TODO: rename
-    def _update_as_sets(self, dh, set_class, member_classes):
+    def _update_set(self, dh, set_class, member_classes):
         q = (
             RPSLDatabaseQuery(
                 column_names=["rpsl_pk", "parsed_data", "source"],

@@ -173,6 +173,7 @@ class ChangeRequest:
         if self._auth_result:
             session = saorm.Session(bind=self.database_handler._connection)
             change_log = self._auth_result.to_change_log()
+            # TODO: extract constant
             change_log.from_ip = self.request_meta.get(META_KEY_HTTP_CLIENT_IP, None)
             change_log.from_email = self.request_meta.get("From", None)
             change_log.rpsl_target_request_type = self.request_type

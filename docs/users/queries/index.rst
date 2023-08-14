@@ -87,8 +87,9 @@ IRRd will answer them after preloading has completed. The time this takes depend
 on the load and speed of the server on which IRRd is deployed, and can
 range between several seconds and one minute.
 
-This concerns the whois queries ``!g``, ``!6``, ``!a`` and in some cases ``!i``,
-and the GraphQL queries ``asnPrefixes`` and ``asSetPrefixes``.
+This concerns the whois queries ``!g``, ``!6``, ``!a`` and ``!i``,
+and the GraphQL queries ``asnPrefixes``, ``asSetPrefixes`` and
+``recursiveSetMembers``.
 
 Once the initial preload is complete, updates to the database do not cause
 delays in queries. However, they may cause queries to return responses
