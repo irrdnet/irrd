@@ -395,7 +395,7 @@ class PreloadStoreManager(ExceptionLoggingProcess):
         except redis.ConnectionError as rce:  # pragma: no cover
             return self._handle_preload_update_error(rce)
 
-    def _handle_preload_update_error(self, rce):
+    def _handle_preload_update_error(self, rce):  # pragma: no cover
         logger.error(
             "Failed to update preload store due to redis connection error, "
             f"attempting new reload in 5s: {rce}"
