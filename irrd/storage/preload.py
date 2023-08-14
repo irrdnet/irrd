@@ -147,7 +147,8 @@ class Preloader:
             for source in sources:
                 try:
                     return SetMembers(
-                        self._route_set_store[source][set_pk].split(REDIS_CONTENTS_LIST_SEPARATOR), "route-set"
+                        self._route_set_store[source][set_pk].split(REDIS_CONTENTS_LIST_SEPARATOR),
+                        "route-set",
                     )
                 except KeyError:
                     continue
