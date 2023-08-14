@@ -99,14 +99,14 @@ class Preloader:
         if enable_queries:
             self._pubsub = self._redis_conn.pubsub()
             self._pubsub_thread = PersistentPubSubWorkerThread(
-                callback=self._load_routes_into_memory, pubsub=self._pubsub, sleep_time=5, daemon=True
+                callback=self._load_preload_data_into_memory, pubsub=self._pubsub, sleep_time=5, daemon=True
             )
             self._pubsub_thread.start()
             if get_setting("readonly_standby"):  # pragma: no cover
                 # If this instance is readonly, another IRRd process will be updating
                 # the store, and likely has already done so, meaning we can try to load
                 # from Redis right away instead of waiting for a signal.
-                self._load_routes_into_memory()
+                self._load_preload_data_into_memory()
 
     def signal_reload(self, object_classes_changed: Optional[Set[str]] = None) -> None:
         """
@@ -127,6 +127,12 @@ class Preloader:
         self._redis_conn.publish(REDIS_PRELOAD_RELOAD_CHANNEL, message)
 
     def set_members(self, set_pk: str, sources: List[str]) -> Optional[SetMembers]:
+        """
+        Retrieve all members of set set_pk in given sources from in memory store.
+
+        Returns the members and the found object class if the set exists, otherwise None.
+        Will block until the store is loaded.
+        """
         while not self._memory_loaded:
             time.sleep(1)  # pragma: no cover
         for source in sources:
@@ -188,7 +194,7 @@ class Preloader:
 
         return prefix_sets
 
-    def _load_routes_into_memory(self, redis_message=None):
+    def _load_preload_data_into_memory(self, redis_message=None):
         """
         Update the in-memory store. This is called whenever a
         message is sent to REDIS_PRELOAD_COMPLETE_CHANNEL.
@@ -352,36 +358,24 @@ class PreloadStoreManager(ExceptionLoggingProcess):
         """
         Store the new as-set information in redis. Returns True on success, False on failure.
         """
-        try:
-            pipeline = self._redis_conn.pipeline(transaction=True)
-            pipeline.delete(REDIS_AS_SET_STORE_KEY)
-            # The redis store can't store sets, only strings
-            as_set_str_dict = {k: REDIS_CONTENTS_LIST_SEPARATOR.join(v) for k, v in new_as_set_store.items()}
-            # Redis can't handle empty dicts, but the dict needs to be present
-            # in order not to block queries.
-            as_set_str_dict[SENTINEL_HASH_CREATED] = "1"
-            pipeline.hset(REDIS_AS_SET_STORE_KEY, mapping=as_set_str_dict)
-            pipeline.execute()
-            return True
-
-        except redis.ConnectionError as rce:  # pragma: no cover
-            return self._handle_preload_update_error(rce)
+        return self.update_set_store(new_as_set_store, REDIS_AS_SET_STORE_KEY)
 
     def update_route_set_store(self, new_route_set_store) -> bool:
         """
         Store the new route-set information in redis. Returns True on success, False on failure.
         """
+        return self.update_set_store(new_route_set_store, REDIS_ROUTE_SET_STORE_KEY)
+
+    def update_set_store(self, new_store, redis_key) -> bool:
         try:
             pipeline = self._redis_conn.pipeline(transaction=True)
-            pipeline.delete(REDIS_ROUTE_SET_STORE_KEY)
+            pipeline.delete(redis_key)
             # The redis store can't store sets, only strings
-            route_set_str_dict = {
-                k: REDIS_CONTENTS_LIST_SEPARATOR.join(v) for k, v in new_route_set_store.items()
-            }
+            set_str_dict = {k: REDIS_CONTENTS_LIST_SEPARATOR.join(v) for k, v in new_store.items()}
             # Redis can't handle empty dicts, but the dict needs to be present
             # in order not to block queries.
-            route_set_str_dict[SENTINEL_HASH_CREATED] = "1"
-            pipeline.hset(REDIS_ROUTE_SET_STORE_KEY, mapping=route_set_str_dict)
+            set_str_dict[SENTINEL_HASH_CREATED] = "1"
+            pipeline.hset(redis_key, mapping=set_str_dict)
             pipeline.execute()
             return True
         except redis.ConnectionError as rce:  # pragma: no cover

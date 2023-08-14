@@ -16,6 +16,7 @@ from ..preload import (
     Preloader,
     PreloadStoreManager,
     PreloadUpdater,
+    SetMembers,
 )
 from ..queries import RPSLDatabaseQuery
 
@@ -100,6 +101,41 @@ class TestPreloading:
         # Listen() on redis is blocking, unblock it after setting terminate
         preload_manager.terminate = True
         Preloader().signal_reload()
+
+    def test_set_members(self, mock_redis_keys):
+        preloader = Preloader()
+        preload_manager = PreloadStoreManager()
+
+        # Wait for the preloader instance to start listening on pubsub
+        time.sleep(1)
+
+        preload_manager.update_as_set_store(
+            {
+                f"TEST1{REDIS_KEY_PK_SOURCE_SEPARATOR}AS-SET1": {"AS65530"},
+                f"TEST2{REDIS_KEY_PK_SOURCE_SEPARATOR}AS-SET2": {"AS65531", "AS65532"},
+            }
+        )
+        preload_manager.update_route_set_store(
+            {
+                f"TEST1{REDIS_KEY_PK_SOURCE_SEPARATOR}RS-SET1": {"192.0.2.0/25"},
+                f"TEST2{REDIS_KEY_PK_SOURCE_SEPARATOR}RS-SET2": {"192.0.2.128/25", "198.51.100.0/25"},
+            }
+        )
+        preload_manager.signal_redis_store_updated()
+        time.sleep(1)
+
+        sources = ["TEST1", "TEST2"]
+        assert preloader.set_members("AS-NOTEXIST", sources) is None
+        assert preloader.set_members("AS-SET1", ["TEST2"]) is None
+        assert preloader.set_members("RS-SET1", ["TEST2"]) is None
+        assert preloader.set_members("AS-SET1", sources) == SetMembers(["AS65530"], "as-set")
+        assert preloader.set_members("AS-SET1", ["TEST1"]) == SetMembers(["AS65530"], "as-set")
+        assert sorted(preloader.set_members("AS-SET2", sources).members) == ["AS65531", "AS65532"]
+        assert preloader.set_members("RS-SET1", sources) == SetMembers(["192.0.2.0/25"], "route-set")
+        assert preloader.set_members("RS-SET1", ["TEST1"]) == SetMembers(["192.0.2.0/25"], "route-set")
+        assert sorted(preloader.set_members("RS-SET2", sources).members) == sorted(
+            ["192.0.2.128/25", "198.51.100.0/25"]
+        )
 
     def test_routes_for_origins(self, mock_redis_keys):
         preloader = Preloader()
