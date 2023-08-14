@@ -329,84 +329,23 @@ class QueryResolver:
           example references to non-existent other sets
         """
         members: Set[str] = set()
-        sets_already_resolved: Set[str] = set()
         leaf_members = set()
 
-        # TODO: root object class / source
         sources = self.source_manager.sources_resolved if not limit_source else [limit_source]
-        # return self.preloader.as_set_members(set_names, sources)
+        # Per RFC 2622 5.3, route-sets can refer to as-sets,
+        # but as-sets can only refer to other as-sets.
+        # if self._current_set_root_object_class == "as-set":
+        #     object_classes = [self._current_set_root_object_class]
+
         for set_name in set_names:
             set_members = self.preloader.set_members(set_name, sources)
             if set_members is None:
                 leaf_members.add(set_name)
             else:
-                members.update(set_members)
+                members.update(set_members.members)
+                if not self._current_set_root_object_class:
+                    self._current_set_root_object_class = set_members.object_class
 
-        return members, leaf_members
-
-        columns = ["parsed_data", "rpsl_pk", "source", "object_class"]
-        query = self._prepare_query(column_names=columns)
-
-        object_classes = ["as-set", "route-set"]
-        # Per RFC 2622 5.3, route-sets can refer to as-sets,
-        # but as-sets can only refer to other as-sets.
-        if self._current_set_root_object_class == "as-set":
-            object_classes = [self._current_set_root_object_class]
-
-        query = query.object_classes(object_classes).rpsl_pks(set_names)
-        if limit_source:
-            query = query.sources([limit_source])
-        query_result = list(self._execute_query(query))
-
-        if not query_result:
-            # No sub-members are found, and apparantly all inputs were leaf members.
-            return set(), set_names
-
-        # Track the object class of the root object set.
-        # In one case self._current_set_root_object_class may already be set
-        # on the first run: when the set resolving should be fixed to one
-        # type of set object.
-        if not self._current_set_root_object_class:
-            self._current_set_root_object_class = query_result[0]["object_class"]
-
-        for result in query_result:
-            rpsl_pk = result["rpsl_pk"]
-
-            # The same PK may occur in multiple sources, but we are
-            # only interested in the first matching object, prioritised
-            # according to the source order. This priority is part of the
-            # query ORDER BY, so basically we only process an RPSL pk once.
-            if rpsl_pk in sets_already_resolved:
-                continue
-            sets_already_resolved.add(rpsl_pk)
-
-            object_class = result["object_class"]
-            object_data = result["parsed_data"]
-            mbrs_by_ref = object_data.get("mbrs-by-ref", None)
-            for members_attr in ["members", "mp-members"]:
-                if members_attr in object_data:
-                    members.update(set(object_data[members_attr]))
-
-            if not rpsl_pk or not object_class or not mbrs_by_ref:
-                continue
-
-            # If mbrs-by-ref is set, find any objects with member-of pointing to the route/as-set
-            # under query, and include a maintainer listed in mbrs-by-ref, unless mbrs-by-ref
-            # is set to ANY.
-            query_object_class = ["route", "route6"] if object_class == "route-set" else ["aut-num"]
-            query = self._prepare_query(column_names=columns).object_classes(query_object_class)
-            query = query.lookup_attrs_in(["member-of"], [rpsl_pk])
-
-            if "ANY" not in [m.strip().upper() for m in mbrs_by_ref]:
-                query = query.lookup_attrs_in(["mnt-by"], mbrs_by_ref)
-
-            referring_objects = self._execute_query(query)
-
-            for result in referring_objects:
-                member_object_class = result["object_class"]
-                members.add(result["parsed_data"][member_object_class])
-
-        leaf_members = set_names - sets_already_resolved
         return members, leaf_members
 
     def database_status(
