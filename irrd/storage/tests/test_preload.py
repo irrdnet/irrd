@@ -127,15 +127,20 @@ class TestPreloading:
         time.sleep(1)
 
         sources = ["TEST1", "TEST2"]
-        assert preloader.set_members("AS-NOTEXIST", sources) is None
-        assert preloader.set_members("AS-SET1", ["TEST2"]) is None
-        assert preloader.set_members("RS-SET1", ["TEST2"]) is None
-        assert preloader.set_members("AS-SET1", sources) == SetMembers(["AS65530"], "as-set")
-        assert preloader.set_members("AS-SET1", ["TEST1"]) == SetMembers(["AS65530"], "as-set")
-        assert sorted(preloader.set_members("AS-SET2", sources).members) == ["AS65531", "AS65532"]
-        assert preloader.set_members("RS-SET1", sources) == SetMembers(["192.0.2.0/25"], "route-set")
-        assert preloader.set_members("RS-SET1", ["TEST1"]) == SetMembers(["192.0.2.0/25"], "route-set")
-        assert sorted(preloader.set_members("RS-SET2", sources).members) == sorted(
+        classes = ["route-set", "as-set"]
+        assert preloader.set_members("AS-NOTEXIST", sources, classes) is None
+        assert preloader.set_members("AS-SET1", ["TEST2"], classes) is None
+        assert preloader.set_members("RS-SET1", ["TEST2"], classes) is None
+        assert preloader.set_members("AS-SET1", sources, ["route-set"]) is None
+        assert preloader.set_members("RS-SET1", sources, ["as-set"]) is None
+        assert preloader.set_members("AS-SET1", sources, classes) == SetMembers(["AS65530"], "as-set")
+        assert preloader.set_members("AS-SET1", sources, classes) == SetMembers(["AS65530"], "as-set")
+        assert preloader.set_members("AS-SET1", ["TEST1"], classes) == SetMembers(["AS65530"], "as-set")
+        assert sorted(preloader.set_members("AS-SET2", sources, classes).members) == ["AS65531", "AS65532"]
+        assert preloader.set_members("RS-SET1", sources, classes) == SetMembers(["192.0.2.0/25"], "route-set")
+        assert preloader.set_members("RS-SET1", sources, ["route-set"]) == SetMembers(["192.0.2.0/25"], "route-set")
+        assert preloader.set_members("RS-SET1", ["TEST1"], classes) == SetMembers(["192.0.2.0/25"], "route-set")
+        assert sorted(preloader.set_members("RS-SET2", sources, classes).members) == sorted(
             ["192.0.2.128/25", "198.51.100.0/25"]
         )
 

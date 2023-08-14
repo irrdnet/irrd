@@ -415,7 +415,7 @@ class TestQueryResolver:
             "AS-THIRDLEVEL": ["AS65545", "AS-FIRSTLEVEL", "AS-4th-UNKNOWN"],
         }
         mock_preloader.set_members = Mock(
-            side_effect=lambda set_pk, sources: (
+            side_effect=lambda set_pk, sources, object_classes: (
                 SetMembers(mock_set_members.get(set_pk), "as-set") if set_pk in mock_set_members else None
             )
         )
@@ -423,7 +423,7 @@ class TestQueryResolver:
         result = resolver.members_for_set("AS-FIRSTLEVEL", recursive=False)
         assert result == ["AS-2nd-UNKNOWN", "AS-SECONDLEVEL", "AS65547"]
         assert flatten_mock_calls(mock_preloader) == [
-            ["set_members", ("AS-FIRSTLEVEL", ["TEST1", "TEST2"]), {}],
+            ["set_members", ("AS-FIRSTLEVEL", ["TEST1", "TEST2"], ['route-set', 'as-set']), {}],
         ]
         mock_preloader.reset_mock()
 
@@ -431,11 +431,11 @@ class TestQueryResolver:
         assert result == ["AS65544", "AS65545", "AS65547"]
         assert sorted(flatten_mock_calls(mock_preloader)) == sorted(
             [
-                ["set_members", ("AS-FIRSTLEVEL", ["TEST1", "TEST2"]), {}],
-                ["set_members", ("AS-SECONDLEVEL", ["TEST1", "TEST2"]), {}],
-                ["set_members", ("AS-2nd-UNKNOWN", ["TEST1", "TEST2"]), {}],
-                ["set_members", ("AS-THIRDLEVEL", ["TEST1", "TEST2"]), {}],
-                ["set_members", ("AS-4th-UNKNOWN", ["TEST1", "TEST2"]), {}],
+                ["set_members", ("AS-FIRSTLEVEL", ["TEST1", "TEST2"], ['route-set', 'as-set']), {}],
+                ["set_members", ("AS-SECONDLEVEL", ["TEST1", "TEST2"], ['as-set']), {}],
+                ["set_members", ("AS-2nd-UNKNOWN", ["TEST1", "TEST2"], ['as-set']), {}],
+                ["set_members", ("AS-THIRDLEVEL", ["TEST1", "TEST2"], ['as-set']), {}],
+                ["set_members", ("AS-4th-UNKNOWN", ["TEST1", "TEST2"], ['as-set']), {}],
             ]
         )
         mock_preloader.reset_mock()
@@ -443,22 +443,21 @@ class TestQueryResolver:
         result = resolver.members_for_set("AS-FIRSTLEVEL", depth=1, recursive=True)
         assert result == ["AS-2nd-UNKNOWN", "AS-SECONDLEVEL", "AS65547"]
         assert flatten_mock_calls(mock_preloader) == [
-            ["set_members", ("AS-FIRSTLEVEL", ["TEST1", "TEST2"]), {}],
+            ["set_members", ("AS-FIRSTLEVEL", ["TEST1", "TEST2"], ['route-set', 'as-set']), {}],
         ]
         mock_preloader.reset_mock()
 
         result = resolver.members_for_set("AS-NOTEXIST", recursive=True)
         assert not result
         assert flatten_mock_calls(mock_preloader) == [
-            ["set_members", ("AS-NOTEXIST", ["TEST1", "TEST2"]), {}],
+            ["set_members", ("AS-NOTEXIST", ["TEST1", "TEST2"], ['route-set', 'as-set']), {}],
         ]
         mock_preloader.reset_mock()
 
         result = resolver.members_for_set("AS-NOTEXIST", recursive=True, root_source="ROOT")
         assert not result
-        # TODO: actually test ROOT
         assert flatten_mock_calls(mock_preloader) == [
-            ["set_members", ("AS-NOTEXIST", ["ROOT"]), {}],
+            ["set_members", ("AS-NOTEXIST", ["ROOT"], ['route-set', 'as-set']), {}],
         ]
 
     def test_route_set_members(self, prepare_resolver):
@@ -469,7 +468,7 @@ class TestQueryResolver:
             "AS-REFERRED": ["AS65545"],
         }
         mock_preloader.set_members = Mock(
-            side_effect=lambda set_pk, sources: (
+            side_effect=lambda set_pk, sources, object_classes: (
                 SetMembers(mock_set_members.get(set_pk), "route-set") if set_pk in mock_set_members else None
             )
         )
@@ -479,10 +478,10 @@ class TestQueryResolver:
         assert set(result) == {"192.0.2.0/26^32", "192.0.2.0/25", "192.0.2.128/25"}
         assert sorted(flatten_mock_calls(mock_preloader)) == sorted(
             [
-                ["set_members", ("RS-FIRSTLEVEL", ["TEST1", "TEST2"]), {}],
-                ["set_members", ("RS-SECONDLEVEL", ["TEST1", "TEST2"]), {}],
-                ["set_members", ("RS-2nd-UNKNOWN", ["TEST1", "TEST2"]), {}],
-                ["set_members", ("AS-REFERRED", ["TEST1", "TEST2"]), {}],
+                ["set_members", ("RS-FIRSTLEVEL", ["TEST1", "TEST2"], ['route-set', 'as-set']), {}],
+                ["set_members", ("RS-SECONDLEVEL", ["TEST1", "TEST2"], ['route-set', 'as-set']), {}],
+                ["set_members", ("RS-2nd-UNKNOWN", ["TEST1", "TEST2"], ['route-set', 'as-set']), {}],
+                ["set_members", ("AS-REFERRED", ["TEST1", "TEST2"], ['route-set', 'as-set']), {}],
                 ["routes_for_origins", (["AS65545"], ["TEST1", "TEST2"]), {}],
             ]
         )
@@ -492,7 +491,7 @@ class TestQueryResolver:
 
         mock_set_members = ["192.0.2.0/32", "2001:db8::/32", "RS-OTHER"]
         mock_preloader.set_members = Mock(
-            side_effect=lambda set_pk, sources: SetMembers(mock_set_members, "route-set")
+            side_effect=lambda set_pk, sources, object_classes: SetMembers(mock_set_members, "route-set")
         )
 
         result = resolver.members_for_set("RS-TEST", recursive=False)
@@ -528,7 +527,7 @@ class TestQueryResolver:
             "TEST2": ["AS65549"],
         }
         mock_preloader.set_members = Mock(
-            side_effect=lambda set_pk, sources: (
+            side_effect=lambda set_pk, sources, object_classes: (
                 SetMembers(mock_set_members_source.get(sources[0]), "as-set")
             )
         )
@@ -541,8 +540,8 @@ class TestQueryResolver:
             ["rpsl_pk", ("AS-TEST",), {}],
         ]
         assert flatten_mock_calls(mock_preloader) == [
-            ["set_members", ("AS-TEST", ["TEST1"]), {}],
-            ["set_members", ("AS-TEST", ["TEST2"]), {}],
+            ["set_members", ("AS-TEST", ["TEST1"], ['route-set', 'as-set']), {}],
+            ["set_members", ("AS-TEST", ["TEST2"], ['route-set', 'as-set']), {}],
         ]
 
     def test_database_status(self, monkeypatch, prepare_resolver, config_override):

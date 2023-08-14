@@ -334,12 +334,13 @@ class QueryResolver:
         sources = self.source_manager.sources_resolved if not limit_source else [limit_source]
         # Per RFC 2622 5.3, route-sets can refer to as-sets,
         # but as-sets can only refer to other as-sets.
-        # TODO: restrict object class in lookups
-        # if self._current_set_root_object_class == "as-set":
-        #     object_classes = [self._current_set_root_object_class]
+        if self._current_set_root_object_class == "as-set":
+            object_classes = [self._current_set_root_object_class]
+        else:
+            object_classes = ["route-set", "as-set"]
 
         for set_name in set_names:
-            set_members = self.preloader.set_members(set_name, sources)
+            set_members = self.preloader.set_members(set_name, sources, object_classes)
             if set_members is None:
                 leaf_members.add(set_name)
             else:

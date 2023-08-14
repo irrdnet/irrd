@@ -126,7 +126,7 @@ class Preloader:
         )
         self._redis_conn.publish(REDIS_PRELOAD_RELOAD_CHANNEL, message)
 
-    def set_members(self, set_pk: str, sources: List[str]) -> Optional[SetMembers]:
+    def set_members(self, set_pk: str, sources: List[str], object_classes: List[str]) -> Optional[SetMembers]:
         """
         Retrieve all members of set set_pk in given sources from in memory store.
 
@@ -135,20 +135,22 @@ class Preloader:
         """
         while not self._memory_loaded:
             time.sleep(1)  # pragma: no cover
-        for source in sources:
-            try:
-                return SetMembers(
-                    self._as_set_store[source][set_pk].split(REDIS_CONTENTS_LIST_SEPARATOR), "as-set"
-                )
-            except KeyError:
-                continue
-        for source in sources:
-            try:
-                return SetMembers(
-                    self._route_set_store[source][set_pk].split(REDIS_CONTENTS_LIST_SEPARATOR), "route-set"
-                )
-            except KeyError:
-                continue
+        if not object_classes or "as-set" in object_classes:
+            for source in sources:
+                try:
+                    return SetMembers(
+                        self._as_set_store[source][set_pk].split(REDIS_CONTENTS_LIST_SEPARATOR), "as-set"
+                    )
+                except KeyError:
+                    continue
+        if not object_classes or "route-set" in object_classes:
+            for source in sources:
+                try:
+                    return SetMembers(
+                        self._route_set_store[source][set_pk].split(REDIS_CONTENTS_LIST_SEPARATOR), "route-set"
+                    )
+                except KeyError:
+                    continue
         return None
 
     def routes_for_origins(
