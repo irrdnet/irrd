@@ -109,6 +109,8 @@ class TestPreloading:
         # Wait for the preloader instance to start listening on pubsub
         time.sleep(1)
 
+        # route store needs to be created to unlock memory loading in Preloader
+        preload_manager.update_route_store({}, {})
         preload_manager.update_as_set_store(
             {
                 f"TEST1{REDIS_KEY_PK_SOURCE_SEPARATOR}AS-SET1": {"AS65530"},
