@@ -1,3 +1,4 @@
+import textwrap
 from typing import Optional
 
 from irrd.conf import get_setting
@@ -80,7 +81,12 @@ class NRTMGenerator:
             .serial_nrtm_range(serial_start_requested, serial_end_requested)
         )
 
-        output = [f"%START Version: {version} {source} {serial_start_requested}-{serial_end_display}\n"]
+        output = []
+        if get_setting(f"sources.{source}.nrtm_response_header"):
+            header = textwrap.indent(get_setting(f"sources.{source}.nrtm_response_header"), "%")
+            output.append(header)
+
+        output.append(f"%START Version: {version} {source} {serial_start_requested}-{serial_end_display}\n")
 
         for operation in database_handler.execute_query(q):
             operation_str = operation["operation"].value

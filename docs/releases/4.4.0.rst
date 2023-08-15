@@ -103,6 +103,9 @@ Other changes
   resolving. This was already possible in GraphQL queries.
 * The ``-q`` whois flag was added to query available serial
   ranges in a RIPE format.
+* The ``sources.{name}.nrtm_response_header`` setting was added, to add
+  an additional response header comment to all NRTM responses,
+  configured per source.
 * A ``compatibility.asdot_queries`` setting was added, which allows
   the use of the (long deprecated) asdot format in origin queries.
 

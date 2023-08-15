@@ -99,6 +99,7 @@ KNOWN_SOURCES_KEYS = {
     "nrtm_access_list",
     "nrtm_access_list_unfiltered",
     "nrtm_query_serial_range_limit",
+    "nrtm_response_header",
     "strict_import_keycert_objects",
     "rpki_excluded",
     "scopefilter_excluded",

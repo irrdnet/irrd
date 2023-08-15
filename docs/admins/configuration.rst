@@ -717,6 +717,13 @@ Sources
   and will take that into account.
   |br| **Default**: not defined, no limits on NRTM query size.
   |br| **Change takes effect**: after SIGHUP, upon next request.
+* ``sources.{name}.nrtm_response_header``: an additional NRTM response
+  header, added as a comment to all NRTM responses for this source.
+  IRRD will prepend the lines with ``%`` to mark them as comments.
+  This can have multiple lines.  When adding this to the configuration,
+  use the `|` style to preserve newlines.
+  |br| **Default**: not defined, no additional header added.
+  |br| **Change takes effect**: after SIGHUP, upon next request.
 * ``sources.{name}.strict_import_keycert_objects``: a setting used when
   migrating authoritative data that may contain `key-cert` objects.
   See the :doc:`data migration guide </admins/availability-and-migration>`
