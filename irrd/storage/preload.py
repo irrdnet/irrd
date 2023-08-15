@@ -4,7 +4,7 @@ import signal
 import sys
 import threading
 import time
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from typing import Dict, List, Optional, Set, Union
 
 import redis
@@ -21,11 +21,13 @@ from .queries import RPSLDatabaseQuery
 SENTINEL_HASH_CREATED = b"SENTINEL_HASH_CREATED"
 REDIS_ORIGIN_ROUTE4_STORE_KEY = b"irrd-preload-origin-route4"
 REDIS_ORIGIN_ROUTE6_STORE_KEY = b"irrd-preload-origin-route6"
+REDIS_AS_SET_STORE_KEY = b"irrd-preload-as-set"
+REDIS_ROUTE_SET_STORE_KEY = b"irrd-preload-route-set"
 REDIS_PRELOAD_RELOAD_CHANNEL = "irrd-preload-reload-channel"
+REDIS_PRELOAD_ALL_MESSAGE = "unknown-classes-changed-preload-all"
 REDIS_PRELOAD_COMPLETE_CHANNEL = "irrd-preload-complete-channel"
-REDIS_ORIGIN_LIST_SEPARATOR = ","
-REDIS_KEY_ORIGIN_SOURCE_SEPARATOR = "_"
-MAX_MEMORY_LIFETIME = 60
+REDIS_CONTENTS_LIST_SEPARATOR = ","
+REDIS_KEY_PK_SOURCE_SEPARATOR = "_"
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +37,9 @@ The preloader allows information to be preloaded into memory.
 For queries that repeat often, or repeatedly retrieve nearly the same,
 large data sets, this can improve performance.
 """
+
+
+SetMembers = namedtuple("SetMembers", ["members", "object_class"])
 
 
 class PersistentPubSubWorkerThread(redis.client.PubSubWorkerThread):  # type: ignore
@@ -94,14 +99,14 @@ class Preloader:
         if enable_queries:
             self._pubsub = self._redis_conn.pubsub()
             self._pubsub_thread = PersistentPubSubWorkerThread(
-                callback=self._load_routes_into_memory, pubsub=self._pubsub, sleep_time=5, daemon=True
+                callback=self._load_preload_data_into_memory, pubsub=self._pubsub, sleep_time=5, daemon=True
             )
             self._pubsub_thread.start()
             if get_setting("readonly_standby"):  # pragma: no cover
                 # If this instance is readonly, another IRRd process will be updating
                 # the store, and likely has already done so, meaning we can try to load
                 # from Redis right away instead of waiting for a signal.
-                self._load_routes_into_memory()
+                self._load_preload_data_into_memory()
 
     def signal_reload(self, object_classes_changed: Optional[Set[str]] = None) -> None:
         """
@@ -114,9 +119,37 @@ class Preloader:
         If object_classes_changed is provided, a reload is only performed
         if those classes are relevant to the data in the preload store.
         """
-        relevant_object_classes = {"route", "route6"}
-        if object_classes_changed is None or object_classes_changed.intersection(relevant_object_classes):
-            self._redis_conn.publish(REDIS_PRELOAD_RELOAD_CHANNEL, "reload")
+        message = (
+            REDIS_CONTENTS_LIST_SEPARATOR.join(object_classes_changed)
+            if object_classes_changed
+            else REDIS_PRELOAD_ALL_MESSAGE
+        )
+        self._redis_conn.publish(REDIS_PRELOAD_RELOAD_CHANNEL, message)
+
+    def set_members(self, set_pk: str, sources: List[str], object_classes: List[str]) -> Optional[SetMembers]:
+        """
+        Retrieve all members of set set_pk in given sources from in memory store.
+
+        Returns the members and the found object class if the set exists, otherwise None.
+        Will block until the store is loaded.
+        """
+        while not self._memory_loaded:
+            time.sleep(1)  # pragma: no cover
+        if not object_classes or "as-set" in object_classes:
+            for source in sources:
+                try:
+                    members = self._as_set_store[source][set_pk].split(REDIS_CONTENTS_LIST_SEPARATOR)
+                    return SetMembers(members, "as-set")
+                except KeyError:
+                    continue
+        if not object_classes or "route-set" in object_classes:
+            for source in sources:
+                try:
+                    members = self._route_set_store[source][set_pk].split(REDIS_CONTENTS_LIST_SEPARATOR)
+                    return SetMembers(members, "route-set")
+                except KeyError:
+                    continue
+        return None
 
     def routes_for_origins(
         self, origins: Union[List[str], Set[str]], sources: List[str], ip_version: Optional[int] = None
@@ -134,10 +167,6 @@ class Preloader:
         """
         while not self._memory_loaded:
             time.sleep(1)  # pragma: no cover
-        logger.critical(
-            f"preload requested routes for {origins=} {sources=} {ip_version=}:"
-            f" {self._origin_route4_store=} {self._origin_route6_store=}"
-        )
         if ip_version and ip_version not in [4, 6]:
             raise ValueError(f"Invalid IP version: {ip_version}")
         if not origins or not sources:
@@ -152,7 +181,7 @@ class Preloader:
                     and origin in self._origin_route4_store[source]
                 ):
                     prefix_sets.update(
-                        self._origin_route4_store[source][origin].split(REDIS_ORIGIN_LIST_SEPARATOR)
+                        self._origin_route4_store[source][origin].split(REDIS_CONTENTS_LIST_SEPARATOR)
                     )
                 if (
                     (not ip_version or ip_version == 6)
@@ -160,12 +189,12 @@ class Preloader:
                     and origin in self._origin_route6_store[source]
                 ):
                     prefix_sets.update(
-                        self._origin_route6_store[source][origin].split(REDIS_ORIGIN_LIST_SEPARATOR)
+                        self._origin_route6_store[source][origin].split(REDIS_CONTENTS_LIST_SEPARATOR)
                     )
 
         return prefix_sets
 
-    def _load_routes_into_memory(self, redis_message=None):
+    def _load_preload_data_into_memory(self, redis_message=None):
         """
         Update the in-memory store. This is called whenever a
         message is sent to REDIS_PRELOAD_COMPLETE_CHANNEL.
@@ -179,21 +208,27 @@ class Preloader:
 
         new_origin_route4_store = dict()
         new_origin_route6_store = dict()
+        new_as_set_store = dict()
+        new_route_set_store = dict()
 
         def _load(redis_key, target):
             for key, routes in self._redis_conn.hgetall(redis_key).items():
                 if key == SENTINEL_HASH_CREATED:
                     continue
-                source, origin = key.decode("ascii").split(REDIS_KEY_ORIGIN_SOURCE_SEPARATOR)
+                source, origin = key.decode("ascii").split(REDIS_KEY_PK_SOURCE_SEPARATOR, 1)
                 if source not in target:
                     target[source] = dict()
                 target[source][origin] = routes.decode("ascii")
 
         _load(REDIS_ORIGIN_ROUTE4_STORE_KEY, new_origin_route4_store)
         _load(REDIS_ORIGIN_ROUTE6_STORE_KEY, new_origin_route6_store)
+        _load(REDIS_AS_SET_STORE_KEY, new_as_set_store)
+        _load(REDIS_ROUTE_SET_STORE_KEY, new_route_set_store)
 
         self._origin_route4_store = new_origin_route4_store
         self._origin_route6_store = new_origin_route6_store
+        self._as_set_store = new_as_set_store
+        self._route_set_store = new_route_set_store
 
         self._memory_loaded = True
 
@@ -234,13 +269,14 @@ class PreloadStoreManager(ExceptionLoggingProcess):
         self.terminate = False  # Used to exit main() in tests
 
         while not self.terminate:
-            self.perform_reload()
+            self.perform_reload(REDIS_PRELOAD_ALL_MESSAGE)
             try:
                 self._pubsub.subscribe(REDIS_PRELOAD_RELOAD_CHANNEL)
                 for item in self._pubsub.listen():
                     if item["type"] == "message":
-                        logger.debug("Reload requested through redis channel")
-                        self.perform_reload()
+                        message = item["data"].decode("ascii")
+                        logger.debug(f"Reload requested through redis channel for {message}")
+                        self.perform_reload(message)
                         if self.terminate:
                             return
             except redis.ConnectionError as rce:  # pragma: no cover
@@ -253,14 +289,16 @@ class PreloadStoreManager(ExceptionLoggingProcess):
         queries are being answered with outdated data.
         """
         try:
-            self._redis_conn.delete(REDIS_ORIGIN_ROUTE4_STORE_KEY, REDIS_ORIGIN_ROUTE6_STORE_KEY)
+            self._redis_conn.delete(
+                REDIS_ORIGIN_ROUTE4_STORE_KEY, REDIS_ORIGIN_ROUTE6_STORE_KEY, REDIS_AS_SET_STORE_KEY
+            )
         except redis.ConnectionError as rce:  # pragma: no cover
             logger.error(
                 "Failed to empty preload store due to redis connection error, "
                 f"queries may have outdated results until full reload is completed (max 30s): {rce}"
             )
 
-    def perform_reload(self) -> None:
+    def perform_reload(self, message: str) -> None:
         """
         Perform a (re)load.
         Should be called after changes to the DB have been committed.
@@ -274,11 +312,36 @@ class PreloadStoreManager(ExceptionLoggingProcess):
         change that prompted this reload call will already be processed
         by the thread that is currently waiting.
         """
+        classes = set(message.split(REDIS_CONTENTS_LIST_SEPARATOR))
+        update_routes = message == REDIS_PRELOAD_ALL_MESSAGE or bool(
+            classes.intersection({"route", "route6"})
+        )
+        update_as_sets = message == REDIS_PRELOAD_ALL_MESSAGE or bool(
+            classes.intersection({"as-set", "aut-num"})
+        )
+        update_route_sets = message == REDIS_PRELOAD_ALL_MESSAGE or bool(
+            classes.intersection({"route-set", "route", "route6"})
+        )
+
+        if not any([update_routes, update_as_sets, update_route_sets]):
+            return
+
+        # Update any queued threads to include the correct objects
+        for thread in self._threads:
+            if update_routes:
+                thread.update_routes = True
+            if update_as_sets:
+                thread.update_as_sets = True
+            if update_route_sets:
+                thread.update_route_sets = True
+
         self._remove_dead_threads()
         if len(self._threads) > 1:
             # Another thread is already scheduled to follow the current one
             return
-        thread = PreloadUpdater(self, self._reload_lock, daemon=True)
+        thread = PreloadUpdater(
+            self, self._reload_lock, update_routes, update_as_sets, update_route_sets, daemon=True
+        )
         thread.start()
         self._threads.append(thread)
 
@@ -291,10 +354,10 @@ class PreloadStoreManager(ExceptionLoggingProcess):
             pipeline.delete(REDIS_ORIGIN_ROUTE4_STORE_KEY, REDIS_ORIGIN_ROUTE6_STORE_KEY)
             # The redis store can't store sets, only strings
             origin_route4_str_dict = {
-                k: REDIS_ORIGIN_LIST_SEPARATOR.join(v) for k, v in new_origin_route4_store.items()
+                k: REDIS_CONTENTS_LIST_SEPARATOR.join(v) for k, v in new_origin_route4_store.items()
             }
             origin_route6_str_dict = {
-                k: REDIS_ORIGIN_LIST_SEPARATOR.join(v) for k, v in new_origin_route6_store.items()
+                k: REDIS_CONTENTS_LIST_SEPARATOR.join(v) for k, v in new_origin_route6_store.items()
             }
             # Redis can't handle empty dicts, but the dict needs to be present
             # in order not to block queries.
@@ -304,17 +367,54 @@ class PreloadStoreManager(ExceptionLoggingProcess):
             pipeline.hset(REDIS_ORIGIN_ROUTE6_STORE_KEY, mapping=origin_route6_str_dict)
             pipeline.execute()
 
+            return True
+
+        except redis.ConnectionError as rce:  # pragma: no cover
+            return self._handle_preload_update_error(rce)
+
+    def update_as_set_store(self, new_as_set_store) -> bool:
+        """
+        Store the new as-set information in redis. Returns True on success, False on failure.
+        """
+        return self.update_set_store(new_as_set_store, REDIS_AS_SET_STORE_KEY)
+
+    def update_route_set_store(self, new_route_set_store) -> bool:
+        """
+        Store the new route-set information in redis. Returns True on success, False on failure.
+        """
+        return self.update_set_store(new_route_set_store, REDIS_ROUTE_SET_STORE_KEY)
+
+    def update_set_store(self, new_store, redis_key) -> bool:
+        try:
+            pipeline = self._redis_conn.pipeline(transaction=True)
+            pipeline.delete(redis_key)
+            # The redis store can't store sets, only strings
+            set_str_dict = {k: REDIS_CONTENTS_LIST_SEPARATOR.join(v) for k, v in new_store.items()}
+            # Redis can't handle empty dicts, but the dict needs to be present
+            # in order not to block queries.
+            set_str_dict[SENTINEL_HASH_CREATED] = "1"
+            pipeline.hset(redis_key, mapping=set_str_dict)
+            pipeline.execute()
+            return True
+        except redis.ConnectionError as rce:  # pragma: no cover
+            return self._handle_preload_update_error(rce)
+
+    def signal_redis_store_updated(self):
+        try:
             self._redis_conn.publish(REDIS_PRELOAD_COMPLETE_CHANNEL, "complete")
             return True
 
         except redis.ConnectionError as rce:  # pragma: no cover
-            logger.error(
-                "Failed to update preload store due to redis connection error, "
-                f"attempting new reload in 5s: {rce}"
-            )
-            time.sleep(5)
-            self.perform_reload()
-            return False
+            return self._handle_preload_update_error(rce)
+
+    def _handle_preload_update_error(self, rce):  # pragma: no cover
+        logger.error(
+            "Failed to update preload store due to redis connection error, "
+            f"attempting new reload in 5s: {rce}"
+        )
+        time.sleep(5)
+        self.perform_reload(REDIS_PRELOAD_ALL_MESSAGE)
+        return False
 
     def _remove_dead_threads(self) -> None:
         """
@@ -333,9 +433,21 @@ class PreloadUpdater(threading.Thread):
     It is started by PreloadStoreManager.
     """
 
-    def __init__(self, preloader, reload_lock, *args, **kwargs):
+    def __init__(
+        self,
+        preloader: PreloadStoreManager,
+        reload_lock,
+        update_routes,
+        update_as_sets,
+        update_route_sets,
+        *args,
+        **kwargs,
+    ):
         self.preloader = preloader
         self.reload_lock = reload_lock
+        self.update_routes = update_routes
+        self.update_as_sets = update_as_sets
+        self.update_route_sets = update_route_sets
         super().__init__(*args, **kwargs)
 
     def run(self, mock_database_handler=None) -> None:
@@ -356,7 +468,7 @@ class PreloadUpdater(threading.Thread):
                 f"Updating preload store failed, retrying in 5s, traceback follows: {exc}", exc_info=exc
             )
             time.sleep(5)
-            self.preloader.perform_reload()
+            self.preloader.perform_reload(REDIS_PRELOAD_ALL_MESSAGE)
         finally:
             self.reload_lock.release()
 
@@ -372,15 +484,25 @@ class PreloadUpdater(threading.Thread):
         """
         logger.debug(f"Starting preload store update from thread {self}")
 
-        new_origin_route4_store: Dict[str, set] = defaultdict(set)
-        new_origin_route6_store: Dict[str, set] = defaultdict(set)
-
         if not mock_database_handler:  # pragma: no cover
             from .database_handler import DatabaseHandler
 
             dh = DatabaseHandler(readonly=True)
         else:
             dh = mock_database_handler
+
+        if self.update_routes:
+            self._update_routes(dh)
+        self._update_all_sets(dh)
+
+        if self.preloader.signal_redis_store_updated():
+            logger.info(f"Completed preload store update from thread {self}, notified workers")
+
+        dh.close()
+
+    def _update_routes(self, dh):
+        new_origin_route4_store: Dict[str, set] = defaultdict(set)
+        new_origin_route6_store: Dict[str, set] = defaultdict(set)
 
         q = RPSLDatabaseQuery(
             column_names=["ip_version", "ip_first", "prefix_length", "asn_first", "source"],
@@ -389,18 +511,77 @@ class PreloadUpdater(threading.Thread):
         q = q.object_classes(["route", "route6"]).rpki_status([RPKIStatus.not_found, RPKIStatus.valid])
         q = q.scopefilter_status([ScopeFilterStatus.in_scope])
         q = q.route_preference_status([RoutePreferenceStatus.visible])
-
         for result in dh.execute_query(q):
             prefix = result["ip_first"]
-            key = result["source"] + REDIS_KEY_ORIGIN_SOURCE_SEPARATOR + "AS" + str(result["asn_first"])
+            key = result["source"] + REDIS_KEY_PK_SOURCE_SEPARATOR + "AS" + str(result["asn_first"])
             length = result["prefix_length"]
 
             if result["ip_version"] == 4:
                 new_origin_route4_store[key].add(f"{prefix}/{length}")
             if result["ip_version"] == 6:
                 new_origin_route6_store[key].add(f"{prefix}/{length}")
-
-        dh.close()
-
         if self.preloader.update_route_store(new_origin_route4_store, new_origin_route6_store):
-            logger.info(f"Completed updating preload store from thread {self}")
+            logger.debug(f"Completed updating preload route store from thread {self}")
+
+    def _update_all_sets(self, dh):
+        if self.update_as_sets:
+            as_set_store = self._update_set(dh, "as-set", ["aut-num"])
+            if self.preloader.update_as_set_store(as_set_store):
+                logger.debug(f"Completed updating preload as-set store from thread {self}")
+
+        if self.update_route_sets:
+            route_set_store = self._update_set(dh, "route-set", ["route", "route6"])
+            if self.preloader.update_route_set_store(route_set_store):
+                logger.debug(f"Completed updating preload route-set store from thread {self}")
+
+    def _update_set(self, dh, set_class, member_classes):
+        q = (
+            RPSLDatabaseQuery(
+                column_names=["rpsl_pk", "parsed_data", "source"],
+                enable_ordering=False,
+            )
+            .object_classes([set_class])
+            .rpki_status([RPKIStatus.not_found, RPKIStatus.valid])
+            .scopefilter_status([ScopeFilterStatus.in_scope])
+            .route_preference_status([RoutePreferenceStatus.visible])
+        )
+
+        member_store: Dict[str, set] = {}
+        mbrs_by_ref_per_set = {}
+
+        for row in dh.execute_query(q):
+            key = row["source"] + REDIS_KEY_PK_SOURCE_SEPARATOR + str(row["rpsl_pk"])
+            member_store[key] = set(
+                row["parsed_data"].get("members", []) + row["parsed_data"].get("mp-members", [])
+            )
+            mbrs_by_ref = set(row["parsed_data"].get("mbrs-by-ref", []))
+            if mbrs_by_ref:
+                mbrs_by_ref_per_set[(row["source"], row["rpsl_pk"])] = mbrs_by_ref
+
+        # This query retrieves all member objects with a member-of, because it
+        # is much faster than the more specific but much larger alternative.
+        q = (
+            RPSLDatabaseQuery(
+                column_names=["rpsl_pk", "parsed_data", "source", "object_class"],
+                enable_ordering=False,
+            )
+            .lookup_attr("member-of", True)
+            .object_classes(member_classes)
+            .rpki_status([RPKIStatus.not_found, RPKIStatus.valid])
+            .scopefilter_status([ScopeFilterStatus.in_scope])
+            .route_preference_status([RoutePreferenceStatus.visible])
+        )
+        for row in dh.execute_query(q):
+            for member_of in row["parsed_data"].get("member-of", []):
+                try:
+                    expected_mntners = mbrs_by_ref_per_set[(row["source"], member_of)]
+                except KeyError:
+                    continue
+
+                if "ANY" in expected_mntners or expected_mntners.intersection(
+                    set(row["parsed_data"]["mnt-by"])
+                ):
+                    key = row["source"] + REDIS_KEY_PK_SOURCE_SEPARATOR + member_of
+                    member_store[key].add(row["parsed_data"][row["object_class"]])
+
+        return member_store

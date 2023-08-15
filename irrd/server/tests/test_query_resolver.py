@@ -10,7 +10,7 @@ from pytz import timezone
 from irrd.routepref.status import RoutePreferenceStatus
 from irrd.rpki.status import RPKIStatus
 from irrd.scopefilter.status import ScopeFilterStatus
-from irrd.storage.preload import Preloader
+from irrd.storage.preload import Preloader, SetMembers
 from irrd.utils.test_utils import flatten_mock_calls
 
 from ..query_resolver import InvalidQueryException, QueryResolver, RouteLookupType
@@ -409,247 +409,100 @@ class TestQueryResolver:
     def test_as_set_members(self, prepare_resolver):
         mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
 
-        mock_query_result1 = [
-            {
-                "pk": uuid.uuid4(),
-                "rpsl_pk": "AS-FIRSTLEVEL",
-                "parsed_data": {
-                    "as-set": "AS-FIRSTLEVEL",
-                    "members": ["AS65547", "AS-FIRSTLEVEL", "AS-SECONDLEVEL", "AS-2nd-UNKNOWN"],
-                },
-                "object_text": "text",
-                "object_class": "as-set",
-                "source": "TEST1",
-            },
-        ]
-        mock_query_result2 = [
-            {
-                "pk": uuid.uuid4(),
-                "rpsl_pk": "AS-SECONDLEVEL",
-                "parsed_data": {"as-set": "AS-SECONDLEVEL", "members": ["AS-THIRDLEVEL", "AS65544"]},
-                "object_text": "text",
-                "object_class": "as-set",
-                "source": "TEST1",
-            },
-            {  # Should be ignored - only the first result per PK is accepted.
-                "pk": uuid.uuid4(),
-                "rpsl_pk": "AS-SECONDLEVEL",
-                "parsed_data": {"as-set": "AS-SECONDLEVEL", "members": ["AS-IGNOREME"]},
-                "object_text": "text",
-                "object_class": "as-set",
-                "source": "TEST2",
-            },
-        ]
-        mock_query_result3 = [
-            {
-                "pk": uuid.uuid4(),
-                "rpsl_pk": "AS-THIRDLEVEL",
-                # Refers back to the first as-set to test infinite recursion issues
-                "parsed_data": {
-                    "as-set": "AS-THIRDLEVEL",
-                    "members": ["AS65545", "AS-FIRSTLEVEL", "AS-4th-UNKNOWN"],
-                },
-                "object_text": "text",
-                "object_class": "as-set",
-                "source": "TEST2",
-            },
-        ]
-        mock_dh.execute_query = lambda query, refresh_on_error=False: iter(mock_query_result1)
+        mock_set_members = {
+            "AS-FIRSTLEVEL": ["AS65547", "AS-FIRSTLEVEL", "AS-SECONDLEVEL", "AS-2nd-UNKNOWN"],
+            "AS-SECONDLEVEL": ["AS-THIRDLEVEL", "AS65544"],
+            "AS-THIRDLEVEL": ["AS65545", "AS-FIRSTLEVEL", "AS-4th-UNKNOWN"],
+        }
+        mock_preloader.set_members = Mock(
+            side_effect=lambda set_pk, sources, object_classes: (
+                SetMembers(mock_set_members.get(set_pk), "as-set") if set_pk in mock_set_members else None
+            )
+        )
 
         result = resolver.members_for_set("AS-FIRSTLEVEL", recursive=False)
         assert result == ["AS-2nd-UNKNOWN", "AS-SECONDLEVEL", "AS65547"]
-        assert flatten_mock_calls(mock_dq) == [
-            ["sources", (["TEST1", "TEST2"],), {}],
-            ["object_classes", (["as-set", "route-set"],), {}],
-            ["rpsl_pks", ({"AS-FIRSTLEVEL"},), {}],
+        assert flatten_mock_calls(mock_preloader) == [
+            ["set_members", ("AS-FIRSTLEVEL", ["TEST1", "TEST2"], ["route-set", "as-set"]), {}],
         ]
-        mock_dq.reset_mock()
-
-        mock_query_iterator = iter(
-            [mock_query_result1, mock_query_result2, mock_query_result3, [], mock_query_result1, []]
-        )
-        mock_dh.execute_query = lambda query, refresh_on_error=False: iter(next(mock_query_iterator))
+        mock_preloader.reset_mock()
 
         result = resolver.members_for_set("AS-FIRSTLEVEL", recursive=True)
         assert result == ["AS65544", "AS65545", "AS65547"]
-        assert flatten_mock_calls(mock_dq) == [
-            ["sources", (["TEST1", "TEST2"],), {}],
-            ["object_classes", (["as-set", "route-set"],), {}],
-            ["rpsl_pks", ({"AS-FIRSTLEVEL"},), {}],
-            ["sources", (["TEST1", "TEST2"],), {}],
-            ["object_classes", (["as-set"],), {}],
-            ["rpsl_pks", ({"AS-2nd-UNKNOWN", "AS-SECONDLEVEL"},), {}],
-            ["sources", (["TEST1", "TEST2"],), {}],
-            ["object_classes", (["as-set"],), {}],
-            ["rpsl_pks", ({"AS-THIRDLEVEL"},), {}],
-            ["sources", (["TEST1", "TEST2"],), {}],
-            ["object_classes", (["as-set"],), {}],
-            ["rpsl_pks", ({"AS-4th-UNKNOWN"},), {}],
-        ]
-        mock_dq.reset_mock()
+        assert sorted(flatten_mock_calls(mock_preloader)) == sorted(
+            [
+                ["set_members", ("AS-FIRSTLEVEL", ["TEST1", "TEST2"], ["route-set", "as-set"]), {}],
+                ["set_members", ("AS-SECONDLEVEL", ["TEST1", "TEST2"], ["as-set"]), {}],
+                ["set_members", ("AS-2nd-UNKNOWN", ["TEST1", "TEST2"], ["as-set"]), {}],
+                ["set_members", ("AS-THIRDLEVEL", ["TEST1", "TEST2"], ["as-set"]), {}],
+                ["set_members", ("AS-4th-UNKNOWN", ["TEST1", "TEST2"], ["as-set"]), {}],
+            ]
+        )
+        mock_preloader.reset_mock()
 
         result = resolver.members_for_set("AS-FIRSTLEVEL", depth=1, recursive=True)
         assert result == ["AS-2nd-UNKNOWN", "AS-SECONDLEVEL", "AS65547"]
-        mock_dq.reset_mock()
+        assert flatten_mock_calls(mock_preloader) == [
+            ["set_members", ("AS-FIRSTLEVEL", ["TEST1", "TEST2"], ["route-set", "as-set"]), {}],
+        ]
+        mock_preloader.reset_mock()
 
-        mock_dh.execute_query = lambda query, refresh_on_error=False: iter([])
         result = resolver.members_for_set("AS-NOTEXIST", recursive=True)
         assert not result
-        assert flatten_mock_calls(mock_dq) == [
-            ["sources", (["TEST1", "TEST2"],), {}],
-            ["object_classes", (["as-set", "route-set"],), {}],
-            ["rpsl_pks", ({"AS-NOTEXIST"},), {}],
+        assert flatten_mock_calls(mock_preloader) == [
+            ["set_members", ("AS-NOTEXIST", ["TEST1", "TEST2"], ["route-set", "as-set"]), {}],
         ]
-        mock_dq.reset_mock()
+        mock_preloader.reset_mock()
 
-        mock_dh.execute_query = lambda query, refresh_on_error=False: iter([])
         result = resolver.members_for_set("AS-NOTEXIST", recursive=True, root_source="ROOT")
         assert not result
-        assert flatten_mock_calls(mock_dq) == [
-            ["sources", (["TEST1", "TEST2"],), {}],
-            ["object_classes", (["as-set", "route-set"],), {}],
-            ["rpsl_pks", ({"AS-NOTEXIST"},), {}],
-            ["sources", (["ROOT"],), {}],
+        assert flatten_mock_calls(mock_preloader) == [
+            ["set_members", ("AS-NOTEXIST", ["ROOT"], ["route-set", "as-set"]), {}],
         ]
+
+        result = resolver.members_for_set("AS-FIRSTLEVEL", recursive=True, exclude_sets={"AS-FIRSTLEVEL"})
+        assert result == ["AS65544", "AS65545", "AS65547"]
+        result = resolver.members_for_set("AS-FIRSTLEVEL", recursive=True, exclude_sets={"AS-SECONDLEVEL"})
+        assert result == ["AS65547"]
+        result = resolver.members_for_set("AS-FIRSTLEVEL", recursive=True, exclude_sets={"AS-THIRDLEVEL"})
+        assert result == ["AS65544", "AS65547"]
 
     def test_route_set_members(self, prepare_resolver):
         mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
-
-        mock_query_result1 = [
-            {
-                "pk": uuid.uuid4(),
-                "rpsl_pk": "RS-FIRSTLEVEL",
-                "parsed_data": {"as-set": "RS-FIRSTLEVEL", "members": ["RS-SECONDLEVEL", "RS-2nd-UNKNOWN"]},
-                "object_text": "text",
-                "object_class": "route-set",
-                "source": "TEST1",
-            },
-        ]
-        mock_query_result2 = [
-            {
-                "pk": uuid.uuid4(),
-                "rpsl_pk": "RS-SECONDLEVEL",
-                "parsed_data": {
-                    "as-set": "RS-SECONDLEVEL",
-                    "members": ["AS-REFERRED", "192.0.2.0/25", "192.0.2.0/26^32"],
-                },
-                "object_text": "text",
-                "object_class": "route-set",
-                "source": "TEST1",
-            },
-        ]
-        mock_query_result3 = [
-            {
-                "pk": uuid.uuid4(),
-                "rpsl_pk": "AS-REFERRED",
-                "parsed_data": {"as-set": "AS-REFERRED", "members": ["AS65545"]},
-                "object_text": "text",
-                "object_class": "as-set",
-                "source": "TEST2",
-            },
-        ]
-        mock_query_iterator = iter([mock_query_result1, mock_query_result2, mock_query_result3, []])
-        mock_dh.execute_query = lambda query, refresh_on_error=False: iter(next(mock_query_iterator))
+        mock_set_members = {
+            "RS-FIRSTLEVEL": ["RS-SECONDLEVEL", "RS-2nd-UNKNOWN"],
+            "RS-SECONDLEVEL": ["AS-REFERRED", "192.0.2.0/25", "192.0.2.0/26^32"],
+            "AS-REFERRED": ["AS65545"],
+        }
+        mock_preloader.set_members = Mock(
+            side_effect=lambda set_pk, sources, object_classes: (
+                SetMembers(mock_set_members.get(set_pk), "route-set") if set_pk in mock_set_members else None
+            )
+        )
         mock_preloader.routes_for_origins = Mock(return_value=["192.0.2.128/25"])
 
         result = resolver.members_for_set("RS-FIRSTLEVEL", recursive=True)
         assert set(result) == {"192.0.2.0/26^32", "192.0.2.0/25", "192.0.2.128/25"}
-        assert flatten_mock_calls(mock_dq) == [
-            ["sources", (["TEST1", "TEST2"],), {}],
-            ["object_classes", (["as-set", "route-set"],), {}],
-            ["rpsl_pks", ({"RS-FIRSTLEVEL"},), {}],
-            ["sources", (["TEST1", "TEST2"],), {}],
-            ["object_classes", (["as-set", "route-set"],), {}],
-            ["rpsl_pks", ({"RS-SECONDLEVEL", "RS-2nd-UNKNOWN"},), {}],
-            ["sources", (["TEST1", "TEST2"],), {}],
-            ["object_classes", (["as-set", "route-set"],), {}],
-            ["rpsl_pks", ({"AS-REFERRED"},), {}],
-        ]
-
-    def test_as_route_set_mbrs_by_ref(self, prepare_resolver):
-        mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
-
-        mock_query_result1 = [
-            {
-                # This route-set is intentionally misnamed RRS, as invalid names occur in real life.
-                "pk": uuid.uuid4(),
-                "rpsl_pk": "RRS-TEST",
-                "parsed_data": {
-                    "route-set": "RRS-TEST",
-                    "members": ["192.0.2.0/32"],
-                    "mp-members": ["2001:db8::/32"],
-                    "mbrs-by-ref": ["MNT-TEST"],
-                },
-                "object_text": "text",
-                "object_class": "route-set",
-                "source": "TEST1",
-            },
-        ]
-        mock_query_result2 = [
-            {
-                "pk": uuid.uuid4(),
-                "rpsl_pk": "192.0.2.0/24,AS65544",
-                "parsed_data": {
-                    "route": "192.0.2.0/24",
-                    "member-of": "rrs-test",
-                    "mnt-by": ["FOO", "MNT-TEST"],
-                },
-                "object_text": "text",
-                "object_class": "route",
-                "source": "TEST1",
-            },
-        ]
-        mock_query_iterator = iter([mock_query_result1, mock_query_result2, [], [], []])
-        mock_dh.execute_query = lambda query, refresh_on_error=False: iter(next(mock_query_iterator))
-
-        result = resolver.members_for_set("RRS-TEST", recursive=True)
-        assert result == ["192.0.2.0/24", "192.0.2.0/32", "2001:db8::/32"]
-        assert flatten_mock_calls(mock_dq) == [
-            ["sources", (["TEST1", "TEST2"],), {}],
-            ["object_classes", (["as-set", "route-set"],), {}],
-            ["rpsl_pks", ({"RRS-TEST"},), {}],
-            ["sources", (["TEST1", "TEST2"],), {}],
-            ["object_classes", (["route", "route6"],), {}],
-            ["lookup_attrs_in", (["member-of"], ["RRS-TEST"]), {}],
-            ["lookup_attrs_in", (["mnt-by"], ["MNT-TEST"]), {}],
-        ]
-        mock_dq.reset_mock()
-
-        # Disable maintainer check
-        mock_query_result1[0]["parsed_data"]["mbrs-by-ref"] = ["ANY"]
-        mock_query_iterator = iter([mock_query_result1, mock_query_result2, [], [], []])
-        result = resolver.members_for_set("RRS-TEST", recursive=True)
-        assert result == ["192.0.2.0/24", "192.0.2.0/32", "2001:db8::/32"]
-        assert flatten_mock_calls(mock_dq) == [
-            ["sources", (["TEST1", "TEST2"],), {}],
-            ["object_classes", (["as-set", "route-set"],), {}],
-            ["rpsl_pks", ({"RRS-TEST"},), {}],
-            ["sources", (["TEST1", "TEST2"],), {}],
-            ["object_classes", (["route", "route6"],), {}],
-            ["lookup_attrs_in", (["member-of"], ["RRS-TEST"]), {}],
-        ]
+        assert sorted(flatten_mock_calls(mock_preloader)) == sorted(
+            [
+                ["set_members", ("RS-FIRSTLEVEL", ["TEST1", "TEST2"], ["route-set", "as-set"]), {}],
+                ["set_members", ("RS-SECONDLEVEL", ["TEST1", "TEST2"], ["route-set", "as-set"]), {}],
+                ["set_members", ("RS-2nd-UNKNOWN", ["TEST1", "TEST2"], ["route-set", "as-set"]), {}],
+                ["set_members", ("AS-REFERRED", ["TEST1", "TEST2"], ["route-set", "as-set"]), {}],
+                ["routes_for_origins", (["AS65545"], ["TEST1", "TEST2"]), {}],
+            ]
+        )
 
     def test_route_set_compatibility_ipv4_only_route_set_members(self, prepare_resolver, config_override):
         mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
 
-        mock_query_result = [
-            {
-                "pk": uuid.uuid4(),
-                "rpsl_pk": "RS-TEST",
-                "parsed_data": {
-                    "route-set": "RS-TEST",
-                    "members": ["192.0.2.0/32"],
-                    "mp-members": ["192.0.2.1/32", "2001:db8::/32", "RS-OTHER"],
-                },
-                "object_text": "text",
-                "object_class": "route-set",
-                "source": "TEST1",
-            },
-        ]
-        mock_dh.execute_query = lambda query, refresh_on_error=False: mock_query_result
+        mock_set_members = ["192.0.2.0/32", "2001:db8::/32", "RS-OTHER"]
+        mock_preloader.set_members = Mock(
+            side_effect=lambda set_pk, sources, object_classes: SetMembers(mock_set_members, "route-set")
+        )
 
         result = resolver.members_for_set("RS-TEST", recursive=False)
-        assert result == ["192.0.2.0/32", "192.0.2.1/32", "2001:db8::/32", "RS-OTHER"]
+        assert result == ["192.0.2.0/32", "2001:db8::/32", "RS-OTHER"]
 
         config_override(
             {
@@ -658,58 +511,33 @@ class TestQueryResolver:
         )
 
         result = resolver.members_for_set("RS-TEST", recursive=False)
-        assert result == ["192.0.2.0/32", "192.0.2.1/32", "RS-OTHER"]
+        assert result == ["192.0.2.0/32", "RS-OTHER"]
 
     def test_members_for_set_per_source(self, prepare_resolver):
         mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
 
-        mock_query_result = iter(
-            [
-                [
-                    {
-                        "rpsl_pk": "AS-TEST",
-                        "source": "TEST1",
-                    },
-                    {
-                        "rpsl_pk": "AS-TEST",
-                        "source": "TEST2",
-                    },
-                ],
-                [
-                    {
-                        "pk": uuid.uuid4(),
-                        "rpsl_pk": "AS-TEST",
-                        "parsed_data": {"as-set": "AS-TEST", "members": ["AS65547", "AS-SECONDLEVEL"]},
-                        "object_text": "text",
-                        "object_class": "as-set",
-                        "source": "TEST1",
-                    },
-                ],
-                [
-                    {
-                        "pk": uuid.uuid4(),
-                        "rpsl_pk": "AS-SECONDLEVEL",
-                        "parsed_data": {"as-set": "AS-SECONDLEVEL", "members": ["AS65548"]},
-                        "object_text": "text",
-                        "object_class": "as-set",
-                        "source": "TEST1",
-                    },
-                ],
-                [
-                    {
-                        "pk": uuid.uuid4(),
-                        "rpsl_pk": "AS-TEST",
-                        "parsed_data": {"as-set": "AS-TEST", "members": ["AS65549"]},
-                        "object_text": "text",
-                        "object_class": "as-set",
-                        "source": "TEST2",
-                    },
-                ],
-                [],
-            ]
-        )
+        mock_query_result = [
+            {
+                "rpsl_pk": "AS-TEST",
+                "source": "TEST1",
+            },
+            {
+                "rpsl_pk": "AS-TEST",
+                "source": "TEST2",
+            },
+        ]
 
-        mock_dh.execute_query = lambda query, refresh_on_error=False: next(mock_query_result)
+        mock_dh.execute_query = lambda query, refresh_on_error=False: mock_query_result
+
+        mock_set_members_source = {
+            "TEST1": ["AS65547", "AS65548"],
+            "TEST2": ["AS65549"],
+        }
+        mock_preloader.set_members = Mock(
+            side_effect=lambda set_pk, sources, object_classes: (
+                SetMembers(mock_set_members_source.get(sources[0]), "as-set")
+            )
+        )
 
         result = resolver.members_for_set_per_source("AS-TEST", recursive=True)
         assert result == {"TEST1": ["AS65547", "AS65548"], "TEST2": ["AS65549"]}
@@ -717,19 +545,11 @@ class TestQueryResolver:
             ["sources", (["TEST1", "TEST2"],), {}],
             ["object_classes", (["as-set", "route-set"],), {}],
             ["rpsl_pk", ("AS-TEST",), {}],
-            ["sources", (["TEST1", "TEST2"],), {}],
-            ["object_classes", (["as-set", "route-set"],), {}],
-            ["rpsl_pks", ({"AS-TEST"},), {}],
-            ["sources", (["TEST1"],), {}],
-            ["sources", (["TEST1", "TEST2"],), {}],
-            ["object_classes", (["as-set"],), {}],
-            ["rpsl_pks", ({"AS-SECONDLEVEL"},), {}],
-            ["sources", (["TEST1", "TEST2"],), {}],
-            ["object_classes", (["as-set", "route-set"],), {}],
-            ["rpsl_pks", ({"AS-TEST"},), {}],
-            ["sources", (["TEST2"],), {}],
         ]
-        mock_dq.reset_mock()
+        assert flatten_mock_calls(mock_preloader) == [
+            ["set_members", ("AS-TEST", ["TEST1"], ["route-set", "as-set"]), {}],
+            ["set_members", ("AS-TEST", ["TEST2"], ["route-set", "as-set"]), {}],
+        ]
 
     def test_database_status(self, monkeypatch, prepare_resolver, config_override):
         config_override(

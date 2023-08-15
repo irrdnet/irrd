@@ -11,10 +11,12 @@ from irrd.utils.test_utils import flatten_mock_calls
 
 from ..database_handler import DatabaseHandler
 from ..preload import (
-    REDIS_KEY_ORIGIN_SOURCE_SEPARATOR,
+    REDIS_KEY_PK_SOURCE_SEPARATOR,
+    REDIS_PRELOAD_ALL_MESSAGE,
     Preloader,
     PreloadStoreManager,
     PreloadUpdater,
+    SetMembers,
 )
 from ..queries import RPSLDatabaseQuery
 
@@ -63,7 +65,7 @@ class TestPreloading:
         assert len(preload_manager._threads) == 1
         mock_preload_updater.reset_mock()
 
-        preload_manager.perform_reload()
+        preload_manager.perform_reload(REDIS_PRELOAD_ALL_MESSAGE)
 
         assert mock_preload_updater.mock_calls[0][0] == "().is_alive"
         assert mock_preload_updater.mock_calls[1][0] == ""
@@ -74,7 +76,7 @@ class TestPreloading:
         mock_preload_updater.reset_mock()
 
         # Two threads already running, do nothing
-        preload_manager.perform_reload()
+        preload_manager.perform_reload(REDIS_PRELOAD_ALL_MESSAGE)
 
         assert mock_preload_updater.mock_calls[0][0] == "().is_alive"
         assert mock_preload_updater.mock_calls[1][0] == "().is_alive"
@@ -100,6 +102,52 @@ class TestPreloading:
         preload_manager.terminate = True
         Preloader().signal_reload()
 
+    def test_set_members(self, mock_redis_keys):
+        preloader = Preloader()
+        preload_manager = PreloadStoreManager()
+
+        # Wait for the preloader instance to start listening on pubsub
+        time.sleep(1)
+
+        # route store needs to be created to unlock memory loading in Preloader
+        preload_manager.update_route_store({}, {})
+        preload_manager.update_as_set_store(
+            {
+                f"TEST1{REDIS_KEY_PK_SOURCE_SEPARATOR}AS-SET1": {"AS65530"},
+                f"TEST2{REDIS_KEY_PK_SOURCE_SEPARATOR}AS-SET2": {"AS65531", "AS65532"},
+            }
+        )
+        preload_manager.update_route_set_store(
+            {
+                f"TEST1{REDIS_KEY_PK_SOURCE_SEPARATOR}RS-SET1": {"192.0.2.0/25"},
+                f"TEST2{REDIS_KEY_PK_SOURCE_SEPARATOR}RS-SET2": {"192.0.2.128/25", "198.51.100.0/25"},
+            }
+        )
+        preload_manager.signal_redis_store_updated()
+        time.sleep(1)
+
+        sources = ["TEST1", "TEST2"]
+        classes = ["route-set", "as-set"]
+        assert preloader.set_members("AS-NOTEXIST", sources, classes) is None
+        assert preloader.set_members("AS-SET1", ["TEST2"], classes) is None
+        assert preloader.set_members("RS-SET1", ["TEST2"], classes) is None
+        assert preloader.set_members("AS-SET1", sources, ["route-set"]) is None
+        assert preloader.set_members("RS-SET1", sources, ["as-set"]) is None
+        assert preloader.set_members("AS-SET1", sources, classes) == SetMembers(["AS65530"], "as-set")
+        assert preloader.set_members("AS-SET1", sources, classes) == SetMembers(["AS65530"], "as-set")
+        assert preloader.set_members("AS-SET1", ["TEST1"], classes) == SetMembers(["AS65530"], "as-set")
+        assert sorted(preloader.set_members("AS-SET2", sources, classes).members) == ["AS65531", "AS65532"]
+        assert preloader.set_members("RS-SET1", sources, classes) == SetMembers(["192.0.2.0/25"], "route-set")
+        assert preloader.set_members("RS-SET1", sources, ["route-set"]) == SetMembers(
+            ["192.0.2.0/25"], "route-set"
+        )
+        assert preloader.set_members("RS-SET1", ["TEST1"], classes) == SetMembers(
+            ["192.0.2.0/25"], "route-set"
+        )
+        assert sorted(preloader.set_members("RS-SET2", sources, classes).members) == sorted(
+            ["192.0.2.128/25", "198.51.100.0/25"]
+        )
+
     def test_routes_for_origins(self, mock_redis_keys):
         preloader = Preloader()
         preload_manager = PreloadStoreManager()
@@ -109,13 +157,14 @@ class TestPreloading:
 
         preload_manager.update_route_store(
             {
-                f"TEST2{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65546": {"192.0.2.0/25"},
-                f"TEST1{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65547": {"192.0.2.128/25", "198.51.100.0/25"},
+                f"TEST2{REDIS_KEY_PK_SOURCE_SEPARATOR}AS65546": {"192.0.2.0/25"},
+                f"TEST1{REDIS_KEY_PK_SOURCE_SEPARATOR}AS65547": {"192.0.2.128/25", "198.51.100.0/25"},
             },
             {
-                f"TEST2{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65547": {"2001:db8::/32"},
+                f"TEST2{REDIS_KEY_PK_SOURCE_SEPARATOR}AS65547": {"2001:db8::/32"},
             },
         )
+        preload_manager.signal_redis_store_updated()
         time.sleep(1)
 
         sources = ["TEST1", "TEST2"]
@@ -163,41 +212,144 @@ class TestPreloadUpdater:
         mock_reload_lock = Mock()
         mock_preload_obj = Mock()
 
-        mock_query_result = [
-            {
-                "ip_version": 4,
-                "ip_first": "192.0.2.0",
-                "prefix_length": 25,
-                "asn_first": 65546,
-                "source": "TEST1",
-            },
-            {
-                "ip_version": 4,
-                "ip_first": "192.0.2.128",
-                "prefix_length": 25,
-                "asn_first": 65547,
-                "source": "TEST1",
-            },
-            {
-                "ip_version": 4,
-                "ip_first": "198.51.100.0",
-                "prefix_length": 25,
-                "asn_first": 65547,
-                "source": "TEST1",
-            },
-            {
-                "ip_version": 6,
-                "ip_first": "2001:db8::",
-                "prefix_length": 32,
-                "asn_first": 65547,
-                "source": "TEST2",
-            },
-        ]
-        mock_database_handler.execute_query = lambda query: mock_query_result
-        PreloadUpdater(mock_preload_obj, mock_reload_lock).run(mock_database_handler)
+        mock_query_result = iter(
+            [
+                [
+                    {
+                        "ip_version": 4,
+                        "ip_first": "192.0.2.0",
+                        "prefix_length": 25,
+                        "asn_first": 65546,
+                        "source": "TEST1",
+                    },
+                    {
+                        "ip_version": 4,
+                        "ip_first": "192.0.2.128",
+                        "prefix_length": 25,
+                        "asn_first": 65547,
+                        "source": "TEST1",
+                    },
+                    {
+                        "ip_version": 4,
+                        "ip_first": "198.51.100.0",
+                        "prefix_length": 25,
+                        "asn_first": 65547,
+                        "source": "TEST1",
+                    },
+                    {
+                        "ip_version": 6,
+                        "ip_first": "2001:db8::",
+                        "prefix_length": 32,
+                        "asn_first": 65547,
+                        "source": "TEST2",
+                    },
+                ],
+                [
+                    {
+                        "rpsl_pk": "AS-SET1",
+                        "parsed_data": {"members": ["AS65530"], "mbrs-by-ref": ["TEST-MNT"]},
+                        "source": "TEST1",
+                    },
+                    {
+                        "rpsl_pk": "AS-SET-ANY",
+                        "parsed_data": {"members": ["AS65530"], "mbrs-by-ref": ["ANY"]},
+                        "source": "TEST1",
+                    },
+                ],
+                [
+                    {
+                        "object_class": "aut-num",
+                        "parsed_data": {
+                            "aut-num": "AS65531",
+                            "member-of": ["AS-SET1", "AS-SET-NOT-EXIST"],
+                            "mnt-by": ["TEST-MNT"],
+                        },
+                        "source": "TEST1",
+                    },
+                    {
+                        "object_class": "aut-num",
+                        "parsed_data": {
+                            "aut-num": "AS65532",
+                            "member-of": ["AS-SET-ANY"],
+                            "mnt-by": ["OTHER-MNT"],
+                        },
+                        "source": "TEST1",
+                    },
+                    {
+                        "object_class": "aut-num",
+                        "parsed_data": {
+                            "aut-num": "AS65533",
+                            "member-of": ["AS-SET1"],
+                            "mnt-by": ["OTHER-MNT"],
+                        },
+                        "source": "TEST1",
+                    },
+                    {
+                        "object_class": "aut-num",
+                        "parsed_data": {
+                            "aut-num": "AS65534",
+                            "member-of": "AS-SET1",
+                            "mnt-by": "TEST-MNT",
+                        },
+                        "source": "OTHER-SOURCE",
+                    },
+                ],
+                [
+                    {
+                        "rpsl_pk": "RS-SET1",
+                        "parsed_data": {
+                            "members": ["192.0.2.0/25"],
+                            "mp-members": ["2001:db8:1::/48"],
+                            "mbrs-by-ref": ["TEST-MNT"],
+                        },
+                        "source": "TEST1",
+                    },
+                ],
+                [
+                    {
+                        "object_class": "route",
+                        "parsed_data": {
+                            "route": "192.0.2.128/25",
+                            "member-of": ["RS-SET1"],
+                            "mnt-by": ["TEST-MNT"],
+                        },
+                        "source": "TEST1",
+                    },
+                    {
+                        "object_class": "route6",
+                        "parsed_data": {
+                            "route6": "2001:db8:2::/48",
+                            "member-of": ["RS-SET1"],
+                            "mnt-by": ["TEST-MNT"],
+                        },
+                        "source": "TEST1",
+                    },
+                ],
+            ]
+        )
+        mock_database_handler.execute_query = lambda query: next(mock_query_result)
+        PreloadUpdater(mock_preload_obj, mock_reload_lock, True, True, True).run(mock_database_handler)
 
         assert flatten_mock_calls(mock_reload_lock) == [["acquire", (), {}], ["release", (), {}]]
         assert flatten_mock_calls(mock_database_query) == [
+            ["object_classes", (["route", "route6"],), {}],
+            ["rpki_status", ([RPKIStatus.not_found, RPKIStatus.valid],), {}],
+            ["scopefilter_status", ([ScopeFilterStatus.in_scope],), {}],
+            ["route_preference_status", ([RoutePreferenceStatus.visible],), {}],
+            ["object_classes", (["as-set"],), {}],
+            ["rpki_status", ([RPKIStatus.not_found, RPKIStatus.valid],), {}],
+            ["scopefilter_status", ([ScopeFilterStatus.in_scope],), {}],
+            ["route_preference_status", ([RoutePreferenceStatus.visible],), {}],
+            ["lookup_attr", ("member-of", True), {}],
+            ["object_classes", (["aut-num"],), {}],
+            ["rpki_status", ([RPKIStatus.not_found, RPKIStatus.valid],), {}],
+            ["scopefilter_status", ([ScopeFilterStatus.in_scope],), {}],
+            ["route_preference_status", ([RoutePreferenceStatus.visible],), {}],
+            ["object_classes", (["route-set"],), {}],
+            ["rpki_status", ([RPKIStatus.not_found, RPKIStatus.valid],), {}],
+            ["scopefilter_status", ([ScopeFilterStatus.in_scope],), {}],
+            ["route_preference_status", ([RoutePreferenceStatus.visible],), {}],
+            ["lookup_attr", ("member-of", True), {}],
             ["object_classes", (["route", "route6"],), {}],
             ["rpki_status", ([RPKIStatus.not_found, RPKIStatus.valid],), {}],
             ["scopefilter_status", ([ScopeFilterStatus.in_scope],), {}],
@@ -209,23 +361,48 @@ class TestPreloadUpdater:
                 "update_route_store",
                 (
                     {
-                        f"TEST1{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65546": {"192.0.2.0/25"},
-                        f"TEST1{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65547": {
+                        f"TEST1{REDIS_KEY_PK_SOURCE_SEPARATOR}AS65546": {"192.0.2.0/25"},
+                        f"TEST1{REDIS_KEY_PK_SOURCE_SEPARATOR}AS65547": {
                             "192.0.2.128/25",
                             "198.51.100.0/25",
                         },
                     },
-                    {f"TEST2{REDIS_KEY_ORIGIN_SOURCE_SEPARATOR}AS65547": {"2001:db8::/32"}},
+                    {f"TEST2{REDIS_KEY_PK_SOURCE_SEPARATOR}AS65547": {"2001:db8::/32"}},
                 ),
                 {},
-            ]
+            ],
+            [
+                "update_as_set_store",
+                (
+                    {
+                        "TEST1_AS-SET-ANY": {"AS65530", "AS65532"},
+                        "TEST1_AS-SET1": {"AS65530", "AS65531"},
+                    },
+                ),
+                {},
+            ],
+            [
+                "update_route_set_store",
+                (
+                    {
+                        "TEST1_RS-SET1": {
+                            "192.0.2.0/25",
+                            "192.0.2.128/25",
+                            "2001:db8:1::/48",
+                            "2001:db8:2::/48",
+                        },
+                    },
+                ),
+                {},
+            ],
+            ["signal_redis_store_updated", (), {}],
         ]
 
     def test_preload_updater_failure(self, caplog):
         mock_database_handler = Mock()
         mock_reload_lock = Mock()
         mock_preload_obj = Mock()
-        PreloadUpdater(mock_preload_obj, mock_reload_lock).run(mock_database_handler)
+        PreloadUpdater(mock_preload_obj, mock_reload_lock, True, True, True).run(mock_database_handler)
 
         assert "Updating preload store failed" in caplog.text
         assert flatten_mock_calls(mock_reload_lock) == [["acquire", (), {}], ["release", (), {}]]

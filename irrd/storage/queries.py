@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import sqlalchemy as sa
 import sqlalchemy.dialects.postgresql as pg
@@ -186,19 +186,21 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         self.statement = sa.select(columns)
         self._lookup_attr_counter = 0
 
-    def lookup_attr(self, attr_name: str, attr_value: str):
+    def lookup_attr(self, attr_name: str, attr_value: Union[str, bool]):
         """
         Filter on a lookup attribute, e.g. mnt-by.
         At least one of the values for the lookup attribute must match attr_value.
         Matching is case-insensitive.
+        If the value is True (the literal object), matches with any value.
         """
         return self.lookup_attrs_in([attr_name], [attr_value])
 
-    def lookup_attrs_in(self, attr_names: List[str], attr_values: List[str]):
+    def lookup_attrs_in(self, attr_names: List[str], attr_values: List[Union[str, bool]]):
         """
         Filter on one or more lookup attributes, e.g. mnt-by, or ['admin-c', 'tech-c']
         At least one of the values for at least one of the lookup attributes must
         match one of the items in attr_values. Matching is case-insensitive.
+        If the value is True (the literal object), matches with any value.
         """
         attr_names = [attr_name.lower() for attr_name in attr_names]
         for attr_name in attr_names:
@@ -212,11 +214,15 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
             for attr_value in attr_values:
                 counter = self._lookup_attr_counter
                 self._lookup_attr_counter += 1
-                value_filters.append(
-                    sa.text(f"parsed_data->:lookup_attr_name{counter} ? :lookup_attr_value{counter}")
-                )
-                statement_params[f"lookup_attr_name{counter}"] = attr_name
-                statement_params[f"lookup_attr_value{counter}"] = attr_value.upper()
+                if attr_value is True:
+                    value_filters.append(sa.text(f"parsed_data ? :lookup_attr_name{counter}"))
+                    statement_params[f"lookup_attr_name{counter}"] = attr_name
+                else:
+                    value_filters.append(
+                        sa.text(f"parsed_data->:lookup_attr_name{counter} ? :lookup_attr_value{counter}")
+                    )
+                    statement_params[f"lookup_attr_name{counter}"] = attr_name
+                    statement_params[f"lookup_attr_value{counter}"] = attr_value.upper()  # type: ignore
         fltr = sa.or_(*value_filters)
         self.statement = self.statement.where(fltr).params(**statement_params)
 

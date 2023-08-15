@@ -275,16 +275,16 @@ Servers
   |br| **Change takes effect**: after SIGHUP.
 * ``server.whois.max_connections``: the maximum number of simultaneous whois
   connections permitted. Note that each permitted connection will result in
-  one IRRd whois worker to be started, each of which use about 200 MB memory.
-  For example, if you set this to 50, you need about 10 GB of memory just for
+  one IRRd whois worker to be started, each of which use about 200-250 MB memory.
+  For example, if you set this to 50, you need about 10-13 GB of memory just for
   IRRd's whois server.
   (and additional memory for other components and PostgreSQL).
   |br| **Default**: ``10``.
   |br| **Change takes effect**: after full IRRd restart.
 * ``server.http.workers``: the number of HTTP workers launched on startup.
   Each worker can process one GraphQL query or other HTTP request at a time.
-  Note that each worker uses about 200 MB memory.
-  For example, if you set this to 50, you need about 10 GB of memory just for
+  Note that each worker uses about 200-250 MB memory.
+  For example, if you set this to 50, you need about 10-13 GB of memory just for
   IRRd's HTTP server.
   (and additional memory for other components and PostgreSQL).
   |br| **Default**: ``4``.
