@@ -9,6 +9,8 @@ from multiprocessing import Process
 
 from setproctitle import getproctitle
 
+from irrd.conf import config_init
+
 logger = logging.getLogger(__name__)
 
 
@@ -16,8 +18,14 @@ logger = logging.getLogger(__name__)
 
 
 class ExceptionLoggingProcess(Process):  # pragma: no cover
+    def __init__(self, config_file_path: str, *args, **kwargs):
+        self.config_file_path = config_file_path
+        super().__init__(*args, **kwargs)
+
     def run(self) -> None:
         try:
+            # Reinitialise the config to reopen logger file handles in PyPy
+            config_init(self.config_file_path)
             super().run()
         except Exception as e:
             logger.critical(
