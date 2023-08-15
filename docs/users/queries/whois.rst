@@ -202,6 +202,7 @@ The queries are:
   than ``-i origin``, as the former benefit from preloading. However, the
   ``-i`` queries are more flexible.
 * ``-t <object-class>`` returns the template for a particular object class.
+* ``-q sources`` returns the serial range for each source.
 * ``-g`` returns an NRTM response, used for mirroring. See the
   :doc:`mirroring documentation </users/mirroring>`.
 * Any other (part of) the query is interpreted as a free text search:

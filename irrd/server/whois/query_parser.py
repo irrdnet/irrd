@@ -429,6 +429,8 @@ class WhoisQueryParser:
                         self.handle_ripe_key_fields_only()
                     elif command == "V":
                         self.handle_user_agent(components.pop(0))
+                    elif command == "q":
+                        result = self.handle_nrtm_information_query(components.pop(0))
                     elif command == "g":
                         result = self.handle_nrtm_request(components.pop(0))
                         remove_auth_hashes = False
@@ -499,6 +501,47 @@ class WhoisQueryParser:
         """-V/!n parameter/query - set a user agent for the client"""
         self.query_resolver.user_agent = user_agent
         logger.info(f"{self.client_str}: user agent set to: {user_agent}")
+
+    def handle_nrtm_information_query(self, param):
+        """
+        -q sources
+        This query will list the serial range for all available sources.
+        """
+        if param != "sources":
+            raise InvalidQueryException(f"Unrecognised parameter: {param}")
+
+        sources = list(get_setting("sources", {}).keys())
+        query = DatabaseStatusQuery().sources(sources)
+        query_results = self.database_handler.execute_query(query, refresh_on_error=True)
+
+        result_txt = ""
+        for query_result in query_results:
+            source = query_result["source"].upper()
+            nrtm_version = "3"
+
+            in_access_list = is_client_permitted(
+                self.client_ip, f"sources.{source}.nrtm_access_list", log=False
+            )
+            in_unfiltered_access_list = is_client_permitted(
+                self.client_ip, f"sources.{source}.nrtm_access_list_unfiltered", log=False
+            )
+            if not in_access_list and not in_unfiltered_access_list:
+                nrtm_mirroring_permission = "N"
+            else:
+                nrtm_mirroring_permission = "X"
+
+            serial_oldest = query_result["serial_oldest_journal"]
+            serial_newest = query_result["serial_newest_journal"]
+            fields = [
+                source,
+                nrtm_version,
+                nrtm_mirroring_permission,
+                f"{serial_oldest}-{serial_newest}" if serial_newest and serial_oldest else "Unknown",
+            ]
+
+            result_txt += ":".join(fields) + "\n"
+
+        return result_txt.strip()
 
     def handle_nrtm_request(self, param):
         try:
