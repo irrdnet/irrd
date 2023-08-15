@@ -313,11 +313,15 @@ class PreloadStoreManager(ExceptionLoggingProcess):
         by the thread that is currently waiting.
         """
         classes = set(message.split(REDIS_CONTENTS_LIST_SEPARATOR))
-        update_routes = message == REDIS_PRELOAD_ALL_MESSAGE or bool(classes.intersection({"route", "route6"}))
-        update_as_sets = message == REDIS_PRELOAD_ALL_MESSAGE or bool(classes.intersection({"as-set", "aut-num"}))
-        update_route_sets = message == REDIS_PRELOAD_ALL_MESSAGE or bool(classes.intersection(
-            {"route-set", "route", "route6"}
-        ))
+        update_routes = message == REDIS_PRELOAD_ALL_MESSAGE or bool(
+            classes.intersection({"route", "route6"})
+        )
+        update_as_sets = message == REDIS_PRELOAD_ALL_MESSAGE or bool(
+            classes.intersection({"as-set", "aut-num"})
+        )
+        update_route_sets = message == REDIS_PRELOAD_ALL_MESSAGE or bool(
+            classes.intersection({"route-set", "route", "route6"})
+        )
 
         if not any([update_routes, update_as_sets, update_route_sets]):
             return
