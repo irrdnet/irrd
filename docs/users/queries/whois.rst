@@ -150,17 +150,18 @@ IRRd style queries
 * ``!s<sources>`` restricts all responses to a specified list of sources,
   comma-separated, e.g. ``!sRIPE,NTTCOM``. In addition, ``!s-lc`` returns the
   sources currently selected. This persists across queries.
+* ``!e<set_names>`` excludes set names from set resolving. During recursive
+  resolving as part of ``!i`` and ``!a`` queries, sets with these names are
+  not expanded. The list is comma-separated, e.g. ``!AS-EX1,AS-EX2``.
+  In addition, ``!e-lc`` returns the set names that are currently excluded.
+  Exclusion does not apply when the target of the query is an excluded object,
+  i.e. with the previous example, ``!aAS-EX1`` is still resolved.
+  The setting persists across queries.
 * ``!v`` returns the current version of IRRd
 * ``!fno-rpki-filter``, ``!fno-scope-filter``, and ``!fno-route-preference-filter``
   disables the filtering of :doc:`suppressed objects </admins/object-suppression>`
   for the remainder of the connection. Disabling the filter only applies to ``!r``
   queries and all RIPE style queries. This is only intended as a debugging aid.
-* ``!fno-scope-filter`` disables filtering out-of-scope objects. If
-  the scope filter is enabled, objects that are
-  :doc:`out of scope </admins/scopefilter>` are not included in the output of any query by default.
-  After using ``!fno-scope-filter``, this filter is disabled for the remainder of
-  the connection. Disabling the filter only applies to ``!r`` queries and
-  all RIPE style queries. This is only intended as a debugging aid.
 
 
 RIPE style queries

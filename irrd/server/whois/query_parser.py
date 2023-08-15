@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Optional
+from typing import List, Optional
 
 import ujson
 from IPy import IP
@@ -50,6 +50,7 @@ class WhoisQueryParser:
         self.multiple_command_mode = False
         self.timeout = SOCKET_DEFAULT_TIMEOUT
         self.key_fields_only = False
+        self.excluded_sets: List[str] = []
         self.client_ip = client_ip
         self.client_str = client_str
         self.database_handler = database_handler
@@ -187,6 +188,8 @@ class WhoisQueryParser:
                 response_type = WhoisQueryResponseType.KEY_NOT_FOUND
         elif command == "s":
             result = self.handle_irrd_sources_list(parameter)
+        elif command == "e":
+            result = self.handle_irrd_set_exclusion(parameter)
         else:
             raise InvalidQueryException(f"Unrecognised command: {command}")
 
@@ -244,7 +247,9 @@ class WhoisQueryParser:
         if not set_name:
             raise InvalidQueryException("Missing required set name for A query")
 
-        prefixes = self.query_resolver.routes_for_as_set(set_name, ip_version)
+        prefixes = self.query_resolver.routes_for_as_set(
+            set_name, ip_version, exclude_sets=set(self.excluded_sets)
+        )
         return " ".join(prefixes)
 
     def handle_irrd_set_members(self, parameter: str) -> str:
@@ -257,7 +262,9 @@ class WhoisQueryParser:
             recursive = True
             parameter = parameter[:-2]
 
-        members = self.query_resolver.members_for_set(parameter, recursive=recursive)
+        members = self.query_resolver.members_for_set(
+            parameter, recursive=recursive, exclude_sets=set(self.excluded_sets)
+        )
         return " ".join(members)
 
     def handle_irrd_database_serial_range(self, parameter: str) -> str:
@@ -355,7 +362,7 @@ class WhoisQueryParser:
     def handle_irrd_sources_list(self, parameter: str) -> Optional[str]:
         """
         !s query - set used sources
-           !s-lc returns all active sources, space separated
+           !s-lc returns all active sources, comma separated
            !sripe,nttcom limits sources to ripe and nttcom
         """
         if parameter == "-lc":
@@ -363,6 +370,18 @@ class WhoisQueryParser:
 
         sources = parameter.upper().split(",")
         self.query_resolver.set_query_sources(sources)
+        return None
+
+    def handle_irrd_set_exclusion(self, parameter: str) -> Optional[str]:
+        """
+        !e query - set excluded set names for deep resolving
+           !e-lc returns all excluded sets, comma separated
+           !eAS-A,AS-B sets AS-A and AS-B to excluded
+        """
+        if parameter == "-lc":
+            return ",".join(self.excluded_sets)
+
+        self.excluded_sets = parameter.upper().split(",") if parameter else []
         return None
 
     def handle_irrd_version(self):

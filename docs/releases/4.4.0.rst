@@ -99,6 +99,8 @@ per worker due to this change.
 
 Other changes
 -------------
+* The ``!e`` whois command was added to exclude sets from recursive
+  resolving. This was already possible in GraphQL queries.
 * A ``compatibility.asdot_queries`` setting was added, which allows
   the use of the (long deprecated) asdot format in origin queries.
 
