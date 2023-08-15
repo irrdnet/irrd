@@ -145,7 +145,9 @@ def run_irrd(mirror_frequency: int, config_file_path: str, uid: Optional[int], g
 
     mirror_scheduler = MirrorScheduler()
 
-    preload_manager = PreloadStoreManager(config_file_path=config_file_path, name="irrd-preload-store-manager")
+    preload_manager = PreloadStoreManager(
+        config_file_path=config_file_path, name="irrd-preload-store-manager"
+    )
     preload_manager.start()
 
     uvicorn_process = ExceptionLoggingProcess(
