@@ -470,10 +470,10 @@ class TestWhoisQueryParserIRRD:
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == "Missing IRRD command"
 
-        response = parser.handle_query("!e")
+        response = parser.handle_query("!x")
         assert response.response_type == WhoisQueryResponseType.ERROR_USER
         assert response.mode == WhoisQueryResponseMode.IRRD
-        assert response.result == "Unrecognised command: e"
+        assert response.result == "Unrecognised command: x"
 
     def test_parameter_required(self, prepare_parser):
         mock_query_resolver, mock_dh, parser = prepare_parser
@@ -562,21 +562,24 @@ class TestWhoisQueryParserIRRD:
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == "192.0.2.0/25 192.0.2.128/25"
-        mock_query_resolver.routes_for_as_set.assert_called_once_with("AS-FOO", None)
+        mock_query_resolver.routes_for_as_set.assert_called_once_with("AS-FOO", None, exclude_sets=set())
         mock_query_resolver.routes_for_as_set.reset_mock()
 
         response = parser.handle_query("!a4AS-FOO")
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == "192.0.2.0/25 192.0.2.128/25"
-        mock_query_resolver.routes_for_as_set.assert_called_once_with("AS-FOO", 4)
+        mock_query_resolver.routes_for_as_set.assert_called_once_with("AS-FOO", 4, exclude_sets=set())
         mock_query_resolver.routes_for_as_set.reset_mock()
 
+        parser.excluded_sets = ["AS-EXCLUDED"]
         response = parser.handle_query("!a6AS-FOO")
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == "192.0.2.0/25 192.0.2.128/25"
-        mock_query_resolver.routes_for_as_set.assert_called_once_with("AS-FOO", 6)
+        mock_query_resolver.routes_for_as_set.assert_called_once_with(
+            "AS-FOO", 6, exclude_sets={"AS-EXCLUDED"}
+        )
         mock_query_resolver.routes_for_as_set.reset_mock()
 
         mock_query_resolver.routes_for_as_set = Mock(return_value=[])
@@ -593,20 +596,28 @@ class TestWhoisQueryParserIRRD:
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == "MEMBER1 MEMBER2"
-        mock_query_resolver.members_for_set.assert_called_once_with("AS-FOO", recursive=False)
+        mock_query_resolver.members_for_set.assert_called_once_with(
+            "AS-FOO", recursive=False, exclude_sets=set()
+        )
         mock_query_resolver.members_for_set.reset_mock()
 
         response = parser.handle_query("!iAS-FOO,1")
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == "MEMBER1 MEMBER2"
-        mock_query_resolver.members_for_set.assert_called_once_with("AS-FOO", recursive=True)
+        mock_query_resolver.members_for_set.assert_called_once_with(
+            "AS-FOO", recursive=True, exclude_sets=set()
+        )
 
+        parser.excluded_sets = ["AS-EXCLUDED"]
         mock_query_resolver.members_for_set = Mock(return_value=[])
         response = parser.handle_query("!iAS-FOO")
         assert response.response_type == WhoisQueryResponseType.KEY_NOT_FOUND
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert not response.result
+        mock_query_resolver.members_for_set.assert_called_once_with(
+            "AS-FOO", recursive=False, exclude_sets={"AS-EXCLUDED"}
+        )
 
     def test_database_serial_range(self, monkeypatch, prepare_parser):
         mock_query_resolver, mock_dh, parser = prepare_parser
@@ -850,6 +861,33 @@ class TestWhoisQueryParserIRRD:
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result == "TEST1,ALIAS"
+
+    def test_set_exclusion(self, prepare_parser, config_override):
+        mock_query_resolver, mock_dh, parser = prepare_parser
+
+        response = parser.handle_query("!e-lc")
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert not response.result
+        assert parser.excluded_sets == []
+
+        response = parser.handle_query("!eAS-A,AS-b")
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert not response.result
+        assert parser.excluded_sets == ["AS-A", "AS-B"]
+
+        response = parser.handle_query("!e-lc")
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert response.result == "AS-A,AS-B"
+        assert parser.excluded_sets == ["AS-A", "AS-B"]
+
+        response = parser.handle_query("!e")
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert not response.result
+        assert parser.excluded_sets == []
 
     def test_irrd_version(self, prepare_parser):
         mock_query_resolver, mock_dh, parser = prepare_parser
