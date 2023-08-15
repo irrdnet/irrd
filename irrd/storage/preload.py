@@ -138,18 +138,15 @@ class Preloader:
         if not object_classes or "as-set" in object_classes:
             for source in sources:
                 try:
-                    return SetMembers(
-                        self._as_set_store[source][set_pk].split(REDIS_CONTENTS_LIST_SEPARATOR), "as-set"
-                    )
+                    members = self._as_set_store[source][set_pk].split(REDIS_CONTENTS_LIST_SEPARATOR)
+                    return SetMembers(members, "as-set")
                 except KeyError:
                     continue
         if not object_classes or "route-set" in object_classes:
             for source in sources:
                 try:
-                    return SetMembers(
-                        self._route_set_store[source][set_pk].split(REDIS_CONTENTS_LIST_SEPARATOR),
-                        "route-set",
-                    )
+                    members = self._route_set_store[source][set_pk].split(REDIS_CONTENTS_LIST_SEPARATOR)
+                    return SetMembers(members, "route-set")
                 except KeyError:
                     continue
         return None
@@ -315,18 +312,32 @@ class PreloadStoreManager(ExceptionLoggingProcess):
         change that prompted this reload call will already be processed
         by the thread that is currently waiting.
         """
-        update_routes = message == REDIS_PRELOAD_ALL_MESSAGE or set(
-            message.split(REDIS_CONTENTS_LIST_SEPARATOR)
-        ).intersection({"route", "route6"})
+        classes = set(message.split(REDIS_CONTENTS_LIST_SEPARATOR))
+        update_routes = message == REDIS_PRELOAD_ALL_MESSAGE or classes.intersection({"route", "route6"})
+        update_as_sets = message == REDIS_PRELOAD_ALL_MESSAGE or classes.intersection({"as-set", "aut-num"})
+        update_route_sets = message == REDIS_PRELOAD_ALL_MESSAGE or classes.intersection(
+            {"route-set", "route", "route6"}
+        )
 
-        if not update_routes:
+        if not any([update_routes, update_as_sets, update_route_sets]):
             return
+
+        # Update any queued threads to include the correct objects
+        for thread in self._threads:
+            if update_routes:
+                thread.update_routes = True
+            if update_as_sets:
+                thread.update_as_sets = True
+            if update_route_sets:
+                thread.update_route_sets = True
 
         self._remove_dead_threads()
         if len(self._threads) > 1:
             # Another thread is already scheduled to follow the current one
             return
-        thread = PreloadUpdater(self, self._reload_lock, daemon=True)
+        thread = PreloadUpdater(
+            self, self._reload_lock, update_routes, update_as_sets, update_route_sets, daemon=True
+        )
         thread.start()
         self._threads.append(thread)
 
@@ -418,9 +429,21 @@ class PreloadUpdater(threading.Thread):
     It is started by PreloadStoreManager.
     """
 
-    def __init__(self, preloader: PreloadStoreManager, reload_lock, *args, **kwargs):
+    def __init__(
+        self,
+        preloader: PreloadStoreManager,
+        reload_lock,
+        update_routes,
+        update_as_sets,
+        update_route_sets,
+        *args,
+        **kwargs,
+    ):
         self.preloader = preloader
         self.reload_lock = reload_lock
+        self.update_routes = update_routes
+        self.update_as_sets = update_routes
+        self.update_route_sets = update_route_sets
         super().__init__(*args, **kwargs)
 
     def run(self, mock_database_handler=None) -> None:
@@ -464,8 +487,12 @@ class PreloadUpdater(threading.Thread):
         else:
             dh = mock_database_handler
 
-        self._update_routes(dh)
+        if self.update_routes:
+            self._update_routes(dh)
         self._update_all_sets(dh)
+
+        if self.preloader.signal_redis_store_updated():
+            logger.info(f"Completed preloaded data refresh for from thread {self}")
 
         dh.close()
 
@@ -490,21 +517,18 @@ class PreloadUpdater(threading.Thread):
             if result["ip_version"] == 6:
                 new_origin_route6_store[key].add(f"{prefix}/{length}")
         if self.preloader.update_route_store(new_origin_route4_store, new_origin_route6_store):
-            logger.info(f"Completed updating preload route store from thread {self}")
+            logger.debug(f"Completed updating preload route store from thread {self}")
 
     def _update_all_sets(self, dh):
-        as_set_store = self._update_set(dh, "as-set", ["aut-num"])
+        if self.update_as_sets:
+            as_set_store = self._update_set(dh, "as-set", ["aut-num"])
+            if self.preloader.update_as_set_store(as_set_store):
+                logger.debug(f"Completed updating preload as-set store from thread {self}")
 
-        if self.preloader.update_as_set_store(as_set_store):
-            logger.info(f"Completed updating preload as-set store from thread {self}")
-
-        route_set_store = self._update_set(dh, "route-set", ["route", "route6"])
-
-        if self.preloader.update_route_set_store(route_set_store):
-            logger.info(f"Completed updating preload route-set store from thread {self}")
-
-        if self.preloader.signal_redis_store_updated():
-            logger.info(f"Completed signal update preload for all from thread {self}")
+        if self.update_route_sets:
+            route_set_store = self._update_set(dh, "route-set", ["route", "route6"])
+            if self.preloader.update_route_set_store(route_set_store):
+                logger.debug(f"Completed updating preload route-set store from thread {self}")
 
     def _update_set(self, dh, set_class, member_classes):
         q = (
@@ -530,8 +554,8 @@ class PreloadUpdater(threading.Thread):
             if mbrs_by_ref:
                 mbrs_by_ref_per_set[(row["source"], row["rpsl_pk"])] = mbrs_by_ref
 
-        logger.info(f"Completed retrieval preload {set_class} store from thread {self}")
-
+        # This query retrieves all member objects with a member-of, because it
+        # is much faster than the more specific but much larger alternative.
         q = (
             RPSLDatabaseQuery(
                 column_names=["rpsl_pk", "parsed_data", "source", "object_class"],
@@ -555,7 +579,5 @@ class PreloadUpdater(threading.Thread):
                 ):
                     key = row["source"] + REDIS_KEY_PK_SOURCE_SEPARATOR + member_of
                     member_store[key].add(row["parsed_data"][row["object_class"]])
-
-        logger.info(f"Completed sub preload {set_class} store from thread {self}")
 
         return member_store
