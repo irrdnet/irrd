@@ -313,11 +313,11 @@ class PreloadStoreManager(ExceptionLoggingProcess):
         by the thread that is currently waiting.
         """
         classes = set(message.split(REDIS_CONTENTS_LIST_SEPARATOR))
-        update_routes = message == REDIS_PRELOAD_ALL_MESSAGE or classes.intersection({"route", "route6"})
-        update_as_sets = message == REDIS_PRELOAD_ALL_MESSAGE or classes.intersection({"as-set", "aut-num"})
-        update_route_sets = message == REDIS_PRELOAD_ALL_MESSAGE or classes.intersection(
+        update_routes = message == REDIS_PRELOAD_ALL_MESSAGE or bool(classes.intersection({"route", "route6"}))
+        update_as_sets = message == REDIS_PRELOAD_ALL_MESSAGE or bool(classes.intersection({"as-set", "aut-num"}))
+        update_route_sets = message == REDIS_PRELOAD_ALL_MESSAGE or bool(classes.intersection(
             {"route-set", "route", "route6"}
-        )
+        ))
 
         if not any([update_routes, update_as_sets, update_route_sets]):
             return
@@ -442,7 +442,7 @@ class PreloadUpdater(threading.Thread):
         self.preloader = preloader
         self.reload_lock = reload_lock
         self.update_routes = update_routes
-        self.update_as_sets = update_routes
+        self.update_as_sets = update_as_sets
         self.update_route_sets = update_route_sets
         super().__init__(*args, **kwargs)
 
@@ -492,7 +492,7 @@ class PreloadUpdater(threading.Thread):
         self._update_all_sets(dh)
 
         if self.preloader.signal_redis_store_updated():
-            logger.info(f"Completed preloaded data refresh for from thread {self}")
+            logger.info(f"Completed preload store update from thread {self}, notified workers")
 
         dh.close()
 
