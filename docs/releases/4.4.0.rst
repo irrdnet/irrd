@@ -90,8 +90,7 @@ Preloading of set members
 -------------------------
 Members of `as-set` and `route-set` are now preloaded by IRRD.
 This improves performance for the  ``!a`` and ``!i`` whois queries,
-and the ``asnPrefixes``, ``asSetPrefixes`` and
-``recursiveSetMembers`` GraphQL queries.
+and the ``asSetPrefixes`` and ``recursiveSetMembers`` GraphQL queries.
 This makes set member resolving about 2-6x faster for larger queries.
 
 Memory use for whois and HTTP workers has increased by about 30-40 MB
