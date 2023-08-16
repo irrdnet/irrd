@@ -59,5 +59,5 @@ def set_traceback_handler():  # pragma: no cover
             code += traceback.format_list(traceback.extract_stack(stack))
         logger.info("".join(code))
 
-    if not getattr(sys, '_called_from_test', False):
+    if not getattr(sys, "_called_from_test", False):
         signal.signal(signal.SIGUSR1, sigusr1_handler)
