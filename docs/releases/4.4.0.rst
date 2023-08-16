@@ -1,0 +1,137 @@
+==================================
+DRAFT Release notes for IRRd 4.4.0
+==================================
+
+Minimum Python version
+----------------------
+The minimum Python version for IRRd is now 3.8. Python 3.7 is `end of life`_
+as of 27 June 2023 and therefore no longer supported.
+
+.. _end of life: https://endoflife.date/python
+
+
+IRRD internal authentication
+----------------------------
+IRRD 4.4 contains a new web interface (on ``/ui/``)
+that allows users to migrate their authoritative maintainers
+to an IRRD internal authentication method. This allows removal of
+hashes from RPSL `mntner` objects and much more granular access
+control.
+
+The new web interface also offers
+more secure alternatives to email submissions and override access,
+independent of whether you choose to allow maintainer migrations.
+
+You can allow maintainer migrations with the
+``auth.irrd_internal_migration_enabled`` setting.
+By default, this is disabled.
+Even with migration disabled, users can use the object submission
+interface to submit in the same format as email, by including the
+``password`` or ``override`` pseudo-attributes.
+
+For full details, see the
+:doc:`web interface and internal authentication documentation </admins/webui/>`
+
+This new feature adds two new required settings, with no default set:
+
+* ``secret_key``, which must be a random secret string, used to protect
+  session data and tokens in emails.
+* ``server.http.url``, which must be the external URL on which users will
+  reach the IRRD instance, used for WebAuthn second factor authentication.
+  This must match the URL as seen from the browser's perspective,
+  and changing it will invalidate all WebAuthn tokens.
+
+
+New recommendations on availability and replication
+---------------------------------------------------
+Historically, operators have used different methods for synchronising
+an active instance of IRRD with a standby, or doing migrations.
+Some of these had issues around serial synchronisation, object suppression, or
+update frequency.
+
+There is now one recommended method for synchronisation between IRRD 4 instances,
+and new documentation on
+:doc:`availability with PostgreSQL replication </admins/availability-and-migration>`
+including specific required PostgreSQL settings.
+
+The ``database_readonly`` setting was removed, in favour of a new
+``readonly_standby`` setting. These settings are similar but have some
+differences, and this is an intentional breaking change as you will need
+specific PostgreSQL configuration for this to work correctly.
+
+If you use any kind of availability/standby setup, you should review
+this documentation and switch to the new recommended setup.
+
+Note that, although most of the work is done by PostgreSQL,
+IRRD 4.4 does have new internal handling to support this replication
+method. This means you can not apply this to IRRD prior to 4.4.
+
+
+Protected names
+---------------
+There is new special handling of names of `mntner`, `person` and `role`
+objects, as these often contain personal data and/or have authentication
+consequences. See the :ref:`protected names documentation <auth-protected-names>`
+for details. This only affects authoritative databases.
+
+
+Source aliases
+--------------
+Operators can now configure source aliases. A source alias can be used
+in queries, and translates to a specific set of regular sources
+configured in the same IRRD instance. These are configured under the
+``source_aliases`` setting. Returned objects are not modified - the
+alias relates only to the query. The database status under the ``!J`` whois
+and the ``databaseStatus`` GraphQL queries is extended with alias
+information.
+
+
+Preloading of set members
+-------------------------
+Members of `as-set` and `route-set` are now preloaded by IRRD.
+This improves performance for the  ``!a`` and ``!i`` whois queries,
+and the ``asSetPrefixes`` and ``recursiveSetMembers`` GraphQL queries.
+This makes set member resolving about 2-6x faster for larger queries.
+
+Memory use for whois and HTTP workers has increased by about 30-40 MB
+per worker due to this change.
+
+This also fixes an issue where set members included through
+``mbrs-by-ref`` / ``member-of`` did not have the correct source
+filter applied. This meant that members could
+be included in a set, even through the `aut-num`, `route` or
+`route6` object were from a different IRR source.
+
+
+Other changes
+-------------
+* The ``!e`` whois command was added to exclude sets from recursive
+  resolving. This was already possible in GraphQL queries.
+* The ``-q`` whois flag was added to query available serial
+  ranges in a RIPE format.
+* The ``sources.{name}.nrtm_response_header`` setting was added, to add
+  an additional response header comment to all NRTM responses,
+  configured per source.
+* A ``compatibility.asdot_queries`` setting was added, which allows
+  the use of the (long deprecated) asdot format in origin queries.
+
+Upgrading to IRRd 4.4.0 from 4.3.x
+----------------------------------
+TODO
+
+
+Downgrading from 4.4 to 4.3.x
+-----------------------------
+If you are running IRRd 4.4, and would like to downgrade back to 4.3.x,
+the database schema needs to be modified. You can either restore an older
+copy of your database, start with a fresh database, or use the database
+migrations.
+
+If you want to use the database migrations, run this command **before**
+downgrading your local package installation to 4.3.x::
+
+    irrd_database_downgrade --version TODO-TODO
+
+If you would like to re-upgrade to 4.4 later on, you will need to run
+the database migrations again, as listed in the upgrade steps.
+
