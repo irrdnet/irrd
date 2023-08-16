@@ -8,7 +8,7 @@ bcrypt==4.0.1          # bcrypt support
 IPy==1.01              # IP address parsing
 ordered-set==4.1.0
 beautifultable==0.8.0  # pyup: <1.0.0
-PyYAML==6.0          # parsing YAML config files
+PyYAML==6.0.1          # parsing YAML config files
 datrie==0.8.2           # efficient route searching, used for RPKI
 setproctitle==1.3.2   # updating the process title for useful ps output
 python-daemon==2.3.2   # daemonising the main process
