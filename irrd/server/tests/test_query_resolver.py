@@ -596,6 +596,7 @@ class TestQueryResolver:
             ["rpsl_pks", ({"RRS-TEST"},), {}],
             ["sources", (["TEST1", "TEST2"],), {}],
             ["object_classes", (["route", "route6"],), {}],
+            ["sources", (["TEST1"],), {}],
             ["lookup_attrs_in", (["member-of"], ["RRS-TEST"]), {}],
             ["lookup_attrs_in", (["mnt-by"], ["MNT-TEST"]), {}],
         ]
@@ -612,6 +613,7 @@ class TestQueryResolver:
             ["rpsl_pks", ({"RRS-TEST"},), {}],
             ["sources", (["TEST1", "TEST2"],), {}],
             ["object_classes", (["route", "route6"],), {}],
+            ["sources", (["TEST1"],), {}],
             ["lookup_attrs_in", (["member-of"], ["RRS-TEST"]), {}],
         ]
 

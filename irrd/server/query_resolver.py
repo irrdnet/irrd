@@ -339,6 +339,7 @@ class QueryResolver:
             # is set to ANY.
             query_object_class = ["route", "route6"] if object_class == "route-set" else ["aut-num"]
             query = self._prepare_query(column_names=columns).object_classes(query_object_class)
+            query = query.sources([result["source"]])
             query = query.lookup_attrs_in(["member-of"], [rpsl_pk])
 
             if "ANY" not in [m.strip().upper() for m in mbrs_by_ref]:
