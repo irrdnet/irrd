@@ -729,6 +729,12 @@ Sources
   use the `|` style to preserve newlines.
   |br| **Default**: not defined, no additional header added.
   |br| **Change takes effect**: after SIGHUP, upon next request.
+* ``sources.{name}.nrtm_query_serial_days_limit``: the oldest day of serials 
+  a client can request in one NRTM query. This is intended to limit the maximum 
+  load of NRTM queries - it is checked before IRRd runs any heavy database queries. 
+  The limit is applied to thecreation date of the requested start serial.
+  |br| **Default**: not defined, no limits on serial days of NRTM query.
+  |br| **Change takes effect**: after SIGHUP, upon next request.
 * ``sources.{name}.strict_import_keycert_objects``: a setting used when
   migrating authoritative data that may contain `key-cert` objects.
   See the :doc:`data migration guide </admins/availability-and-migration>`

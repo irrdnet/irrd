@@ -454,6 +454,7 @@ class Configuration:
                 "export_timer",
                 "route_object_preference",
                 "nrtm_query_serial_range_limit",
+                "nrtm_query_serial_days_limit",
             ]
             for field_name in number_fields:
                 if not str(details.get(field_name, 0)).isnumeric():

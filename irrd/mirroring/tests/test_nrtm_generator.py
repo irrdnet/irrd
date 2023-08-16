@@ -1,4 +1,5 @@
 import textwrap
+from datetime import datetime, timedelta
 from itertools import cycle, repeat
 from unittest.mock import Mock
 
@@ -273,3 +274,30 @@ NRTM response header line2""",
         object 2 🌈
 
         %END TEST""").strip()
+
+    def test_days_limit_exceeded(self, prepare_generator, config_override):
+        generator, mock_dh = prepare_generator
+        config_override(
+            {
+                "sources": {
+                    "TEST": {
+                        "keep_journal": True,
+                        "nrtm_query_serial_days_limit": 14,
+                    }
+                }
+            }
+        )
+
+        mock_dh.execute_query = lambda q: iter(
+            [
+                {
+                    "serial_oldest_journal": 100,
+                    "serial_newest_journal": 200,
+                    "timestamp": datetime.utcnow() - timedelta(days=15),
+                }
+            ]
+        )
+
+        with pytest.raises(NRTMGeneratorException) as nge:
+            generator.generate("TEST", "3", 110, 190, mock_dh)
+        assert "Requesting serials older than 14 days will be rejected" in str(nge.value)
