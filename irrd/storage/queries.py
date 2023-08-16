@@ -479,7 +479,7 @@ class RPSLDatabaseJournalQuery(BaseRPSLObjectDatabaseQuery):
         Filter for NRTM serials within a specific range, inclusive.
         """
         return self._filter_range(self.columns.serial_nrtm, start, end)
-    
+
     def serial_nrtms(self, serial_nrtms: List[str]):
         """
         Filter on one or more serial nrtms.
