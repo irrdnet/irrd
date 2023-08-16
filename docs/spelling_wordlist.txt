@@ -83,3 +83,4 @@ validator
 validators
 virtualenv
 whois
+keyring
