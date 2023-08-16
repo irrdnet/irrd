@@ -1,7 +1,7 @@
 import textwrap
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from datetime import datetime, timezone, timedelta
 from irrd.conf import get_setting
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import DatabaseStatusQuery, RPSLDatabaseJournalQuery
