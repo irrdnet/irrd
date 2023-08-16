@@ -1,0 +1,12 @@
+============================
+Release notes for IRRd 4.2.9
+============================
+
+IRRd 4.2.9 was released on August 17, 2023, and fixes several issues:
+
+* Set members included through ``mbrs-by-ref`` / ``member-of`` did not
+  have the correct source filter applied. This meant that members could
+  be included in a set, even through the `aut-num`, `route` or
+  `route6` object were from a different IRR source.
+* The PyYAML dependency was updated to 6.0.1 to resolve installation
+  issues in certain environments.
