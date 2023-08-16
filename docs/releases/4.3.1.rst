@@ -1,0 +1,17 @@
+============================
+Release notes for IRRd 4.3.1
+============================
+
+IRRd 4.3.1 was released on August 17, 2023, and fixes several issues:
+
+* Set members included through ``mbrs-by-ref`` / ``member-of`` did not
+  have the correct source filter applied. This meant that members could
+  be included in a set, even through the `aut-num`, `route` or
+  `route6` object were from a different IRR source.
+* IRRD could incorrectly try to use synchronised serials even when
+  route object preference was enabled. This could cause issues for
+  mirrored sources when this setting was enabled, but RPKI and the
+  scope filter were not. If this affected your setup, mirroring would
+  break, but IRRD would log errors repeatedly.
+* The PyYAML dependency was updated to 6.0.1 to resolve installation
+  issues in certain environments.

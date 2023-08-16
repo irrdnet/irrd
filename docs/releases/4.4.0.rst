@@ -96,6 +96,12 @@ This makes set member resolving about 2-6x faster for larger queries.
 Memory use for whois and HTTP workers has increased by about 30-40 MB
 per worker due to this change.
 
+This also fixes an issue where set members included through
+``mbrs-by-ref`` / ``member-of`` did not have the correct source
+filter applied. This meant that members could
+be included in a set, even through the `aut-num`, `route` or
+`route6` object were from a different IRR source.
+
 
 Other changes
 -------------
