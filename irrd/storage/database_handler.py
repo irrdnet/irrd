@@ -1230,6 +1230,7 @@ def is_serial_synchronised(database_handler: DatabaseHandler, source: str, setti
         [
             not get_setting("scopefilter") or get_setting(f"sources.{source}.scopefilter_excluded"),
             not get_setting("rpki.roa_source") or get_setting(f"sources.{source}.rpki_excluded"),
+            not get_setting(f"sources.{source}.route_object_preference"),
             get_setting(f"sources.{source}.nrtm_host"),
         ]
     )
