@@ -2,6 +2,19 @@
 DRAFT Release notes for IRRd 4.4.0
 ==================================
 
+IRRD 4.4.0 was released on TODO. Highlights of new features:
+
+* A new web interface offering internal authentication for
+  improved flexibility, security and user-friendliness.
+* A new method for running standby instances, mainly for
+  authoritative databases.
+* Protection of previously used `mntner`, `person` and `role`
+  names, and an option to delete such objects with override.
+* Source aliases that can be used in queries.
+* Preloading of set members, improving performance for all
+  queries that include `as-set` and `route-set` resolving.
+
+
 Minimum Python version
 ----------------------
 The minimum Python version for IRRd is now 3.8. Python 3.7 is `end of life`_
@@ -29,7 +42,7 @@ Even with migration disabled, users can use the object submission
 interface to submit in the same format as email, by including the
 ``password`` or ``override`` pseudo-attributes.
 
-For full details, see the
+For full details and benefits, see the
 :doc:`web interface and internal authentication documentation </admins/webui/>`
 
 This new feature adds two new required settings, with no default set:
@@ -64,7 +77,12 @@ this documentation and switch to the new recommended setup.
 
 Note that, although most of the work is done by PostgreSQL,
 IRRD 4.4 does have new internal handling to support this replication
-method. This means you can not apply this to IRRD prior to 4.4.
+method. This means you can not apply these instructions
+in IRRD prior to 4.4.
+
+The ``sources.{name}.export_destination_unfiltered`` and
+``sources.{name}.export_destination`` settings are deprecated
+and will be removed in IRRD 4.5.
 
 
 Protected names
@@ -91,7 +109,7 @@ Preloading of set members
 Members of `as-set` and `route-set` are now preloaded by IRRD.
 This improves performance for the  ``!a`` and ``!i`` whois queries,
 and the ``asSetPrefixes`` and ``recursiveSetMembers`` GraphQL queries.
-This makes set member resolving about 2-6x faster for larger queries.
+This can make set member resolving about 2-10x faster.
 
 Memory use for whois and HTTP workers has increased by about 30-40 MB
 per worker due to this change.
