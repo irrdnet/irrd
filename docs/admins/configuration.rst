@@ -326,9 +326,10 @@ Email
 
 Authentication and validation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-* ``auth.override_password``: a salted MD5 hash of the override password,
-  which can be used to override any
+* ``auth.override_password``: a bcrypt or salted MD5 hash of the override
+  password, which can be used to override any
   authorisation requirements for authoritative databases.
+  Salted MD5 is discouraged and may be removed in the future.
   |br| **Default**: not defined, no override password will be accepted.
   |br| **Change takes effect**: upon the next update attempt.
 * ``auth.gnupg_keyring``: the full path to the gnupg keyring.

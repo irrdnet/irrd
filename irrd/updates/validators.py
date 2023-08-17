@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple, Union
 import sqlalchemy.orm as saorm
 from IPy import IP
 from ordered_set import OrderedSet
-from passlib.hash import md5_crypt
+from passlib.hash import bcrypt, md5_crypt
 
 from irrd.conf import RPSL_MNTNER_AUTH_INTERNAL, get_setting
 from irrd.rpsl.parser import RPSLObject
@@ -443,15 +443,21 @@ class AuthValidator:
         if override_hash:
             for override in self.overrides:
                 try:
-                    if md5_crypt.verify(override, override_hash):
+                    if bcrypt.verify(override, override_hash):
                         return AuthMethod.OVERRIDE_PASSWORD
                     else:
                         logger.info("Found invalid override password, ignoring.")
-                except ValueError as ve:
-                    logger.error(
-                        f"Exception occurred while checking override password: {ve} (possible misconfigured"
-                        " hash?)"
-                    )
+                except ValueError:
+                    try:
+                        if md5_crypt.verify(override, override_hash):
+                            return AuthMethod.OVERRIDE_PASSWORD
+                        else:
+                            logger.info("Found invalid override password, ignoring.")
+                    except ValueError:
+                        logger.error(
+                            "Exception occurred while checking override password as both bcrypt and salted"
+                            " MD5 (possible misconfigured hash?)"
+                        )
         elif self.overrides:
             logger.info("Ignoring override password, auth.override_password not set.")
         return AuthMethod.NONE
