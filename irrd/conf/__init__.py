@@ -25,7 +25,6 @@ ROUTEPREF_IMPORT_TIME = 3600
 AUTH_SET_CREATION_COMMON_KEY = "COMMON"
 SOCKET_DEFAULT_TIMEOUT = 30
 RPSL_MNTNER_AUTH_INTERNAL = "IRRD-INTERNAL-AUTH"
-MIN_SECRET_KEY_LENGTH = 30
 
 
 LOGGING = {
@@ -259,11 +258,6 @@ class Configuration:
 
         if not self._check_is_str(config, "piddir") or not os.path.isdir(config["piddir"]):
             errors.append("Setting piddir is required and must point to an existing directory.")
-
-        if not self._check_is_str(config, "secret_key") or len(config["secret_key"]) < MIN_SECRET_KEY_LENGTH:
-            errors.append(
-                f"Setting secret_key is required and must be at least {MIN_SECRET_KEY_LENGTH} characters."
-            )
 
         if not str(config.get("route_object_preference.update_timer", "0")).isnumeric():
             errors.append("Setting route_object_preference.update_timer must be a number.")

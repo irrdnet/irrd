@@ -45,14 +45,11 @@ interface to submit in the same format as email, by including the
 For full details and benefits, see the
 :doc:`web interface and internal authentication documentation </admins/webui/>`
 
-This new feature adds two new required settings, with no default set:
-
-* ``secret_key``, which must be a random secret string, used to protect
-  session data and tokens in emails.
-* ``server.http.url``, which must be the external URL on which users will
-  reach the IRRD instance, used for WebAuthn second factor authentication.
-  This must match the URL as seen from the browser's perspective,
-  and changing it will invalidate all WebAuthn tokens.
+This new feature adds one new required setting: ``server.http.url``,
+which must be the external URL on which users will
+reach the IRRD instance, used for WebAuthn second factor authentication.
+This must match the URL as seen from the browser's perspective,
+and changing it will invalidate all WebAuthn tokens.
 
 
 New recommendations on availability and replication

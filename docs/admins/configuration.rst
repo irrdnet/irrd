@@ -44,7 +44,6 @@ This sample shows most configuration options
         user: irrd
         group: irrd
         # required, but no default included for safety
-        secret_key: null
 
         access_lists:
             http_database_status:
@@ -228,14 +227,6 @@ General settings
   :ref:`an HTTPS proxy <deployment-https>` in front. Therefore, there is no
   need for IRRd to bind to port 80 or 443.
   |br| **Default**: not defined, IRRd does not drop privileges.
-  |br| **Change takes effect**: after full IRRd restart.
-* ``secret_key``: a random secret string. **The secrecy of this key protects
-  all web authentication.** If rotated, all sessions and tokens in emails
-  are invalidated, requiring users to log in or request new password
-  reset links. Rotation will **not** invalidate existing user passwords
-  (only reset links), second factor authentication, or API tokens.
-  Minimum 30 characters.
-  |br| **Default**: not defined, but required.
   |br| **Change takes effect**: after full IRRd restart.
 
 

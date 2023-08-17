@@ -1,5 +1,7 @@
 import functools
+import hashlib
 import logging
+import secrets
 from typing import Any, Dict, Optional
 
 import limits
@@ -7,7 +9,8 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from irrd.conf import get_setting
-from irrd.storage.models import AuthUser, RPSLDatabaseObject
+from irrd.storage.models import AuthUser, RPSLDatabaseObject, Setting
+from irrd.storage.orm_provider import ORMSessionProvider, session_provider_manager_sync
 from irrd.utils.email import send_email
 from irrd.utils.text import remove_auth_hashes
 from irrd.webui import RATE_LIMIT_POST_200_NAMESPACE, templates
@@ -140,3 +143,22 @@ def client_ip(request: Optional[Request]) -> Optional[str]:
     if request and request.client:
         return request.client.host if request.client.host != "testclient" else "127.0.0.1"
     return None
+
+
+@session_provider_manager_sync
+def secret_key_derive(scope: str, session_provider: ORMSessionProvider):
+    """
+    Return the secret key for a particular scope.
+    This is derived from the scope, an otherwise meaningless string,
+    and a secret key from the database.
+    """
+    setting_name = "secret_key"
+    query = session_provider.session.query(Setting).filter_by(name=setting_name)
+    setting_obj = session_provider.run_sync(query.one)
+    if not setting_obj:
+        setting_obj = Setting(name=setting_name, value=secrets.token_hex())
+        session_provider.session.add(setting_obj)
+        session_provider.session.commit()
+
+    key_base = scope.encode("utf-8") + setting_obj.value.encode("utf-8")
+    return str(hashlib.sha512(key_base).hexdigest())

@@ -834,7 +834,6 @@ class TestIntegration:
 
         base_config = {
             "irrd": {
-                "secret_key": "secretsecretsecretsecretsecretsecretsecretsecretsecretsecret",
                 "access_lists": {"localhost": ["::/32", "127.0.0.1"]},
                 "server": {
                     "http": {
