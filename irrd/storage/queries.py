@@ -480,7 +480,7 @@ class RPSLDatabaseJournalQuery(BaseRPSLObjectDatabaseQuery):
         """
         return self._filter_range(self.columns.serial_nrtm, start, end)
 
-    def serial_nrtms(self, serial_nrtms: List[str]):
+    def serial_nrtms(self, serial_nrtms: List[int]):
         """
         Filter on one or more serial nrtms.
 

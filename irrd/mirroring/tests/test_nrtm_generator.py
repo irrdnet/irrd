@@ -275,6 +275,37 @@ NRTM response header line2""",
 
         %END TEST""").strip()
 
+    def test_no_serial_journal_entry(self, prepare_generator, config_override):
+        generator, mock_dh = prepare_generator
+        config_override(
+            {
+                "sources": {
+                    "TEST": {
+                        "keep_journal": True,
+                        "nrtm_query_serial_days_limit": 14,
+                    }
+                }
+            }
+        )
+
+        mock_dh.execute_query = Mock(
+            side_effect=[
+                iter(
+                    [
+                        {
+                            "serial_oldest_journal": 100,
+                            "serial_newest_journal": 200,
+                        }
+                    ]
+                ),
+                StopIteration(),
+            ]
+        )
+
+        with pytest.raises(NRTMGeneratorException) as nge:
+            generator.generate("TEST", "3", 110, 190, mock_dh)
+        assert "There are no journal entries for this serial 110" in str(nge.value)
+
     def test_days_limit_exceeded(self, prepare_generator, config_override):
         generator, mock_dh = prepare_generator
         config_override(
