@@ -21,7 +21,7 @@ from irrd.webui.tests.conftest import WebRequestTest
 class TestMfaStatus(WebRequestTest):
     url = "/ui/auth/mfa-status"
 
-    def test_render(self, test_client, irrd_db_session_with_user):
+    def test_render(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         webauthn = AuthWebAuthnFactory(user_id=str(user.pk))
         self.pre_login(session_provider, user)
@@ -37,14 +37,14 @@ class TestTOTPAuthenticate(WebRequestTest):
     url = "/ui/auth/mfa-authenticate/?next=/ui/user/"
     requires_mfa = False
 
-    def test_render_form(self, test_client, irrd_db_session_with_user):
+    def test_render_form(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self._login_if_needed(test_client, user)
         response = test_client.get(self.url)
         assert response.status_code == 200
         assert "one time password" in response.text
 
-    def test_valid_totp(self, test_client, irrd_db_session_with_user):
+    def test_valid_totp(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self._login_if_needed(test_client, user)
         response = test_client.post(
@@ -54,7 +54,7 @@ class TestTOTPAuthenticate(WebRequestTest):
         )
         assert response.url.path == "/ui/user/"
 
-    def test_invalid_totp(self, test_client, irrd_db_session_with_user):
+    def test_invalid_totp(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self._login_if_needed(test_client, user)
         response = test_client.post(
@@ -65,7 +65,7 @@ class TestTOTPAuthenticate(WebRequestTest):
         assert response.status_code == 200
         assert "Incorrect token." in response.text
 
-    def test_missing_totp(self, test_client, irrd_db_session_with_user):
+    def test_missing_totp(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self._login_if_needed(test_client, user)
         response = test_client.post(
@@ -83,7 +83,7 @@ class TestWebAuthnAuthenticate(WebRequestTest):
     requires_login = True
     requires_mfa = False
 
-    def test_render_form(self, test_client, irrd_db_session_with_user):
+    def test_render_form(self, irrd_db_session_with_user, test_client):
         if ENV_WEBAUTHN_TESTING_CHALLENGE_OVERRIDE in os.environ:
             del os.environ[ENV_WEBAUTHN_TESTING_CHALLENGE_OVERRIDE]  # pragma: no cover
         session_provider, user = irrd_db_session_with_user
@@ -98,7 +98,7 @@ class TestWebAuthnAuthenticate(WebRequestTest):
         challenge2 = json.loads(response.context["webauthn_options_json"])["challenge"]
         assert challenge1 != challenge2
 
-    def test_valid_authenticate(self, test_client, irrd_db_session_with_user):
+    def test_valid_authenticate(self, irrd_db_session_with_user, test_client):
         os.environ[ENV_WEBAUTHN_TESTING_RP_OVERRIDE] = "http://localhost:5000,localhost"
         os.environ[ENV_WEBAUTHN_TESTING_CHALLENGE_OVERRIDE] = (
             "iPmAi1Pp1XL6oAgq3PWZtZPnZa1zFUDoGbaQ0_KvVG1lF2s3Rt_3o4uSzccy0tmcTIpTTT4BU1T-I4maavndjQ"
@@ -134,7 +134,7 @@ class TestWebAuthnAuthenticate(WebRequestTest):
         response = test_client.get("/ui/user/", follow_redirects=False)
         assert response.status_code == 200
 
-    def test_invalid_authenticate(self, test_client, irrd_db_session_with_user):
+    def test_invalid_authenticate(self, irrd_db_session_with_user, test_client):
         os.environ[ENV_WEBAUTHN_TESTING_RP_OVERRIDE] = "http://localhost:5000,localhost"
         os.environ[ENV_WEBAUTHN_TESTING_CHALLENGE_OVERRIDE] = (
             "iPmAi1Pp1XL6oAgq3PWZtZPnZa1zFUDoGbaQ0_KvVG1lF2s3Rt_3o4uSzccy0tmcTIpTTT4BU1T-I4maavndjQ="
@@ -178,7 +178,7 @@ class TestWebAuthnRegister(WebRequestTest):
     requires_login = True
     requires_mfa = True
 
-    def test_render_form(self, test_client, irrd_db_session_with_user):
+    def test_render_form(self, irrd_db_session_with_user, test_client):
         if ENV_WEBAUTHN_TESTING_CHALLENGE_OVERRIDE in os.environ:
             del os.environ[ENV_WEBAUTHN_TESTING_CHALLENGE_OVERRIDE]  # pragma: no cover
         session_provider, user = irrd_db_session_with_user
@@ -193,7 +193,7 @@ class TestWebAuthnRegister(WebRequestTest):
         challenge2 = json.loads(response.context["webauthn_options_json"])["challenge"]
         assert challenge1 != challenge2
 
-    def test_valid_register(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_valid_register(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         os.environ[ENV_WEBAUTHN_TESTING_RP_OVERRIDE] = "http://localhost:5000,localhost"
         os.environ[ENV_WEBAUTHN_TESTING_CHALLENGE_OVERRIDE] = (
@@ -235,7 +235,7 @@ class TestWebAuthnRegister(WebRequestTest):
         assert len(smtpd.messages) == 1
         assert "token was added" in smtpd.messages[0].as_string()
 
-    def test_invalid_register(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_invalid_register(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         os.environ[ENV_WEBAUTHN_TESTING_RP_OVERRIDE] = "http://localhost:5000,localhost"
         os.environ[ENV_WEBAUTHN_TESTING_CHALLENGE_OVERRIDE] = (
@@ -282,7 +282,7 @@ class TestWebAuthnRemove(WebRequestTest):
         self.webauthn = AuthWebAuthnFactory(user_id=str(user.pk))
         self.url = self.url_template.format(uuid=self.webauthn.pk)
 
-    def test_render_form(self, test_client, irrd_db_session_with_user):
+    def test_render_form(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
@@ -291,7 +291,7 @@ class TestWebAuthnRemove(WebRequestTest):
         assert response.status_code == 200
         assert self.webauthn.name in response.text
 
-    def test_valid_remove(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_valid_remove(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
@@ -306,7 +306,7 @@ class TestWebAuthnRemove(WebRequestTest):
         assert len(smtpd.messages) == 1
         assert "token was removed" in smtpd.messages[0].as_string()
 
-    def test_invalid_incorrect_current_password(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_invalid_incorrect_current_password(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
@@ -319,7 +319,7 @@ class TestWebAuthnRemove(WebRequestTest):
         assert session_provider.run_sync(session_provider.session.query(AuthWebAuthn).one)
         assert not smtpd.messages
 
-    def test_invalid_object_not_exists(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_invalid_object_not_exists(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         self._login_if_needed(test_client, user)
@@ -342,7 +342,7 @@ class TestTOTPRegister(WebRequestTest):
         assert response.status_code == 200
         return response.context["secret"]
 
-    def test_valid(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_valid(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         secret = self.get_secret(test_client, session_provider, user)
@@ -359,7 +359,7 @@ class TestTOTPRegister(WebRequestTest):
         assert len(smtpd.messages) == 1
         assert "time password was added" in smtpd.messages[0].as_string()
 
-    def test_invalid_token(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_invalid_token(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         self.get_secret(test_client, session_provider, user)
@@ -376,7 +376,7 @@ class TestTOTPRegister(WebRequestTest):
         assert not user.totp_secret
         assert not smtpd.messages
 
-    def test_invalid_current_password(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_invalid_current_password(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         secret = self.get_secret(test_client, session_provider, user)
@@ -393,7 +393,7 @@ class TestTOTPRegister(WebRequestTest):
         assert not user.totp_secret
         assert not smtpd.messages
 
-    def test_missing_token(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_missing_token(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         self.get_secret(test_client, session_provider, user)
@@ -412,7 +412,7 @@ class TestTOTPRegister(WebRequestTest):
 class TestTOTPRemove(WebRequestTest):
     url = "/ui/auth/totp-remove/"
 
-    def test_render_form(self, test_client, irrd_db_session_with_user):
+    def test_render_form(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
@@ -420,7 +420,7 @@ class TestTOTPRemove(WebRequestTest):
         response = test_client.get(self.url)
         assert response.status_code == 200
 
-    def test_valid_remove(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_valid_remove(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
@@ -435,7 +435,7 @@ class TestTOTPRemove(WebRequestTest):
         assert not user.totp_secret
         assert "time password was removed" in smtpd.messages[0].as_string()
 
-    def test_invalid_incorrect_current_password(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_invalid_incorrect_current_password(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)

@@ -36,7 +36,7 @@ class TestIndex(WebRequestTest):
 class TestUserDetail(WebRequestTest):
     url = "/ui/user/"
 
-    def test_get(self, test_client, irrd_db_session_with_user):
+    def test_get(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self._login_if_needed(test_client, user)
         response = test_client.get(self.url)
@@ -46,14 +46,14 @@ class TestUserDetail(WebRequestTest):
 class TestMaintainedObjects(WebRequestTest):
     url = "/ui/maintained-objects"
 
-    def test_get_no_user_mntners(self, test_client, irrd_db_session_with_user):
+    def test_get_no_user_mntners(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self._login_if_needed(test_client, user)
         response = test_client.get(self.url)
         assert response.status_code == 200
         assert response.context["objects"] is None
 
-    def test_get(self, test_client, irrd_db_session_with_user):
+    def test_get(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         create_permission(session_provider, user)
         self._login_if_needed(test_client, user)
@@ -70,7 +70,7 @@ class TestRpslDetail(WebRequestTest):
     requires_mfa = False
 
     def test_valid_mntner_logged_in_mfa_complete_user_management(
-        self, test_client, irrd_db_session_with_user
+        self, irrd_db_session_with_user, test_client
     ):
         session_provider, user = irrd_db_session_with_user
         self._login(test_client, user)
@@ -82,7 +82,7 @@ class TestRpslDetail(WebRequestTest):
         assert "TEST-MNT" in response.text
         assert "DUMMYVALUE" not in response.text.upper()
 
-    def test_valid_mntner_not_logged_in(self, test_client, irrd_db_session_with_user):
+    def test_valid_mntner_not_logged_in(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self._login(test_client, user)
         create_permission(session_provider, user)
@@ -93,7 +93,7 @@ class TestRpslDetail(WebRequestTest):
         assert "DUMMYVALUE" in response.text.upper()
 
     def test_valid_mntner_logged_in_mfa_incomplete_user_management(
-        self, test_client, irrd_db_session_with_user
+        self, irrd_db_session_with_user, test_client
     ):
         session_provider, user = irrd_db_session_with_user
         self._login(test_client, user)
@@ -106,7 +106,7 @@ class TestRpslDetail(WebRequestTest):
         assert "DUMMYVALUE" in response.text.upper()
 
     def test_valid_mntner_logged_in_mfa_complete_no_user_management(
-        self, test_client, irrd_db_session_with_user
+        self, irrd_db_session_with_user, test_client
     ):
         session_provider, user = irrd_db_session_with_user
         self._login(test_client, user)
@@ -118,7 +118,7 @@ class TestRpslDetail(WebRequestTest):
         assert "TEST-MNT" in response.text
         assert "DUMMYVALUE" in response.text.upper()
 
-    def test_object_not_exists(self, test_client, irrd_db_session_with_user):
+    def test_object_not_exists(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self._login(test_client, user)
         create_permission(session_provider, user)
@@ -141,7 +141,7 @@ class TestRpslUpdateNoInitial(WebRequestTest):
     requires_mfa = False
 
     def test_valid_mntner_logged_in_mfa_complete_no_user_management(
-        self, test_client, irrd_db_session_with_user, mock_change_submission_handler
+        self, irrd_db_session_with_user, test_client, mock_change_submission_handler
     ):
         session_provider, user = irrd_db_session_with_user
         self._login(test_client, user)
@@ -154,7 +154,7 @@ class TestRpslUpdateNoInitial(WebRequestTest):
         assert "(you can not update this mntner itself)" in response.text
 
     def test_valid_mntner_logged_in_mfa_complete_user_management(
-        self, test_client, irrd_db_session_with_user, mock_change_submission_handler
+        self, irrd_db_session_with_user, test_client, mock_change_submission_handler
     ):
         session_provider, user = irrd_db_session_with_user
         self._login(test_client, user)
@@ -174,7 +174,7 @@ class TestRpslUpdateNoInitial(WebRequestTest):
         assert mock_handler_kwargs["internal_authenticated_user"].pk == user.pk
 
     def test_valid_mntner_logged_in_mfa_incomplete_user_management(
-        self, test_client, irrd_db_session_with_user, mock_change_submission_handler
+        self, irrd_db_session_with_user, test_client, mock_change_submission_handler
     ):
         session_provider, user = irrd_db_session_with_user
         self._login(test_client, user)
@@ -192,7 +192,7 @@ class TestRpslUpdateNoInitial(WebRequestTest):
         assert mock_handler_kwargs["internal_authenticated_user"] is None
 
     def test_valid_mntner_not_logged_in(
-        self, test_client, irrd_db_session_with_user, mock_change_submission_handler
+        self, irrd_db_session_with_user, test_client, mock_change_submission_handler
     ):
         session_provider, user = irrd_db_session_with_user
         response = test_client.get(self.url)
@@ -213,7 +213,7 @@ class TestRpslUpdateWithInitial(WebRequestTest):
     requires_mfa = False
 
     def test_valid_mntner_logged_in_mfa_complete_no_user_management(
-        self, test_client, irrd_db_session_with_user
+        self, irrd_db_session_with_user, test_client
     ):
         session_provider, user = irrd_db_session_with_user
         self._login(test_client, user)
@@ -227,7 +227,7 @@ class TestRpslUpdateWithInitial(WebRequestTest):
         assert "DUMMYVALUE" in response.text.upper()
 
     def test_valid_mntner_logged_in_mfa_complete_user_management(
-        self, test_client, irrd_db_session_with_user
+        self, irrd_db_session_with_user, test_client
     ):
         session_provider, user = irrd_db_session_with_user
         self._login(test_client, user)
@@ -241,7 +241,7 @@ class TestRpslUpdateWithInitial(WebRequestTest):
         assert "DUMMYVALUE" not in response.text.upper()
 
     def test_valid_mntner_logged_in_mfa_incomplete_user_management(
-        self, test_client, irrd_db_session_with_user
+        self, irrd_db_session_with_user, test_client
     ):
         session_provider, user = irrd_db_session_with_user
         self._login(test_client, user)
@@ -252,7 +252,7 @@ class TestRpslUpdateWithInitial(WebRequestTest):
         assert "TEST-MNT" in response.text
         assert "DUMMYVALUE" in response.text.upper()
 
-    def test_valid_mntner_not_logged_in(self, test_client, irrd_db_session_with_user):
+    def test_valid_mntner_not_logged_in(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         response = test_client.get(self.url)
         assert response.status_code == 200
@@ -267,7 +267,7 @@ class TestChangeLogMntner(WebRequestTest):
         self.permission = create_permission(session_provider, user, user_management=user_management)
         self.url = self.url_template.format(uuid=self.permission.mntner.pk)
 
-    def test_render(self, test_client, irrd_db_session_with_user):
+    def test_render(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
@@ -295,7 +295,7 @@ class TestChangeLogMntner(WebRequestTest):
         assert "127.0.0.1" in response.text
         assert "modify of person TARGET-PK" in response.text
 
-    def test_no_entries(self, test_client, irrd_db_session_with_user):
+    def test_no_entries(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
@@ -304,7 +304,7 @@ class TestChangeLogMntner(WebRequestTest):
         assert response.status_code == 200
         assert self.permission.mntner.rpsl_mntner_pk in response.text
 
-    def test_no_permissions(self, test_client, irrd_db_session_with_user):
+    def test_no_permissions(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
@@ -314,7 +314,7 @@ class TestChangeLogMntner(WebRequestTest):
         response = test_client.get(self.url)
         assert response.status_code == 404
 
-    def test_wrong_permissions(self, test_client, irrd_db_session_with_user):
+    def test_wrong_permissions(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
@@ -347,7 +347,7 @@ class TestChangeLogEntry(WebRequestTest):
         )
         self.url = self.url_template.format(uuid=self.change_log.pk)
 
-    def test_render(self, test_client, irrd_db_session_with_user):
+    def test_render(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
@@ -356,7 +356,7 @@ class TestChangeLogEntry(WebRequestTest):
         assert response.status_code == 200
         assert "auth change descr" in response.text
 
-    def test_render_rpsl_change(self, test_client, irrd_db_session_with_user):
+    def test_render_rpsl_change(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
 
@@ -379,7 +379,7 @@ class TestChangeLogEntry(WebRequestTest):
         assert "127.0.0.1" in response.text
         assert "modify of person TARGET-PK" in response.text
 
-    def test_no_permissions(self, test_client, irrd_db_session_with_user):
+    def test_no_permissions(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
@@ -389,7 +389,7 @@ class TestChangeLogEntry(WebRequestTest):
         response = test_client.get(self.url)
         assert response.status_code == 404
 
-    def test_object_not_exists(self, test_client, irrd_db_session_with_user):
+    def test_object_not_exists(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)

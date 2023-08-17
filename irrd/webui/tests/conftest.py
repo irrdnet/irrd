@@ -9,10 +9,13 @@ from irrd.utils.factories import (
     AuthMntnerFactory,
     AuthPermissionFactory,
 )
+from irrd.webui.helpers import secret_key_derive
 
 
 @pytest.fixture()
 def test_client(config_override):
+    secret_key_derive("scope", thread_safe=False)
+
     config_override(
         {
             "server": {"http": {"url": "http://testserver/"}},
@@ -27,6 +30,8 @@ def test_client(config_override):
 
 @pytest.fixture()
 def test_client_with_smtp(config_override, smtpd):
+    secret_key_derive("scope", thread_safe=False)
+
     config_override(
         {
             "server": {"http": {"url": "http://testserver/"}},
@@ -45,7 +50,7 @@ class WebRequestTest:
     requires_login = True
     requires_mfa = True
 
-    def test_login_requirement(self, test_client, irrd_db_session_with_user):
+    def test_login_requirement(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         if not self.requires_login:
             return
@@ -53,7 +58,7 @@ class WebRequestTest:
         response = test_client.get(self.url)
         assert response.url.path == "/ui/auth/login/"
 
-    def test_mfa_requirement(self, test_client, irrd_db_session_with_user):
+    def test_mfa_requirement(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         if not self.requires_mfa:
             return

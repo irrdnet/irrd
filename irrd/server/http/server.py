@@ -10,6 +10,8 @@ import uvicorn
 from setproctitle import setproctitle
 from uvicorn import _subprocess
 
+from irrd.webui.helpers import secret_key_derive
+
 sys.path.append(str(Path(__file__).resolve().parents[3]))
 
 from irrd import __version__
@@ -22,6 +24,8 @@ def run_http_server(config_path: str):
     configuration = get_configuration()
     assert configuration
     os.environ[ENV_UVICORN_WORKER_CONFIG_PATH] = config_path
+    # Ensure the secret key is initalised before forking
+    secret_key_derive("scope", thread_safe=False)
     uvicorn.run(
         app="irrd.server.http.app:app",
         host=get_setting("server.http.interface"),
