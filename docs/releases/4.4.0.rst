@@ -124,6 +124,9 @@ Other changes
   resolving. This was already possible in GraphQL queries.
 * The ``-q`` whois flag was added to query available serial
   ranges in a RIPE format.
+* The override password in ``auth.override_password`` can now also
+  be set with a bcrypt hash. Salted MD5 is also still supported,
+  but discouraged and may be removed in the future.
 * The ``sources.{name}.nrtm_response_header`` setting was added, to add
   an additional response header comment to all NRTM responses,
   configured per source.

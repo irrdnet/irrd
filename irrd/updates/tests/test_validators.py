@@ -36,7 +36,8 @@ from ..validators import AuthValidator, RulesValidator, ValidatorResult
 
 VALID_PW = "override-password"
 INVALID_PW = "not-override-password"
-VALID_PW_HASH = "$1$J6KycItM$MbPaBU6iFSGFV299Rk7Di0"
+VALID_PW_MD5 = "$1$J6KycItM$MbPaBU6iFSGFV299Rk7Di0"
+VALID_PW_BCRYPT = "$2b$12$FU9brDeaS5o93mBbidgeruRL8JzwQi7yK8JBXUGgBLoB5PHfYy3Im"
 MNTNER_OBJ_CRYPT_PW = SAMPLE_MNTNER.replace("MD5", "")
 MNTNER_OBJ_MD5_PW = SAMPLE_MNTNER.replace("CRYPT", "")
 
@@ -81,10 +82,11 @@ class TestAuthValidator:
         validator = AuthValidator(mock_dh, AuthoritativeChangeOrigin.webapi)
         yield validator, mock_dq, mock_dh
 
-    def test_override_valid(self, prepare_mocks, config_override):
+    @pytest.mark.parametrize("password_hash", [VALID_PW_MD5, VALID_PW_BCRYPT])
+    def test_override_valid(self, prepare_mocks, config_override, password_hash):
         config_override(
             {
-                "auth": {"override_password": VALID_PW_HASH},
+                "auth": {"override_password": password_hash},
             }
         )
         validator, mock_dq, mock_dh = prepare_mocks
@@ -120,7 +122,8 @@ class TestAuthValidator:
         assert result.auth_method == AuthMethod.NONE
         assert not result.auth_method.used_override()
 
-    def test_override_invalid_or_missing(self, prepare_mocks, config_override):
+    @pytest.mark.parametrize("password_hash", [VALID_PW_MD5, VALID_PW_BCRYPT])
+    def test_override_invalid_or_missing(self, prepare_mocks, config_override, password_hash):
         # This test mostly ignores the regular process that happens
         # after override validation fails.
         validator, mock_dq, mock_dh = prepare_mocks
@@ -134,7 +137,7 @@ class TestAuthValidator:
 
         config_override(
             {
-                "auth": {"override_password": VALID_PW_HASH},
+                "auth": {"override_password": password_hash},
             }
         )
         validator.overrides = []
@@ -338,7 +341,7 @@ class TestAuthValidator:
         validator.overrides = [VALID_PW]
         config_override(
             {
-                "auth": {"override_password": VALID_PW_HASH},
+                "auth": {"override_password": VALID_PW_MD5},
             }
         )
 
