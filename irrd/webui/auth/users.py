@@ -23,7 +23,7 @@ from zxcvbn import zxcvbn
 
 from irrd.storage.models import AuthUser
 from irrd.storage.orm_provider import ORMSessionProvider
-from irrd.utils.misc import secret_key_derive
+from irrd.webui.helpers import secret_key_derive
 
 logger = logging.getLogger(__name__)
 

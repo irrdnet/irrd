@@ -12,7 +12,6 @@ KNOWN_CONFIG_KEYS = DottedDict(
         "piddir": {},
         "user": {},
         "group": {},
-        "secret_key": {},
         "server": {
             "http": {
                 "interface": {},

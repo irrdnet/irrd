@@ -60,7 +60,6 @@ class TestConfiguration:
                 "database_url": "db-url",
                 "redis_url": "redis-url",
                 "piddir": str(tmpdir),
-                "secret_key": "sssssssssssssssssssssssssssssss",
                 "server": {"http": {"url": "https://example.com/"}},
                 "email": {"from": "example@example.com", "smtp": "192.0.2.1"},
                 "route_object_preference": {
@@ -177,7 +176,6 @@ class TestConfiguration:
                 "database_url": "db-url",
                 "redis_url": "redis-url",
                 "piddir": str(tmpdir),
-                "secret_key": "sssssssssssssssssssssssssssssss",
                 "server": {"http": {"url": "https://example.com/"}},
                 "email": {"from": "example@example.com", "smtp": "192.0.2.1"},
                 "rpki": {
@@ -200,7 +198,6 @@ class TestConfiguration:
                     "database_url": "db-url",
                     "redis_url": "redis-url",
                     "piddir": str(tmpdir),
-                    "secret_key": "sssssssssssssssssssssssssssssss",
                     "server": {"http": {"url": "https://example.com/"}},
                     "email": {"from": "example@example.com", "smtp": "192.0.2.1"},
                     "access_lists": {
@@ -248,7 +245,6 @@ class TestConfiguration:
                 "readonly_standby": True,
                 "piddir": str(tmpdir + "/does-not-exist"),
                 "user": "a",
-                "secret_key": "sssssssssssss",
                 "server": {
                     "whois": {
                         "access_list": "doesnotexist",
@@ -343,7 +339,6 @@ class TestConfiguration:
         assert "Setting database_url is required." in str(ce.value)
         assert "Setting redis_url is required." in str(ce.value)
         assert "Setting piddir is required and must point to an existing directory." in str(ce.value)
-        assert "Setting secret_key is required and must be at least 30 characters." in str(ce.value)
         assert "Setting email.from is required and must be an email address." in str(ce.value)
         assert "Setting email.smtp is required." in str(ce.value)
         assert "Setting email.footer must be a string, if defined." in str(ce.value)

@@ -34,9 +34,9 @@ from irrd.server.http.event_stream import (
 )
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.preload import Preloader
-from irrd.utils.misc import secret_key_derive
 from irrd.utils.process_support import memory_trim, set_traceback_handler
 from irrd.webui.auth.users import auth_middleware
+from irrd.webui.helpers import secret_key_derive
 from irrd.webui.routes import UI_ROUTES
 
 logger = logging.getLogger(__name__)

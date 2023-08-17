@@ -49,6 +49,23 @@ class AuthoritativeChangeOrigin(enum.Enum):
 Base = declarative_base()
 
 
+class Setting(Base):  # type: ignore
+    """
+    SQLAlchemy ORM object for settings stored in the DB.
+    Only intended for internal IRRD state, not admin-modified settings.
+    """
+
+    __tablename__ = "setting"
+
+    name = sa.Column(sa.String, primary_key=True)
+    value = sa.Column(sa.String)
+
+    created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
+
+    def __repr__(self):
+        return f"<Setting/{self.name}>"
+
+
 class RPSLDatabaseObject(Base):  # type: ignore
     """
     SQLAlchemy ORM object for RPSL database objects.
