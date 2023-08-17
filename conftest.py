@@ -18,6 +18,7 @@ from irrd.storage.orm_provider import ORMSessionProvider
 from irrd.utils.factories import set_factory_session, AuthUserFactory
 from irrd.utils.rpsl_samples import SAMPLE_KEY_CERT, SAMPLE_MNTNER, SAMPLE_PERSON, SAMPLE_ROLE
 from irrd.vendor.dotted.collection import DottedDict
+from irrd.webui.helpers import secret_key_derive
 
 
 @pytest.fixture()

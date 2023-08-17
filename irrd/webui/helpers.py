@@ -146,16 +146,20 @@ def client_ip(request: Optional[Request]) -> Optional[str]:
 
 
 @session_provider_manager_sync
-def secret_key_derive(scope: str, session_provider: ORMSessionProvider):
+def secret_key_derive(scope: str, session_provider: ORMSessionProvider, thread_safe=True):
     """
     Return the secret key for a particular scope.
     This is derived from the scope, an otherwise meaningless string,
     and a secret key from the database.
+    Generation of the key is not thread/multiprocess safe, so the caller
+    must indicate thread safety with the thread_safe parameter.
     """
     setting_name = "secret_key"
     query = session_provider.session.query(Setting).filter_by(name=setting_name)
     setting_obj = session_provider.run_sync(query.one)
     if not setting_obj:
+        if thread_safe:
+            raise ValueError("secret_key_derive called in non thread safe, but no key found in database")
         setting_obj = Setting(name=setting_name, value=secrets.token_hex())
         session_provider.session.add(setting_obj)
         session_provider.session.commit()

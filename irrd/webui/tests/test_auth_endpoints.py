@@ -15,7 +15,7 @@ class TestLogin:
         assert response.status_code == 200
         assert "password" in response.text
 
-    def test_rate_limit(self, test_client, irrd_db_session_with_user, config_override):
+    def test_rate_limit(self, irrd_db_session_with_user, test_client, config_override):
         session_provider, user = irrd_db_session_with_user
         config_override(
             {
@@ -39,7 +39,7 @@ class TestLogin:
         )
         assert response.status_code == 403
 
-    def test_login_valid_mfa_pending(self, test_client, irrd_db_session_with_user):
+    def test_login_valid_mfa_pending(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         response = test_client.post(
             self.url,
@@ -53,7 +53,7 @@ class TestLogin:
         response = test_client.get("/ui/user/")
         assert response.url.path == "/ui/auth/mfa-authenticate/"
 
-    def test_login_valid_no_mfa(self, test_client, irrd_db_session_with_user):
+    def test_login_valid_no_mfa(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         user.totp_secret = None
         session_provider.session.commit()
@@ -70,7 +70,7 @@ class TestLogin:
         response = test_client.get("/ui/user/")
         assert response.url.path == "/ui/user/"
 
-    def test_login_invalid(self, test_client, irrd_db_session_with_user):
+    def test_login_invalid(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         response = test_client.post(
             self.url,
@@ -86,7 +86,7 @@ class TestLogout(WebRequestTest):
     requires_login = True
     requires_mfa = False
 
-    def test_logout(self, test_client, irrd_db_session_with_user):
+    def test_logout(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self._login_if_needed(test_client, user)
         response = test_client.get(self.url)
@@ -102,7 +102,7 @@ class TestCreateAccount:
         assert response.status_code == 200
         assert "name" in response.text
 
-    def test_create_valid(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_create_valid(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         new_user_email = "new-user@example.com"
@@ -125,7 +125,7 @@ class TestCreateAccount:
         assert str(new_user.pk) in smtpd.messages[0].as_string()
         assert token in smtpd.messages[0].as_string()
 
-    def test_create_invalid_email_exists(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_create_invalid_email_exists(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
 
@@ -143,7 +143,7 @@ class TestCreateAccount:
         assert not new_user
         assert not smtpd.messages
 
-    def test_create_invalid_missing_required(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_create_invalid_missing_required(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
 
@@ -170,7 +170,7 @@ class TestResetPasswordRequest:
         assert response.status_code == 200
         assert "name" in response.text
 
-    def test_request_valid(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_request_valid(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
 
@@ -187,7 +187,7 @@ class TestResetPasswordRequest:
         assert str(user.pk) in smtpd.messages[0].as_string()
         assert token in smtpd.messages[0].as_string()
 
-    def test_request_unknown_user(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_request_unknown_user(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         response = test_client.post(
             self.url,
@@ -206,7 +206,7 @@ class TestChangePassword(WebRequestTest):
         assert response.status_code == 200
         assert "name" in response.text
 
-    def test_valid(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_valid(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         self._login_if_needed(test_client, user)
@@ -227,7 +227,7 @@ class TestChangePassword(WebRequestTest):
         assert len(smtpd.messages) == 1
         assert "password was changed" in smtpd.messages[0].as_string()
 
-    def test_invalid_too_long(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_invalid_too_long(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         self._login_if_needed(test_client, user)
@@ -248,7 +248,7 @@ class TestChangePassword(WebRequestTest):
         self._login(test_client, user, SAMPLE_USER_PASSWORD)
         assert not smtpd.messages
 
-    def test_invalid_current_password(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_invalid_current_password(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         self._login_if_needed(test_client, user)
@@ -269,7 +269,7 @@ class TestChangePassword(WebRequestTest):
         self._login(test_client, user, SAMPLE_USER_PASSWORD)
         assert not smtpd.messages
 
-    def test_invalid_password_mismatch(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_invalid_password_mismatch(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         self._login_if_needed(test_client, user)
@@ -291,7 +291,7 @@ class TestChangePassword(WebRequestTest):
         self._login(test_client, user, SAMPLE_USER_PASSWORD)
         assert not smtpd.messages
 
-    def test_invalid_weak_password(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_invalid_weak_password(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         self._login_if_needed(test_client, user)
@@ -310,7 +310,7 @@ class TestChangePassword(WebRequestTest):
         self._login(test_client, user, SAMPLE_USER_PASSWORD)
         assert not smtpd.messages
 
-    def test_invalid_missing_field(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_invalid_missing_field(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         self._login_if_needed(test_client, user)
@@ -339,7 +339,7 @@ class TestChangeProfile(WebRequestTest):
         assert response.status_code == 200
         assert "name" in response.text
 
-    def test_valid(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_valid(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         self._login_if_needed(test_client, user)
@@ -368,7 +368,7 @@ class TestChangeProfile(WebRequestTest):
         assert "current email address" in smtpd.messages[0].as_string()
         assert new_email in smtpd.messages[0].as_string()
 
-    def test_invalid_current_password(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_invalid_current_password(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         self._login_if_needed(test_client, user)
@@ -394,7 +394,7 @@ class TestChangeProfile(WebRequestTest):
         assert user.name == old_name
         assert not smtpd.messages
 
-    def test_invalid_email(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_invalid_email(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         self._login_if_needed(test_client, user)
@@ -426,7 +426,7 @@ class TestSetPassword(WebRequestTest):
         token = PasswordResetToken(user).generate_token()
         return f"/ui/auth/set-password/{user.pk}/{token}/{1 if initial else 0}/"
 
-    def test_render_form(self, test_client, irrd_db_session_with_user):
+    def test_render_form(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         token = PasswordResetToken(user).generate_token()
 
@@ -440,7 +440,7 @@ class TestSetPassword(WebRequestTest):
         assert response.status_code == 200
         assert "Create account" in response.text
 
-    def test_valid_reset(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_valid_reset(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         url = self.valid_url(user)
@@ -456,7 +456,7 @@ class TestSetPassword(WebRequestTest):
         assert len(smtpd.messages) == 1
         assert "password was reset" in smtpd.messages[0].as_string()
 
-    def test_valid_reset_initial(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_valid_reset_initial(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         url = self.valid_url(user, initial=True)
@@ -471,7 +471,7 @@ class TestSetPassword(WebRequestTest):
         self._login(test_client, user, new_password)
         assert not smtpd.messages
 
-    def test_invalid_password_mismatch(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_invalid_password_mismatch(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         url = self.valid_url(user)
@@ -488,7 +488,7 @@ class TestSetPassword(WebRequestTest):
         self._login(test_client, user)  # uses original password
         assert not smtpd.messages
 
-    def test_invalid_password_weak(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_invalid_password_weak(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         url = self.valid_url(user)
@@ -503,7 +503,7 @@ class TestSetPassword(WebRequestTest):
         self._login(test_client, user)  # uses original password
         assert not smtpd.messages
 
-    def test_invalid_missing_required(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_invalid_missing_required(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         url = self.valid_url(user)
@@ -521,7 +521,7 @@ class TestSetPassword(WebRequestTest):
         self._login(test_client, user)  # uses original password
         assert not smtpd.messages
 
-    def test_unknown_user_or_invalid_token(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_unknown_user_or_invalid_token(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
 

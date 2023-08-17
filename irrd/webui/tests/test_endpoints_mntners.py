@@ -20,7 +20,7 @@ class TestApiTokenAdd(WebRequestTest):
         self.permission = create_permission(session_provider, user, user_management=user_management)
         self.url = self.url_template.format(uuid=self.permission.mntner.pk)
 
-    def test_render_form(self, test_client, irrd_db_session_with_user):
+    def test_render_form(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
@@ -29,7 +29,7 @@ class TestApiTokenAdd(WebRequestTest):
         assert response.status_code == 200
         assert "TEST-MNT" in response.text
 
-    def test_valid_new_token(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_valid_new_token(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
@@ -57,7 +57,7 @@ class TestApiTokenAdd(WebRequestTest):
         assert len(smtpd.messages) == 3
         assert new_api_token.name in smtpd.messages[1].as_string()
 
-    def test_invalid_cidr_range(self, test_client, irrd_db_session_with_user):
+    def test_invalid_cidr_range(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
@@ -74,7 +74,7 @@ class TestApiTokenAdd(WebRequestTest):
         assert not new_api_token
         assert "Invalid IP" in response.text
 
-    def test_invalid_ip_restriction_with_email(self, test_client, irrd_db_session_with_user):
+    def test_invalid_ip_restriction_with_email(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
@@ -95,7 +95,7 @@ class TestApiTokenAdd(WebRequestTest):
         assert not new_api_token
         assert "can not be combined" in response.text
 
-    def test_object_not_exists(self, test_client, irrd_db_session_with_user):
+    def test_object_not_exists(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self._login_if_needed(test_client, user)
         response = test_client.get(self.url_template.format(uuid=uuid.uuid4()))
@@ -112,7 +112,7 @@ class TestApiTokenEdit(WebRequestTest):
         )
         self.url = self.url_template.format(uuid=self.api_token.pk)
 
-    def test_render_form(self, test_client, irrd_db_session_with_user):
+    def test_render_form(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
@@ -121,7 +121,7 @@ class TestApiTokenEdit(WebRequestTest):
         assert response.status_code == 200
         assert "TEST-MNT" in response.text
 
-    def test_valid_edit(self, test_client, irrd_db_session_with_user):
+    def test_valid_edit(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
@@ -142,7 +142,7 @@ class TestApiTokenEdit(WebRequestTest):
         assert not self.api_token.enabled_webapi
         assert self.api_token.enabled_email
 
-    def test_object_not_exists(self, test_client, irrd_db_session_with_user):
+    def test_object_not_exists(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self._login_if_needed(test_client, user)
         response = test_client.get(self.url_template.format(uuid=uuid.uuid4()))
@@ -159,7 +159,7 @@ class TestApiTokenDelete(WebRequestTest):
         )
         self.url = self.url_template.format(uuid=self.api_token.pk)
 
-    def test_render_form(self, test_client, irrd_db_session_with_user):
+    def test_render_form(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
@@ -168,7 +168,7 @@ class TestApiTokenDelete(WebRequestTest):
         assert response.status_code == 200
         assert "TEST-MNT" in response.text
 
-    def test_valid_delete(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_valid_delete(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
@@ -187,7 +187,7 @@ class TestApiTokenDelete(WebRequestTest):
         assert len(smtpd.messages) == 3
         assert api_token_name in smtpd.messages[1].as_string()
 
-    def test_object_not_exists(self, test_client, irrd_db_session_with_user):
+    def test_object_not_exists(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self._login_if_needed(test_client, user)
         response = test_client.get(self.url_template.format(uuid=uuid.uuid4()))
@@ -201,7 +201,7 @@ class TestPermissionAdd(WebRequestTest):
         self.permission = create_permission(session_provider, user, user_management=user_management)
         self.url = self.url_template.format(uuid=self.permission.mntner.pk)
 
-    def test_render_form(self, test_client, irrd_db_session_with_user):
+    def test_render_form(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
@@ -210,7 +210,7 @@ class TestPermissionAdd(WebRequestTest):
         assert response.status_code == 200
         assert "TEST-MNT" in response.text
 
-    def test_valid_without_new_user_management(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_valid_without_new_user_management(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
@@ -243,7 +243,7 @@ class TestPermissionAdd(WebRequestTest):
         permission_count = session_provider.run_sync(session_provider.session.query(AuthPermission).count)
         assert permission_count == 2
 
-    def test_valid_with_new_user_management(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_valid_with_new_user_management(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
@@ -272,7 +272,7 @@ class TestPermissionAdd(WebRequestTest):
         assert len(smtpd.messages) == 3
         assert user2.email in smtpd.messages[1].as_string()
 
-    def test_invalid_incorrect_current_password(self, test_client, irrd_db_session_with_user):
+    def test_invalid_incorrect_current_password(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
@@ -295,7 +295,7 @@ class TestPermissionAdd(WebRequestTest):
         )
         assert new_permission is None
 
-    def test_invalid_new_user_does_not_exist(self, test_client, irrd_db_session_with_user):
+    def test_invalid_new_user_does_not_exist(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
@@ -317,7 +317,7 @@ class TestPermissionAdd(WebRequestTest):
         )
         assert new_permission is None
 
-    def test_missing_user_management_on_mntner(self, test_client, irrd_db_session_with_user):
+    def test_missing_user_management_on_mntner(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user, user_management=False)
         self._login_if_needed(test_client, user)
@@ -325,7 +325,7 @@ class TestPermissionAdd(WebRequestTest):
         response = test_client.get(self.url)
         assert response.status_code == 404
 
-    def test_object_not_exists(self, test_client, irrd_db_session_with_user):
+    def test_object_not_exists(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self._login_if_needed(test_client, user)
         response = test_client.get(self.url_template.format(uuid=uuid.uuid4()))
@@ -343,7 +343,7 @@ class TestPermissionDelete(WebRequestTest):
         )
         self.url = self.url_template.format(uuid=self.permission2.pk)
 
-    def test_render_form(self, test_client, irrd_db_session_with_user):
+    def test_render_form(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
@@ -352,7 +352,7 @@ class TestPermissionDelete(WebRequestTest):
         assert response.status_code == 200
         assert "TEST-MNT" in response.text
 
-    def test_valid_other_delete(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_valid_other_delete(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
@@ -376,7 +376,7 @@ class TestPermissionDelete(WebRequestTest):
         assert len(smtpd.messages) == 3
         assert self.user2.email in smtpd.messages[1].as_string()
 
-    def test_valid_self_delete(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_valid_self_delete(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
@@ -401,7 +401,7 @@ class TestPermissionDelete(WebRequestTest):
         assert len(smtpd.messages) == 3
         assert user.email in smtpd.messages[1].as_string()
 
-    def test_invalid_refuse_last_delete(self, test_client, irrd_db_session_with_user):
+    def test_invalid_refuse_last_delete(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
@@ -423,7 +423,7 @@ class TestPermissionDelete(WebRequestTest):
         )
         assert deleted_permission is not None
 
-    def test_invalid_incorrect_current_password(self, test_client, irrd_db_session_with_user):
+    def test_invalid_incorrect_current_password(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
@@ -443,7 +443,7 @@ class TestPermissionDelete(WebRequestTest):
         )
         assert deleted_permission is not None
 
-    def test_missing_user_management_on_mntner(self, test_client, irrd_db_session_with_user):
+    def test_missing_user_management_on_mntner(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user, user_management=False)
         self._login_if_needed(test_client, user)
@@ -451,7 +451,7 @@ class TestPermissionDelete(WebRequestTest):
         response = test_client.get(self.url)
         assert response.status_code == 404
 
-    def test_object_not_exists(self, test_client, irrd_db_session_with_user):
+    def test_object_not_exists(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self._login_if_needed(test_client, user)
         response = test_client.get(self.url_template.format(uuid=uuid.uuid4()))
@@ -464,7 +464,7 @@ class TestMntnerMigrateInitiate(WebRequestTest):
     def pre_login(self, session_provider, user):
         self.mntner_obj = rpsl_object_from_text(SAMPLE_MNTNER)
 
-    def test_render_form(self, test_client, irrd_db_session_with_user):
+    def test_render_form(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
@@ -472,7 +472,7 @@ class TestMntnerMigrateInitiate(WebRequestTest):
         response = test_client.get(self.url)
         assert response.status_code == 200
 
-    def test_render_form_disabled(self, test_client, irrd_db_session_with_user, config_override):
+    def test_render_form_disabled(self, irrd_db_session_with_user, test_client, config_override):
         config_override(
             {
                 "server": {"http": {"url": "http://testserver/"}},
@@ -488,7 +488,7 @@ class TestMntnerMigrateInitiate(WebRequestTest):
         assert response.status_code == 200
         assert "mntners is not enabled on this instance" in response.text
 
-    def test_valid_submit(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_valid_submit(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
@@ -516,7 +516,7 @@ class TestMntnerMigrateInitiate(WebRequestTest):
         assert self.mntner_obj.pk() in smtpd.messages[0].as_string()
         assert new_permission.mntner.migration_token in smtpd.messages[0].as_string()
 
-    def test_invalid_password(self, test_client, irrd_db_session_with_user):
+    def test_invalid_password(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
@@ -537,7 +537,7 @@ class TestMntnerMigrateInitiate(WebRequestTest):
         new_permission = session_provider.run_sync(session_provider.session.query(AuthPermission).one)
         assert not new_permission
 
-    def test_already_migrated(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_already_migrated(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         create_permission(session_provider, user)
@@ -557,7 +557,7 @@ class TestMntnerMigrateInitiate(WebRequestTest):
         assert response.status_code == 200
         assert "already migrated" in response.text
 
-    def test_missing_confirm(self, test_client, irrd_db_session_with_user):
+    def test_missing_confirm(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
@@ -577,7 +577,7 @@ class TestMntnerMigrateInitiate(WebRequestTest):
         new_permission = session_provider.run_sync(session_provider.session.query(AuthPermission).one)
         assert not new_permission
 
-    def test_mntner_does_not_exist(self, test_client, irrd_db_session_with_user):
+    def test_mntner_does_not_exist(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
@@ -609,7 +609,7 @@ class TestMntnerMigrateComplete(WebRequestTest):
             uuid=self.permission.mntner.pk, token=self.permission.mntner.migration_token
         )
 
-    def test_render_form(self, test_client, irrd_db_session_with_user):
+    def test_render_form(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
@@ -617,7 +617,7 @@ class TestMntnerMigrateComplete(WebRequestTest):
         response = test_client.get(self.url)
         assert response.status_code == 200
 
-    def test_valid_submit(self, test_client_with_smtp, irrd_db_session_with_user):
+    def test_valid_submit(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
@@ -640,7 +640,7 @@ class TestMntnerMigrateComplete(WebRequestTest):
         assert len(smtpd.messages) == 3
         assert user.email in smtpd.messages[1].as_string()
 
-    def test_invalid_password(self, test_client, irrd_db_session_with_user):
+    def test_invalid_password(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
@@ -660,7 +660,7 @@ class TestMntnerMigrateComplete(WebRequestTest):
         assert self.permission.mntner.migration_token
         assert RPSL_MNTNER_AUTH_INTERNAL not in self.permission.mntner.rpsl_mntner_obj.parsed_data["auth"]
 
-    def test_invalid_token_or_unknown_id(self, test_client, irrd_db_session_with_user):
+    def test_invalid_token_or_unknown_id(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
@@ -689,7 +689,7 @@ class TestMntnerMigrateComplete(WebRequestTest):
         assert self.permission.mntner.migration_token
         assert RPSL_MNTNER_AUTH_INTERNAL not in self.permission.mntner.rpsl_mntner_obj.parsed_data["auth"]
 
-    def test_missing_confirm(self, test_client, irrd_db_session_with_user):
+    def test_missing_confirm(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
         self._login_if_needed(test_client, user)
