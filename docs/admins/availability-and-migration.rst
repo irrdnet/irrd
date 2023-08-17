@@ -145,8 +145,8 @@ The general plan for promoting an IRRDv4 instance is:
   restrict NRTM access to certain IPs).
 
 .. warning::
-    If users use IRRD internal authentication, by logging in through
-    the web interface, ensure you have a consistent URL, i.e.
+    If users use IRRD's web interface for user logins,
+    ensure you have a consistent URL, i.e.
     direct to the current active instance by DNS records. WebAuthn
     tokens are tied to the URL as seen by the browser, and will
     become unusable if you change the URL.
@@ -185,8 +185,9 @@ Due to small differences in the timing of the preload process,
 there may be an additional delay in updating responses to some
 queries on the standby compared to the active instance, in the
 order of 15-60 seconds.
-This concerns the whois queries ``!g``, ``!6``, ``!a`` and in some cases ``!i``,
-and the GraphQL queries ``asnPrefixes`` and ``asSetPrefixes``.
+This concerns the whois queries ``!g``, ``!6``, ``!a`` and ``!i``,
+and the GraphQL queries ``asnPrefixes``, ``asSetPrefixes`` and
+``recursiveSetMembers``.
 
 
 Query-only instances using NRTM
@@ -211,7 +212,8 @@ For further details, see the
 :ref:`NRTM serial handling documentation <mirroring-nrtm-serials>`.
 
 .. warning::
-   When **not** using synchronised serials, NRTM users must never be switched
+   When **not** using synchronised serials, NRTM must get their export,
+   CURRENTSERIAL and NRTM stream from the same instance and never be switched
    (e.g. by DNS changes or load balancers) to different instances, without
    reloading their local copy. Otherwise they may silently lose updates.
 
@@ -310,8 +312,9 @@ GnuPG keychain before users can submit PGP signed updates.
 
 By default, IRRd only inserts public PGP keys from `key-cert` objects for
 authoritative sources - as there is no reason to do PGP signature validation
-for non-authoritative sources. However, a standby source needs to have these
-keys imported already to become active later. This can be enabled with the
+for non-authoritative sources.
+
+When using mirroring, e.g. for migration from a legacy IRRD, you can use the
 ``strict_import_keycert_objects`` setting on the mirror configuration.
 When enabled, `key-cert` objects always use the strict importer which includes
 importing into the key chain, which allows them to be used for authentication
@@ -319,7 +322,9 @@ in the future.
 
 If your IRRd instance already has (or may have) `key-cert` objects that were
 imported without ``strict_import_keycert_objects``, you can insert them into the
-local keychain with the ``irrd_load_pgp_keys`` command.
+local keychain with the ``irrd_load_pgp_keys`` command. You must also run this
+command after promoting a standby instance to active when using PostgreSQL
+replication.
 
 The ``irrd_load_pgp_keys`` command may fail to import certain keys if they use
 an unsupported format. It is safe to run multiple times, even if some or all
