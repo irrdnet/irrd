@@ -4,6 +4,7 @@ name = "irrd"
 
 [tool.poetry]
 name = "irrd"
+# Note that version is also in irrd/__init__.py
 version = "4.4-dev"
 description = "Internet Routing Registry daemon (IRRd)"
 authors = ["Reliably Coded for NTT Ltd. and others <irrd@reliablycoded.nl>"]
@@ -32,9 +33,9 @@ datrie = "0.8.2"
 setproctitle = "1.3.2"
 python-daemon = "3.0.1"
 pid = "3.0.4"
-redis = "4.6.0"
+redis = "5.0.0"
 hiredis = "2.2.3"
-coredis = "4.14.0"
+coredis = "4.15.1"
 requests = "2.31.0"
 pytz = "2023.3"
 ariadne = "0.20.1"
@@ -45,17 +46,17 @@ asgiref = "3.6.0"
 pydantic = "1.10.12"
 typing-extensions = "4.7.1"
 py-radix-sr = "1.0.0.post1"
-psycopg2-binary = { version = "2.9.6", markers = "platform_python_implementation == 'CPython'" }
+psycopg2-binary = { version = "2.9.7", markers = "platform_python_implementation == 'CPython'" }
 psycopg2cffi = { version = "2.9.0", markers = "platform_python_implementation == 'PyPy'" }
 sqlalchemy = "1.3.24"  # pinned <1.24
-alembic = "1.11.1"
+alembic = "1.11.2"
 ujson = "5.8.0"
-wheel = "0.41.0"
+wheel = "0.41.1"
 python-multipart = "0.0.6"
 imia = "0.5.3"
 starlette-wtf = "0.4.3"
 limits = "3.5.0"
-webauthn = "1.9.0"
+webauthn = "1.10.1"
 pyotp = "2.9.0"
 click = "8.1.6"
 zxcvbn = "4.4.28"
