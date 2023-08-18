@@ -53,6 +53,9 @@ def main():
     mirror_frequency = int(os.environ.get("IRRD_SCHEDULER_TIMER_OVERRIDE", 15))
 
     daemon_kwargs = {
+        # by default we set detach_process to true to avoid #848,
+        # the python-daemon default of None does not suffice
+        "detach_process": True,
         "umask": 0o022,
     }
     if args.foreground:
