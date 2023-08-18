@@ -134,10 +134,7 @@ def run_irrd(mirror_frequency: int, config_file_path: str, uid: Optional[int], g
     set_traceback_handler()
 
     whois_process = ExceptionLoggingProcess(
-        config_file_path=config_file_path,
-        target=start_whois_server,
-        name="irrd-whois-server-listener",
-        kwargs={"uid": uid, "gid": gid},
+        target=start_whois_server, name="irrd-whois-server-listener", kwargs={"uid": uid, "gid": gid}
     )
     whois_process.start()
     if uid and gid:
@@ -145,16 +142,11 @@ def run_irrd(mirror_frequency: int, config_file_path: str, uid: Optional[int], g
 
     mirror_scheduler = MirrorScheduler()
 
-    preload_manager = PreloadStoreManager(
-        config_file_path=config_file_path, name="irrd-preload-store-manager"
-    )
+    preload_manager = PreloadStoreManager(name="irrd-preload-store-manager")
     preload_manager.start()
 
     uvicorn_process = ExceptionLoggingProcess(
-        config_file_path=config_file_path,
-        target=run_http_server,
-        name="irrd-http-server-listener",
-        args=(config_file_path,),
+        target=run_http_server, name="irrd-http-server-listener", args=(config_file_path,)
     )
     uvicorn_process.start()
 
