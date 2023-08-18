@@ -52,7 +52,7 @@ def mock_redis_keys(monkeypatch, config_override):
 
 class TestPreloading:
     def test_load_reload_thread_management(self, mock_preload_updater, mock_redis_keys):
-        preload_manager = PreloadStoreManager(config_file_path=None)
+        preload_manager = PreloadStoreManager()
 
         preload_manager_thread = threading.Thread(target=preload_manager.main, daemon=True)
         preload_manager_thread.start()
@@ -104,7 +104,7 @@ class TestPreloading:
 
     def test_set_members(self, mock_redis_keys):
         preloader = Preloader()
-        preload_manager = PreloadStoreManager(config_file_path=None)
+        preload_manager = PreloadStoreManager()
 
         # Wait for the preloader instance to start listening on pubsub
         time.sleep(1)
@@ -150,7 +150,7 @@ class TestPreloading:
 
     def test_routes_for_origins(self, mock_redis_keys):
         preloader = Preloader()
-        preload_manager = PreloadStoreManager(config_file_path=None)
+        preload_manager = PreloadStoreManager()
 
         # Wait for the preloader instance to start listening on pubsub
         time.sleep(1)
