@@ -860,5 +860,9 @@ def setup_argparse():
     return parser
 
 
-if __name__ == "__main__":  # pragma: no cover
+def main():  # pragma: no cover
     run(sys.argv[1:])
+
+
+if __name__ == "__main__":  # pragma: no cover
+    main()
