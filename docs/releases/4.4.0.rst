@@ -143,8 +143,32 @@ Other changes
 
 Upgrading to IRRd 4.4.0 from 4.3.x
 ----------------------------------
-TODO
+As with any other major IRRd release, depending on the availability
+needs of your setup, it is recommended to first test the upgrade
+and operation on a testing/acceptance setup with similar data size.
 
+The recommended steps to upgrade are:
+
+* If you are running any standby servers, read the new
+  :doc:`availability with PostgreSQL replication </admins/availability-and-migration>`
+  carefully. Standby servers using NRTM are no longer supported.
+* Make sure your Python (minimum 3.8) version is recent enough.
+  If you were using PyPy, switch to CPython.
+* Update your settings file with ``server.http.url``.
+* Stop the IRRd process.
+* Upgrade the IRRd package from within the virtualenv with
+  ``pip install irrd==4.4.0``
+* Run the database migrations, using the
+  :ref:`irrd_database_upgrade <deployment-database-upgrade>` command.
+  The migrations create only new tables, and should be fairly quick.
+* Restart IRRd.
+* If you run an authoritative database, consider enabling
+  :doc:`internal authentication </admins/webui/>` migration with
+  ``auth.irrd_internal_migration_enabled``
+
+It should be safe to keep cron and e-mail triggered tasks active
+during the upgrade, but during installation, tasks may fail.
+To prevent this, disable these during the upgrade.
 
 Downgrading from 4.4 to 4.3.x
 -----------------------------
@@ -156,7 +180,10 @@ migrations.
 If you want to use the database migrations, run this command **before**
 downgrading your local package installation to 4.3.x::
 
-    irrd_database_downgrade --version TODO-TODO
+    irrd_database_downgrade --version fd4473bc1a10
+
+Note that any internal authentication data will be lost by this
+database downgrade.
 
 If you would like to re-upgrade to 4.4 later on, you will need to run
 the database migrations again, as listed in the upgrade steps.
