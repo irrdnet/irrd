@@ -166,5 +166,5 @@ omit = [
 ]
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry"]
 build-backend = "poetry.masonry.api"
