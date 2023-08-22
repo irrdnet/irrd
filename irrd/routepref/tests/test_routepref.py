@@ -17,6 +17,7 @@ def test_route_preference_validator(config_override):
                 "SRC-HIGH-B": {"route_object_preference": 900},
                 "SRC-LOWEST": {"route_object_preference": 100},
                 "SRC-LOW": {"route_object_preference": 200},
+                "SRC-NONE": {},
             }
         }
     )
@@ -218,3 +219,20 @@ def test_update_route_preference_status(config_override, monkeypatch):
             {"rpsl_objs_now_visible": [], "rpsl_objs_now_suppressed": []},
         )
     ]
+
+
+def test_update_route_preference_status_no_config(config_override, monkeypatch):
+    config_override(
+        {
+            "sources": {
+                "SRC-HIGH": {},
+                "SRC-LOW": {},
+            }
+        }
+    )
+
+    mock_dh = MockDatabaseHandler()
+    mock_dh.reset_mock()
+    update_route_preference_status(mock_dh)
+    assert mock_dh.queries == []
+    assert mock_dh.other_calls == []

@@ -138,6 +138,14 @@ def update_route_preference_status(
     and an optional set of prefixes to limit the evaluation.
     Results are saved to the database and counters are logged.
     """
+    if not any(
+        [
+            source_setting.get("route_object_preference", None)
+            for source_setting in get_setting("sources", {}).values()
+        ]
+    ):
+        return
+
     if filter_prefixes and len(filter_prefixes) > MAX_FILTER_PREFIX_LEN:
         filter_prefixes = None
 
