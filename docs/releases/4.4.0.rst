@@ -137,6 +137,9 @@ Other changes
   configured per source.
 * A ``compatibility.asdot_queries`` setting was added, which allows
   the use of the (long deprecated) asdot format in origin queries.
+* The deployment documentation now also suggests pipx for
+  installing IRRD, which can be easier than managing the virtualenv
+  manually.
 
 Upgrading to IRRd 4.4.0 from 4.3.x
 ----------------------------------

@@ -125,6 +125,28 @@ Python work will be done, including different versions of IRRd
 on the same host, this step can be skipped, but this is not
 recommended.
 
+There are two ways to manage the virtualenv: pipx or manual.
+The pipx install is generally easier.
+
+pipx virtualenv
+~~~~~~~~~~~~~~~
+You can use pipx_ to manage the virtualenv and IRRD commands.
+It creates a virtualenv for you, installs IRRD and dependencies,
+and can make IRRD commands available.
+
+To install with pipx, run::
+
+    pipx install irrd
+
+You may want to run ``pipx ensurepath`` to make sure your user
+has the installed commands in the path. See the pipx
+documentation for further details.
+
+.. _pipx: https://pypa.github.io/pipx/
+
+Manual virtualenv
+~~~~~~~~~~~~~~~~~
+
 Create the virtualenv with a command like this for PyPy::
 
     pypy3 -m venv /home/irrd/irrd-venv
@@ -382,7 +404,8 @@ Processing email changes
 To process incoming requested changes by email, configure a mail server to
 deliver the email to the ``irrd_submit_email`` command.
 
-When using the virtualenv as set up above, the full path is::
+When using pipx, the command will be added to your path.
+When using the manual virtualenv as set up above, the full path is::
 
     /home/irrd/irrd-venv/bin/irrd_submit_email
 
