@@ -20,25 +20,11 @@ workflows:
               python_version: ["3.8", "3.11"]
               postgres_version: ["15.0"]
               redis_version: ["5.0"]
-      - unit_tests_pypy:
-          name: unit-tests-pypy<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
-          matrix:
-            parameters:
-              python_version: ["3.8", "3.9"]
-              postgres_version: ["15.0"]
-              redis_version: ["5.0"]
       - integration_tests_cpython:
           name: integration-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
           matrix:
             parameters:
               python_version: ["3.8", "3.11"]
-              postgres_version: ["15.0"]
-              redis_version: ["5.0"]
-      - integration_tests_pypy:
-          name: integration-tests-pypy<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
-          matrix:
-            parameters:
-              python_version: ["3.8", "3.9"]
               postgres_version: ["15.0"]
               redis_version: ["5.0"]
       - lint:
@@ -59,25 +45,11 @@ workflows:
               python_version: ["3.8", "3.9", "3.10", "3.11"]
               postgres_version: ["9.6", "11.16", "13.7", "15.0"]
               redis_version: ["5.0", "6.2", "7.0"]
-      - unit_tests_pypy:
-          name: unit-tests-pypy<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
-          matrix:
-            parameters:
-              python_version: ["3.8", "3.9"]
-              postgres_version: ["9.6", "11.16", "13.7", "15.0"]
-              redis_version: ["5.0", "6.2", "7.0"]
       - integration_tests_cpython:
           name: integration-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
           matrix:
             parameters:
               python_version: ["3.8", "3.9", "3.10", "3.11"]
-              postgres_version: ["9.6", "11.16", "13.7", "15.0"]
-              redis_version: ["5.0", "6.2", "7.0"]
-      - integration_tests_pypy:
-          name: integration-tests-pypy<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
-          matrix:
-            parameters:
-              python_version: ["3.8", "3.9"]
               postgres_version: ["9.6", "11.16", "13.7", "15.0"]
               redis_version: ["5.0", "6.2", "7.0"]
       - lint:
@@ -171,7 +143,6 @@ commands:
           path: /tmp/pytest-of-circleci/
 
 
-
 jobs:
   unit_tests_cpython:
     parameters:
@@ -191,43 +162,6 @@ jobs:
           IRRD_REDIS_URL: 'redis://localhost'
           PYTHON_INTERPRETER: python3
           SUDO: sudo
-
-      - image: cimg/postgres:<< parameters.postgres_version >>
-        environment:
-          POSTGRES_USER: root
-          POSTGRES_DB: circle_test
-          POSTGRES_HOST_AUTH_METHOD: trust
-        command: postgres -c track_commit_timestamp=true
-
-      - image: cimg/redis:<< parameters.redis_version >>
-#      - image: cimg/rust:1.65
-
-    steps:
-      - checkout
-      - install_dependencies
-      - wait_for_postgres
-      - run_unit_tests
-      - store_results
-
-
-  unit_tests_pypy:
-    parameters:
-      python_version:
-        type: string
-      postgres_version:
-        type: string
-      redis_version:
-        type: string
-
-    resource_class: medium
-    working_directory: /mnt/ramdisk
-    docker:
-      - image: pypy:<< parameters.python_version >>
-        environment:
-          IRRD_DATABASE_URL: 'postgresql://root@localhost/circle_test'
-          IRRD_REDIS_URL: 'redis://localhost'
-          PYTHON_INTERPRETER: pypy3
-          SUDO: ''
 
       - image: cimg/postgres:<< parameters.postgres_version >>
         environment:
@@ -267,46 +201,6 @@ jobs:
           IRRD_REDIS_URL_INTEGRATION_2: 'redis://localhost/5'
           PYTHON_INTERPRETER: python3
           SUDO: sudo
-
-      - image: cimg/postgres:<< parameters.postgres_version >>
-        environment:
-          POSTGRES_USER: root
-          POSTGRES_DB: circle_test
-          POSTGRES_HOST_AUTH_METHOD: trust
-        command: postgres -c track_commit_timestamp=true
-
-      - image: cimg/redis:<< parameters.redis_version >>
-#      - image: cimg/rust:1.65
-
-    steps:
-      - checkout
-      - install_dependencies
-      - wait_for_postgres
-      - create_integration_test_db
-      - run_integration_tests
-      - store_results
-
-
-  integration_tests_pypy:
-    parameters:
-      python_version:
-        type: string
-      postgres_version:
-        type: string
-      redis_version:
-        type: string
-
-    resource_class: large
-    working_directory: /mnt/ramdisk
-    docker:
-      - image: pypy:<< parameters.python_version >>
-        environment:
-          IRRD_DATABASE_URL_INTEGRATION_1: 'postgresql://root@localhost/circle_test_integration_1'
-          IRRD_DATABASE_URL_INTEGRATION_2: 'postgresql://root@localhost/circle_test_integration_2'
-          IRRD_REDIS_URL_INTEGRATION_1: 'redis://localhost/4'
-          IRRD_REDIS_URL_INTEGRATION_2: 'redis://localhost/5'
-          PYTHON_INTERPRETER: pypy3
-          SUDO: ''
 
       - image: cimg/postgres:<< parameters.postgres_version >>
         environment:

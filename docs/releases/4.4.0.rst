@@ -15,10 +15,15 @@ IRRD 4.4.0 was released on TODO. Highlights of new features:
   queries that include `as-set` and `route-set` resolving.
 
 
-Minimum Python version
-----------------------
+Minimum Python version and PyPy
+-------------------------------
 The minimum Python version for IRRd is now 3.8. Python 3.7 is `end of life`_
 as of 27 June 2023 and therefore no longer supported.
+
+IRRD no longer supports PyPy. While it offered some performance
+benefit, it kept causing numerous complex issues.
+If you were running on PyPy, switch your environment to CPython,
+the commonly used Python interpreter.
 
 .. _end of life: https://endoflife.date/python
 
