@@ -54,6 +54,7 @@ ntt
 num
 ov
 pidfile
+pipx
 poe
 postgres
 Pre
