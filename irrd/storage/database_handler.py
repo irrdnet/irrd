@@ -10,7 +10,7 @@ from asgiref.sync import sync_to_async
 from IPy import IP
 from sqlalchemy.dialects import postgresql as pg
 
-from irrd.conf import get_setting
+from irrd.conf import RPKI_IRR_PSEUDO_SOURCE, get_setting
 from irrd.routepref.status import RoutePreferenceStatus
 from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.parser import RPSLObject
@@ -311,7 +311,9 @@ class DatabaseHandler:
         self._rpsl_upsert_buffer.append((object_dict, origin, source_serial))
 
         self._rpsl_pk_source_seen.add(rpsl_pk_source)
-        self.changed_objects_tracker.object_modified(rpsl_object.rpsl_object_class, rpsl_object.prefix)
+        self.changed_objects_tracker.object_modified(
+            rpsl_object.rpsl_object_class, rpsl_object.source(), rpsl_object.prefix
+        )
 
         if len(self._rpsl_upsert_buffer) > MAX_RECORDS_BUFFER_BEFORE_INSERT:
             self._flush_rpsl_object_writing_buffer()
@@ -1187,10 +1189,14 @@ class SessionChangedObjectsTracker:
             prefix = rpsl_obj["prefix"]
         except (KeyError, AttributeError):
             prefix = None
-        self.object_modified(rpsl_obj["object_class"], prefix, origin)
+        self.object_modified(rpsl_obj["object_class"], rpsl_obj["source"], prefix, origin)
 
     def object_modified(
-        self, object_class: str, prefix: Optional[IP], origin: Optional[JournalEntryOrigin] = None
+        self,
+        object_class: str,
+        source: str,
+        prefix: Optional[IP],
+        origin: Optional[JournalEntryOrigin] = None,
     ):
         self._object_classes.add(object_class)
         if all(
@@ -1198,6 +1204,7 @@ class SessionChangedObjectsTracker:
                 prefix,
                 object_class in RPKI_RELEVANT_OBJECT_CLASSES,
                 origin != JournalEntryOrigin.route_preference,
+                source != RPKI_IRR_PSEUDO_SOURCE,
             ]
         ):
             self._prefixes_for_routepref.add(prefix)
