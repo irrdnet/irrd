@@ -167,4 +167,4 @@ omit = [
 
 [build-system]
 requires = ["poetry-core"]
-build-backend = 'setuptools.build_meta'
+build-backend = "poetry.masonry.api"
