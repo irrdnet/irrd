@@ -66,8 +66,13 @@ async def startup():
     try:
         app.state.database_handler = DatabaseHandler(readonly=True)
         app.state.preloader = Preloader(enable_queries=True)
+        async_redis_prefix = ""
+        if get_setting("redis_url").startswith("redis://"):
+            async_redis_prefix = "async+"
+        elif get_setting("redis_url").startswith("unix://"):
+            async_redis_prefix = "async+redis+"
         app.state.rate_limiter_storage = limits.storage.storage_from_string(
-            "async+" + get_setting("redis_url"),
+            async_redis_prefix + get_setting("redis_url"),
             protocol_version=2,
         )
         app.state.rate_limiter = limits.aio.strategies.MovingWindowRateLimiter(app.state.rate_limiter_storage)
