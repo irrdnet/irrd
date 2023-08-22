@@ -52,6 +52,10 @@ LOGGING = {
         "uvicorn.error": {
             "level": "INFO",
         },
+        # handled by asgi-log
+        "uvicorn.access": {
+            "level": "ERROR",
+        },
         "sqlalchemy": {
             "level": "WARNING",
         },

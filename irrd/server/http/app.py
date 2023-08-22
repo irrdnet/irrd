@@ -6,6 +6,7 @@ from pathlib import Path
 import limits
 from ariadne.asgi import GraphQL
 from ariadne.asgi.handlers import GraphQLHTTPHandler
+from asgi_logger import AccessLoggerMiddleware
 from setproctitle import setproctitle
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
@@ -139,6 +140,12 @@ def set_middleware(app):
     if testing:
         logger.info("Running in testing mode, disabling CSRF.")
     app.user_middleware = [
+        # Use asgi-log to work around https://github.com/encode/uvicorn/issues/1384
+        Middleware(
+            AccessLoggerMiddleware,
+            logger=logger,
+            format='%(client_addr)s - "%(request_line)s" %(status_code)s - %(L)ss',
+        ),
         Middleware(MemoryTrimMiddleware),
         Middleware(SessionMiddleware, secret_key=secret_key_derive("web.session_middleware")),
         Middleware(

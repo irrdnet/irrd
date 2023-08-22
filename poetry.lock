@@ -225,6 +225,20 @@ test = ["aiodataloader", "freezegun", "graphql-sync-dataloaders", "httpx", "open
 tracing = ["opentracing"]
 
 [[package]]
+name = "asgi-logger"
+version = "0.1.0"
+description = "Middleware based uvicorn access logger! :tada:"
+optional = false
+python-versions = ">=3.8,<4.0"
+files = [
+    {file = "asgi-logger-0.1.0.tar.gz", hash = "sha256:b289f530bf49d14320242a567580ffc8ad053ba5667eece27d25a97822d3a0aa"},
+    {file = "asgi_logger-0.1.0-py3-none-any.whl", hash = "sha256:f2d1252cfc48b4a806d1810f0308ba2979fa73aca06ecc809903a8ebc5a6ef23"},
+]
+
+[package.dependencies]
+asgiref = ">=3.4.1,<4.0.0"
+
+[[package]]
 name = "asgiref"
 version = "3.6.0"
 description = "ASGI specs, helper code, and adapters"
@@ -3452,4 +3466,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "06c216a460cb25337cf79c1db0e0046467f3bcd974300e3d6e998845237e15e5"
+content-hash = "7566804853dd25d90246a031520ab38d12fd3cc770650edbf604934c0bfd08d0"
