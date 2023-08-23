@@ -55,7 +55,7 @@ This document mainly discusses three kinds of IRRd instances:
     incompatibility with :doc:`object suppression </admins/object-suppression>`
     along with other issues regarding mirror synchronisation.
     The ``sources.{name}.export_destination_unfiltered`` and
-    ``sources.{name}.export_destination`` settings are deprecated.
+    ``sources.{name}.nrtm_access_list_unfiltered`` settings are deprecated.
 
 
 Using PostgreSQL replication for standby and query-only instances

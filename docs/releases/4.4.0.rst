@@ -83,7 +83,7 @@ method. This means you can not apply these instructions
 in IRRD prior to 4.4.
 
 The ``sources.{name}.export_destination_unfiltered`` and
-``sources.{name}.export_destination`` settings are deprecated
+``sources.{name}.nrtm_access_list_unfiltered`` settings are deprecated
 and will be removed in IRRD 4.5.
 
 
