@@ -1,7 +1,15 @@
+import enum
+import inspect
+from collections import abc
 from datetime import datetime
-from typing import Any, Dict, Iterable
+from typing import Any, Dict
 
-from irrd.storage.database_handler import QueryType, RPSLDatabaseResponse
+from irrd.rpsl.parser import RPSLObject
+from irrd.storage.database_handler import (
+    DatabaseHandler,
+    QueryType,
+    RPSLDatabaseResponse,
+)
 from irrd.storage.models import DatabaseOperation, JournalEntryOrigin
 from irrd.storage.queries import (
     DatabaseStatusQuery,
@@ -46,13 +54,61 @@ class Singleton(type):
         return cls._instances[cls]
 
 
-class MockDatabaseHandler(metaclass=Singleton):
+class MockSingletonMeta(Singleton):
+    """
+    This is a sort of Mock class with some special behaviour to help
+    mocking a DatabaseHandler.
+
+    First, it will create a method for each method of DatabaseHandler,
+    except for dunder methods and methods already defined.
+    Then, on each method call, the call is logged in self.other_calls,
+    resolving all arguments to their names, applying defaults,
+    and translating a number of arguments to make tests easier.
+    """
+
+    def __new__(cls, name, bases, attrs):
+        original_class = attrs.pop("DeriveFrom")
+        new_class = super().__new__(cls, name, bases, attrs)
+        for name, method in inspect.getmembers(original_class, predicate=inspect.isfunction):
+            if name not in attrs and not name.startswith("__"):
+                defined_method = cls.create_mock_method(method)
+                setattr(new_class, name, defined_method)
+        return new_class
+
+    @staticmethod
+    def create_mock_method(orig_method):
+        method_sig = inspect.signature(orig_method)
+
+        def mock_method(self, *args, **kwargs):
+            bind = method_sig.bind(self, *args, **kwargs)
+            bind.apply_defaults()
+            all_args = {}
+            for key, value in bind.arguments.items():
+                if key == "self":
+                    continue
+                if isinstance(value, RPSLObject):
+                    value = str(value) if value else None
+                if isinstance(value, enum.Enum):
+                    value = value.name
+                if isinstance(value, abc.Iterator):
+                    value = list(value)
+                all_args[key] = value
+
+            self.other_calls.append((orig_method.__name__, all_args))
+
+        mock_method.__name__ = orig_method.__name__
+        return mock_method
+
+
+class MockDatabaseHandler(metaclass=MockSingletonMeta):
     """
     This mock is a new approach to handle database mocking in unit tests
-    and is currently only used in the HTTP event stream tests.
+    and is currently only used in limited tests.
     If extended, it has a lot of potential to improve other tests
     in clarity and debugging - perhaps combined with factoryboy.
     """
+
+    DeriveFrom = DatabaseHandler
 
     def _default_rpsl_database_journal_query_iterator(self):
         yield {
@@ -67,9 +123,20 @@ class MockDatabaseHandler(metaclass=Singleton):
             "object_text": SAMPLE_MNTNER,
         }
 
+    def _default_rpsl_database_status_query_iterator(self):
+        return iter(
+            [
+                {
+                    "source": "TEST",
+                    "created": datetime.utcnow(),
+                }
+            ]
+        )
+
     def reset_mock(self):
         self.query_responses = {
-            RPSLDatabaseJournalQuery: self._default_rpsl_database_journal_query_iterator()
+            RPSLDatabaseJournalQuery: self._default_rpsl_database_journal_query_iterator(),
+            DatabaseStatusQuery: self._default_rpsl_database_status_query_iterator(),
         }
         self.queries = []
         self.other_calls = []
@@ -106,46 +173,11 @@ class MockDatabaseHandler(metaclass=Singleton):
                     }
                 ]
             )
-        elif type(query) == DatabaseStatusQuery:
-            return iter(
-                [
-                    {
-                        "source": "TEST",
-                        "created": datetime.utcnow(),
-                    }
-                ]
-            )
         else:
             try:
                 return self.query_responses[type(query)]
             except KeyError:  # pragma: no cover
                 raise ValueError(f"Unknown query in MockDatabaseHandler: {query}")
-
-    def update_route_preference_status(
-        self,
-        rpsl_objs_now_visible: Iterable[Dict[str, Any]] = [],
-        rpsl_objs_now_suppressed: Iterable[Dict[str, Any]] = [],
-    ) -> None:
-        self.other_calls.append(
-            (
-                "update_route_preference_status",
-                {
-                    "rpsl_objs_now_visible": list(rpsl_objs_now_visible),
-                    "rpsl_objs_now_suppressed": list(rpsl_objs_now_suppressed),
-                },
-            )
-        )
-
-    def delete_journal_entries_before_date(self, timestamp: datetime, source: str):
-        self.other_calls.append(
-            (
-                "delete_journal_entries_before_date",
-                {"timestamp": timestamp, "source": source},
-            )
-        )
-
-    def commit(self):
-        self.other_calls.append(("commit", {}))
 
     def close(self):
         self.closed = True

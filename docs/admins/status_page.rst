@@ -38,15 +38,15 @@ The local information shows:
   :doc:`periodic full import mode </users/mirroring>`.
 * `Oldest/newest journal serial number`: the oldest and newest serial which
   this IRRd has in the local journal. This is the range that can be requested
-  with NRTM queries. Note that for mirrored sources, it is not possible
+  with NRTMv3 queries. Note that for mirrored sources, it is not possible
   to guarantee that all operations in this range are in the local journal.
-  NRTM serials can have gaps, which means it is not possible to be certain
-  whether a gap is intentional, or because an NRTM operation was not processed,
+  NRTMv3 serials can have gaps, which means it is not possible to be certain
+  whether a gap is intentional, or because an NRTMv3 operation was not processed,
   or is missing due to temporary disabling of journal keeping.
 * `Last export at serial number`: serial at which this IRRd instance last
   created an export for this source, if any.
 * `Last update`: the last time when a change was processed for this source,
-  either by user submitted changes, NRTM operations, or a full import.
+  either by user submitted changes, NRTMv3 operations, or a full import.
 * `Local journal kept`: whether local journal keeping is enabled.
 * `Last import error occurred at`: when the most recent import error occurred,
   for mirrored sources. An import error means an object
@@ -55,12 +55,12 @@ The local information shows:
 
 The remote information shows:
 
-* `NRTM host`: the host on which NRTM queries are run, if configured.
-* `Mirror-able`: whether the `!j` response of the NRTM host indicated this
+* `NRTM host`: the host on which NRTMv3 queries are run, if configured.
+* `Mirror-able`: whether the `!j` response of the NRTMv3 host indicated this
   source is mirror-able.
 * `Oldest/newest journal serial number`: the oldest and newest serial which
-  the NRTM host has in its own journal.
-* `Last export at serial number`: serial at which the NRTM host last created
+  the NRTMv3 host has in its own journal.
+* `Last export at serial number`: serial at which the NRTMv3 host last created
   an export for this source.
 
 Not all remote information may be available for all sources.

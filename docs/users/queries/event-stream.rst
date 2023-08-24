@@ -63,7 +63,7 @@ The fields are:
 * ``sources_filter`` and ``object_classes_filter``: the filters as set in
   the GET parameters of the request.
 * ``max_serial_global``: the journal serial number of the most recent
-  change that was included in this data. Note that this is not an NRTM
+  change that was included in this data. Note that this is not an NRTMv3
   serial - this serial is global for the entire journal of this IRRd instance.
   May be ``null`` if there have been no changes.
 * ``last_change_timestamp``: the timestamp of the most recent change
@@ -153,14 +153,14 @@ The ``rpsl_journal`` message from IRRd contains an update to the RPSL journal.
 The message contains a key ``event_data`` which in turn contains:
 
 * ``operation``: the type of change, either ``add_or_update`` or ``delete``.
-* ``origin``: the reason for the update. Can include ``mirror`` for NRTM,
+* ``origin``: the reason for the update. Can include ``mirror`` for NRTMv3,
   ``auth_change`` for authoritative submissions, ``rpki_status`` for a change
   in RPKI validity.
 * ``timestamp``: the timestamp of the change.
 * ``serial_global``: the journal-wide serial of this change, i.e. the same
   type of serial referred by ``max_serial_global`` in initial files
   and ``after_global_serial`` in subscribe messages.
-* ``serial_nrtm``: the NRTM serial of this change, in the context of a single
+* ``serial_nrtm``: the NRTMv3 serial of this change, in the context of a single
   IRR source.
 * ``pk``, ``object_class``, ``object_text``, ``source``, ``parsed_data``:
   the RPSL primary key, object class full text, IRR source, and parsed

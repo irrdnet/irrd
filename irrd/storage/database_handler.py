@@ -28,6 +28,7 @@ from .event_stream import EventStreamPublisher
 from .models import (
     DatabaseOperation,
     JournalEntryOrigin,
+    NRTM4ClientDatabaseStatus,
     ProtectedRPSLName,
     ROADatabaseObject,
     RPSLDatabaseJournal,
@@ -872,6 +873,13 @@ class DatabaseHandler:
         self._check_write_permitted()
         self.status_tracker.record_serial_exported(source, serial)
 
+    def record_nrtm4_client_status(self, source: str, status: NRTM4ClientDatabaseStatus) -> None:
+        """
+        Record the status of NRTMv4 mirroring.
+        """
+        self._check_write_permitted()
+        self.status_tracker.record_nrtm4_client_status(source, status)
+
     def close(self) -> None:
         if self.status_tracker:
             self.status_tracker.close()
@@ -926,6 +934,7 @@ class DatabaseStatusTracker:
     _newest_mirror_serials: Dict[str, int]
     _mirroring_error: Dict[str, str]
     _exported_serials: Dict[str, int]
+    _nrtm4_client_status: Dict[str, NRTM4ClientDatabaseStatus]
     _journal_table_locked = False
 
     c_journal = RPSLDatabaseJournal.__table__.c
@@ -966,6 +975,10 @@ class DatabaseStatusTracker:
         """
         self._sources_seen.add(source)
         self._exported_serials[source] = serial
+
+    def record_nrtm4_client_status(self, source: str, status: NRTM4ClientDatabaseStatus) -> None:
+        self._sources_seen.add(source)
+        self._nrtm4_client_status[source] = status
 
     def record_operation_from_rpsl_dict(
         self, operation: DatabaseOperation, rpsl_obj: Dict[str, Any], origin: JournalEntryOrigin
@@ -1142,6 +1155,19 @@ class DatabaseStatusTracker:
             )
             self.database_handler.execute_statement(stmt)
 
+        for source, status in self._nrtm4_client_status.items():
+            stmt = (
+                RPSLDatabaseStatus.__table__.update()
+                .where(self.c_status.source == source)
+                .values(
+                    nrtm4_client_session_id=status.session_id,
+                    nrtm4_client_version=status.version,
+                    nrtm4_client_current_key=status.current_key,
+                    nrtm4_client_next_key=status.next_key,
+                )
+            )
+            self.database_handler.execute_statement(stmt)
+
     def publish_event_stream(self):
         """
         Publish the changed sources to the event stream.
@@ -1166,6 +1192,7 @@ class DatabaseStatusTracker:
         self._newest_mirror_serials = dict()
         self._mirroring_error = dict()
         self._exported_serials = dict()
+        self._nrtm4_client_status = dict()
         self._is_serial_synchronised.cache_clear()
 
 

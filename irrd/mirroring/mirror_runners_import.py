@@ -4,6 +4,7 @@ from typing import Optional, Tuple
 
 from irrd.conf import RPKI_IRR_PSEUDO_SOURCE, get_setting
 from irrd.conf.defaults import DEFAULT_SOURCE_NRTM_PORT
+from irrd.mirroring.nrtm4.nrtm4_client import NRTM4Client, NRTM4ClientError
 from irrd.routepref.routepref import update_route_preference_status
 from irrd.rpki.importer import ROADataImporter, ROAParserException
 from irrd.rpki.notifications import notify_rpki_invalid_owners
@@ -25,6 +26,8 @@ class RPSLMirrorImportUpdateRunner:
     This RPSLMirrorImportUpdateRunner is the entry point for updating a single
     database mirror, depending on current state.
 
+    For NRTMv4, it will call the NRTM 4 client which handles snapshot/delta
+    loading internally.
     If there is no current mirrored data, will call RPSLMirrorFullImportRunner
     to run a new import from full export files. Otherwise, will call
     NRTMImportUpdateStreamRunner to retrieve new updates from NRTM.
@@ -39,22 +42,12 @@ class RPSLMirrorImportUpdateRunner:
         self.database_handler = DatabaseHandler()
 
         try:
-            serial_newest_mirror, force_reload = self._status()
-            nrtm_enabled = bool(get_setting(f"sources.{self.source}.nrtm_host"))
-            logger.debug(
-                f"Most recent mirrored serial for {self.source}: {serial_newest_mirror}, "
-                f"force_reload: {force_reload}, nrtm enabled: {nrtm_enabled}"
-            )
-            full_reload = force_reload or not serial_newest_mirror or not nrtm_enabled
-            if full_reload:
-                self.full_import_runner.run(
-                    database_handler=self.database_handler,
-                    serial_newest_mirror=serial_newest_mirror,
-                    force_reload=force_reload,
-                )
+            if get_setting(f"sources.{self.source}.nrtm4_client_notification_file_url"):
+                full_reload = NRTM4Client(
+                    source=self.source, database_handler=self.database_handler
+                ).run_client()
             else:
-                assert serial_newest_mirror
-                self.update_stream_runner.run(serial_newest_mirror, database_handler=self.database_handler)
+                full_reload = self.run_full_or_nrtm3_import()
 
             self.database_handler.commit()
             if full_reload:
@@ -62,6 +55,13 @@ class RPSLMirrorImportUpdateRunner:
                 event_stream_publisher.publish_rpsl_full_reload(self.source)
                 event_stream_publisher.close()
 
+        except NRTM4ClientError as err:
+            msg = (
+                f"{self.source}: Validation errors occurred while attempting a NRTMv4 client update:"
+                f" {str(err)}"
+            )
+            logger.error(msg)
+            self.database_handler.record_mirror_error(self.source, str(err))
         except OSError as ose:
             # I/O errors can occur and should not log a full traceback (#177)
             logger.error(
@@ -76,6 +76,25 @@ class RPSLMirrorImportUpdateRunner:
             )
         finally:
             self.database_handler.close()
+
+    def run_full_or_nrtm3_import(self):
+        serial_newest_mirror, force_reload = self._status()
+        nrtm_enabled = bool(get_setting(f"sources.{self.source}.nrtm_host"))
+        logger.debug(
+            f"Most recent mirrored serial for {self.source}: {serial_newest_mirror}, "
+            f"force_reload: {force_reload}, nrtm enabled: {nrtm_enabled}"
+        )
+        full_reload = force_reload or not serial_newest_mirror or not nrtm_enabled
+        if full_reload:
+            self.full_import_runner.run(
+                database_handler=self.database_handler,
+                serial_newest_mirror=serial_newest_mirror,
+                force_reload=force_reload,
+            )
+        else:
+            assert serial_newest_mirror
+            self.update_stream_runner.run(serial_newest_mirror, database_handler=self.database_handler)
+        return full_reload
 
     def _status(self) -> Tuple[Optional[int], Optional[bool]]:
         query = DatabaseStatusQuery().source(self.source)

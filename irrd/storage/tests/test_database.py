@@ -12,7 +12,7 @@ from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.utils.test_utils import flatten_mock_calls
 
 from ..database_handler import DatabaseHandler
-from ..models import DatabaseOperation, JournalEntryOrigin
+from ..models import DatabaseOperation, JournalEntryOrigin, NRTM4ClientDatabaseStatus
 from ..preload import Preloader
 from ..queries import (
     DatabaseStatusQuery,
@@ -279,6 +279,10 @@ class TestDatabaseHandlerLive:
         assert len(result) == 1
 
         self.dh.record_mirror_error("TEST2", "error")
+        nrtm4_client_status = NRTM4ClientDatabaseStatus(
+            session_id=uuid.uuid4(), version=20, current_key="current key", next_key="next key"
+        )
+        self.dh.record_nrtm4_client_status("TEST2", nrtm4_client_status)
         self.dh.record_serial_exported("TEST2", "424242")
         self.dh.commit()
 
@@ -402,6 +406,10 @@ class TestDatabaseHandlerLive:
                 "serial_newest_seen": None,
                 "serial_last_export": None,
                 "serial_newest_mirror": None,
+                "nrtm4_client_session_id": None,
+                "nrtm4_client_version": None,
+                "nrtm4_client_current_key": None,
+                "nrtm4_client_next_key": None,
                 "last_error": None,
                 "force_reload": True,
                 "synchronised_serials": True,
@@ -426,6 +434,10 @@ class TestDatabaseHandlerLive:
                 "serial_newest_seen": 44,
                 "serial_last_export": 424242,
                 "serial_newest_mirror": 99999999,
+                "nrtm4_client_session_id": nrtm4_client_status.session_id,
+                "nrtm4_client_version": nrtm4_client_status.version,
+                "nrtm4_client_current_key": nrtm4_client_status.current_key,
+                "nrtm4_client_next_key": nrtm4_client_status.next_key,
                 "last_error": "error",
                 "force_reload": False,
                 "synchronised_serials": True,
@@ -491,6 +503,10 @@ class TestDatabaseHandlerLive:
                 "serial_newest_seen": None,
                 "serial_last_export": None,
                 "serial_newest_mirror": None,
+                "nrtm4_client_session_id": None,
+                "nrtm4_client_version": None,
+                "nrtm4_client_current_key": None,
+                "nrtm4_client_next_key": None,
                 "last_error": None,
                 "force_reload": False,
                 "synchronised_serials": False,

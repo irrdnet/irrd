@@ -1,8 +1,13 @@
 import pytest
 from click.testing import CliRunner
 
-from irrd.scripts.irrd_control import cli, user_change_override, user_mfa_clear
-from irrd.storage.models import AuthWebAuthn
+from irrd.scripts.irrd_control import (
+    cli,
+    client_clear_known_keys,
+    user_change_override,
+    user_mfa_clear,
+)
+from irrd.storage.models import AuthWebAuthn, RPSLDatabaseStatus
 from irrd.utils.factories import AuthWebAuthnFactory
 
 
@@ -170,3 +175,42 @@ class TestUserChangeOverride:
         result = runner.invoke(user_change_override, [user.email, "--enable"], input="y")
         assert result.exit_code == 1
         assert "readonly_standby" in result.output
+
+
+class TestNRTMv4ClientClearKnownKeys:
+    def test_valid_clear(self, irrd_db_session_with_user, config_override):
+        config_override({"sources": {"TEST2": {"nrtm4_client_initial_public_key": "key"}}})
+
+        session_provider, _ = irrd_db_session_with_user
+        status = RPSLDatabaseStatus(
+            source="TEST2", force_reload=False, nrtm4_client_current_key="key", nrtm4_client_next_key="key"
+        )
+        session_provider.session.add(status)
+        session_provider.session.commit()
+
+        runner = CliRunner()
+        result = runner.invoke(client_clear_known_keys, ["TEST2"])
+        assert result.exit_code == 0, result.output
+        assert "keys removed" in result.output
+
+        session_provider.session.refresh(status)
+        assert not status.nrtm4_client_next_key
+        assert not status.nrtm4_client_next_key
+
+    def test_no_current_state(self, irrd_db_session_with_user, config_override):
+        config_override({"sources": {"TEST2": {"nrtm4_client_initial_public_key": "key"}}})
+
+        session_provider, _ = irrd_db_session_with_user
+
+        runner = CliRunner()
+        result = runner.invoke(client_clear_known_keys, ["TEST2"])
+        assert result.exit_code == 1
+        assert "No current known" in result.output
+
+    def test_no_nrtm4_client_configured(self, irrd_db_session_with_user, config_override):
+        session_provider, _ = irrd_db_session_with_user
+
+        runner = CliRunner()
+        result = runner.invoke(client_clear_known_keys, ["TEST2"])
+        assert result.exit_code == 1, result.output
+        assert "not configured as an NRTMv4 client" in result.output

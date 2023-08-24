@@ -53,6 +53,8 @@ enum RoutePreferenceStatus {
                 serialNewestJournal: Int
                 serialLastExport: Int
                 serialNewestMirror: Int
+                nrtm4ClientSessionId: String
+                nrtm4ClientVersion: String
                 lastUpdate: String
                 synchronisedSerials: Boolean!
                 aliased_sources: [String!]

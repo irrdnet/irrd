@@ -69,6 +69,11 @@ class TestStatusGenerator:
                     "TEST4": {
                         "authoritative": False,
                         "keep_journal": False,
+                        "nrtm4_client_notification_file_url": "url",
+                    },
+                    "TEST5": {
+                        "authoritative": False,
+                        "keep_journal": False,
                     },
                 }
             }
@@ -91,6 +96,8 @@ class TestStatusGenerator:
                         "serial_newest_journal": 20,
                         "serial_last_export": 16,
                         "serial_newest_mirror": 25,
+                        "nrtm4_client_session_id": "session_id",
+                        "nrtm4_client_version": 10,
                         "last_error_timestamp": datetime(2018, 1, 1, tzinfo=timezone.utc),
                         "updated": datetime(2018, 6, 1, tzinfo=timezone.utc),
                     },
@@ -102,6 +109,8 @@ class TestStatusGenerator:
                         "serial_newest_journal": None,
                         "serial_last_export": None,
                         "serial_newest_mirror": None,
+                        "nrtm4_client_session_id": None,
+                        "nrtm4_client_version": None,
                         "last_error_timestamp": datetime(2019, 1, 1, tzinfo=timezone.utc),
                         "updated": datetime(2019, 6, 1, tzinfo=timezone.utc),
                     },
@@ -113,6 +122,8 @@ class TestStatusGenerator:
                         "serial_newest_journal": None,
                         "serial_last_export": None,
                         "serial_newest_mirror": None,
+                        "nrtm4_client_session_id": None,
+                        "nrtm4_client_version": None,
                         "last_error_timestamp": None,
                         "updated": None,
                     },
@@ -124,6 +135,21 @@ class TestStatusGenerator:
                         "serial_newest_journal": None,
                         "serial_last_export": None,
                         "serial_newest_mirror": None,
+                        "nrtm4_client_session_id": None,
+                        "nrtm4_client_version": None,
+                        "last_error_timestamp": None,
+                        "updated": None,
+                    },
+                    {
+                        "source": "TEST5",
+                        "serial_oldest_seen": None,
+                        "serial_newest_seen": None,
+                        "serial_oldest_journal": None,
+                        "serial_newest_journal": None,
+                        "serial_last_export": None,
+                        "serial_newest_mirror": None,
+                        "nrtm4_client_session_id": None,
+                        "nrtm4_client_version": None,
                         "last_error_timestamp": None,
                         "updated": None,
                     },
@@ -145,6 +171,7 @@ class TestStatusGenerator:
              TEST2            42        42              0       221                
              TEST3             0         0              0      None                
              TEST4             0         0              0      None                
+             TEST5             0         0              0      None                
              TOTAL            67        52             10                          
             
             
@@ -159,6 +186,8 @@ class TestStatusGenerator:
                 Newest local journal serial number: 20
                 Last export at serial number: 16
                 Newest serial number mirrored: 25
+                Current NRTMv4 client session: session_id
+                Current NRTMv4 client version: 10
                 Synchronised NRTM serials: No
                 Last update: 2018-06-01 00:00:00+00:00
                 Local journal kept: Yes
@@ -186,6 +215,8 @@ class TestStatusGenerator:
                 Newest local journal serial number: None
                 Last export at serial number: None
                 Newest serial number mirrored: None
+                Current NRTMv4 client session: None
+                Current NRTMv4 client version: None
                 Synchronised NRTM serials: No
                 Last update: 2019-06-01 00:00:00+00:00
                 Local journal kept: No
@@ -210,6 +241,8 @@ class TestStatusGenerator:
                 Newest local journal serial number: None
                 Last export at serial number: None
                 Newest serial number mirrored: None
+                Current NRTMv4 client session: None
+                Current NRTMv4 client version: None
                 Synchronised NRTM serials: No
                 Last update: None
                 Local journal kept: No
@@ -221,8 +254,8 @@ class TestStatusGenerator:
             Remote information:
                 NRTM host: nrtm3.example.com port 45
                 Unable to reach remote server for status query
-            
-            
+
+
             Status for TEST4
             -------------------
             Local information:
@@ -234,6 +267,8 @@ class TestStatusGenerator:
                 Newest local journal serial number: None
                 Last export at serial number: None
                 Newest serial number mirrored: None
+                Current NRTMv4 client session: None
+                Current NRTMv4 client version: None
                 Synchronised NRTM serials: No
                 Last update: None
                 Local journal kept: No
@@ -243,6 +278,31 @@ class TestStatusGenerator:
                 Route object preference: None
             
             Remote information:
-                No NRTM host configured.\n\n""").lstrip()
+                NRTMv4 Update Notification File URL: url
+            
+            
+            Status for TEST5
+            -------------------
+            Local information:
+                Authoritative: No
+                Object class filter: None
+                Oldest serial seen: None
+                Newest serial seen: None
+                Oldest local journal serial number: None
+                Newest local journal serial number: None
+                Last export at serial number: None
+                Newest serial number mirrored: None
+                Current NRTMv4 client session: None
+                Current NRTMv4 client version: None
+                Synchronised NRTM serials: No
+                Last update: None
+                Local journal kept: No
+                Last import error occurred at: None
+                RPKI validation enabled: Yes
+                Scope filter enabled: No
+                Route object preference: None
+            
+            Remote information:
+                No NRTM configured.\n\n""").lstrip()
 
         assert expected_report == status_report

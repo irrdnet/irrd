@@ -55,7 +55,7 @@ def main():
     )
     args = parser.parse_args()
 
-    mirror_frequency = int(os.environ.get("IRRD_SCHEDULER_TIMER_OVERRIDE", 15))
+    mirror_frequency = int(os.environ.get("IRRD_SCHEDULER_TIMER_OVERRIDE", 3))
 
     daemon_kwargs = {
         # by default we set detach_process to true to avoid #848,

@@ -85,8 +85,9 @@ There are several important requirements for this setup:
   ``sources.{name}.route_object_preference``,
   ``sources.{name}.object_class_filter`` consistent between active
   and standby. Note that you can not set
-  ``sources.{name}.authoritative``, ``sources.{name}.nrtm_host``, or
-  ``sources.{name}.import_source`` on a standby instance, as these
+  ``sources.{name}.authoritative``, ``sources.{name}.nrtm_host``,
+  ``sources.{name}.import_source``, ``sources.{name}.nrtm4_client_notification_file_url``, or
+  ``sources.{name}.nrtm4_client_initial_public_key`` on a standby instance, as these
   conflict with ``readonly_standby``.
 * All instances must run the same IRRD version.
 * It is recommended that all PostgreSQL instances only host the IRRd
@@ -132,7 +133,7 @@ The general plan for promoting an IRRDv4 instance is:
   compared to the old active (ideally, manage this continuously).
   Make sure the ``authoritative`` setting is enabled on your authoritative
   source, and mirroring settings for any mirrored sources, e.g.
-  ``nrtm_host`` are correct.
+  ``nrtm_host`` or ``nrtm4_client_notification_file_url`` are correct.
 * Start the IRRd instance.
 * Redirect queries to the new instance.
 * Run the ``irrd_load_pgp_keys`` command to load all PGP keys from
@@ -212,8 +213,8 @@ For further details, see the
 :ref:`NRTM serial handling documentation <mirroring-nrtm-serials>`.
 
 .. warning::
-   When **not** using synchronised serials, NRTM must get their export,
-   CURRENTSERIAL and NRTM stream from the same instance and never be switched
+   When **not** using synchronised serials, NRTMv3 must get their export,
+   CURRENTSERIAL and NRTMv3 stream from the same instance and never be switched
    (e.g. by DNS changes or load balancers) to different instances, without
    reloading their local copy. Otherwise they may silently lose updates.
 
@@ -241,7 +242,7 @@ This is a bit different from "regular" mirroring, where the mirror
 is never meant to be promoted to an active instance, and instances may be run by entirely
 different organisations for different reasons.
 There are a number of important special circumstances when using exports and
-NRTM for migrations or availability, which are detailed below.
+NRTMv3 for migrations or availability, which are detailed below.
 
 Note that an active IRRd instance for one IRR registry may simultaneously be a
 regular mirror for other registries.
@@ -274,18 +275,18 @@ disappear when you make IRRd 4 your authoritative instance.**
 
 Serials
 ~~~~~~~
-Each instance potentially creates its own set of NRTM serials when
-importing changes over NRTM.
+Each instance potentially creates its own set of NRTMv3 serials when
+importing changes over NRTMv3.
 This means that when switching to a different instance, mirrors would
 have to refresh their data.
 
 Promoting a IRRD mirror of a legacy instance to active
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-If you use IRR mirroring with exports and NRTM, the general plan for switching
+If you use IRR mirroring with exports and NRTMv3, the general plan for switching
 from a legacy IRRD to a new IRRDv4 instance would be:
 
 * Hold all update emails.
-* Ensure an NRTM update has run so that the instances are in sync
+* Ensure an NRTMv3 update has run so that the instances are in sync
   (it may be worthwhile to lower ``import_timer``)
 * Remove the mirror configuration from the promoted instance for
   the authoritative sources.
@@ -333,7 +334,7 @@ keys are already in the keychain, and safe to run while IRRd is running.
 Suppressed objects
 ~~~~~~~~~~~~~~~~~~
 :doc:`Suppressed objects </admins/object-suppression>` are invisible
-to normal queries and to the NRTM feed, but not deleted. They may
+to normal queries and to the NRTMv3 feed, but not deleted. They may
 become visible again at any point in the future, e.g. by someone
 creating a ROA or a change in another object.
 

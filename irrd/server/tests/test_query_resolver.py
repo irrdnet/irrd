@@ -581,6 +581,8 @@ class TestQueryResolver:
                 "serial_newest_journal": 10,
                 "serial_last_export": 10,
                 "serial_newest_mirror": 500,
+                "nrtm4_client_session_id": "session_id",
+                "nrtm4_client_version": 10,
                 "updated": datetime.datetime(2020, 1, 1, tzinfo=timezone("UTC")),
             },
             {
@@ -589,6 +591,8 @@ class TestQueryResolver:
                 "serial_newest_journal": None,
                 "serial_last_export": None,
                 "serial_newest_mirror": 20,
+                "nrtm4_client_session_id": None,
+                "nrtm4_client_version": None,
                 "updated": datetime.datetime(2020, 1, 1, tzinfo=timezone("UTC")),
             },
         ]
@@ -610,6 +614,8 @@ class TestQueryResolver:
                     ("serial_newest_journal", 10),
                     ("serial_last_export", 10),
                     ("serial_newest_mirror", 500),
+                    ("nrtm4_client_session_id", "session_id"),
+                    ("nrtm4_client_version", 10),
                     ("last_update", "2020-01-01T00:00:00+00:00"),
                     ("synchronised_serials", False),
                 ]
@@ -633,6 +639,8 @@ class TestQueryResolver:
                             ("serial_newest_journal", None),
                             ("serial_last_export", None),
                             ("serial_newest_mirror", 20),
+                            ("nrtm4_client_session_id", None),
+                            ("nrtm4_client_version", None),
                             ("last_update", "2020-01-01T00:00:00+00:00"),
                             ("synchronised_serials", False),
                         ]

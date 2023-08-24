@@ -1,21 +1,28 @@
 import gzip
+import hashlib
 import logging
 import os
 import shutil
 from io import BytesIO
 from tempfile import NamedTemporaryFile
-from typing import IO, Any, Tuple
+from typing import IO, Any, Optional, Tuple, Union
 from urllib import request
 from urllib.error import URLError
 from urllib.parse import urlparse
 
 import requests
+from cryptography.hazmat.primitives import constant_time
+from pydantic_core import Url
+
+from irrd.conf.defaults import HTTP_USER_AGENT
 
 logger = logging.getLogger(__name__)
 DOWNLOAD_TIMEOUT = 10
 
 
-def retrieve_file(url: str, return_contents=True) -> Tuple[str, bool]:
+def retrieve_file(
+    url: Union[Url, str], return_contents=True, expected_hash: Optional[str] = None
+) -> Tuple[str, bool]:
     """
     Retrieve a file from either HTTP(s), FTP or local disk.
 
@@ -30,17 +37,19 @@ def retrieve_file(url: str, return_contents=True) -> Tuple[str, bool]:
     If the URL ends in .gz, the file is gunzipped before being processed,
     but only for HTTP(s) and FTP downloads.
     """
-    url_parsed = urlparse(url)
+    url_parsed = urlparse(str(url))
 
     if url_parsed.scheme in ["ftp", "http", "https"]:
-        return _retrieve_file_download(url, url_parsed, return_contents)
+        return _retrieve_file_download(str(url), url_parsed, return_contents, expected_hash)
     if url_parsed.scheme == "file":
-        return _retrieve_file_local(url_parsed.path, return_contents)
+        return _retrieve_file_local(url_parsed.path, return_contents, expected_hash)
 
     raise ValueError(f"Invalid URL: {url} - scheme {url_parsed.scheme} is not supported")
 
 
-def _retrieve_file_download(url, url_parsed, return_contents=False) -> Tuple[str, bool]:
+def _retrieve_file_download(
+    url: str, url_parsed, return_contents=False, expected_hash: Optional[str] = None
+) -> Tuple[str, bool]:
     """
     Retrieve a file from HTTP(s) or FTP
 
@@ -60,19 +69,18 @@ def _retrieve_file_download(url, url_parsed, return_contents=False) -> Tuple[str
     _download_file(destination, url, url_parsed)
     if return_contents:
         value = destination.getvalue().decode("utf-8").strip()  # type: ignore
-        logger.info(f"Downloaded {url}, contained {value}")
+        logger.info(f"Downloaded {url}")
         return value, False
     else:
+        destination.close()
+        _check_expected_hash(destination.name, expected_hash)
         if url.endswith(".gz"):
             zipped_file = destination
-            zipped_file.close()
+
             destination = NamedTemporaryFile(delete=False)
-            logger.debug(f"Downloaded file is expected to be gzipped, gunzipping from {zipped_file.name}")
             with gzip.open(zipped_file.name, "rb") as f_in:
                 shutil.copyfileobj(f_in, destination)  # type: ignore
             os.unlink(zipped_file.name)
-
-        destination.close()
 
         logger.info(f"Downloaded (and gunzipped if applicable) {url} to {destination.name}")
         return destination.name, True
@@ -91,7 +99,7 @@ def _download_file(destination: IO[Any], url: str, url_parsed):
         except URLError as error:
             raise OSError(f"Failed to download {url}: {str(error)}")
     elif url_parsed.scheme in ["http", "https"]:
-        r = requests.get(url, stream=True, timeout=DOWNLOAD_TIMEOUT)
+        r = requests.get(url, stream=True, timeout=DOWNLOAD_TIMEOUT, headers={"User-Agent": HTTP_USER_AGENT})
         if r.status_code == 200:
             for chunk in r.iter_content(10240):
                 destination.write(chunk)
@@ -99,8 +107,11 @@ def _download_file(destination: IO[Any], url: str, url_parsed):
             raise OSError(f"Failed to download {url}: {r.status_code}: {str(r.content)}")
 
 
-def _retrieve_file_local(path, return_contents=False) -> Tuple[str, bool]:
+def _retrieve_file_local(
+    path, return_contents=False, expected_hash: Optional[str] = None
+) -> Tuple[str, bool]:
     if not return_contents:
+        _check_expected_hash(path, expected_hash)
         if path.endswith(".gz"):
             destination = NamedTemporaryFile(delete=False)
             logger.debug(f"Local file is expected to be gzipped, gunzipping from {path}")
@@ -113,3 +124,23 @@ def _retrieve_file_local(path, return_contents=False) -> Tuple[str, bool]:
     with open(path) as fh:
         value = fh.read().strip()
     return value, False
+
+
+def _check_expected_hash(filename: str, expected_hash: Optional[str]) -> None:
+    """
+    Check whether the contents of a file match an expected SHA256 hash.
+    expected_hash should be a hex digest.
+    """
+    sha256_hash = hashlib.sha256()
+
+    if not expected_hash:
+        return
+    with open(filename, "rb") as f:
+        # Read and update hash in chunks of 4K
+        for byte_block in iter(lambda: f.read(4096), b""):
+            sha256_hash.update(byte_block)
+
+    if not constant_time.bytes_eq(sha256_hash.digest(), bytes.fromhex(expected_hash)):
+        raise ValueError(
+            f"Invalid hash in {filename}: expected {expected_hash}, found {sha256_hash.hexdigest()}"
+        )

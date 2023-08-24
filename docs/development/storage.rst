@@ -75,7 +75,7 @@ this table. If enabled, records may be kept of this in the RPSL journal.
 RPSL journal
 ~~~~~~~~~~~~
 The journal keeps changes to objects, which are used to provide
-NRTM streams to other mirrors. It keeps much less extracted data.
+NRTMv3 streams to other mirrors. It keeps much less extracted data.
 Specifically, it records:
 
 * `pk`: a random UUID, primary key of the table.
@@ -85,14 +85,14 @@ Specifically, it records:
 * `origin`: the origin of the operation, i.e. what caused this change.
   Options are:
   * `UNKNOWN`: entry was created before origin field was added
-  * `MIRROR`: change received from a mirror, over NRTM or by file import
+  * `MIRROR`: change received from a mirror, over NRTMv3 or by file import
   * `SYNTHETIC_NRTM`: change derived from synthesised NRTM
   * `PSEUDO_IRR`: change derived from changes to pseudo-IRR objects
   * `AUTH_CHANGE`: change made by a user of an authoritative database
   * `RPKI_STATUS`: change triggered by a change in RPKI status
   * `BOGON_STATUS`: change triggered by a change in bogon status
-* `serial_nrtm`: the local NRTM serial of this change.
-* `operation`: the type of NRTM operation, either ADD (object was added or
+* `serial_nrtm`: the local NRTMv3 serial of this change.
+* `operation`: the type of NRTMv3 operation, either ADD (object was added or
   updated), or DEL (object was deleted).
 * `object_class`: the RPSL object class, e.g. ``route6``.
 * `object_text`: the full text of the object as a single text.
@@ -116,8 +116,8 @@ For each source, a record is kept of:
 * `serial_oldest_journal`, `serial_newest_journal`: the oldest/newest serial
   recorded in the local RPSL journal.
 * `serial_last_export`: the serial at which the database was last exported.
-* `serial_newest_mirror`: the last serial seen from an NRTM mirror, i.e.
-  NRTM queries to the mirror are resumed from the serial.
+* `serial_newest_mirror`: the last serial seen from an NRTMv3 mirror, i.e.
+  NRTMv3 queries to the mirror are resumed from the serial.
 * `force_reload`: flag that can be set by an admin to force an full re-import
   of a mirrored source. This will be performed at the next update for this mirror.
   The flag will automatically be set back to false.
@@ -131,9 +131,9 @@ and the latter refers to the local journal. These may be different, e.g. due
 to changes in RPKI status.
 
 .. note::
-    There is no guarantee that all NRTM operations between
+    There is no guarantee that all NRTMv3 operations between
     `serial_oldest_journal` and `serial_newest_journal` are actually in the
-    journal. In NRTM, serials may have gaps, and there it's not
+    journal. In NRTMv3, serials may have gaps, and there it's not
     possible to verify whether any operations are missing.
 
 .. danger::
@@ -141,7 +141,7 @@ to changes in RPKI status.
     local data for this source, and then start a new import from the URLs
     in the configuration. If others mirror the reloaded source from this
     IRRd instance, they will also have to discard their local data and
-    re-import, as the journal used for NRTM queries will be reset.
+    re-import, as the journal used for NRTMv3 queries will be reset.
 
 
 ROAs

@@ -60,7 +60,7 @@ async def maintained_objects(request: Request, session_provider: ORMSessionProvi
             },
         )
     user_mntbys, user_sources = zip(*user_mntners)
-    q = RPSLDatabaseQuery().lookup_attrs_in(["mnt-by"], user_mntbys).sources(user_sources)
+    q = RPSLDatabaseQuery().lookup_attrs_in(["mnt-by"], list(user_mntbys)).sources(user_sources)
     query_result = list(session_provider.database_handler.execute_query(q))
     objects = filter(
         lambda obj: any([(mntby, obj["source"]) in user_mntners for mntby in obj["parsed_data"]["mnt-by"]]),

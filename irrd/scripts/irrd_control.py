@@ -13,7 +13,7 @@ from irrd.webui.helpers import send_authentication_change_mail
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from irrd.conf import CONFIG_PATH_DEFAULT, config_init, get_setting
-from irrd.storage.models import AuthUser
+from irrd.storage.models import AuthUser, RPSLDatabaseStatus
 from irrd.storage.orm_provider import ORMSessionProvider, session_provider_manager_sync
 from irrd.webui import UI_DEFAULT_DATETIME_FORMAT
 
@@ -126,6 +126,47 @@ def user_change_override(email: str, enable: bool, session_provider: ORMSessionP
     enabled_str = "enabled" if enable else "disabled"
     click.echo(f"Override permission has been {enabled_str}.")
     logger.info(f"override {enabled_str} for user {user.email} ({user.pk})")
+
+
+@cli.group()
+def nrtmv4():
+    """Manage NRTMv4 status."""
+    pass  # pragma: no cover
+
+
+@nrtmv4.command()
+@click.argument("source")
+@check_readonly_standby
+@session_provider_manager_sync
+def client_clear_known_keys(source: str, session_provider: ORMSessionProvider):
+    """
+    Remove the known keys from the database for SOURCE.
+
+    IRRD stores these known keys in the DB as part of NRTMv4 key rotation, to reflect
+    the key currently used for signature validation. Explicit clearing is
+    required when missing a key rotation window or switching to a different
+    NRTMv4 server for the same source.
+
+    After clearing, NRTMv4 client signature validation will revert to the key in
+    sources.{source}.nrtm4_client_initial_public_key for the next NRTMv4
+    update, and again store the current key after the first successful update.
+    """
+    if not get_setting(f"sources.{source}.nrtm4_client_initial_public_key"):
+        raise click.ClickException(f"Source {source} is not configured as an NRTMv4 client")
+    query = session_provider.session.query(RPSLDatabaseStatus).filter_by(source=source)
+    status = session_provider.run_sync(query.one)
+    if not status:
+        raise click.ClickException(f"No current known keys for source {source}")
+    status.nrtm4_client_current_key = None
+    status.nrtm4_client_next_key = None
+    session_provider.session.add(status)
+
+    click.echo(
+        "Known keys removed, expected key is now taken from the"
+        f" sources.{source}.nrtm4_client_initial_public_key setting.\nNote that other data for this source is"
+        " not reloaded - for that use irrd_mirror_force_reload."
+    )
+    logger.info(f"{source}: known NRTMv4 client keys removed")
 
 
 def find_user(session_provider: ORMSessionProvider, email: str) -> AuthUser:

@@ -176,7 +176,7 @@ class TestObjectSubmissionEndpoint:
             ],
             "passwords": ["invalid1", "invalid2"],
         }
-        expected_data = RPSLChangeSubmission.parse_obj(data)
+        expected_data = RPSLChangeSubmission.model_validate(data)
 
         response_post = client.post(
             "/v1/submit/", data=ujson.dumps(data), headers={"X-irrd-metadata": '{"meta": 2}'}
@@ -208,7 +208,7 @@ class TestObjectSubmissionEndpoint:
 
         response_invalid_format = client.post("/v1/submit/", content='{"invalid": true}')
         assert response_invalid_format.status_code == 400
-        assert "field required" in response_invalid_format.text
+        assert "Field required" in response_invalid_format.text
         mock_handler.load_change_submission.assert_not_called()
         mock_handler.send_notification_target_reports.assert_not_called()
 
@@ -230,7 +230,7 @@ class TestSuspensionSubmissionEndpoint:
             "objects": [{"mntner": "DASHCARE-MNT", "source": "DASHCARE", "request_type": "reactivate"}],
             "override": "<>",
         }
-        expected_data = RPSLSuspensionSubmission.parse_obj(data)
+        expected_data = RPSLSuspensionSubmission.model_validate(data)
 
         response_post = client.post("/v1/suspension/", data=ujson.dumps(data))
         assert response_post.status_code == 200
@@ -243,7 +243,7 @@ class TestSuspensionSubmissionEndpoint:
 
         response_invalid_format = client.post("/v1/suspension/", content='{"invalid": true}')
         assert response_invalid_format.status_code == 400
-        assert "field required" in response_invalid_format.text
+        assert "Field required" in response_invalid_format.text
 
         response_invalid_json = client.post("/v1/suspension/", content="invalid")
         assert response_invalid_json.status_code == 400
