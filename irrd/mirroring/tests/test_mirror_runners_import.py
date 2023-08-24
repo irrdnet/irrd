@@ -1,7 +1,7 @@
 from base64 import b64decode
 from io import BytesIO
 from typing import List
-from unittest.mock import Mock
+from unittest.mock import Mock, create_autospec
 from urllib.error import URLError
 
 import pytest
@@ -21,9 +21,43 @@ from ..mirror_runners_import import (
     RPSLMirrorImportUpdateRunner,
     ScopeFilterUpdateRunner,
 )
+from ..nrtm4.nrtm4_client import NRTM4Client, NRTM4ClientError
 
 
 class TestRPSLMirrorImportUpdateRunner:
+    def test_nrtm4(self, monkeypatch, config_override):
+        config_override(
+            {
+                "sources": {
+                    "TEST": {"nrtm4_client_notification_file_url": "url"},
+                },
+            }
+        )
+        mock_nrtm4_client = create_autospec(NRTM4Client)
+
+        monkeypatch.setattr("irrd.mirroring.mirror_runners_import.NRTM4Client", mock_nrtm4_client)
+        runner = RPSLMirrorImportUpdateRunner(source="TEST")
+        runner.run()
+
+        assert mock_nrtm4_client.mock_calls[0][0] == ""
+        assert mock_nrtm4_client.mock_calls[0][2]["source"] == "TEST"
+        assert mock_nrtm4_client.mock_calls[1][0] == "().run_client"
+
+    def test_nrtm4_client_error(self, monkeypatch, config_override, caplog):
+        config_override(
+            {
+                "sources": {
+                    "TEST": {"nrtm4_client_notification_file_url": "url"},
+                },
+            }
+        )
+        mock_nrtm4_client = Mock(side_effect=NRTM4ClientError("error"))
+
+        monkeypatch.setattr("irrd.mirroring.mirror_runners_import.NRTM4Client", mock_nrtm4_client)
+        runner = RPSLMirrorImportUpdateRunner(source="TEST")
+        runner.run()
+        assert "Validation errors occurred while attempting a NRTMv4" in caplog.text
+
     def test_full_import_call(self, monkeypatch):
         mock_dh = Mock()
         mock_dq = Mock()
@@ -176,7 +210,7 @@ class TestRPSLMirrorFullImportRunner:
         monkeypatch.setattr(
             "irrd.mirroring.mirror_runners_import.MirrorFileImportParser", MockMirrorFileImportParser
         )
-        monkeypatch.setattr("irrd.mirroring.mirror_runners_import.request", request)
+        monkeypatch.setattr("irrd.mirroring.retrieval.request", request)
 
         mock_bulk_validator_init = Mock()
         monkeypatch.setattr(
@@ -218,7 +252,7 @@ class TestRPSLMirrorFullImportRunner:
         monkeypatch.setattr(
             "irrd.mirroring.mirror_runners_import.MirrorFileImportParser", MockMirrorFileImportParser
         )
-        monkeypatch.setattr("irrd.mirroring.mirror_runners_import.request", request)
+        monkeypatch.setattr("irrd.mirroring.retrieval.request", request)
 
         mock_bulk_validator_init = Mock()
         monkeypatch.setattr(
@@ -289,7 +323,7 @@ class TestRPSLMirrorFullImportRunner:
         monkeypatch.setattr(
             "irrd.mirroring.mirror_runners_import.MirrorFileImportParser", MockMirrorFileImportParser
         )
-        monkeypatch.setattr("irrd.mirroring.mirror_runners_import.request", request)
+        monkeypatch.setattr("irrd.mirroring.retrieval.request", request)
 
         responses = {
             # gzipped data, contains 'source1'
@@ -323,7 +357,7 @@ class TestRPSLMirrorFullImportRunner:
         monkeypatch.setattr(
             "irrd.mirroring.mirror_runners_import.MirrorFileImportParser", MockMirrorFileImportParser
         )
-        monkeypatch.setattr("irrd.mirroring.mirror_runners_import.request", request)
+        monkeypatch.setattr("irrd.mirroring.retrieval.request", request)
 
         responses = {
             # gzipped data, contains 'source1'
@@ -357,7 +391,7 @@ class TestRPSLMirrorFullImportRunner:
         monkeypatch.setattr(
             "irrd.mirroring.mirror_runners_import.MirrorFileImportParser", MockMirrorFileImportParser
         )
-        monkeypatch.setattr("irrd.mirroring.mirror_runners_import.request", request)
+        monkeypatch.setattr("irrd.mirroring.retrieval.request", request)
 
         responses = {
             # gzipped data, contains 'source1'
@@ -443,7 +477,7 @@ class TestROAImportRunner:
         class MockRequestsSuccess:
             status_code = 200
 
-            def __init__(self, url, stream, timeout):
+            def __init__(self, url, stream, timeout, headers):
                 assert url == "https://host/roa.json"
                 assert stream
                 assert timeout
@@ -461,7 +495,7 @@ class TestROAImportRunner:
         monkeypatch.setattr(
             "irrd.mirroring.mirror_runners_import.BulkRouteROAValidator", lambda dh, roas: mock_bulk_validator
         )
-        monkeypatch.setattr("irrd.mirroring.mirror_runners_import.requests.get", MockRequestsSuccess)
+        monkeypatch.setattr("irrd.mirroring.retrieval.requests.get", MockRequestsSuccess)
         monkeypatch.setattr(
             "irrd.mirroring.mirror_runners_import.notify_rpki_invalid_owners", lambda dh, invalids: 1
         )
@@ -513,14 +547,14 @@ class TestROAImportRunner:
             status_code = 500
             content = "expected-test-error"
 
-            def __init__(self, url, stream, timeout):
+            def __init__(self, url, stream, timeout, headers):
                 assert url == "https://host/roa.json"
                 assert stream
                 assert timeout
 
         mock_dh = Mock(spec=DatabaseHandler)
         monkeypatch.setattr("irrd.mirroring.mirror_runners_import.DatabaseHandler", lambda: mock_dh)
-        monkeypatch.setattr("irrd.mirroring.mirror_runners_import.requests.get", MockRequestsSuccess)
+        monkeypatch.setattr("irrd.mirroring.retrieval.requests.get", MockRequestsSuccess)
 
         ROAImportRunner().run()
         assert "Failed to download https://host/roa.json: 500: expected-test-error" in caplog.text

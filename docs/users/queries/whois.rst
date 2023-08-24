@@ -105,7 +105,7 @@ IRRd style queries
   * ``route_preference``: the route order preference setting for this source,
     if any is set.
   * ``local_journal_kept``: whether this IRRd instance keeps a local journal
-    of the changes in this source, allowing it to be mirrored over NRTM.
+    of the changes in this source, allowing it to be mirrored over NRTMv3.
   * ``serial_oldest_journal`` / ``serial_newest_journal``: the oldest and
     newest serials in the local journal on this IRRd instance for this source.
     IRRd does not guarantee that all changes in this range are available over
@@ -203,7 +203,7 @@ The queries are:
   ``-i`` queries are more flexible.
 * ``-t <object-class>`` returns the template for a particular object class.
 * ``-q sources`` returns the serial range for each source.
-* ``-g`` returns an NRTM response, used for mirroring. See the
+* ``-g`` returns an NRTMv3 response, used for mirroring. See the
   :doc:`mirroring documentation </users/mirroring>`.
 * Any other (part of) the query is interpreted as a free text search:
 

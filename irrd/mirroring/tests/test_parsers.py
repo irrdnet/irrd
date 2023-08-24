@@ -107,7 +107,7 @@ class TestMirrorFileImportParser:
             "File import for TEST: 6 objects read, 2 objects inserted, ignored 2 due to errors" in caplog.text
         )
         assert "ignored 1 due to object_class_filter" in caplog.text
-        assert "Ignored 1 objects found in file import for TEST due to unknown object classes" in caplog.text
+        assert "Ignored 1 objects found in import for TEST due to unknown object classes" in caplog.text
 
         key_cert_obj = rpsl_object_from_text(SAMPLE_KEY_CERT, strict_validation=False)
         assert key_cert_obj.verify(KEY_CERT_SIGNED_MESSAGE_VALID)
@@ -281,7 +281,7 @@ class TestMirrorUpdateFileImportParser:
             in caplog.text
         )
         assert "ignored 0 due to object_class_filter" in caplog.text
-        assert "Ignored 1 objects found in file import for TEST due to unknown object classes" in caplog.text
+        assert "Ignored 1 objects found in import for TEST due to unknown object classes" in caplog.text
 
     def test_direct_error_return(self, mock_scopefilter, config_override):
         config_override({"sources": {"TEST": {}}})

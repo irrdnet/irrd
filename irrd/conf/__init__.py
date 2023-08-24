@@ -5,12 +5,14 @@ import re
 import signal
 import sys
 import time
+from base64 import b64decode
 from pathlib import Path
 from typing import Any, List, Optional
 from urllib.parse import urlparse
 
 import limits
 import yaml
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from IPy import IP
 
 from irrd.vendor.dotted.collection import DottedDict
@@ -381,11 +383,25 @@ class Configuration:
                     "authoritative."
                 )
 
-            nrtm_mirror = details.get("nrtm_host") and details.get("import_serial_source")
-            if details.get("keep_journal") and not (nrtm_mirror or details.get("authoritative")):
+            nrtm3_mirror_client = details.get("nrtm_host") and details.get("import_serial_source")
+            nrtm4_client_unf_url = details.get("nrtm4_client_notification_file_url")
+
+            url_parsed = urlparse(nrtm4_client_unf_url)
+            if nrtm4_client_unf_url and (
+                not url_parsed.scheme or url_parsed.scheme not in ["https", "file"] or not url_parsed.netloc
+            ):
                 errors.append(
-                    f"Setting keep_journal for source {name} can not be enabled unless either authoritative "
-                    "is enabled, or all three of nrtm_host, nrtm_port and import_serial_source."
+                    f"Setting nrtm4_client_notification_file_url for source {name} is not a valid https or"
+                    " file URL."
+                )
+
+            if details.get("keep_journal") and not (
+                nrtm3_mirror_client or nrtm4_client_unf_url or details.get("authoritative")
+            ):
+                errors.append(
+                    f"Setting keep_journal for source {name} can not be enabled unless either authoritative"
+                    " is enabled, or all three of nrtm_host, nrtm_port and import_serial_source, or"
+                    " nrtm4_client_notification_file_url."
                 )
             if details.get("nrtm_host") and not details.get("import_serial_source"):
                 errors.append(
@@ -393,18 +409,43 @@ class Configuration:
                     "import_serial_source."
                 )
 
-            if details.get("authoritative") and (details.get("nrtm_host") or details.get("import_source")):
+            if nrtm4_client_unf_url and not details.get("nrtm4_client_initial_public_key"):
+                errors.append(
+                    f"Setting nrtm4_client_notification_file_url for source {name} must be set together with"
+                    " nrtm4_client_initial_public_key."
+                )
+
+            if details.get("nrtm4_client_initial_public_key"):
+                try:
+                    Ed25519PublicKey.from_public_bytes(b64decode(details["nrtm4_client_initial_public_key"]))
+                except ValueError as ve:
+                    errors.append(
+                        f"Invalid value for setting nrtm4_client_initial_public_key for source {name}: {ve}"
+                    )
+
+            if nrtm4_client_unf_url and (details.get("nrtm_host") or details.get("import_serial_source")):
+                errors.append(
+                    f"Settings nrtm_host/import_serial_source for {name} can not both be set together with"
+                    " nrtm4_client_notification_file_url."
+                )
+
+            if details.get("authoritative") and (
+                nrtm4_client_unf_url or details.get("nrtm_host") or details.get("import_source")
+            ):
                 errors.append(
                     f"Setting authoritative for source {name} can not be enabled when either "
-                    "nrtm_host or import_source are set."
+                    "nrtm_host, import_source, or nrtm4_client_notification_file_url are set."
                 )
 
             if config.get("readonly_standby") and (
-                details.get("authoritative") or details.get("nrtm_host") or details.get("import_source")
+                details.get("authoritative")
+                or details.get("nrtm_host")
+                or details.get("import_source")
+                or nrtm4_client_unf_url
             ):
                 errors.append(
-                    f"Source {name} can not have authoritative, import_source or nrtm_host set "
-                    "when readonly_standby is enabled."
+                    f"Source {name} can not have authoritative, import_source, nrtm_host, or"
+                    " nrtm4_client_notification_file_url set when readonly_standby is enabled."
                 )
 
             number_fields = [

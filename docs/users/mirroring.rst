@@ -10,35 +10,33 @@ For details on all configuration options, see
 the :doc:`configuration documentation </admins/configuration>`.
 
 .. note::
-    If :doc:`RPKI-aware mode </admins/rpki>` is enabled, mirroring
-    is also affected by RPKI validation. This is documented in
-    the RPKI integration documentation.
-
+    If :doc:`object suppression </admins/object-suppression>` is enabled,
+    including RPKI-aware mode, this also affects mirroring.
 
 Scheduling
 ----------
 
-All mirroring processes, except answering NRTM queries, are run in a separate
-thread for each source. The frequencies at which they run can be configured
+All mirroring processes, except answering NRTMv3 queries, are run in a separate
+process for each source. The frequencies at which they run can be configured
 for each source and for importing and exporting separately, but there are
 default settings.
 
-A global scheduler runs every 15 seconds, which will start mirror import and/or
-export processes for every source for which the `import_timer` or `export_timer`
-has expired. On startup, all mirror processes are started, as all their timers
-are considered expired.
+A global scheduler runs every 3 seconds, which will start mirror import and/or
+export processes for one source for which the `import_timer` or `export_timer`
+has expired. On startup, all mirror processes are started (at 3 second intervals),
+as all their timers are considered expired.
 
 If a previously scheduled process is still running, no new process will be
 run, until the current run for this source is finished and the timer
-expires again. This means that, for example, when mirroring a source in NRTM
-mode, `import_timer` can be safely kept low, even though the initial large
+expires again. This means that, for example, when mirroring a source with NRTM
+mode, ``import_timer`` can be safely kept low, even though the initial large
 full import may take some time.
 
 
 Mirroring services for others (exporting)
 -----------------------------------------
 
-IRRd can produce periodic exports and generate NRTM responses to support
+IRRd can produce periodic exports and generate NRTMv3 responses to support
 mirroring of authoritative or mirrored data by other users.
 
 Periodic exports of the database can be produced for all sources. They consist
@@ -47,23 +45,23 @@ in UTF-8. If a serial is known, another file is exported with the serial
 number of this export. If the database is entirely empty, an error is logged
 and no files are exported.
 
-NRTM responses can be generated for all sources that have `keep_journal`
-enabled, as the NRTM response is based on the journal, which records changes
+NRTMv3 responses can be generated for all sources that have `keep_journal`
+enabled, as the NRTMv3 response is based on the journal, which records changes
 to objects. A journal can be kept for both authoritative sources and mirrors.
 
 In typical setups, the files exported to `export_destination` will be published
-over FTP to allow mirrors to load all initial data. After that, NRTM requests
+over FTP to allow mirrors to load all initial data. After that, NRTMv3 requests
 can be made to receive recent changes. If a mirroring client lags behind too
 far, it may need to re-import the entire database to catch up.
 
-The NRTM query format is::
+The NRTMv3 query format is::
 
     -g <source>:<version>:<serial start>-<serial end>
 
 The version can be 1 or 3. The serial range included the starting and ending
 serials. If the ending serial is ``LAST``, all changes from the starting serial
 up to the most recent change will be sent. Admins can configure an access list
-for NRTM queries. By default all NRTM requests are denied.
+for NRTMv3 queries. By default all NRTMv3 requests are denied.
 
 To a query like ``-g EXAMPLESOURCE:3:998350-LAST``, the response may look
 like this::
@@ -110,25 +108,99 @@ serials from mirrored databases.
 Mirroring other databases (importing)
 -------------------------------------
 
-There are fundamentally two different modes to mirror other databases: NRTM mode
+There are three different modes to mirror other databases: NRTMv4 mode, NRTMv3 mode
 and periodic full imports. Regardless of mode, all updates are performed in a
 single transaction. This means that, for example, when a full reload of a mirror
 is performed, clients will keep seeing the old objects until the import is
 entirely ready. Clients should never see half-finished imports.
 
-NRTM mode
-~~~~~~~~~
-NRTM mode uses a download of a full copy of the database, followed by updating
-the local data using NRTM queries. This requires a downloadable full copy,
-the serial belonging to that copy, and NRTM access. This method is recommended,
+NRTMv4 mode
+~~~~~~~~~~~
+NRTMv4 uses `draft-ietf-grow-nrtm-v4`_ which loads JSON-ish files over HTTPS.
+The protocol is designed to be robust, secure, recover as well as possible,
+and detect errors clearly.
+
+The basic building blocks of NRTMv4 are:
+
+* The Update Notification File (UNF), a JSON file that serves as an index.
+* The Update Notification File signature, which proves the authenticity
+  of the UNF.
+* A Snapshot file that contains all objects in a database at a particular time,
+  at a particular version number.
+* Zero or more Delta files that contain changes to a database.
+  A mirror server generates one every minute, with all changes in that minute,
+  if there were any changes.
+  Each Delta file has an increasing version number.
+* The UNF has a random session ID. If this is changed, all clients
+  must reload from the snapshot.
+
+To configure an NRTMv4 source, you set the ``nrtm4_client_notification_file_url``
+setting on the source to the Update Notification File URL.
+and the ``nrtm4_client_notification_file_url`` setting to the initial public key.
+Both of these will be published by the mirror server operator.
+
+When running the NRTMv4 client process, IRRD will:
+
+* Retrieve and validate the Update Notification File and its signature.
+* Check if the force reload flag was set by the ``irrd_mirror_force_reload`` command,
+  if so, IRRD reloads from snapshot.
+* Check if the session ID is the same as previously known. If not,
+  IRRD reloads from snapshot.
+* Check if there is a version update. If not, IRRD is up to date and
+  no action is needed.
+* Check if there are deltas available to update from the current local
+  version to the latest. If not, IRRD was lagging too far behind, and
+  reloads from snapshot.
+* Download and process any relevant delta files.
+
+Whenever IRRD reloads from the snapshot, all local RPSL objects and
+journal entries for the source are discarded.
+
+There are some aspects of key management you should be aware of.
+For authentication, the UNF is signed, and IRRD uses a public key
+to validate the signature. The key set in the
+``nrtm4_client_initial_public_key`` setting is the initial key. Once IRRD
+has retrieved a valid UNF, it will store the used key in the database.
+This is required for key rotation, where a mirror server operator may
+transition to a new key, also stored in IRRDs database. This allows
+key rotation to be processed entirely automatically without changing your
+client configuration. If you missed a key rotation window, or want to
+pull NRTMv4 data from a different server, you may need to clear the
+key information from the IRRD database.
+You can do this with the ``irrdctl nrtmv4 client-clear-known-keys``
+command. After that, IRRD will revert back to using the public key from the
+``nrtm4_client_initial_public_key`` setting, until the next successful UNF
+retrieval.
+
+.. warning::
+    Automatically reloading from a snapshot means IRRD will recover
+    mirroring in many scenarios. However, the journal is
+    cleared when this happens, which means that if you in turn offer
+    NRTMv3 of the same source to other clients, they will also
+    need to reload. As NRTMv3 has no signalling for this, those
+    operators will need to do this manually.
+
+The default ``import_timer`` for NRTMv4 clients is 60 seconds.
+
+.. _draft-ietf-grow-nrtm-v4: https://datatracker.ietf.org/doc/draft-ietf-grow-nrtm-v4/
+
+NRTMv3 mode
+~~~~~~~~~~~
+.. note::
+    NRTMv4 is always recommended above NRTMv3, as it is much more reliable
+    and secure.
+
+NRTMv3 mode uses a download of a full copy of the database, followed by updating
+the local data using NRTMv3 queries. This requires a downloadable full copy,
+the serial belonging to that copy, and NRTMv3 access. This method is recommended,
 as it is efficient and allows IRRd to generate a journal, if enabled, so that
 others can mirror the source from this IRRd instance too.
 
 Updates will be retrieved every `import_timer`, and IRRd will automatically
-perform a full import the first time, and then use NRTM for updates.
+perform a full import the first time, and then use NRTMv3 for updates.
 
-Even in sources that normally use NRTM, IRRd can run a full new import of the
-database. This may be needed if the NRTM stream has gotten so far behind that
+Even in sources that normally use NRTMv3, IRRd can run a full new import of the
+database. This may be needed if the NRTMv3 stream has gotten so far behind that
 the updates IRRd needs are no longer available. To start a full reload,
 use the ``irrd_mirror_force_reload`` command. For example, to force a full
 reload for the ``MIRROR-EXAMPLE`` source::
@@ -137,7 +209,7 @@ reload for the ``MIRROR-EXAMPLE`` source::
 
 The config parameter is optional. The reload will start the next time
 `import_timer` expires. After the reload, IRRd will resume mirroring from
-the NRTM stream.
+the NRTMv3 stream.
 
 Note that any instances mirroring from your instance (i.e. your IRRd is
 mirroring a source, a third party mirrors this from your instance), will also
@@ -177,7 +249,7 @@ If this setting is undefined, all known classes are accepted.
 
 Serial handling
 ~~~~~~~~~~~~~~~
-When using NRTM mirroring, the local IRRd journal for each source, if enabled,
+When using NRTMv3 mirroring, the local IRRd journal for each source, if enabled,
 can operate in two modes: synchronised serials, or local serials.
 
 In local serial mode, the local journal may have different serials for the same
@@ -186,7 +258,7 @@ that mirrors from the same original source, may have a different set of serials
 for the same changes.
 
 In synchronised serial mode, the local IRRd journal has the same serial for
-each change as the original NRTM source. Serials of NRTM operations that are
+each change as the original NRTMv3 source. Serials of NRTMv3 operations that are
 filtered out by the object class filter are skipped.
 
 IRRd automatically uses synchronised serials for a source if these conditions
@@ -207,9 +279,9 @@ In all other circumstances, IRRd uses local serials. This is necessary because
 object suppression can cause IRRd to generate local
 journal entries, causing the serials to run out of sync.
 
-When users change their NRTM source to a different one when using local serials,
-they should reload the entire database from that source, not just resume NRTM
-streaming. Simply changing the NRTM host may lead to missing data.
+When users change their NRTMv3 source to a different one when using local serials,
+they should reload the entire database from that source, not just resume NRTMv3
+streaming. Simply changing the NRTMv3 host may lead to missing data.
 
 If you disable all object suppression (RPKI, scope filter and route object
 preference) for a source or your
@@ -241,13 +313,13 @@ There are two ways to use manual data loading:
 * Calling the ``irrd_load_database`` command once, and then using the
   ``irrd_update_database`` command to update the state of the database.
   This may be slower, but will generate journal entries to support offering
-  NRTM mirroring services.
+  NRTMv3 mirroring services.
 
 .. caution::
     This process is intended for data sources such as produced by scripts.
     The validation is quite strict, as in script output, an error in script
     execution is a likely cause for any issues in the data.
-    To force a reload of a regular mirror that normally uses NRTM,
+    To force a reload of a regular mirror that normally uses NRTMv3,
     use the ``irrd_mirror_force_reload`` command instead.
     Mixing manual data loading with the regular mirroring options documented
     above is not recommended.
@@ -302,7 +374,7 @@ The ``irrd_load_database`` command can be passed a serial to set:
     CURRENTSERIAL file to determine whether to run a new import.
 
 The ``irrd_update_database`` command automatically generates the correct
-serials, as required for NRTM support.
+serials, as required for NRTMv3 support.
 
 Examples
 ~~~~~~~~
@@ -318,7 +390,7 @@ To update the database from a new file::
     irrd_update_database --source TEST testv2.db
 
 This command will update the objects for source `TEST` to match the contents
-of `testv2.db`. Journal entries, available over NRTM, are generated for the
+of `testv2.db`. Journal entries, available over NRTMv3, are generated for the
 changes between ``testv1.db`` and ``testv2.db``.
 
 The ``--config`` parameter can be used to read the configuration from a
@@ -328,7 +400,7 @@ configuration file - not on the configuration that IRRd started with.
 .. caution::
     Each time ``irrd_load_database`` is called, all existing journal
     entries for the source are discarded, as they may no longer be complete.
-    This breaks any ongoing NRTM mirroring by third parties.
+    This breaks any ongoing NRTMv3 mirroring by third parties.
     This only applies if loading was successful.
 
 Performance

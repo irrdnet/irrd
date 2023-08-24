@@ -29,19 +29,11 @@ class RPSLImportError(Exception):
         self.message = message
 
 
-class MirrorParser:
-    def __init__(self):
-        self.object_class_filter = get_object_class_filter_for_source(self.source)
-        self.strict_validation_key_cert = get_setting(
-            f"sources.{self.source}.strict_import_keycert_objects", False
-        )
-
-
-class MirrorFileImportParserBase(MirrorParser):
+class MirrorFileImportParserBase:
     """
-    This parser handles imports of files for mirror databases.
-    Note that this parser can be called multiple times for a single
-    full import, as some databases use split files.
+    This parser handles parsing of objects into an RPSLObject,
+    applying filters like ROA, scope filter, and keeping counts.
+    It is used by all bulk importers.
 
     If direct_error_return is set, run_import() immediately returns
     upon an encountering an error message. It will return an error
@@ -73,9 +65,13 @@ class MirrorFileImportParserBase(MirrorParser):
         self.obj_unknown = 0  # Objects with unknown classes
         self.unknown_object_classes: Set[str] = set()  # Set of encountered unknown classes
         self.scopefilter_validator = ScopeFilterValidator()
+        self.strict_validation_key_cert = get_setting(
+            f"sources.{self.source}.strict_import_keycert_objects", False
+        )
+        self.object_class_filter = get_object_class_filter_for_source(source)
         super().__init__()
 
-    def _parse_object(self, rpsl_text: str) -> Optional[RPSLObject]:
+    def parse_object(self, rpsl_text: str) -> Optional[RPSLObject]:
         """
         Parse and validate a single object and return it.
         If there is a parsing error, unknown object class, invalid source:
@@ -141,6 +137,24 @@ class MirrorFileImportParserBase(MirrorParser):
             self.unknown_object_classes.add(e.rpsl_object_class)
         return None
 
+    def log_report_with_prefix(self, prefix: str) -> None:
+        obj_successful = self.obj_parsed - self.obj_unknown - self.obj_errors - self.obj_ignored_class
+        logger.info(
+            f"{prefix}: {self.obj_parsed} objects read, "
+            f"{obj_successful} objects inserted, "
+            f"ignored {self.obj_errors} due to errors, "
+            f"ignored {self.obj_ignored_class} due to object_class_filter"
+        )
+        self.log_unknown_object_classes()
+
+    def log_unknown_object_classes(self):
+        if self.obj_unknown:
+            unknown_formatted = ", ".join(self.unknown_object_classes)
+            logger.warning(
+                f"Ignored {self.obj_unknown} objects found in import for {self.source} due to unknown "
+                f"object classes: {unknown_formatted}"
+            )
+
 
 class MirrorFileImportParser(MirrorFileImportParserBase):
     """
@@ -166,7 +180,7 @@ class MirrorFileImportParser(MirrorFileImportParserBase):
         f = open(self.filename, encoding="utf-8", errors="backslashreplace")
         for paragraph in split_paragraphs_rpsl(f):
             try:
-                rpsl_obj = self._parse_object(paragraph)
+                rpsl_obj = self.parse_object(paragraph)
             except RPSLImportError as e:
                 if self.direct_error_return:
                     return e.message
@@ -182,20 +196,7 @@ class MirrorFileImportParser(MirrorFileImportParserBase):
         return None
 
     def log_report(self) -> None:
-        obj_successful = self.obj_parsed - self.obj_unknown - self.obj_errors - self.obj_ignored_class
-        logger.info(
-            f"File import for {self.source}: {self.obj_parsed} objects read, "
-            f"{obj_successful} objects inserted, "
-            f"ignored {self.obj_errors} due to errors, "
-            f"ignored {self.obj_ignored_class} due to object_class_filter, "
-            f"source {self.filename}"
-        )
-        if self.obj_unknown:
-            unknown_formatted = ", ".join(self.unknown_object_classes)
-            logger.warning(
-                f"Ignored {self.obj_unknown} objects found in file import for {self.source} due to unknown "
-                f"object classes: {unknown_formatted}"
-            )
+        self.log_report_with_prefix(f"File import for {self.source}")
 
 
 class MirrorUpdateFileImportParser(MirrorFileImportParserBase):
@@ -229,7 +230,7 @@ class MirrorUpdateFileImportParser(MirrorFileImportParserBase):
         f = open(self.filename, encoding="utf-8", errors="backslashreplace")
         for paragraph in split_paragraphs_rpsl(f):
             try:
-                rpsl_obj = self._parse_object(paragraph)
+                rpsl_obj = self.parse_object(paragraph)
             except RPSLImportError as e:
                 if self.direct_error_return:
                     return e.message
@@ -299,15 +300,10 @@ class MirrorUpdateFileImportParser(MirrorFileImportParserBase):
             f"ignored {self.obj_ignored_class} due to object_class_filter, "
             f"source {self.filename}"
         )
-        if self.obj_unknown:
-            unknown_formatted = ", ".join(self.unknown_object_classes)
-            logger.warning(
-                f"Ignored {self.obj_unknown} objects found in file import for {self.source} due to unknown "
-                f"object classes: {unknown_formatted}"
-            )
+        self.log_unknown_object_classes()
 
 
-class NRTMStreamParser(MirrorParser):
+class NRTMStreamParser:
     """
     The NRTM parser takes the data of an NRTM string, and splits it
     into individual operations, matched with their serial and
@@ -331,6 +327,10 @@ class NRTMStreamParser(MirrorParser):
         self.source = source
         self.database_handler = database_handler
         self.rpki_aware = bool(get_setting("rpki.roa_source"))
+        self.strict_validation_key_cert = get_setting(
+            f"sources.{self.source}.strict_import_keycert_objects", False
+        )
+        self.object_class_filter = get_object_class_filter_for_source(source)
         super().__init__()
         self.operations: List[NRTMOperation] = []
         self._split_stream(nrtm_data)
@@ -448,12 +448,12 @@ class NRTMStreamParser(MirrorParser):
         operation = DatabaseOperation(operation_str)
         object_text = next(paragraphs)
         nrtm_operation = NRTMOperation(
-            self.source,
-            operation,
-            self._current_op_serial,
-            object_text,
-            self.strict_validation_key_cert,
-            self.rpki_aware,
-            self.object_class_filter,
+            source=self.source,
+            operation=operation,
+            serial=self._current_op_serial,
+            object_text=object_text,
+            strict_validation_key_cert=self.strict_validation_key_cert,
+            rpki_aware=self.rpki_aware,
+            object_class_filter=self.object_class_filter,
         )
         self.operations.append(nrtm_operation)

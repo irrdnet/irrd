@@ -142,7 +142,6 @@ This sample shows most configuration options
                     - route-set
                     - rtr-set
             MIRROR-SECOND:
-                # Every hour, a new full import will be done.
                 authoritative: false
                 import_source:
                     - 'ftp://ftp.example.net/mirror-second.db.as-set.gz'
@@ -152,7 +151,8 @@ This sample shows most configuration options
                     - 'ftp://ftp.example.net/mirror-second.db.route.gz'
                     - 'ftp://ftp.example.net/mirror-second.db.route6.gz'
                     - 'ftp://ftp.example.net/mirror-second.db.route-set.gz'
-                import_timer: 3600
+                nrtm4_client_notification_file_url: https://example.net/nrtmv4/MIRROR-SECOND/update-notification-file.json
+                nrtm4_client_initial_public_key: base64publickey==
 
 
 Loading and reloading
@@ -203,7 +203,7 @@ General settings
   in read-only standby mode. See
   :doc:`availability with PostgreSQL replication </admins/availability-and-migration>`
   for further details. Can not be used if any source has ``authoritative``,
-  ``import_source`` or ``nrtm_host`` set.
+  ``import_source``, ``nrtm_host``, or ``nrtm4_client_notification_file_url`` set.
   **Do not enable this setting without reading the further documentation on standby setups.**
   |br| **Default**: ``false``.
   |br| **Change takes effect**: after full IRRd restart.
@@ -615,16 +615,25 @@ Sources
   retained of changes to objects from this source. This journal can contain
   changes submitted to this IRRd instance, or changes received over NRTM.
   This setting is needed when offering mirroring services for this source.
-  Can only be enabled when either ``authoritative`` is enabled, or both
-  ``nrtm_host`` and ``import_serial_source`` are configured.
+  Can only be enabled when either ``authoritative`` is enabled, or
+  ``nrtm_host`` with ``import_serial_source``, or ``nrtm4_client_notification_file_url``
+  are configured.
   |br| **Default**: ``false``.
   |br| **Change takes effect**: after SIGHUP, for all subsequent changes.
-* ``sources.{name}.nrtm_host``: the hostname or IP to connect to for an NRTM stream.
-  |br| **Default**: not defined, no NRTM requests attempted.
-  |br| **Change takes effect**: after SIGHUP, at the next NRTM update.
-* ``sources.{name}.nrtm_port``: the TCP port to connect to for an NRTM stream.
+* ``sources.{name}.nrtm4_client_notification_file_url``: the HTTPS or file URL of
+  an NRTMv4 Update Notification File, when the source is used as an NRTMv4 client.
+  |br| **Default**: not defined, no NRTMv4 updates attempted.
+  |br| **Change takes effect**: after SIGHUP, at the next mirror update.
+* ``sources.{name}.nrtm4_client_initial_public_key``: the initial public
+  Ed25519 key used to sign the Update Notification File, in base64.
+  |br| **Default**: not defined, no NRTMv4 updates attempted.
+  |br| **Change takes effect**: after SIGHUP, at the next mirror update.
+* ``sources.{name}.nrtm_host``: the hostname or IP to connect to for an NRTMv3 stream.
+  |br| **Default**: not defined, no NRTMv3 requests attempted.
+  |br| **Change takes effect**: after SIGHUP, at the next mirror update.
+* ``sources.{name}.nrtm_port``: the TCP port to connect to for an NRTMv3 stream.
   |br| **Default**: 43
-  |br| **Change takes effect**: after SIGHUP, at the next NRTM update.
+  |br| **Change takes effect**: after SIGHUP, at the next mirror update.
 * ``sources.{name}.import_source``: the URL or list of URLs where the full
   copies of this source can be retrieved. You can provide a list of URLs for
   sources that offer split files. Supports HTTP(s), FTP or local file URLs.
@@ -647,7 +656,8 @@ Sources
   default is rather frequent for sources that work exclusively with periodic
   full imports. The minimum effective time is 15 seconds, and this is also
   the granularity of the timer.
-  |br| **Default**: ``300``.
+  |br| **Default**: ``60`` for sources configured as NRTMv4 client,
+  ``300`` for any others.
   |br| **Change takes effect**: after SIGHUP.
 * ``sources.{name}.object_class_filter``: a list of object classes that will
   be mirrored and allowed modification for authoritative source. Objects of
@@ -684,7 +694,7 @@ Sources
   |br| **Change takes effect**: after SIGHUP
 * ``sources.{name}.nrtm_access_list``: a reference to an access list in the
   configuration, where only IPs in the access list are permitted filtered access
-  to the NRTM stream for this particular source (``-g`` queries).
+  to the NRTMv3 stream for this particular source (``-g`` queries).
   Filtered means password hashes are not included.
   This same list is used to restrict access to
   :ref:`GraphQL journal queries <graphql-journal>`.
@@ -693,7 +703,7 @@ Sources
   |br| **Change takes effect**: after SIGHUP, upon next request.
 * ``sources.{name}.nrtm_access_list_unfiltered``: a reference to an access list
   in the configuration, where IPs in the access list are permitted unfiltered
-  access to the NRTM stream for this particular source (``-g`` queries).
+  access to the NRTMv3 stream for this particular source (``-g`` queries).
   Unfiltered means full password hashes are included.
   Sharing password hashes externally is a security risk, the unfiltered data
   is intended only to support
@@ -703,17 +713,17 @@ Sources
   ``nrtm_access_list``, if defined, have filtered access.
   |br| **Change takes effect**: after SIGHUP, upon next request.
 * ``sources.{name}.nrtm_query_serial_range_limit``: the maximum number of
-  serials a client may request in one NRTM query, if otherwise permitted.
-  This is intended to limit the maximum load of NRTM queries - it is checked
+  serials a client may request in one NRTMv3 query, if otherwise permitted.
+  This is intended to limit the maximum load of NRTMv3 queries - it is checked
   before IRRd runs any heavy database queries. The limit is applied to the
   requested range regardless of any gaps, i.e. querying a range of ``10-20``
   is allowed if this setting to be at least 10, even if there are no entries
   for some of those serials. IRRd is aware of the serial ``LAST`` refers to
   and will take that into account.
-  |br| **Default**: not defined, no limits on NRTM query size.
+  |br| **Default**: not defined, no limits on NRTMv3 query size.
   |br| **Change takes effect**: after SIGHUP, upon next request.
-* ``sources.{name}.nrtm_response_header``: an additional NRTM response
-  header, added as a comment to all NRTM responses for this source.
+* ``sources.{name}.nrtm_response_header``: an additional NRTMv3 response
+  header, added as a comment to all NRTMv3 responses for this source.
   IRRD will prepend the lines with ``%`` to mark them as comments.
   This can have multiple lines.  When adding this to the configuration,
   use the `|` style to preserve newlines.
@@ -757,7 +767,7 @@ to others, see the :doc:`mirroring documentation </users/mirroring>`.
     database, and is therefore strongly recommended to enable on
     authoritative databases to be able to reconstruct history.**
 
-    Journal-keeping for NRTM streams is dependent on providing a single
+    Journal-keeping for NRTMv3 streams is dependent on providing a single
     uninterrupted stream of updates. This stream is only kept while
     ``keep_journal`` is enabled. Disabling it while mirrors are dependent on it,
     even briefly, will cause the databases to go out of sync silently until
@@ -767,7 +777,7 @@ to others, see the :doc:`mirroring documentation </users/mirroring>`.
 
     Source names are case sensitive and must be an exact match to
     ``sources_default``, and the source attribute value in any objects imported
-    from files or NRTM. E.g. if ``sources.EXAMPLE`` is defined, and
+    from files or NRTMv3. E.g. if ``sources.EXAMPLE`` is defined, and
     ``sources_default`` contains ``example``, this is a configuration error.
     If an object is encountered with ``source: EXAMPLe``, it is rejected and an
     error is logged.

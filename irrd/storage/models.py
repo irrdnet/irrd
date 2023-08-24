@@ -1,4 +1,7 @@
 import enum
+from dataclasses import dataclass
+from typing import Optional
+from uuid import UUID
 
 import sqlalchemy as sa
 from IPy import IP
@@ -29,7 +32,7 @@ class JournalEntryOrigin(enum.Enum):
     pseudo_irr = "PSEUDO_IRR"
     # Journal entry caused by a user-submitted change in an authoritative database
     auth_change = "AUTH_CHANGE"
-    # Journal entry caused by a change in in the RPKI status of an object in an authoritative db
+    # Journal entry caused by a change in the RPKI status of an object in an authoritative db
     rpki_status = "RPKI_STATUS"
     # Journal entry caused by a change in the scope filter status
     scope_filter = "SCOPE_FILTER"
@@ -44,6 +47,14 @@ class AuthoritativeChangeOrigin(enum.Enum):
     webapi = "WEBAPI"
     email = "EMAIL"
     other = "OTHER"
+
+
+@dataclass
+class NRTM4ClientDatabaseStatus:
+    session_id: Optional[UUID]
+    version: Optional[int]
+    current_key: Optional[str]
+    next_key: Optional[str]
 
 
 Base = declarative_base()
@@ -242,6 +253,10 @@ class RPSLDatabaseStatus(Base):  # type: ignore
     serial_last_export = sa.Column(sa.Integer)
     # The last serial seen from an NRTM mirror, i.e. resume NRTM query from this serial
     serial_newest_mirror = sa.Column(sa.Integer)
+    nrtm4_client_session_id = sa.Column(pg.UUID(as_uuid=True))
+    nrtm4_client_version = sa.Column(sa.Integer)
+    nrtm4_client_current_key = sa.Column(sa.Text)
+    nrtm4_client_next_key = sa.Column(sa.Text)
 
     force_reload = sa.Column(sa.Boolean(), default=False, nullable=False)
     synchronised_serials = sa.Column(sa.Boolean(), default=True, nullable=False)

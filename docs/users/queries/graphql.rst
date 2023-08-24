@@ -267,7 +267,7 @@ are an alias. Other sources have the the following fields for each valid source:
 * ``serialOldestJournal`` / ``serialNewestJournal``: the oldest and
   newest serials in the local journal on this IRRd instance for this source.
   IRRd does not guarantee that all changes in this range are available over
-  NRTM. This serial range is entirely independent of that used by the
+  NRTMv3. This serial range is entirely independent of that used by the
   mirror source, if any.
 * ``serialLastExport``: the serial at which the last export for this
   source took place, if any.
@@ -810,7 +810,7 @@ Journal queries
 ``RPSLObject`` also has a field ``journal``, which returns an array of
 ``RPSLJournal`` objects. This allows you to query the history of objects
 as seen in the local IRRd database. This is the same journal that is used
-for serving NRTM queries. This feature may be restricted by
+for serving NRTM. This feature may be restricted by
 the IRRd instance administrator. An example::
 
     query {

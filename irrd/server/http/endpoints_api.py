@@ -75,7 +75,7 @@ class ObjectSubmissionEndpoint(HTTPEndpoint):
         assert request.client
         try:
             request_json = await request.json()
-            data = RPSLChangeSubmission.parse_obj(request_json)
+            data = RPSLChangeSubmission.model_validate(request_json)
         except (JSONDecodeError, pydantic.ValidationError) as error:
             return PlainTextResponse(str(error), status_code=400)
 
@@ -109,7 +109,7 @@ class SuspensionSubmissionEndpoint(HTTPEndpoint):
         assert request.client
         try:
             json = await request.json()
-            data = RPSLSuspensionSubmission.parse_obj(json)
+            data = RPSLSuspensionSubmission.model_validate(json)
         except (JSONDecodeError, pydantic.ValidationError) as error:
             return PlainTextResponse(str(error), status_code=400)
 

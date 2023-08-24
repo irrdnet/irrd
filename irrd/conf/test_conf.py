@@ -116,6 +116,10 @@ class TestConfiguration:
                         "export_destination_unfiltered": "/tmp",
                         "nrtm_access_list_unfiltered": "valid-list",
                     },
+                    "TESTDB-NRTM4": {
+                        "nrtm4_client_notification_file_url": "https://testhost/",
+                        "nrtm4_client_initial_public_key": "kL7kSk56ASeaHl6Nj0eXC3XCHkCzktoPA3ceKz/cjOo=",
+                    },
                     # RPKI source permitted, rpki.roa_source not set
                     "RPKI": {},
                 },
@@ -306,12 +310,15 @@ class TestConfiguration:
                         "unknown": True,
                         "suspension_enabled": True,
                         "nrtm_query_serial_range_limit": "not-a-number",
+                        "nrtm4_client_initial_public_key": "invalid",
                     },
                     "TESTDB2": {
                         "authoritative": True,
                         "nrtm_host": "192.0.2.1",
                         "nrtm_port": "not a number",
                         "nrtm_access_list": "invalid-list",
+                        "nrtm_query_serial_range_limit": "not-a-number",
+                        "nrtm4_client_notification_file_url": "http://invalid",
                     },
                     "TESTDB3": {
                         "authoritative": True,
@@ -376,24 +383,41 @@ class TestConfiguration:
             "Setting nrtm_host for source TESTDB can not be enabled without setting import_serial_source."
             in str(ce.value)
         )
+        assert "Invalid value for setting nrtm4_client_initial_public_key for source TESTDB: " in str(
+            ce.value
+        )
         assert (
-            "Setting authoritative for source TESTDB2 can not be enabled when either nrtm_host or"
-            " import_source are set."
+            "Setting authoritative for source TESTDB2 can not be enabled when either nrtm_host,"
+            " import_source, or nrtm4_client_notification_file_url are set."
             in str(ce.value)
         )
         assert (
-            "Setting authoritative for source TESTDB3 can not be enabled when either nrtm_host or"
-            " import_source are set."
+            "Setting authoritative for source TESTDB3 can not be enabled when either nrtm_host,"
+            " import_source, or nrtm4_client_notification_file_url are set."
             in str(ce.value)
         )
         assert (
-            "Source TESTDB can not have authoritative, import_source or nrtm_host set when readonly_standby"
-            " is enabled."
+            "Setting nrtm4_client_notification_file_url for source TESTDB2 is not a valid https or file URL."
             in str(ce.value)
         )
         assert (
-            "Source TESTDB3 can not have authoritative, import_source or nrtm_host set when readonly_standby"
-            " is enabled."
+            "Setting nrtm4_client_notification_file_url for source TESTDB2 must be set together with"
+            " nrtm4_client_initial_public_key."
+            in str(ce.value)
+        )
+        assert (
+            "Settings nrtm_host/import_serial_source for TESTDB2 can not both be set together with"
+            " nrtm4_client_notification_file_url."
+            in str(ce.value)
+        )
+        assert (
+            "Source TESTDB can not have authoritative, import_source, nrtm_host, or"
+            " nrtm4_client_notification_file_url set when readonly_standby is enabled."
+            in str(ce.value)
+        )
+        assert (
+            "Source TESTDB3 can not have authoritative, import_source, nrtm_host, or"
+            " nrtm4_client_notification_file_url set when readonly_standby is enabled."
             in str(ce.value)
         )
         assert "Setting nrtm_port for source TESTDB2 must be a number." in str(ce.value)

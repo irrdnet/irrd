@@ -817,7 +817,7 @@ class TestChangeSubmissionHandler:
         source:         TEST
         """).strip() + "\n"
 
-        submission_object = RPSLChangeSubmission.parse_obj(
+        submission_object = RPSLChangeSubmission.model_validate(
             {
                 "objects": [
                     {"object_text": rpsl_text},
@@ -1063,7 +1063,7 @@ class TestChangeSubmissionHandler:
         mock_dq, mock_dh, mock_email = prepare_mocks
         mock_dh.execute_query = lambda query: []
 
-        submission_object = RPSLChangeSubmission.parse_obj(
+        submission_object = RPSLChangeSubmission.model_validate(
             {
                 "objects": [
                     {
@@ -1133,7 +1133,7 @@ class TestChangeSubmissionHandler:
             "objects": [{"mntner": "DASHCARE-MNT", "source": "DASHCARE", "request_type": "reactivate"}],
             "override": "override-pw",
         }
-        submission_object = RPSLSuspensionSubmission.parse_obj(data)
+        submission_object = RPSLSuspensionSubmission.model_validate(data)
 
         ChangeSubmissionHandler().load_suspension_submission(submission_object)
         assert mock_handle_change_requests.assert_called_once

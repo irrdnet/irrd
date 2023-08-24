@@ -63,7 +63,7 @@ def test_validate_asdot_as_number(config_override):
 
 
 def test_validate_rpsl_change_submission():
-    result = RPSLChangeSubmission.parse_obj(
+    result = RPSLChangeSubmission.model_validate(
         {
             "objects": [
                 {"object_text": "text"},
@@ -82,7 +82,7 @@ def test_validate_rpsl_change_submission():
     assert result.objects[1].attributes[1].value == "list1, list2"
 
     with pytest.raises(pydantic.ValidationError):
-        RPSLChangeSubmission.parse_obj(
+        RPSLChangeSubmission.model_validate(
             {
                 "objects": [
                     {
@@ -95,7 +95,7 @@ def test_validate_rpsl_change_submission():
         )
 
     with pytest.raises(pydantic.ValidationError):
-        RPSLChangeSubmission.parse_obj(
+        RPSLChangeSubmission.model_validate(
             {
                 "objects": [
                     {

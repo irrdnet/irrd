@@ -383,6 +383,12 @@ class QueryResolver:
             results[source]["serial_newest_journal"] = query_result["serial_newest_journal"]
             results[source]["serial_last_export"] = query_result["serial_last_export"]
             results[source]["serial_newest_mirror"] = query_result["serial_newest_mirror"]
+            results[source]["nrtm4_client_session_id"] = (
+                str(query_result["nrtm4_client_session_id"])
+                if query_result["nrtm4_client_session_id"]
+                else None
+            )
+            results[source]["nrtm4_client_version"] = query_result["nrtm4_client_version"]
             results[source]["last_update"] = query_result["updated"].astimezone(timezone("UTC")).isoformat()
             results[source]["synchronised_serials"] = is_serial_synchronised(self.database_handler, source)
 

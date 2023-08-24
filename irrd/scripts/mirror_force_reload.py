@@ -17,6 +17,14 @@ from irrd.storage.database_handler import DatabaseHandler
 
 
 def set_force_reload(source) -> None:
+    if get_setting(f"sources.{source}.nrtm4_client_initial_public_key"):
+        print(
+            "Note: the reload flag will be set on the source, but existing NRTMv4 client key information is"
+            " kept. To revert to the key currently set in the"
+            f" sources.{source}.nrtm4_client_initial_public_key setting, use 'irrdctl nrtmv4"
+            " client-clear-known-keys'"
+        )
+
     dh = DatabaseHandler()
     dh.set_force_reload(source)
     dh.commit()

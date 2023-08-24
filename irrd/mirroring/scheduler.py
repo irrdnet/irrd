@@ -9,7 +9,11 @@ from typing import Dict, Optional
 from setproctitle import setproctitle
 
 from irrd.conf import get_setting
-from irrd.conf.defaults import DEFAULT_SOURCE_EXPORT_TIMER, DEFAULT_SOURCE_IMPORT_TIMER
+from irrd.conf.defaults import (
+    DEFAULT_SOURCE_EXPORT_TIMER,
+    DEFAULT_SOURCE_IMPORT_TIMER,
+    DEFAULT_SOURCE_IMPORT_TIMER_NRTM4,
+)
 from irrd.mirroring.jobs import TransactionTimePreloadSignaller
 
 from .mirror_runners_export import SourceExportRunner
@@ -22,7 +26,7 @@ from .mirror_runners_import import (
 
 logger = logging.getLogger(__name__)
 
-MAX_SIMULTANEOUS_RUNS = 3
+MAX_SIMULTANEOUS_RUNS = 1
 
 
 class ScheduledTaskProcess(multiprocessing.Process):
@@ -90,10 +94,17 @@ class MirrorScheduler:
             started_import = False
             started_export = False
 
-            is_mirror = get_setting(f"sources.{source}.import_source") or get_setting(
-                f"sources.{source}.nrtm_host"
+            is_mirror = (
+                get_setting(f"sources.{source}.import_source")
+                or get_setting(f"sources.{source}.nrtm_host")
+                or get_setting(f"sources.{source}.nrtm4_client_notification_file_url")
             )
-            import_timer = int(get_setting(f"sources.{source}.import_timer", DEFAULT_SOURCE_IMPORT_TIMER))
+            default_import_timer = (
+                DEFAULT_SOURCE_IMPORT_TIMER_NRTM4
+                if get_setting(f"sources.{source}.nrtm4_client_initial_public_key")
+                else DEFAULT_SOURCE_IMPORT_TIMER
+            )
+            import_timer = int(get_setting(f"sources.{source}.import_timer", default_import_timer))
 
             if is_mirror:
                 started_import = self.run_if_relevant(source, RPSLMirrorImportUpdateRunner, import_timer)

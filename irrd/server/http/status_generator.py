@@ -115,8 +115,11 @@ class StatusGenerator:
 
             nrtm_host = get_setting(f"sources.{source}.nrtm_host")
             nrtm_port = int(get_setting(f"sources.{source}.nrtm_port", DEFAULT_SOURCE_NRTM_PORT))
+            nrtm4_notification_file_url = get_setting(f"sources.{source}.nrtm4_client_notification_file_url")
 
-            remote_information = self._generate_remote_status_info(nrtm_host, nrtm_port, source)
+            remote_information = self._generate_remote_status_info(
+                nrtm_host, nrtm_port, nrtm4_notification_file_url, source
+            )
             remote_information = textwrap.indent(remote_information, " " * 16)
 
             result_txt += textwrap.dedent(f"""
@@ -131,6 +134,8 @@ class StatusGenerator:
                 Newest local journal serial number: {status_result['serial_newest_journal']}
                 Last export at serial number: {status_result['serial_last_export']}
                 Newest serial number mirrored: {status_result['serial_newest_mirror']}
+                Current NRTMv4 client session: {status_result['nrtm4_client_session_id']}
+                Current NRTMv4 client version: {status_result['nrtm4_client_version']}
                 Synchronised NRTM serials: {synchronised_serials_str}
                 Last update: {status_result['updated']}
                 Local journal kept: {keep_journal}
@@ -143,7 +148,13 @@ class StatusGenerator:
             """)
         return result_txt
 
-    def _generate_remote_status_info(self, nrtm_host: Optional[str], nrtm_port: int, source: str) -> str:
+    def _generate_remote_status_info(
+        self,
+        nrtm_host: Optional[str],
+        nrtm_port: int,
+        nrtm4_notification_file_url: Optional[str],
+        source: str,
+    ) -> str:
         """
         Determine the remote status.
 
@@ -151,7 +162,11 @@ class StatusGenerator:
         source for serial information. Various error states will produce
         an appropriate remote status message for the report.
         """
-        if nrtm_host:
+        if nrtm4_notification_file_url:
+            return textwrap.dedent(f"""
+                NRTMv4 Update Notification File URL: {nrtm4_notification_file_url}
+                """)
+        elif nrtm_host:
             try:
                 source_status = whois_query_source_status(nrtm_host, nrtm_port, source)
                 mirrorable, mirror_serial_oldest, mirror_serial_newest, mirror_export_serial = source_status
@@ -176,5 +191,5 @@ class StatusGenerator:
                     """)
         else:
             return textwrap.dedent("""
-                No NRTM host configured.
+                No NRTM configured.
                 """)
