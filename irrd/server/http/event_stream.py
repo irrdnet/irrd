@@ -210,7 +210,7 @@ class EventStreamEndpoint(WebSocketEndpoint):
 
 class EventStreamSubscriptionRequest(pydantic.main.BaseModel):
     message_type: Literal["subscribe"]
-    after_global_serial: Optional[int]
+    after_global_serial: Optional[int] = None
 
 
 class AsyncEventStreamFollower:
