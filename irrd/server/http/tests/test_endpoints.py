@@ -208,7 +208,7 @@ class TestObjectSubmissionEndpoint:
 
         response_invalid_format = client.post("/v1/submit/", content='{"invalid": true}')
         assert response_invalid_format.status_code == 400
-        assert "field required" in response_invalid_format.text
+        assert "field required" in response_invalid_format.text.lower()
         mock_handler.load_change_submission.assert_not_called()
         mock_handler.send_notification_target_reports.assert_not_called()
 
@@ -243,7 +243,7 @@ class TestSuspensionSubmissionEndpoint:
 
         response_invalid_format = client.post("/v1/suspension/", content='{"invalid": true}')
         assert response_invalid_format.status_code == 400
-        assert "field required" in response_invalid_format.text
+        assert "field required" in response_invalid_format.text.lower()
 
         response_invalid_json = client.post("/v1/suspension/", content="invalid")
         assert response_invalid_json.status_code == 400
