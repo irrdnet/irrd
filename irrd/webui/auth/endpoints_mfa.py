@@ -178,7 +178,7 @@ async def webauthn_verify_authentication_response(
     wn_origin, wn_rpid = get_webauthn_origin_rpid()
     try:
         expected_challenge = base64.b64decode(request.session[WN_CHALLENGE_SESSION_KEY])
-        credential = AuthenticationCredential.parse_raw(await request.body())
+        credential = AuthenticationCredential.model_validate_json(await request.body())
         query = session_provider.session.query(AuthWebAuthn).filter_by(
             user=request.auth.user, credential_id=credential.raw_id
         )
@@ -256,7 +256,7 @@ async def webauthn_verify_registration_response(
     try:
         expected_challenge = base64.b64decode(request.session[WN_CHALLENGE_SESSION_KEY])
         body = await request.json()
-        credential = RegistrationCredential.parse_raw(body["registration_response"])
+        credential = RegistrationCredential.model_validate_json(body["registration_response"])
         verification = webauthn.verify_registration_response(
             credential=credential,
             expected_challenge=expected_challenge,

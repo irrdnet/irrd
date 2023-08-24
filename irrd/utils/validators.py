@@ -69,7 +69,8 @@ class RPSLChangeSubmissionObjectAttribute(pydantic.main.BaseModel):
     name: str
     value: Union[str, List[str]]
 
-    @pydantic.validator("value")
+    @pydantic.field_validator("value")
+    @classmethod
     def translate_list_to_str(cls, value):  # noqa: N805
         """Translate lists to RPSL-compatible strings"""
         if not isinstance(value, str):
@@ -80,10 +81,10 @@ class RPSLChangeSubmissionObjectAttribute(pydantic.main.BaseModel):
 class RPSLChangeSubmissionObject(pydantic.main.BaseModel):
     """Model for a single object in an RPSL change submission"""
 
-    object_text: Optional[str]
-    attributes: Optional[List[RPSLChangeSubmissionObjectAttribute]]
+    object_text: Optional[str] = None
+    attributes: Optional[List[RPSLChangeSubmissionObjectAttribute]] = None
 
-    @pydantic.root_validator(pre=True)
+    @pydantic.model_validator(mode="before")
     def check_text_xor_attributes_present(cls, values):  # noqa: N805
         if bool(values.get("object_text")) == bool(values.get("attributes")):
             raise ValueError('You must describe each object with either "object_text" or "attributes"')
@@ -95,7 +96,7 @@ class RPSLChangeSubmission(pydantic.main.BaseModel):
 
     objects: List[RPSLChangeSubmissionObject]
     passwords: List[str] = []
-    override: Optional[str]
+    override: Optional[str] = None
     api_keys: List[str] = []
     delete_reason: str = "(No reason provided)"
 
@@ -115,4 +116,4 @@ class RPSLSuspensionSubmission(pydantic.main.BaseModel):
     """Model for an RPSL suspension submission"""
 
     objects: List[RPSLSuspensionSubmissionObject]
-    override: Optional[str]
+    override: Optional[str] = None
