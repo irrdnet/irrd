@@ -147,11 +147,7 @@ documentation for further details.
 Manual virtualenv
 ~~~~~~~~~~~~~~~~~
 
-Create the virtualenv with a command like this for PyPy::
-
-    pypy3 -m venv /home/irrd/irrd-venv
-
-Or, like this for CPython::
+Create the virtualenv with a command like this::
 
     python3 -m venv /home/irrd/irrd-venv
 
