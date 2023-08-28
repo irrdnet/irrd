@@ -1939,20 +1939,6 @@ files = [
 ]
 
 [[package]]
-name = "psycopg2cffi"
-version = "2.9.0"
-description = ".. image:: https://travis-ci.org/chtd/psycopg2cffi.svg?branch=master"
-optional = false
-python-versions = "*"
-files = [
-    {file = "psycopg2cffi-2.9.0.tar.gz", hash = "sha256:7e272edcd837de3a1d12b62185eb85c45a19feda9e62fa1b120c54f9e8d35c52"},
-]
-
-[package.dependencies]
-cffi = ">=1.0"
-six = "*"
-
-[[package]]
 name = "py-radix-sr"
 version = "1.0.0.post1"
 description = "Radix tree implementation"
@@ -3466,4 +3452,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "ee665604b46ac0d906da6f7bcb5c69eefdd7559d4d960da617549205d3f4d9c4"
+content-hash = "6470d41663e11eaa1aa6e5d18cda62695560c4e264eaf687c311000d73f56ae5"

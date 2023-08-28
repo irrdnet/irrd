@@ -5,6 +5,7 @@ import grp
 import logging
 import multiprocessing
 import os
+import platform
 import pwd
 import signal
 import sys
@@ -34,6 +35,10 @@ from irrd.utils.process_support import ExceptionLoggingProcess, set_traceback_ha
 
 
 def main():
+    if platform.python_implementation() == "PyPy":
+        print("IRRD can not be run under PyPy. Use CPython instead.")
+        sys.exit(1)
+
     description = """IRRd main process"""
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument(
