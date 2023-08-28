@@ -40,7 +40,6 @@ from irrd.utils.rpsl_samples import (
 )
 from irrd.utils.whois_client import whois_query, whois_query_irrd
 
-from ..storage import translate_url
 from .constants import (
     EMAIL_DISCARD_MSGS_COMMAND,
     EMAIL_END,
@@ -941,7 +940,7 @@ class TestIntegration:
         alembic_cfg.set_main_option("script_location", f"{IRRD_ROOT_PATH}/irrd/storage/alembic")
         command.upgrade(alembic_cfg, "head")
 
-        connection = sa.create_engine(translate_url(self.database_url1)).connect()
+        connection = sa.create_engine(self.database_url1).connect()
         connection.execute("DELETE FROM rpsl_objects")
         connection.execute("DELETE FROM rpsl_database_journal")
         connection.execute("DELETE FROM database_status")
@@ -952,7 +951,7 @@ class TestIntegration:
         alembic_cfg.set_main_option("script_location", f"{IRRD_ROOT_PATH}/irrd/storage/alembic")
         command.upgrade(alembic_cfg, "head")
 
-        connection = sa.create_engine(translate_url(self.database_url2)).connect()
+        connection = sa.create_engine(self.database_url2).connect()
         connection.execute("DELETE FROM rpsl_objects")
         connection.execute("DELETE FROM rpsl_database_journal")
         connection.execute("DELETE FROM database_status")
