@@ -156,6 +156,27 @@ class TestSingleChangeRequestHandling:
         assert not result.is_valid()
         assert result.error_messages == ["This instance is not authoritative for source TEST2"]
 
+    def test_object_not_in_object_class_filter(self, prepare_mocks, config_override):
+        config_override(
+            {
+                "sources": {
+                    "TEST": {
+                        "object_class_filter": "route",
+                    }
+                }
+            }
+        )
+        mock_dq, mock_dh = prepare_mocks
+
+        mock_dh.execute_query = lambda query: []
+
+        auth_validator = AuthValidator(mock_dh)
+        result = parse_change_requests(SAMPLE_INETNUM, mock_dh, auth_validator, None, {})[0]
+
+        assert result.status == UpdateRequestStatus.ERROR_OBJECT_FILTER
+        assert not result.is_valid()
+        assert result.error_messages == ["Can not make changes to inetnum objects in this database"]
+
     def test_validates_for_create(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
 

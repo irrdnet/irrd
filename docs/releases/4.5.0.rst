@@ -1,0 +1,6 @@
+==================================
+DRAFT Release notes for IRRd 4.5.0
+==================================
+
+* The ``object_class_filter`` setting can now also be used to restrict
+  permitted changes to authoritative objects.

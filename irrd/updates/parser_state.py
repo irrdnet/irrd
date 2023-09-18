@@ -28,6 +28,7 @@ class UpdateRequestStatus(Enum):
     ERROR_ROA = "error: conflict with existing ROA"
     ERROR_SCOPEFILTER = "error: not in scope"
     ERROR_NON_AUTHORITIVE = "error: attempt to update object in non-authoritive database"
+    ERROR_OBJECT_FILTER = "error: objects rejected due to object_class_filter setting"
 
 
 @unique

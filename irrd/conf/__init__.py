@@ -533,6 +533,19 @@ def get_setting(setting_name: str, default: Optional[Any] = None) -> Any:
     return configuration.get_setting_live(setting_name, default)
 
 
+def get_object_class_filter_for_source(source: str) -> Optional[List[str]]:
+    """
+    Helper method to get the cleaned object class filter for a source, if any.
+    """
+    object_class_filter = get_setting(f"sources.{source}.object_class_filter")
+    if object_class_filter:
+        if isinstance(object_class_filter, str):
+            object_class_filter = [object_class_filter]
+        return [c.strip().lower() for c in object_class_filter]
+    else:
+        return None
+
+
 def sighup_handler(signum, frame) -> None:
     """
     Reload the settings when a SIGHUP is received.

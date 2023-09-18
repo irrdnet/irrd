@@ -10,6 +10,7 @@ from . import (
     ConfigurationError,
     config_init,
     get_configuration,
+    get_object_class_filter_for_source,
     get_setting,
     is_config_initialised,
 )
@@ -101,6 +102,7 @@ class TestConfiguration:
                         "keep_journal": True,
                         "suspension_enabled": True,
                         "nrtm_query_serial_range_limit": 10,
+                        "object_class_filter": "route",
                     },
                     "TESTDB2": {
                         "nrtm_host": "192.0.2.1",
@@ -108,6 +110,7 @@ class TestConfiguration:
                         "import_serial_source": "ftp://example.com/serial",
                         "keep_journal": True,
                         "route_object_preference": 200,
+                        "object_class_filter": ["ROUTE"],
                     },
                     "TESTDB3": {
                         "export_destination_unfiltered": "/tmp",
@@ -124,6 +127,8 @@ class TestConfiguration:
         }
         save_yaml_config(config)
         assert is_config_initialised()
+        assert get_object_class_filter_for_source("TESTDB") == ["route"]
+        assert get_object_class_filter_for_source("TESTDB2") == ["route"]
 
         config["irrd"]["sources_default"] = ["TESTDB2"]
         save_yaml_config(config, run_init=False)

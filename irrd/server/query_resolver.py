@@ -7,7 +7,11 @@ from IPy import IP
 from ordered_set import OrderedSet
 from pytz import timezone
 
-from irrd.conf import RPKI_IRR_PSEUDO_SOURCE, get_setting
+from irrd.conf import (
+    RPKI_IRR_PSEUDO_SOURCE,
+    get_object_class_filter_for_source,
+    get_setting,
+)
 from irrd.routepref.status import RoutePreferenceStatus
 from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING, lookup_field_names
@@ -366,10 +370,7 @@ class QueryResolver:
             results[source] = OrderedDict()
             results[source]["source_type"] = "regular"
             results[source]["authoritative"] = get_setting(f"sources.{source}.authoritative", False)
-            object_class_filter = get_setting(f"sources.{source}.object_class_filter")
-            results[source]["object_class_filter"] = (
-                list(object_class_filter) if object_class_filter else None
-            )
+            results[source]["object_class_filter"] = get_object_class_filter_for_source(source)
             results[source]["rpki_rov_filter"] = bool(
                 get_setting("rpki.roa_source") and not get_setting(f"sources.{source}.rpki_excluded")
             )
