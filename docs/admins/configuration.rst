@@ -650,9 +650,12 @@ Sources
   |br| **Default**: ``300``.
   |br| **Change takes effect**: after SIGHUP.
 * ``sources.{name}.object_class_filter``: a list of object classes that will
-  be mirrored. Objects of other RPSL object classes will be ignored immediately
-  when encountered in full imports or NRTM streams. Without a filter, all
-  objects are mirrored.
+  be mirrored and allowed modification for authoritative source. Objects of
+  other RPSL object classes will be ignored immediately when encountered in full
+  imports or NRTM streams. Authoritative changes for objects in this filter
+  are rejected.
+  Without a filter, all objects of known object classes are mirrored and
+  can be changed in authoritative sources.
   |br| **Default**: no filter, all known object classes permitted.
   |br| **Change takes effect**: after SIGHUP, at the next NRTM update or full import.
 * ``sources.{name}.export_destination``: a path to save full exports, including

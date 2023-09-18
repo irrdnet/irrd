@@ -2,7 +2,7 @@ import logging
 import re
 from typing import List, Optional, Set
 
-from irrd.conf import get_setting
+from irrd.conf import get_object_class_filter_for_source, get_setting
 from irrd.rpki.validators import BulkRouteROAValidator
 from irrd.rpsl.parser import RPSLObject, UnknownRPSLObjectClassException
 from irrd.rpsl.rpsl_objects import RPSLKeyCert, rpsl_object_from_text
@@ -31,14 +31,7 @@ class RPSLImportError(Exception):
 
 class MirrorParser:
     def __init__(self):
-        object_class_filter = get_setting(f"sources.{self.source}.object_class_filter")
-        if object_class_filter:
-            if isinstance(object_class_filter, str):
-                object_class_filter = [object_class_filter]
-            self.object_class_filter = [c.strip().lower() for c in object_class_filter]
-        else:
-            self.object_class_filter = None
-
+        self.object_class_filter = get_object_class_filter_for_source(self.source)
         self.strict_validation_key_cert = get_setting(
             f"sources.{self.source}.strict_import_keycert_objects", False
         )

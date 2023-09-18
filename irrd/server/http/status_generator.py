@@ -5,7 +5,7 @@ from typing import Optional
 from beautifultable import BeautifulTable
 
 from irrd import __version__
-from irrd.conf import get_setting
+from irrd.conf import get_object_class_filter_for_source, get_setting
 from irrd.conf.defaults import DEFAULT_SOURCE_NRTM_PORT
 from irrd.storage.database_handler import DatabaseHandler, is_serial_synchronised
 from irrd.storage.queries import DatabaseStatusQuery, RPSLDatabaseObjectStatisticsQuery
@@ -100,7 +100,8 @@ class StatusGenerator:
             source = status_result["source"].upper()
             keep_journal = "Yes" if get_setting(f"sources.{source}.keep_journal") else "No"
             authoritative = "Yes" if get_setting(f"sources.{source}.authoritative") else "No"
-            object_class_filter = get_setting(f"sources.{source}.object_class_filter")
+            object_class_filter = get_object_class_filter_for_source(source)
+            object_class_filter_str = ",".join(object_class_filter) if object_class_filter else "None"
             rpki_enabled = get_setting("rpki.roa_source") and not get_setting(
                 f"sources.{source}.rpki_excluded"
             )
@@ -123,7 +124,7 @@ class StatusGenerator:
             -------------------
             Local information:
                 Authoritative: {authoritative}
-                Object class filter: {object_class_filter}
+                Object class filter: {object_class_filter_str}
                 Oldest serial seen: {status_result['serial_oldest_seen']}
                 Newest serial seen: {status_result['serial_newest_seen']}
                 Oldest local journal serial number: {status_result['serial_oldest_journal']}

@@ -4,7 +4,7 @@ from typing import Dict, List, Optional, Set, Union
 
 import sqlalchemy.orm as saorm
 
-from irrd.conf import get_setting
+from irrd.conf import get_object_class_filter_for_source, get_setting
 from irrd.rpki.status import RPKIStatus
 from irrd.rpki.validators import SingleRouteROAValidator
 from irrd.rpsl.parser import RPSLObject, UnknownRPSLObjectClassException
@@ -106,6 +106,19 @@ class ChangeRequest:
                 logger.debug(f"{id(self)}: change is for non-authoritative source {source}, rejected")
                 self.error_messages.append(f"This instance is not authoritative for source {source}")
                 self.status = UpdateRequestStatus.ERROR_NON_AUTHORITIVE
+                return
+
+            object_class_filter = get_object_class_filter_for_source(source)
+            if object_class_filter and self.rpsl_obj_new.rpsl_object_class.lower() not in object_class_filter:
+                logger.debug(
+                    f"{id(self)}: change is for object class {self.rpsl_obj_new.rpsl_object_class}, not in"
+                    " object_class_filter, rejected"
+                )
+                self.error_messages.append(
+                    f"Can not make changes to {self.rpsl_obj_new.rpsl_object_class.lower()} objects in this"
+                    " database"
+                )
+                self.status = UpdateRequestStatus.ERROR_OBJECT_FILTER
                 return
 
             self._retrieve_existing_version()
