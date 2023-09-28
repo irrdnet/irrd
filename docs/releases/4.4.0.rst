@@ -1,8 +1,8 @@
-==================================
-DRAFT Release notes for IRRd 4.4.0
-==================================
+============================
+Release notes for IRRd 4.4.0
+============================
 
-IRRD 4.4.0 was released on TODO. Highlights of new features:
+IRRD 4.4.0 was released on September 28, 2023. Highlights of new features:
 
 * A new web interface offering internal authentication for
   improved flexibility, security and user-friendliness.
