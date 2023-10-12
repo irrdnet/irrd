@@ -1,0 +1,9 @@
+============================
+Release notes for IRRd 4.4.1
+============================
+
+IRRd 4.4.1 was released on October 12th, 2023, and fixes an issue in 4.4.0
+where `instances using readonly_standby would fail to start`_.
+It also fixes some minor display issues in the web interface.
+
+.. _instances using readonly_standby would fail to start: https://github.com/irrdnet/irrd/issues/861
