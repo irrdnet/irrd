@@ -10,7 +10,7 @@ from starlette.responses import Response
 
 from irrd.conf import get_setting
 from irrd.storage.models import AuthUser, RPSLDatabaseObject, Setting
-from irrd.storage.orm_provider import ORMSessionProvider, session_provider_manager_sync
+from irrd.storage.orm_provider import ORMSessionProvider
 from irrd.utils.email import send_email
 from irrd.utils.text import remove_auth_hashes
 from irrd.webui import RATE_LIMIT_POST_200_NAMESPACE, templates
@@ -145,8 +145,7 @@ def client_ip(request: Optional[Request]) -> Optional[str]:
     return None
 
 
-@session_provider_manager_sync
-def secret_key_derive(scope: str, session_provider: ORMSessionProvider, thread_safe=True):
+def secret_key_derive(scope: str, thread_safe=True):
     """
     Return the secret key for a particular scope.
     This is derived from the scope, an otherwise meaningless string,
@@ -154,15 +153,21 @@ def secret_key_derive(scope: str, session_provider: ORMSessionProvider, thread_s
     Generation of the key is not thread/multiprocess safe, so the caller
     must indicate thread safety with the thread_safe parameter.
     """
+    session_provider = ORMSessionProvider()
     setting_name = "secret_key"
     query = session_provider.session.query(Setting).filter_by(name=setting_name)
     setting_obj = session_provider.run_sync(query.one)
     if not setting_obj:
         if thread_safe:
+            session_provider.close()
             raise ValueError("secret_key_derive called in non thread safe, but no key found in database")
         setting_obj = Setting(name=setting_name, value=secrets.token_hex())
         session_provider.session.add(setting_obj)
-        session_provider.session.commit()
+        value = setting_obj.value
+        session_provider.commit_close()
+    else:
+        value = setting_obj.value
+        session_provider.close()
 
-    key_base = scope.encode("utf-8") + setting_obj.value.encode("utf-8")
+    key_base = scope.encode("utf-8") + value.encode("utf-8")
     return str(hashlib.sha512(key_base).hexdigest())
