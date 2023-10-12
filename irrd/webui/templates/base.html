@@ -20,7 +20,7 @@
 <nav class="navbar navbar-expand-lg sticky-top navbar-dark bg-primary mb-3">
     <div class="container-fluid">
         <a class="navbar-brand" href="{{ url_for('ui:index') }}">
-            IRRD {{ irrd_version }} {% if auth_sources %}({{ ', '.join(auth_sources) }}{% endif %})
+            IRRD {{ irrd_version }} {% if auth_sources %}({{ ', '.join(auth_sources) }}){% endif %}
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                 data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
@@ -29,7 +29,9 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                {{ nav_link('ui:rpsl_update', 'Submit update') }}
+                {% if not readonly_standby %}
+                    {{ nav_link('ui:rpsl_update', 'Submit update') }}
+                {% endif %}
 
                 {% if request.auth.is_authenticated %}
                     {{ nav_link('ui:user_permissions', 'Maintainers & permissions') }}
@@ -54,7 +56,7 @@
                         </ul>
                     </li>
 
-                {% else %}
+                {% elif not readonly_standby %}
                     {{ nav_link('ui:auth:login', 'Log in') }}
                     {{ nav_link('ui:auth:create_account', 'Create account') }}
                 {% endif %}
