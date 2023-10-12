@@ -15,6 +15,7 @@ def template_context_render(template_name, request, context) -> Response:
     """
     context["request"] = request
     context["messages"] = get_messages(request)
+    context["readonly_standby"] = get_setting("readonly_standby")
     context["irrd_internal_migration_enabled"] = get_setting("auth.irrd_internal_migration_enabled")
 
     context["auth_sources"] = [
