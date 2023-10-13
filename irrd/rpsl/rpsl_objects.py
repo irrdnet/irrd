@@ -306,6 +306,36 @@ class RPSLInetnum(RPSLObject):
     )
 
 
+class RPSLIrt(RPSLObject):
+    fields = OrderedDict(
+        [
+            ("irt", RPSLGenericNameField(primary_key=True, lookup_key=True)),
+            ("address", RPSLTextField(multiple=True)),
+            ("phone", RPSLTextField(optional=True, multiple=True)),
+            ("fax-no", RPSLTextField(optional=True, multiple=True)),
+            ("e-mail", RPSLEmailField(multiple=True)),
+            ("abuse-mailbox", RPSLEmailField(multiple=True)),
+            (
+                "admin-c",
+                RPSLReferenceField(
+                    lookup_key=True, optional=True, multiple=True, referring=["role", "person"]
+                ),
+            ),
+            (
+                "tech-c",
+                RPSLReferenceField(
+                    lookup_key=True, optional=True, multiple=True, referring=["role", "person"]
+                ),
+            ),
+            ("remarks", RPSLTextField(optional=True, multiple=True)),
+            ("notify", RPSLEmailField(optional=True, multiple=True)),
+            ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
+            ("changed", RPSLChangedField(optional=True, multiple=True)),
+            ("source", RPSLGenericNameField()),
+        ]
+    )
+
+
 class RPSLKeyCert(RPSLObject):
     fields = OrderedDict(
         [
@@ -482,6 +512,37 @@ class RPSLMntner(RPSLObject):
 
     def has_internal_auth(self) -> bool:
         return RPSL_MNTNER_AUTH_INTERNAL in self.parsed_data["auth"]
+
+
+class RPSLOrganisation(RPSLObject):
+    fields = OrderedDict(
+        [
+            ("organisation", RPSLGenericNameField(primary_key=True, lookup_key=True)),
+            ("org-name", RPSLTextField()),
+            ("country", RPSLTextField(multiple=True)),
+            ("address", RPSLTextField(multiple=True)),
+            ("phone", RPSLTextField(optional=True, multiple=True)),
+            ("fax-no", RPSLTextField(optional=True, multiple=True)),
+            ("e-mail", RPSLEmailField(multiple=True)),
+            (
+                "admin-c",
+                RPSLReferenceField(
+                    lookup_key=True, optional=True, multiple=True, referring=["role", "person"]
+                ),
+            ),
+            (
+                "tech-c",
+                RPSLReferenceField(
+                    lookup_key=True, optional=True, multiple=True, referring=["role", "person"]
+                ),
+            ),
+            ("remarks", RPSLTextField(optional=True, multiple=True)),
+            ("notify", RPSLEmailField(optional=True, multiple=True)),
+            ("mnt-by", RPSLReferenceListField(lookup_key=True, multiple=True, referring=["mntner"])),
+            ("changed", RPSLChangedField(optional=True, multiple=True)),
+            ("source", RPSLGenericNameField()),
+        ]
+    )
 
 
 class RPSLPeeringSet(RPSLSet):
@@ -758,8 +819,10 @@ OBJECT_CLASS_MAPPING = {
     "inet-rtr": RPSLInetRtr,
     "inet6num": RPSLInet6Num,
     "inetnum": RPSLInetnum,
+    "irt": RPSLIrt,
     "key-cert": RPSLKeyCert,
     "mntner": RPSLMntner,
+    "organisation": RPSLOrganisation,
     "peering-set": RPSLPeeringSet,
     "person": RPSLPerson,
     "role": RPSLRole,

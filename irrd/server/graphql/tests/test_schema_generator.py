@@ -328,6 +328,30 @@ type RPSLInetnum implements RPSLObject {
   ipLast: String
 }
 
+type RPSLIrt implements RPSLObject {
+  rpslPk: String
+  objectClass: String
+  objectText: String
+  updated: String
+  journal: [RPSLJournalEntry]
+  irt: String
+  address: [String!]
+  phone: [String!]
+  faxNo: [String!]
+  eMail: [String!]
+  abuseMailbox: [String!]
+  adminC: [String!]
+  adminCObjs: [RPSLContactUnion!]
+  techC: [String!]
+  techCObjs: [RPSLContactUnion!]
+  remarks: [String!]
+  notify: [String!]
+  mntBy: [String!]
+  mntByObjs: [RPSLMntner!]
+  changed: [String!]
+  source: String
+}
+
 type RPSLKeyCert implements RPSLObject {
   rpslPk: String
   objectClass: String
@@ -366,6 +390,31 @@ type RPSLMntner implements RPSLObject {
   updTo: [String!]
   mntNfy: [String!]
   auth: [String!]
+  remarks: [String!]
+  notify: [String!]
+  mntBy: [String!]
+  mntByObjs: [RPSLMntner!]
+  changed: [String!]
+  source: String
+}
+
+type RPSLOrganisation implements RPSLObject {
+  rpslPk: String
+  objectClass: String
+  objectText: String
+  updated: String
+  journal: [RPSLJournalEntry]
+  organisation: String
+  orgName: String
+  country: [String!]
+  address: [String!]
+  phone: [String!]
+  faxNo: [String!]
+  eMail: [String!]
+  adminC: [String!]
+  adminCObjs: [RPSLContactUnion!]
+  techC: [String!]
+  techCObjs: [RPSLContactUnion!]
   remarks: [String!]
   notify: [String!]
   mntBy: [String!]

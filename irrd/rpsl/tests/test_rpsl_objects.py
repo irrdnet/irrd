@@ -38,8 +38,10 @@ from ..rpsl_objects import (
     RPSLInet6Num,
     RPSLInetnum,
     RPSLInetRtr,
+    RPSLIrt,
     RPSLKeyCert,
     RPSLMntner,
+    RPSLOrganisation,
     RPSLPeeringSet,
     RPSLPerson,
     RPSLRole,
@@ -294,6 +296,28 @@ class TestRPSLInetnum:
         assert obj.render_rpsl_text() == rpsl_text.replace("192.0.02.255", "192.0.2.255")
 
 
+class TestRPSLIrt:
+    def test_has_mapping(self):
+        obj = RPSLIrt()
+        assert OBJECT_CLASS_MAPPING[obj.rpsl_object_class] == obj.__class__
+
+    def test_parse(self):
+        rpsl_text = object_sample_mapping[RPSLIrt().rpsl_object_class]
+        obj = rpsl_object_from_text(rpsl_text)
+        assert obj.__class__ == RPSLIrt
+
+        assert not obj.messages.errors()
+        assert obj.pk() == "TEST-IRT"
+        assert obj.parsed_data["irt"] == "TEST-IRT"
+        assert obj.referred_strong_objects() == [
+            ("admin-c", ["role", "person"], ["PERSON-TEST"]),
+            ("tech-c", ["role", "person"], ["PERSON-TEST"]),
+            ("mnt-by", ["mntner"], ["TEST-MNT"]),
+        ]
+        assert obj.references_strong_inbound() == set()
+        assert obj.render_rpsl_text() == rpsl_text
+
+
 class TestRPSLKeyCert:
     """
     The tests for KeyCert objects intentionally do not mock gnupg, meaning these
@@ -412,6 +436,28 @@ class TestRPSLMntner:
         assert obj.verify_auth(["other-password"]) is None
         assert obj.verify_auth([KEY_CERT_SIGNED_MESSAGE_CORRUPT]) is None
         assert obj.verify_auth([KEY_CERT_SIGNED_MESSAGE_WRONG_KEY]) is None
+
+
+class TestRPSLOrganisation:
+    def test_has_mapping(self):
+        obj = RPSLOrganisation()
+        assert OBJECT_CLASS_MAPPING[obj.rpsl_object_class] == obj.__class__
+
+    def test_parse(self):
+        rpsl_text = object_sample_mapping[RPSLOrganisation().rpsl_object_class]
+        obj = rpsl_object_from_text(rpsl_text)
+        assert obj.__class__ == RPSLOrganisation
+
+        assert not obj.messages.errors()
+        assert obj.pk() == "TEST-ORG"
+        assert obj.parsed_data["org-name"] == "Test Corporation"
+        assert obj.referred_strong_objects() == [
+            ("admin-c", ["role", "person"], ["PERSON-TEST"]),
+            ("tech-c", ["role", "person"], ["PERSON-TEST"]),
+            ("mnt-by", ["mntner"], ["TEST-MNT"]),
+        ]
+        assert obj.references_strong_inbound() == set()
+        assert obj.render_rpsl_text() == rpsl_text
 
 
 class TestRPSLPeeringSet:

@@ -216,6 +216,18 @@ source:         TEST
 remarks:        remark
 """
 
+SAMPLE_IRT = """irt:            TEST-IRT
+address:        address
+e-mail:         email@example.com
+abuse-mailbox:  email@example.com
+admin-c:        PERSON-TEST
+tech-c:         PERSON-TEST
+mnt-by:         TEST-MNT
+changed:        changed@example.com 20190701 # comment
+remarks:        remark
+source:         TEST
+"""
+
 SAMPLE_KEY_CERT = """key-cert:       PGPKEY-80F238C6
 method:         PGP
 owner:          Sasha Romijn <sasha@mxsasha.eu>
@@ -514,6 +526,19 @@ source:         TEST
 remarks:        remark
 """
 
+SAMPLE_ORGANISATION = """organisation:   TEST-ORG
+org-name:       Test Corporation
+country:        DE
+address:        address
+e-mail:         email@example.com
+admin-c:        PERSON-TEST
+tech-c:         PERSON-TEST
+mnt-by:         TEST-MNT
+changed:        changed@example.com 20190701 # comment
+remarks:        remark
+source:         TEST
+"""
+
 SAMPLE_PEERING_SET = """peering-set:    prng-settest
 descr:          test data for peering-set
 peering:        AS65537 at 192.0.2.1
@@ -800,8 +825,10 @@ object_sample_mapping = {
     "inet-rtr": SAMPLE_INET_RTR,
     "inet6num": SAMPLE_INET6NUM,
     "inetnum": SAMPLE_INETNUM,
+    "irt": SAMPLE_IRT,
     "key-cert": SAMPLE_KEY_CERT,
     "mntner": SAMPLE_MNTNER,
+    "organisation": SAMPLE_ORGANISATION,
     "peering-set": SAMPLE_PEERING_SET,
     "person": SAMPLE_PERSON,
     "role": SAMPLE_ROLE,
