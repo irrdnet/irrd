@@ -5,11 +5,13 @@ DRAFT Release notes for IRRd 4.5.0
 New irt and organisation object classes
 ---------------------------------------
 The `irt` and `organisation` object classes were added. This means that
-users in authoritative databases can now create these objects, and they
-will be included when mirroring other sources.
+in authoritative databases, users can now create these objects, and IRRD
+will include these objects when mirroring other sources.
 **By default, support for these classes is enabled.**
 To restore the old behaviour, you can use the
 ``sources.{name}.object_class_filter`` setting.
+You can query the templates using the ``-t`` whois query or see all
+supported classes in the GraphQL schema.
 
 Other changes
 -------------
