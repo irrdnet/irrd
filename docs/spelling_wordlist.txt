@@ -30,6 +30,7 @@ IPtables
 IPv
 IRR
 irr
+irt
 irrd
 journaling
 keepalive
