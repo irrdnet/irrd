@@ -2,5 +2,16 @@
 DRAFT Release notes for IRRd 4.5.0
 ==================================
 
-* The ``object_class_filter`` setting can now also be used to restrict
-  permitted changes to authoritative objects.
+New irt and organisation object classes
+---------------------------------------
+The `irt` and `organisation` object classes were added. This means that
+users in authoritative databases can now create these objects, and they
+will be included when mirroring other sources.
+**By default, support for these classes is enabled.**
+To restore the old behaviour, you can use the
+``sources.{name}.object_class_filter`` setting.
+
+Other changes
+-------------
+* The ``sources.{name}.object_class_filter`` setting can now also be used
+  to restrict permitted changes to authoritative objects.
