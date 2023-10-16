@@ -304,7 +304,7 @@ NRTM response header line2""",
 
         with pytest.raises(NRTMGeneratorException) as nge:
             generator.generate("TEST", "3", 110, 190, mock_dh)
-        assert "There are no journal entries for this serial 110" in str(nge.value)
+        assert "There are no journal entries greater than or equal to this serial 110" in str(nge.value)
 
     def test_days_limit_exceeded(self, prepare_generator, config_override):
         generator, mock_dh = prepare_generator

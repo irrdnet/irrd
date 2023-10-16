@@ -78,13 +78,19 @@ class NRTMGenerator:
 
         days_limit = get_setting(f"sources.{source}.nrtm_query_serial_days_limit")
         if days_limit:
-            q = RPSLDatabaseJournalQuery().sources([source]).serial_nrtms([serial_start_requested])
+            q = (
+                RPSLDatabaseJournalQuery()
+                .sources([source])
+                .serial_nrtms_after_serial(serial_start_requested)
+                .first_only()
+            )
 
             try:
                 journal = next(database_handler.execute_query(q))
             except StopIteration:
                 raise NRTMGeneratorException(
-                    f"There are no journal entries for this serial {serial_start_requested}."
+                    "There are no journal entries greater than or equal to this serial"
+                    f" {serial_start_requested}."
                 )
 
             serial_start_requested_timestamp_utc = journal["timestamp"].astimezone(timezone.utc)

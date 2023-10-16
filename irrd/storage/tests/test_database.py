@@ -385,7 +385,9 @@ class TestDatabaseHandlerLive:
         ]
 
         partial_journal = self._clean_result(
-            self.dh.execute_query(RPSLDatabaseJournalQuery().sources(["TEST"]).serial_nrtms([1]))
+            self.dh.execute_query(
+                RPSLDatabaseJournalQuery().sources(["TEST"]).serial_nrtms_after_serial(1).first_only()
+            )
         )
         assert partial_journal == [
             {
