@@ -1,4 +1,4 @@
 # Note that version is also in pyproject.toml
-__version__ = "4.4.1"
+__version__ = "4.4.2"
 ENV_MAIN_PROCESS_PID = "IRRD_MAIN_PROCESS_PID"
 META_KEY_HTTP_CLIENT_IP = "HTTP-Client-IP"
