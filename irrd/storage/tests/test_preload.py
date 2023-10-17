@@ -136,6 +136,7 @@ class TestPreloading:
         assert preloader.set_members("AS-SET1", sources, classes) == SetMembers(["AS65530"], "as-set")
         assert preloader.set_members("AS-SET1", sources, classes) == SetMembers(["AS65530"], "as-set")
         assert preloader.set_members("AS-SET1", ["TEST1"], classes) == SetMembers(["AS65530"], "as-set")
+        assert preloader.set_members("AS-set1", ["TEST1"], classes) == SetMembers(["AS65530"], "as-set")
         assert sorted(preloader.set_members("AS-SET2", sources, classes).members) == ["AS65531", "AS65532"]
         assert preloader.set_members("RS-SET1", sources, classes) == SetMembers(["192.0.2.0/25"], "route-set")
         assert preloader.set_members("RS-SET1", sources, ["route-set"]) == SetMembers(

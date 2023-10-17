@@ -133,6 +133,7 @@ class Preloader:
         Returns the members and the found object class if the set exists, otherwise None.
         Will block until the store is loaded.
         """
+        set_pk = set_pk.upper()
         while not self._memory_loaded:
             time.sleep(1)  # pragma: no cover
         if not object_classes or "as-set" in object_classes:
