@@ -1,0 +1,8 @@
+============================
+Release notes for IRRd 4.4.2
+============================
+
+IRRd 4.4.2 was released on October 17th, 2023, and fixes an issue in 4.4.0
+and 4.4.1 where `set member queries were incorrectly case sensitive`_.
+
+.. _set member queries were incorrectly case sensitive: https://github.com/irrdnet/irrd/issues/868
