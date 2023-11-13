@@ -24,15 +24,6 @@ class MetricsGenerator:
         status_query = DatabaseStatusQuery()
         status_results = list(database_handler.execute_query(status_query))
 
-        status_results = [
-            {
-                key: value
-                for key, value in status.items()
-                if not key.startswith('last_error')
-            }
-            for status in status_results
-        ]
-
         statistics = sorted(statistics_results, key=lambda item: f"{item['source']}-{item['object_class']}")
         status = sorted(status_results, key=lambda item: item['source'])
 
@@ -40,6 +31,7 @@ class MetricsGenerator:
             self._generate_header(),
             self._generate_object_counts(statistics),
             self._generate_updated(status),
+            self._generate_last_error(status),
             self._generate_serial_newest_mirror(status),
             self._generate_serial_last_export(status),
             self._generate_serial_oldest_journal(status),
@@ -89,6 +81,23 @@ class MetricsGenerator:
         return textwrap.dedent("""
         # HELP irrd_seconds_since_last_update Seconds since the last update
         # TYPE irrd_seconds_since_last_update gauge
+        """).lstrip() + '\n'.join(lines) + '\n'
+
+    def _generate_last_error(self, status: Iterable[Dict[str, Any]]) -> str:
+        """
+        Generate statistics about the time since last update
+        """
+        now = datetime.datetime.now(tz=datetime.timezone.utc)
+        lines = []
+        for stat in status:
+            if 'last_error_timestamp' not in stat or stat['last_error_timestamp'] is None:
+                continue
+            diff = now - stat['last_error_timestamp']
+            lines.append(f"""irrd_seconds_since_last_error{{source="{stat['source']}"}} {diff.total_seconds()}""")
+
+        return textwrap.dedent("""
+        # HELP irrd_seconds_since_last_error Seconds since the last error
+        # TYPE irrd_seconds_since_last_error gauge
         """).lstrip() + '\n'.join(lines) + '\n'
 
     def _generate_serial_newest_mirror(self, status: Iterable[Dict[str, Any]]) -> str:
