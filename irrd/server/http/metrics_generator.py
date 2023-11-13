@@ -90,10 +90,12 @@ class MetricsGenerator:
         now = datetime.datetime.now(tz=datetime.timezone.utc)
         lines = []
         for stat in status:
-            if 'last_error_timestamp' not in stat or stat['last_error_timestamp'] is None:
-                continue
-            diff = now - stat['last_error_timestamp']
-            lines.append(f"""irrd_seconds_since_last_error{{source="{stat['source']}"}} {diff.total_seconds()}""")
+            if 'last_error_timestamp' in stat and stat['last_error_timestamp'] is not None:
+                diff = now - stat['last_error_timestamp']
+                lines.append(f"""irrd_seconds_since_last_error{{source="{stat['source']}"}} {diff.total_seconds()}""")
+            else:
+                # No error, so the error was infinitely long ago, right?
+                lines.append(f"""irrd_seconds_since_last_error{{source="{stat['source']}"}} +Inf""")
 
         return textwrap.dedent("""
         # HELP irrd_seconds_since_last_error Seconds since the last error
