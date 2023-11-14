@@ -36,6 +36,7 @@ class StatusEndpoint(HTTPEndpoint):
 
 class MetricsEndpoint(HTTPEndpoint):
     def get(self, request: Request) -> Response:
+        assert request.client
         if not is_client_permitted(request.client.host, 'server.http.status_access_list'):
             return PlainTextResponse('Access denied', status_code=403)
 
