@@ -33,10 +33,10 @@ class MetricsGenerator:
             self._generate_object_counts(statistics),
             self._generate_updated(status),
             self._generate_last_error(status),
-            self._generate_serial_newest_mirror(status),
-            self._generate_serial_last_export(status),
-            self._generate_serial_oldest_journal(status),
-            self._generate_serial_newest_journal(status),
+            self._generate_newest_mirror_serial(status),
+            self._generate_last_export_serial(status),
+            self._generate_oldest_journal_serial(status),
+            self._generate_newest_journal_serial(status),
         ]
         database_handler.close()
         return '\n'.join(results) + '\n'
@@ -66,13 +66,13 @@ class MetricsGenerator:
         lines = []
         for stat in statistics:
             lines.append(
-                f"""irrd_object_class{{source="{stat['source']}", object_class="{stat['object_class']}"}} """
+                f"""irrd_object_class_total{{source="{stat['source']}", object_class="{stat['object_class']}"}} """
                 f"""{stat['count']}"""
             )
 
         return textwrap.dedent("""
-        # HELP irrd_object_class Number of objects per class per source
-        # TYPE irrd_object_class gauge
+        # HELP irrd_object_class_total Number of objects per class per source
+        # TYPE irrd_object_class_total gauge
         """).lstrip() + '\n'.join(lines) + '\n'
 
     def _generate_updated(self, status: Iterable[Dict[str, Any]]) -> str:
@@ -80,38 +80,58 @@ class MetricsGenerator:
         Generate statistics about the time since last update
         """
         now = datetime.datetime.now(tz=datetime.timezone.utc)
-        lines = []
+        lines = [
+            "# HELP irrd_last_update_seconds Seconds since the last update",
+            "# TYPE irrd_last_update_seconds gauge"
+        ]
         for stat in status:
             if 'updated' not in stat or stat['updated'] is None:
                 continue
             diff = now - stat['updated']
-            lines.append(f"""irrd_seconds_since_last_update{{source="{stat['source']}"}} {diff.total_seconds()}""")
+            lines.append(f"""irrd_last_update_seconds{{source="{stat['source']}"}} {int(diff.total_seconds())}""")
 
-        return textwrap.dedent("""
-        # HELP irrd_seconds_since_last_update Seconds since the last update
-        # TYPE irrd_seconds_since_last_update gauge
-        """).lstrip() + '\n'.join(lines) + '\n'
+        lines += [
+            "",
+            "# HELP irrd_last_update_timestamp Timestamp of the last update in seconds since UNIX epoch",
+            "# TYPE irrd_last_update_timestamp gauge"
+        ]
+
+        for stat in status:
+            if 'updated' not in stat or stat['updated'] is None:
+                continue
+            lines.append(f"""irrd_last_update_timestamp{{source="{stat['source']}"}} """
+                         f"""{int(stat['updated'].timestamp())}""")
+
+        return '\n'.join(lines) + '\n'
 
     def _generate_last_error(self, status: Iterable[Dict[str, Any]]) -> str:
         """
         Generate statistics about the time since last update
         """
         now = datetime.datetime.now(tz=datetime.timezone.utc)
-        lines = []
+        lines = [
+            "# HELP irrd_last_error_seconds Seconds since the last error",
+            "# TYPE irrd_last_error_seconds gauge"
+        ]
         for stat in status:
             if 'last_error_timestamp' in stat and stat['last_error_timestamp'] is not None:
                 diff = now - stat['last_error_timestamp']
-                lines.append(f"""irrd_seconds_since_last_error{{source="{stat['source']}"}} {diff.total_seconds()}""")
-            else:
-                # No error, so the error was infinitely long ago, right?
-                lines.append(f"""irrd_seconds_since_last_error{{source="{stat['source']}"}} +Inf""")
+                lines.append(f"""irrd_last_error_seconds{{source="{stat['source']}"}} """
+                             f"""{int(diff.total_seconds())}""")
 
-        return textwrap.dedent("""
-        # HELP irrd_seconds_since_last_error Seconds since the last error
-        # TYPE irrd_seconds_since_last_error gauge
-        """).lstrip() + '\n'.join(lines) + '\n'
+        lines += [
+            "",
+            "# HELP irrd_last_error_timestamp Timestamp of the last error in seconds since UNIX epoch",
+            "# TYPE irrd_last_error_timestamp gauge"
+        ]
+        for stat in status:
+            if 'last_error_timestamp' in stat and stat['last_error_timestamp'] is not None:
+                lines.append(f"""irrd_last_error_timestamp{{source="{stat['source']}"}} """
+                             f"""{int(stat['last_error_timestamp'].timestamp())}""")
 
-    def _generate_serial_newest_mirror(self, status: Iterable[Dict[str, Any]]) -> str:
+        return '\n'.join(lines) + '\n'
+
+    def _generate_newest_mirror_serial(self, status: Iterable[Dict[str, Any]]) -> str:
         """
         Generate statistics about the newest mirrored serial
         """
@@ -119,14 +139,14 @@ class MetricsGenerator:
         for stat in status:
             if 'serial_newest_mirror' not in stat or stat['serial_newest_mirror'] is None:
                 continue
-            lines.append(f"""irrd_serial_newest_mirror{{source="{stat['source']}"}} {stat['serial_newest_mirror']}""")
+            lines.append(f"""irrd_mirrored_serial{{source="{stat['source']}"}} {stat['serial_newest_mirror']}""")
 
         return textwrap.dedent("""
-        # HELP irrd_serial_newest_mirror Newest serial number mirrored from upstream
-        # TYPE irrd_serial_newest_mirror gauge
+        # HELP irrd_mirrored_serial Newest serial number mirrored from upstream
+        # TYPE irrd_mirrored_serial gauge
         """).lstrip() + '\n'.join(lines) + '\n'
 
-    def _generate_serial_last_export(self, status: Iterable[Dict[str, Any]]) -> str:
+    def _generate_last_export_serial(self, status: Iterable[Dict[str, Any]]) -> str:
         """
         Generate statistics about the last export
         """
@@ -134,14 +154,14 @@ class MetricsGenerator:
         for stat in status:
             if 'serial_last_export' not in stat or stat['serial_last_export'] is None:
                 continue
-            lines.append(f"""irrd_serial_last_export{{source="{stat['source']}"}} {stat['serial_last_export']}""")
+            lines.append(f"""irrd_last_export_serial{{source="{stat['source']}"}} {stat['serial_last_export']}""")
 
         return textwrap.dedent("""
-        # HELP irrd_serial_last_export Last serial number exported
-        # TYPE irrd_serial_last_export gauge
+        # HELP irrd_last_export_serial Last serial number exported
+        # TYPE irrd_last_export_serial gauge
         """).lstrip() + '\n'.join(lines) + '\n'
 
-    def _generate_serial_oldest_journal(self, status: Iterable[Dict[str, Any]]) -> str:
+    def _generate_oldest_journal_serial(self, status: Iterable[Dict[str, Any]]) -> str:
         """
         Generate statistics about the oldest serial in the journal
         """
@@ -149,14 +169,14 @@ class MetricsGenerator:
         for stat in status:
             if 'serial_oldest_journal' not in stat or stat['serial_oldest_journal'] is None:
                 continue
-            lines.append(f"""irrd_serial_oldest_journal{{source="{stat['source']}"}} {stat['serial_oldest_journal']}""")
+            lines.append(f"""irrd_oldest_journal_serial{{source="{stat['source']}"}} {stat['serial_oldest_journal']}""")
 
         return textwrap.dedent("""
-        # HELP irrd_serial_oldest_journal Oldest serial in the journal
-        # TYPE irrd_serial_oldest_journal gauge
+        # HELP irrd_oldest_journal_serial Oldest serial in the journal
+        # TYPE irrd_oldest_journal_serial gauge
         """).lstrip() + '\n'.join(lines) + '\n'
 
-    def _generate_serial_newest_journal(self, status: Iterable[Dict[str, Any]]) -> str:
+    def _generate_newest_journal_serial(self, status: Iterable[Dict[str, Any]]) -> str:
         """
         Generate statistics about the last serial in the journal
         """
@@ -164,9 +184,9 @@ class MetricsGenerator:
         for stat in status:
             if 'serial_newest_journal' not in stat or stat['serial_newest_journal'] is None:
                 continue
-            lines.append(f"""irrd_serial_newest_journal{{source="{stat['source']}"}} {stat['serial_newest_journal']}""")
+            lines.append(f"""irrd_newest_journal_serial{{source="{stat['source']}"}} {stat['serial_newest_journal']}""")
 
         return textwrap.dedent("""
-        # HELP irrd_serial_newest_journal Newest serial in the journal
-        # TYPE irrd_serial_newest_journal gauge
+        # HELP irrd_newest_journal_serial Newest serial in the journal
+        # TYPE irrd_newest_journal_serial gauge
         """).lstrip() + '\n'.join(lines) + '\n'
