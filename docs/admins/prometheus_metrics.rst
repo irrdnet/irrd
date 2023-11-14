@@ -20,7 +20,7 @@ The generic metrics exposed are:
     # TYPE irrd_info gauge
     irrd_info{version="4.5-dev"} 1
 
-* `irrd_uptime_seconds`: the uptime of IRRd in seconds
+* `irrd_uptime_seconds`: the up-time of IRRd in seconds
 
   .. code-block::
 
