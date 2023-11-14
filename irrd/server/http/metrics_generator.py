@@ -5,7 +5,7 @@ import textwrap
 import time
 from typing import Any, Dict, Iterable
 
-from irrd import __version__, ENV_MAIN_STARTUP_TIME
+from irrd import ENV_MAIN_STARTUP_TIME, __version__
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import DatabaseStatusQuery, RPSLDatabaseObjectStatisticsQuery
 
