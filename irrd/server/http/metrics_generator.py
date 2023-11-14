@@ -1,10 +1,11 @@
 import datetime
 import logging
-import pprint
+import os
 import textwrap
+import time
 from typing import Any, Dict, Iterable
 
-from irrd import __version__
+from irrd import __version__, ENV_MAIN_STARTUP_TIME
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import DatabaseStatusQuery, RPSLDatabaseObjectStatisticsQuery
 
@@ -42,12 +43,20 @@ class MetricsGenerator:
 
     def _generate_header(self) -> str:
         """
-        Generate the header of the report, containing basic info like version
+        Generate the header of the report, containing basic info like version and uptime
         """
         return textwrap.dedent(f"""
         # HELP irrd_info Info from IRRD, value is always 1
         # TYPE irrd_info gauge
         irrd_info{{version="{__version__}"}} 1
+        
+        # HELP irrd_uptime_seconds Uptime of IRRD in seconds
+        # TYPE irrd_uptime_seconds gauge
+        irrd_uptime_seconds {int(time.time()) - int(os.environ[ENV_MAIN_STARTUP_TIME])}
+        
+        # HELP irrd_startup_timestamp Startup time of IRRD in seconds since UNIX epoch
+        # TYPE irrd_startup_timestamp gauge
+        irrd_startup_timestamp {os.environ[ENV_MAIN_STARTUP_TIME]}
         """).strip() + '\n'
 
     def _generate_object_counts(self, statistics: Iterable[Dict[str, Any]]) -> str:
