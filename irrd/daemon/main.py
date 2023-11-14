@@ -22,7 +22,7 @@ from daemon.daemon import change_process_owner
 logger = logging.getLogger(__name__)
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
-from irrd import ENV_MAIN_PROCESS_PID, __version__, ENV_MAIN_STARTUP_TIME
+from irrd import ENV_MAIN_PROCESS_PID, ENV_MAIN_STARTUP_TIME, __version__
 from irrd.conf import CONFIG_PATH_DEFAULT, config_init, get_configuration, get_setting
 from irrd.mirroring.scheduler import MirrorScheduler
 from irrd.server.http.server import run_http_server

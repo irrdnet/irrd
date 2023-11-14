@@ -24,9 +24,9 @@ from irrd.server.graphql import ENV_UVICORN_WORKER_CONFIG_PATH
 from irrd.server.graphql.extensions import QueryMetadataExtension, error_formatter
 from irrd.server.graphql.schema_builder import build_executable_schema
 from irrd.server.http.endpoints_api import (
+    MetricsEndpoint,
     ObjectSubmissionEndpoint,
     StatusEndpoint,
-    MetricsEndpoint,
     SuspensionSubmissionEndpoint,
     WhoisQueryEndpoint,
 )
