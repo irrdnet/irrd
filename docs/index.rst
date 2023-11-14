@@ -49,6 +49,7 @@ This documentation is mainly for administrators of IRRd deployments.
    admins/availability-and-migration
    admins/migrating-legacy-irrd
    admins/status_page
+   admins/prometheus_metrics
    admins/webui
    admins/faq
 

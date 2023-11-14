@@ -46,15 +46,15 @@ class MetricsGenerator:
         Generate the header of the report, containing basic info like version and uptime
         """
         return textwrap.dedent(f"""
-        # HELP irrd_info Info from IRRD, value is always 1
+        # HELP irrd_info Info from IRRd, value is always 1
         # TYPE irrd_info gauge
         irrd_info{{version="{__version__}"}} 1
         
-        # HELP irrd_uptime_seconds Uptime of IRRD in seconds
+        # HELP irrd_uptime_seconds Uptime of IRRd in seconds
         # TYPE irrd_uptime_seconds gauge
         irrd_uptime_seconds {int(time.time()) - int(os.environ[ENV_MAIN_STARTUP_TIME])}
         
-        # HELP irrd_startup_timestamp Startup time of IRRD in seconds since UNIX epoch
+        # HELP irrd_startup_timestamp Startup time of IRRd in seconds since UNIX epoch
         # TYPE irrd_startup_timestamp gauge
         irrd_startup_timestamp {os.environ[ENV_MAIN_STARTUP_TIME]}
         """).strip() + '\n'
