@@ -18,8 +18,8 @@ from ... import META_KEY_HTTP_CLIENT_IP
 from ...storage.models import AuthoritativeChangeOrigin
 from ..whois.query_parser import WhoisQueryParser
 from ..whois.query_response import WhoisQueryResponseType
-from .status_generator import StatusGenerator
 from .metrics_generator import MetricsGenerator
+from .status_generator import StatusGenerator
 
 logger = logging.getLogger(__name__)
 
