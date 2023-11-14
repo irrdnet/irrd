@@ -22,7 +22,7 @@ from daemon.daemon import change_process_owner
 logger = logging.getLogger(__name__)
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
-from irrd import ENV_MAIN_PROCESS_PID, __version__
+from irrd import ENV_MAIN_PROCESS_PID, __version__, ENV_MAIN_STARTUP_TIME
 from irrd.conf import CONFIG_PATH_DEFAULT, config_init, get_configuration, get_setting
 from irrd.mirroring.scheduler import MirrorScheduler
 from irrd.server.http.server import run_http_server
@@ -139,6 +139,7 @@ def run_irrd(mirror_frequency: int, config_file_path: str, uid: Optional[int], g
         os.environ["no_proxy"] = " * "
 
     os.environ[ENV_MAIN_PROCESS_PID] = str(os.getpid())
+    os.environ[ENV_MAIN_STARTUP_TIME] = str(int(time.time()))
     set_traceback_handler()
 
     whois_process = ExceptionLoggingProcess(
