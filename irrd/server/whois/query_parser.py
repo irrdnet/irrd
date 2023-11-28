@@ -362,9 +362,13 @@ class WhoisQueryParser:
     def handle_irrd_sources_list(self, parameter: str) -> Optional[str]:
         """
         !s query - set used sources
+           !s-* no-op, backwards compatibility for irrtoolset/peval
            !s-lc returns all active sources, comma separated
            !sripe,nttcom limits sources to ripe and nttcom
         """
+        if parameter == "-*":
+            return None
+
         if parameter == "-lc":
             return ",".join(self.query_resolver.source_manager.sources)
 
