@@ -30,23 +30,6 @@ class ScheduledTaskProcess(multiprocessing.Process):
         self.runner = runner
         super().__init__(*args, **kwargs)
 
-    def close(self):  # pragma: no cover
-        """
-        close() is not available in Python 3.6,
-        use our own implementation if needed.
-        """
-        if hasattr(super, "close"):
-            return super().close()
-        if self._popen is not None:
-            if self._popen.poll() is None:
-                raise ValueError(
-                    "Cannot close a process while it is still running. "
-                    "You should first call join() or terminate()."
-                )
-            self._popen = None
-            del self._sentinel
-        self._closed = True
-
     def run(self):
         # Disable the special sigterm_handler defined in main()
         # (signal handlers are inherited)
