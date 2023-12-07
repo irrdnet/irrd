@@ -42,7 +42,7 @@ ariadne = "0.21"
 uvicorn = { extras = ["standard"], version = "0.24.0post1" }
 starlette = "0.33.0"
 psutil = "5.9.6"
-asgiref = "3.6.0"
+asgiref = "3.7.2"
 pydantic = "2.5.2"
 typing-extensions = "4.8.0"
 py-radix-sr = "1.0.0.post1"
