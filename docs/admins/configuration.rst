@@ -722,6 +722,15 @@ Sources
   and will take that into account.
   |br| **Default**: not defined, no limits on NRTMv3 query size.
   |br| **Change takes effect**: after SIGHUP, upon next request.
+* ``sources.{name}.nrtm_query_serial_days_limit``: the maximum age in days
+  if serials a client may request through NRTMv3, if otherwise permitted.
+  It does not matter whether this is in a single or multiple queries.
+  To determine the age, IRRD looks at the timestamp of the oldest journal
+  entry equal to or newer than the start of the serial range requested
+  by the client. This is intended to limit the maximum
+  load of NRTM queries.
+  |br| **Default**: not defined, no limits on age of requested serials.
+  |br| **Change takes effect**: after SIGHUP, upon next request.
 * ``sources.{name}.nrtm_response_header``: an additional NRTMv3 response
   header, added as a comment to all NRTMv3 responses for this source.
   IRRD will prepend the lines with ``%`` to mark them as comments.

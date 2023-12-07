@@ -1,4 +1,5 @@
 import textwrap
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from irrd.conf import get_setting
@@ -74,6 +75,31 @@ class NRTMGenerator:
         range_limit = get_setting(f"sources.{source}.nrtm_query_serial_range_limit")
         if range_limit and int(range_limit) < (serial_end_display - serial_start_requested):
             raise NRTMGeneratorException(f"Serial range requested exceeds maximum range of {range_limit}")
+
+        days_limit = get_setting(f"sources.{source}.nrtm_query_serial_days_limit")
+        if days_limit:
+            q = (
+                RPSLDatabaseJournalQuery()
+                .sources([source])
+                .serial_nrtm_range(serial_start_requested)
+                .first_only()
+            )
+
+            try:
+                journal = next(database_handler.execute_query(q))
+            except StopIteration:
+                raise NRTMGeneratorException(
+                    "There are no journal entries greater than or equal to this serial"
+                    f" {serial_start_requested}."
+                )
+
+            serial_start_requested_timestamp_utc = journal["timestamp"].astimezone(timezone.utc)
+            current_utc_time = datetime.now(timezone.utc)
+
+            if (current_utc_time - serial_start_requested_timestamp_utc) > timedelta(days=days_limit):
+                raise NRTMGeneratorException(
+                    f"Requesting serials older than {days_limit} days will be rejected"
+                )
 
         q = (
             RPSLDatabaseJournalQuery()

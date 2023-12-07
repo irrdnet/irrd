@@ -97,6 +97,7 @@ KNOWN_SOURCES_KEYS = {
     "export_timer",
     "nrtm_access_list",
     "nrtm_access_list_unfiltered",
+    "nrtm_query_serial_days_limit",
     "nrtm_query_serial_range_limit",
     "nrtm_response_header",
     "nrtm4_client_notification_file_url",
