@@ -60,7 +60,7 @@ class ValidationError(ValueError):
     pass
 
 
-class RPSLChangeSubmissionObjectAttribute(pydantic.main.BaseModel):
+class RPSLChangeSubmissionObjectAttribute(pydantic.BaseModel):
     """
     Model for a single name/value pair of an RPSL attribute
     in an object in an RPSL change submission
@@ -78,7 +78,7 @@ class RPSLChangeSubmissionObjectAttribute(pydantic.main.BaseModel):
         return value
 
 
-class RPSLChangeSubmissionObject(pydantic.main.BaseModel):
+class RPSLChangeSubmissionObject(pydantic.BaseModel):
     """Model for a single object in an RPSL change submission"""
 
     object_text: Optional[str] = None
