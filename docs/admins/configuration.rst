@@ -722,18 +722,21 @@ Sources
   and will take that into account.
   |br| **Default**: not defined, no limits on NRTMv3 query size.
   |br| **Change takes effect**: after SIGHUP, upon next request.
+* ``sources.{name}.nrtm_query_serial_days_limit``: the maximum age in days
+  if serials a client may request through NRTMv3, if otherwise permitted.
+  It does not matter whether this is in a single or multiple queries.
+  To determine the age, IRRD looks at the timestamp of the oldest journal
+  entry equal to or newer than the start of the serial range requested
+  by the client. This is intended to limit the maximum
+  load of NRTM queries.
+  |br| **Default**: not defined, no limits on age of requested serials.
+  |br| **Change takes effect**: after SIGHUP, upon next request.
 * ``sources.{name}.nrtm_response_header``: an additional NRTMv3 response
   header, added as a comment to all NRTMv3 responses for this source.
   IRRD will prepend the lines with ``%`` to mark them as comments.
   This can have multiple lines.  When adding this to the configuration,
   use the `|` style to preserve newlines.
   |br| **Default**: not defined, no additional header added.
-  |br| **Change takes effect**: after SIGHUP, upon next request.
-* ``sources.{name}.nrtm_query_serial_days_limit``: the oldest day of serials 
-  a client can request in one NRTM query. This is intended to limit the maximum 
-  load of NRTM queries - it is checked before IRRd runs any heavy database queries. 
-  The limit is applied to the creation date of the requested start serial.
-  |br| **Default**: not defined, no limits on serial days of NRTM query.
   |br| **Change takes effect**: after SIGHUP, upon next request.
 * ``sources.{name}.strict_import_keycert_objects``: a setting used when
   migrating authoritative data that may contain `key-cert` objects.
