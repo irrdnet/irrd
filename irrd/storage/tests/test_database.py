@@ -384,24 +384,6 @@ class TestDatabaseHandlerLive:
             },
         ]
 
-        partial_journal = self._clean_result(
-            self.dh.execute_query(
-                RPSLDatabaseJournalQuery().sources(["TEST"]).serial_nrtms_after_serial(1).first_only()
-            )
-        )
-        assert partial_journal == [
-            {
-                "rpsl_pk": "192.0.2.0/24,AS65537",
-                "source": "TEST",
-                "serial_nrtm": 1,
-                "operation": DatabaseOperation.add_or_update,
-                "object_class": "route",
-                "object_text": "object-text",
-                "origin": JournalEntryOrigin.auth_change,
-                "serial_global": 1,
-            },
-        ]
-
         # Override the config to enable synchronised serials for TEST
         config_override(
             {

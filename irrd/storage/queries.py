@@ -480,13 +480,6 @@ class RPSLDatabaseJournalQuery(BaseRPSLObjectDatabaseQuery):
         """
         return self._filter_range(self.columns.serial_nrtm, start, end)
 
-    def serial_nrtms_after_serial(self, serial_nrtms: int):
-        """
-        Filter for NRTM serials greater than or equal to the specified serial number
-        """
-        fltr = self.columns.serial_nrtm >= serial_nrtms
-        return self._filter(fltr)
-
     def serial_global_range(self, start: int, end: Optional[int] = None):
         """
         Filter for journal-wide serials within a specific range, inclusive.

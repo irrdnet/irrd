@@ -81,7 +81,7 @@ class NRTMGenerator:
             q = (
                 RPSLDatabaseJournalQuery()
                 .sources([source])
-                .serial_nrtms_after_serial(serial_start_requested)
+                .serial_nrtm_range(serial_start_requested)
                 .first_only()
             )
 
