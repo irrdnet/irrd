@@ -10,7 +10,7 @@ from pytz import UTC
 from typing_extensions import Self
 
 
-def get_from_pydantic_context(info: pydantic.FieldValidationInfo, key: str):
+def get_from_pydantic_context(info: pydantic.ValidationInfo, key: str):
     """
     This is a little helper to get a key from the pydantic context,
     as it's a bit convoluted and needs some type guarding.
@@ -31,7 +31,7 @@ class ExpectedValuesMixin:
     """
 
     @pydantic.model_validator(mode="after")  # type: ignore
-    def validate_expected_values(self, info: pydantic.FieldValidationInfo):
+    def validate_expected_values(self, info: pydantic.ValidationInfo):
         expected_values = get_from_pydantic_context(info, "expected_values")
         for key, expected_value in expected_values.items():
             value = getattr(self, key)
@@ -80,7 +80,7 @@ class NRTM4FileReference(pydantic.main.BaseModel):
 
     @pydantic.field_validator("url")
     @classmethod
-    def validate_url(cls, url, info: pydantic.FieldValidationInfo):
+    def validate_url(cls, url, info: pydantic.ValidationInfo):
         update_notification_file_scheme = get_from_pydantic_context(info, "update_notification_file_scheme")
         if url.scheme != update_notification_file_scheme:
             raise ValueError(
