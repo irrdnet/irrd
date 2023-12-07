@@ -205,13 +205,13 @@ files = [
 
 [[package]]
 name = "ariadne"
-version = "0.20.1"
+version = "0.21"
 description = "Ariadne is a Python library for implementing GraphQL servers."
 optional = false
 python-versions = "*"
 files = [
-    {file = "ariadne-0.20.1-py2.py3-none-any.whl", hash = "sha256:5921f9dd030c336fa6ef74770d8f80f7d813f751a5901051f8ec3bde74f92bb3"},
-    {file = "ariadne-0.20.1.tar.gz", hash = "sha256:19b863bf1d237dc5bd34cebae10bd66a63cfb26ea3cfb561ee7d568ed0067989"},
+    {file = "ariadne-0.21-py2.py3-none-any.whl", hash = "sha256:dba401b9dfdeab3f913025c2d798e27dc45374bad8ff7d40786470b3ecd60633"},
+    {file = "ariadne-0.21.tar.gz", hash = "sha256:1d7f9fca17f5828a360417b7191310d4fe1506010f358470576450934ac0613b"},
 ]
 
 [package.dependencies]
@@ -223,7 +223,7 @@ typing-extensions = ">=3.6.0"
 asgi-file-uploads = ["python-multipart (>=0.0.5)"]
 dev = ["black", "mypy", "pylint"]
 telemetry = ["opentelemetry-api"]
-test = ["aiodataloader", "freezegun", "graphql-sync-dataloaders", "httpx", "opentelemetry-api", "opentracing", "pytest", "pytest-asyncio", "pytest-benchmark", "pytest-cov", "pytest-mock", "python-multipart (>=0.0.5)", "snapshottest", "werkzeug"]
+test = ["aiodataloader", "freezegun", "graphql-sync-dataloaders", "httpx", "opentelemetry-api", "opentracing", "pytest", "pytest-asyncio", "pytest-benchmark", "pytest-cov", "pytest-mock", "python-multipart (>=0.0.5)", "syrupy", "werkzeug"]
 tracing = ["opentracing"]
 
 [[package]]
@@ -2891,13 +2891,13 @@ pymysql = ["pymysql", "pymysql (<1)"]
 
 [[package]]
 name = "starlette"
-version = "0.31.0"
+version = "0.33.0"
 description = "The little ASGI library that shines."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "starlette-0.31.0-py3-none-any.whl", hash = "sha256:1aab7e04bcbafbb1867c1ce62f6b21c60a6e3cecb5a08dcee8abac7457fbcfbf"},
-    {file = "starlette-0.31.0.tar.gz", hash = "sha256:7df0a3d8fa2c027d641506204ef69239d19bf9406ad2e77b319926e476ac3042"},
+    {file = "starlette-0.33.0-py3-none-any.whl", hash = "sha256:6d492f0f7dfb2dd646ac7d80444af4989cd5c5c78f622fac99e39a66c3e01f06"},
+    {file = "starlette-0.33.0.tar.gz", hash = "sha256:8c21f9592451b2016300c5bbc54b181063367b62720a4048656c070319238897"},
 ]
 
 [package.dependencies]
@@ -3102,13 +3102,13 @@ zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
 name = "uvicorn"
-version = "0.23.2"
+version = "0.24.0.post1"
 description = "The lightning-fast ASGI server."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "uvicorn-0.23.2-py3-none-any.whl", hash = "sha256:1f9be6558f01239d4fdf22ef8126c39cb1ad0addf76c40e760549d2c2f43ab53"},
-    {file = "uvicorn-0.23.2.tar.gz", hash = "sha256:4d3cc12d7727ba72b64d12d3cc7743124074c0a69f7b201512fc50c3e3f1569a"},
+    {file = "uvicorn-0.24.0.post1-py3-none-any.whl", hash = "sha256:7c84fea70c619d4a710153482c0d230929af7bcf76c7bfa6de151f0a3a80121e"},
+    {file = "uvicorn-0.24.0.post1.tar.gz", hash = "sha256:09c8e5a79dc466bdf28dead50093957db184de356fcdc48697bad3bde4c2588e"},
 ]
 
 [package.dependencies]
@@ -3664,4 +3664,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "a403418889c4024c2f559bf377ec89e29f1fd7ba3b3574a8e6a7b870e8c9dd27"
+content-hash = "13bb479dc9b36fc100ad6cec3537d73bc6045bedda8ca62402f34f33cd676a50"
