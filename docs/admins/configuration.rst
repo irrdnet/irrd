@@ -765,6 +765,15 @@ Sources
   Can only be enabled if `authoritative` is enabled.
   |br| **Default**: ``false``.
   |br| **Change takes effect**: after SIGHUP, for all subsequent changes.
+* ``sources.{name}.authoritative_non_strict_mode_dangerous``: a boolean for
+  whether this source, despite being authoritative, should use
+  :doc:`non-strict mode </admins/object-validation>`. Enabling this setting
+  will use non-strict validation and disable all reference checking.
+  The intended use are cases where the origin of IRR data is in a separate
+  system. For regular authoritative use, **this setting is most strongly
+  discouraged**, as it allows reduced data integrity.
+  |br| **Default**: ``false``, authoritative changes validated strictly.
+  |br| **Change takes effect**: after SIGHUP, for all subsequent changes.
 
 
 For more detail on mirroring other sources, and providing mirroring services
