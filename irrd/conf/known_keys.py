@@ -85,6 +85,7 @@ KNOWN_FLEXIBLE_KEYS = ["access_lists", "source_aliases"]
 
 KNOWN_SOURCES_KEYS = {
     "authoritative",
+    "authoritative_non_strict_mode_dangerous",
     "keep_journal",
     "nrtm_host",
     "nrtm_port",

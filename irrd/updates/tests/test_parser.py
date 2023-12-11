@@ -142,6 +142,31 @@ class TestSingleChangeRequestHandling:
             ["upsert_rpsl_object", (result_as_set.rpsl_obj_new, JournalEntryOrigin.auth_change), {}],
         ]
 
+    def test_parse_non_strict(self, prepare_mocks, config_override):
+        mock_dq, mock_dh = prepare_mocks
+
+        config_override(
+            {
+                "auth": {
+                    "password_hashers": {"crypt-pw": "enabled"},
+                },
+                "sources": {"TEST": {"authoritative_non_strict_mode_dangerous": True}},
+            }
+        )
+
+        mock_dh.execute_query = lambda query: []
+        request_text = SAMPLE_INETNUM + "unknown-attr: value"
+
+        auth_validator = AuthValidator(mock_dh)
+        reference_validator = ReferenceValidator(mock_dh)
+        (result,) = parse_change_requests(request_text, mock_dh, auth_validator, reference_validator, {})
+
+        assert result.status == UpdateRequestStatus.PROCESSING, result.error_messages
+        assert result.is_valid()
+        assert result._check_references()
+        assert result.rpsl_text_submitted.startswith("inetnum:")
+        assert not result.error_messages
+
     def test_non_authorative_source(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
 

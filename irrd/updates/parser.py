@@ -82,16 +82,29 @@ class ChangeRequest:
         self.scopefilter_validator = ScopeFilterValidator()
         self.rules_validator = RulesValidator(database_handler)
         self.request_meta = request_meta
+        self.non_strict_mode = False
 
         try:
             self.rpsl_obj_new = rpsl_object_from_text(rpsl_text_submitted, strict_validation=True)
+            try:
+                self.non_strict_mode = get_setting(
+                    f"sources.{self.rpsl_obj_new.source()}.authoritative_non_strict_mode_dangerous", False
+                )
+            except ValueError:
+                pass
+            if self.non_strict_mode:
+                self.rpsl_obj_new = rpsl_object_from_text(rpsl_text_submitted, strict_validation=False)
+
             if self.rpsl_obj_new.messages.errors():
                 self.status = UpdateRequestStatus.ERROR_PARSING
             self.error_messages = self.rpsl_obj_new.messages.errors()
             self.info_messages = self.rpsl_obj_new.messages.infos()
-            logger.debug(
+            msg = (
                 f"{id(self)}: Processing new ChangeRequest for object {self.rpsl_obj_new}: request {id(self)}"
             )
+            if self.non_strict_mode:
+                msg += " in non-strict mode"
+            logger.debug(msg)
 
         except UnknownRPSLObjectClassException as exc:
             self.rpsl_obj_new = None
@@ -350,6 +363,8 @@ class ChangeRequest:
         they now become invalid. For other operations, only the validity
         of references from the new object to others matter.
         """
+        if self.non_strict_mode:
+            return True
         override = self._auth_result.auth_method.used_override() if self._auth_result else False
         if self.request_type == UpdateRequestType.DELETE and self.rpsl_obj_current is not None:
             assert self.rpsl_obj_new
