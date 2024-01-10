@@ -11,6 +11,7 @@ from setproctitle import setproctitle
 from irrd.conf import get_setting
 from irrd.conf.defaults import (
     DEFAULT_SOURCE_EXPORT_TIMER,
+    DEFAULT_SOURCE_EXPORT_TIMER_NRTM4,
     DEFAULT_SOURCE_IMPORT_TIMER,
     DEFAULT_SOURCE_IMPORT_TIMER_NRTM4,
 )
@@ -23,6 +24,7 @@ from .mirror_runners_import import (
     RPSLMirrorImportUpdateRunner,
     ScopeFilterUpdateRunner,
 )
+from .nrtm4.nrtm4_server import NRTM4Server
 
 logger = logging.getLogger(__name__)
 
@@ -109,13 +111,17 @@ class MirrorScheduler:
             if is_mirror:
                 started_import = self.run_if_relevant(source, RPSLMirrorImportUpdateRunner, import_timer)
 
-            runs_export = get_setting(f"sources.{source}.export_destination") or get_setting(
+            runs_rpsl_export = get_setting(f"sources.{source}.export_destination") or get_setting(
                 f"sources.{source}.export_destination_unfiltered"
             )
             export_timer = int(get_setting(f"sources.{source}.export_timer", DEFAULT_SOURCE_EXPORT_TIMER))
 
-            if runs_export:
+            if runs_rpsl_export:
                 started_export = self.run_if_relevant(source, SourceExportRunner, export_timer)
+
+            runs_nrtm4_server = get_setting(f"sources.{source}.nrtm4_server_private_key")
+            if runs_nrtm4_server:
+                started_export = self.run_if_relevant(source, NRTM4Server, DEFAULT_SOURCE_EXPORT_TIMER_NRTM4)
 
             if started_import or started_export:
                 sources_started += 1

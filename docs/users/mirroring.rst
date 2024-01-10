@@ -32,10 +32,98 @@ expires again. This means that, for example, when mirroring a source with NRTM
 mode, ``import_timer`` can be safely kept low, even though the initial large
 full import may take some time.
 
+NRTMv4 overview
+---------------
+
+The recommended method of mirroring to/from other databases is NRTM version 4.
+
+NRTMv4 uses `draft-ietf-grow-nrtm-v4`_ which loads JSON-ish files over HTTPS.
+
+The basic building blocks of NRTMv4 are:
+
+* The Update Notification File (UNF), a JSON file that serves as an index.
+* The Update Notification File signature, which proves the authenticity
+  of the UNF.
+* A Snapshot file that contains all objects in a database at a particular time,
+  at a particular version number.
+* Zero or more Delta files that contain changes to a database.
+  A mirror server generates one every minute, with all changes in that minute,
+  if there were any changes.
+  Each Delta file has an increasing version number.
+* The UNF has a random session ID. If this is changed, all clients
+  must reload from the snapshot.
+* The server keeps Delta files for 24 hours. If a client lags behind too
+  far, it will detect this, and reload from the snapshot.
+
+NRTMv4 is reliable, detects errors, secure, and recovers automatically
+from loss of synchronisation.
+
+.. _draft-ietf-grow-nrtm-v4: https://datatracker.ietf.org/doc/draft-ietf-grow-nrtm-v4/
+
 
 Mirroring services for others (exporting)
 -----------------------------------------
 
+Two modes for running a mirror servers are available. You can enable
+both of them at the same time for the same source.
+
+NRTMv4 mode
+~~~~~~~~~~~
+To configure an NRTMv4 source, you set the ``nrtm4_server_private_key``,
+``nrtm4_server_local_path`` and ``nrtm4_server_base_url`` settings on the
+source. The local path is where IRRD will write the files, the base URL
+is the full HTTPS URL under which you will be serving the files.
+The private key must be an Ed25519 private key in base64. You can use the
+``irrdctl nrtmv4 generate-private-key`` command generate such a key,
+though does not store the key in the configuration for you.
+You need to use a separate base URL and local path for each
+IRR source.
+
+When running the NRTMv4 client process, IRRD will:
+
+* Check that all previous Snapshot and Delta files are still present.
+  If a file is missing, the ongoing session is corrupt and will be reset.
+* If there is no ongoing session, generate a new session ID and start
+  from version 1.
+* If there an ongoing session, find any changes since the last Delta file,
+  and if there were changes, write a new Delta file.
+* If ``nrtm4_server_snapshot_frequency`` has expired (default: 4 hours),
+  or there was no ongoing session, write a new snapshot.
+* Expire any Delta files older than 24 hours.
+* Remove any dangling Delta files.
+* Remove older UNF signature files and Snapshot (they are kept for a while
+  after no longer being needed, to avoid race conditions).
+* Generate a new Update Notification File signature file.
+* Write the new Update Notification File.
+
+You need to serve the files written to ``nrtm4_server_local_path`` on
+``nrtm4_server_base_url``, so that clients can retrieve
+``{nrtm4_server_base_url}/update-notification-file.json``. This can
+be done using the same nginx instance used for other parts of IRRD,
+or through an entirely different web server or CDN, depending on your
+scalability needs. So in a way, the actual "serving" part of an
+NRTMv4 server is not performed by IRRD, as it's just HTTPS.
+
+NRTMv4 has support for in-band key rotation. Use the following process:
+
+* Generate a new private key.
+* Save the new key in ``nrtm4_server_private_key_next`` on the source.
+* IRRD will automatically add the public key to the ``next_signing_key``
+  field in the Update Notification File.
+* On their next update of the Update Notification File, clients will
+  see the next key, and store it.
+* After some time (recommended: one week), set the new key in
+  ``nrtm4_server_private_key`` and remove ``nrtm4_server_private_key_next``.
+* Key rotation is now complete.
+
+The private key(s) stored in your IRRD configuration should never be
+shared publicly. Clients should only have the public key.
+At any time you can use the ``irrdctl nrtmv4 server-show-public-key``
+command to see the public key of the configured private key(s).
+
+
+NRTMv3 mode
+~~~~~~~~~~~
 IRRd can produce periodic exports and generate NRTMv3 responses to support
 mirroring of authoritative or mirrored data by other users.
 
@@ -114,26 +202,10 @@ single transaction. This means that, for example, when a full reload of a mirror
 is performed, clients will keep seeing the old objects until the import is
 entirely ready. Clients should never see half-finished imports.
 
+A single source can only use one mirroring mode.
+
 NRTMv4 mode
 ~~~~~~~~~~~
-NRTMv4 uses `draft-ietf-grow-nrtm-v4`_ which loads JSON-ish files over HTTPS.
-The protocol is designed to be robust, secure, recover as well as possible,
-and detect errors clearly.
-
-The basic building blocks of NRTMv4 are:
-
-* The Update Notification File (UNF), a JSON file that serves as an index.
-* The Update Notification File signature, which proves the authenticity
-  of the UNF.
-* A Snapshot file that contains all objects in a database at a particular time,
-  at a particular version number.
-* Zero or more Delta files that contain changes to a database.
-  A mirror server generates one every minute, with all changes in that minute,
-  if there were any changes.
-  Each Delta file has an increasing version number.
-* The UNF has a random session ID. If this is changed, all clients
-  must reload from the snapshot.
-
 To configure an NRTMv4 source, you set the ``nrtm4_client_notification_file_url``
 setting on the source to the Update Notification File URL.
 and the ``nrtm4_client_notification_file_url`` setting to the initial public key.
@@ -181,8 +253,6 @@ retrieval.
     operators will need to do this manually.
 
 The default ``import_timer`` for NRTMv4 clients is 60 seconds.
-
-.. _draft-ietf-grow-nrtm-v4: https://datatracker.ietf.org/doc/draft-ietf-grow-nrtm-v4/
 
 NRTMv3 mode
 ~~~~~~~~~~~

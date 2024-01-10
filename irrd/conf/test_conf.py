@@ -117,8 +117,14 @@ class TestConfiguration:
                         "nrtm_access_list_unfiltered": "valid-list",
                     },
                     "TESTDB-NRTM4": {
+                        "keep_journal": True,
                         "nrtm4_client_notification_file_url": "https://testhost/",
                         "nrtm4_client_initial_public_key": "kL7kSk56ASeaHl6Nj0eXC3XCHkCzktoPA3ceKz/cjOo=",
+                        "nrtm4_server_base_url": "https://example.com",
+                        "nrtm4_server_private_key": "FalXchs8HIU22Efc3ipNcxVwYwB+Mp0x9TCM9BFtig0=",
+                        "nrtm4_server_private_key_next": "4YDgaXpRDIU8vJbFYeYgPQqEa4YAdHeRF1s6SLdXCsE=",
+                        "nrtm4_server_local_path": str(tmpdir),
+                        "nrtm4_server_snapshot_frequency": 3600 * 2,
                     },
                     # RPKI source permitted, rpki.roa_source not set
                     "RPKI": {},
@@ -311,6 +317,11 @@ class TestConfiguration:
                         "suspension_enabled": True,
                         "nrtm_query_serial_range_limit": "not-a-number",
                         "nrtm4_client_initial_public_key": "invalid",
+                        "nrtm4_server_base_url": "invalid",
+                        "nrtm4_server_private_key": "invalid",
+                        "nrtm4_server_private_key_next": "invalid",
+                        "nrtm4_server_local_path": str(tmpdir / "invalid"),
+                        "nrtm4_server_snapshot_frequency": 3600 * 60,
                     },
                     "TESTDB2": {
                         "authoritative": True,
@@ -321,10 +332,12 @@ class TestConfiguration:
                         "nrtm4_client_notification_file_url": "http://invalid",
                     },
                     "TESTDB3": {
+                        "keep_journal": False,
                         "authoritative": True,
                         "import_source": "192.0.2.1",
                         "nrtm_access_list_unfiltered": "invalid-list",
                         "route_object_preference": "not-a-number",
+                        "nrtm4_server_base_url": "invalid",
                     },
                     # Not permitted, rpki.roa_source is set
                     "RPKI": {},
@@ -411,13 +424,13 @@ class TestConfiguration:
             in str(ce.value)
         )
         assert (
-            "Source TESTDB can not have authoritative, import_source, nrtm_host, or"
-            " nrtm4_client_notification_file_url set when readonly_standby is enabled."
+            "Source TESTDB can not have authoritative, import_source, nrtm_host,"
+            " or NRTMv4 client or server set when readonly_standby is enabled."
             in str(ce.value)
         )
         assert (
-            "Source TESTDB3 can not have authoritative, import_source, nrtm_host, or"
-            " nrtm4_client_notification_file_url set when readonly_standby is enabled."
+            "Source TESTDB3 can not have authoritative, import_source, nrtm_host,"
+            " or NRTMv4 client or server set when readonly_standby is enabled."
             in str(ce.value)
         )
         assert "Setting nrtm_port for source TESTDB2 must be a number." in str(ce.value)
@@ -443,6 +456,36 @@ class TestConfiguration:
         assert "Unknown setting key: unknown_setting" in str(ce.value)
         assert "Unknown setting key: log.unknown" in str(ce.value)
         assert "Unknown key(s) under source TESTDB: unknown" in str(ce.value)
+
+        assert (
+            "Invalid value for setting nrtm4_server_private_key for source TESTDB: Incorrect padding"
+            in str(ce.value)
+        )
+        assert (
+            "Invalid value for setting nrtm4_server_private_key_next for source TESTDB: Incorrect padding"
+            in str(ce.value)
+        )
+        assert "Setting nrtm4_server_base_url for source TESTDB is not a valid https or file URL." in str(
+            ce.value
+        )
+        assert (
+            "Setting nrtm4_server_local_path for source TESTDB is required and must point to an existing"
+            " directory."
+            in str(ce.value)
+        )
+        assert "nrtm4_server_snapshot_frequency for source TESTDB must be between 1 and 24 hours" in str(
+            ce.value
+        )
+        assert (
+            "When setting any nrtm4_server setting, all of"
+            " nrtm4_server_private_key/nrtm4_server_local_path/nrtm4_server_base_url must be set for source"
+            " TESTDB3."
+            in str(ce.value)
+        )
+        assert "Setting nrtm4_server_base_url for source TESTDB3 is not a valid https or file URL." in str(
+            ce.value
+        )
+        assert "Duplicate value(s) invalid for source setting nrtm4_server_base_url." in str(ce.value)
 
 
 class TestGetSetting:

@@ -78,7 +78,11 @@ class SchemaGenerator:
                 serialLastExport: Int
                 serialNewestMirror: Int
                 nrtm4ClientSessionId: String
-                nrtm4ClientVersion: String
+                nrtm4ClientVersion: Int
+                nrtm4ServerSessionId: String
+                nrtm4ServerVersion: Int
+                nrtm4ServerLastUpdateNotificationFileUpdate: String
+                nrtm4ServerLastSnapshotVersion: Int
                 lastUpdate: String
                 synchronisedSerials: Boolean!
                 aliased_sources: [String!]
