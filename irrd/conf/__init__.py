@@ -1,3 +1,5 @@
+import collections
+import datetime
 import importlib.util
 import logging.config
 import os
@@ -5,16 +7,15 @@ import re
 import signal
 import sys
 import time
-from base64 import b64decode
 from pathlib import Path
 from typing import Any, List, Optional
 from urllib.parse import urlparse
 
 import limits
 import yaml
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from IPy import IP
 
+from irrd.conf.defaults import DEFAULT_SOURCE_NRTM4_SERVER_SNAPSHOT_FREQUENCY
 from irrd.vendor.dotted.collection import DottedDict
 
 CONFIG_PATH_DEFAULT = "/etc/irrd.yaml"
@@ -27,6 +28,7 @@ ROUTEPREF_IMPORT_TIME = 3600
 AUTH_SET_CREATION_COMMON_KEY = "COMMON"
 SOCKET_DEFAULT_TIMEOUT = 30
 RPSL_MNTNER_AUTH_INTERNAL = "IRRD-INTERNAL-AUTH"
+NRTM4_SERVER_DELTA_EXPIRY_TIME = datetime.timedelta(hours=24)
 
 
 LOGGING = {
@@ -47,6 +49,9 @@ LOGGING = {
             "level": "INFO",
         },
         "faker.factory": {
+            "level": "INFO",
+        },
+        "urllib3": {
             "level": "INFO",
         },
         # uvicorn.error be specified explicitly to disable tracing middleware,
@@ -236,6 +241,11 @@ class Configuration:
         Validate the current staging configuration.
         Returns a list of any errors, or an empty list for a valid config.
         """
+        from irrd.utils.crypto import (
+            ed25519_private_key_from_str,
+            ed25519_public_key_from_str,
+        )
+
         errors = []
         config = self.user_config_staging
 
@@ -400,7 +410,7 @@ class Configuration:
             ):
                 errors.append(
                     f"Setting keep_journal for source {name} can not be enabled unless either authoritative"
-                    " is enabled, or all three of nrtm_host, nrtm_port and import_serial_source, or"
+                    " is enabled, or all three of nrtm_host/nrtm_port/import_serial_source, or"
                     " nrtm4_client_notification_file_url."
                 )
             if details.get("nrtm_host") and not details.get("import_serial_source"):
@@ -417,7 +427,7 @@ class Configuration:
 
             if details.get("nrtm4_client_initial_public_key"):
                 try:
-                    Ed25519PublicKey.from_public_bytes(b64decode(details["nrtm4_client_initial_public_key"]))
+                    ed25519_public_key_from_str(details["nrtm4_client_initial_public_key"])
                 except ValueError as ve:
                     errors.append(
                         f"Invalid value for setting nrtm4_client_initial_public_key for source {name}: {ve}"
@@ -437,6 +447,64 @@ class Configuration:
                     "nrtm_host, import_source, or nrtm4_client_notification_file_url are set."
                 )
 
+            nrtm4_server_keys = "nrtm4_server_private_key", "nrtm4_server_local_path", "nrtm4_server_base_url"
+            nrtm4_server_enabled = any(details.get(k) for k in nrtm4_server_keys)
+
+            if (nrtm4_server_enabled or details.get("nrtm4_server_private_key_next")) and not all(
+                details.get(k) for k in nrtm4_server_keys
+            ):
+                errors.append(
+                    f"When setting any nrtm4_server setting, all of {'/'.join(nrtm4_server_keys)} must be set"
+                    f" for source {name}."
+                )
+
+            if nrtm4_server_enabled and not details.get("keep_journal"):
+                errors.append("NRTMv4 server requires keep_journal to be set for for source {name}.")
+
+            if details.get("nrtm4_server_private_key"):
+                try:
+                    ed25519_private_key_from_str(details["nrtm4_server_private_key"])
+                except ValueError as ve:
+                    errors.append(
+                        f"Invalid value for setting nrtm4_server_private_key for source {name}: {ve}"
+                    )
+
+            if details.get("nrtm4_server_private_key_next"):
+                try:
+                    ed25519_private_key_from_str(details["nrtm4_server_private_key_next"])
+                except ValueError as ve:
+                    errors.append(
+                        f"Invalid value for setting nrtm4_server_private_key_next for source {name}: {ve}"
+                    )
+
+            url_parsed = urlparse(details.get("nrtm4_server_base_url"))
+            if nrtm4_server_enabled and (
+                not url_parsed.scheme or url_parsed.scheme not in ["https", "file"] or not url_parsed.netloc
+            ):
+                errors.append(
+                    f"Setting nrtm4_server_base_url for source {name} is not a valid https or file URL."
+                )
+
+            if details.get("nrtm4_server_local_path") and not os.path.isdir(
+                details["nrtm4_server_local_path"]
+            ):
+                errors.append(
+                    f"Setting nrtm4_server_local_path for source {name} is required and must point to an"
+                    " existing directory."
+                )
+
+            if not (
+                datetime.timedelta(hours=1).total_seconds()
+                <= details.get(
+                    "nrtm4_server_snapshot_frequency", DEFAULT_SOURCE_NRTM4_SERVER_SNAPSHOT_FREQUENCY
+                )
+                <= datetime.timedelta(hours=24).total_seconds()
+            ):
+                errors.append(
+                    f"nrtm4_server_snapshot_frequency for source {name} must be between 1 and 24 hours"
+                    f" of {int(NRTM4_SERVER_DELTA_EXPIRY_TIME.total_seconds())} seconds"
+                )
+
             if config.get("readonly_standby") and (
                 details.get("authoritative")
                 or details.get("nrtm_host")
@@ -444,10 +512,11 @@ class Configuration:
                 or details.get("export_destination")
                 or details.get("export_destination_unfiltered")
                 or nrtm4_client_unf_url
+                or nrtm4_server_enabled
             ):
                 errors.append(
-                    f"Source {name} can not have authoritative, import_source, nrtm_host, or"
-                    " nrtm4_client_notification_file_url set when readonly_standby is enabled."
+                    f"Source {name} can not have authoritative, import_source, nrtm_host,"
+                    " or NRTMv4 client or server set when readonly_standby is enabled."
                 )
 
             number_fields = [
@@ -457,6 +526,7 @@ class Configuration:
                 "route_object_preference",
                 "nrtm_query_serial_range_limit",
                 "nrtm_query_serial_days_limit",
+                "nrtm4_server_snapshot_frequency",
             ]
             for field_name in number_fields:
                 if not str(details.get(field_name, 0)).isnumeric():
@@ -466,6 +536,13 @@ class Configuration:
                 expected_access_lists.add(details.get("nrtm_access_list"))
             if details.get("nrtm_access_list_unfiltered"):
                 expected_access_lists.add(details.get("nrtm_access_list_unfiltered"))
+
+        source_keys_no_duplicates = ["nrtm4_server_local_path", "nrtm4_server_base_url"]
+        for key in source_keys_no_duplicates:
+            values = [s.get(key) for s in config.get("sources", {}).values()]
+            duplicates = [item for item, count in collections.Counter(values).items() if item and count > 1]
+            if duplicates:
+                errors.append(f"Duplicate value(s) {','.join(duplicates)} for source setting {key}.")
 
         if config.get("rpki.roa_source", "https://rpki.gin.ntt.net/api/export.json"):
             known_sources.add(RPKI_IRR_PSEUDO_SOURCE)

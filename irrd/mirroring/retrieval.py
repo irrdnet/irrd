@@ -2,6 +2,7 @@ import gzip
 import hashlib
 import logging
 import os
+import pathlib
 import shutil
 from io import BytesIO
 from tempfile import NamedTemporaryFile
@@ -73,7 +74,7 @@ def _retrieve_file_download(
         return value, False
     else:
         destination.close()
-        _check_expected_hash(destination.name, expected_hash)
+        check_file_hash_sha256(destination.name, expected_hash)
         if url.endswith(".gz"):
             zipped_file = destination
 
@@ -111,7 +112,7 @@ def _retrieve_file_local(
     path, return_contents=False, expected_hash: Optional[str] = None
 ) -> Tuple[str, bool]:
     if not return_contents:
-        _check_expected_hash(path, expected_hash)
+        check_file_hash_sha256(path, expected_hash)
         if path.endswith(".gz"):
             destination = NamedTemporaryFile(delete=False)
             logger.debug(f"Local file is expected to be gzipped, gunzipping from {path}")
@@ -126,21 +127,26 @@ def _retrieve_file_local(
     return value, False
 
 
-def _check_expected_hash(filename: str, expected_hash: Optional[str]) -> None:
+def check_file_hash_sha256(filename: str, expected_hash: Optional[str]) -> None:
     """
     Check whether the contents of a file match an expected SHA256 hash.
     expected_hash should be a hex digest.
     """
-    sha256_hash = hashlib.sha256()
-
     if not expected_hash:
         return
+    file_hash = file_hash_sha256(filename)
+
+    if not constant_time.bytes_eq(file_hash.digest(), bytes.fromhex(expected_hash)):
+        raise ValueError(
+            f"Invalid hash in {filename}: expected {expected_hash}, found {file_hash.hexdigest()}"
+        )
+
+
+def file_hash_sha256(filename: Union[str, pathlib.Path]):
+    """Calculate the SHA256 hash of a file."""
+    sha256_hash = hashlib.sha256()
     with open(filename, "rb") as f:
         # Read and update hash in chunks of 4K
         for byte_block in iter(lambda: f.read(4096), b""):
             sha256_hash.update(byte_block)
-
-    if not constant_time.bytes_eq(sha256_hash.digest(), bytes.fromhex(expected_hash)):
-        raise ValueError(
-            f"Invalid hash in {filename}: expected {expected_hash}, found {sha256_hash.hexdigest()}"
-        )
+    return sha256_hash

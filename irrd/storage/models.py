@@ -1,6 +1,7 @@
+import dataclasses
+import datetime
 import enum
-from dataclasses import dataclass
-from typing import Optional
+from typing import Dict, List, Optional
 from uuid import UUID
 
 import sqlalchemy as sa
@@ -49,12 +50,39 @@ class AuthoritativeChangeOrigin(enum.Enum):
     other = "OTHER"
 
 
-@dataclass
+@dataclasses.dataclass
 class NRTM4ClientDatabaseStatus:
     session_id: Optional[UUID]
     version: Optional[int]
     current_key: Optional[str]
     next_key: Optional[str]
+
+
+@dataclasses.dataclass
+class NRTM4ServerDatabaseStatus:
+    session_id: Optional[UUID]
+    version: Optional[int]
+    last_update_notification_file_update: Optional[datetime.datetime]
+    last_snapshot_version: Optional[int]
+    last_snapshot_global_serial: Optional[int]
+    last_snapshot_filename: Optional[str]
+    last_snapshot_timestamp: Optional[datetime.datetime]
+    last_snapshot_hash: Optional[str]
+    previous_deltas: List[Dict]
+
+    @classmethod
+    def from_dict(cls, env):
+        return cls(
+            session_id=env["nrtm4_server_session_id"],
+            version=env["nrtm4_server_version"],
+            last_update_notification_file_update=env["nrtm4_server_last_update_notification_file_update"],
+            last_snapshot_version=env["nrtm4_server_last_snapshot_version"],
+            last_snapshot_global_serial=env["nrtm4_server_last_snapshot_global_serial"],
+            last_snapshot_filename=env["nrtm4_server_last_snapshot_filename"],
+            last_snapshot_timestamp=env["nrtm4_server_last_snapshot_timestamp"],
+            last_snapshot_hash=env["nrtm4_server_last_snapshot_hash"],
+            previous_deltas=env["nrtm4_server_previous_deltas"] or [],
+        )
 
 
 Base = declarative_base()
@@ -257,6 +285,16 @@ class RPSLDatabaseStatus(Base):  # type: ignore
     nrtm4_client_version = sa.Column(sa.Integer)
     nrtm4_client_current_key = sa.Column(sa.Text)
     nrtm4_client_next_key = sa.Column(sa.Text)
+
+    nrtm4_server_session_id = sa.Column(pg.UUID(as_uuid=True))
+    nrtm4_server_version = sa.Column(sa.Integer)
+    nrtm4_server_last_update_notification_file_update = sa.Column(sa.DateTime(timezone=True))
+    nrtm4_server_last_snapshot_version = sa.Column(sa.Integer)
+    nrtm4_server_last_snapshot_global_serial = sa.Column(sa.Integer)
+    nrtm4_server_last_snapshot_timestamp = sa.Column(sa.DateTime(timezone=True))
+    nrtm4_server_last_snapshot_filename = sa.Column(sa.Text)
+    nrtm4_server_last_snapshot_hash = sa.Column(sa.Text)
+    nrtm4_server_previous_deltas = sa.Column(pg.JSONB, nullable=True)
 
     force_reload = sa.Column(sa.Boolean(), default=False, nullable=False)
     synchronised_serials = sa.Column(sa.Boolean(), default=True, nullable=False)

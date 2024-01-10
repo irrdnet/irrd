@@ -1,4 +1,5 @@
-from typing import IO, Any, Generator, Iterable
+from gzip import GzipFile
+from typing import IO, Any, Generator, Iterable, Union
 
 import ujson
 
@@ -32,11 +33,19 @@ def jsonseq_decode(input_stream: IO[bytes]) -> Generator[dict, None, None]:
         yield from yield_buffer()
 
 
-def jsonseq_encode(input_stream: Iterable[Any], output_stream: IO[bytes]):
+def jsonseq_encode(input_stream: Iterable[Any], output_stream: Union[IO[bytes], GzipFile]):
     """
     Encode a byte stream with RFC7464 JSON sequences.
     Reads objects from the input iterable, writes the bytes to the output stream.
     """
     for input_item in input_stream:
-        input_encoded = ujson.dumps(input_item)
-        output_stream.write(RS + input_encoded.encode("utf-8") + b"\n")
+        jsonseq_encode_one(input_item, output_stream)
+
+
+def jsonseq_encode_one(input_item: Any, output_stream: Union[IO[bytes], GzipFile]):
+    """
+    Encode a byte stream with RFC7464 JSON sequences.
+    Reads a single object and writes the bytes to the output stream.
+    """
+    input_encoded = ujson.dumps(input_item)
+    output_stream.write(RS + input_encoded.encode("utf-8") + b"\n")

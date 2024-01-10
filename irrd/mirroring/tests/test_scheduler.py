@@ -314,6 +314,36 @@ class TestMirrorScheduler:
         time.sleep(0.5)
         assert thread_run_count == 1
 
+    def test_scheduler_runs_nrtm4_server(self, monkeypatch, config_override):
+        monkeypatch.setattr("irrd.mirroring.scheduler.TransactionTimePreloadSignaller", object)
+        monkeypatch.setattr("irrd.mirroring.scheduler.ScheduledTaskProcess", MockScheduledTaskProcess)
+        global thread_run_count
+        thread_run_count = 0
+
+        config_override(
+            {
+                "rpki": {"roa_source": None},
+                "sources": {
+                    "TEST": {
+                        "nrtm4_server_base_url": "https://example.com",
+                        "nrtm4_server_private_key": "FalXchs8HIU22Efc3ipNcxVwYwB+Mp0x9TCM9BFtig0=",
+                        "nrtm4_server_private_key_next": "4YDgaXpRDIU8vJbFYeYgPQqEa4YAdHeRF1s6SLdXCsE=",
+                    }
+                },
+            }
+        )
+
+        monkeypatch.setattr("irrd.mirroring.scheduler.NRTM4Server", MockRunner)
+        MockRunner.run_sleep = True
+
+        scheduler = MirrorScheduler()
+        scheduler.run()
+        time.sleep(0.5)
+        # Second run will not start the thread, as the current one is still running
+        scheduler.run()
+
+        assert thread_run_count == 1
+
 
 class TestScheduledTaskProcess:
     def test_task(self):

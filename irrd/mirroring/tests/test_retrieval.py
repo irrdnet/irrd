@@ -5,7 +5,7 @@ from tempfile import NamedTemporaryFile
 
 import pytest
 
-from irrd.mirroring.retrieval import _check_expected_hash
+from irrd.mirroring.retrieval import check_file_hash_sha256
 
 
 def test_check_expected_hash(tmp_path):
@@ -13,9 +13,9 @@ def test_check_expected_hash(tmp_path):
     f.write(b"test")
     f.close()
 
-    _check_expected_hash(f.name, expected_hash=None)
-    _check_expected_hash(
+    check_file_hash_sha256(f.name, expected_hash=None)
+    check_file_hash_sha256(
         f.name, expected_hash="9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
     )
     with pytest.raises(ValueError):
-        _check_expected_hash(f.name, expected_hash="9f")
+        check_file_hash_sha256(f.name, expected_hash="9f")
