@@ -124,8 +124,23 @@ class TestAuthValidator:
             ["rpsl_pks", ({"TEST-MNT"},), {}],
         ]
 
-<<<<<<< HEAD
-=======
+    def test_new_person_with_legacy_hash(self, prepare_mocks, config_override):
+        config_override(
+            {
+                "auth": {"password_hashers": {"crypt-pw": "legacy"}},
+            }
+        )
+
+        validator, mock_dq, mock_dh = prepare_mocks
+        person = rpsl_object_from_text(SAMPLE_PERSON)
+        mock_dh.execute_query = lambda q: [
+            {"object_class": "mntner", "object_text": SAMPLE_MNTNER},
+        ]
+
+        validator.passwords = [SAMPLE_MNTNER_CRYPT]
+        result = validator.process_auth(person, None)
+        assert result.is_valid()
+
     def test_new_person_with_authless_mntner(self, prepare_mocks, config_override):
         # "authless" meaning: no auth lines that are currently enabled - #891
         config_override(
@@ -139,84 +154,14 @@ class TestAuthValidator:
         cryptonly_maintainer = "\n".join(
             line for line in SAMPLE_MNTNER.splitlines() if not line.startswith("auth:") or "CRYPT" in line
         )
-        print(cryptonly_maintainer)
         mock_dh.execute_query = lambda q: [
             {"object_class": "mntner", "object_text": cryptonly_maintainer},
         ]
 
-        validator.passwords = [SAMPLE_MNTNER_MD5]
+        validator.passwords = [SAMPLE_MNTNER_CRYPT]
         result = validator.process_auth(person, None)
         assert not result.is_valid()
 
-    def test_valid_new_person_api_key(self, prepare_mocks, monkeypatch):
-        validator, mock_dq, mock_dh = prepare_mocks
-        person = rpsl_object_from_text(SAMPLE_PERSON)
-        mock_mntner = AuthMntner(rpsl_mntner_pk="TEST-MNT")
-        mock_sa_session = UnifiedAlchemyMagicMock(
-            data=[
-                (
-                    [
-                        mock.call.query(AuthMntner),
-                        mock.call.filter(
-                            AuthMntner.rpsl_mntner_pk == "TEST-MNT", AuthMntner.rpsl_mntner_source == "TEST"
-                        ),
-                    ],
-                    [mock_mntner],
-                )
-            ]
-        )
-        mock_api_key = AuthApiTokenFactory.build(mntner=mock_mntner)
-        monkeypatch.setattr("irrd.updates.validators.saorm.Session", lambda bind: mock_sa_session)
-
-        mock_dh._connection = None
-        mock_dh.execute_query = lambda q: [
-            {"object_class": "mntner", "object_text": SAMPLE_MNTNER},
-        ]
-        mock_sa_session.all = lambda: [mock_api_key]
-
-        validator.api_keys = ["key"]
-        result = validator.process_auth(person, None)
-        assert result.is_valid(), result.error_messages
-        assert result.mntners_notify[0].pk() == "TEST-MNT"
-        assert result.auth_method == AuthMethod.MNTNER_API_KEY
-        assert result.auth_through_mntner == "TEST-MNT"
-        assert result.auth_through_internal_mntner.rpsl_mntner_pk == "TEST-MNT"
-
-        mock_sa_session.filter.assert_has_calls(
-            [
-                mock.call(
-                    AuthMntner.rpsl_mntner_pk == "TEST-MNT",
-                    AuthMntner.rpsl_mntner_source == "TEST",
-                    AuthApiToken.token.in_(["key"]),
-                ),
-            ]
-        )
-
-        validator.origin = AuthoritativeChangeOrigin.webui
-        result = validator.process_auth(person, None)
-        assert not result.is_valid(), result.error_messages
-
-        validator.origin = AuthoritativeChangeOrigin.email
-        result = validator.process_auth(person, None)
-        assert result.is_valid(), result.error_messages
-
-        mock_api_key.enabled_email = False
-        validator.origin = AuthoritativeChangeOrigin.email
-        result = validator.process_auth(person, None)
-        assert not result.is_valid(), result.error_messages
-
-        mock_api_key.ip_restriction = "192.0.2.0/26,192.0.2.64/26"
-        validator.remote_ip = IP("192.0.2.1")
-        validator.origin = AuthoritativeChangeOrigin.webapi
-        result = validator.process_auth(person, None)
-        assert result.is_valid(), result.error_messages
-
-        validator.remote_ip = IP("192.0.2.200")
-        validator.origin = AuthoritativeChangeOrigin.webapi
-        result = validator.process_auth(person, None)
-        assert not result.is_valid(), result.error_messages
-
->>>>>>> eb51512 (Fix #891 - Gracefully handle auth for a mntner with no enabled methods)
     def test_existing_person_mntner_change(self, prepare_mocks):
         validator, mock_dq, mock_dh = prepare_mocks
         # TEST-MNT is in both maintainers
