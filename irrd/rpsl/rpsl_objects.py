@@ -438,7 +438,7 @@ class RPSLMntner(RPSLObject):
             )
 
     def verify_auth(self, passwords: List[str], keycert_obj_pk: Optional[str] = None) -> Optional[str]:
-        return verify_auth_lines(self.parsed_data["auth"], passwords, keycert_obj_pk)
+        return verify_auth_lines(self.parsed_data.get("auth", []), passwords, keycert_obj_pk)
 
     def has_dummy_auth_value(self) -> bool:
         """
