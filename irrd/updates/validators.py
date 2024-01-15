@@ -484,7 +484,7 @@ class AuthValidator:
             query = query.object_classes(["mntner"]).rpsl_pks(mntner_pks_to_resolve)
             results = self.database_handler.execute_query(query)
 
-            retrieved_mntner_objs: List[RPSLMntner] = [rpsl_object_from_text(r["object_text"]) for r in results]  # type: ignore
+            retrieved_mntner_objs: List[RPSLMntner] = [rpsl_object_from_text(r["object_text"], strict_validation=False) for r in results]  # type: ignore
             self._mntner_db_cache.update(retrieved_mntner_objs)
             mntner_objs += retrieved_mntner_objs
 
