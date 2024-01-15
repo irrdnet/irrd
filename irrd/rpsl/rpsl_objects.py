@@ -434,6 +434,7 @@ class RPSLMntner(RPSLObject):
                 "Either all password auth hashes in a submitted mntner must be dummy objects, or none."
             )
 
+<<<<<<< HEAD
     def verify_auth(self, passwords: List[str], keycert_obj_pk: Optional[str] = None) -> bool:
         """
         Verify whether one of a given list of passwords matches
@@ -456,6 +457,10 @@ class RPSLMntner(RPSLObject):
                     except ValueError:
                         pass
         return False
+=======
+    def verify_auth(self, passwords: List[str], keycert_obj_pk: Optional[str] = None) -> Optional[str]:
+        return verify_auth_lines(self.parsed_data.get("auth", []), passwords, keycert_obj_pk)
+>>>>>>> eb51512 (Fix #891 - Gracefully handle auth for a mntner with no enabled methods)
 
     def has_dummy_auth_value(self) -> bool:
         """
