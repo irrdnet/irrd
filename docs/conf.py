@@ -92,9 +92,9 @@ todo_include_todos = False
 html_theme = 'sphinx_immaterial'
 html_show_sourcelink = False
 
-html_sidebars = {
-    "**": ["logo-text.html", "globaltoc.html", "localtoc.html", "searchbox.html"]
-}
+# html_sidebars = {
+#     "**": ["logo-text.html", "globaltoc.html", "localtoc.html", "searchbox.html"]
+# }
 
 # Theme options are theme-specific and customize the look and feel of a
 # theme further.  For a list of options available for each theme, see the
@@ -121,7 +121,7 @@ html_theme_options = {
         "search.highlight",
         # "search.share",
         "toc.follow",
-        # "toc.sticky",
+        "toc.sticky",
         # "content.tabs.link",
         # "announce.dismiss",
     ],
