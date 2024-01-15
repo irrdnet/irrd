@@ -180,6 +180,23 @@ class TestAuthValidator:
             ["rpsl_pks", ({"TEST-MNT"},), {}],
         ]
 
+    def test_new_person_with_legacy_hash(self, prepare_mocks, config_override):
+        config_override(
+            {
+                "auth": {"password_hashers": {"crypt-pw": "legacy"}},
+            }
+        )
+
+        validator, mock_dq, mock_dh = prepare_mocks
+        person = rpsl_object_from_text(SAMPLE_PERSON)
+        mock_dh.execute_query = lambda q: [
+            {"object_class": "mntner", "object_text": SAMPLE_MNTNER},
+        ]
+
+        validator.passwords = [SAMPLE_MNTNER_CRYPT]
+        result = validator.process_auth(person, None)
+        assert result.is_valid()
+
     def test_new_person_with_authless_mntner(self, prepare_mocks, config_override):
         # "authless" meaning: no auth lines that are currently enabled - #891
         config_override(
@@ -193,12 +210,11 @@ class TestAuthValidator:
         cryptonly_maintainer = "\n".join(
             line for line in SAMPLE_MNTNER.splitlines() if not line.startswith("auth:") or "CRYPT" in line
         )
-        print(cryptonly_maintainer)
         mock_dh.execute_query = lambda q: [
             {"object_class": "mntner", "object_text": cryptonly_maintainer},
         ]
 
-        validator.passwords = [SAMPLE_MNTNER_MD5]
+        validator.passwords = [SAMPLE_MNTNER_CRYPT]
         result = validator.process_auth(person, None)
         assert not result.is_valid()
 
