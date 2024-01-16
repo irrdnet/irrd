@@ -99,19 +99,24 @@ commands:
             echo
 
       - run:
-          name: Installing psql client, enchant, netcat, rust
-          command: $SUDO apt -y install postgresql-client netcat python3-enchant rustc
+          name: Installing psql client, enchant, netcat
+          command: $SUDO apt -y install postgresql-client netcat python3-enchant python3-venv python3-dev
+
+      - run:
+          name: Installing rust
+          command: $SUDO curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
       - restore_cache:
           keys:
-            - v23-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
+            - v24-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
               "requirements.txt" }}
             # fallback to using the latest cache if no exact match is found
-            - v23-dependencies-{{ .Environment.CIRCLE_JOB }}
+            - v24-dependencies-{{ .Environment.CIRCLE_JOB }}
 
       - run:
           name: install latest pip
           command: |
+            rm -rf venv
             $PYTHON_INTERPRETER -m venv venv
             . venv/bin/activate
             pip install -U pip
@@ -119,6 +124,7 @@ commands:
       - run:
           name: install dependencies
           command: |
+            rm -rf venv
             PATH=$PATH:/root/.cargo/bin/
             $PYTHON_INTERPRETER -m venv venv
             . venv/bin/activate
@@ -127,7 +133,7 @@ commands:
       - save_cache:
           paths:
             - ./venv
-          key: v23-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
+          key: v24-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
             "requirements.txt" }}
 
   wait_for_postgres:
@@ -200,6 +206,7 @@ jobs:
           IRRD_REDIS_URL: 'redis://localhost'
           PYTHON_INTERPRETER: python3
           SUDO: sudo
+          PATH: /root/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
       - image: cimg/postgres:<< parameters.postgres_version >>
         environment:
@@ -236,6 +243,7 @@ jobs:
           IRRD_REDIS_URL: 'redis://localhost'
           PYTHON_INTERPRETER: pypy3
           SUDO: ''
+          PATH: /root/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
       - image: cimg/postgres:<< parameters.postgres_version >>
         environment:
@@ -274,6 +282,7 @@ jobs:
           IRRD_REDIS_URL_INTEGRATION_2: 'redis://localhost/5'
           PYTHON_INTERPRETER: python3
           SUDO: sudo
+          PATH: /root/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
       - image: cimg/postgres:<< parameters.postgres_version >>
         environment:
@@ -313,6 +322,7 @@ jobs:
           IRRD_REDIS_URL_INTEGRATION_2: 'redis://localhost/5'
           PYTHON_INTERPRETER: pypy3
           SUDO: ''
+          PATH: /root/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
       - image: cimg/postgres:<< parameters.postgres_version >>
         environment:
