@@ -34,7 +34,7 @@ class NRTMGenerator:
 
         q = DatabaseStatusQuery().source(source)
         try:
-            status = next(database_handler.execute_query(q))
+            status = next(database_handler.execute_query(q, refresh_on_error=True))
         except StopIteration:
             raise NRTMGeneratorException("There are no journal entries for this source.")
 
@@ -86,7 +86,7 @@ class NRTMGenerator:
             )
 
             try:
-                journal = next(database_handler.execute_query(q))
+                journal = next(database_handler.execute_query(q, refresh_on_error=True))
             except StopIteration:
                 raise NRTMGeneratorException(
                     "There are no journal entries greater than or equal to this serial"
@@ -114,7 +114,7 @@ class NRTMGenerator:
 
         output.append(f"%START Version: {version} {source} {serial_start_requested}-{serial_end_display}\n")
 
-        for operation in database_handler.execute_query(q):
+        for operation in database_handler.execute_query(q, refresh_on_error=True):
             operation_str = operation["operation"].value
             if version == "3":
                 operation_str += " " + str(operation["serial_nrtm"])
