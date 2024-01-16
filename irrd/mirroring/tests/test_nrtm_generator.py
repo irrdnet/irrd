@@ -48,7 +48,7 @@ def prepare_generator(monkeypatch, config_override):
             ],
         ]
     )
-    mock_dh.execute_query = lambda q: next(responses)
+    mock_dh.execute_query = lambda q, refresh_on_error: next(responses)
 
     yield NRTMGenerator(), mock_dh
 
@@ -151,7 +151,7 @@ class TestNRTMGenerator:
         generator, mock_dh = prepare_generator
 
         responses = repeat({"serial_oldest_journal": None, "serial_newest_journal": None})
-        mock_dh.execute_query = lambda q: responses
+        mock_dh.execute_query = lambda q, refresh_on_error: responses
 
         result = generator.generate("TEST", "3", 201, None, mock_dh)
         assert result == "% Warning: there are no updates available"
@@ -319,7 +319,7 @@ NRTM response header line2""",
             }
         )
 
-        mock_dh.execute_query = lambda q: iter(
+        mock_dh.execute_query = lambda q, refresh_on_error: iter(
             [
                 {
                     "serial_oldest_journal": 100,
