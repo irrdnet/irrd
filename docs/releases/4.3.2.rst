@@ -1,0 +1,13 @@
+============================
+Release notes for IRRd 4.3.2
+============================
+
+IRRd 4.3.2 was released on January 25th, 2024, and `fixes an issue`_ in earlier versions
+where:
+
+* Password hashers configured as legacy were incorrectly not
+  available for authentication.
+* The password validation did not gracefully handle maintainers
+  that had no currently supported authentication methods.
+
+.. _fixes an issue: https://github.com/irrdnet/irrd/pull/894
