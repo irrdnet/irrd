@@ -1033,25 +1033,18 @@ class DatabaseStatusTracker:
                 if source in self._new_serials_per_source and self._new_serials_per_source[source]:
                     serial_nrtm = max(self._new_serials_per_source[source]) + 1
                 else:
-                    serial_nrtm = sa.select([sa.text("COALESCE(MAX(serial_nrtm), 0) + 1")])
-                    serial_nrtm = serial_nrtm.where(RPSLDatabaseJournal.__table__.c.source == source)
-                    serial_nrtm_value = self.database_handler.execute_statement(serial_nrtm).scalar()
+                    serial_nrtm = sa.select(
+                        [sa.text("COALESCE(MAX(serial_nrtm), MAX(serial_newest_seen), 0) + 1")]
+                    )
+                    serial_nrtm = serial_nrtm.select_from(
+                        RPSLDatabaseStatus.__table__.outerjoin(
+                            RPSLDatabaseJournal.__table__, self.c_status.source == self.c_journal.source
+                        )
+                    )
+                    serial_nrtm = serial_nrtm.where(self.c_status.source == source)
                     # as_scalar() method is deprecated since version 1.4 and will be removed in a future release.
                     # Use scalar_subquery() instead when upgrading the sqlalchemy.
                     serial_nrtm = serial_nrtm.as_scalar()
-
-                    serial_newest_seen = sa.select([sa.text("COALESCE(MAX(serial_newest_seen), 0) + 1")])
-                    serial_newest_seen = serial_newest_seen.where(self.c_status.source == source)
-                    serial_newest_seen_value = self.database_handler.execute_statement(
-                        serial_newest_seen
-                    ).scalar()
-                    serial_newest_seen = serial_newest_seen.as_scalar()
-
-                    # If there is no records in the rpsl_database_journal table and the serial_newest_seen is
-                    # bigger than 1, use the serial_newest_seen as the serial_nrtm which is the initial serial
-                    # provided in irrd_load_database command.
-                    if serial_nrtm_value == 1 and serial_newest_seen_value > 1:
-                        serial_nrtm = serial_newest_seen
 
             timestamp = datetime.now(timezone.utc)
 
