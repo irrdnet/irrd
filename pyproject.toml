@@ -40,7 +40,7 @@ requests = "2.31.0"
 pytz = "2023.3"
 ariadne = "0.20.1"
 uvicorn = { extras = ["standard"], version = "0.23.2" }
-starlette = "0.31.0"
+starlette = "0.37.1"
 psutil = "5.9.5"
 asgiref = "3.6.0"
 pydantic = "1.10.12"

@@ -79,10 +79,10 @@ commands:
 
       - restore_cache:
           keys:
-            - v4-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
+            - v5-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
               "poetry.lock" }}
             # fallback to using the latest cache if no exact match is found
-            - v4-dependencies-{{ .Environment.CIRCLE_JOB }}
+            - v5-dependencies-{{ .Environment.CIRCLE_JOB }}
 
       - run:
           name: install python dependencies
@@ -94,7 +94,7 @@ commands:
       - save_cache:
           paths:
             - /mnt/ramdisk/.venv
-          key: v4-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
+          key: v5-dependencies-{{ .Environment.CIRCLE_JOB }}-{{ checksum
             "poetry.lock" }}
 
   wait_for_postgres:
@@ -276,7 +276,7 @@ jobs:
       - install_dependencies
 
       - restore_cache:
-          keys: v1-docs-cache
+          keys: v5-docs-cache
 
       # Sphinx_immaterial does parallel downloads that don't work
       # well on CircleCI. There is no setting, so we just edit
@@ -294,5 +294,5 @@ jobs:
       - save_cache:
           paths:
             - ./sphinx_immaterial_cache
-          key: v1-docs-cache
+          key: v5-docs-cache
 
