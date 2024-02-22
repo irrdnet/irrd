@@ -75,7 +75,7 @@ authenticators = [
     SessionAuthenticator(user_provider=user_provider),
 ]
 
-auth_middleware = Middleware(AuthenticationMiddleware, authenticators=authenticators)
+auth_middleware = Middleware(AuthenticationMiddleware, authenticators=authenticators)  # type: ignore
 
 
 def verify_password(user: AuthUser, plain: str) -> bool:

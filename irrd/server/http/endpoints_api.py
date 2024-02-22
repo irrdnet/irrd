@@ -10,7 +10,7 @@ from starlette.endpoints import HTTPEndpoint
 from starlette.requests import Request
 from starlette.responses import JSONResponse, PlainTextResponse, Response
 
-from irrd.server.access_check import is_client_permitted
+from irrd.server.access_check import STARLETTE_TEST_CLIENT_HOST, is_client_permitted
 from irrd.updates.handler import ChangeSubmissionHandler
 from irrd.utils.validators import RPSLChangeSubmission, RPSLSuspensionSubmission
 
@@ -25,8 +25,8 @@ logger = logging.getLogger(__name__)
 
 class StatusEndpoint(HTTPEndpoint):
     def get(self, request: Request) -> Response:
-        assert request.client
-        if not is_client_permitted(request.client.host, "server.http.status_access_list"):
+        host = request.client.host if request.client else STARLETTE_TEST_CLIENT_HOST
+        if not is_client_permitted(host, "server.http.status_access_list"):
             return PlainTextResponse("Access denied", status_code=403)
 
         response = StatusGenerator().generate_status()
@@ -35,15 +35,16 @@ class StatusEndpoint(HTTPEndpoint):
 
 class WhoisQueryEndpoint(HTTPEndpoint):
     def get(self, request: Request) -> Response:
-        assert request.client
+        host = request.client.host if request.client else STARLETTE_TEST_CLIENT_HOST
+        port = request.client.port if request.client else 0
         start_time = time.perf_counter()
         if "q" not in request.query_params:
             return PlainTextResponse('Missing required query parameter "q"', status_code=400)
-        client_str = request.client.host + ":" + str(request.client.port)
+        client_str = host + ":" + str(port)
         query = request.query_params["q"]
 
         parser = WhoisQueryParser(
-            request.client.host, client_str, request.app.state.preloader, request.app.state.database_handler
+            host, client_str, request.app.state.preloader, request.app.state.database_handler
         )
         response = parser.handle_query(query)
         response.clean_response()
@@ -72,7 +73,7 @@ class ObjectSubmissionEndpoint(HTTPEndpoint):
         return await self._handle_submission(request, delete=True)
 
     async def _handle_submission(self, request: Request, delete=False):
-        assert request.client
+        host = request.client.host if request.client else STARLETTE_TEST_CLIENT_HOST
         try:
             request_json = await request.json()
             data = RPSLChangeSubmission.parse_obj(request_json)
@@ -85,10 +86,10 @@ class ObjectSubmissionEndpoint(HTTPEndpoint):
         except (JSONDecodeError, KeyError):
             request_meta = {}
 
-        request_meta[META_KEY_HTTP_CLIENT_IP] = request.client.host
+        request_meta[META_KEY_HTTP_CLIENT_IP] = host
         request_meta["HTTP-User-Agent"] = request.headers.get("User-Agent")
         try:
-            remote_ip = IP(request.client.host)
+            remote_ip = IP(host)
         except ValueError:
             remote_ip = None
 
@@ -106,7 +107,7 @@ class ObjectSubmissionEndpoint(HTTPEndpoint):
 
 class SuspensionSubmissionEndpoint(HTTPEndpoint):
     async def post(self, request: Request) -> Response:
-        assert request.client
+        host = request.client.host if request.client else STARLETTE_TEST_CLIENT_HOST
         try:
             json = await request.json()
             data = RPSLSuspensionSubmission.parse_obj(json)
@@ -114,7 +115,7 @@ class SuspensionSubmissionEndpoint(HTTPEndpoint):
             return PlainTextResponse(str(error), status_code=400)
 
         request_meta = {
-            META_KEY_HTTP_CLIENT_IP: request.client.host,
+            META_KEY_HTTP_CLIENT_IP: host,
             "HTTP-User-Agent": request.headers.get("User-Agent"),
         }
         handler = ChangeSubmissionHandler()
