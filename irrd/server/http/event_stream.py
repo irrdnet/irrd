@@ -20,7 +20,7 @@ from irrd.routepref.status import RoutePreferenceStatus
 from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.scopefilter.status import ScopeFilterStatus
-from irrd.server.access_check import is_client_permitted
+from irrd.server.access_check import STARLETTE_TEST_CLIENT_HOST, is_client_permitted
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.event_stream import (
     REDIS_STREAM_END_IDENTIFIER,
@@ -40,8 +40,8 @@ logger = logging.getLogger(__name__)
 
 class EventStreamInitialDownloadEndpoint(HTTPEndpoint):
     async def get(self, request: Request) -> Response:
-        assert request.client
-        if not is_client_permitted(request.client.host, "server.http.event_stream_access_list"):
+        host = request.client.host if request.client else STARLETTE_TEST_CLIENT_HOST
+        if not is_client_permitted(host, "server.http.event_stream_access_list"):
             return PlainTextResponse("Access denied", status_code=403)
 
         sources = request.query_params.get("sources")
@@ -53,7 +53,7 @@ class EventStreamInitialDownloadEndpoint(HTTPEndpoint):
             )
         return StreamingResponse(
             EventStreamInitialDownloadGenerator(
-                request.client.host,
+                host,
                 sources.split(",") if sources else [],
                 object_classes.split(",") if object_classes else [],
             ).stream_response(),
@@ -144,9 +144,9 @@ class EventStreamEndpoint(WebSocketEndpoint):
     websocket = None
 
     async def on_connect(self, websocket: WebSocket) -> None:
-        assert websocket.client
+        host = websocket.client.host if websocket.client else STARLETTE_TEST_CLIENT_HOST
         await websocket.accept()
-        if not is_client_permitted(websocket.client.host, "server.http.event_stream_access_list"):
+        if not is_client_permitted(host, "server.http.event_stream_access_list"):
             await websocket.close(code=WS_1008_POLICY_VIOLATION)
             return
 
@@ -175,8 +175,8 @@ class EventStreamEndpoint(WebSocketEndpoint):
         await self.websocket.send_text(ujson.encode(message))
 
     async def on_receive(self, websocket: WebSocket, data: Any) -> None:
-        assert websocket.client
-        logger.debug(f"event stream {websocket.client.host}: received {data}")
+        host = websocket.client.host if websocket.client else STARLETTE_TEST_CLIENT_HOST
+        logger.debug(f"event stream {host}: received {data}")
         try:
             request = EventStreamSubscriptionRequest.parse_raw(data)
         except pydantic.ValidationError as exc:
@@ -199,7 +199,7 @@ class EventStreamEndpoint(WebSocketEndpoint):
             return
 
         self.stream_follower = await AsyncEventStreamFollower.create(
-            websocket.client.host, request.after_global_serial, self.message_callback
+            host, request.after_global_serial, self.message_callback
         )
 
     async def on_disconnect(self, websocket: WebSocket, close_code: int) -> None:

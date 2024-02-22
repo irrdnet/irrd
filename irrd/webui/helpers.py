@@ -9,6 +9,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from irrd.conf import get_setting
+from irrd.server.access_check import STARLETTE_TEST_CLIENT_HOST
 from irrd.storage.models import AuthUser, RPSLDatabaseObject, Setting
 from irrd.storage.orm_provider import ORMSessionProvider
 from irrd.utils.email import send_email
@@ -42,7 +43,8 @@ def rate_limit_post(_func=None, any_response_code=False):
 
             if request and request.method == "POST":
                 limiter = request.app.state.rate_limiter
-                permitted = await limiter.test(rate_limit, RATE_LIMIT_POST_200_NAMESPACE, request.client.host)
+                host = request.client.host if request.client else STARLETTE_TEST_CLIENT_HOST
+                permitted = await limiter.test(rate_limit, RATE_LIMIT_POST_200_NAMESPACE, host)
                 if not permitted:
                     logger.info(f"{client_ip_str(request)}rejecting request due to rate limiting")
                     return Response("Request denied due to rate limiting", status_code=403)
@@ -50,7 +52,7 @@ def rate_limit_post(_func=None, any_response_code=False):
                 response = await func(*args, **kwargs)
 
                 if any_response_code or response.status_code == 200:
-                    await limiter.hit(rate_limit, RATE_LIMIT_POST_200_NAMESPACE, request.client.host)
+                    await limiter.hit(rate_limit, RATE_LIMIT_POST_200_NAMESPACE, host)
             else:
                 response = await func(*args, **kwargs)
 
@@ -133,15 +135,15 @@ def filter_auth_hash_non_mntner(user: Optional[AuthUser], rpsl_object: RPSLDatab
 def client_ip_str(request: Optional[Request]) -> str:
     """Small wrapper to wrap client IP in a loggable str."""
     ip = client_ip(request)
-    if ip:
+    if ip:  # pragma: no cover
         return f"{ip}: "
     return ""  # pragma: no cover
 
 
 def client_ip(request: Optional[Request]) -> Optional[str]:
     """Small wrapper to get the client IP from a request."""
-    if request and request.client:
-        return request.client.host if request.client.host != "testclient" else "127.0.0.1"
+    if request:
+        return request.client.host if request.client else "127.0.0.1"
     return None
 
 
