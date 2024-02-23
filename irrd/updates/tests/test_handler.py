@@ -1071,7 +1071,6 @@ class TestChangeSubmissionHandler:
                             {"name": "person", "value": "Placeholder Person Object"},
                             {"name": "nic-hdl", "value": "PERSON-TEST"},
                             {"name": "changed", "value": "changed@example.com 20190701 # comment"},
-                            {"name": "source", "value": "TEST"},
                         ]
                     },
                 ],
@@ -1110,12 +1109,8 @@ class TestChangeSubmissionHandler:
         person: Placeholder Person Object
         nic-hdl: PERSON-TEST
         changed: changed@example.com 20190701 # comment
-        source: TEST
         
-        ERROR: Mandatory attribute "address" on object person is missing
-        ERROR: Mandatory attribute "phone" on object person is missing
-        ERROR: Mandatory attribute "e-mail" on object person is missing
-        ERROR: Mandatory attribute "mnt-by" on object person is missing
+        ERROR: Primary key attribute "source" on object person is missing
         ERROR: Can not delete object: no object found for this key in this database.
  
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
