@@ -92,7 +92,7 @@ class ChangeRequest:
                 )
             except ValueError:
                 pass
-            if self.non_strict_mode:
+            if self.non_strict_mode or delete_reason:
                 self.rpsl_obj_new = rpsl_object_from_text(rpsl_text_submitted, strict_validation=False)
 
             if self.rpsl_obj_new.messages.errors():
