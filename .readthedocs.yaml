@@ -18,7 +18,7 @@ build:
       - asdf global poetry latest
       - poetry config virtualenvs.create false
     post_install:
-      - pip install .
+      - poetry install -vvv --with=docs
 
 
 # Build documentation in the docs/ directory with Sphinx
