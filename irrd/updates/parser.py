@@ -88,18 +88,8 @@ class ChangeRequest:
 
         try:
             self.rpsl_obj_new = rpsl_object_from_text(rpsl_text_submitted, strict_validation=True)
-<<<<<<< HEAD
-=======
-            try:
-                self.non_strict_mode = get_setting(
-                    f"sources.{self.rpsl_obj_new.source()}.authoritative_non_strict_mode_dangerous", False
-                )
-            except ValueError:
-                pass
-            if self.non_strict_mode or self.request_type == UpdateRequestType.DELETE:
+            if self.request_type == UpdateRequestType.DELETE:
                 self.rpsl_obj_new = rpsl_object_from_text(rpsl_text_submitted, strict_validation=False)
-
->>>>>>> 3239354 (Fix #647, fix #909 - Always parse delete object non-strict)
             if self.rpsl_obj_new.messages.errors():
                 self.status = UpdateRequestStatus.ERROR_PARSING
             self.error_messages = self.rpsl_obj_new.messages.errors()
