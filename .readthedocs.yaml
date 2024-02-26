@@ -19,6 +19,9 @@ build:
       - poetry config virtualenvs.create false
     post_install:
       - poetry install -vvv --with=docs
+      - ls /home/docs/checkouts/readthedocs.org/user_builds/irrd/envs/docfix
+      - ls /home/docs/checkouts/readthedocs.org/user_builds/irrd/envs/docfix/lib/python3.11/site-packages/
+      - ls /home/docs/.asdf/installs/python/3.11.6/lib/python3.11/site-packages
 
 
 # Build documentation in the docs/ directory with Sphinx
