@@ -17,6 +17,7 @@ build:
       - asdf install poetry latest
       - asdf global poetry latest
       - poetry config virtualenvs.create false
+      - poetry env use `which python`
       - which python
     post_install:
       - poetry env info
