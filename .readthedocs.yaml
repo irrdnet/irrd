@@ -16,7 +16,7 @@ build:
       - asdf plugin add poetry
       - asdf install poetry latest
       - asdf global poetry latest
-      - mkdir -p .cache/pypoetry/virtualenvs
+      - mkdir -p /home/docs/.cache/pypoetry/virtualenvs/
       - poetry config virtualenvs.create false
       - poetry env use `which python`
       - which python
