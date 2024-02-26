@@ -84,6 +84,9 @@ class ChangeRequest:
         self.request_meta = request_meta
         self.non_strict_mode = False
 
+        if delete_reason:
+            self.request_type = UpdateRequestType.DELETE
+
         try:
             self.rpsl_obj_new = rpsl_object_from_text(rpsl_text_submitted, strict_validation=True)
             try:
@@ -92,7 +95,7 @@ class ChangeRequest:
                 )
             except ValueError:
                 pass
-            if self.non_strict_mode or delete_reason:
+            if self.non_strict_mode or self.request_type == UpdateRequestType.DELETE:
                 self.rpsl_obj_new = rpsl_object_from_text(rpsl_text_submitted, strict_validation=False)
 
             if self.rpsl_obj_new.messages.errors():
@@ -136,17 +139,15 @@ class ChangeRequest:
 
             self._retrieve_existing_version()
 
-        if delete_reason:
-            self.request_type = UpdateRequestType.DELETE
-            if not self.rpsl_obj_current:
-                self.status = UpdateRequestStatus.ERROR_PARSING
-                self.error_messages.append(
-                    "Can not delete object: no object found for this key in this database."
-                )
-                logger.debug(
-                    f"{id(self)}: Request attempts to delete object {self.rpsl_obj_new}, "
-                    "but no existing object found."
-                )
+        if self.request_type == UpdateRequestType.DELETE and not self.rpsl_obj_current:
+            self.status = UpdateRequestStatus.ERROR_PARSING
+            self.error_messages.append(
+                "Can not delete object: no object found for this key in this database."
+            )
+            logger.debug(
+                f"{id(self)}: Request attempts to delete object {self.rpsl_obj_new}, "
+                "but no existing object found."
+            )
 
     def _retrieve_existing_version(self):
         """
@@ -158,12 +159,12 @@ class ChangeRequest:
         results = list(self.database_handler.execute_query(query))
 
         if not results:
-            self.request_type = UpdateRequestType.CREATE
+            self.request_type = UpdateRequestType.CREATE if not self.request_type else self.request_type
             logger.debug(
                 f"{id(self)}: Did not find existing version for object {self.rpsl_obj_new}, request is CREATE"
             )
         elif len(results) == 1:
-            self.request_type = UpdateRequestType.MODIFY
+            self.request_type = UpdateRequestType.MODIFY if not self.request_type else self.request_type
             self.rpsl_obj_current = rpsl_object_from_text(results[0]["object_text"], strict_validation=False)
             logger.debug(
                 f"{id(self)}: Retrieved existing version for object "
@@ -323,7 +324,7 @@ class ChangeRequest:
                 self.error_messages += self.rpsl_obj_new.messages.errors()
                 self.status = UpdateRequestStatus.ERROR_PARSING
                 return False
-        if self.rpsl_obj_new and self.request_type:
+        if self.rpsl_obj_new and self.request_type and self.request_type != UpdateRequestType.DELETE:
             rules_result = self.rules_validator.validate(self.rpsl_obj_new, self.request_type)
             self.info_messages += rules_result.info_messages
             self.error_messages += rules_result.error_messages
