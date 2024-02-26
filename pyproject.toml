@@ -83,6 +83,7 @@ smtpdfix = "^0.5.1"
 httpx = "^0.24.0"
 
 [tool.poetry.group.docs.dependencies]
+# Also in readthedocs.yaml
 sphinx = "^6.1.3"
 sphinxcontrib-spelling = "^8.0.0"
 sphinx-immaterial = "^0.11.10"
