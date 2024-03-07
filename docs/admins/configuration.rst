@@ -775,6 +775,11 @@ Sources
   discouraged**, as it allows reduced data integrity.
   |br| **Default**: ``false``, authoritative changes validated strictly.
   |br| **Change takes effect**: after SIGHUP, for all subsequent changes.
+* ``sources.{name}.authoritative_unset_last_modified``: a boolean for whether
+  to skip setting last-modified attribute when the authoritative object is
+  created or updated.
+  |br| **Default**: ``false``.
+  |br| **Change takes effect**: after SIGHUP, for all subsequent changes.
 
 
 For more detail on mirroring other sources, and providing mirroring services
