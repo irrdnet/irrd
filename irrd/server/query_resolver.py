@@ -180,7 +180,11 @@ class QueryResolver:
         self._current_set_root_object_class = "as-set"
         self._current_excluded_sets = exclude_sets if exclude_sets else set()
         self._current_set_maximum_depth = 0
-        members = self._recursive_set_resolve({set_name})
+        if "::" in set_name:
+            source, set_name = set_name.split("::")
+            members = self._recursive_set_resolve(members={set_name}, root_source=source)
+        else:
+            members = self._recursive_set_resolve({set_name})
         return self.preloader.routes_for_origins(
             members, self.source_manager.sources_resolved, ip_version=ip_version
         )
@@ -196,7 +200,11 @@ class QueryResolver:
         """
         query = self._prepare_query(column_names=["source"])
         object_classes = ["as-set", "route-set"]
-        query = query.object_classes(object_classes).rpsl_pk(parameter)
+        if "::" in parameter:
+            rpsl_pk = parameter.split("::")[1]
+        else:
+            rpsl_pk = parameter
+        query = query.object_classes(object_classes).rpsl_pk(rpsl_pk)
         set_sources = [row["source"] for row in self._execute_query(query)]
 
         return {
@@ -231,7 +239,11 @@ class QueryResolver:
             members, leaf_members = self._find_set_members({parameter}, limit_source=root_source)
             members.update(leaf_members)
         else:
-            members = self._recursive_set_resolve({parameter}, root_source=root_source)
+            if "::" in parameter:
+                source, set_name = parameter.split("::")
+                members = self._recursive_set_resolve(members={set_name}, root_source=source)
+            else:
+                members = self._recursive_set_resolve({parameter}, root_source=root_source)
         if parameter in members:
             members.remove(parameter)
 
