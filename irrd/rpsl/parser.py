@@ -186,12 +186,20 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         Render the RPSL object as an RPSL string.
         If last_modified is provided, removes existing last-modified:
         attributes and adds a new one with that timestamp, if self.source()
-        is authoritative.
+        is authoritative and authoritative_retain_last_modified config is unset.
         """
         output = ""
         authoritative = get_setting(f"sources.{self.source()}.authoritative")
+        authoritative_retain_last_modified = get_setting(
+            f"sources.{self.source()}.authoritative_retain_last_modified"
+        )
         for attr, value, continuation_chars in self._object_data:
-            if authoritative and last_modified and attr == "last-modified":
+            if (
+                authoritative
+                and last_modified
+                and attr == "last-modified"
+                and not authoritative_retain_last_modified
+            ):
                 continue
             attr_display = f"{attr}:".ljust(RPSL_ATTRIBUTE_TEXT_WIDTH)
             value_lines = list(splitline_unicodesafe(value))
@@ -207,7 +215,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                         continuation_char = "+"
                     output += continuation_char + (RPSL_ATTRIBUTE_TEXT_WIDTH - 1) * " " + line
                 output += "\n"
-        if authoritative and last_modified:
+        if authoritative and last_modified and not authoritative_retain_last_modified:
             output += "last-modified:".ljust(RPSL_ATTRIBUTE_TEXT_WIDTH)
             output += last_modified.replace(microsecond=0).isoformat().replace("+00:00", "Z")
             output += "\n"

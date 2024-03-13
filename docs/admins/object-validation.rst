@@ -116,13 +116,14 @@ last-modified
 For authoritative objects, the ``last-modified`` attribute is set when
 the object is created or updated. Any existing ``last-modified`` values are
 discarded. This timestamp is not updated for changes in object suppression
-status. This attribute is visible over NRTM and in exports.
+status. This attribute is visible over NRTM and in exports. The behaviour
+can be disabled with the ``sources.{name}.authoritative_retain_last_modified``
+setting.
 
 By default, this attribute is only added when an object is changed or
 created. If you have upgraded to IRRd 4.1, you can use the
 ``irrd_set_last_modified_auth`` command to set it to the current time on
 all existing authoritative objects.
-
 This may take in the order of 10 minutes, depending
 on the number of objects to be updated. This only needs to be done once.
 It is safe to execute while other IRRd processes are running.
