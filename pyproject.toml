@@ -86,7 +86,7 @@ httpx = "^0.24.0"
 # Also in readthedocs.yaml
 sphinx = "^6.1.3"
 sphinxcontrib-spelling = "^8.0.0"
-sphinx-immaterial = "^0.11.4"
+sphinx-immaterial = "^0.11.11"
 pyenchant = "^3.2.2"
 
 [tool.poetry.scripts]
