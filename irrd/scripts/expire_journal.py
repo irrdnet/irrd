@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # flake8: noqa: E402
 import argparse
+import datetime
 import logging
 import sys
 import textwrap
-from datetime import datetime
 from pathlib import Path
 
 import pytz
@@ -15,13 +15,26 @@ Remove journal entries from IRRd.
 
 logger = logging.getLogger(__name__)
 sys.path.append(str(Path(__file__).resolve().parents[2]))
+from pytz import UTC
 
-from irrd.conf import CONFIG_PATH_DEFAULT, config_init, get_setting
+from irrd.conf import (
+    CONFIG_PATH_DEFAULT,
+    NRTM4_SERVER_DELTA_EXPIRY_TIME,
+    config_init,
+    get_setting,
+)
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseJournalQuery
 
 
-def expire_journal(skip_confirmation: bool, expire_before: datetime, source: str):
+def expire_journal(skip_confirmation: bool, expire_before: datetime.datetime, source: str):
+    minimum_expiry = (
+        datetime.datetime.now(tz=UTC) - NRTM4_SERVER_DELTA_EXPIRY_TIME - datetime.timedelta(days=1)
+    )
+    if expire_before > minimum_expiry:
+        print(f"Minimum expiry is {minimum_expiry.strftime('%Y-%m-%d')}")
+        return 1
+
     dh = DatabaseHandler()
 
     q = (
@@ -88,7 +101,7 @@ def main():  # pragma: no cover
         sys.exit(-1)
 
     try:
-        expire_before = pytz.utc.localize(datetime.strptime(args.expire_before, "%Y-%m-%d"))
+        expire_before = pytz.utc.localize(datetime.datetime.strptime(args.expire_before, "%Y-%m-%d"))
     except ValueError:
         print("Invalid date or date format")
         sys.exit(-1)
