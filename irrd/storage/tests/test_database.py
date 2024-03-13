@@ -520,6 +520,96 @@ class TestDatabaseHandlerLive:
 
         self.dh.close()
 
+    def test_keep_initial_serial(self, monkeypatch, irrd_db_mock_preload):
+        monkeypatch.setenv("IRRD_SOURCES_TEST_KEEP_JOURNAL", "1")
+
+        self.dh = DatabaseHandler()
+
+        assert not self._clean_result(self.dh.execute_query(RPSLDatabaseJournalQuery()))
+
+        # Record initial serial provided in the irrd_load_database command
+        self.dh.record_serial_seen("TEST", 10)
+        self.dh.commit()
+
+        status_test = list(self.dh.execute_query(DatabaseStatusQuery().source("TEST")))
+        assert self._clean_result(status_test) == [
+            {
+                "source": "TEST",
+                "serial_oldest_journal": None,
+                "serial_newest_journal": None,
+                "serial_oldest_seen": 10,
+                "serial_newest_seen": 10,
+                "serial_last_export": None,
+                "serial_newest_mirror": None,
+                "nrtm4_client_session_id": None,
+                "nrtm4_client_version": None,
+                "nrtm4_client_current_key": None,
+                "nrtm4_client_next_key": None,
+                "last_error": None,
+                "force_reload": False,
+                "synchronised_serials": False,
+            },
+        ]
+
+        rpsl_object_route_v4 = Mock(
+            pk=lambda: "192.0.2.0/24,AS65537",
+            rpsl_object_class="route",
+            parsed_data={"source": "TEST"},
+            render_rpsl_text=lambda last_modified: "object-text",
+            ip_version=lambda: 4,
+            ip_first=IP("192.0.2.0"),
+            ip_last=IP("192.0.2.255"),
+            prefix=IP("192.0.2.0/24"),
+            prefix_length=24,
+            asn_first=65537,
+            asn_last=65537,
+            rpki_status=RPKIStatus.not_found,
+            scopefilter_status=ScopeFilterStatus.in_scope,
+            route_preference_status=RoutePreferenceStatus.visible,
+        )
+        self.dh.upsert_rpsl_object(rpsl_object_route_v4, JournalEntryOrigin.auth_change)
+
+        rpsl_object_route_v6 = Mock(
+            pk=lambda: "2001:db8::/64,AS65537",
+            rpsl_object_class="route",
+            parsed_data={"mnt-by": "MNT-CORRECT", "source": "TEST"},
+            render_rpsl_text=lambda last_modified: "object-text",
+            ip_version=lambda: 6,
+            ip_first=IP("2001:db8::"),
+            ip_last=IP("2001:db8::ffff:ffff:ffff:ffff"),
+            prefix=IP("2001:db8::/32"),
+            prefix_length=32,
+            asn_first=65537,
+            asn_last=65537,
+            rpki_status=RPKIStatus.not_found,
+            scopefilter_status=ScopeFilterStatus.in_scope,
+            route_preference_status=RoutePreferenceStatus.visible,
+        )
+        self.dh.upsert_rpsl_object(rpsl_object_route_v6, JournalEntryOrigin.auth_change)
+        self.dh.commit()
+
+        status_test = self._clean_result(self.dh.execute_query(DatabaseStatusQuery()))
+        assert status_test == [
+            {
+                "source": "TEST",
+                "serial_oldest_journal": 11,
+                "serial_newest_journal": 12,
+                "serial_oldest_seen": 10,
+                "serial_newest_seen": 12,
+                "serial_last_export": None,
+                "serial_newest_mirror": None,
+                "nrtm4_client_session_id": None,
+                "nrtm4_client_version": None,
+                "nrtm4_client_current_key": None,
+                "nrtm4_client_next_key": None,
+                "last_error": None,
+                "force_reload": False,
+                "synchronised_serials": False,
+            },
+        ]
+
+        self.dh.close()
+
     def test_roa_handling_and_query(self, irrd_db_mock_preload):
         self.dh = DatabaseHandler()
         self.dh.insert_roa_object(
