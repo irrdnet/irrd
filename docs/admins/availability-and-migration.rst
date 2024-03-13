@@ -76,7 +76,7 @@ There are several important requirements for this setup:
 * The PostgreSQL configuration must have ``track_commit_timestamp``
   and ``hot_standby_feedback`` enabled.
 * On the standby, you run the IRRD instance with the ``readonly_standby``
-  parameters set.
+  setting on.
 * The standby instance must use its own Redis instance. Do not use
   Redis replication.
 * ``rpki.roa_source`` must be consistent between active and standby
@@ -85,8 +85,10 @@ There are several important requirements for this setup:
   ``sources.{name}.route_object_preference``,
   ``sources.{name}.object_class_filter`` consistent between active
   and standby. Note that you can not set
-  ``sources.{name}.authoritative``, ``sources.{name}.nrtm_host``, or
-  ``sources.{name}.import_source`` on a standby instance, as these
+  ``sources.{name}.authoritative``, ``sources.{name}.nrtm_host``,
+  ``sources.{name}.import_source``, ``sources.{name}.import_source``,
+  ``sources.{name}.export_destination``, or ``sources.{name}.export_destination_unfiltered``
+  on a standby instance, as these
   conflict with ``readonly_standby``.
 * All instances must run the same IRRD version.
 * It is recommended that all PostgreSQL instances only host the IRRd
