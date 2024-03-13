@@ -441,6 +441,8 @@ class Configuration:
                 details.get("authoritative")
                 or details.get("nrtm_host")
                 or details.get("import_source")
+                or details.get("export_destination")
+                or details.get("export_destination_unfiltered")
                 or nrtm4_client_unf_url
             ):
                 errors.append(
