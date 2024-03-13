@@ -629,9 +629,9 @@ class TestLastModified:
         expected_text = rpsl_text + "last-modified:  old-value\n"
         assert obj.render_rpsl_text(last_modified=last_modified) == expected_text
 
-    def test_unset_last_modified(self, config_override):
+    def test_authoritative_retain_last_modified(self, config_override):
         config_override(
-            {"sources": {"TEST": {"authoritative": True, "authoritative_unset_last_modified": True}}}
+            {"sources": {"TEST": {"authoritative": True, "authoritative_retain_last_modified": True}}}
         )
         rpsl_text = object_sample_mapping[RPSLRtrSet().rpsl_object_class]
         obj = rpsl_object_from_text(rpsl_text + "last-modified: old-value\n")

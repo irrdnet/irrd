@@ -775,10 +775,11 @@ Sources
   discouraged**, as it allows reduced data integrity.
   |br| **Default**: ``false``, authoritative changes validated strictly.
   |br| **Change takes effect**: after SIGHUP, for all subsequent changes.
-* ``sources.{name}.authoritative_unset_last_modified``: a boolean for whether
-  to skip setting last-modified attribute when the authoritative object is
-  created or updated.
-  |br| **Default**: ``false``.
+* ``sources.{name}.authoritative_retain_last_modified``: whether to update
+  :ref:`last-modified <last-modified>` on authoritative objects when saving,
+  or to retain their original value, if any.
+  |br| **Default**: ``false``, last-modified is set/replaced when saving
+  authoritative objects.
   |br| **Change takes effect**: after SIGHUP, for all subsequent changes.
 
 

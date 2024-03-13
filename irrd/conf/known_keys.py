@@ -108,5 +108,5 @@ KNOWN_SOURCES_KEYS = {
     "scopefilter_excluded",
     "suspension_enabled",
     "route_object_preference",
-    "authoritative_unset_last_modified",
+    "authoritative_retain_last_modified",
 }
