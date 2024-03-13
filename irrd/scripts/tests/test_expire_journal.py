@@ -1,6 +1,7 @@
 import io
 from datetime import datetime
 
+import pytest
 import pytz
 
 from irrd.storage.queries import RPSLDatabaseJournalQuery
@@ -94,3 +95,13 @@ class TestExpireJournal:
             ["TEST"]
         ).entries_before_date(EXPIRY_DATE)
         assert not mock_dh.other_calls
+
+    @pytest.mark.freeze_time("2022-03-14 12:34:56")
+    def test_expire_too_recent(self, capsys, monkeypatch):
+        exit_code = expire_journal(
+            skip_confirmation=False,
+            expire_before=datetime(2022, 3, 13, tzinfo=pytz.UTC),
+            source="TEST",
+        )
+        assert exit_code == 1
+        assert "Minimum expiry is" in capsys.readouterr().out
