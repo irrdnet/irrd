@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import os
 from base64 import b64decode
@@ -115,9 +116,20 @@ class NRTM4Client:
         if not notification_file_url:  # pragma: no cover
             raise RuntimeError("NRTM4 client called for a source without a Update Notification File URL")
 
-        sig_url = notification_file_url + ".sig"
         unf_content, _ = retrieve_file(notification_file_url, return_contents=True)
-        signature, _ = retrieve_file(sig_url, return_contents=True)
+        unf_hash = hashlib.sha256(unf_content.encode("ascii")).hexdigest()
+        sig_url = notification_file_url.replace(
+            "update-notification-file.json", f"update-notification-file-signature-{unf_hash}.json"
+        )
+        legacy_sig_url = notification_file_url + ".sig"
+        try:
+            signature, _ = retrieve_file(sig_url, return_contents=True)
+        except OSError:  # pragma: no cover
+            logger.warning(
+                f"Downloading signature from legacy url {legacy_sig_url} instead of expected {sig_url}"
+            )
+            signature, _ = retrieve_file(legacy_sig_url, return_contents=True)
+
         used_key = self._validate_unf_signature(unf_content, signature)
 
         unf = NRTM4UpdateNotificationFile.model_validate_json(

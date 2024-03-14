@@ -1,4 +1,5 @@
 import base64
+import hashlib
 import json
 from tempfile import NamedTemporaryFile
 from uuid import UUID, uuid4
@@ -21,8 +22,8 @@ MOCK_SESSION_ID = "ca128382-78d9-41d1-8927-1ecef15275be"
 MOCK_SNAPSHOT_URL = "https://example.com/snapshot.2.json"
 MOCK_DELTA3_URL = "https://example.com/delta.3.json"
 MOCK_DELTA4_URL = "https://example.com/delta.4.json"
-MOCK_UNF_URL = "https://example.com/unf"
-MOCK_UNF_SIG_URL = "https://example.com/unf.sig"
+MOCK_UNF_URL = "https://example.com/update-notification-file.json"
+MOCK_UNF_SIG_URL = "https://example.com/update-notification-file-signature-hash.json"
 
 MOCK_UNF = {
     "nrtm_version": 4,
@@ -89,11 +90,15 @@ def _mock_retrieve_file(tmp_path, mock_responses):
         mock_unf_content = json.dumps(mock_responses[MOCK_UNF_URL])
         if url == MOCK_UNF_URL and return_contents:
             return mock_unf_content, False
-        elif url == MOCK_UNF_SIG_URL and return_contents:
+        elif "update-notification-file-signature" in url and return_contents:
             try:
                 return mock_responses[MOCK_UNF_SIG_URL], False
             except KeyError:
-                return base64.b64encode(MOCK_UNF_PRIVATE_KEY.sign(mock_unf_content.encode("utf-8"))), False
+                unf_bytes = mock_unf_content.encode("utf-8")
+                unf_hash = hashlib.sha256(unf_bytes).hexdigest()
+                if unf_hash not in url:  # pragma: no cover
+                    raise ValueError(f"Signature URL requested {url}, expected hash {unf_hash}")
+                return base64.b64encode(MOCK_UNF_PRIVATE_KEY.sign(unf_bytes)), False
         elif not return_contents:
             assert url == expected_hash
             destination = NamedTemporaryFile(dir=tmp_path, delete=False)
