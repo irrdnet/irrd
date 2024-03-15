@@ -100,6 +100,7 @@ KNOWN_SOURCES_KEYS = {
     "nrtm_access_list_unfiltered",
     "nrtm_query_serial_days_limit",
     "nrtm_query_serial_range_limit",
+    "nrtm_response_header",
     "nrtm_response_dummy_attributes",
     "nrtm_response_dummy_object_class",
     "nrtm_response_dummy_remarks",

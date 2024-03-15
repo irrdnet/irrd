@@ -37,7 +37,7 @@ def prepare_generator(monkeypatch, config_override):
                 {
                     # The CRYPT-PW hash must not appear in the output
                     "object_text": (
-                        "object 1 🦄\ndescr:          description\nnotify:         notify@example.com\nauth: "
+                        "mntner:         TEST-MNT\ndescr:          description\nnotify:         notify@example.com\nauth: "
                         "          CRYPT-PW foobar\n"
                     ),
                     "operation": DatabaseOperation.add_or_update,
@@ -45,9 +45,10 @@ def prepare_generator(monkeypatch, config_override):
                     "object_class": "mntner",
                 },
                 {
-                    "object_text": "object 2 🌈\n",
+                    "object_text": "mntner:         TEST-MNT\n",
                     "operation": DatabaseOperation.delete,
                     "serial_nrtm": 180,
+                    "object_class": "mntner",
                 },
             ],
         ]
@@ -67,14 +68,14 @@ class TestNRTMGenerator:
 
         ADD 120
 
-        object 1 🦄
+        mntner:         TEST-MNT
         descr:          description
         notify:         notify@example.com
         auth:           CRYPT-PW DummyValue  # Filtered for security
 
         DEL 180
 
-        object 2 🌈
+        mntner:         TEST-MNT
 
         %END TEST""").strip()
 
@@ -87,14 +88,14 @@ class TestNRTMGenerator:
 
         ADD
 
-        object 1 🦄
+        mntner:         TEST-MNT
         descr:          description
         notify:         notify@example.com
         auth:           CRYPT-PW DummyValue  # Filtered for security
 
         DEL
 
-        object 2 🌈
+        mntner:         TEST-MNT
 
         %END TEST""").strip()
 
@@ -107,14 +108,14 @@ class TestNRTMGenerator:
 
         ADD 120
 
-        object 1 🦄
+        mntner:         TEST-MNT
         descr:          description
         notify:         notify@example.com
-        auth:           CRYPT-PW DummyValue  # Filtered for security                                        
+        auth:           CRYPT-PW DummyValue  # Filtered for security
 
         DEL 180
 
-        object 2 🌈
+        mntner:         TEST-MNT
 
         %END TEST""").strip()
 
@@ -209,14 +210,14 @@ class TestNRTMGenerator:
 
         ADD 120
 
-        object 1 🦄
+        mntner:         TEST-MNT
         descr:          description
         notify:         notify@example.com
         auth:           CRYPT-PW DummyValue  # Filtered for security
 
         DEL 180
 
-        object 2 🌈
+        mntner:         TEST-MNT
 
         %END TEST""").strip()
 
@@ -246,14 +247,14 @@ class TestNRTMGenerator:
 
         ADD 120
 
-        object 1 🦄
+        mntner:         TEST-MNT
         descr:          description
         notify:         notify@example.com
         auth:           CRYPT-PW foobar
 
         DEL 180
 
-        object 2 🌈
+        mntner:         TEST-MNT
 
         %END TEST""").strip()
 
@@ -280,14 +281,14 @@ NRTM response header line2""",
 
         ADD 120
 
-        object 1 🦄
+        mntner:         TEST-MNT
         descr:          description
         notify:         notify@example.com
         auth:           CRYPT-PW DummyValue  # Filtered for security
 
         DEL 180
 
-        object 2 🌈
+        mntner:         TEST-MNT
 
         %END TEST""").strip()
 
@@ -371,7 +372,7 @@ NRTM response header line2""",
 
         ADD 120
 
-        object 1 🦄
+        mntner:         TEST-MNT
         descr:          Dummy description
         notify:         notify@example.com
         auth:           CRYPT-PW DummyValue  # Filtered for security
@@ -379,6 +380,6 @@ NRTM response header line2""",
 
         DEL 180
 
-        object 2 🌈
+        mntner:         TEST-MNT
 
         %END TEST""").strip()

@@ -121,10 +121,11 @@ def dummy_rpsl_object(rpsl_text: str, dummy_attributes: Dict[str, str], pk: str,
                     value = str(value)
                 lines[index] = format_key + value
 
-    dummyfied_rpsl_object = "\n".join(lines)
+    dummyfied_rpsl_object = "\n".join(lines) + "\n"
 
     if rpsl_text != dummyfied_rpsl_object:
         if remarks:
-            dummyfied_rpsl_object += "\n" + remarks
+            dummyfied_rpsl_object += remarks.strip() + "\n"
+        return dummyfied_rpsl_object
 
-    return dummyfied_rpsl_object
+    return rpsl_text
