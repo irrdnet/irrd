@@ -1,12 +1,13 @@
 import re
 from collections.abc import Iterator
-from typing import Optional, TextIO, Union
+from typing import Optional, TextIO, Union, Dict
 
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
 from irrd.rpsl.auth import PASSWORD_HASHERS_ALL
 
 re_remove_passwords = re.compile(r"(%s)[^\n]+" % "|".join(PASSWORD_HASHERS_ALL.keys()), flags=re.IGNORECASE)
 re_remove_last_modified = re.compile(r"^last-modified: [^\n]+\n", flags=re.MULTILINE)
+RPSL_ATTRIBUTE_TEXT_WIDTH = 16
 
 
 def remove_auth_hashes(input: Optional[str]):
@@ -98,3 +99,33 @@ re_clean_ip_error = re.compile(r"IP\('[A-F0-9:./]+'\) has ", re.IGNORECASE)
 
 def clean_ip_value_error(value_error):
     return re.sub(re_clean_ip_error, "", str(value_error))
+
+
+def dummy_rpsl_object(rpsl_text: str, dummy_attributes: Dict[str, str], pk: str, remarks: Optional[str]):
+    """
+    Modify the value of attributes in an RPSL object.
+    """
+
+    if not rpsl_text:
+        return
+
+    lines = rpsl_text.splitlines()
+
+    for index, line in enumerate(lines):
+        for key, value in dummy_attributes.items():
+            if "%s" in str(value):
+                value = str(value).replace("%s", pk)
+
+            if line.startswith(f"{key}:"):
+                format_key = f"{key}:".ljust(RPSL_ATTRIBUTE_TEXT_WIDTH)
+                if not isinstance(value, str):
+                    value = str(value)
+                lines[index] = format_key + value
+
+    dummyfied_rpsl_object = "\n".join(lines)
+
+    if rpsl_text != dummyfied_rpsl_object:
+        if remarks:
+            dummyfied_rpsl_object += "\n" + remarks
+
+    return dummyfied_rpsl_object

@@ -2,10 +2,14 @@ import textwrap
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from irrd.conf import get_setting
+from irrd.conf import (
+    get_setting,
+    get_nrtm_response_dummy_object_class_for_source,
+)
+from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import DatabaseStatusQuery, RPSLDatabaseJournalQuery
-from irrd.utils.text import remove_auth_hashes as remove_auth_hashes_func
+from irrd.utils.text import remove_auth_hashes as remove_auth_hashes_func, dummy_rpsl_object
 
 
 class NRTMGeneratorException(Exception):  # noqa: N818
@@ -119,6 +123,26 @@ class NRTMGenerator:
             if version == "3":
                 operation_str += " " + str(operation["serial_nrtm"])
             text = operation["object_text"]
+
+            nrtm_response_dummy_object_class = get_nrtm_response_dummy_object_class_for_source(source)
+            if nrtm_response_dummy_object_class:
+                object_class = operation["object_class"]
+
+                if object_class in nrtm_response_dummy_object_class:
+                    obj = rpsl_object_from_text(text.strip(), strict_validation=False)
+
+                    dummy_attributes = get_setting(f"sources.{source}.nrtm_response_dummy_attributes")
+
+                    if get_setting(f"sources.{source}.nrtm_response_dummy_remarks"):
+                        dummy_remarks = textwrap.indent(
+                            get_setting(f"sources.{source}.nrtm_response_dummy_remarks"), "remarks:".ljust(16)
+                        )
+                    else:
+                        dummy_remarks = None
+
+                    if dummy_attributes:
+                        text = dummy_rpsl_object(text, dummy_attributes, obj.pk(), dummy_remarks)
+
             if remove_auth_hashes:
                 text = remove_auth_hashes_func(text)
             operation_str += "\n\n" + text

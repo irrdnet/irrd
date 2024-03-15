@@ -15,6 +15,7 @@ from . import (
     ConfigurationError,
     config_init,
     get_configuration,
+    get_nrtm_response_dummy_object_class_for_source,
     get_object_class_filter_for_source,
     get_setting,
     is_config_initialised,
@@ -108,6 +109,7 @@ class TestConfiguration:
                         "suspension_enabled": True,
                         "nrtm_query_serial_range_limit": 10,
                         "object_class_filter": "route",
+                        "nrtm_response_dummy_object_class": "person",
                     },
                     "TESTDB2": {
                         "nrtm_host": "192.0.2.1",
@@ -116,6 +118,7 @@ class TestConfiguration:
                         "keep_journal": True,
                         "route_object_preference": 200,
                         "object_class_filter": ["ROUTE"],
+                        "nrtm_response_dummy_object_class": ["PERSON"],
                     },
                     "TESTDB3": {
                         "export_destination_unfiltered": "/tmp",
@@ -143,6 +146,8 @@ class TestConfiguration:
         assert is_config_initialised()
         assert get_object_class_filter_for_source("TESTDB") == ["route"]
         assert get_object_class_filter_for_source("TESTDB2") == ["route"]
+        assert get_nrtm_response_dummy_object_class_for_source("TESTDB") == ["person"]
+        assert get_nrtm_response_dummy_object_class_for_source("TESTDB2") == ["person"]
 
         config["irrd"]["sources_default"] = ["TESTDB2"]
         save_yaml_config(config, run_init=False)

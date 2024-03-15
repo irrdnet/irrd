@@ -662,6 +662,19 @@ def get_object_class_filter_for_source(source: str) -> Optional[list[str]]:
         return None
 
 
+def get_nrtm_response_dummy_object_class_for_source(source: str) -> Optional[List[str]]:
+    """
+    Helper method to get the cleaned dummy object class in NRTMv3 reponse for a source, if any.
+    """
+    dummy_object_class = get_setting(f"sources.{source}.nrtm_response_dummy_object_class")
+    if dummy_object_class:
+        if isinstance(dummy_object_class, str):
+            dummy_object_class = [dummy_object_class]
+        return [c.strip().lower() for c in dummy_object_class]
+    else:
+        return None
+
+
 def sighup_handler(signum, frame) -> None:
     """
     Reload the settings when a SIGHUP is received.
