@@ -6,12 +6,12 @@ from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
 
 from ..text import (
+    dummy_rpsl_object,
     remove_auth_hashes,
     remove_last_modified,
     snake_to_camel_case,
     split_paragraphs_rpsl,
     splitline_unicodesafe,
-    dummy_rpsl_object,
 )
 
 
