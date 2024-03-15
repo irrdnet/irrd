@@ -2,14 +2,12 @@ import textwrap
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from irrd.conf import (
-    get_setting,
-    get_nrtm_response_dummy_object_class_for_source,
-)
+from irrd.conf import get_nrtm_response_dummy_object_class_for_source, get_setting
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import DatabaseStatusQuery, RPSLDatabaseJournalQuery
-from irrd.utils.text import remove_auth_hashes as remove_auth_hashes_func, dummy_rpsl_object
+from irrd.utils.text import dummy_rpsl_object
+from irrd.utils.text import remove_auth_hashes as remove_auth_hashes_func
 
 
 class NRTMGeneratorException(Exception):  # noqa: N818
