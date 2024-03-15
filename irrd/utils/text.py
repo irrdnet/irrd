@@ -1,5 +1,5 @@
 import re
-from typing import Iterator, List, Optional, Set, TextIO, Union, Dict
+from typing import Dict, Iterator, List, Optional, Set, TextIO, Union
 
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
 from irrd.rpsl.auth import PASSWORD_HASHERS_ALL
