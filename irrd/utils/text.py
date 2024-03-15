@@ -106,7 +106,7 @@ def dummy_rpsl_object(rpsl_text: str, dummy_attributes: Dict[str, str], pk: str,
     """
 
     if not rpsl_text:
-        return
+        return rpsl_text
 
     lines = rpsl_text.splitlines()
 
