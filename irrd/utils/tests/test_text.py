@@ -11,6 +11,7 @@ from ..text import (
     snake_to_camel_case,
     split_paragraphs_rpsl,
     splitline_unicodesafe,
+    dummy_rpsl_object,
 )
 
 
@@ -64,3 +65,17 @@ def test_split_paragraphs_rpsl():
 def test_snake_to_camel_case():
     assert snake_to_camel_case("foo1_bar") == "foo1Bar"
     assert snake_to_camel_case(["foo1_bar", "second_item"]) == ["foo1Bar", "secondItem"]
+
+
+def test_dummy_rpsl_object():
+    assert dummy_rpsl_object("", {}, "", None) == ""
+    assert (
+        dummy_rpsl_object(
+            "person:         Test person\nnic-hdl:        PERSON-TEST\nphone:          +31 20 000 0000",
+            {"person": "Dummy person for %s", "phone": 1234},
+            "PERSON-TEST",
+            "remarks:        Invalid object",
+        )
+        == "person:         Dummy person for PERSON-TEST\nnic-hdl:        PERSON-TEST\nphone:         "
+        " 1234\nremarks:        Invalid object\n"
+    )

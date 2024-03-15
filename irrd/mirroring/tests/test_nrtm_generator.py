@@ -383,3 +383,35 @@ NRTM response header line2""",
         mntner:         TEST-MNT
 
         %END TEST""").strip()
+
+    def test_nrtm_response_dummy_object_without_remarks(self, prepare_generator, config_override):
+        generator, mock_dh = prepare_generator
+        config_override(
+            {
+                "sources": {
+                    "TEST": {
+                        "keep_journal": True,
+                        "nrtm_response_dummy_object_class": "mntner",
+                        "nrtm_response_dummy_attributes": {"descr": "Dummy description"},
+                    }
+                }
+            }
+        )
+
+        result = generator.generate("TEST", "3", 110, 190, mock_dh)
+
+        assert result == textwrap.dedent("""
+        %START Version: 3 TEST 110-190
+
+        ADD 120
+
+        mntner:         TEST-MNT
+        descr:          Dummy description
+        notify:         notify@example.com
+        auth:           CRYPT-PW DummyValue  # Filtered for security
+
+        DEL 180
+
+        mntner:         TEST-MNT
+
+        %END TEST""").strip()
