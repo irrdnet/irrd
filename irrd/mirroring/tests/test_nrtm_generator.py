@@ -37,8 +37,8 @@ def prepare_generator(monkeypatch, config_override):
                 {
                     # The CRYPT-PW hash must not appear in the output
                     "object_text": (
-                        "mntner:         TEST-MNT\ndescr:          description\nnotify:         notify@example.com\nauth: "
-                        "          CRYPT-PW foobar\n"
+                        "mntner:         TEST-MNT\ndescr:          description\nnotify:        "
+                        " notify@example.com\nauth:           CRYPT-PW foobar\n"
                     ),
                     "operation": DatabaseOperation.add_or_update,
                     "serial_nrtm": 120,
