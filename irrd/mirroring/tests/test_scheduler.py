@@ -317,6 +317,7 @@ class TestMirrorScheduler:
     def test_scheduler_runs_nrtm4_server(self, monkeypatch, config_override):
         monkeypatch.setattr("irrd.mirroring.scheduler.TransactionTimePreloadSignaller", object)
         monkeypatch.setattr("irrd.mirroring.scheduler.ScheduledTaskProcess", MockScheduledTaskProcess)
+        monkeypatch.setattr("irrd.mirroring.scheduler.DEFAULT_SOURCE_EXPORT_TIMER_NRTM4", 0)
         global thread_run_count
         thread_run_count = 0
 
@@ -339,10 +340,11 @@ class TestMirrorScheduler:
         scheduler = MirrorScheduler()
         scheduler.run()
         time.sleep(0.5)
-        # Second run will not start the thread, as the current one is still running
+        # Different from every other runner, NRTMv4 server implements its own locking,
+        # so should start a new runner
         scheduler.run()
 
-        assert thread_run_count == 1
+        assert thread_run_count == 2
 
 
 class TestScheduledTaskProcess:

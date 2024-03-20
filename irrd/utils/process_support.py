@@ -1,4 +1,5 @@
 import ctypes
+import fcntl
 import logging
 import os
 import signal
@@ -6,6 +7,8 @@ import sys
 import threading
 import traceback
 from multiprocessing import Process
+from pathlib import Path
+from typing import Optional, TextIO
 
 from setproctitle import getproctitle
 
@@ -53,3 +56,16 @@ def set_traceback_handler():  # pragma: no cover
 
     if not getattr(sys, "_called_from_test", False):
         signal.signal(signal.SIGUSR1, sigusr1_handler)
+
+
+def get_lockfile(path: Path, blocking: bool) -> Optional[TextIO]:
+    file_handle = open(path, "w")
+    operation = fcntl.LOCK_EX
+    if not blocking:
+        operation |= fcntl.LOCK_NB
+    try:
+        fcntl.lockf(file_handle, operation)
+    except OSError:
+        file_handle.close()
+        return None
+    return file_handle

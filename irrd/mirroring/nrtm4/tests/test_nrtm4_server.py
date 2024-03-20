@@ -36,7 +36,7 @@ class TestNRTM4Server:
         monkeypatch.setattr("irrd.mirroring.nrtm4.nrtm4_server.DatabaseHandler", lambda: mock_dh)
         monkeypatch.setattr("irrd.mirroring.nrtm4.nrtm4_server.NRTM4ServerWriter", mock_writer)
         NRTM4Server("TEST").run()
-        assert mock_dh.other_calls == [("commit", {})]
+        assert mock_dh.other_calls == []
 
 
 class TestNRTM4ServerWriter:
@@ -56,17 +56,20 @@ class TestNRTM4ServerWriter:
     def test_nrtm4_server(self, tmpdir, config_override):
         nrtm_path = Path(tmpdir / "nrtm4")
         nrtm_path.mkdir()
+        pid_path = Path(tmpdir / "piddir")
+        pid_path.mkdir()
 
         config_override(
             {
+                "piddir": pid_path,
                 "sources": {
                     "TEST": {
                         "nrtm4_server_private_key": ed25519_private_key_as_str(MOCK_UNF_PRIVATE_KEY),
                         "nrtm4_server_local_path": str(nrtm_path),
                         "nrtm4_server_base_url": BASE_URL,
-                        "nrtm4_server_snapshot_frequency": 1,
+                        # "nrtm4_server_snapshot_frequency": 0,
                     }
-                }
+                },
             }
         )
         mock_dh = MockDatabaseHandler()
@@ -81,6 +84,7 @@ class TestNRTM4ServerWriter:
         # Initial run, no data, no action
         self._run_writer(mock_dh, [])
         assert mock_dh.queries == [
+            RPSLDatabaseJournalStatisticsQuery(),
             DatabaseStatusQuery().source("TEST"),
         ]
 
@@ -88,8 +92,8 @@ class TestNRTM4ServerWriter:
         # Expect new snapshot
         self._run_writer(mock_dh, [self.empty_status])
         assert mock_dh.queries == [
-            DatabaseStatusQuery().source("TEST"),
             RPSLDatabaseJournalStatisticsQuery(),
+            DatabaseStatusQuery().source("TEST"),
             RPSLDatabaseQuery(["object_text"]).sources(["TEST"]).default_suppression(),
         ]
 
@@ -112,9 +116,10 @@ class TestNRTM4ServerWriter:
         assert snapshot[1]["object"] == remove_auth_hashes(SAMPLE_MNTNER)
         assert PASSWORD_HASH_DUMMY_VALUE in snapshot[1]["object"]
 
-        assert len(mock_dh.other_calls) == 1
+        assert len(mock_dh.other_calls) == 2
         assert mock_dh.other_calls[0][0] == "record_nrtm4_server_status"
         assert mock_dh.other_calls[0][1]["source"] == "TEST"
+        assert mock_dh.other_calls[1][0] == "commit"
         status = mock_dh.other_calls[0][1]["status"]
         assert str(status.session_id) == unf["session_id"]
         assert status.version == unf["version"]
@@ -136,8 +141,8 @@ class TestNRTM4ServerWriter:
             ],
         )
         assert mock_dh.queries == [
-            DatabaseStatusQuery().source("TEST"),
             RPSLDatabaseJournalStatisticsQuery(),
+            DatabaseStatusQuery().source("TEST"),
             RPSLDatabaseJournalQuery()
             .sources(["TEST"])
             .serial_global_range(status.last_snapshot_global_serial + 1),
@@ -182,8 +187,8 @@ class TestNRTM4ServerWriter:
             ],
         )
         assert mock_dh.queries == [
-            DatabaseStatusQuery().source("TEST"),
             RPSLDatabaseJournalStatisticsQuery(),
+            DatabaseStatusQuery().source("TEST"),
             RPSLDatabaseJournalQuery()
             .sources(["TEST"])
             .serial_global_range(status.last_snapshot_global_serial + 1),
@@ -216,8 +221,8 @@ class TestNRTM4ServerWriter:
         status.previous_deltas[0]["timestamp"] -= (NRTM4_SERVER_DELTA_EXPIRY_TIME * 2).total_seconds()
         self._run_writer(mock_dh, [self._status_to_dict(status)])
         assert mock_dh.queries == [
-            DatabaseStatusQuery().source("TEST"),
             RPSLDatabaseJournalStatisticsQuery(),
+            DatabaseStatusQuery().source("TEST"),
             RPSLDatabaseJournalQuery()
             .sources(["TEST"])
             .serial_global_range(status.last_snapshot_global_serial + 1),
@@ -242,7 +247,7 @@ class TestNRTM4ServerWriter:
         assert integrity_fail_reset_unf["session_id"] != newest_unf["session_id"]
 
         self._run_writer(mock_dh, [self._status_to_dict(status, force_reload=True)])
-        assert [type(q) for q in mock_dh.queries] == [DatabaseStatusQuery, RPSLDatabaseJournalStatisticsQuery]
+        assert [type(q) for q in mock_dh.queries] == [RPSLDatabaseJournalStatisticsQuery, DatabaseStatusQuery]
         assert not mock_dh.other_calls
 
     def _load_unf(self, nrtm_path):
@@ -269,7 +274,7 @@ class TestNRTM4ServerWriter:
         if journal is None:
             journal = []
         mock_dh.reset_mock()
-        mock_dh.query_responses[DatabaseStatusQuery] = iter(status)
+        mock_dh.query_responses[DatabaseStatusQuery] = status
         mock_dh.query_responses[RPSLDatabaseQuery] = iter(
             [
                 {
