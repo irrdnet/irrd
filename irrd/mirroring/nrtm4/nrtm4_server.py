@@ -27,6 +27,7 @@ from irrd.storage.queries import (
 from irrd.utils.crypto import ed25519_private_key_from_config, ed25519_public_key_as_str
 from irrd.utils.text import remove_auth_hashes
 
+from ...utils.process_support import get_lockfile
 from ..retrieval import file_hash_sha256
 from .jsonseq import jsonseq_encode, jsonseq_encode_one
 from .nrtm4_types import (
@@ -52,7 +53,6 @@ class NRTM4Server:
     def run(self) -> None:
         database_handler = DatabaseHandler()
         NRTM4ServerWriter(self.source, database_handler).run()
-        database_handler.commit()
         database_handler.close()
 
 
@@ -73,8 +73,17 @@ class NRTM4ServerWriter:
     ):
         self.database_handler = database_handler
         self.source = source
-        self.status = None
+        self.path = Path(get_setting(f"sources.{self.source}.nrtm4_server_local_path"))
+        self.base_url = get_setting(f"sources.{self.source}.nrtm4_server_base_url").rstrip("/") + "/"
+        self.status_lockfile_path = Path(get_setting("piddir")) / f"nrtm4-server-status-{source}.lock"
+        self.snapshot_lockfile_path = Path(get_setting("piddir")) / f"nrtm4-server-snapshot-{source}.lock"
+        self.timestamp = datetime.datetime.now(tz=UTC)
+        self.max_serial_global = next(
+            self.database_handler.execute_query(RPSLDatabaseJournalStatisticsQuery())
+        )["max_serial_global"]
 
+    def _update_status(self):
+        self.status = None
         try:
             database_status = next(
                 self.database_handler.execute_query(DatabaseStatusQuery().source(self.source))
@@ -86,14 +95,14 @@ class NRTM4ServerWriter:
             return
         self.force_reload = database_status["force_reload"]
         self.status = NRTM4ServerDatabaseStatus.from_dict(database_status)
-        self.max_serial_global = next(database_handler.execute_query(RPSLDatabaseJournalStatisticsQuery()))[
-            "max_serial_global"
-        ]
-        self.path = Path(get_setting(f"sources.{self.source}.nrtm4_server_local_path"))
-        self.base_url = get_setting(f"sources.{self.source}.nrtm4_server_base_url").rstrip("/") + "/"
-        self.timestamp = datetime.datetime.now(tz=UTC)
 
     def run(self):
+        status_lockfile = get_lockfile(self.status_lockfile_path, blocking=False)
+        if not status_lockfile:  # pragma: no cover - covered in integration
+            logger.debug(f"{self.source}: NRTMv4 server not running, status changes locked by other server")
+            return
+
+        self._update_status()
         if not self.status:
             return
         if self.force_reload:
@@ -108,7 +117,8 @@ class NRTM4ServerWriter:
             logger.error(f"{self.source}: integrity check failed, discarding existing session")
             self.status.session_id = None
 
-        if not self.status.session_id:
+        is_initialisation = not bool(self.status.session_id)
+        if is_initialisation:
             self.status.session_id = uuid.uuid4()
             self.status.version = 1
             self.status.last_snapshot_version = None
@@ -120,8 +130,7 @@ class NRTM4ServerWriter:
             )
 
         # Deltas are not created when the repository has only just been initialised.
-        should_create_delta = bool(self.status.last_snapshot_global_serial)
-        if should_create_delta:
+        if not is_initialisation:
             try:
                 serial_global_start = self.status.previous_deltas[-1]["serial_global_end"]
             except IndexError:
@@ -129,6 +138,8 @@ class NRTM4ServerWriter:
             serial_global_start += 1
 
             next_version = self.status.version + 1
+            logger.debug(f"{self.source}: Starting generate delta {next_version}")
+
             filename = self._write_delta(next_version, serial_global_start)
             if filename:
                 self.status.version = next_version
@@ -147,37 +158,69 @@ class NRTM4ServerWriter:
                     f" {serial_global_start}-{self.max_serial_global} in {filename}"
                 )
 
+            self._commit_status()
+            status_lockfile.close()
+
         snapshot_frequency = datetime.timedelta(
             seconds=get_setting(
                 f"sources.{self.source}.nrtm4_server_snapshot_frequency",
                 DEFAULT_SOURCE_NRTM4_SERVER_SNAPSHOT_FREQUENCY,
             )
         )
-        should_create_snapshot = (
-            not self.status.last_snapshot_version
-            or (
-                self.status.last_snapshot_version != self.status.version
-                and self.timestamp - self.status.last_snapshot_timestamp
-            )
-            > snapshot_frequency
+        should_create_snapshot = not self.status.last_snapshot_version or (
+            self.status.last_snapshot_version != self.status.version
+            and (self.timestamp - self.status.last_snapshot_timestamp) > snapshot_frequency
         )
         if should_create_snapshot:
-            self.status.last_snapshot_filename = self._write_snapshot(self.status.version)
-            self.status.last_snapshot_version = self.status.version
+            snapshot_lockfile = get_lockfile(self.snapshot_lockfile_path, blocking=False)
+            if not snapshot_lockfile:  # pragma: no cover - covered in integration
+                logger.debug(f"{self.source}: not running snapshot, already active")
+                if not status_lockfile.closed:
+                    self._commit_status()
+                    status_lockfile.close()
+                return
+
+            logger.debug(f"{self.source}: Starting generate snapshot at {self.status.version}")
+            snapshot_file = self._write_snapshot(self.status.version)
+            snapshot_version = self.status.version
+
+            if not is_initialisation:  # pragma: no cover - covered in integration
+                status_lockfile = get_lockfile(self.status_lockfile_path, blocking=True)
+                # Commit to refresh the transaction
+                self.database_handler.commit()
+                self._update_status()
+                logger.debug(
+                    f"{self.source}: post snapshot write not initial, refreshed status and locking, snapshot"
+                    f" at {snapshot_version} to current {self.status.version}"
+                )
+
+            self.status.last_snapshot_filename = snapshot_file
+            self.status.last_snapshot_version = snapshot_version
             self.status.last_snapshot_global_serial = self.max_serial_global
             self.status.last_snapshot_timestamp = self.timestamp
             self.status.last_snapshot_hash = file_hash_sha256(
                 self.path / self.status.last_snapshot_filename
             ).hexdigest()
             logger.info(
-                f"{self.source}: Created snapshot {self.status.version} for global serial"
+                f"{self.source}: Created snapshot {snapshot_version} for global serial"
                 f" {self.max_serial_global} in {self.status.last_snapshot_filename}"
             )
+            self._commit_status()
+            status_lockfile.close()
+            snapshot_lockfile.close()
+
+    def _commit_status(self) -> None:
+        logger.debug(
+            f"{self.source}: committing status at version {self.status.version} delta count"
+            f" {len(self.status.previous_deltas)} snapshot {self.status.last_snapshot_version}"
+        )
+
         self._expire_deltas()
         self._write_unf()
 
         self.database_handler.record_nrtm4_server_status(self.source, self.status)
         self._expire_snapshots_unf_signatures()
+        self.database_handler.commit()
 
     def _write_unf(self) -> None:
         """
