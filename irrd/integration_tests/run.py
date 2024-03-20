@@ -15,6 +15,7 @@ import sqlalchemy as sa
 import ujson
 import yaml
 from alembic import command, config
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from python_graphql_client import GraphqlClient
 
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE, config_init
@@ -40,6 +41,7 @@ from irrd.utils.rpsl_samples import (
 )
 from irrd.utils.whois_client import whois_query, whois_query_irrd
 
+from ..utils.crypto import ed25519_private_key_as_str, ed25519_public_key_as_str
 from .constants import (
     EMAIL_DISCARD_MSGS_COMMAND,
     EMAIL_END,
@@ -106,6 +108,8 @@ class TestIntegration:
     port_whois1 = 6043
     port_http2 = 6081
     port_whois2 = 6044
+    port_http3 = 6082
+    port_whois3 = 6045
 
     def test_irrd_integration(self, tmpdir):
         self.assertCountEqual = unittest.TestCase().assertCountEqual
@@ -116,7 +120,7 @@ class TestIntegration:
             del os.environ["IRRD_REDIS_URL"]
         # PYTHONPATH needs to contain the twisted plugin path to support the mailserver.
         os.environ["PYTHONPATH"] = IRRD_ROOT_PATH
-        os.environ["IRRD_SCHEDULER_TIMER_OVERRIDE"] = "1"
+        os.environ["IRRD_TESTING_FAST_SCHEDULER_OVERRIDE"] = "1"
         self.tmpdir = tmpdir
 
         self._start_mailserver()
@@ -485,8 +489,8 @@ class TestIntegration:
         query_result = whois_query("127.0.0.1", self.port_whois2, "-g TEST:3:1-LAST")
         assert "route:192.0.2.0/24" not in query_result.replace(" ", "")
 
-        # These queries should produce identical answers on both instances.
-        for port in self.port_whois1, self.port_whois2:
+        # These queries should produce identical answers on all instances.
+        for port in self.port_whois1, self.port_whois2, self.port_whois3:
             query_result = whois_query_irrd("127.0.0.1", port, "!iAS65537:AS-SETTEST")
             assert set(query_result.split(" ")) == {"AS65537", "AS65538", "AS65539", "AS-OTHERSET"}
             query_result = whois_query_irrd("127.0.0.1", port, "!iAS65537:AS-TESTREF")
@@ -787,25 +791,37 @@ class TestIntegration:
         """
         self.database_url1 = os.environ["IRRD_DATABASE_URL_INTEGRATION_1"]
         self.database_url2 = os.environ["IRRD_DATABASE_URL_INTEGRATION_2"]
+        self.database_url3 = os.environ["IRRD_DATABASE_URL_INTEGRATION_3"]
         self.redis_url1 = os.environ["IRRD_REDIS_URL_INTEGRATION_1"]
         self.redis_url2 = os.environ["IRRD_REDIS_URL_INTEGRATION_2"]
+        self.redis_url3 = os.environ["IRRD_REDIS_URL_INTEGRATION_3"]
 
         self.config_path1 = str(self.tmpdir) + "/irrd1_config.yaml"
         self.config_path2 = str(self.tmpdir) + "/irrd2_config.yaml"
+        self.config_path3 = str(self.tmpdir) + "/irrd3_config.yaml"
         self.logfile1 = str(self.tmpdir) + "/irrd1.log"
         self.logfile2 = str(self.tmpdir) + "/irrd2.log"
+        self.logfile3 = str(self.tmpdir) + "/irrd3.log"
         self.roa_source1 = str(self.tmpdir) + "/roa1.json"
         self.roa_source2 = str(self.tmpdir) + "/roa2.json"
         self.export_dir1 = str(self.tmpdir) + "/export1/"
         self.export_dir2 = str(self.tmpdir) + "/export2/"
+        self.nrtm4_dir2 = str(self.tmpdir) + "/nrtm4/"
         self.piddir1 = str(self.tmpdir) + "/piddir1/"
         self.piddir2 = str(self.tmpdir) + "/piddir2/"
+        self.piddir3 = str(self.tmpdir) + "/piddir3/"
         self.pidfile1 = self.piddir1 + "irrd.pid"
         self.pidfile2 = self.piddir2 + "irrd.pid"
-        os.mkdir(self.export_dir1)
-        os.mkdir(self.export_dir2)
-        os.mkdir(self.piddir1)
-        os.mkdir(self.piddir2)
+        self.pidfile3 = self.piddir3 + "irrd.pid"
+        for dir in (
+            self.export_dir1,
+            self.export_dir2,
+            self.nrtm4_dir2,
+            self.piddir1,
+            self.piddir2,
+            self.piddir3,
+        ):
+            os.mkdir(dir)
 
         print(textwrap.dedent(f"""
             Preparing to start IRRd for integration test.
@@ -821,6 +837,12 @@ class TestIntegration:
             Database URL: {self.database_url2}
             PID file: {self.pidfile2}
             Logfile: {self.logfile2}
+            
+            IRRd #3 running on HTTP port {self.port_http3}, whois port {self.port_whois3}
+            Config in: {self.config_path3}
+            Database URL: {self.database_url3}
+            PID file: {self.pidfile3}
+            Logfile: {self.logfile3}
         """))
 
         with open(self.roa_source1, "w") as roa_file:
@@ -902,6 +924,7 @@ class TestIntegration:
         with open(self.config_path1, "w") as yaml_file:
             yaml.safe_dump(config1, yaml_file)
 
+        self.nrtm4_private_key = Ed25519PrivateKey.generate()
         config2 = base_config.copy()
         config2["irrd"]["piddir"] = self.piddir2
         config2["irrd"]["database_url"] = self.database_url2
@@ -921,41 +944,57 @@ class TestIntegration:
             "nrtm_host": "127.0.0.1",
             "nrtm_port": str(self.port_whois1),
             "nrtm_access_list": "localhost",
+            "nrtm4_server_private_key": ed25519_private_key_as_str(self.nrtm4_private_key),
+            "nrtm4_server_local_path": self.nrtm4_dir2,
+            "nrtm4_server_base_url": f"file://{self.nrtm4_dir2}",
+            "nrtm4_server_snapshot_frequency": 3600,
         }
         with open(self.config_path2, "w") as yaml_file:
             yaml.safe_dump(config2, yaml_file)
+
+        config3 = base_config.copy()
+        config3["irrd"]["piddir"] = self.piddir3
+        config3["irrd"]["database_url"] = self.database_url3
+        config3["irrd"]["redis_url"] = self.redis_url3
+        config3["irrd"]["server"]["http"]["port"] = self.port_http3
+        config3["irrd"]["server"]["whois"]["port"] = self.port_whois3
+        config3["irrd"]["auth"]["gnupg_keyring"] = str(self.tmpdir) + "/gnupg3"
+        config3["irrd"]["log"]["logfile_path"] = self.logfile3
+        config3["irrd"]["rpki"]["roa_source"] = None
+        config3["irrd"]["sources"]["TEST"] = {
+            "keep_journal": True,
+            "nrtm4_client_notification_file_url": f"file://{self.nrtm4_dir2}update-notification-file.json",
+            "nrtm4_client_initial_public_key": ed25519_public_key_as_str(self.nrtm4_private_key.public_key()),
+        }
+        with open(self.config_path3, "w") as yaml_file:
+            yaml.safe_dump(config3, yaml_file)
 
         self._prepare_database()
 
         assert not subprocess.call(["irrd/daemon/main.py", f"--config={self.config_path1}"])
         assert not subprocess.call(["irrd/daemon/main.py", f"--config={self.config_path2}"])
+        assert not subprocess.call(["irrd/daemon/main.py", f"--config={self.config_path3}"])
 
     def _prepare_database(self):
         """
         Prepare the databases for IRRd #1 and #2. This includes running
         migrations to create tables, and *wiping existing content*.
         """
-        config_init(self.config_path1)
-        alembic_cfg = config.Config()
-        alembic_cfg.set_main_option("script_location", f"{IRRD_ROOT_PATH}/irrd/storage/alembic")
-        command.upgrade(alembic_cfg, "head")
+        for config_path, database_url in [
+            (self.config_path1, self.database_url1),
+            (self.config_path2, self.database_url2),
+            (self.config_path3, self.database_url3),
+        ]:
+            config_init(config_path)
+            alembic_cfg = config.Config()
+            alembic_cfg.set_main_option("script_location", f"{IRRD_ROOT_PATH}/irrd/storage/alembic")
+            command.upgrade(alembic_cfg, "head")
 
-        connection = sa.create_engine(self.database_url1).connect()
-        connection.execute("DELETE FROM rpsl_objects")
-        connection.execute("DELETE FROM rpsl_database_journal")
-        connection.execute("DELETE FROM database_status")
-        connection.execute("DELETE FROM roa_object")
-
-        config_init(self.config_path2)
-        alembic_cfg = config.Config()
-        alembic_cfg.set_main_option("script_location", f"{IRRD_ROOT_PATH}/irrd/storage/alembic")
-        command.upgrade(alembic_cfg, "head")
-
-        connection = sa.create_engine(self.database_url2).connect()
-        connection.execute("DELETE FROM rpsl_objects")
-        connection.execute("DELETE FROM rpsl_database_journal")
-        connection.execute("DELETE FROM database_status")
-        connection.execute("DELETE FROM roa_object")
+            connection = sa.create_engine(database_url).connect()
+            connection.execute("DELETE FROM rpsl_objects")
+            connection.execute("DELETE FROM rpsl_database_journal")
+            connection.execute("DELETE FROM database_status")
+            connection.execute("DELETE FROM roa_object")
 
     def _submit_update(self, config_path, request):
         """
@@ -1055,7 +1094,7 @@ class TestIntegration:
         server processes.
         """
         print("\n")
-        for pidfile in self.pidfile1, self.pidfile2, self.pidfile_mailserver:
+        for pidfile in self.pidfile1, self.pidfile2, self.pidfile3, self.pidfile_mailserver:
             try:
                 with open(pidfile) as fh:
                     pid = int(fh.read())

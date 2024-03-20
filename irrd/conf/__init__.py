@@ -66,6 +66,9 @@ LOGGING = {
         "sqlalchemy": {
             "level": "WARNING",
         },
+        # "sqlalchemy.engine.base.Engine": {
+        #     "level": "INFO",
+        # },
         "multipart": {
             "level": "INFO",
         },
@@ -397,8 +400,11 @@ class Configuration:
             nrtm4_client_unf_url = details.get("nrtm4_client_notification_file_url")
 
             url_parsed = urlparse(nrtm4_client_unf_url)
-            if nrtm4_client_unf_url and (
-                not url_parsed.scheme or url_parsed.scheme not in ["https", "file"] or not url_parsed.netloc
+            if nrtm4_client_unf_url and not any(
+                [
+                    url_parsed.scheme == "https" and url_parsed.netloc,
+                    url_parsed.scheme == "file" and url_parsed.path,
+                ]
             ):
                 errors.append(
                     f"Setting nrtm4_client_notification_file_url for source {name} is not a valid https or"
@@ -478,8 +484,11 @@ class Configuration:
                     )
 
             url_parsed = urlparse(details.get("nrtm4_server_base_url"))
-            if nrtm4_server_enabled and (
-                not url_parsed.scheme or url_parsed.scheme not in ["https", "file"] or not url_parsed.netloc
+            if nrtm4_server_enabled and not any(
+                [
+                    url_parsed.scheme == "https" and url_parsed.netloc,
+                    url_parsed.scheme == "file" and url_parsed.path,
+                ]
             ):
                 errors.append(
                     f"Setting nrtm4_server_base_url for source {name} is not a valid https or file URL."

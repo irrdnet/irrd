@@ -78,9 +78,11 @@ class NRTM4ServerWriter:
         self.status_lockfile_path = Path(get_setting("piddir")) / f"nrtm4-server-status-{source}.lock"
         self.snapshot_lockfile_path = Path(get_setting("piddir")) / f"nrtm4-server-snapshot-{source}.lock"
         self.timestamp = datetime.datetime.now(tz=UTC)
-        self.max_serial_global = next(
-            self.database_handler.execute_query(RPSLDatabaseJournalStatisticsQuery())
-        )["max_serial_global"]
+        max_serial_global = next(self.database_handler.execute_query(RPSLDatabaseJournalStatisticsQuery()))[
+            "max_serial_global"
+        ]
+        # If the journal is entirely empty on a new database, there is no serial at all yet
+        self.max_serial_global = max_serial_global if max_serial_global else 0
 
     def _update_status(self):
         self.status = None
@@ -111,7 +113,7 @@ class NRTM4ServerWriter:
             )
             return
 
-        logger.debug(f"{self.source}: NRTMv4 server preparing update in {self.path} for {self.base_url}")
+        logger.debug(f"{self.source}: NRTMv4 server preparing to update in {self.path} for {self.base_url}")
 
         if not self._verify_integrity():
             logger.error(f"{self.source}: integrity check failed, discarding existing session")
@@ -138,7 +140,6 @@ class NRTM4ServerWriter:
             serial_global_start += 1
 
             next_version = self.status.version + 1
-            logger.debug(f"{self.source}: Starting generate delta {next_version}")
 
             filename = self._write_delta(next_version, serial_global_start)
             if filename:
@@ -174,13 +175,15 @@ class NRTM4ServerWriter:
         if should_create_snapshot:
             snapshot_lockfile = get_lockfile(self.snapshot_lockfile_path, blocking=False)
             if not snapshot_lockfile:  # pragma: no cover - covered in integration
-                logger.debug(f"{self.source}: not running snapshot, already active")
+                logger.debug(
+                    f"{self.source}: Not creating a snapshot, as a snapshot runner is already active"
+                )
                 if not status_lockfile.closed:
                     self._commit_status()
                     status_lockfile.close()
                 return
 
-            logger.debug(f"{self.source}: Starting generate snapshot at {self.status.version}")
+            logger.debug(f"{self.source}: Generating a new snapshot at version {self.status.version}")
             snapshot_file = self._write_snapshot(self.status.version)
             snapshot_version = self.status.version
 
@@ -189,10 +192,6 @@ class NRTM4ServerWriter:
                 # Commit to refresh the transaction
                 self.database_handler.commit()
                 self._update_status()
-                logger.debug(
-                    f"{self.source}: post snapshot write not initial, refreshed status and locking, snapshot"
-                    f" at {snapshot_version} to current {self.status.version}"
-                )
 
             self.status.last_snapshot_filename = snapshot_file
             self.status.last_snapshot_version = snapshot_version
@@ -210,11 +209,6 @@ class NRTM4ServerWriter:
             snapshot_lockfile.close()
 
     def _commit_status(self) -> None:
-        logger.debug(
-            f"{self.source}: committing status at version {self.status.version} delta count"
-            f" {len(self.status.previous_deltas)} snapshot {self.status.last_snapshot_version}"
-        )
-
         self._expire_deltas()
         self._write_unf()
 
