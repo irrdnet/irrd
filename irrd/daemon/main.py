@@ -33,6 +33,8 @@ from irrd.utils.process_support import ExceptionLoggingProcess, set_traceback_ha
 # This file does not have a unit test, but is instead tested through
 # the integration tests. Writing a unit test would be too complex.
 
+MIRROR_FREQUENCY = 3 if not os.environ.get("IRRD_TESTING_FAST_SCHEDULER_OVERRIDE") else 1
+
 
 def main():
     if platform.python_implementation() == "PyPy":
@@ -54,8 +56,6 @@ def main():
         help=f"run IRRd in the foreground, don't detach",
     )
     args = parser.parse_args()
-
-    mirror_frequency = int(os.environ.get("IRRD_SCHEDULER_TIMER_OVERRIDE", 3))
 
     daemon_kwargs = {
         # by default we set detach_process to true to avoid #848,
@@ -118,7 +118,7 @@ def main():
             with PidFile(pidname="irrd", piddir=piddir):
                 logger.info(f"IRRd {__version__} starting, PID {os.getpid()}, PID file in {piddir}")
                 run_irrd(
-                    mirror_frequency=mirror_frequency,
+                    mirror_frequency=MIRROR_FREQUENCY,
                     config_file_path=args.config_file_path if args.config_file_path else CONFIG_PATH_DEFAULT,
                     uid=uid,
                     gid=gid,
