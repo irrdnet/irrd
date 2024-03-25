@@ -79,7 +79,7 @@ though does not store the key in the configuration for you.
 You need to use a separate base URL and local path for each
 IRR source.
 
-When running the NRTMv4 client process, IRRD will:
+When running the NRTMv4 server process, IRRD will:
 
 * Check that all previous Snapshot and Delta files are still present.
   If a file is missing, the ongoing session is corrupt and will be reset.
@@ -102,7 +102,7 @@ You need to serve the files written to ``nrtm4_server_local_path`` on
 be done using the same nginx instance used for other parts of IRRD,
 or through an entirely different web server or CDN, depending on your
 scalability needs. So in a way, the actual "serving" part of an
-NRTMv4 server is not performed by IRRD, as it's just HTTPS.
+NRTMv4 server is not performed by IRRD, as it's just static files over HTTPS.
 
 NRTMv4 has support for in-band key rotation. Use the following process:
 

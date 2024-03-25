@@ -40,6 +40,7 @@ logfile
 loglevel
 logrotate
 Miroslav
+misconfiguration
 mnt
 mntner
 mntners
