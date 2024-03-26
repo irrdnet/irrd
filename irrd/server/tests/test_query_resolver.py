@@ -406,6 +406,22 @@ class TestQueryResolver:
 
         assert not mock_dq.mock_calls
 
+        monkeypatch.setattr(
+            "irrd.server.query_resolver.QueryResolver._recursive_set_resolve",
+            lambda self, set_name, sets_seen, root_source: {"AS65547"},
+        )
+
+        mock_preloader.routes_for_origins = Mock(return_value=[])
+        result = resolver.routes_for_as_set("IRRDB::AS65547", 4)
+        assert flatten_mock_calls(mock_preloader.routes_for_origins) == [
+            [
+                "",
+                ({"AS65547"}, resolver.source_manager.all_valid_real_sources),
+                {"ip_version": 4},
+            ],
+        ]
+        assert not result
+
     def test_as_set_members(self, prepare_resolver):
         mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
 
@@ -466,6 +482,9 @@ class TestQueryResolver:
         assert result == ["AS65547"]
         result = resolver.members_for_set("AS-FIRSTLEVEL", recursive=True, exclude_sets={"AS-THIRDLEVEL"})
         assert result == ["AS65544", "AS65547"]
+
+        result = resolver.members_for_set("IRRDB::AS-FIRSTLEVEL", recursive=True)
+        assert result == ["AS65544", "AS65545", "AS65547"]
 
     def test_route_set_members(self, prepare_resolver):
         mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
@@ -550,6 +569,9 @@ class TestQueryResolver:
             ["set_members", ("AS-TEST", ["TEST1"], ["route-set", "as-set"]), {}],
             ["set_members", ("AS-TEST", ["TEST2"], ["route-set", "as-set"]), {}],
         ]
+
+        result = resolver.members_for_set_per_source("IRRDB::AS-TEST", recursive=True)
+        assert result == {"TEST1": ["AS65547", "AS65548"], "TEST2": ["AS65549"]}
 
     def test_database_status(self, monkeypatch, prepare_resolver, config_override):
         config_override(
