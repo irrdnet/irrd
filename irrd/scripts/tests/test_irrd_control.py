@@ -1,13 +1,21 @@
 import pytest
 from click.testing import CliRunner
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from irrd.scripts.irrd_control import (
     cli,
     client_clear_known_keys,
+    generate_private_key,
+    server_show_public_key,
     user_change_override,
     user_mfa_clear,
 )
 from irrd.storage.models import AuthWebAuthn, RPSLDatabaseStatus
+from irrd.utils.crypto import (
+    ed25519_private_key_as_str,
+    ed25519_private_key_from_str,
+    ed25519_public_key_as_str,
+)
 from irrd.utils.factories import AuthWebAuthnFactory
 
 
@@ -177,7 +185,7 @@ class TestUserChangeOverride:
         assert "readonly_standby" in result.output
 
 
-class TestNRTMv4ClientClearKnownKeys:
+class TestNRTM4ClientClearKnownKeys:
     def test_valid_clear(self, irrd_db_session_with_user, config_override):
         config_override({"sources": {"TEST2": {"nrtm4_client_initial_public_key": "key"}}})
 
@@ -214,3 +222,40 @@ class TestNRTMv4ClientClearKnownKeys:
         result = runner.invoke(client_clear_known_keys, ["TEST2"])
         assert result.exit_code == 1, result.output
         assert "not configured as an NRTMv4 client" in result.output
+
+
+class TestNRTM4GeneratePrivateKey:
+    def test_call(self):
+        runner = CliRunner()
+        result = runner.invoke(generate_private_key)
+        assert result.exit_code == 0
+        private_str, public_str = [line.split(":")[1].strip() for line in result.output.splitlines()[:2]]
+        assert ed25519_public_key_as_str(ed25519_private_key_from_str(private_str).public_key()) == public_str
+
+
+class TestNRTM4ServerShowPublicKey:
+    def test_valid(self, config_override):
+        private_key = Ed25519PrivateKey.generate()
+        private_key_str = ed25519_private_key_as_str(private_key)
+        public_key_str = ed25519_public_key_as_str(private_key.public_key())
+
+        config_override(
+            {
+                "sources": {
+                    "TEST": {
+                        "nrtm4_server_private_key": private_key_str,
+                        "nrtm4_server_private_key_next": private_key_str,
+                    }
+                }
+            }
+        )
+        runner = CliRunner()
+        result = runner.invoke(server_show_public_key, args=["TEST"])
+        assert result.exit_code == 0
+        assert public_key_str in result.output
+
+    def test_not_configured(self):
+        runner = CliRunner()
+        result = runner.invoke(server_show_public_key, args=["TEST"])
+        assert result.exit_code == 1, result.output
+        assert "not configured as an NRTMv4 server" in result.output

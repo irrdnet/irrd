@@ -7,7 +7,6 @@ from urllib.parse import urlparse
 
 import pydantic
 from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from irrd.conf import get_setting
 from irrd.mirroring.nrtm4.jsonseq import jsonseq_decode
@@ -30,6 +29,7 @@ from irrd.storage.models import (
     NRTM4ClientDatabaseStatus,
 )
 from irrd.storage.queries import DatabaseStatusQuery
+from irrd.utils.crypto import ed25519_public_key_from_str
 from irrd.utils.misc import format_pydantic_errors
 
 logger = logging.getLogger(__name__)
@@ -119,16 +119,16 @@ class NRTM4Client:
         unf_content, _ = retrieve_file(notification_file_url, return_contents=True)
         unf_hash = hashlib.sha256(unf_content.encode("ascii")).hexdigest()
         sig_url = notification_file_url.replace(
-            "update-notification-file.json", f"update-notification-file-signature-{unf_hash}.json"
+            "update-notification-file.json", f"update-notification-file-signature-{unf_hash}.sig"
         )
         legacy_sig_url = notification_file_url + ".sig"
-        try:
-            signature, _ = retrieve_file(sig_url, return_contents=True)
-        except OSError:  # pragma: no cover
+        if "nrtm.db.ripe.net" in notification_file_url:  # pragma: no cover
             logger.warning(
                 f"Downloading signature from legacy url {legacy_sig_url} instead of expected {sig_url}"
             )
             signature, _ = retrieve_file(legacy_sig_url, return_contents=True)
+        else:
+            signature, _ = retrieve_file(sig_url, return_contents=True)
 
         used_key = self._validate_unf_signature(unf_content, signature)
 
@@ -172,11 +172,11 @@ class NRTM4Client:
             # confusing situation for the user, so gets a special message.
             msg = (
                 f"{self.source}: No valid signature found for the Update Notification File for signature"
-                f" {signature_b64}. The signature is valid for key {config_key} set in the"
+                f" {signature_b64}. The signature is valid for public key {config_key} set in the"
                 " nrtm4_client_initial_public_key setting, but that is only used for initial validation."
-                f" IRRD is currently expecting the key {self.last_status.current_key}. If you want to clear"
-                " IRRDs key information and revert to nrtm4_client_initial_public_key, use the 'irrdctl"
-                " nrtmv4 client-clear-known-keys' command."
+                f" IRRD is currently expecting the public key {self.last_status.current_key}. If you want to"
+                " clear IRRDs key information and revert to nrtm4_client_initial_public_key, use the"
+                " 'irrdctl nrtmv4 client-clear-known-keys' command."
             )
             if self.last_status.next_key:
                 msg += f" or {self.last_status.next_key}"
@@ -193,7 +193,7 @@ class NRTM4Client:
         exceptions for things like an invalid key format.
         """
         try:
-            Ed25519PublicKey.from_public_bytes(b64decode(key_b64)).verify(signature, content)
+            ed25519_public_key_from_str(key_b64).verify(signature, content)
             return True
         except InvalidSignature:
             return False

@@ -389,6 +389,22 @@ class QueryResolver:
                 else None
             )
             results[source]["nrtm4_client_version"] = query_result["nrtm4_client_version"]
+            results[source]["nrtm4_server_session_id"] = (
+                str(query_result["nrtm4_server_session_id"])
+                if query_result["nrtm4_server_session_id"]
+                else None
+            )
+            results[source]["nrtm4_server_version"] = query_result["nrtm4_server_version"]
+            results[source]["nrtm4_server_last_update_notification_file_update"] = (
+                query_result["nrtm4_server_last_update_notification_file_update"]
+                .astimezone(timezone("UTC"))
+                .isoformat()
+                if query_result["nrtm4_server_last_update_notification_file_update"]
+                else None
+            )
+            results[source]["nrtm4_server_last_snapshot_version"] = query_result[
+                "nrtm4_server_last_snapshot_version"
+            ]
             results[source]["last_update"] = query_result["updated"].astimezone(timezone("UTC")).isoformat()
             results[source]["synchronised_serials"] = is_serial_synchronised(self.database_handler, source)
 

@@ -583,6 +583,12 @@ class TestQueryResolver:
                 "serial_newest_mirror": 500,
                 "nrtm4_client_session_id": "session_id",
                 "nrtm4_client_version": 10,
+                "nrtm4_server_session_id": "server_session_id",
+                "nrtm4_server_version": 22,
+                "nrtm4_server_last_update_notification_file_update": datetime.datetime(
+                    2020, 1, 1, tzinfo=datetime.timezone.utc
+                ),
+                "nrtm4_server_last_snapshot_version": 21,
                 "updated": datetime.datetime(2020, 1, 1, tzinfo=timezone("UTC")),
             },
             {
@@ -593,6 +599,10 @@ class TestQueryResolver:
                 "serial_newest_mirror": 20,
                 "nrtm4_client_session_id": None,
                 "nrtm4_client_version": None,
+                "nrtm4_server_session_id": None,
+                "nrtm4_server_version": None,
+                "nrtm4_server_last_update_notification_file_update": None,
+                "nrtm4_server_last_snapshot_version": None,
                 "updated": datetime.datetime(2020, 1, 1, tzinfo=timezone("UTC")),
             },
         ]
@@ -616,6 +626,10 @@ class TestQueryResolver:
                     ("serial_newest_mirror", 500),
                     ("nrtm4_client_session_id", "session_id"),
                     ("nrtm4_client_version", 10),
+                    ("nrtm4_server_session_id", "server_session_id"),
+                    ("nrtm4_server_version", 22),
+                    ("nrtm4_server_last_update_notification_file_update", "2020-01-01T00:00:00+00:00"),
+                    ("nrtm4_server_last_snapshot_version", 21),
                     ("last_update", "2020-01-01T00:00:00+00:00"),
                     ("synchronised_serials", False),
                 ]
@@ -641,6 +655,10 @@ class TestQueryResolver:
                             ("serial_newest_mirror", 20),
                             ("nrtm4_client_session_id", None),
                             ("nrtm4_client_version", None),
+                            ("nrtm4_server_session_id", None),
+                            ("nrtm4_server_version", None),
+                            ("nrtm4_server_last_update_notification_file_update", None),
+                            ("nrtm4_server_last_snapshot_version", None),
                             ("last_update", "2020-01-01T00:00:00+00:00"),
                             ("synchronised_serials", False),
                         ]

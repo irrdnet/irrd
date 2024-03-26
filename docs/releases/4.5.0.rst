@@ -1,6 +1,22 @@
 ==================================
-DRAFT Release notes for IRRd 4.5.0
+DRAFT Release notes for IRRD 4.5.0
 ==================================
+
+NRTMv4
+------
+IRRD 4.5 adds support for NRTMv4_, a new IRR mirroring protocol based
+on JSON-ish files over HTTPS. It is now the recommended method of
+mirroring to/from other databases. It is more reliable, secure, detects
+errors, has less opportunities for misconfiguration, and recovers
+automatically from loss of synchronisation.
+
+A single IRRD instance can mix NRTMv3, NRTMv4 and authoritative databases,
+so gradual upgrades are possible.
+There are several new settings to enable NRTMv4. You will also need to
+be aware of key management.
+For all details, see the :doc:`mirroring documentation </users/mirroring>`.
+
+.. _NRTMv4: https://datatracker.ietf.org/doc/draft-ietf-grow-nrtm-v4/
 
 New irt and organisation object classes
 ---------------------------------------
@@ -9,11 +25,36 @@ in authoritative databases, users can now create these objects, and IRRD
 will include these objects when mirroring other sources.
 **By default, support for these classes is enabled.**
 To restore the old behaviour, you can use the
-``sources.{name}.object_class_filter`` setting.
+``sources.{name}.object_class_filter`` setting, which now also applies
+to authoritative databases.
 You can query the templates using the ``-t`` whois query or see all
 supported classes in the GraphQL schema.
+
+New Prometheus metrics
+----------------------
+A :doc:`Prometheus-compatible metrics page </admins/prometheus-metrics>`
+was added to the HTTP server in IRRD, on ``/metrics/``.
+This page is only accessible to IPs :doc:`configured </admins/configuration>`
+in the access list set in the ``server.http.status_access_list`` setting.
 
 Other changes
 -------------
 * The ``sources.{name}.object_class_filter`` setting can now also be used
   to restrict permitted changes to authoritative objects.
+* The setting ``sources.{name}.authoritative_retain_last_modified`` was
+  added to skip updating `last-modified` in authoritative databases,
+  and retain the original value (if any) instead.
+* Deleted objects no longer have to meet all strict validation requirements.
+  This makes it easier to delete objects created under a legacy IRRD that
+  do not meet current validation requirements. Authentication requirements
+  have not been changed.
+* The ``sources.{name}.nrtm_query_serial_days_limit`` setting was added to
+  limit the age of the oldest serial that can be requested over NRTMv3.
+* The ``irrd_update_database`` command now starts counting serials from
+  the serial provided to a previous ``irrd_load_database``.
+* The combination of ``readonly_standby`` and ``sources.{name}.export_destination``
+  is explicitly invalid in the configuration.
+* The ``sources.{name}.authoritative_non_strict_mode_dangerous`` setting
+  was added, to force an authoritative database into non-strict mode.
+  As it's name notes, this disables many checks and all referential integrity
+  and is therefore strongly discouraged.

@@ -53,6 +53,7 @@ class TestStatusGenerator:
                         "object_class_filter": "object-class-filter",
                         "rpki_excluded": True,
                         "route_object_preference": 200,
+                        "nrtm4_server_base_url": "url",
                     },
                     "TEST2": {
                         "authoritative": True,
@@ -98,6 +99,13 @@ class TestStatusGenerator:
                         "serial_newest_mirror": 25,
                         "nrtm4_client_session_id": "session_id",
                         "nrtm4_client_version": 10,
+                        "nrtm4_server_session_id": "server_session_id",
+                        "nrtm4_server_version": 22,
+                        "nrtm4_server_last_update_notification_file_update": datetime(
+                            2018, 1, 1, tzinfo=timezone.utc
+                        ),
+                        "nrtm4_server_last_snapshot_version": 21,
+                        "nrtm4_server_previous_deltas": ["d1", "d2"],
                         "last_error_timestamp": datetime(2018, 1, 1, tzinfo=timezone.utc),
                         "updated": datetime(2018, 6, 1, tzinfo=timezone.utc),
                     },
@@ -111,6 +119,11 @@ class TestStatusGenerator:
                         "serial_newest_mirror": None,
                         "nrtm4_client_session_id": None,
                         "nrtm4_client_version": None,
+                        "nrtm4_server_session_id": None,
+                        "nrtm4_server_version": None,
+                        "nrtm4_server_last_update_notification_file_update": None,
+                        "nrtm4_server_last_snapshot_version": None,
+                        "nrtm4_server_previous_deltas": None,
                         "last_error_timestamp": datetime(2019, 1, 1, tzinfo=timezone.utc),
                         "updated": datetime(2019, 6, 1, tzinfo=timezone.utc),
                     },
@@ -124,6 +137,11 @@ class TestStatusGenerator:
                         "serial_newest_mirror": None,
                         "nrtm4_client_session_id": None,
                         "nrtm4_client_version": None,
+                        "nrtm4_server_session_id": None,
+                        "nrtm4_server_version": None,
+                        "nrtm4_server_last_update_notification_file_update": None,
+                        "nrtm4_server_last_snapshot_version": None,
+                        "nrtm4_server_previous_deltas": None,
                         "last_error_timestamp": None,
                         "updated": None,
                     },
@@ -137,6 +155,11 @@ class TestStatusGenerator:
                         "serial_newest_mirror": None,
                         "nrtm4_client_session_id": None,
                         "nrtm4_client_version": None,
+                        "nrtm4_server_session_id": None,
+                        "nrtm4_server_version": None,
+                        "nrtm4_server_last_update_notification_file_update": None,
+                        "nrtm4_server_last_snapshot_version": None,
+                        "nrtm4_server_previous_deltas": None,
                         "last_error_timestamp": None,
                         "updated": None,
                     },
@@ -150,6 +173,11 @@ class TestStatusGenerator:
                         "serial_newest_mirror": None,
                         "nrtm4_client_session_id": None,
                         "nrtm4_client_version": None,
+                        "nrtm4_server_session_id": None,
+                        "nrtm4_server_version": None,
+                        "nrtm4_server_last_update_notification_file_update": None,
+                        "nrtm4_server_last_snapshot_version": None,
+                        "nrtm4_server_previous_deltas": None,
                         "last_error_timestamp": None,
                         "updated": None,
                     },
@@ -186,8 +214,14 @@ class TestStatusGenerator:
                 Newest local journal serial number: 20
                 Last export at serial number: 16
                 Newest serial number mirrored: 25
-                Current NRTMv4 client session: session_id
-                Current NRTMv4 client version: 10
+                NRTMv4 client: current session: session_id
+                NRTMv4 client: current version: 10
+                NRTMv4 server: current session: server_session_id
+                NRTMv4 server: current version: 22
+                NRTMv4 server: last Update Notification File update: 2018-01-01 00:00:00+00:00
+                NRTMv4 server: last snapshot version: 21
+                NRTMv4 server: number of deltas: 2
+                NRTMv4 server: base URL: url
                 Synchronised NRTM serials: No
                 Last update: 2018-06-01 00:00:00+00:00
                 Local journal kept: Yes
@@ -215,8 +249,14 @@ class TestStatusGenerator:
                 Newest local journal serial number: None
                 Last export at serial number: None
                 Newest serial number mirrored: None
-                Current NRTMv4 client session: None
-                Current NRTMv4 client version: None
+                NRTMv4 client: current session: None
+                NRTMv4 client: current version: None
+                NRTMv4 server: current session: None
+                NRTMv4 server: current version: None
+                NRTMv4 server: last Update Notification File update: None
+                NRTMv4 server: last snapshot version: None
+                NRTMv4 server: number of deltas: 0
+                NRTMv4 server: base URL: None
                 Synchronised NRTM serials: No
                 Last update: 2019-06-01 00:00:00+00:00
                 Local journal kept: No
@@ -241,8 +281,14 @@ class TestStatusGenerator:
                 Newest local journal serial number: None
                 Last export at serial number: None
                 Newest serial number mirrored: None
-                Current NRTMv4 client session: None
-                Current NRTMv4 client version: None
+                NRTMv4 client: current session: None
+                NRTMv4 client: current version: None
+                NRTMv4 server: current session: None
+                NRTMv4 server: current version: None
+                NRTMv4 server: last Update Notification File update: None
+                NRTMv4 server: last snapshot version: None
+                NRTMv4 server: number of deltas: 0
+                NRTMv4 server: base URL: None
                 Synchronised NRTM serials: No
                 Last update: None
                 Local journal kept: No
@@ -267,8 +313,14 @@ class TestStatusGenerator:
                 Newest local journal serial number: None
                 Last export at serial number: None
                 Newest serial number mirrored: None
-                Current NRTMv4 client session: None
-                Current NRTMv4 client version: None
+                NRTMv4 client: current session: None
+                NRTMv4 client: current version: None
+                NRTMv4 server: current session: None
+                NRTMv4 server: current version: None
+                NRTMv4 server: last Update Notification File update: None
+                NRTMv4 server: last snapshot version: None
+                NRTMv4 server: number of deltas: 0
+                NRTMv4 server: base URL: None
                 Synchronised NRTM serials: No
                 Last update: None
                 Local journal kept: No
@@ -278,7 +330,7 @@ class TestStatusGenerator:
                 Route object preference: None
             
             Remote information:
-                NRTMv4 Update Notification File URL: url
+                NRTMv4 client Update Notification File URL: url
             
             
             Status for TEST5
@@ -292,8 +344,14 @@ class TestStatusGenerator:
                 Newest local journal serial number: None
                 Last export at serial number: None
                 Newest serial number mirrored: None
-                Current NRTMv4 client session: None
-                Current NRTMv4 client version: None
+                NRTMv4 client: current session: None
+                NRTMv4 client: current version: None
+                NRTMv4 server: current session: None
+                NRTMv4 server: current version: None
+                NRTMv4 server: last Update Notification File update: None
+                NRTMv4 server: last snapshot version: None
+                NRTMv4 server: number of deltas: 0
+                NRTMv4 server: base URL: None
                 Synchronised NRTM serials: No
                 Last update: None
                 Local journal kept: No

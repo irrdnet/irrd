@@ -66,10 +66,6 @@ class TestNRTM4SnapshotHeader:
             )
         assert "Input should be 'snapshot'" in str(ve)
 
-    def test_missing_context(self):
-        with pytest.raises(RuntimeError):
-            NRTM4SnapshotHeader.model_validate(self.valid_data)
-
 
 class TestNRTM4DeltaHeader:
     valid_data = {
@@ -118,10 +114,6 @@ class TestNRTM4DeltaHeader:
                 context=self.valid_context,
             )
         assert "Input should be 'delta'" in str(ve)
-
-    def test_missing_context(self):
-        with pytest.raises(RuntimeError):
-            NRTM4DeltaHeader.model_validate(self.valid_data)
 
 
 class TestNRTM4UpdateNotificationFile:

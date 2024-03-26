@@ -386,6 +386,16 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         fltr = self.columns.route_preference_status.in_(status)
         return self._filter(fltr)
 
+    def default_suppression(self):
+        """
+        Filter for non-suppressed objects in RPKI, scope filter and route preference
+        """
+        return (
+            self.rpki_status([RPKIStatus.not_found, RPKIStatus.valid])
+            .scopefilter_status([ScopeFilterStatus.in_scope])
+            .route_preference_status([RoutePreferenceStatus.visible])
+        )
+
     def text_search(self, value: str, extract_asn_ip=True):
         """
         Search the database for a specific free text.
@@ -552,6 +562,15 @@ class DatabaseStatusQuery(BaseDatabaseQuery):
                 self.columns.nrtm4_client_version,
                 self.columns.nrtm4_client_current_key,
                 self.columns.nrtm4_client_next_key,
+                self.columns.nrtm4_server_session_id,
+                self.columns.nrtm4_server_version,
+                self.columns.nrtm4_server_last_update_notification_file_update,
+                self.columns.nrtm4_server_last_snapshot_version,
+                self.columns.nrtm4_server_last_snapshot_global_serial,
+                self.columns.nrtm4_server_last_snapshot_filename,
+                self.columns.nrtm4_server_last_snapshot_timestamp,
+                self.columns.nrtm4_server_last_snapshot_hash,
+                self.columns.nrtm4_server_previous_deltas,
                 self.columns.force_reload,
                 self.columns.synchronised_serials,
                 self.columns.last_error,

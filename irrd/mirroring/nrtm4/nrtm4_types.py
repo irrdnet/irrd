@@ -1,27 +1,22 @@
 import datetime
-from base64 import b64decode
 from functools import cached_property
-from typing import List, Literal, Optional
+from typing import Any, List, Literal, Optional
 from uuid import UUID
 
 import pydantic
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from pytz import UTC
 from typing_extensions import Self
 
+from irrd.utils.crypto import ed25519_public_key_from_str
 
-def get_from_pydantic_context(info: pydantic.ValidationInfo, key: str):
+
+def get_from_pydantic_context(info: pydantic.ValidationInfo, key: str) -> Optional[Any]:
     """
     This is a little helper to get a key from the pydantic context,
     as it's a bit convoluted and needs some type guarding.
-    Not finding a value is always programmer error due to incorrect call,
-    never an error in the remote data retrieved.
     """
     context = getattr(info, "context", {})
-    value = context.get(key, None) if context else None
-    if not value:
-        raise RuntimeError(f"Model called without '{key}' in context, context was: {context}")
-    return value
+    return context.get(key, None) if context else None
 
 
 class ExpectedValuesMixin:
@@ -33,6 +28,8 @@ class ExpectedValuesMixin:
     @pydantic.model_validator(mode="after")  # type: ignore
     def validate_expected_values(self, info: pydantic.ValidationInfo):
         expected_values = get_from_pydantic_context(info, "expected_values")
+        if not expected_values:
+            return self
         for key, expected_value in expected_values.items():
             value = getattr(self, key)
             if value != expected_value:
@@ -82,6 +79,8 @@ class NRTM4FileReference(pydantic.main.BaseModel):
     @classmethod
     def validate_url(cls, url, info: pydantic.ValidationInfo):
         update_notification_file_scheme = get_from_pydantic_context(info, "update_notification_file_scheme")
+        if not update_notification_file_scheme:
+            return url
         if url.scheme != update_notification_file_scheme:
             raise ValueError(
                 f"Invalid scheme in file reference: expected {update_notification_file_scheme}, found"
@@ -142,11 +141,12 @@ class NRTM4UpdateNotificationFile(NRTM4Common):
 
     @pydantic.field_validator("next_signing_key")
     @classmethod
-    def validate_next_signing_key(cls, next_signing_key: str):
-        try:
-            Ed25519PublicKey.from_public_bytes(b64decode(next_signing_key))
-        except ValueError as ve:
-            raise ValueError(
-                f"Update Notification File has invalid next_signing_key {next_signing_key}: {ve}"
-            )
+    def validate_next_signing_key(cls, next_signing_key: Optional[str]):
+        if next_signing_key:
+            try:
+                ed25519_public_key_from_str(next_signing_key)
+            except ValueError as ve:
+                raise ValueError(
+                    f"Update Notification File has invalid next_signing_key {next_signing_key}: {ve}"
+                )
         return next_signing_key

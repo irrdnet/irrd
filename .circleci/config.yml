@@ -128,6 +128,11 @@ commands:
           command: |
             psql -U root -h localhost -d circle_test -c "CREATE DATABASE circle_test_integration_2;"
 
+      - run:
+          name: Creating additional database 3
+          command: |
+            psql -U root -h localhost -d circle_test -c "CREATE DATABASE circle_test_integration_3;"
+
   run_integration_tests:
     steps:
       - run:
@@ -197,8 +202,10 @@ jobs:
         environment:
           IRRD_DATABASE_URL_INTEGRATION_1: 'postgresql://root@localhost/circle_test_integration_1'
           IRRD_DATABASE_URL_INTEGRATION_2: 'postgresql://root@localhost/circle_test_integration_2'
+          IRRD_DATABASE_URL_INTEGRATION_3: 'postgresql://root@localhost/circle_test_integration_3'
           IRRD_REDIS_URL_INTEGRATION_1: 'redis://localhost/4'
           IRRD_REDIS_URL_INTEGRATION_2: 'redis://localhost/5'
+          IRRD_REDIS_URL_INTEGRATION_3: 'redis://localhost/6'
           PYTHON_INTERPRETER: python3
           SUDO: sudo
 

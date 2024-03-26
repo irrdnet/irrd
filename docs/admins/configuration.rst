@@ -120,6 +120,9 @@ This sample shows most configuration options
                 export_destination: /var/ftp/
                 export_timer: 7200
                 nrtm_access_list: generic_nrtm_access
+                nrtm4_server_private_key: base64privatekey==
+                nrtm4_server_local_path: /var/www/nrtmv4/authdatabase/
+                nrtm4_server_base_url: https://www.example.net/nrtmv4/authdatabase/
             MIRROR-FIRST:
                 # Run a full import at first, then periodic NRTM updates.
                 authoritative: false
@@ -203,7 +206,7 @@ General settings
   in read-only standby mode. See
   :doc:`availability with PostgreSQL replication </admins/availability-and-migration>`
   for further details. Can not be used if any source has ``authoritative``,
-  ``import_source``, ``nrtm_host``, or ``nrtm4_client_notification_file_url`` set.
+  ``import_source``, ``nrtm_host``, or an NRTMv4 client or server set.
   **Do not enable this setting without reading the further documentation on standby setups.**
   |br| **Default**: ``false``.
   |br| **Change takes effect**: after full IRRd restart.
@@ -621,12 +624,37 @@ Sources
   are configured.
   |br| **Default**: ``false``.
   |br| **Change takes effect**: after SIGHUP, for all subsequent changes.
+* ``sources.{name}.nrtm4_server_private_key``: the private key Ed25519 key
+  used to sign the Update Notification File for an NRTMv4 server, base64 encoded.
+  You may find the ``irrdctl nrtmv4 generate-private-key`` and
+  ``irrdctl nrtmv4 show-public-key`` convenience commands helpful.
+  |br| **Default**: not defined, no NRTMv4 server runs.
+  |br| **Change takes effect**: after SIGHUP, at the next mirror update.
+* ``sources.{name}.nrtm4_server_private_key_next``: the next private Ed25519
+  key used to sign the Update Notification File for an NRTMv4 server. This
+  setting is used for key rotation. Base64 encoded.
+  See the :doc:`mirroring documentation </users/mirroring>` for details on
+  key rotation.
+  |br| **Default**: not defined, no key rotation signalled.
+  |br| **Change takes effect**: after SIGHUP, at the next mirror update.
+* ``sources.{name}.nrtm4_server_local_path``: the path where the NRTMv4 server
+  writes the repository on the local file system.
+  |br| **Default**: not defined, no NRTMv4 server runs.
+  |br| **Change takes effect**: after SIGHUP, at the next mirror update.
+* ``sources.{name}.nrtm4_server_base_url``: the HTTPS URL where you will
+  host the files from ``nrtm4_server_local_path``.
+  |br| **Default**: not defined, no NRTMv4 server runs.
+  |br| **Change takes effect**: after SIGHUP, at the next mirror update.
+* ``sources.{name}.nrtm4_server_snapshot_frequency``: the frequency, in
+  seconds, at which to generate Snapshot files. Must be between 1 and 24 hours.
+  |br| **Default**: 4 hours.
+  |br| **Change takes effect**: after SIGHUP, at the next mirror update.
 * ``sources.{name}.nrtm4_client_notification_file_url``: the HTTPS or file URL of
   an NRTMv4 Update Notification File, when the source is used as an NRTMv4 client.
   |br| **Default**: not defined, no NRTMv4 updates attempted.
   |br| **Change takes effect**: after SIGHUP, at the next mirror update.
 * ``sources.{name}.nrtm4_client_initial_public_key``: the initial public
-  Ed25519 key used to sign the Update Notification File, in base64.
+  Ed25519 key expected to match the Update Notification File signature, base64 encoded.
   |br| **Default**: not defined, no NRTMv4 updates attempted.
   |br| **Change takes effect**: after SIGHUP, at the next mirror update.
 * ``sources.{name}.nrtm_host``: the hostname or IP to connect to for an NRTMv3 stream.

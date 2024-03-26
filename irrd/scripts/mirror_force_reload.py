@@ -17,6 +17,18 @@ from irrd.storage.database_handler import DatabaseHandler
 
 
 def set_force_reload(source) -> None:
+    if not any(
+        [
+            get_setting(f"sources.{source}.nrtm4_client_notification_file_url"),
+            get_setting(f"sources.{source}.nrtm_host"),
+            get_setting(f"sources.{source}.import_source"),
+        ]
+    ):
+        print(
+            f"You can only set the force reload flag for sources that are a mirror. Source {source} has"
+            " neither nrtm4_client_notification_file_url, nrtm_host, or import_source set."
+        )
+        return
     if get_setting(f"sources.{source}.nrtm4_client_initial_public_key"):
         print(
             "Note: the reload flag will be set on the source, but existing NRTMv4 client key information is"

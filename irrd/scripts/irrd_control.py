@@ -7,7 +7,13 @@ from functools import update_wrapper
 from pathlib import Path
 
 import click
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
+from irrd.utils.crypto import (
+    ed25519_private_key_as_str,
+    ed25519_private_key_from_config,
+    ed25519_public_key_as_str,
+)
 from irrd.webui.helpers import send_authentication_change_mail
 
 sys.path.append(str(Path(__file__).resolve().parents[2]))
@@ -129,12 +135,12 @@ def user_change_override(email: str, enable: bool, session_provider: ORMSessionP
 
 
 @cli.group()
-def nrtmv4():
+def nrtm4():
     """Manage NRTMv4 status."""
     pass  # pragma: no cover
 
 
-@nrtmv4.command()
+@nrtm4.command()
 @click.argument("source")
 @check_readonly_standby
 @session_provider_manager_sync
@@ -167,6 +173,47 @@ def client_clear_known_keys(source: str, session_provider: ORMSessionProvider):
         " not reloaded - for that use irrd_mirror_force_reload."
     )
     logger.info(f"{source}: known NRTMv4 client keys removed")
+
+
+@nrtm4.command()
+def generate_private_key():
+    """
+    Generate a new private key for an NRTMv4 server.
+    """
+    private_key = Ed25519PrivateKey.generate()
+    private_key_str = ed25519_private_key_as_str(private_key)
+    public_key_str = ed25519_public_key_as_str(private_key.public_key())
+
+    click.echo(
+        f"Private key: {private_key_str}\nCorresponding public key: {public_key_str}\nNote: this key has not"
+        " been configured in IRRD, that is a manual step. This is only a convenience command."
+    )
+
+
+@nrtm4.command()
+@click.argument("source")
+def server_show_public_key(source: str):
+    """
+    Show the public key(s) matching the currently configured private keys.
+    """
+    private_key = ed25519_private_key_from_config(
+        f"sources.{source}.nrtm4_server_private_key", permit_empty=True
+    )
+    if not private_key:
+        raise click.ClickException(f"Source {source} is not configured as an NRTMv4 server")
+    public_key_str = ed25519_public_key_as_str(private_key.public_key())
+
+    click.echo(
+        f"Source {source} NRTMv4 server public keys (base64):\n"
+        f"Current public key (from nrtm4_server_private_key): {public_key_str}"
+    )
+
+    next_private_key = ed25519_private_key_from_config(
+        f"sources.{source}.nrtm4_server_private_key_next", permit_empty=True
+    )
+    if next_private_key:
+        next_public_key_str = ed25519_public_key_as_str(next_private_key.public_key())
+        click.echo(f"Next key (from nrtm4_server_private_key_next): {next_public_key_str}")
 
 
 def find_user(session_provider: ORMSessionProvider, email: str) -> AuthUser:

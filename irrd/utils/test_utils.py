@@ -175,7 +175,10 @@ class MockDatabaseHandler(metaclass=MockSingletonMeta):
             )
         else:
             try:
-                return self.query_responses[type(query)]
+                result = self.query_responses[type(query)]
+                if type(result) == list:
+                    return iter(result)
+                return result
             except KeyError:  # pragma: no cover
                 raise ValueError(f"Unknown query in MockDatabaseHandler: {query}")
 

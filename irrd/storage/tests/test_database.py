@@ -12,7 +12,12 @@ from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.utils.test_utils import flatten_mock_calls
 
 from ..database_handler import DatabaseHandler
-from ..models import DatabaseOperation, JournalEntryOrigin, NRTM4ClientDatabaseStatus
+from ..models import (
+    DatabaseOperation,
+    JournalEntryOrigin,
+    NRTM4ClientDatabaseStatus,
+    NRTM4ServerDatabaseStatus,
+)
 from ..preload import Preloader
 from ..queries import (
     DatabaseStatusQuery,
@@ -283,6 +288,18 @@ class TestDatabaseHandlerLive:
             session_id=uuid.uuid4(), version=20, current_key="current key", next_key="next key"
         )
         self.dh.record_nrtm4_client_status("TEST2", nrtm4_client_status)
+        nrtm4_server_status = NRTM4ServerDatabaseStatus(
+            session_id=uuid.uuid4(),
+            version=20,
+            last_update_notification_file_update=None,
+            last_snapshot_version=10,
+            last_snapshot_global_serial=11,
+            last_snapshot_filename="filename",
+            last_snapshot_timestamp=None,
+            last_snapshot_hash="hash",
+            previous_deltas=["delta"],
+        )
+        self.dh.record_nrtm4_server_status("TEST2", nrtm4_server_status)
         self.dh.record_serial_exported("TEST2", "424242")
         self.dh.commit()
 
@@ -410,6 +427,15 @@ class TestDatabaseHandlerLive:
                 "nrtm4_client_version": None,
                 "nrtm4_client_current_key": None,
                 "nrtm4_client_next_key": None,
+                "nrtm4_server_last_snapshot_filename": None,
+                "nrtm4_server_last_snapshot_global_serial": None,
+                "nrtm4_server_last_snapshot_hash": None,
+                "nrtm4_server_last_snapshot_timestamp": None,
+                "nrtm4_server_last_snapshot_version": None,
+                "nrtm4_server_last_update_notification_file_update": None,
+                "nrtm4_server_previous_deltas": None,
+                "nrtm4_server_session_id": None,
+                "nrtm4_server_version": None,
                 "last_error": None,
                 "force_reload": True,
                 "synchronised_serials": True,
@@ -421,7 +447,6 @@ class TestDatabaseHandlerLive:
 
         self.dh.record_serial_newest_mirror("TEST2", 99999999)
         self.dh.record_serial_seen("TEST2", 44)
-        self.dh.set_force_reload("TEST2")  # should be ignored, source is new
         self.dh.commit()
 
         status_test2 = list(self.dh.execute_query(DatabaseStatusQuery().source("TEST2")))
@@ -438,6 +463,17 @@ class TestDatabaseHandlerLive:
                 "nrtm4_client_version": nrtm4_client_status.version,
                 "nrtm4_client_current_key": nrtm4_client_status.current_key,
                 "nrtm4_client_next_key": nrtm4_client_status.next_key,
+                "nrtm4_server_last_snapshot_filename": nrtm4_server_status.last_snapshot_filename,
+                "nrtm4_server_last_snapshot_global_serial": nrtm4_server_status.last_snapshot_global_serial,
+                "nrtm4_server_last_snapshot_hash": nrtm4_server_status.last_snapshot_hash,
+                "nrtm4_server_last_snapshot_timestamp": nrtm4_server_status.last_snapshot_timestamp,
+                "nrtm4_server_last_snapshot_version": nrtm4_server_status.last_snapshot_version,
+                "nrtm4_server_last_update_notification_file_update": (
+                    nrtm4_server_status.last_update_notification_file_update
+                ),
+                "nrtm4_server_previous_deltas": nrtm4_server_status.previous_deltas,
+                "nrtm4_server_session_id": nrtm4_server_status.session_id,
+                "nrtm4_server_version": nrtm4_server_status.version,
                 "last_error": "error",
                 "force_reload": False,
                 "synchronised_serials": True,
@@ -507,6 +543,15 @@ class TestDatabaseHandlerLive:
                 "nrtm4_client_version": None,
                 "nrtm4_client_current_key": None,
                 "nrtm4_client_next_key": None,
+                "nrtm4_server_last_snapshot_filename": None,
+                "nrtm4_server_last_snapshot_global_serial": None,
+                "nrtm4_server_last_snapshot_hash": None,
+                "nrtm4_server_last_snapshot_timestamp": None,
+                "nrtm4_server_last_snapshot_version": None,
+                "nrtm4_server_last_update_notification_file_update": None,
+                "nrtm4_server_previous_deltas": None,
+                "nrtm4_server_session_id": None,
+                "nrtm4_server_version": None,
                 "last_error": None,
                 "force_reload": False,
                 "synchronised_serials": False,
@@ -545,6 +590,15 @@ class TestDatabaseHandlerLive:
                 "nrtm4_client_version": None,
                 "nrtm4_client_current_key": None,
                 "nrtm4_client_next_key": None,
+                "nrtm4_server_last_snapshot_filename": None,
+                "nrtm4_server_last_snapshot_global_serial": None,
+                "nrtm4_server_last_snapshot_hash": None,
+                "nrtm4_server_last_snapshot_timestamp": None,
+                "nrtm4_server_last_snapshot_version": None,
+                "nrtm4_server_last_update_notification_file_update": None,
+                "nrtm4_server_previous_deltas": None,
+                "nrtm4_server_session_id": None,
+                "nrtm4_server_version": None,
                 "last_error": None,
                 "force_reload": False,
                 "synchronised_serials": False,
@@ -602,6 +656,15 @@ class TestDatabaseHandlerLive:
                 "nrtm4_client_version": None,
                 "nrtm4_client_current_key": None,
                 "nrtm4_client_next_key": None,
+                "nrtm4_server_last_snapshot_filename": None,
+                "nrtm4_server_last_snapshot_global_serial": None,
+                "nrtm4_server_last_snapshot_hash": None,
+                "nrtm4_server_last_snapshot_timestamp": None,
+                "nrtm4_server_last_snapshot_version": None,
+                "nrtm4_server_last_update_notification_file_update": None,
+                "nrtm4_server_previous_deltas": None,
+                "nrtm4_server_session_id": None,
+                "nrtm4_server_version": None,
                 "last_error": None,
                 "force_reload": False,
                 "synchronised_serials": False,

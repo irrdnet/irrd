@@ -134,8 +134,14 @@ class StatusGenerator:
                 Newest local journal serial number: {status_result['serial_newest_journal']}
                 Last export at serial number: {status_result['serial_last_export']}
                 Newest serial number mirrored: {status_result['serial_newest_mirror']}
-                Current NRTMv4 client session: {status_result['nrtm4_client_session_id']}
-                Current NRTMv4 client version: {status_result['nrtm4_client_version']}
+                NRTMv4 client: current session: {status_result['nrtm4_client_session_id']}
+                NRTMv4 client: current version: {status_result['nrtm4_client_version']}
+                NRTMv4 server: current session: {status_result['nrtm4_server_session_id']}
+                NRTMv4 server: current version: {status_result['nrtm4_server_version']}
+                NRTMv4 server: last Update Notification File update: {status_result['nrtm4_server_last_update_notification_file_update']}
+                NRTMv4 server: last snapshot version: {status_result['nrtm4_server_last_snapshot_version']}
+                NRTMv4 server: number of deltas: {len(status_result['nrtm4_server_previous_deltas'] or [])}
+                NRTMv4 server: base URL: {get_setting(f"sources.{source}.nrtm4_server_base_url")}
                 Synchronised NRTM serials: {synchronised_serials_str}
                 Last update: {status_result['updated']}
                 Local journal kept: {keep_journal}
@@ -164,7 +170,7 @@ class StatusGenerator:
         """
         if nrtm4_notification_file_url:
             return textwrap.dedent(f"""
-                NRTMv4 Update Notification File URL: {nrtm4_notification_file_url}
+                NRTMv4 client Update Notification File URL: {nrtm4_notification_file_url}
                 """)
         elif nrtm_host:
             try:
