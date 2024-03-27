@@ -85,6 +85,11 @@ Pytest can be ran from inside docker
     export IRRD_REDIS_URL=redis://host.docker.internal/3
     pytest irrd/
 
+Sphinx can also be run from inside docker:
+
+    docker compose -f docker/docker-compose.yaml exec irrd bash
+    cd /opt/irrd/ && poetry -n --no-ansi run sphinx-build -nW -b spelling docs/ docs/build
+
 Integration test
 ----------------
 

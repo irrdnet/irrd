@@ -36,6 +36,7 @@ journaling
 keepalive
 keychain
 keyring
+localhost
 logfile
 loglevel
 logrotate
@@ -69,6 +70,7 @@ preloads
 prepend
 pubsub
 py
+pytest
 Rajiv
 rc
 reactivations
@@ -88,6 +90,7 @@ setcap
 scalability
 Shubernetskiy
 snapshotting
+sphinx
 sqlalchemy
 Starlette
 starlette
