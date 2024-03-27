@@ -1,0 +1,49 @@
+version: "3.8"
+services:
+  irrd:
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
+      args:
+        - DATA_PATH=/opt/irrd_data/
+    ports:
+      - "8080:8080"
+      - "8043:8043"
+    volumes:
+      - ../:/opt/irrd/:z
+      - ./irrd.yaml:/etc/irrd.yaml:z
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    entrypoint:
+      # A custom entry point is needed to init the DB before starting IRRd
+      - /opt/irrd/docker/irrd_init.sh
+      - "/opt/irrd/"
+    depends_on:
+      - postgresql
+      - redis
+  postgresql:
+    image: postgres:14-alpine
+    environment:
+      POSTGRES_PASSWORD: irrd
+    ports:
+      - "5432:5432"
+    volumes:
+      - ../docker/psql_init.sh:/docker-entrypoint-initdb.d/psql_init.sh:z
+    command: postgres -c random_page_cost=1 -c work_mem=50000 -c shared_buffers=102400 -c max_connections=100 -c checkpoint_timeout=86400 -c max_wal_size=2147483647
+  redis:
+    image: redis:6-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 0
+  # An instance of Postgres used for pytest
+  test-postgresql:
+    image: postgres:14-alpine
+    environment:
+      POSTGRES_DB: irrd_test
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_PASSWORD: secret
+      POSTGRES_USER: root
+    ports:
+      - "5433:5432"
+    # Default is off, needed for test_object_writing_and_status_checking()
+    command: postgres -c track_commit_timestamp=on

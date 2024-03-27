@@ -47,6 +47,44 @@ To avoid this, use ``--basetemp`` to set an alternate temporary directory, e.g.:
 
 You may also want to add ``-v`` for more verbose output.
 
+Docker
+------------------------------------
+
+Docker files are provided in `docker/` which build a container that runs IRRd,
+and also starts a Redis and Postgres container. An additional Postgres container
+is provided for running pytest.
+
+A default configuration file (`docker/irrd.yaml`) is used to run IRRd inside docker.
+The configuration file references some initial data which is pulled from RIPE and
+RADB at build-time. This is so that developers have data to work with. When the
+IRRd container is first started it will import this initial data. This initial
+import can take several minutes to complete.
+
+If you're unfamiliar with docker, some typical actions are:
+
+* Build the IRRd container: `docker compose -f docker/docker-compose.yaml build`
+* Start all containers: `docker compose -f docker/docker-compose.yaml up -d`
+* Start a live log of the STDOUT from all containers: `docker compose -f docker/docker-compose.yaml logs -f`
+* Drop into a BASH shell in the IRRd container: `docker compose -f docker/docker-compose.yaml exec irrd bash`
+
+After starting the containers, these two ports are exposed:
+
+* localhost:8043 - whois daemon
+* localhost:8080 - http daemon
+
+You can check the status of the initial data import by looking at the docker
+live log or by checking the `HTTP status page`_.
+
+.. _HTTP status page: http://localhost:8080/v1/status/
+
+Pytest can be ran from inside docker
+
+    docker compose -f docker/docker-compose.yaml exec irrd bash
+    cd /opt/irrd/
+    export IRRD_DATABASE_URL=postgresql://host.docker.internal:5433/irrd_test
+    export IRRD_REDIS_URL=redis://host.docker.internal/3
+    pytest irrd/
+
 Integration test
 ----------------
 
