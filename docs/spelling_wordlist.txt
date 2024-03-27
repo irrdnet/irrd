@@ -8,6 +8,7 @@ backend
 balancers
 boolean
 bugfix
+cd
 conf
 config
 CPython
@@ -110,3 +111,4 @@ validator
 validators
 virtualenv
 whois
+yaml
