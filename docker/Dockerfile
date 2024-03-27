@@ -1,5 +1,6 @@
 FROM ubuntu:22.04
 
+ARG APP_PATH
 ARG DATA_PATH
 
 # BASH is needed for Poetry to work at build time
@@ -7,7 +8,7 @@ SHELL ["/bin/bash", "-c"]
 
 # Install requirements
 RUN DEBIAN_FRONTEND=noninteractive apt-get update
-RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y ca-certificates build-essential python3-dev pipx wget gpg git
+RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y ca-certificates build-essential python3-dev pipx wget gpg git libenchant-2-2
 
 # Get some example data from RIPE and RADB
 RUN mkdir "$DATA_PATH"
@@ -28,3 +29,7 @@ RUN cd /irrd/ && \
 /root/.local/bin/poetry config virtualenvs.create false && \
 /root/.local/bin/poetry install -vv --no-interaction --with=dev,docs
 RUN useradd irrd
+
+# Configure git to ignore dubious ownership of the irrd directory.
+# It is mapped to the docker host so the USER will not match.
+RUN git config --global --add safe.directory "$APP_PATH"
