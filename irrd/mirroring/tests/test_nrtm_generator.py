@@ -43,12 +43,14 @@ def prepare_generator(monkeypatch, config_override):
                     "operation": DatabaseOperation.add_or_update,
                     "serial_nrtm": 120,
                     "object_class": "mntner",
+                    "rpsl_pk": "TEST-MNT",
                 },
                 {
                     "object_text": "mntner:         TEST-MNT\n",
                     "operation": DatabaseOperation.delete,
                     "serial_nrtm": 180,
                     "object_class": "mntner",
+                    "rpsl_pk": "TEST-MNT",
                 },
             ],
         ]
