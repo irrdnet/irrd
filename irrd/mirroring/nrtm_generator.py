@@ -3,7 +3,6 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from irrd.conf import get_nrtm_response_dummy_object_class_for_source, get_setting
-from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import DatabaseStatusQuery, RPSLDatabaseJournalQuery
 from irrd.utils.text import dummy_rpsl_object
@@ -128,8 +127,6 @@ class NRTMGenerator:
                 pk = operation["rpsl_pk"]
 
                 if object_class in nrtm_response_dummy_object_class:
-                    obj = rpsl_object_from_text(text.strip(), strict_validation=False)
-
                     dummy_attributes = get_setting(f"sources.{source}.nrtm_response_dummy_attributes")
 
                     if get_setting(f"sources.{source}.nrtm_response_dummy_remarks"):
