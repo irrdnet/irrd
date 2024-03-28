@@ -125,6 +125,7 @@ class NRTMGenerator:
             nrtm_response_dummy_object_class = get_nrtm_response_dummy_object_class_for_source(source)
             if nrtm_response_dummy_object_class:
                 object_class = operation["object_class"]
+                pk = operation["rpsl_pk"]
 
                 if object_class in nrtm_response_dummy_object_class:
                     obj = rpsl_object_from_text(text.strip(), strict_validation=False)
@@ -139,7 +140,7 @@ class NRTMGenerator:
                         dummy_remarks = None
 
                     if dummy_attributes:
-                        text = dummy_rpsl_object(text, dummy_attributes, obj.pk(), dummy_remarks)
+                        text = dummy_rpsl_object(text, dummy_attributes, pk, dummy_remarks)
 
             if remove_auth_hashes:
                 text = remove_auth_hashes_func(text)
