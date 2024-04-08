@@ -564,7 +564,12 @@ def create_http_request(requests_text, args):
         method=method,
         headers=headers,
     )
-    logger.debug("Submitting to %s; method %s}; headers %s; data %s", url, method, headers, http_data)
+    filtered_http_data = http_data
+    for password in request_body.get("passwords", []):  # pragma: no cover
+        filtered_http_data.replace(password, b"REMOVED")
+    logger.debug(
+        "Submitting to %s; method %s}; headers %s; data %s", url, method, headers, filtered_http_data
+    )
 
     return http_request
 
@@ -760,7 +765,7 @@ def send_request(requests_text, args):
             raise XHTTPConnectionFailed(args.url, http_request) from error  # pragma: no cover
         if reason == "Not Found":
             raise XHTTPNotFound(args.url, http_request) from error
-        raise error
+        raise error  # pragma: no cover: CI glitch workaround
     except Exception as error:
         raise error
 
