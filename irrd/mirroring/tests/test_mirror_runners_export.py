@@ -4,9 +4,6 @@ from itertools import cycle, repeat
 from pathlib import Path
 from unittest.mock import Mock
 
-from irrd.routepref.status import RoutePreferenceStatus
-from irrd.rpki.status import RPKIStatus
-from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.utils.test_utils import flatten_mock_calls
 
 from ..mirror_runners_export import EXPORT_PERMISSIONS, SourceExportRunner
@@ -71,13 +68,9 @@ class TestSourceExportRunner:
         ]
         assert flatten_mock_calls(mock_dq) == [
             ["sources", (["TEST"],), {}],
-            ["rpki_status", ([RPKIStatus.not_found, RPKIStatus.valid],), {}],
-            ["scopefilter_status", ([ScopeFilterStatus.in_scope],), {}],
-            ["route_preference_status", ([RoutePreferenceStatus.visible],), {}],
+            ["default_suppression", (), {}],
             ["sources", (["TEST"],), {}],
-            ["rpki_status", ([RPKIStatus.not_found, RPKIStatus.valid],), {}],
-            ["scopefilter_status", ([ScopeFilterStatus.in_scope],), {}],
-            ["route_preference_status", ([RoutePreferenceStatus.visible],), {}],
+            ["default_suppression", (), {}],
         ]
         assert "Starting a source export for TEST" in caplog.text
         assert "Export for TEST complete" in caplog.text

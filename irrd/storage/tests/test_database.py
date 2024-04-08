@@ -1153,6 +1153,7 @@ class TestRPSLDatabaseQueryLive:
         self._assert_no_match(RPSLDatabaseQuery().rpki_status([RPKIStatus.valid]))
         self._assert_no_match(RPSLDatabaseQuery().scopefilter_status([ScopeFilterStatus.out_scope_as]))
         self._assert_no_match(RPSLDatabaseQuery().route_preference_status([RoutePreferenceStatus.suppressed]))
+        self._assert_no_match(RPSLDatabaseQuery().default_suppression())
 
     def test_ordering_sources(self, irrd_db_mock_preload, database_handler_with_route):
         self.dh = database_handler_with_route

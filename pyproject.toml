@@ -138,7 +138,7 @@ ruff = "ruff irrd --fix"
 isort = "isort irrd"
 mypy = "mypy irrd"
 lint = ["black", "ruff", "isort", "mypy"]
-test = "pytest --cov-report term-missing:skip-covered --cov=irrd --basetemp=.tmpdirs/ irrd"
+test = "pytest --cov-report term-missing:skip-covered --cov=irrd --basetemp=.tmpdirs/ "
 
 [tool.coverage.report]
 exclude_lines = [
