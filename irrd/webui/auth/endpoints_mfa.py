@@ -12,12 +12,14 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, RedirectResponse, Response
 from starlette_wtf import StarletteForm, csrf_protect
 from webauthn import base64url_to_bytes
+from webauthn.helpers import (
+    parse_authentication_credential_json,
+    parse_registration_credential_json,
+)
 from webauthn.helpers.structs import (
     AttestationConveyancePreference,
-    AuthenticationCredential,
     AuthenticatorSelectionCriteria,
     PublicKeyCredentialDescriptor,
-    RegistrationCredential,
     UserVerificationRequirement,
 )
 from wtforms_bootstrap5 import RendererContext
@@ -178,7 +180,7 @@ async def webauthn_verify_authentication_response(
     wn_origin, wn_rpid = get_webauthn_origin_rpid()
     try:
         expected_challenge = base64.b64decode(request.session[WN_CHALLENGE_SESSION_KEY])
-        credential = AuthenticationCredential.model_validate_json(await request.body())
+        credential = parse_authentication_credential_json(await request.json())
         query = session_provider.session.query(AuthWebAuthn).filter_by(
             user=request.auth.user, credential_id=credential.raw_id
         )
@@ -226,7 +228,7 @@ async def webauthn_register(request: Request) -> Response:
         rp_id=wn_rpid,
         # An assigned random identifier;
         # never anything user-identifying like an email address
-        user_id=str(request.auth.user.pk),
+        user_id=request.auth.user.pk.bytes,
         # A user-visible hint of which account this credential belongs to
         user_name=request.auth.user.email,
         authenticator_selection=AuthenticatorSelectionCriteria(
@@ -256,7 +258,7 @@ async def webauthn_verify_registration_response(
     try:
         expected_challenge = base64.b64decode(request.session[WN_CHALLENGE_SESSION_KEY])
         body = await request.json()
-        credential = RegistrationCredential.model_validate_json(body["registration_response"])
+        credential = parse_registration_credential_json(body["registration_response"])
         verification = webauthn.verify_registration_response(
             credential=credential,
             expected_challenge=expected_challenge,
