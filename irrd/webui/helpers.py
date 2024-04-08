@@ -143,7 +143,7 @@ def client_ip_str(request: Optional[Request]) -> str:
 def client_ip(request: Optional[Request]) -> Optional[str]:
     """Small wrapper to get the client IP from a request."""
     if request:
-        return request.client.host if request.client else "127.0.0.1"
+        return request.client.host if request.client and request.client.host != "testclient" else "127.0.0.1"
     return None
 
 
