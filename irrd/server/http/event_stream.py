@@ -16,10 +16,7 @@ from starlette.status import WS_1003_UNSUPPORTED_DATA, WS_1008_POLICY_VIOLATION
 from starlette.websockets import WebSocket
 
 from irrd.conf import get_setting
-from irrd.routepref.status import RoutePreferenceStatus
-from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
-from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.server.access_check import STARLETTE_TEST_CLIENT_HOST, is_client_permitted
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.event_stream import (
@@ -110,14 +107,9 @@ class EventStreamInitialDownloadGenerator:
                 }
 
     async def generate_sql_query(self):
-        query = (
-            RPSLDatabaseQuery(
-                column_names=["rpsl_pk", "object_class", "object_text", "source", "updated", "parsed_data"]
-            )
-            .rpki_status([RPKIStatus.not_found.name, RPKIStatus.valid.name])
-            .scopefilter_status([ScopeFilterStatus.in_scope.name])
-            .route_preference_status([RoutePreferenceStatus.visible.name])
-        )
+        query = RPSLDatabaseQuery(
+            column_names=["rpsl_pk", "object_class", "object_text", "source", "updated", "parsed_data"]
+        ).default_suppression()
         if self.sources:
             query = query.sources(self.sources)
         if self.object_classes:

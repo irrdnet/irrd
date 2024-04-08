@@ -11,9 +11,6 @@ import redis
 from setproctitle import setproctitle
 
 from irrd.conf import get_setting
-from irrd.routepref.status import RoutePreferenceStatus
-from irrd.rpki.status import RPKIStatus
-from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.utils.process_support import ExceptionLoggingProcess
 
 from .queries import RPSLDatabaseQuery
@@ -509,9 +506,7 @@ class PreloadUpdater(threading.Thread):
             column_names=["ip_version", "ip_first", "prefix_length", "asn_first", "source"],
             enable_ordering=False,
         )
-        q = q.object_classes(["route", "route6"]).rpki_status([RPKIStatus.not_found, RPKIStatus.valid])
-        q = q.scopefilter_status([ScopeFilterStatus.in_scope])
-        q = q.route_preference_status([RoutePreferenceStatus.visible])
+        q = q.object_classes(["route", "route6"]).default_suppression()
         for result in dh.execute_query(q):
             prefix = result["ip_first"]
             key = result["source"] + REDIS_KEY_PK_SOURCE_SEPARATOR + "AS" + str(result["asn_first"])
@@ -542,9 +537,7 @@ class PreloadUpdater(threading.Thread):
                 enable_ordering=False,
             )
             .object_classes([set_class])
-            .rpki_status([RPKIStatus.not_found, RPKIStatus.valid])
-            .scopefilter_status([ScopeFilterStatus.in_scope])
-            .route_preference_status([RoutePreferenceStatus.visible])
+            .default_suppression()
         )
 
         member_store: Dict[str, set] = {}
@@ -568,9 +561,7 @@ class PreloadUpdater(threading.Thread):
             )
             .lookup_attr("member-of", True)
             .object_classes(member_classes)
-            .rpki_status([RPKIStatus.not_found, RPKIStatus.valid])
-            .scopefilter_status([ScopeFilterStatus.in_scope])
-            .route_preference_status([RoutePreferenceStatus.visible])
+            .default_suppression()
         )
         for row in dh.execute_query(q):
             for member_of in row["parsed_data"].get("member-of", []):

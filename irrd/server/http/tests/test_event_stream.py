@@ -12,10 +12,7 @@ from coredis.response.types import StreamEntry
 from starlette.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
-from irrd.routepref.status import RoutePreferenceStatus
-from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
-from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.storage.event_stream import OPERATION_JOURNAL_EXTENDED
 from irrd.storage.queries import (
     RPSLDatabaseJournalQuery,
@@ -103,9 +100,7 @@ class TestEventStreamInitialDownloadEndpoint:
             RPSLDatabaseQuery(
                 column_names=["rpsl_pk", "object_class", "object_text", "source", "updated", "parsed_data"]
             )
-            .rpki_status([RPKIStatus.not_found.name, RPKIStatus.valid.name])
-            .scopefilter_status([ScopeFilterStatus.in_scope.name])
-            .route_preference_status([RoutePreferenceStatus.visible.name])
+            .default_suppression()
             .sources(["TEST"])
             .object_classes(["mntner"])
             .finalise_statement()

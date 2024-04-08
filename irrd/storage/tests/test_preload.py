@@ -4,9 +4,6 @@ from unittest.mock import Mock
 
 import pytest
 
-from irrd.routepref.status import RoutePreferenceStatus
-from irrd.rpki.status import RPKIStatus
-from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.utils.test_utils import flatten_mock_calls
 
 from ..database_handler import DatabaseHandler
@@ -334,27 +331,17 @@ class TestPreloadUpdater:
         assert flatten_mock_calls(mock_reload_lock) == [["acquire", (), {}], ["release", (), {}]]
         assert flatten_mock_calls(mock_database_query) == [
             ["object_classes", (["route", "route6"],), {}],
-            ["rpki_status", ([RPKIStatus.not_found, RPKIStatus.valid],), {}],
-            ["scopefilter_status", ([ScopeFilterStatus.in_scope],), {}],
-            ["route_preference_status", ([RoutePreferenceStatus.visible],), {}],
+            ["default_suppression", (), {}],
             ["object_classes", (["as-set"],), {}],
-            ["rpki_status", ([RPKIStatus.not_found, RPKIStatus.valid],), {}],
-            ["scopefilter_status", ([ScopeFilterStatus.in_scope],), {}],
-            ["route_preference_status", ([RoutePreferenceStatus.visible],), {}],
+            ["default_suppression", (), {}],
             ["lookup_attr", ("member-of", True), {}],
             ["object_classes", (["aut-num"],), {}],
-            ["rpki_status", ([RPKIStatus.not_found, RPKIStatus.valid],), {}],
-            ["scopefilter_status", ([ScopeFilterStatus.in_scope],), {}],
-            ["route_preference_status", ([RoutePreferenceStatus.visible],), {}],
+            ["default_suppression", (), {}],
             ["object_classes", (["route-set"],), {}],
-            ["rpki_status", ([RPKIStatus.not_found, RPKIStatus.valid],), {}],
-            ["scopefilter_status", ([ScopeFilterStatus.in_scope],), {}],
-            ["route_preference_status", ([RoutePreferenceStatus.visible],), {}],
+            ["default_suppression", (), {}],
             ["lookup_attr", ("member-of", True), {}],
             ["object_classes", (["route", "route6"],), {}],
-            ["rpki_status", ([RPKIStatus.not_found, RPKIStatus.valid],), {}],
-            ["scopefilter_status", ([ScopeFilterStatus.in_scope],), {}],
-            ["route_preference_status", ([RoutePreferenceStatus.visible],), {}],
+            ["default_suppression", (), {}],
         ]
 
         assert flatten_mock_calls(mock_preload_obj) == [

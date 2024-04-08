@@ -760,7 +760,7 @@ def send_request(requests_text, args):
             raise XHTTPConnectionFailed(args.url, http_request) from error  # pragma: no cover
         if reason == "Not Found":
             raise XHTTPNotFound(args.url, http_request) from error
-        raise error
+        raise error  # pragma: no cover: CI glitch workaround
     except Exception as error:
         raise error
 
