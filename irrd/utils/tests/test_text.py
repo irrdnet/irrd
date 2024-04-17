@@ -89,7 +89,7 @@ def test_dummify_object_text(config_override):
             "PERSON-TEST",
         )
         == "person:         Test person\naddress:        address\nnic-hdl:        PERSON-TEST\nphone:        "
-        "  +31 20 000 0000",
+        "  +31 20 000 0000"
     )
 
     config_override(
@@ -101,7 +101,7 @@ def test_dummify_object_text(config_override):
                     "nrtm_response_dummy_attributes": {
                         "person": "Dummy person for %s",
                         "address": "Dummy address",
-                        "phone": "1234",
+                        "phone": 1234,
                     },
                 }
             }
@@ -128,7 +128,7 @@ def test_dummify_object_text(config_override):
                     "nrtm_response_dummy_attributes": {
                         "person": "Dummy person for %s",
                         "address": "Dummy address",
-                        "phone": "1234",
+                        "phone": 1234,
                     },
                     "nrtm_response_dummy_remarks": "Invalid object",
                 }
