@@ -6,7 +6,7 @@ from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
 
 from ..text import (
-    dummy_rpsl_object,
+    dummify_object_text,
     remove_auth_hashes,
     remove_last_modified,
     snake_to_camel_case,
@@ -67,15 +67,82 @@ def test_snake_to_camel_case():
     assert snake_to_camel_case(["foo1_bar", "second_item"]) == ["foo1Bar", "secondItem"]
 
 
-def test_dummy_rpsl_object():
-    assert dummy_rpsl_object("", {}, "", None) == ""
+def test_dummify_object_text(config_override):
+    assert dummify_object_text("", "person", "TEST", "PERSON-TEST") == ""
+
+    config_override(
+        {
+            "sources": {
+                "TEST": {
+                    "keep_journal": True,
+                    "nrtm_response_dummy_object_class": "role",
+                }
+            }
+        }
+    )
     assert (
-        dummy_rpsl_object(
-            "person:         Test person\nnic-hdl:        PERSON-TEST\nphone:          +31 20 000 0000",
-            {"person": "Dummy person for %s", "phone": 1234},
+        dummify_object_text(
+            "person:         Test person\naddress:        address\nnic-hdl:        PERSON-TEST\nphone:       "
+            "   +31 20 000 0000",
+            "person",
+            "TEST",
             "PERSON-TEST",
-            "remarks:        Invalid object",
         )
-        == "person:         Dummy person for PERSON-TEST\nnic-hdl:        PERSON-TEST\nphone:         "
-        " 1234\nremarks:        Invalid object\n"
+        == "person:         Test person\naddress:        address\nnic-hdl:        PERSON-TEST\nphone:        "
+        "  +31 20 000 0000",
+    )
+
+    config_override(
+        {
+            "sources": {
+                "TEST": {
+                    "keep_journal": True,
+                    "nrtm_response_dummy_object_class": "person",
+                    "nrtm_response_dummy_attributes": {
+                        "person": "Dummy person for %s",
+                        "address": "Dummy address",
+                        "phone": "1234",
+                    },
+                }
+            }
+        }
+    )
+    assert (
+        dummify_object_text(
+            "person:         Test person\naddress:        address\nnic-hdl:        PERSON-TEST\nphone:       "
+            "   +31 20 000 0000",
+            "person",
+            "TEST",
+            "PERSON-TEST",
+        )
+        == "person:         Dummy person for PERSON-TEST\naddress:        Dummy address\nnic-hdl:       "
+        " PERSON-TEST\nphone:          1234\n"
+    )
+
+    config_override(
+        {
+            "sources": {
+                "TEST": {
+                    "keep_journal": True,
+                    "nrtm_response_dummy_object_class": "person",
+                    "nrtm_response_dummy_attributes": {
+                        "person": "Dummy person for %s",
+                        "address": "Dummy address",
+                        "phone": "1234",
+                    },
+                    "nrtm_response_dummy_remarks": "Invalid object",
+                }
+            }
+        }
+    )
+    assert (
+        dummify_object_text(
+            "person:         Test person\naddress:        address\nnic-hdl:        PERSON-TEST\nphone:       "
+            "   +31 20 000 0000",
+            "person",
+            "TEST",
+            "PERSON-TEST",
+        )
+        == "person:         Dummy person for PERSON-TEST\naddress:        Dummy address\nnic-hdl:       "
+        " PERSON-TEST\nphone:          1234\nremarks:        Invalid object\n"
     )
