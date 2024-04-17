@@ -1,7 +1,12 @@
 import re
-from typing import Dict, Iterator, Optional, TextIO, Union
+import textwrap
+from typing import Iterator, Optional, TextIO, Union
 
-from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
+from irrd.conf import (
+    PASSWORD_HASH_DUMMY_VALUE,
+    get_nrtm_response_dummy_object_class_for_source,
+    get_setting,
+)
 from irrd.rpsl.auth import PASSWORD_HASHERS_ALL
 
 re_remove_passwords = re.compile(r"(%s)[^\n]+" % "|".join(PASSWORD_HASHERS_ALL.keys()), flags=re.IGNORECASE)
@@ -100,7 +105,7 @@ def clean_ip_value_error(value_error):
     return re.sub(re_clean_ip_error, "", str(value_error))
 
 
-def dummy_rpsl_object(rpsl_text: str, dummy_attributes: Dict[str, str], pk: str, remarks: Optional[str]):
+def dummify_object_text(rpsl_text: str, object_class: str, source: str, pk: str):
     """
     Modify the value of attributes in an RPSL object.
     """
@@ -108,24 +113,36 @@ def dummy_rpsl_object(rpsl_text: str, dummy_attributes: Dict[str, str], pk: str,
     if not rpsl_text:
         return rpsl_text
 
-    lines = rpsl_text.splitlines()
+    nrtm_response_dummy_object_class = get_nrtm_response_dummy_object_class_for_source(source)
+    if nrtm_response_dummy_object_class:
+        if object_class in nrtm_response_dummy_object_class:
+            dummy_attributes = get_setting(f"sources.{source}.nrtm_response_dummy_attributes")
+            if dummy_attributes:
+                if get_setting(f"sources.{source}.nrtm_response_dummy_remarks"):
+                    dummy_remarks = textwrap.indent(
+                        get_setting(f"sources.{source}.nrtm_response_dummy_remarks"), "remarks:".ljust(16)
+                    )
+                else:
+                    dummy_remarks = None
 
-    for index, line in enumerate(lines):
-        for key, value in dummy_attributes.items():
-            if "%s" in str(value):
-                value = str(value).replace("%s", pk)
+                lines = rpsl_text.splitlines()
 
-            if line.startswith(f"{key}:"):
-                format_key = f"{key}:".ljust(RPSL_ATTRIBUTE_TEXT_WIDTH)
-                if not isinstance(value, str):
-                    value = str(value)
-                lines[index] = format_key + value
+                for index, line in enumerate(lines):
+                    for key, value in dummy_attributes.items():
+                        if "%s" in str(value):
+                            value = str(value).replace("%s", pk)
 
-    dummyfied_rpsl_object = "\n".join(lines) + "\n"
+                        if line.startswith(f"{key}:"):
+                            format_key = f"{key}:".ljust(RPSL_ATTRIBUTE_TEXT_WIDTH)
+                            if not isinstance(value, str):
+                                value = str(value)
+                            lines[index] = format_key + value
 
-    if rpsl_text != dummyfied_rpsl_object:
-        if remarks:
-            dummyfied_rpsl_object += remarks.strip() + "\n"
-        return dummyfied_rpsl_object
+                dummyfied_rpsl_object = "\n".join(lines) + "\n"
+
+                if rpsl_text != dummyfied_rpsl_object:
+                    if dummy_remarks:
+                        dummyfied_rpsl_object += dummy_remarks.strip() + "\n"
+                    return dummyfied_rpsl_object
 
     return rpsl_text
