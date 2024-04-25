@@ -87,11 +87,13 @@ def main():
     if uid and gid:
         os.setegid(gid)
         os.seteuid(uid)
-        if staged_logfile_path and not os.access(staged_logfile_path, os.W_OK, effective_ids=True):
-            logging.critical(
-                f"Unable to start: logfile {staged_logfile_path} not writable by UID {uid} / GID {gid}"
-            )
-            return
+        if staged_logfile_path:
+            staged_logfile_dir = Path(staged_logfile_path).parent
+            if not os.access(staged_logfile_dir, os.W_OK, effective_ids=True):
+                logging.critical(
+                    f"Unable to start: logfile {staged_logfile_path} not writable by UID {uid} / GID {gid}"
+                )
+                return
 
     with daemon.DaemonContext(**daemon_kwargs):
         config_init(args.config_file_path)
