@@ -1,0 +1,9 @@
+============================
+Release notes for IRRd 4.3.3
+============================
+
+IRRd 4.3.3 was released on April 25th, 2024, and `fixes an issue`_ in earlier versions
+where startup could fail when using the user/group settings. This happened because of
+an incorrect log file access check.
+
+.. _fixes an issue: https://github.com/irrdnet/irrd/issues/937
