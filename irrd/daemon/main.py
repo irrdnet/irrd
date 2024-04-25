@@ -87,7 +87,8 @@ def main():
     if uid and gid:
         os.setegid(gid)
         os.seteuid(uid)
-        if staged_logfile_path and not os.access(staged_logfile_path, os.W_OK, effective_ids=True):
+        staged_logfile_dir = Path(staged_logfile_path).parent
+        if staged_logfile_path and not os.access(staged_logfile_dir, os.W_OK, effective_ids=True):
             logging.critical(
                 f"Unable to start: logfile {staged_logfile_path} not writable by UID {uid} / GID {gid}"
             )
