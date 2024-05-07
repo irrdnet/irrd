@@ -775,6 +775,12 @@ Sources
   use the `|` style to preserve newlines.
   |br| **Default**: not defined, no additional header added.
   |br| **Change takes effect**: after SIGHUP, upon next request.
+* ``sources.{name}.nrtm_original_data_access_list``: a reference to an access 
+  list in the configuration, where only IPs in the list are permitted access
+  to the original data in the NRTMv3 stream for this particular source (``-g`` queries),
+  regardless of any dummy data defined.
+  IPs not in the list will get the dummy data if defined.
+  |br| **Default**: not defined, all NRTMv3 clients get the dummy data if defined.
 * ``sources.{name}.nrtm_response_dummy_object_class``: a list of object classes
   that will contain the dummy data within the NRTMv3 responses.
   IRRD will dummy an object class only if the ``nrtm_response_dummy_attributes``

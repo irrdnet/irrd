@@ -5,7 +5,7 @@ from typing import Optional
 from irrd.conf import get_setting
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import DatabaseStatusQuery, RPSLDatabaseJournalQuery
-from irrd.utils.text import dummify_object_text
+from irrd.utils.text import dummify_object_text as dummify_object_text_func
 from irrd.utils.text import remove_auth_hashes as remove_auth_hashes_func
 
 
@@ -22,6 +22,7 @@ class NRTMGenerator:
         serial_end_requested: Optional[int],
         database_handler: DatabaseHandler,
         remove_auth_hashes=True,
+        dummify_object_text=True,
     ) -> str:
         """
         Generate an NRTM response for a particular source, serial range and
@@ -121,9 +122,10 @@ class NRTMGenerator:
                 operation_str += " " + str(operation["serial_nrtm"])
             text = operation["object_text"]
 
-            object_class = operation["object_class"]
-            pk = operation["rpsl_pk"]
-            text = dummify_object_text(text, object_class, source, pk)
+            if dummify_object_text:
+                object_class = operation["object_class"]
+                pk = operation["rpsl_pk"]
+                text = dummify_object_text_func(text, object_class, source, pk)
 
             if remove_auth_hashes:
                 text = remove_auth_hashes_func(text)

@@ -109,6 +109,7 @@ class TestConfiguration:
                         "suspension_enabled": True,
                         "nrtm_query_serial_range_limit": 10,
                         "object_class_filter": "route",
+                        "nrtm_original_data_access_list": "valid-list",
                         "nrtm_response_dummy_object_class": "person",
                     },
                     "TESTDB2": {
