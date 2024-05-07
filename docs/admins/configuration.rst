@@ -785,20 +785,20 @@ Sources
   that will contain the dummy data within the NRTMv3 responses.
   IRRD will dummy an object class only if the ``nrtm_response_dummy_attributes``
   is defined and the object class attribute keys are in the dummy attributes.
-  |br| **Default**: not defined, no objects dummyfied.
+  |br| **Default**: not defined, no objects dummied.
   |br| **Change takes effect**: after SIGHUP, upon next request.
 * ``sources.{name}.nrtm_response_dummy_attributes``: object attributes that contain
   dummy data. This is a dictionary with the attribute keys and corresponding dummy 
   attribute string values.
   The attributes will be replaced only if ``nrtm_response_dummy_object_class``
   is defined and the attributes are in the defined object class.
-  If the attibute value has the ``%s``, IRRD will replace it by the object primary key,
+  If the attribute value has the ``%s``, IRRD will replace it by the object primary key,
   e.g. ``person: Dummy name for %s``.
   
-  |br| **Default**: not defined. no objects dummyfied.
+  |br| **Default**: not defined. no objects dummied.
   |br| **Change takes effect**: after SIGHUP, upon next request.
 * ``sources.{name}.nrtm_response_dummy_remarks``: an additional remarks to be added 
-  to the end of the dummyfied object in the NRTMv3 response.
+  to the end of the dummied object in the NRTMv3 response.
   IRRD will only add the remarks to the object classes defined in the 
   ``nrtm_response_dummy_object_class``.
   This can have multiple lines. When adding this to the configuration,
