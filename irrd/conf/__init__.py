@@ -545,6 +545,8 @@ class Configuration:
                 expected_access_lists.add(details.get("nrtm_access_list"))
             if details.get("nrtm_access_list_unfiltered"):
                 expected_access_lists.add(details.get("nrtm_access_list_unfiltered"))
+            if details.get("nrtm_original_data_access_list"):
+                expected_access_lists.add(details.get("nrtm_original_data_access_list"))
 
         source_keys_no_duplicates = ["nrtm4_server_local_path", "nrtm4_server_base_url"]
         for key in source_keys_no_duplicates:
