@@ -412,3 +412,30 @@ and :doc:`any relevant notifications are also sent </users/database-changes>`.
 .. note::
     As a separate script, `irrd_submit_email` **always acts on the current
     configuration file** - not on the configuration that IRRd started with.
+
+Docker / Docker Compose
+
+If you need to quickly deploy a new IRRd instance, you can utilise the provided Docker file and Docker Compose configuration.
+
+Steps to set up the container infrastructure::
+
+  => Clone the repository
+  git clone git@github.com:irrdnet/irrd.git`
+  => Navigate to the Docker directory:
+  cd irrd/docker
+  => Launch the environment:
+  docker-compose -f docker-up -d
+
+You get the following services running::
+
+  % docker ps
+  CONTAINER ID   IMAGE         COMMAND                  CREATED              STATUS                        PORTS                                            NAMES
+  9d357d719f43   docker-irrd   "/app/irrd/init.sh"      About a minute ago   Up 16 seconds (healthy)       0.0.0.0:8043->8043/tcp, 0.0.0.0:8080->8080/tcp   irrd
+  178603c6442f   postgres      "docker-entrypoint.s…"   About a minute ago   Up About a minute (healthy)   5432/tcp                                         postgres_irrd
+  416ebb4c0f4b   redis         "docker-entrypoint.s…"   About a minute ago   Up About a minute (healthy)   6379/tcp                                         redis_irrd
+
+.. note::
+  * Ensure to select the appropriate IRRd version in the Docker file;
+  * Always modify the default credentials in the `docker-compose.yml`/`irrd.yaml` file;
+  * Update the `irrd.yaml` configuration to suit your specific needs;
+  * IRRd web interface available at http://localhost:8080/.
