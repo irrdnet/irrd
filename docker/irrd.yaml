@@ -1,0 +1,68 @@
+irrd:
+    database_url: 'postgresql://irrd:irrd@host.docker.internal:5432/irrd'
+    redis_url: 'redis://host.docker.internal'
+    piddir: /var/run/
+    user: irrd
+    group: irrd
+
+    access_lists:
+        allow_all:
+            - '::0'
+            - '0.0.0.0/0'
+
+    server:
+        http:
+            status_access_list: allow_all
+            interface: '::0'
+            port: 8080
+            url: "https://localhost/"
+        whois:
+            interface: '::0'
+            port: 8043
+
+    auth:
+        gnupg_keyring: /tmp
+
+    email:
+        from: example@example.com
+        smtp: localhost
+
+    log:
+        level: DEBUG
+
+    rpki:
+        roa_source: null
+
+    sources_default:
+        - RADB
+        - RIPE
+
+    sources:
+        RADB:
+            authoritative: false
+            keep_journal: false
+            import_serial_source: file:///opt/irrd_data/RADB.CURRENTSERIAL
+            import_source:
+            - file:///opt/irrd_data/radb.db.gz
+            object_class_filter:
+            - as-set
+            - aut-num
+            - route
+            - route6
+            - route-set
+        RIPE:
+            authoritative: false
+            keep_journal: false
+            import_serial_source: file:///opt/irrd_data/RIPE.CURRENTSERIAL
+            import_source:
+            - file:///opt/irrd_data/ripe.db.as-set.gz
+            - file:///opt/irrd_data/ripe.db.aut-num.gz
+            - file:///opt/irrd_data/ripe.db.route.gz
+            - file:///opt/irrd_data/ripe.db.route6.gz
+            - file:///opt/irrd_data/ripe.db.route-set.gz
+            object_class_filter:
+            - as-set
+            - aut-num
+            - route
+            - route6
+            - route-set
