@@ -2,11 +2,7 @@ import re
 import textwrap
 from typing import Iterator, Optional, TextIO, Union
 
-from irrd.conf import (
-    PASSWORD_HASH_DUMMY_VALUE,
-    get_nrtm_response_dummy_object_class_for_source,
-    get_setting,
-)
+from irrd.conf import PASSWORD_HASH_DUMMY_VALUE, get_setting
 from irrd.rpsl.auth import PASSWORD_HASHERS_ALL
 
 re_remove_passwords = re.compile(r"(%s)[^\n]+" % "|".join(PASSWORD_HASHERS_ALL.keys()), flags=re.IGNORECASE)
@@ -105,44 +101,62 @@ def clean_ip_value_error(value_error):
     return re.sub(re_clean_ip_error, "", str(value_error))
 
 
+def get_nrtm_response_dummy_object_class_for_source(source: str) -> List[str]:
+    """
+    Helper method to get the cleaned dummy object class in NRTMv3 reponse for a source, if any.
+    """
+    dummy_object_class = get_setting(f"sources.{source}.nrtm_response_dummy_object_class")
+    if dummy_object_class:
+        if isinstance(dummy_object_class, str):
+            dummy_object_class = [dummy_object_class]
+        return [c.strip().lower() for c in dummy_object_class]
+    else:
+        return []
+
+
 def dummify_object_text(rpsl_text: str, object_class: str, source: str, pk: str):
     """
-    Modify the value of attributes in an RPSL object.
+    Dummifies the provided RPSL text by replacing certain attributes with dummy values,
+    based on the configuration defined for the given source.
+
+    This function retrieves the configuration for dummy object class, dummy attributes
+    and remarks from the settings corresponding to the provided source. If dummy object class
+    and attributes are configured for the provided object class, attributes will be replaced
+    in the RPSL text with dummy values. Additionally, if dummy remarks are configured,
+    they will be appended to the end of the dummied object.
     """
 
     if not rpsl_text:
         return rpsl_text
 
     nrtm_response_dummy_object_class = get_nrtm_response_dummy_object_class_for_source(source)
-    if nrtm_response_dummy_object_class:
-        if object_class in nrtm_response_dummy_object_class:
-            dummy_attributes = get_setting(f"sources.{source}.nrtm_response_dummy_attributes")
-            if dummy_attributes:
-                if get_setting(f"sources.{source}.nrtm_response_dummy_remarks"):
-                    dummy_remarks = textwrap.indent(
-                        get_setting(f"sources.{source}.nrtm_response_dummy_remarks"), "remarks:".ljust(16)
-                    )
-                else:
-                    dummy_remarks = None
+    if object_class in nrtm_response_dummy_object_class:
+        dummy_attributes = get_setting(f"sources.{source}.nrtm_response_dummy_attributes")
+        if dummy_attributes:
+            if get_setting(f"sources.{source}.nrtm_response_dummy_remarks"):
+                dummy_remarks = textwrap.indent(
+                    get_setting(f"sources.{source}.nrtm_response_dummy_remarks"),
+                    "remarks:".ljust(RPSL_ATTRIBUTE_TEXT_WIDTH),
+                )
+            else:
+                dummy_remarks = None
 
-                lines = rpsl_text.splitlines()
+            lines = rpsl_text.splitlines()
 
-                for index, line in enumerate(lines):
-                    for key, value in dummy_attributes.items():
-                        if "%s" in str(value):
-                            value = str(value).replace("%s", pk)
+            for index, line in enumerate(lines):
+                for key, value in dummy_attributes.items():
+                    if "%s" in str(value):
+                        value = str(value).replace("%s", pk)
 
-                        if line.startswith(f"{key}:"):
-                            format_key = f"{key}:".ljust(RPSL_ATTRIBUTE_TEXT_WIDTH)
-                            if not isinstance(value, str):
-                                value = str(value)
-                            lines[index] = format_key + value
+                    if line.startswith(f"{key}:"):
+                        format_key = f"{key}:".ljust(RPSL_ATTRIBUTE_TEXT_WIDTH)
+                        lines[index] = format_key + str(value)
 
-                dummyfied_rpsl_object = "\n".join(lines) + "\n"
+            dummyfied_rpsl_object = "\n".join(lines) + "\n"
 
-                if rpsl_text != dummyfied_rpsl_object:
-                    if dummy_remarks:
-                        dummyfied_rpsl_object += dummy_remarks.strip() + "\n"
-                    return dummyfied_rpsl_object
+            if rpsl_text != dummyfied_rpsl_object:
+                if dummy_remarks:
+                    dummyfied_rpsl_object += dummy_remarks.strip() + "\n"
+                return dummyfied_rpsl_object
 
     return rpsl_text

@@ -15,7 +15,6 @@ from . import (
     ConfigurationError,
     config_init,
     get_configuration,
-    get_nrtm_response_dummy_object_class_for_source,
     get_object_class_filter_for_source,
     get_setting,
     is_config_initialised,
@@ -147,8 +146,6 @@ class TestConfiguration:
         assert is_config_initialised()
         assert get_object_class_filter_for_source("TESTDB") == ["route"]
         assert get_object_class_filter_for_source("TESTDB2") == ["route"]
-        assert get_nrtm_response_dummy_object_class_for_source("TESTDB") == ["person"]
-        assert get_nrtm_response_dummy_object_class_for_source("TESTDB2") == ["person"]
 
         config["irrd"]["sources_default"] = ["TESTDB2"]
         save_yaml_config(config, run_init=False)
