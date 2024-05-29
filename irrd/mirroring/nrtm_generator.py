@@ -22,7 +22,7 @@ class NRTMGenerator:
         serial_end_requested: Optional[int],
         database_handler: DatabaseHandler,
         remove_auth_hashes=True,
-        dummify_object_text=True,
+        client_is_dummifying_exempt=False,
     ) -> str:
         """
         Generate an NRTM response for a particular source, serial range and
@@ -122,7 +122,7 @@ class NRTMGenerator:
                 operation_str += " " + str(operation["serial_nrtm"])
             text = operation["object_text"]
 
-            if dummify_object_text:
+            if not client_is_dummifying_exempt:
                 object_class = operation["object_class"]
                 pk = operation["rpsl_pk"]
                 text = dummify_object_text_func(text, object_class, source, pk)

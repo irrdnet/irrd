@@ -320,9 +320,7 @@ class TestWhoisQueryParserRIPE:
         mock_nrg = Mock()
         monkeypatch.setattr("irrd.server.whois.query_parser.NRTMGenerator", lambda: mock_nrg)
         mock_nrg.generate = (
-            lambda source, version, serial_start, serial_end, dh, remove_auth_hashes, dummify_object_text: (
-                f"{source}/{version}/{serial_start}/{serial_end}/{remove_auth_hashes}/{dummify_object_text}"
-            )
+            lambda source, version, serial_start, serial_end, dh, remove_auth_hashes, client_is_dummifying_exempt: f"{source}/{version}/{serial_start}/{serial_end}/{remove_auth_hashes}/{client_is_dummifying_exempt}"
         )
 
         response = parser.handle_query("-g TEST1:3:1-5")
@@ -345,13 +343,13 @@ class TestWhoisQueryParserRIPE:
         response = parser.handle_query("-g TEST1:3:1-5")
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.RIPE
-        assert response.result == "TEST1/3/1/5/True/True"
+        assert response.result == "TEST1/3/1/5/True/False"
         assert not response.remove_auth_hashes
 
         response = parser.handle_query("-g TEST1:3:1-LAST")
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.RIPE
-        assert response.result == "TEST1/3/1/None/True/True"
+        assert response.result == "TEST1/3/1/None/True/False"
         assert not response.remove_auth_hashes
 
         config_override(
@@ -368,7 +366,7 @@ class TestWhoisQueryParserRIPE:
         response = parser.handle_query("-g TEST1:3:1-LAST")
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.RIPE
-        assert response.result == "TEST1/3/1/None/False/True"
+        assert response.result == "TEST1/3/1/None/False/False"
         assert not response.remove_auth_hashes
 
         config_override(
@@ -388,7 +386,7 @@ class TestWhoisQueryParserRIPE:
         response = parser.handle_query("-g TEST1:3:1-LAST")
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.RIPE
-        assert response.result == "TEST1/3/1/None/False/True"
+        assert response.result == "TEST1/3/1/None/False/False"
         assert not response.remove_auth_hashes
 
         response = parser.handle_query("-g TEST1:9:1-LAST")
