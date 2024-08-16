@@ -51,6 +51,7 @@ the necessary permissions, to be run as a superuser::
     CREATE ROLE irrd WITH LOGIN ENCRYPTED PASSWORD 'irrd';
     GRANT ALL PRIVILEGES ON DATABASE irrd TO irrd;
     \c irrd
+    GRANT ALL ON SCHEMA public TO irrd;
     CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 The `pgcrypto` extension is used by some IRRd tables, and has to be created
