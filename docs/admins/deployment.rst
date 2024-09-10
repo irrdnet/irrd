@@ -51,6 +51,7 @@ the necessary permissions, to be run as a superuser::
     CREATE ROLE irrd WITH LOGIN ENCRYPTED PASSWORD 'irrd';
     GRANT ALL PRIVILEGES ON DATABASE irrd TO irrd;
     \c irrd
+    GRANT ALL ON SCHEMA public TO irrd;
     CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 The `pgcrypto` extension is used by some IRRd tables, and has to be created
@@ -104,7 +105,7 @@ Redis is required for communication and persistence between IRRd's processes.
 IRRd releases are tested on Redis 5, 6 and 7.
 Beyond a default Redis installation, it is recommended to:
 
-* Increase ``maxmemory`` to 1GB (no limit is also fine). This is a hard
+* Increase ``maxmemory`` to 2GB (no limit is also fine). This is a hard
   requirement - IRRd will exceed the default maximum memory otherwise.
 * Disable snapshotting, by removing all ``save`` lines from the
   Redis configuration. IRRd always reloads the existing data upon startup

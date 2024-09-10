@@ -713,7 +713,7 @@ Sources
   Sharing password hashes externally is a security risk, the unfiltered data
   is intended only to support
   :doc:`availability and data migration </admins/availability-and-migration>`.
-  **This setting is deprecated and will be removed in IRRD 4.5.**
+  **This setting is deprecated and will be removed in IRRD 4.6.**
   |br| **Default**: not defined, no exports made.
   |br| **Change takes effect**: after SIGHUP, at the next ``export_timer``.
 * ``sources.{name}.export_timer``: the time between two full exports of all
@@ -737,7 +737,7 @@ Sources
   Sharing password hashes externally is a security risk, the unfiltered data
   is intended only to support
   :doc:`availability and data migration </admins/availability-and-migration>`.
-  **This setting is deprecated and will be removed in IRRD 4.5.**
+  **This setting is deprecated and will be removed in IRRD 4.6.**
   |br| **Default**: not defined, all access denied. Clients in
   ``nrtm_access_list``, if defined, have filtered access.
   |br| **Change takes effect**: after SIGHUP, upon next request.

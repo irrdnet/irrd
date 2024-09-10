@@ -1,0 +1,15 @@
+============================
+Release notes for IRRd 4.4.4
+============================
+
+IRRd 4.4.4 was released on April 25th, 2024, and has several fixes/improvements:
+
+* `Startup could fail`_ when using the user/group settings. This happened because of
+  an incorrect log file access check.
+* `Deletes are now non-strict`_ which means legacy objects that are currently
+  not valid can be deleted without fixing the object first.
+* The irr_rpsl_submit command could `log an RPSL password`_ for certain failures.
+
+.. _startup could fail: https://github.com/irrdnet/irrd/issues/937
+.. _deletes are now non-strict: https://github.com/irrdnet/irrd/pull/912
+.. _log an RPSL password: https://github.com/irrdnet/irrd/commit/bb8cb94cc3d64564788dca96d29efaf74c25544c
