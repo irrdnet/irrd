@@ -24,14 +24,20 @@ ENV PATH="/root/.local/bin:${PATH}"
 WORKDIR $APP_PATH/
 COPY ./pyproject.toml $APP_PATH/pyproject.toml
 COPY ./poetry.lock $APP_PATH/poetry.lock
-# "poetry config virtualenvs.create false" will install the poetry depdencies,
-# globally not in a venv.
-# In this case all programs must be run in a poetry shell using `poetry run foo`.
-# This can be problematic because IRRd forks threads/processes and they don't
-# run in the same poetry shell with all the poetry managed deps.
-# Insall poetry in a venv (default) and force the venv to be in the
-# project directory (non-default) so that they are in a consistent location
-# ($APP_PATH/.venv).
+# "poetry config virtualenvs.create false" will install the poetry dependencies
+# globally, not in a venv. This would be ideal, it allows all apps to access the
+# dependencies. This is not supported by pipx though, it will throw an error
+# that this clashes with any dependencies installed by the system package
+# manager.
+#
+# So we need to install poetry dep's in a venv. This can be problematic because
+# IRRd forks threads/processes and they don't run in the same poetry venv with
+# all the poetry managed dep's. To resolve this:
+# Install poetry dep's in a venv (default) but force the venv to be in the
+# project directory (non-default), so that they the venv is in a consistent
+# location ($APP_PATH/.venv). Then we can make the venv python bin our default
+# python bin, and all applications and threads/forks will have access to the
+# poetry dep's.
 RUN poetry config virtualenvs.create true && \
 poetry config virtualenvs.in-project true && \
 poetry install -vv --no-interaction --with=dev,docs
