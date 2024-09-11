@@ -55,40 +55,55 @@ and also starts a Redis and Postgres container. An additional Postgres container
 is provided for running pytest.
 
 A default configuration file (`docker/irrd.yaml`) is used to run IRRd inside docker.
-The configuration file references some initial data which is pulled from RIPE and
-RADB at build-time. This is so that developers have data to work with. When the
-IRRd container is first started it will import this initial data. This initial
-import can take several minutes to complete.
 
 If you're unfamiliar with docker, some typical actions are:
 
-* Build the IRRd container: `docker compose -f docker/docker-compose.yaml build`
-* Start all containers: `docker compose -f docker/docker-compose.yaml up -d`
-* Start a live log of the STDOUT from all containers: `docker compose -f docker/docker-compose.yaml logs -f`
-* Drop into a BASH shell in the IRRd container: `docker compose -f docker/docker-compose.yaml exec irrd bash`
+* Build the IRRd container: `docker compose build`
+* Start all containers: `docker compose up -d`
+* Start a live log of the STDOUT from all containers: `docker compose logs -f`
+* Drop into a BASH shell in the IRRd container: `docker compose exec irrd bash`
 
-After starting the containers, these two ports are exposed:
+After starting the containers, these ports are exposed:
 
-* localhost:8043 - whois daemon
-* localhost:8080 - http daemon
-
-You can check the status of the initial data import by looking at the docker
-live log or by checking the `HTTP status page`_.
-
-.. _HTTP status page: http://localhost:8080/v1/status/
+* localhost:8043 - irrd: whois daemon
+* localhost:8080 - irrd: http daemon
+* localhost:5432 - Postgres
+* localhost:6379 - Redis
+* localhost:5433 - Postgres instance for PyTest
 
 Pytest can be ran from inside docker
 
-    docker compose -f docker/docker-compose.yaml exec irrd bash
-    cd /opt/irrd/
-    export IRRD_DATABASE_URL=postgresql://host.docker.internal:5433/irrd_test
-    export IRRD_REDIS_URL=redis://host.docker.internal/3
-    pytest irrd/
+    docker compose exec irrd bash
+    export IRRD_DATABASE_URL=postgresql://test-postgresql:5432/irrd_test
+    export IRRD_REDIS_URL=redis://redis/3
+    poetry run pytest irrd/
 
 Sphinx can also be run from inside docker:
 
-    docker compose -f docker/docker-compose.yaml exec irrd bash
-    cd /opt/irrd/ && poetry -n --no-ansi run sphinx-build -nW -b spelling docs/ docs/build
+    docker compose exec irrd bash
+    git config --global --add safe.directory $(pwd)
+    poetry -n --no-ansi run sphinx-build -nW -b spelling docs/ docs/build
+
+To drop into a PostgreSQL shell use:
+
+    docker compose exec postgresql psql
+
+To drop into a Redis shell use:
+
+    docker compose exec redis redis-cli
+
+A script is included to import some real world data for testing during
+development. The script downloads data from public IRR DBs, updates the IRRd
+config to use these data sources, restarts IRRd to load the configuration 
+changes, and ingests the downloaded data. The following command can be used
+to import the data for testing:
+
+    docker compose exec irrd bash -c "\$APP_PATH/docker/import_data.sh"
+
+This data import can take several minutes to complete. After the import has
+completed you can check the status IRRd by checking the `HTTP status page`_.
+
+.. _HTTP status page: http://localhost:8080/v1/status/
 
 Integration test
 ----------------
