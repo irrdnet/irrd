@@ -1,6 +1,6 @@
 irrd:
-    database_url: 'postgresql://irrd:irrd@host.docker.internal:5432/irrd'
-    redis_url: 'redis://host.docker.internal'
+    database_url: 'postgresql://irrd:irrd@postgresql:5432/irrd'
+    redis_url: 'redis://redis'
     piddir: /var/run/
     user: irrd
     group: irrd
@@ -30,39 +30,33 @@ irrd:
     log:
         level: DEBUG
 
+    route_object_preference:
+        update_timer: 3600
+
     rpki:
-        roa_source: null
+        roa_source: https://rpki.gin.ntt.net/api/export.json
+        roa_import_timer: 3600
+        pseudo_irr_remarks: |
+            This AS{asn} route object represents routing data retrieved
+            from the RPKI. This route object is the result of an automated
+            RPKI-to-IRR conversion process performed by IRRd.
+        notify_invalid_subject: route(6) objects in {sources_str} marked RPKI invalid
+        notify_invalid_header: |
+            This is to notify that {object_count} route(6) objects for which you are a
+            contact have been marked as RPKI invalid. This concerns
+            objects in the {sources_str} database.
+            You have received this message because your e-mail address is
+            listed in one or more of the tech-c or admin-c contacts, on
+            the maintainer(s) for these route objects.
+            The {object_count} route(6) objects listed below have been validated using
+            RPKI origin validation, and found to be invalid. This means that
+            these objects are no longer visible on the IRRd instance that
+            sent this e-mail.
+            This may affect routing filters based on queries to this IRRd
+            instance. It is also no longer possible to modify these objects.
+            To resolve this situation, create or modify ROA objects that
+            result in these route(6) being valid, or not_found. If this
+            happens, the route(6) objects will return to being visible.
+            You may also delete these objects if they are no longer
+            relevant.
 
-    sources_default:
-        - RADB
-        - RIPE
-
-    sources:
-        RADB:
-            authoritative: false
-            keep_journal: false
-            import_serial_source: file:///opt/irrd_data/RADB.CURRENTSERIAL
-            import_source:
-            - file:///opt/irrd_data/radb.db.gz
-            object_class_filter:
-            - as-set
-            - aut-num
-            - route
-            - route6
-            - route-set
-        RIPE:
-            authoritative: false
-            keep_journal: false
-            import_serial_source: file:///opt/irrd_data/RIPE.CURRENTSERIAL
-            import_source:
-            - file:///opt/irrd_data/ripe.db.as-set.gz
-            - file:///opt/irrd_data/ripe.db.aut-num.gz
-            - file:///opt/irrd_data/ripe.db.route.gz
-            - file:///opt/irrd_data/ripe.db.route6.gz
-            - file:///opt/irrd_data/ripe.db.route-set.gz
-            object_class_filter:
-            - as-set
-            - aut-num
-            - route
-            - route6
-            - route-set
