@@ -3,6 +3,7 @@ set -e
 
 psql -v ON_ERROR_STOP=1 <<-EOSQL
     CREATE DATABASE irrd;
+    ALTER DATABASE irrd OWNER TO irrd;
     CREATE ROLE irrd WITH LOGIN ENCRYPTED PASSWORD 'irrd';
     GRANT ALL PRIVILEGES ON DATABASE irrd TO irrd;
     \c irrd

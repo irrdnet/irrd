@@ -1,35 +1,44 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
+
+# Install requirements
+RUN DEBIAN_FRONTEND=noninteractive apt-get update
+RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+ca-certificates build-essential git gpg libenchant-2-2 libpq-dev netcat-traditional python3-dev pipx wget
+RUN apt-get clean && \
+rm -rf /var/lib/apt/lists/*
 
 ARG APP_PATH
-ARG DATA_PATH
+ARG CONFIG_FILE
 
 # BASH is needed for Poetry to work at build time
 SHELL ["/bin/bash", "-c"]
 
-# Install requirements
-RUN DEBIAN_FRONTEND=noninteractive apt-get update
-RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y ca-certificates build-essential python3-dev pipx wget gpg git libenchant-2-2
-
-# Get some example data from RIPE and RADB
-RUN mkdir "$DATA_PATH"
-RUN wget -nc -O "${DATA_PATH}/ripe.db.as-set.gz" https://ftp.ripe.net/ripe/dbase/split/ripe.db.as-set.gz
-RUN wget -nc -O "${DATA_PATH}/ripe.db.aut-num.gz" https://ftp.ripe.net/ripe/dbase/split/ripe.db.aut-num.gz
-RUN wget -nc -O "${DATA_PATH}/ripe.db.route-set.gz" https://ftp.ripe.net/ripe/dbase/split/ripe.db.route-set.gz
-RUN wget -nc -O "${DATA_PATH}/ripe.db.route.gz" https://ftp.ripe.net/ripe/dbase/split/ripe.db.route.gz
-RUN wget -nc -O "${DATA_PATH}/ripe.db.route6.gz" https://ftp.ripe.net/ripe/dbase/split/ripe.db.route6.gz
-RUN wget -nc -O "${DATA_PATH}/RIPE.CURRENTSERIAL" https://ftp.ripe.net/ripe/dbase/RIPE.CURRENTSERIAL
-RUN wget -nc -O "${DATA_PATH}/radb.db.gz" ftp://ftp.radb.net/radb/dbase/radb.db.gz
-RUN wget -nc -O "${DATA_PATH}/RADB.CURRENTSERIAL" ftp://ftp.radb.net/radb/dbase/RADB.CURRENTSERIAL
+# Setup poetry
+RUN pipx install poetry
+# Persist poetry path to $PATH in ~/.bashrc for run-time availability
+RUN pipx ensurepath
+# Add poetry path to current $PATH for build-time availability
+ENV PATH="/root/.local/bin:${PATH}"
 
 # Setup irrd
-RUN pipx ensurepath
-RUN pipx install poetry
-COPY ./pyproject.toml /irrd/pyproject.toml
-RUN cd /irrd/ && \
-/root/.local/bin/poetry config virtualenvs.create false && \
-/root/.local/bin/poetry install -vv --no-interaction --with=dev,docs
-RUN useradd irrd
+WORKDIR $APP_PATH/
+COPY ./pyproject.toml $APP_PATH/pyproject.toml
+COPY ./poetry.lock $APP_PATH/poetry.lock
+# "poetry config virtualenvs.create false" will install the poetry depdencies,
+# globally not in a venv.
+# In this case all programs must be run in a poetry shell using `poetry run foo`.
+# This can be problematic because IRRd forks threads/processes and they don't
+# run in the same poetry shell with all the poetry managed deps.
+# Insall poetry in a venv (default) and force the venv to be in the
+# project directory (non-default) so that they are in a consistent location
+# ($APP_PATH/.venv).
+RUN poetry config virtualenvs.create true && \
+poetry config virtualenvs.in-project true && \
+poetry install -vv --no-interaction --with=dev,docs
 
-# Configure git to ignore dubious ownership of the irrd directory.
-# It is mapped to the docker host so the USER will not match.
-RUN git config --global --add safe.directory "$APP_PATH"
+# Copy a config file into the container with the relevant settings to access the
+# other containers (postgres and redis).
+# This can be overrider by the build argument.
+COPY $CONFIG_FILE /etc/irrd.yaml
+
+RUN useradd irrd
