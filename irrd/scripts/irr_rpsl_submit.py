@@ -221,21 +221,6 @@ class XHTTPConnectionFailed(XNetwork):
         return "Connection refused"  # pragma: no cover
 
 
-class XHTTPNotFound(XNetwork):
-    """
-    Raised when the response returns 404.
-
-    This is a refinement of HTTPError, which is not granular enough
-    to provide useful information to consumers.
-    """
-
-    def prefix(self):
-        """
-        Returns the prefix to attach to the start of each logged message.
-        """
-        return "Not found"
-
-
 class XNameResolutionFailed(XNetwork):
     """
     Raised when urllib cannot resolve the URL host.
@@ -763,8 +748,6 @@ def send_request(requests_text, args):
             raise XNameResolutionFailed(args.url, reason) from error
         if isinstance(reason, (socket.timeout, ConnectionRefusedError)):
             raise XHTTPConnectionFailed(args.url, http_request) from error  # pragma: no cover
-        if reason == "Not Found":
-            raise XHTTPNotFound(args.url, http_request) from error
         raise error  # pragma: no cover: CI glitch workaround
     except Exception as error:
         raise error

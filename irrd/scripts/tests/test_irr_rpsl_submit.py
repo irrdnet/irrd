@@ -37,7 +37,7 @@ REGEX_NO_H_WITH_U = re.compile("argument -h: not allowed with argument -u")
 REGEX_UNRESOLVABLE = re.compile("Could not resolve")
 REGEX_UNREACHABLE = re.compile("Connection refused|Cannot assign requested address")
 REGEX_BAD_RESPONSE = re.compile("decoding JSON")
-REGEX_NOT_FOUND = re.compile("Not found")
+REGEX_NOT_ALLOWED = re.compile("Method Not Allowed")
 
 EXIT_SUCCESS = 0
 EXIT_CHANGE_FAILED = 1
@@ -767,7 +767,7 @@ class Test900Command(MyBase):
             EXIT_NETWORK_ERROR,
             "using both -h and -O exits with value appropriate to -h value",
         )
-        self.assertRegex(result.stderr, REGEX_NOT_FOUND)
+        self.assertRegex(result.stderr, REGEX_NOT_ALLOWED)
 
     def test_030_empty_input_option(self):
         result = Runner.run(["-u", IRRD_URL], ENV_EMPTY, RPSL_EMPTY)
@@ -841,7 +841,7 @@ class Test900Command(MyBase):
             result = Runner.run(row, ENV_EMPTY, RPSL_MINIMAL)
             self.assertEqual(
                 result.returncode,
-                EXIT_RESPONSE_ERROR,
+                EXIT_NETWORK_ERROR,
                 f"Bad response URL {row[1]} exits with {EXIT_NETWORK_ERROR}",
             )
-            self.assertRegex(result.stderr, REGEX_BAD_RESPONSE)
+            self.assertRegex(result.stderr, REGEX_NOT_ALLOWED)
