@@ -15,7 +15,7 @@ import sqlalchemy as sa
 import ujson
 import yaml
 from alembic import command, config
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from joserfc.rfc7518.ec_key import ECKey
 from python_graphql_client import GraphqlClient
 
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE, config_init
@@ -41,7 +41,7 @@ from irrd.utils.rpsl_samples import (
 )
 from irrd.utils.whois_client import whois_query, whois_query_irrd
 
-from ..utils.crypto import ed25519_private_key_as_str, ed25519_public_key_as_str
+from ..utils.crypto import eckey_private_key_as_str, eckey_public_key_as_str
 from .constants import (
     EMAIL_DISCARD_MSGS_COMMAND,
     EMAIL_END,
@@ -924,7 +924,7 @@ class TestIntegration:
         with open(self.config_path1, "w") as yaml_file:
             yaml.safe_dump(config1, yaml_file)
 
-        self.nrtm4_private_key = Ed25519PrivateKey.generate()
+        self.nrtm4_private_key = ECKey.generate_key()
         config2 = base_config.copy()
         config2["irrd"]["piddir"] = self.piddir2
         config2["irrd"]["database_url"] = self.database_url2
@@ -944,7 +944,7 @@ class TestIntegration:
             "nrtm_host": "127.0.0.1",
             "nrtm_port": str(self.port_whois1),
             "nrtm_access_list": "localhost",
-            "nrtm4_server_private_key": ed25519_private_key_as_str(self.nrtm4_private_key),
+            "nrtm4_server_private_key": eckey_private_key_as_str(self.nrtm4_private_key),
             "nrtm4_server_local_path": self.nrtm4_dir2,
             "nrtm4_server_base_url": f"file://{self.nrtm4_dir2}",
             "nrtm4_server_snapshot_frequency": 3600,
@@ -964,7 +964,7 @@ class TestIntegration:
         config3["irrd"]["sources"]["TEST"] = {
             "keep_journal": True,
             "nrtm4_client_notification_file_url": f"file://{self.nrtm4_dir2}update-notification-file.json",
-            "nrtm4_client_initial_public_key": ed25519_public_key_as_str(self.nrtm4_private_key.public_key()),
+            "nrtm4_client_initial_public_key": eckey_public_key_as_str(self.nrtm4_private_key),
         }
         with open(self.config_path3, "w") as yaml_file:
             yaml.safe_dump(config3, yaml_file)

@@ -1,12 +1,10 @@
-import hashlib
 import logging
 import os
-from base64 import b64decode
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
 import pydantic
-from cryptography.exceptions import InvalidSignature
+from joserfc.rfc7515.model import CompactSignature
 
 from irrd.conf import get_setting
 from irrd.mirroring.nrtm4.jsonseq import jsonseq_decode
@@ -29,7 +27,7 @@ from irrd.storage.models import (
     NRTM4ClientDatabaseStatus,
 )
 from irrd.storage.queries import DatabaseStatusQuery
-from irrd.utils.crypto import ed25519_public_key_from_str
+from irrd.utils.crypto import eckey_from_config, eckey_from_str, jws_deserialize
 from irrd.utils.misc import format_pydantic_errors
 
 logger = logging.getLogger(__name__)
@@ -107,7 +105,7 @@ class NRTM4Client:
         )
         return has_loaded_snapshot
 
-    def _retrieve_unf(self) -> Tuple[NRTM4UpdateNotificationFile, str]:
+    def _retrieve_unf(self) -> Tuple[NRTM4UpdateNotificationFile, Optional[str]]:
         """
         Retrieve, verify and parse the Update Notification File.
         Returns the UNF object and the used key in base64 string.
@@ -116,24 +114,17 @@ class NRTM4Client:
         if not notification_file_url:  # pragma: no cover
             raise RuntimeError("NRTM4 client called for a source without a Update Notification File URL")
 
-        unf_content, _ = retrieve_file(notification_file_url, return_contents=True)
-        unf_hash = hashlib.sha256(unf_content.encode("ascii")).hexdigest()
-        sig_url = notification_file_url.replace(
-            "update-notification-file.json", f"update-notification-file-signature-{unf_hash}.sig"
-        )
-        legacy_sig_url = notification_file_url + ".sig"
+        unf_signed, _ = retrieve_file(notification_file_url, return_contents=True)
         if "nrtm.db.ripe.net" in notification_file_url:  # pragma: no cover
-            logger.warning(
-                f"Downloading signature from legacy url {legacy_sig_url} instead of expected {sig_url}"
-            )
-            signature, _ = retrieve_file(legacy_sig_url, return_contents=True)
+            # When removing this, also remove Optional[] from return type
+            logger.warning("Expecting raw UNF as source is RIPE*, signature not checked")
+            unf_payload = unf_signed.encode("ascii")
+            used_key = None
         else:
-            signature, _ = retrieve_file(sig_url, return_contents=True)
-
-        used_key = self._validate_unf_signature(unf_content, signature)
+            unf_payload, used_key = self._deserialize_unf(unf_signed)
 
         unf = NRTM4UpdateNotificationFile.model_validate_json(
-            unf_content,
+            unf_payload,
             context={
                 "update_notification_file_scheme": urlparse(notification_file_url).scheme,
                 "expected_values": {
@@ -143,60 +134,63 @@ class NRTM4Client:
         )
         return unf, used_key
 
-    def _validate_unf_signature(self, unf_content: str, signature_b64: str) -> str:
+    def _deserialize_unf(self, unf_content: str) -> Tuple[bytes, str]:
         """
         Verify the Update Notification File signature,
-        given the content (before JSON parsing) and a base64 signature.
-        Returns the used key in base64 string.
+        given the content (before JWS deserialize).
+        Returns the deserialized payload and used key in PEM string.
         """
+        compact_signature: Optional[CompactSignature]
         unf_content_bytes = unf_content.encode("utf-8")
-        signature = b64decode(signature_b64, validate=True)
         config_key = get_setting(f"sources.{self.source}.nrtm4_client_initial_public_key")
 
         if self.last_status.current_key:
-            keys = [
+            keys_pem = [
                 self.last_status.current_key,
                 self.last_status.next_key,
             ]
         else:
-            keys = [get_setting(f"sources.{self.source}.nrtm4_client_initial_public_key")]
+            keys_pem = [get_setting(f"sources.{self.source}.nrtm4_client_initial_public_key")]
 
-        for key in keys:
-            if key and self._validate_ed25519_signature(key, unf_content_bytes, signature):
-                return key
+        for key_pem in keys_pem:
+            if not key_pem:  # pragma: no cover
+                continue
+            pubkey = eckey_from_str(key_pem)
+            try:
+                compact_signature = jws_deserialize(unf_content_bytes, pubkey)
+                return compact_signature.payload, key_pem
+            except ValueError:
+                continue
 
-        if self.last_status.current_key and self._validate_ed25519_signature(
-            config_key, unf_content_bytes, signature
-        ):
-            # While technically just a "signature not valid case", it is a rather
-            # confusing situation for the user, so gets a special message.
-            msg = (
-                f"{self.source}: No valid signature found for the Update Notification File for signature"
-                f" {signature_b64}. The signature is valid for public key {config_key} set in the"
-                " nrtm4_client_initial_public_key setting, but that is only used for initial validation."
-                f" IRRD is currently expecting the public key {self.last_status.current_key}. If you want to"
-                " clear IRRDs key information and revert to nrtm4_client_initial_public_key, use the"
-                " 'irrdctl nrtmv4 client-clear-known-keys' command."
-            )
-            if self.last_status.next_key:
-                msg += f" or {self.last_status.next_key}"
-            raise NRTM4ClientError(msg)
+        if self.last_status.current_key:
+            compact_signature = None
+
+            try:
+                ec_key = eckey_from_config(f"sources.{self.source}.nrtm4_client_initial_public_key")
+                if ec_key:
+                    compact_signature = jws_deserialize(
+                        unf_content_bytes,
+                        ec_key,
+                    )
+            except ValueError:  # pragma: no cover
+                pass
+            if compact_signature:
+                # While technically just a "signature not valid case", it is a rather
+                # confusing situation for the user, so gets a special message.
+                msg = (
+                    f"{self.source}: No valid signature found for the Update Notification File. The signature"
+                    f" is valid for public key {config_key} set in the nrtm4_client_initial_public_key"
+                    " setting, but that is only used for initial validation. IRRD is currently expecting the"
+                    f" public key {self.last_status.current_key}. If you want to clear IRRDs key information"
+                    " and revert to nrtm4_client_initial_public_key, use the 'irrdctl nrtmv4"
+                    " client-clear-known-keys' command."
+                )
+                if self.last_status.next_key:
+                    msg += f" or {self.last_status.next_key}"
+                raise NRTM4ClientError(msg)
         raise NRTM4ClientError(
-            f"{self.source}: No valid signature found for any known keys, signature {signature_b64},"
-            f" considered public keys: {keys}"
+            f"{self.source}: No valid signature found for any known keys, considered public keys: {keys_pem}"
         )
-
-    def _validate_ed25519_signature(self, key_b64: str, content: bytes, signature: bytes) -> bool:
-        """
-        Verify an Ed25519 signature, given the key in base64, and the content
-        and signature in bytes. Returns True or False for validity, raises other
-        exceptions for things like an invalid key format.
-        """
-        try:
-            ed25519_public_key_from_str(key_b64).verify(signature, content)
-            return True
-        except InvalidSignature:
-            return False
 
     def _current_db_status(self) -> Tuple[bool, NRTM4ClientDatabaseStatus]:
         """Look up the current status of self.source in the database."""

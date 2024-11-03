@@ -6,6 +6,12 @@ from typing import Dict
 import pytest
 import yaml
 
+from ..mirroring.nrtm4.tests import (
+    MOCK_UNF_PRIVATE_KEY,
+    MOCK_UNF_PRIVATE_KEY_OTHER_STR,
+    MOCK_UNF_PRIVATE_KEY_STR,
+)
+from ..utils.crypto import eckey_public_key_as_str
 from . import (
     ConfigurationError,
     config_init,
@@ -119,10 +125,10 @@ class TestConfiguration:
                     "TESTDB-NRTM4": {
                         "keep_journal": True,
                         "nrtm4_client_notification_file_url": "https://testhost/",
-                        "nrtm4_client_initial_public_key": "kL7kSk56ASeaHl6Nj0eXC3XCHkCzktoPA3ceKz/cjOo=",
+                        "nrtm4_client_initial_public_key": eckey_public_key_as_str(MOCK_UNF_PRIVATE_KEY),
                         "nrtm4_server_base_url": "https://example.com",
-                        "nrtm4_server_private_key": "FalXchs8HIU22Efc3ipNcxVwYwB+Mp0x9TCM9BFtig0=",
-                        "nrtm4_server_private_key_next": "4YDgaXpRDIU8vJbFYeYgPQqEa4YAdHeRF1s6SLdXCsE=",
+                        "nrtm4_server_private_key": MOCK_UNF_PRIVATE_KEY_STR,
+                        "nrtm4_server_private_key_next": MOCK_UNF_PRIVATE_KEY_OTHER_STR,
                         "nrtm4_server_local_path": str(tmpdir),
                         "nrtm4_server_snapshot_frequency": 3600 * 2,
                     },
@@ -457,14 +463,8 @@ class TestConfiguration:
         assert "Unknown setting key: log.unknown" in str(ce.value)
         assert "Unknown key(s) under source TESTDB: unknown" in str(ce.value)
 
-        assert (
-            "Invalid value for setting nrtm4_server_private_key for source TESTDB: Incorrect padding"
-            in str(ce.value)
-        )
-        assert (
-            "Invalid value for setting nrtm4_server_private_key_next for source TESTDB: Incorrect padding"
-            in str(ce.value)
-        )
+        assert "Invalid value for setting nrtm4_server_private_key for source TESTDB:" in str(ce.value)
+        assert "Invalid value for setting nrtm4_server_private_key_next for source TESTDB:" in str(ce.value)
         assert "Setting nrtm4_server_base_url for source TESTDB is not a valid https or file URL." in str(
             ce.value
         )

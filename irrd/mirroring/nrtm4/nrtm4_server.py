@@ -1,7 +1,5 @@
-import base64
 import datetime
 import gzip
-import hashlib
 import logging
 import os
 import secrets
@@ -24,7 +22,7 @@ from irrd.storage.queries import (
     RPSLDatabaseJournalStatisticsQuery,
     RPSLDatabaseQuery,
 )
-from irrd.utils.crypto import ed25519_private_key_from_config, ed25519_public_key_as_str
+from irrd.utils.crypto import eckey_from_config, eckey_public_key_as_str, jws_serialize
 from irrd.utils.text import remove_auth_hashes
 
 from ...utils.process_support import get_lockfile
@@ -222,13 +220,11 @@ class NRTM4ServerWriter:
         This is based on settings and self.status.
         """
         assert self.status
-        next_signing_private_key = ed25519_private_key_from_config(
+        next_signing_private_key = eckey_from_config(
             f"sources.{self.source}.nrtm4_server_private_key_next", permit_empty=True
         )
         next_signing_public_key = (
-            ed25519_public_key_as_str(next_signing_private_key.public_key())
-            if next_signing_private_key
-            else None
+            eckey_public_key_as_str(next_signing_private_key) if next_signing_private_key else None
         )
         unf = NRTM4UpdateNotificationFile(
             nrtm_version=4,
@@ -251,14 +247,11 @@ class NRTM4ServerWriter:
             ],
         )
         unf_content = unf.model_dump_json(exclude_none=True, include=unf.model_fields_set).encode("ascii")
-        private_key = ed25519_private_key_from_config(f"sources.{self.source}.nrtm4_server_private_key")
+        private_key = eckey_from_config(f"sources.{self.source}.nrtm4_server_private_key")
         assert private_key
-        signature = private_key.sign(unf_content)
-        unf_hash = hashlib.sha256(unf_content).hexdigest()
-        with open(self.path / f"update-notification-file-signature-{unf_hash}.sig", "wb") as sig_file:
-            sig_file.write(base64.b64encode(signature))
-        with open(self.path / "update-notification-file.json", "wb") as unf_file:
-            unf_file.write(unf_content)
+        unf_serialized = jws_serialize(unf_content, private_key)
+        with open(self.path / "update-notification-file.json", "w") as unf_file:
+            unf_file.write(unf_serialized)
         self.status.last_update_notification_file_update = unf.timestamp
 
     def _expire_deltas(self) -> None:

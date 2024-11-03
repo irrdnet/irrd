@@ -244,10 +244,7 @@ class Configuration:
         Validate the current staging configuration.
         Returns a list of any errors, or an empty list for a valid config.
         """
-        from irrd.utils.crypto import (
-            ed25519_private_key_from_str,
-            ed25519_public_key_from_str,
-        )
+        from irrd.utils.crypto import eckey_from_str
 
         errors = []
         config = self.user_config_staging
@@ -433,7 +430,7 @@ class Configuration:
 
             if details.get("nrtm4_client_initial_public_key"):
                 try:
-                    ed25519_public_key_from_str(details["nrtm4_client_initial_public_key"])
+                    eckey_from_str(details["nrtm4_client_initial_public_key"])
                 except ValueError as ve:
                     errors.append(
                         f"Invalid value for setting nrtm4_client_initial_public_key for source {name}: {ve}"
@@ -469,7 +466,7 @@ class Configuration:
 
             if details.get("nrtm4_server_private_key"):
                 try:
-                    ed25519_private_key_from_str(details["nrtm4_server_private_key"])
+                    eckey_from_str(details["nrtm4_server_private_key"], require_private=True)
                 except ValueError as ve:
                     errors.append(
                         f"Invalid value for setting nrtm4_server_private_key for source {name}: {ve}"
@@ -477,7 +474,7 @@ class Configuration:
 
             if details.get("nrtm4_server_private_key_next"):
                 try:
-                    ed25519_private_key_from_str(details["nrtm4_server_private_key_next"])
+                    eckey_from_str(details["nrtm4_server_private_key_next"], require_private=True)
                 except ValueError as ve:
                     errors.append(
                         f"Invalid value for setting nrtm4_server_private_key_next for source {name}: {ve}"

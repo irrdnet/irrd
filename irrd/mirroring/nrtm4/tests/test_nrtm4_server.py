@@ -1,7 +1,5 @@
-import base64
 import dataclasses
 import gzip
-import hashlib
 import json
 import os
 import time
@@ -11,7 +9,7 @@ from unittest.mock import create_autospec
 from irrd.conf import NRTM4_SERVER_DELTA_EXPIRY_TIME, PASSWORD_HASH_DUMMY_VALUE
 from irrd.mirroring.nrtm4.jsonseq import jsonseq_decode
 from irrd.mirroring.nrtm4.nrtm4_server import NRTM4Server, NRTM4ServerWriter
-from irrd.mirroring.nrtm4.tests import MOCK_UNF_PRIVATE_KEY, MOCK_UNF_PUBLIC_KEY
+from irrd.mirroring.nrtm4.tests import MOCK_UNF_PRIVATE_KEY, MOCK_UNF_PRIVATE_KEY_STR
 from irrd.mirroring.retrieval import check_file_hash_sha256
 from irrd.storage.models import DatabaseOperation, NRTM4ServerDatabaseStatus
 from irrd.storage.queries import (
@@ -20,7 +18,7 @@ from irrd.storage.queries import (
     RPSLDatabaseJournalStatisticsQuery,
     RPSLDatabaseQuery,
 )
-from irrd.utils.crypto import ed25519_private_key_as_str, ed25519_public_key_from_str
+from irrd.utils.crypto import jws_deserialize
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
 from irrd.utils.test_utils import MockDatabaseHandler
 from irrd.utils.text import remove_auth_hashes
@@ -64,7 +62,7 @@ class TestNRTM4ServerWriter:
                 "piddir": pid_path,
                 "sources": {
                     "TEST": {
-                        "nrtm4_server_private_key": ed25519_private_key_as_str(MOCK_UNF_PRIVATE_KEY),
+                        "nrtm4_server_private_key": MOCK_UNF_PRIVATE_KEY_STR,
                         "nrtm4_server_local_path": str(nrtm_path),
                         "nrtm4_server_base_url": BASE_URL,
                         # "nrtm4_server_snapshot_frequency": 0,
@@ -253,16 +251,11 @@ class TestNRTM4ServerWriter:
     def _load_unf(self, nrtm_path):
         with open(nrtm_path / "update-notification-file.json", "rb") as f:
             unf_content = f.read()
-        unf = json.loads(unf_content)
+        unf_payload = jws_deserialize(unf_content, MOCK_UNF_PRIVATE_KEY)
+        unf = json.loads(unf_payload.payload)
         assert unf["nrtm_version"] == 4
         assert unf["source"] == "TEST"
         assert unf["type"] == "notification"
-
-        unf_hash = hashlib.sha256(unf_content).hexdigest()
-        with open(nrtm_path / f"update-notification-file-signature-{unf_hash}.sig", "r") as sig_file:
-            sig_content = base64.b64decode(sig_file.read())
-        public_key = ed25519_public_key_from_str(MOCK_UNF_PUBLIC_KEY)
-        public_key.verify(sig_content, unf_content)
         return unf
 
     def _status_to_dict(self, status: NRTM4ServerDatabaseStatus, force_reload=False):

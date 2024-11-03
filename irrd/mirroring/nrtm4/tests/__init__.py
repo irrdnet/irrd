@@ -1,13 +1,22 @@
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from irrd.utils.crypto import eckey_from_str, eckey_public_key_as_str
 
-from irrd.utils.crypto import ed25519_public_key_as_str
-
-MOCK_UNF_PRIVATE_KEY = Ed25519PrivateKey.from_private_bytes(
-    b"\x15\xa9Wr\x1b<\x1c\x856\xd8G\xdc\xde*Ms\x15pc\x00~2\x9d1\xf50\x8c\xf4\x11m\x8a\r"
+MOCK_UNF_PRIVATE_KEY_STR = (
+    "-----BEGIN PRIVATE"
+    " KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgGQrdALKHTVC4sVav\nmKUjXaPB22CWZP3t5XSkLqKHMO2hRANCAAQ9U/aaZwLV4koey4Jvu9cRaxiXna9k\naQ3YwrPzZlwd5MQSZ59kfT2+LAbQmXbZg0NGzptqHoOK0YD3YVBjv4kc\n-----END"
+    " PRIVATE KEY-----\n"
 )
-MOCK_UNF_PUBLIC_KEY = ed25519_public_key_as_str(MOCK_UNF_PRIVATE_KEY.public_key())
 
-MOCK_UNF_PRIVATE_KEY_OTHER = Ed25519PrivateKey.from_private_bytes(
-    b"\xe1\x80\xe0izQ\x0c\x85<\xbc\x96\xc5a\xe6 =\n\x84k\x86\x00tw\x91\x17[:H\xb7W\n\xc1"
+MOCK_UNF_PRIVATE_KEY = eckey_from_str(MOCK_UNF_PRIVATE_KEY_STR)
+
+MOCK_UNF_PUBLIC_KEY = eckey_public_key_as_str(MOCK_UNF_PRIVATE_KEY)
+
+MOCK_UNF_PRIVATE_KEY_OTHER_STR = (
+    "-----BEGIN PRIVATE"
+    " KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgmHtbXrQ0uEcrzeZK\niaK8UnpD5c/YAmqdUHqoHLz997ShRANCAAQ18hSL1o3ynp1kLsfXgZBtlWSYwKvc\nLT2qRj7QeJPxHA6X3XMk7eD6xbdeyNFnLXiKwNPFMPcwRLC6oLN81Fvb\n-----END"
+    " PRIVATE KEY-----\n"
 )
-MOCK_UNF_PUBLIC_KEY_OTHER = ed25519_public_key_as_str(MOCK_UNF_PRIVATE_KEY_OTHER.public_key())
+
+
+MOCK_UNF_PRIVATE_KEY_OTHER = eckey_from_str(MOCK_UNF_PRIVATE_KEY_OTHER_STR)
+
+MOCK_UNF_PUBLIC_KEY_OTHER = eckey_public_key_as_str(MOCK_UNF_PRIVATE_KEY_OTHER)

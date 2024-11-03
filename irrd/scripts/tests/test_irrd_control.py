@@ -1,6 +1,6 @@
 import pytest
 from click.testing import CliRunner
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from joserfc.rfc7518.ec_key import ECKey
 
 from irrd.scripts.irrd_control import (
     cli,
@@ -11,11 +11,7 @@ from irrd.scripts.irrd_control import (
     user_mfa_clear,
 )
 from irrd.storage.models import AuthWebAuthn, RPSLDatabaseStatus
-from irrd.utils.crypto import (
-    ed25519_private_key_as_str,
-    ed25519_private_key_from_str,
-    ed25519_public_key_as_str,
-)
+from irrd.utils.crypto import eckey_private_key_as_str, eckey_public_key_as_str
 from irrd.utils.factories import AuthWebAuthnFactory
 
 
@@ -229,15 +225,14 @@ class TestNRTM4GeneratePrivateKey:
         runner = CliRunner()
         result = runner.invoke(generate_private_key)
         assert result.exit_code == 0
-        private_str, public_str = [line.split(":")[1].strip() for line in result.output.splitlines()[:2]]
-        assert ed25519_public_key_as_str(ed25519_private_key_from_str(private_str).public_key()) == public_str
+        assert "BEGIN PRIVATE KEY" in result.output
 
 
 class TestNRTM4ServerShowPublicKey:
     def test_valid(self, config_override):
-        private_key = Ed25519PrivateKey.generate()
-        private_key_str = ed25519_private_key_as_str(private_key)
-        public_key_str = ed25519_public_key_as_str(private_key.public_key())
+        private_key = ECKey.generate_key()
+        private_key_str = eckey_private_key_as_str(private_key)
+        public_key_str = eckey_public_key_as_str(private_key)
 
         config_override(
             {

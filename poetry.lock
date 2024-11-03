@@ -1000,8 +1000,11 @@ name = "docutils"
 version = "0.19"
 description = "Docutils -- Python Documentation Utilities"
 optional = false
-python-versions = "*"
-files = []
+python-versions = ">=3.7"
+files = [
+    {file = "docutils-0.19-py3-none-any.whl", hash = "sha256:5e1de4d849fee02c63b040a4a3fd567f4ab104defd8a5511fbbc24a8a017efbc"},
+    {file = "docutils-0.19.tar.gz", hash = "sha256:33995a6753c30b7f577febfc2c50411fec6aac7f7ffeb7c4cfe5991072dcf9e6"},
+]
 
 [[package]]
 name = "email-validator"
@@ -1560,6 +1563,23 @@ MarkupSafe = ">=2.0"
 
 [package.extras]
 i18n = ["Babel (>=2.7)"]
+
+[[package]]
+name = "joserfc"
+version = "1.0.0"
+description = "The ultimate Python library for JOSE RFCs, including JWS, JWE, JWK, JWA, JWT"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "joserfc-1.0.0-py3-none-any.whl", hash = "sha256:1de2c3ac203db8fceb2e84c1e78ba357030b195c21af046a1411711927654a09"},
+    {file = "joserfc-1.0.0.tar.gz", hash = "sha256:298a9820c76576f8ca63375d1851cc092f3f225508305c7a36c4632cec38f7bc"},
+]
+
+[package.dependencies]
+cryptography = "*"
+
+[package.extras]
+drafts = ["pycryptodome"]
 
 [[package]]
 name = "limits"
@@ -3881,4 +3901,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "123ae7911637a1059c530bc3dfb618bbdc6f9114980ae5c82cfb682682b926dc"
+content-hash = "36bc4f48122512ec21dca41e480e018f098d9b5a78ae7cf06283c25b03cbd4d3"
