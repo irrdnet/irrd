@@ -722,7 +722,7 @@ def process_args(options):
         # output something.
         if "--help" in options:
             raise XHelp("") from error
-        raise XArgumentError("Error processing command-line arguments: {error.message}") from error
+        raise XArgumentError(f"Error processing command-line arguments: {error.message}") from error
 
     if args.debug:
         logger.setLevel(logging.DEBUG)
