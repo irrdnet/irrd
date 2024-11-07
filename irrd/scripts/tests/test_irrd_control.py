@@ -6,7 +6,7 @@ from irrd.scripts.irrd_control import (
     cli,
     client_clear_known_keys,
     generate_private_key,
-    server_show_public_settings,
+    server_show_public_key,
     user_change_override,
     user_mfa_clear,
 )
@@ -246,12 +246,12 @@ class TestNRTM4ServerShowPublicKey:
             }
         )
         runner = CliRunner()
-        result = runner.invoke(server_show_public_settings, args=["TEST"])
+        result = runner.invoke(server_show_public_key, args=["TEST"])
         assert result.exit_code == 0
         assert public_key_str in result.output
 
     def test_not_configured(self):
         runner = CliRunner()
-        result = runner.invoke(server_show_public_settings, args=["TEST"])
+        result = runner.invoke(server_show_public_key, args=["TEST"])
         assert result.exit_code == 1, result.output
         assert "not configured as an NRTMv4 server" in result.output
