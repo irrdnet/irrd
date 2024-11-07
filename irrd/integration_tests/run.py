@@ -40,6 +40,7 @@ from irrd.utils.rpsl_samples import (
     SIGNED_PERSON_UPDATE_VALID,
 )
 from irrd.utils.whois_client import whois_query, whois_query_irrd
+from ..mirroring.nrtm4 import UPDATE_NOTIFICATION_FILENAME
 
 from ..utils.crypto import eckey_private_key_as_str, eckey_public_key_as_str
 from .constants import (
@@ -963,7 +964,7 @@ class TestIntegration:
         config3["irrd"]["rpki"]["roa_source"] = None
         config3["irrd"]["sources"]["TEST"] = {
             "keep_journal": True,
-            "nrtm4_client_notification_file_url": f"file://{self.nrtm4_dir2}update-notification-file.json",
+            "nrtm4_client_notification_file_url": f"file://{self.nrtm4_dir2}{UPDATE_NOTIFICATION_FILENAME}",
             "nrtm4_client_initial_public_key": eckey_public_key_as_str(self.nrtm4_private_key),
         }
         with open(self.config_path3, "w") as yaml_file:

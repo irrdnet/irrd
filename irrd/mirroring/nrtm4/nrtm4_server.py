@@ -38,7 +38,7 @@ from .nrtm4_types import (
 
 logger = logging.getLogger(__name__)
 
-DANGLING_SNAPSHOT_UNF_SIGNATURE_EXPIRY_TIME = datetime.timedelta(minutes=5)
+DANGLING_SNAPSHOT_EXPIRY_TIME = datetime.timedelta(minutes=5)
 
 
 class NRTM4Server:
@@ -212,12 +212,12 @@ class NRTM4ServerWriter:
         self._write_unf()
 
         self.database_handler.record_nrtm4_server_status(self.source, self.status)
-        self._expire_snapshots_unf_signatures()
+        self._expire_snapshots()
         self.database_handler.commit()
 
     def _write_unf(self) -> None:
         """
-        Write the Update Notification File and signature.
+        Write the Update Notification File.
         This is based on settings and self.status.
         """
         assert self.status
@@ -279,22 +279,21 @@ class NRTM4ServerWriter:
                 file_path.unlink()
                 logger.debug(f"{self.source}: Removed dangling delta file {file_path.name}")
 
-    def _expire_snapshots_unf_signatures(self) -> None:
+    def _expire_snapshots(self) -> None:
         """
-        Expire old UNF signatures and old snapshots.
+        Expire old snapshots.
         To avoid race conditions, these files are kept around after they
         are no longer referred. This method cleans them up.
         """
         assert self.status
-        patterns = ["update-notification-file-signature-*.sig", "nrtm-snapshot.*.json.gz"]
-        for pattern in patterns:
-            for file_path in self.path.glob(pattern):
-                modification_time = datetime.datetime.fromtimestamp(os.path.getmtime(file_path), tz=UTC)
-                if (
-                    self.timestamp - modification_time > DANGLING_SNAPSHOT_UNF_SIGNATURE_EXPIRY_TIME
-                    and file_path.name != self.status.last_snapshot_filename
-                ):
-                    file_path.unlink()
+        snapshot_pattern = "nrtm-snapshot.*.json.gz"
+        for file_path in self.path.glob(snapshot_pattern):
+            modification_time = datetime.datetime.fromtimestamp(os.path.getmtime(file_path), tz=UTC)
+            if (
+                self.timestamp - modification_time > DANGLING_SNAPSHOT_EXPIRY_TIME
+                and file_path.name != self.status.last_snapshot_filename
+            ):
+                file_path.unlink()
 
     def _write_snapshot(self, version: int) -> str:
         """
