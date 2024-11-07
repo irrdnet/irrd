@@ -5,6 +5,7 @@ from uuid import UUID, uuid4
 import pytest
 from joserfc import jws
 
+from irrd.mirroring.nrtm4 import UPDATE_NOTIFICATION_FILENAME
 from irrd.mirroring.nrtm4.jsonseq import jsonseq_encode
 from irrd.mirroring.nrtm4.nrtm4_client import NRTM4Client, NRTM4ClientError
 from irrd.mirroring.nrtm4.tests import (
@@ -21,8 +22,7 @@ MOCK_SESSION_ID = "ca128382-78d9-41d1-8927-1ecef15275be"
 MOCK_SNAPSHOT_URL = "https://example.com/snapshot.2.json"
 MOCK_DELTA3_URL = "https://example.com/delta.3.json"
 MOCK_DELTA4_URL = "https://example.com/delta.4.json"
-MOCK_UNF_URL = "https://example.com/update-notification-file.json"
-MOCK_UNF_SIG_URL = "https://example.com/update-notification-file-signature-hash.json"
+MOCK_UNF_URL = "https://example.com/" + UPDATE_NOTIFICATION_FILENAME
 
 MOCK_UNF = {
     "nrtm_version": 4,

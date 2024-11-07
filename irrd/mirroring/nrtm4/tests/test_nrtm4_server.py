@@ -7,6 +7,7 @@ from pathlib import Path
 from unittest.mock import create_autospec
 
 from irrd.conf import NRTM4_SERVER_DELTA_EXPIRY_TIME, PASSWORD_HASH_DUMMY_VALUE
+from irrd.mirroring.nrtm4 import UPDATE_NOTIFICATION_FILENAME
 from irrd.mirroring.nrtm4.jsonseq import jsonseq_decode
 from irrd.mirroring.nrtm4.nrtm4_server import NRTM4Server, NRTM4ServerWriter
 from irrd.mirroring.nrtm4.tests import MOCK_UNF_PRIVATE_KEY, MOCK_UNF_PRIVATE_KEY_STR
@@ -74,8 +75,7 @@ class TestNRTM4ServerWriter:
 
         delta_dangling_path = nrtm_path / "nrtm-delta.aaaaa.json.gz"
         snapshot_outdated_path = nrtm_path / "nrtm-snapshot.aaaaa.json.gz"
-        unf_signature_outdated_path = nrtm_path / "update-notification-file-signature-aaaaa.sig"
-        for path in delta_dangling_path, snapshot_outdated_path, unf_signature_outdated_path:
+        for path in delta_dangling_path, snapshot_outdated_path:
             path.touch()
             os.utime(path, (time.time() - 3600, time.time() - 3600))
 
@@ -249,7 +249,7 @@ class TestNRTM4ServerWriter:
         assert not mock_dh.other_calls
 
     def _load_unf(self, nrtm_path):
-        with open(nrtm_path / "update-notification-file.json", "rb") as f:
+        with open(nrtm_path / UPDATE_NOTIFICATION_FILENAME, "rb") as f:
             unf_content = f.read()
         unf_payload = jws_deserialize(unf_content, MOCK_UNF_PRIVATE_KEY)
         unf = json.loads(unf_payload.payload)

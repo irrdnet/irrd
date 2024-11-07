@@ -9,6 +9,7 @@ from pathlib import Path
 import click
 from joserfc.rfc7518.ec_key import ECKey
 
+from irrd.mirroring.nrtm4 import UPDATE_NOTIFICATION_FILENAME
 from irrd.utils.crypto import (
     eckey_from_config,
     eckey_private_key_as_str,
@@ -192,17 +193,23 @@ def generate_private_key():
 
 @nrtm4.command()
 @click.argument("source")
-def server_show_public_key(source: str):
+def server_show_public_settings(source: str):
     """
-    Show the public key(s) matching the currently configured private keys.
+    Show the public parameters matching the current configuration for an NRTMv4 server.
     """
     private_key = eckey_from_config(f"sources.{source}.nrtm4_server_private_key", permit_empty=True)
     if not private_key:
         raise click.ClickException(f"Source {source} is not configured as an NRTMv4 server")
     public_key_str = eckey_public_key_as_str(private_key)
+    unf_url = (
+        get_setting(f"sources.{source}.nrtm4_server_base_url").rstrip("/")
+        + "/"
+        + UPDATE_NOTIFICATION_FILENAME
+    )
 
     click.echo(
-        f"Source {source} NRTMv4 server public keys (base64):\n"
+        f"Settings for {source} NRTMv4 server:\n"
+        f"Update Notification File URL: {unf_url}\n"
         f"Current public key (from nrtm4_server_private_key):\n{public_key_str}\n"
     )
 

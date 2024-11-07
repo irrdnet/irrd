@@ -27,6 +27,7 @@ from irrd.utils.text import remove_auth_hashes
 
 from ...utils.process_support import get_lockfile
 from ..retrieval import file_hash_sha256
+from . import UPDATE_NOTIFICATION_FILENAME
 from .jsonseq import jsonseq_encode, jsonseq_encode_one
 from .nrtm4_types import (
     NRTM4DeltaHeader,
@@ -250,7 +251,7 @@ class NRTM4ServerWriter:
         private_key = eckey_from_config(f"sources.{self.source}.nrtm4_server_private_key")
         assert private_key
         unf_serialized = jws_serialize(unf_content, private_key)
-        with open(self.path / "update-notification-file.json", "w") as unf_file:
+        with open(self.path / UPDATE_NOTIFICATION_FILENAME, "w") as unf_file:
             unf_file.write(unf_serialized)
         self.status.last_update_notification_file_update = unf.timestamp
 
