@@ -186,7 +186,7 @@ def generate_private_key():
     public_key_str = eckey_public_key_as_str(private_key)
 
     click.echo(
-        f"Private key:\n{private_key_str}\n\nCorresponding public key:\n{public_key_str}\n\nNote: this key"
+        f"Private key:\n\n{private_key_str}\nCorresponding public key:\n\n{public_key_str}\nNote: this key"
         " has not been configured in IRRD, that is a manual step. This is only a convenience command."
     )
 
@@ -208,9 +208,9 @@ def server_show_public_settings(source: str):
     )
 
     click.echo(
-        f"Settings for {source} NRTMv4 server:\n"
+        f"Settings for {source} NRTMv4 server\n"
         f"Update Notification File URL: {unf_url}\n"
-        f"Current public key (from nrtm4_server_private_key):\n{public_key_str}\n"
+        f"Current public key (from nrtm4_server_private_key):\n\n{public_key_str}"
     )
 
     next_private_key = eckey_from_config(f"sources.{source}.nrtm4_server_private_key_next", permit_empty=True)
