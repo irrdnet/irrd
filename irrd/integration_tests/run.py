@@ -40,8 +40,8 @@ from irrd.utils.rpsl_samples import (
     SIGNED_PERSON_UPDATE_VALID,
 )
 from irrd.utils.whois_client import whois_query, whois_query_irrd
-from ..mirroring.nrtm4 import UPDATE_NOTIFICATION_FILENAME
 
+from ..mirroring.nrtm4 import UPDATE_NOTIFICATION_FILENAME
 from ..utils.crypto import eckey_private_key_as_str, eckey_public_key_as_str
 from .constants import (
     EMAIL_DISCARD_MSGS_COMMAND,
