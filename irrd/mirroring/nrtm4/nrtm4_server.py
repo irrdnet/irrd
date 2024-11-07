@@ -1,7 +1,5 @@
-import base64
 import datetime
 import gzip
-import hashlib
 import logging
 import os
 import secrets
@@ -24,11 +22,12 @@ from irrd.storage.queries import (
     RPSLDatabaseJournalStatisticsQuery,
     RPSLDatabaseQuery,
 )
-from irrd.utils.crypto import ed25519_private_key_from_config, ed25519_public_key_as_str
+from irrd.utils.crypto import eckey_from_config, eckey_public_key_as_str, jws_serialize
 from irrd.utils.text import remove_auth_hashes
 
 from ...utils.process_support import get_lockfile
 from ..retrieval import file_hash_sha256
+from . import UPDATE_NOTIFICATION_FILENAME
 from .jsonseq import jsonseq_encode, jsonseq_encode_one
 from .nrtm4_types import (
     NRTM4DeltaHeader,
@@ -39,7 +38,7 @@ from .nrtm4_types import (
 
 logger = logging.getLogger(__name__)
 
-DANGLING_SNAPSHOT_UNF_SIGNATURE_EXPIRY_TIME = datetime.timedelta(minutes=5)
+DANGLING_SNAPSHOT_EXPIRY_TIME = datetime.timedelta(minutes=5)
 
 
 class NRTM4Server:
@@ -213,22 +212,20 @@ class NRTM4ServerWriter:
         self._write_unf()
 
         self.database_handler.record_nrtm4_server_status(self.source, self.status)
-        self._expire_snapshots_unf_signatures()
+        self._expire_snapshots()
         self.database_handler.commit()
 
     def _write_unf(self) -> None:
         """
-        Write the Update Notification File and signature.
+        Write the Update Notification File.
         This is based on settings and self.status.
         """
         assert self.status
-        next_signing_private_key = ed25519_private_key_from_config(
+        next_signing_private_key = eckey_from_config(
             f"sources.{self.source}.nrtm4_server_private_key_next", permit_empty=True
         )
         next_signing_public_key = (
-            ed25519_public_key_as_str(next_signing_private_key.public_key())
-            if next_signing_private_key
-            else None
+            eckey_public_key_as_str(next_signing_private_key) if next_signing_private_key else None
         )
         unf = NRTM4UpdateNotificationFile(
             nrtm_version=4,
@@ -251,14 +248,11 @@ class NRTM4ServerWriter:
             ],
         )
         unf_content = unf.model_dump_json(exclude_none=True, include=unf.model_fields_set).encode("ascii")
-        private_key = ed25519_private_key_from_config(f"sources.{self.source}.nrtm4_server_private_key")
+        private_key = eckey_from_config(f"sources.{self.source}.nrtm4_server_private_key")
         assert private_key
-        signature = private_key.sign(unf_content)
-        unf_hash = hashlib.sha256(unf_content).hexdigest()
-        with open(self.path / f"update-notification-file-signature-{unf_hash}.sig", "wb") as sig_file:
-            sig_file.write(base64.b64encode(signature))
-        with open(self.path / "update-notification-file.json", "wb") as unf_file:
-            unf_file.write(unf_content)
+        unf_serialized = jws_serialize(unf_content, private_key)
+        with open(self.path / UPDATE_NOTIFICATION_FILENAME, "w") as unf_file:
+            unf_file.write(unf_serialized)
         self.status.last_update_notification_file_update = unf.timestamp
 
     def _expire_deltas(self) -> None:
@@ -285,22 +279,21 @@ class NRTM4ServerWriter:
                 file_path.unlink()
                 logger.debug(f"{self.source}: Removed dangling delta file {file_path.name}")
 
-    def _expire_snapshots_unf_signatures(self) -> None:
+    def _expire_snapshots(self) -> None:
         """
-        Expire old UNF signatures and old snapshots.
+        Expire old snapshots.
         To avoid race conditions, these files are kept around after they
         are no longer referred. This method cleans them up.
         """
         assert self.status
-        patterns = ["update-notification-file-signature-*.sig", "nrtm-snapshot.*.json.gz"]
-        for pattern in patterns:
-            for file_path in self.path.glob(pattern):
-                modification_time = datetime.datetime.fromtimestamp(os.path.getmtime(file_path), tz=UTC)
-                if (
-                    self.timestamp - modification_time > DANGLING_SNAPSHOT_UNF_SIGNATURE_EXPIRY_TIME
-                    and file_path.name != self.status.last_snapshot_filename
-                ):
-                    file_path.unlink()
+        snapshot_pattern = "nrtm-snapshot.*.json.gz"
+        for file_path in self.path.glob(snapshot_pattern):
+            modification_time = datetime.datetime.fromtimestamp(os.path.getmtime(file_path), tz=UTC)
+            if (
+                self.timestamp - modification_time > DANGLING_SNAPSHOT_EXPIRY_TIME
+                and file_path.name != self.status.last_snapshot_filename
+            ):
+                file_path.unlink()
 
     def _write_snapshot(self, version: int) -> str:
         """

@@ -1,31 +1,48 @@
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+import pytest
+from joserfc.rfc7518.ec_key import ECKey
 
 from irrd.utils.crypto import (
-    ed25519_private_key_as_str,
-    ed25519_private_key_from_config,
-    ed25519_private_key_from_str,
-    ed25519_public_key_as_str,
-    ed25519_public_key_from_str,
+    eckey_from_config,
+    eckey_from_str,
+    eckey_private_key_as_str,
+    eckey_public_key_as_str,
+    jws_deserialize,
+    jws_serialize,
 )
 
 
-def test_crypto_ed25519(config_override):
-    private_key = Ed25519PrivateKey.generate()
+def test_crypto_eckey(config_override):
+    private_key = ECKey.generate_key()
     config_override(
-        {"sources": {"TEST": {"nrtm4_server_private_key": ed25519_private_key_as_str(private_key)}}}
+        {
+            "sources": {"TEST": {"nrtm4_server_private_key": eckey_private_key_as_str(private_key)}},
+            "invalid": "invalid",
+        }
     )
+    assert eckey_from_config("sources.TEST.nrtm4_server_private_key").as_pem() == private_key.as_pem()
+    assert eckey_from_str(
+        eckey_public_key_as_str(eckey_from_str(eckey_private_key_as_str(private_key)))
+    ).as_pem() == private_key.as_pem(private=False)
+    assert eckey_from_config("sources.OTHER.nrtm4_server_private_key", permit_empty=True) is None
+
+    with pytest.raises(ValueError):
+        eckey_from_config("invalid")
+
+    eckey_from_str(eckey_public_key_as_str(private_key), require_private=False)
+    with pytest.raises(ValueError):
+        eckey_from_str(eckey_public_key_as_str(private_key), require_private=True)
+    with pytest.raises(ValueError):
+        eckey_from_str(eckey_public_key_as_str(private_key)[:20])
+
+    payload = b"test"
     assert (
-        ed25519_private_key_from_config("sources.TEST.nrtm4_server_private_key").private_bytes_raw()
-        == private_key.private_bytes_raw()
+        jws_deserialize(
+            jws_serialize(payload, private_key), eckey_from_str(eckey_public_key_as_str(private_key))
+        ).payload
+        == payload
     )
-    assert (
-        ed25519_public_key_from_str(
-            ed25519_public_key_as_str(
-                ed25519_private_key_from_str(ed25519_private_key_as_str(private_key)).public_key()
-            )
-        ).public_bytes_raw()
-        == private_key.public_key().public_bytes_raw()
-    )
-    assert (
-        ed25519_private_key_from_config("sources.OTHER.nrtm4_server_private_key", permit_empty=True) is None
-    )
+    with pytest.raises(ValueError):
+        jws_deserialize(jws_serialize(payload, private_key), ECKey.generate_key())
+
+    with pytest.raises(ValueError):
+        jws_serialize(payload, "invalid")

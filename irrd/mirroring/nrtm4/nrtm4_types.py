@@ -4,10 +4,9 @@ from typing import Any, List, Literal, Optional
 from uuid import UUID
 
 import pydantic
+from joserfc.rfc7518.ec_key import ECKey
 from pytz import UTC
 from typing_extensions import Self
-
-from irrd.utils.crypto import ed25519_public_key_from_str
 
 
 def get_from_pydantic_context(info: pydantic.ValidationInfo, key: str) -> Optional[Any]:
@@ -144,7 +143,7 @@ class NRTM4UpdateNotificationFile(NRTM4Common):
     def validate_next_signing_key(cls, next_signing_key: Optional[str]):
         if next_signing_key:
             try:
-                ed25519_public_key_from_str(next_signing_key)
+                ECKey.import_key(next_signing_key)
             except ValueError as ve:
                 raise ValueError(
                     f"Update Notification File has invalid next_signing_key {next_signing_key}: {ve}"

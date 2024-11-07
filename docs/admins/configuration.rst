@@ -120,7 +120,10 @@ This sample shows most configuration options
                 export_destination: /var/ftp/
                 export_timer: 7200
                 nrtm_access_list: generic_nrtm_access
-                nrtm4_server_private_key: base64privatekey==
+                nrtm4_server_private_key: |
+                    -----BEGIN PRIVATE KEY-----
+                    key date in base64 PEM here
+                    -----END PRIVATE KEY-----
                 nrtm4_server_local_path: /var/www/nrtmv4/authdatabase/
                 nrtm4_server_base_url: https://www.example.net/nrtmv4/authdatabase/
             MIRROR-FIRST:
@@ -155,7 +158,10 @@ This sample shows most configuration options
                     - 'ftp://ftp.example.net/mirror-second.db.route6.gz'
                     - 'ftp://ftp.example.net/mirror-second.db.route-set.gz'
                 nrtm4_client_notification_file_url: https://example.net/nrtmv4/MIRROR-SECOND/update-notification-file.json
-                nrtm4_client_initial_public_key: base64publickey==
+                nrtm4_client_initial_public_key: |
+                    -----BEGIN PUBLIC KEY-----
+                    key date in base64 PEM here
+                    -----END PUBLIC KEY-----
 
 
 Loading and reloading
@@ -624,10 +630,11 @@ Sources
   are configured.
   |br| **Default**: ``false``.
   |br| **Change takes effect**: after SIGHUP, for all subsequent changes.
-* ``sources.{name}.nrtm4_server_private_key``: the private key Ed25519 key
-  used to sign the Update Notification File for an NRTMv4 server, base64 encoded.
+* ``sources.{name}.nrtm4_server_private_key``: the private key
+  used to sign the Update Notification File for an NRTMv4 server, in PEM format.
   You may find the ``irrdctl nrtmv4 generate-private-key`` and
-  ``irrdctl nrtmv4 show-public-key`` convenience commands helpful.
+  ``irrdctl nrtmv4 server-show-public-key`` convenience commands helpful.
+  Note the use of the pipe character (``|``) to enter this multi-line data.
   |br| **Default**: not defined, no NRTMv4 server runs.
   |br| **Change takes effect**: after SIGHUP, at the next mirror update.
 * ``sources.{name}.nrtm4_server_private_key_next``: the next private Ed25519
@@ -635,6 +642,7 @@ Sources
   setting is used for key rotation. Base64 encoded.
   See the :doc:`mirroring documentation </users/mirroring>` for details on
   key rotation.
+  Note the use of the pipe character (``|``) to enter this multi-line data.
   |br| **Default**: not defined, no key rotation signalled.
   |br| **Change takes effect**: after SIGHUP, at the next mirror update.
 * ``sources.{name}.nrtm4_server_local_path``: the path where the NRTMv4 server
@@ -654,7 +662,8 @@ Sources
   |br| **Default**: not defined, no NRTMv4 updates attempted.
   |br| **Change takes effect**: after SIGHUP, at the next mirror update.
 * ``sources.{name}.nrtm4_client_initial_public_key``: the initial public
-  Ed25519 key expected to match the Update Notification File signature, base64 encoded.
+  key expected to match the Update Notification File signature, in PEM format.
+  Note the use of the pipe character (``|``) to enter this multi-line data.
   |br| **Default**: not defined, no NRTMv4 updates attempted.
   |br| **Change takes effect**: after SIGHUP, at the next mirror update.
 * ``sources.{name}.nrtm_host``: the hostname or IP to connect to for an NRTMv3 stream.

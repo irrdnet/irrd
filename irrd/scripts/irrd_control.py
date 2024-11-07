@@ -7,12 +7,12 @@ from functools import update_wrapper
 from pathlib import Path
 
 import click
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from joserfc.rfc7518.ec_key import ECKey
 
 from irrd.utils.crypto import (
-    ed25519_private_key_as_str,
-    ed25519_private_key_from_config,
-    ed25519_public_key_as_str,
+    eckey_from_config,
+    eckey_private_key_as_str,
+    eckey_public_key_as_str,
 )
 from irrd.webui.helpers import send_authentication_change_mail
 
@@ -180,13 +180,13 @@ def generate_private_key():
     """
     Generate a new private key for an NRTMv4 server.
     """
-    private_key = Ed25519PrivateKey.generate()
-    private_key_str = ed25519_private_key_as_str(private_key)
-    public_key_str = ed25519_public_key_as_str(private_key.public_key())
+    private_key = ECKey.generate_key()
+    private_key_str = eckey_private_key_as_str(private_key)
+    public_key_str = eckey_public_key_as_str(private_key)
 
     click.echo(
-        f"Private key: {private_key_str}\nCorresponding public key: {public_key_str}\nNote: this key has not"
-        " been configured in IRRD, that is a manual step. This is only a convenience command."
+        f"Private key:\n\n{private_key_str}\nCorresponding public key:\n\n{public_key_str}\nNote: this key"
+        " has not been configured in IRRD, that is a manual step. This is only a convenience command."
     )
 
 
@@ -196,24 +196,19 @@ def server_show_public_key(source: str):
     """
     Show the public key(s) matching the currently configured private keys.
     """
-    private_key = ed25519_private_key_from_config(
-        f"sources.{source}.nrtm4_server_private_key", permit_empty=True
-    )
+    private_key = eckey_from_config(f"sources.{source}.nrtm4_server_private_key", permit_empty=True)
     if not private_key:
         raise click.ClickException(f"Source {source} is not configured as an NRTMv4 server")
-    public_key_str = ed25519_public_key_as_str(private_key.public_key())
+    public_key_str = eckey_public_key_as_str(private_key)
 
     click.echo(
-        f"Source {source} NRTMv4 server public keys (base64):\n"
-        f"Current public key (from nrtm4_server_private_key): {public_key_str}"
+        f"Current public key for {source} NRTMv4 server (from nrtm4_server_private_key):\n\n{public_key_str}"
     )
 
-    next_private_key = ed25519_private_key_from_config(
-        f"sources.{source}.nrtm4_server_private_key_next", permit_empty=True
-    )
+    next_private_key = eckey_from_config(f"sources.{source}.nrtm4_server_private_key_next", permit_empty=True)
     if next_private_key:
-        next_public_key_str = ed25519_public_key_as_str(next_private_key.public_key())
-        click.echo(f"Next key (from nrtm4_server_private_key_next): {next_public_key_str}")
+        next_public_key_str = eckey_public_key_as_str(next_private_key)
+        click.echo(f"Next key (from nrtm4_server_private_key_next):\n{next_public_key_str}")
 
 
 def find_user(session_provider: ORMSessionProvider, email: str) -> AuthUser:

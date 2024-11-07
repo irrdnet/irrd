@@ -1,11 +1,11 @@
-import base64
-import hashlib
 import json
 from tempfile import NamedTemporaryFile
 from uuid import UUID, uuid4
 
 import pytest
+from joserfc import jws
 
+from irrd.mirroring.nrtm4 import UPDATE_NOTIFICATION_FILENAME
 from irrd.mirroring.nrtm4.jsonseq import jsonseq_encode
 from irrd.mirroring.nrtm4.nrtm4_client import NRTM4Client, NRTM4ClientError
 from irrd.mirroring.nrtm4.tests import (
@@ -22,8 +22,7 @@ MOCK_SESSION_ID = "ca128382-78d9-41d1-8927-1ecef15275be"
 MOCK_SNAPSHOT_URL = "https://example.com/snapshot.2.json"
 MOCK_DELTA3_URL = "https://example.com/delta.3.json"
 MOCK_DELTA4_URL = "https://example.com/delta.4.json"
-MOCK_UNF_URL = "https://example.com/update-notification-file.json"
-MOCK_UNF_SIG_URL = "https://example.com/update-notification-file-signature-hash.json"
+MOCK_UNF_URL = "https://example.com/" + UPDATE_NOTIFICATION_FILENAME
 
 MOCK_UNF = {
     "nrtm_version": 4,
@@ -88,17 +87,9 @@ def _mock_retrieve_file(tmp_path, mock_responses):
     def mock_retrieve_file(url, expected_hash=None, return_contents=True):
         url = str(url)
         mock_unf_content = json.dumps(mock_responses[MOCK_UNF_URL])
+        mock_unf_serialized = jws.serialize_compact({"alg": "ES256"}, mock_unf_content, MOCK_UNF_PRIVATE_KEY)
         if url == MOCK_UNF_URL and return_contents:
-            return mock_unf_content, False
-        elif "update-notification-file-signature" in url and return_contents:
-            try:
-                return mock_responses[MOCK_UNF_SIG_URL], False
-            except KeyError:
-                unf_bytes = mock_unf_content.encode("utf-8")
-                unf_hash = hashlib.sha256(unf_bytes).hexdigest()
-                if unf_hash not in url:  # pragma: no cover
-                    raise ValueError(f"Signature URL requested {url}, expected hash {unf_hash}")
-                return base64.b64encode(MOCK_UNF_PRIVATE_KEY.sign(unf_bytes)), False
+            return mock_unf_serialized, False
         elif not return_contents:
             assert url == expected_hash
             destination = NamedTemporaryFile(dir=tmp_path, delete=False)
@@ -172,25 +163,21 @@ class TestNRTM4Client:
         self._assert_import_queries(mock_dh, expect_reload=False)
         assert "Updating from deltas, starting from version 3" in caplog.text
 
-    def test_invalid_signature(self, prepare_nrtm4_test, monkeypatch, tmp_path):
-        mock_responses = {
-            MOCK_UNF_URL: MOCK_UNF,
-            MOCK_UNF_SIG_URL: "invalid-base64",
-            MOCK_SNAPSHOT_URL: MOCK_SNAPSHOT,
-            # Shorten delta 3 to header only
-            MOCK_DELTA3_URL: MOCK_DELTA3,
-            MOCK_DELTA4_URL: MOCK_DELTA4,
-        }
-        monkeypatch.setattr(
-            "irrd.mirroring.nrtm4.nrtm4_client.retrieve_file", _mock_retrieve_file(tmp_path, mock_responses)
+    def test_invalid_signature(self, prepare_nrtm4_test, monkeypatch, tmp_path, config_override):
+        config_override(
+            {
+                "sources": {
+                    "TEST": {
+                        "nrtm4_client_notification_file_url": MOCK_UNF_URL,
+                        "nrtm4_client_initial_public_key": MOCK_UNF_PUBLIC_KEY_OTHER,
+                    },
+                },
+                "rpki": {"roa_source": None},
+            }
         )
         mock_dh = MockDatabaseHandler()
         mock_dh.reset_mock()
         mock_dh.query_responses[DatabaseStatusQuery] = iter([])
-        with pytest.raises(NRTM4ClientError):
-            NRTM4Client("TEST", mock_dh).run_client()
-
-        mock_responses[MOCK_UNF_SIG_URL] = base64.b64encode(b"invalid-key")
         with pytest.raises(NRTM4ClientError):
             NRTM4Client("TEST", mock_dh).run_client()
 
@@ -434,7 +421,7 @@ class TestNRTM4Client:
         )
         with pytest.raises(NRTM4ClientError) as exc:
             NRTM4Client("TEST", mock_dh).run_client()
-        assert "use the 'irrdctl" in str(exc)
+        assert "is valid for" in str(exc)
 
     def test_uses_current_db_key(self, prepare_nrtm4_test, config_override):
         config_override(
