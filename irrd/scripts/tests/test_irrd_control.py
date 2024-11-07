@@ -240,7 +240,6 @@ class TestNRTM4ServerShowPublicKey:
                     "TEST": {
                         "nrtm4_server_private_key": private_key_str,
                         "nrtm4_server_private_key_next": private_key_str,
-                        "nrtm4_server_base_url": "https://url/",
                     }
                 }
             }

@@ -947,7 +947,6 @@ class TestIntegration:
             "nrtm_access_list": "localhost",
             "nrtm4_server_private_key": eckey_private_key_as_str(self.nrtm4_private_key),
             "nrtm4_server_local_path": self.nrtm4_dir2,
-            "nrtm4_server_base_url": f"file://{self.nrtm4_dir2}",
             "nrtm4_server_snapshot_frequency": 3600,
         }
         with open(self.config_path2, "w") as yaml_file:

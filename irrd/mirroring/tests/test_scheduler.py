@@ -326,7 +326,6 @@ class TestMirrorScheduler:
                 "rpki": {"roa_source": None},
                 "sources": {
                     "TEST": {
-                        "nrtm4_server_base_url": "https://example.com",
                         "nrtm4_server_private_key": "FalXchs8HIU22Efc3ipNcxVwYwB+Mp0x9TCM9BFtig0=",
                         "nrtm4_server_private_key_next": "4YDgaXpRDIU8vJbFYeYgPQqEa4YAdHeRF1s6SLdXCsE=",
                     }

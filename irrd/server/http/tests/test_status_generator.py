@@ -53,7 +53,6 @@ class TestStatusGenerator:
                         "object_class_filter": "object-class-filter",
                         "rpki_excluded": True,
                         "route_object_preference": 200,
-                        "nrtm4_server_base_url": "url",
                     },
                     "TEST2": {
                         "authoritative": True,
@@ -221,7 +220,6 @@ class TestStatusGenerator:
                 NRTMv4 server: last Update Notification File update: 2018-01-01 00:00:00+00:00
                 NRTMv4 server: last snapshot version: 21
                 NRTMv4 server: number of deltas: 2
-                NRTMv4 server: base URL: url
                 Synchronised NRTM serials: No
                 Last update: 2018-06-01 00:00:00+00:00
                 Local journal kept: Yes
@@ -256,7 +254,6 @@ class TestStatusGenerator:
                 NRTMv4 server: last Update Notification File update: None
                 NRTMv4 server: last snapshot version: None
                 NRTMv4 server: number of deltas: 0
-                NRTMv4 server: base URL: None
                 Synchronised NRTM serials: No
                 Last update: 2019-06-01 00:00:00+00:00
                 Local journal kept: No
@@ -288,7 +285,6 @@ class TestStatusGenerator:
                 NRTMv4 server: last Update Notification File update: None
                 NRTMv4 server: last snapshot version: None
                 NRTMv4 server: number of deltas: 0
-                NRTMv4 server: base URL: None
                 Synchronised NRTM serials: No
                 Last update: None
                 Local journal kept: No
@@ -320,7 +316,6 @@ class TestStatusGenerator:
                 NRTMv4 server: last Update Notification File update: None
                 NRTMv4 server: last snapshot version: None
                 NRTMv4 server: number of deltas: 0
-                NRTMv4 server: base URL: None
                 Synchronised NRTM serials: No
                 Last update: None
                 Local journal kept: No
@@ -351,7 +346,6 @@ class TestStatusGenerator:
                 NRTMv4 server: last Update Notification File update: None
                 NRTMv4 server: last snapshot version: None
                 NRTMv4 server: number of deltas: 0
-                NRTMv4 server: base URL: None
                 Synchronised NRTM serials: No
                 Last update: None
                 Local journal kept: No

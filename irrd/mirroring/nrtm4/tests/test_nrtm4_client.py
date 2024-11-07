@@ -34,18 +34,18 @@ MOCK_UNF = {
     "version": 4,
     "snapshot": {
         "version": 3,
-        "url": MOCK_SNAPSHOT_URL,
+        "url": MOCK_SNAPSHOT_URL.split("/")[-1],
         "hash": MOCK_SNAPSHOT_URL,
     },
     "deltas": [
         {
             "version": 3,
-            "url": MOCK_DELTA3_URL,
+            "url": MOCK_DELTA3_URL.split("/")[-1],
             "hash": MOCK_DELTA3_URL,
         },
         {
             "version": 4,
-            "url": MOCK_DELTA4_URL,
+            "url": MOCK_DELTA4_URL.split("/")[-1],
             "hash": MOCK_DELTA4_URL,
         },
     ],

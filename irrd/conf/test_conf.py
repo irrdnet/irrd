@@ -126,7 +126,6 @@ class TestConfiguration:
                         "keep_journal": True,
                         "nrtm4_client_notification_file_url": "https://testhost/",
                         "nrtm4_client_initial_public_key": eckey_public_key_as_str(MOCK_UNF_PRIVATE_KEY),
-                        "nrtm4_server_base_url": "https://example.com",
                         "nrtm4_server_private_key": MOCK_UNF_PRIVATE_KEY_STR,
                         "nrtm4_server_private_key_next": MOCK_UNF_PRIVATE_KEY_OTHER_STR,
                         "nrtm4_server_local_path": str(tmpdir),
@@ -323,7 +322,6 @@ class TestConfiguration:
                         "suspension_enabled": True,
                         "nrtm_query_serial_range_limit": "not-a-number",
                         "nrtm4_client_initial_public_key": "invalid",
-                        "nrtm4_server_base_url": "invalid",
                         "nrtm4_server_private_key": "invalid",
                         "nrtm4_server_private_key_next": "invalid",
                         "nrtm4_server_local_path": str(tmpdir / "invalid"),
@@ -336,6 +334,7 @@ class TestConfiguration:
                         "nrtm_access_list": "invalid-list",
                         "nrtm_query_serial_range_limit": "not-a-number",
                         "nrtm4_client_notification_file_url": "http://invalid",
+                        "nrtm4_server_local_path": str(tmpdir / "invalid"),
                     },
                     "TESTDB3": {
                         "keep_journal": False,
@@ -343,7 +342,6 @@ class TestConfiguration:
                         "import_source": "192.0.2.1",
                         "nrtm_access_list_unfiltered": "invalid-list",
                         "route_object_preference": "not-a-number",
-                        "nrtm4_server_base_url": "invalid",
                     },
                     # Not permitted, rpki.roa_source is set
                     "RPKI": {},
@@ -465,9 +463,6 @@ class TestConfiguration:
 
         assert "Invalid value for setting nrtm4_server_private_key for source TESTDB:" in str(ce.value)
         assert "Invalid value for setting nrtm4_server_private_key_next for source TESTDB:" in str(ce.value)
-        assert "Setting nrtm4_server_base_url for source TESTDB is not a valid https or file URL." in str(
-            ce.value
-        )
         assert (
             "Setting nrtm4_server_local_path for source TESTDB is required and must point to an existing"
             " directory."
@@ -478,14 +473,13 @@ class TestConfiguration:
         )
         assert (
             "When setting any nrtm4_server setting, all of"
-            " nrtm4_server_private_key/nrtm4_server_local_path/nrtm4_server_base_url must be set for source"
-            " TESTDB3."
+            " nrtm4_server_private_key/nrtm4_server_local_path must be set for source"
+            " TESTDB2."
             in str(ce.value)
         )
-        assert "Setting nrtm4_server_base_url for source TESTDB3 is not a valid https or file URL." in str(
+        assert f"Duplicate value(s) {tmpdir}/invalid for source setting nrtm4_server_local_path." in str(
             ce.value
         )
-        assert "Duplicate value(s) invalid for source setting nrtm4_server_base_url." in str(ce.value)
 
 
 class TestGetSetting:

@@ -1,7 +1,6 @@
 import logging
 import os
 from typing import Any, Dict, List, Optional, Tuple
-from urllib.parse import urlparse
 
 import pydantic
 from joserfc.rfc7515.model import CompactSignature
@@ -55,6 +54,7 @@ class NRTM4Client:
         self.source = source
         self.database_handler = database_handler
         self.rpki_aware = bool(get_setting("rpki.roa_source"))
+        self.notification_file_url = get_setting(f"sources.{self.source}.nrtm4_client_notification_file_url")
         self.force_reload, self.last_status = self._current_db_status()
 
     def run_client(self) -> bool:
@@ -110,12 +110,11 @@ class NRTM4Client:
         Retrieve, verify and parse the Update Notification File.
         Returns the UNF object and the used key in base64 string.
         """
-        notification_file_url = get_setting(f"sources.{self.source}.nrtm4_client_notification_file_url")
-        if not notification_file_url:  # pragma: no cover
+        if not self.notification_file_url:  # pragma: no cover
             raise RuntimeError("NRTM4 client called for a source without a Update Notification File URL")
 
-        unf_signed, _ = retrieve_file(notification_file_url, return_contents=True)
-        if "nrtm.db.ripe.net" in notification_file_url:  # pragma: no cover
+        unf_signed, _ = retrieve_file(self.notification_file_url, return_contents=True)
+        if "nrtm.db.ripe.net" in self.notification_file_url:  # pragma: no cover
             # When removing this, also remove Optional[] from return type
             logger.warning("Expecting raw UNF as source is RIPE*, signature not checked")
             unf_payload = unf_signed.encode("ascii")
@@ -126,7 +125,6 @@ class NRTM4Client:
         unf = NRTM4UpdateNotificationFile.model_validate_json(
             unf_payload,
             context={
-                "update_notification_file_scheme": urlparse(notification_file_url).scheme,
                 "expected_values": {
                     "source": self.source,
                 },
@@ -255,7 +253,9 @@ class NRTM4Client:
         Deals with the usual things for bulk loading, like deleting old objects.
         """
         snapshot_path, should_delete = retrieve_file(
-            unf.snapshot.url, return_contents=False, expected_hash=unf.snapshot.hash
+            unf.snapshot.full_url(self.notification_file_url),
+            return_contents=False,
+            expected_hash=unf.snapshot.hash,
         )
 
         try:
@@ -308,7 +308,7 @@ class NRTM4Client:
             if delta.version < next_version:
                 continue
             delta_path, should_delete = retrieve_file(
-                delta.url, return_contents=False, expected_hash=delta.hash
+                delta.full_url(self.notification_file_url), return_contents=False, expected_hash=delta.hash
             )
             try:
                 delta_file = open(delta_path, "rb")

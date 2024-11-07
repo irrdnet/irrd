@@ -69,11 +69,11 @@ both of them at the same time for the same source.
 
 NRTMv4 mode
 ~~~~~~~~~~~
-To configure an NRTMv4 source, you set the ``nrtm4_server_private_key``,
-``nrtm4_server_local_path`` and ``nrtm4_server_base_url`` settings on the
+To configure an NRTMv4 source, you set the ``nrtm4_server_private_key``
+and ``nrtm4_server_local_path`` settings on the
 source. The local path is where IRRD will write the files, the base URL
 is the full HTTPS URL under which you will be serving the files.
-The private key must be an Ed25519 private key in base64. You can use the
+The private key must be a JWK private key in PEM. You can use the
 ``irrdctl nrtmv4 generate-private-key`` command generate such a key,
 though does not store the key in the configuration for you.
 You need to use a separate base URL and local path for each
@@ -97,9 +97,10 @@ When running the NRTMv4 server process, IRRD will:
 * Write the new Update Notification File.
 
 You need to serve the files written to ``nrtm4_server_local_path`` on
-``nrtm4_server_base_url``, so that clients can retrieve
-``{nrtm4_server_base_url}/update-notification-file.json``. This can
-be done using the same nginx instance used for other parts of IRRD,
+HTTPS, so that clients can retrieve them.
+You then tell clients the full URL to ``update-notification-file.jose``
+which IRRD will create in the provided path. You can serve them
+using the same nginx instance used for other parts of IRRD,
 or through an entirely different web server or CDN, depending on your
 scalability needs. So in a way, the actual "serving" part of an
 NRTMv4 server is not performed by IRRD, as it's just static files over HTTPS.

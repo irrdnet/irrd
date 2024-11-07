@@ -125,7 +125,6 @@ This sample shows most configuration options
                     key date in base64 PEM here
                     -----END PRIVATE KEY-----
                 nrtm4_server_local_path: /var/www/nrtmv4/authdatabase/
-                nrtm4_server_base_url: https://www.example.net/nrtmv4/authdatabase/
             MIRROR-FIRST:
                 # Run a full import at first, then periodic NRTM updates.
                 authoritative: false
@@ -157,7 +156,7 @@ This sample shows most configuration options
                     - 'ftp://ftp.example.net/mirror-second.db.route.gz'
                     - 'ftp://ftp.example.net/mirror-second.db.route6.gz'
                     - 'ftp://ftp.example.net/mirror-second.db.route-set.gz'
-                nrtm4_client_notification_file_url: https://example.net/nrtmv4/MIRROR-SECOND/update-notification-file.json
+                nrtm4_client_notification_file_url: https://example.net/nrtmv4/MIRROR-SECOND/update-notification-file.jose
                 nrtm4_client_initial_public_key: |
                     -----BEGIN PUBLIC KEY-----
                     key date in base64 PEM here
@@ -637,9 +636,9 @@ Sources
   Note the use of the pipe character (``|``) to enter this multi-line data.
   |br| **Default**: not defined, no NRTMv4 server runs.
   |br| **Change takes effect**: after SIGHUP, at the next mirror update.
-* ``sources.{name}.nrtm4_server_private_key_next``: the next private Ed25519
+* ``sources.{name}.nrtm4_server_private_key_next``: the next private
   key used to sign the Update Notification File for an NRTMv4 server. This
-  setting is used for key rotation. Base64 encoded.
+  setting is used for key rotation. PEM format.
   See the :doc:`mirroring documentation </users/mirroring>` for details on
   key rotation.
   Note the use of the pipe character (``|``) to enter this multi-line data.
@@ -647,10 +646,6 @@ Sources
   |br| **Change takes effect**: after SIGHUP, at the next mirror update.
 * ``sources.{name}.nrtm4_server_local_path``: the path where the NRTMv4 server
   writes the repository on the local file system.
-  |br| **Default**: not defined, no NRTMv4 server runs.
-  |br| **Change takes effect**: after SIGHUP, at the next mirror update.
-* ``sources.{name}.nrtm4_server_base_url``: the HTTPS URL where you will
-  host the files from ``nrtm4_server_local_path``.
   |br| **Default**: not defined, no NRTMv4 server runs.
   |br| **Change takes effect**: after SIGHUP, at the next mirror update.
 * ``sources.{name}.nrtm4_server_snapshot_frequency``: the frequency, in
