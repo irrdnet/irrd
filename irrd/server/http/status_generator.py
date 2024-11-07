@@ -141,7 +141,6 @@ class StatusGenerator:
                 NRTMv4 server: last Update Notification File update: {status_result['nrtm4_server_last_update_notification_file_update']}
                 NRTMv4 server: last snapshot version: {status_result['nrtm4_server_last_snapshot_version']}
                 NRTMv4 server: number of deltas: {len(status_result['nrtm4_server_previous_deltas'] or [])}
-                NRTMv4 server: base URL: {get_setting(f"sources.{source}.nrtm4_server_base_url")}
                 Synchronised NRTM serials: {synchronised_serials_str}
                 Last update: {status_result['updated']}
                 Local journal kept: {keep_journal}

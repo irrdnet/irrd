@@ -24,8 +24,6 @@ from irrd.utils.rpsl_samples import SAMPLE_MNTNER
 from irrd.utils.test_utils import MockDatabaseHandler
 from irrd.utils.text import remove_auth_hashes
 
-BASE_URL = "https://example.com/"
-
 
 class TestNRTM4Server:
     def test_server(self, monkeypatch):
@@ -65,7 +63,6 @@ class TestNRTM4ServerWriter:
                     "TEST": {
                         "nrtm4_server_private_key": MOCK_UNF_PRIVATE_KEY_STR,
                         "nrtm4_server_local_path": str(nrtm_path),
-                        "nrtm4_server_base_url": BASE_URL,
                         # "nrtm4_server_snapshot_frequency": 0,
                     }
                 },
@@ -100,7 +97,6 @@ class TestNRTM4ServerWriter:
         assert unf["deltas"] == []
         assert "next_signing_key" not in unf
         assert unf["snapshot"]["version"] == 1
-        assert unf["snapshot"]["url"].startswith(BASE_URL)
 
         snapshot_filename = unf["snapshot"]["url"].split("/")[-1]
         with gzip.open(nrtm_path / snapshot_filename, "rb") as snapshot_file:

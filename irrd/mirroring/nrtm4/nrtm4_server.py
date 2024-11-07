@@ -73,7 +73,6 @@ class NRTM4ServerWriter:
         self.database_handler = database_handler
         self.source = source
         self.path = Path(get_setting(f"sources.{self.source}.nrtm4_server_local_path"))
-        self.base_url = get_setting(f"sources.{self.source}.nrtm4_server_base_url").rstrip("/") + "/"
         self.status_lockfile_path = Path(get_setting("piddir")) / f"nrtm4-server-status-{source}.lock"
         self.snapshot_lockfile_path = Path(get_setting("piddir")) / f"nrtm4-server-snapshot-{source}.lock"
         self.timestamp = datetime.datetime.now(tz=UTC)
@@ -112,7 +111,7 @@ class NRTM4ServerWriter:
             )
             return
 
-        logger.debug(f"{self.source}: NRTMv4 server preparing to update in {self.path} for {self.base_url}")
+        logger.debug(f"{self.source}: NRTMv4 server preparing to update in {self.path}")
 
         if not self._verify_integrity():
             logger.error(f"{self.source}: integrity check failed, discarding existing session")
@@ -237,13 +236,11 @@ class NRTM4ServerWriter:
             next_signing_key=next_signing_public_key,
             snapshot=NRTM4FileReference(
                 version=self.status.last_snapshot_version,
-                url=self.base_url + self.status.last_snapshot_filename,
+                url=self.status.last_snapshot_filename,
                 hash=self.status.last_snapshot_hash,
             ),
             deltas=[
-                NRTM4FileReference(
-                    version=delta["version"], url=self.base_url + delta["filename"], hash=delta["hash"]
-                )
+                NRTM4FileReference(version=delta["version"], url=delta["filename"], hash=delta["hash"])
                 for delta in self.status.previous_deltas
             ],
         )

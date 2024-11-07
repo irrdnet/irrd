@@ -1,12 +1,16 @@
 import datetime
 from functools import cached_property
+from pathlib import Path
 from typing import Any, List, Literal, Optional
+from urllib.parse import urlparse, urlunparse
 from uuid import UUID
 
 import pydantic
 from joserfc.rfc7518.ec_key import ECKey
 from pytz import UTC
 from typing_extensions import Self
+
+from irrd.mirroring.nrtm4 import UPDATE_NOTIFICATION_FILENAME
 
 
 def get_from_pydantic_context(info: pydantic.ValidationInfo, key: str) -> Optional[Any]:
@@ -71,21 +75,21 @@ class NRTM4FileReference(pydantic.main.BaseModel):
     """
 
     version: pydantic.PositiveInt
-    url: pydantic.AnyUrl
+    url: Path
     hash: str
 
-    @pydantic.field_validator("url")
-    @classmethod
-    def validate_url(cls, url, info: pydantic.ValidationInfo):
-        update_notification_file_scheme = get_from_pydantic_context(info, "update_notification_file_scheme")
-        if not update_notification_file_scheme:
-            return url
-        if url.scheme != update_notification_file_scheme:
-            raise ValueError(
-                f"Invalid scheme in file reference: expected {update_notification_file_scheme}, found"
-                f" {url.scheme}"
+    def full_url(self, unf_url: str) -> str:
+        unf_path = urlparse(unf_url)
+        return urlunparse(
+            (
+                unf_path.scheme,
+                unf_path.hostname,
+                unf_path.path.replace(UPDATE_NOTIFICATION_FILENAME, str(self.url)),
+                "",
+                "",
+                "",
             )
-        return url
+        )
 
 
 class NRTM4UpdateNotificationFile(NRTM4Common):

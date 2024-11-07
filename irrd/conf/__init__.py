@@ -450,7 +450,7 @@ class Configuration:
                     "nrtm_host, import_source, or nrtm4_client_notification_file_url are set."
                 )
 
-            nrtm4_server_keys = "nrtm4_server_private_key", "nrtm4_server_local_path", "nrtm4_server_base_url"
+            nrtm4_server_keys = "nrtm4_server_private_key", "nrtm4_server_local_path"
             nrtm4_server_enabled = any(details.get(k) for k in nrtm4_server_keys)
 
             if (nrtm4_server_enabled or details.get("nrtm4_server_private_key_next")) and not all(
@@ -479,17 +479,6 @@ class Configuration:
                     errors.append(
                         f"Invalid value for setting nrtm4_server_private_key_next for source {name}: {ve}"
                     )
-
-            url_parsed = urlparse(details.get("nrtm4_server_base_url"))
-            if nrtm4_server_enabled and not any(
-                [
-                    url_parsed.scheme == "https" and url_parsed.netloc,
-                    url_parsed.scheme == "file" and url_parsed.path,
-                ]
-            ):
-                errors.append(
-                    f"Setting nrtm4_server_base_url for source {name} is not a valid https or file URL."
-                )
 
             if details.get("nrtm4_server_local_path") and not os.path.isdir(
                 details["nrtm4_server_local_path"]
@@ -543,7 +532,7 @@ class Configuration:
             if details.get("nrtm_access_list_unfiltered"):
                 expected_access_lists.add(details.get("nrtm_access_list_unfiltered"))
 
-        source_keys_no_duplicates = ["nrtm4_server_local_path", "nrtm4_server_base_url"]
+        source_keys_no_duplicates = ["nrtm4_server_local_path"]
         for key in source_keys_no_duplicates:
             values = [s.get(key) for s in config.get("sources", {}).values()]
             duplicates = [item for item, count in collections.Counter(values).items() if item and count > 1]

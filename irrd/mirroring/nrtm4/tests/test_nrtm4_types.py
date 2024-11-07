@@ -170,17 +170,6 @@ class TestNRTM4UpdateNotificationFile:
         assert "snapshot: Field required" in format_pydantic_errors(ve.value)
 
     @pytest.mark.freeze_time("2022-03-14 12:34:56")
-    def test_invalid_url_scheme(self):
-        data = copy.deepcopy(self.valid_data)
-        data["deltas"][1]["url"] = "file:///filename"
-        with pytest.raises(pydantic.ValidationError) as ve:
-            NRTM4UpdateNotificationFile.model_validate(
-                data,
-                context=self.valid_context,
-            )
-        assert "Invalid scheme" in str(ve)
-
-    @pytest.mark.freeze_time("2022-03-14 12:34:56")
     def test_invalid_unf_older_than_snapshot(self):
         data = copy.deepcopy(self.valid_data)
         data["snapshot"]["version"] = 10

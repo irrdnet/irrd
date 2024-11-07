@@ -106,7 +106,6 @@ KNOWN_SOURCES_KEYS = {
     "nrtm4_server_private_key",
     "nrtm4_server_private_key_next",
     "nrtm4_server_local_path",
-    "nrtm4_server_base_url",
     "nrtm4_server_snapshot_frequency",
     "strict_import_keycert_objects",
     "rpki_excluded",
