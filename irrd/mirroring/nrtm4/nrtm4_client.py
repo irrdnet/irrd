@@ -99,6 +99,7 @@ class NRTM4Client:
             version=unf.version,
             current_key=used_key,
             next_key=unf.next_signing_key,
+            previous_file_hashes=self._validate_aggregate_previous_file_hashes_from_unf(unf),
         )
         if self.last_status != new_status:
             self.database_handler.record_nrtm4_client_status(
@@ -194,7 +195,10 @@ class NRTM4Client:
 
     def _current_db_status(self) -> Tuple[bool, NRTM4ClientDatabaseStatus]:
         """Look up the current status of self.source in the database."""
-        query = DatabaseStatusQuery().source(self.source)
+        query = DatabaseStatusQuery(
+            DatabaseStatusQuery.get_default_columns()
+            + [DatabaseStatusQuery.columns.nrtm4_client_previous_file_hashes]
+        ).source(self.source)
         result = self.database_handler.execute_query(query)
         try:
             status = next(result)
@@ -203,9 +207,10 @@ class NRTM4Client:
                 version=status["nrtm4_client_version"],
                 current_key=status["nrtm4_client_current_key"],
                 next_key=status["nrtm4_client_next_key"],
+                previous_file_hashes=status["nrtm4_client_previous_file_hashes"],
             )
         except StopIteration:
-            return False, NRTM4ClientDatabaseStatus(None, None, None, None)
+            return False, NRTM4ClientDatabaseStatus(None, None, None, None, None)
 
     def _find_next_version(self, unf: NRTM4UpdateNotificationFile, last_version: Optional[int] = None):
         """
@@ -248,6 +253,32 @@ class NRTM4Client:
             return None
 
         return next_version
+
+    def _validate_aggregate_previous_file_hashes_from_unf(
+        self, unf: NRTM4UpdateNotificationFile
+    ) -> Dict[str, List[str]]:
+        """
+        Check if the server hasn't been rewriting history, which is obviously not allowed.
+        Also produces the new value for "previous_file_hashes"
+        """
+        current_files = {f"snapshot-{unf.snapshot.version}": [str(unf.snapshot.url), unf.snapshot.hash]}
+        for delta in unf.deltas:
+            current_files[f"delta-{delta.version}"] = [str(delta.url), delta.hash]
+        if not self.last_status.previous_file_hashes:
+            return current_files
+
+        for current_file_reference, current_file_details in current_files.items():
+            if current_file_reference in self.last_status.previous_file_hashes:
+                previous_file_details = self.last_status.previous_file_hashes[current_file_reference]
+                if current_file_details != previous_file_details:
+                    raise NRTM4ClientError(
+                        f"{self.source}: Reference {current_file_reference} has filename"
+                        f" '{current_file_details[0]}' with hash '{current_file_details[1]}' in current"
+                        f" Update Notification File, but had filename '{previous_file_details[0]}' with hash"
+                        f" '{previous_file_details[1]}' in a previous Update Notification File. Server is"
+                        " rewriting history."
+                    )
+        return current_files
 
     def _load_snapshot(self, unf: NRTM4UpdateNotificationFile):
         """

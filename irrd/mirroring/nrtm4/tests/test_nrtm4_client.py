@@ -20,9 +20,19 @@ from irrd.utils.test_utils import MockDatabaseHandler
 MOCK_SESSION_ID = "ca128382-78d9-41d1-8927-1ecef15275be"
 
 MOCK_SNAPSHOT_URL = "https://example.com/snapshot.2.json"
+MOCK_SNAPSHOT_FILENAME = MOCK_SNAPSHOT_URL.split("/")[-1]
 MOCK_DELTA3_URL = "https://example.com/delta.3.json"
+MOCK_DELTA3_FILENAME = MOCK_DELTA3_URL.split("/")[-1]
 MOCK_DELTA4_URL = "https://example.com/delta.4.json"
+MOCK_DELTA4_FILENAME = MOCK_DELTA4_URL.split("/")[-1]
 MOCK_UNF_URL = "https://example.com/" + UPDATE_NOTIFICATION_FILENAME
+
+VALID_PREVIOUS_FILE_HASHES = {
+    # URL is actually reused as the hash in our test data
+    "snapshot-3": [MOCK_SNAPSHOT_FILENAME, MOCK_SNAPSHOT_URL],
+    "delta-3": [MOCK_DELTA3_FILENAME, MOCK_DELTA3_URL],
+    "delta-4": [MOCK_DELTA4_FILENAME, MOCK_DELTA4_URL],
+}
 
 MOCK_UNF = {
     "nrtm_version": 4,
@@ -34,18 +44,18 @@ MOCK_UNF = {
     "version": 4,
     "snapshot": {
         "version": 3,
-        "url": MOCK_SNAPSHOT_URL.split("/")[-1],
+        "url": MOCK_SNAPSHOT_FILENAME,
         "hash": MOCK_SNAPSHOT_URL,
     },
     "deltas": [
         {
             "version": 3,
-            "url": MOCK_DELTA3_URL.split("/")[-1],
+            "url": MOCK_DELTA3_FILENAME,
             "hash": MOCK_DELTA3_URL,
         },
         {
             "version": 4,
-            "url": MOCK_DELTA4_URL.split("/")[-1],
+            "url": MOCK_DELTA4_FILENAME,
             "hash": MOCK_DELTA4_URL,
         },
     ],
@@ -136,6 +146,7 @@ class TestNRTM4Client:
                     "nrtm4_client_version": None,
                     "nrtm4_client_current_key": None,
                     "nrtm4_client_next_key": None,
+                    "nrtm4_client_previous_file_hashes": None,
                 }
             ]
         )
@@ -156,6 +167,8 @@ class TestNRTM4Client:
                     "nrtm4_client_version": 2,
                     "nrtm4_client_current_key": None,
                     "nrtm4_client_next_key": None,
+                    # Also tests the scenario for previous hashes, which do match
+                    "nrtm4_client_previous_file_hashes": {"delta-3": [MOCK_DELTA3_FILENAME, MOCK_DELTA3_URL]},
                 }
             ]
         )
@@ -202,6 +215,7 @@ class TestNRTM4Client:
                     "nrtm4_client_version": 2,
                     "nrtm4_client_current_key": None,
                     "nrtm4_client_next_key": None,
+                    "nrtm4_client_previous_file_hashes": None,
                 }
             ]
         )
@@ -231,6 +245,7 @@ class TestNRTM4Client:
                     "nrtm4_client_version": 2,
                     "nrtm4_client_current_key": None,
                     "nrtm4_client_next_key": None,
+                    "nrtm4_client_previous_file_hashes": None,
                 }
             ]
         )
@@ -250,6 +265,7 @@ class TestNRTM4Client:
                     "nrtm4_client_version": 6,
                     "nrtm4_client_current_key": None,
                     "nrtm4_client_next_key": None,
+                    "nrtm4_client_previous_file_hashes": None,
                 }
             ]
         )
@@ -269,6 +285,7 @@ class TestNRTM4Client:
                     "nrtm4_client_version": 2,
                     "nrtm4_client_current_key": None,
                     "nrtm4_client_next_key": None,
+                    "nrtm4_client_previous_file_hashes": None,
                 }
             ]
         )
@@ -289,6 +306,7 @@ class TestNRTM4Client:
                     "nrtm4_client_version": 1,
                     "nrtm4_client_current_key": None,
                     "nrtm4_client_next_key": None,
+                    "nrtm4_client_previous_file_hashes": None,
                 }
             ]
         )
@@ -309,6 +327,7 @@ class TestNRTM4Client:
                     "nrtm4_client_version": 2,
                     "nrtm4_client_current_key": None,
                     "nrtm4_client_next_key": None,
+                    "nrtm4_client_previous_file_hashes": None,
                 }
             ]
         )
@@ -339,6 +358,7 @@ class TestNRTM4Client:
                     "nrtm4_client_version": 4,
                     "nrtm4_client_current_key": None,
                     "nrtm4_client_next_key": None,
+                    "nrtm4_client_previous_file_hashes": None,
                 }
             ]
         )
@@ -353,6 +373,7 @@ class TestNRTM4Client:
                         version=4,
                         current_key=MOCK_UNF_PUBLIC_KEY,
                         next_key=MOCK_UNF_PUBLIC_KEY_OTHER,
+                        previous_file_hashes=VALID_PREVIOUS_FILE_HASHES,
                     ),
                 },
             ),
@@ -392,6 +413,47 @@ class TestNRTM4Client:
             NRTM4Client("TEST", mock_dh).run_client()
         assert "any known keys" in str(exc)
 
+    def test_invalid_hash_change_history_rewrite(self, prepare_nrtm4_test, config_override):
+        mock_dh = MockDatabaseHandler()
+        mock_dh.reset_mock()
+        mock_dh.query_responses[DatabaseStatusQuery] = iter(
+            [
+                {
+                    "force_reload": False,
+                    "nrtm4_client_session_id": UUID(MOCK_SESSION_ID),
+                    "nrtm4_client_version": 4,
+                    "nrtm4_client_current_key": MOCK_UNF_PUBLIC_KEY,
+                    "nrtm4_client_next_key": None,
+                    "nrtm4_client_previous_file_hashes": {
+                        "delta-3": [MOCK_DELTA3_FILENAME, "incorrect-hash"]
+                    },
+                }
+            ]
+        )
+        with pytest.raises(NRTM4ClientError) as exc:
+            NRTM4Client("TEST", mock_dh).run_client()
+        assert "rewriting history" in str(exc)
+
+    def test_invalid_filename_change_history_rewrite(self, prepare_nrtm4_test, config_override):
+        mock_dh = MockDatabaseHandler()
+        mock_dh.reset_mock()
+        mock_dh.query_responses[DatabaseStatusQuery] = iter(
+            [
+                {
+                    "force_reload": False,
+                    "nrtm4_client_session_id": UUID(MOCK_SESSION_ID),
+                    "nrtm4_client_version": 4,
+                    "nrtm4_client_current_key": MOCK_UNF_PUBLIC_KEY,
+                    "nrtm4_client_next_key": None,
+                    # URL is used as hash in the mock data
+                    "nrtm4_client_previous_file_hashes": {"delta-3": ["changed filename", MOCK_DELTA3_URL]},
+                }
+            ]
+        )
+        with pytest.raises(NRTM4ClientError) as exc:
+            NRTM4Client("TEST", mock_dh).run_client()
+        assert "rewriting history" in str(exc)
+
     def test_invalid_current_db_key_with_valid_config_key(self, prepare_nrtm4_test, config_override):
         config_override(
             {
@@ -416,6 +478,7 @@ class TestNRTM4Client:
                     # Does not match, but must be used
                     "nrtm4_client_current_key": MOCK_UNF_PUBLIC_KEY_OTHER,
                     "nrtm4_client_next_key": MOCK_UNF_PUBLIC_KEY_OTHER,
+                    "nrtm4_client_previous_file_hashes": None,
                 }
             ]
         )
@@ -446,6 +509,7 @@ class TestNRTM4Client:
                     "nrtm4_client_version": 4,
                     "nrtm4_client_current_key": MOCK_UNF_PUBLIC_KEY,
                     "nrtm4_client_next_key": None,
+                    "nrtm4_client_previous_file_hashes": None,
                 }
             ]
         )
@@ -475,6 +539,7 @@ class TestNRTM4Client:
                     # Does not match, but must be used
                     "nrtm4_client_current_key": MOCK_UNF_PUBLIC_KEY_OTHER,
                     "nrtm4_client_next_key": MOCK_UNF_PUBLIC_KEY,
+                    "nrtm4_client_previous_file_hashes": None,
                 }
             ]
         )
@@ -489,6 +554,7 @@ class TestNRTM4Client:
                         version=4,
                         current_key=MOCK_UNF_PUBLIC_KEY,
                         next_key=MOCK_UNF_PUBLIC_KEY_OTHER,
+                        previous_file_hashes=VALID_PREVIOUS_FILE_HASHES,
                     ),
                 },
             ),
@@ -496,7 +562,12 @@ class TestNRTM4Client:
         assert "key rotated" in caplog.text
 
     def _assert_import_queries(self, mock_dh, expect_reload=True):
-        assert mock_dh.queries == [DatabaseStatusQuery().source("TEST")]
+        assert mock_dh.queries == [
+            DatabaseStatusQuery(
+                DatabaseStatusQuery.get_default_columns()
+                + [DatabaseStatusQuery.columns.nrtm4_client_previous_file_hashes]
+            ).source("TEST")
+        ]
         expected = (
             (
                 [
@@ -550,6 +621,7 @@ class TestNRTM4Client:
                             version=4,
                             current_key=MOCK_UNF_PUBLIC_KEY,
                             next_key=MOCK_UNF_PUBLIC_KEY_OTHER,
+                            previous_file_hashes=VALID_PREVIOUS_FILE_HASHES,
                         ),
                     },
                 ),
