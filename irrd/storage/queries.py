@@ -546,40 +546,42 @@ class DatabaseStatusQuery(BaseDatabaseQuery):
     table = RPSLDatabaseStatus.__table__
     columns = RPSLDatabaseStatus.__table__.c
 
-    def __init__(self):
+    def __init__(self, columns=None):
         self._sources_list: List[str] = []
-        self.statement = sa.select(
-            [
-                self.columns.pk,
-                self.columns.source,
-                self.columns.serial_oldest_seen,
-                self.columns.serial_newest_seen,
-                self.columns.serial_oldest_journal,
-                self.columns.serial_newest_journal,
-                self.columns.serial_last_export,
-                self.columns.serial_newest_mirror,
-                self.columns.nrtm4_client_session_id,
-                self.columns.nrtm4_client_version,
-                self.columns.nrtm4_client_current_key,
-                self.columns.nrtm4_client_next_key,
-                self.columns.nrtm4_server_session_id,
-                self.columns.nrtm4_server_version,
-                self.columns.nrtm4_server_last_update_notification_file_update,
-                self.columns.nrtm4_server_last_snapshot_version,
-                self.columns.nrtm4_server_last_snapshot_global_serial,
-                self.columns.nrtm4_server_last_snapshot_filename,
-                self.columns.nrtm4_server_last_snapshot_timestamp,
-                self.columns.nrtm4_server_last_snapshot_hash,
-                self.columns.nrtm4_server_previous_deltas,
-                self.columns.force_reload,
-                self.columns.synchronised_serials,
-                self.columns.last_error,
-                self.columns.last_error_timestamp,
-                self.columns.rpsl_data_updated,
-                self.columns.created,
-                self.columns.updated,
-            ]
-        )
+        self.statement = sa.select(columns if columns else self.get_default_columns())
+
+    @classmethod
+    def get_default_columns(cls):
+        return [
+            cls.columns.pk,
+            cls.columns.source,
+            cls.columns.serial_oldest_seen,
+            cls.columns.serial_newest_seen,
+            cls.columns.serial_oldest_journal,
+            cls.columns.serial_newest_journal,
+            cls.columns.serial_last_export,
+            cls.columns.serial_newest_mirror,
+            cls.columns.nrtm4_client_session_id,
+            cls.columns.nrtm4_client_version,
+            cls.columns.nrtm4_client_current_key,
+            cls.columns.nrtm4_client_next_key,
+            cls.columns.nrtm4_server_session_id,
+            cls.columns.nrtm4_server_version,
+            cls.columns.nrtm4_server_last_update_notification_file_update,
+            cls.columns.nrtm4_server_last_snapshot_version,
+            cls.columns.nrtm4_server_last_snapshot_global_serial,
+            cls.columns.nrtm4_server_last_snapshot_filename,
+            cls.columns.nrtm4_server_last_snapshot_timestamp,
+            cls.columns.nrtm4_server_last_snapshot_hash,
+            cls.columns.nrtm4_server_previous_deltas,
+            cls.columns.force_reload,
+            cls.columns.synchronised_serials,
+            cls.columns.last_error,
+            cls.columns.last_error_timestamp,
+            cls.columns.rpsl_data_updated,
+            cls.columns.created,
+            cls.columns.updated,
+        ]
 
     def source(self, source: str):
         """Filter on a source."""

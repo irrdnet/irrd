@@ -56,6 +56,7 @@ class NRTM4ClientDatabaseStatus:
     version: Optional[int]
     current_key: Optional[str]
     next_key: Optional[str]
+    previous_file_hashes: Optional[Dict[str, List[str]]]
 
 
 @dataclasses.dataclass
@@ -285,6 +286,7 @@ class RPSLDatabaseStatus(Base):  # type: ignore
     nrtm4_client_version = sa.Column(sa.Integer)
     nrtm4_client_current_key = sa.Column(sa.Text)
     nrtm4_client_next_key = sa.Column(sa.Text)
+    nrtm4_client_previous_file_hashes = sa.Column(pg.JSONB, nullable=True)
 
     nrtm4_server_session_id = sa.Column(pg.UUID(as_uuid=True))
     nrtm4_server_version = sa.Column(sa.Integer)

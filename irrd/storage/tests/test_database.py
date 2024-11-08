@@ -285,7 +285,11 @@ class TestDatabaseHandlerLive:
 
         self.dh.record_mirror_error("TEST2", "error")
         nrtm4_client_status = NRTM4ClientDatabaseStatus(
-            session_id=uuid.uuid4(), version=20, current_key="current key", next_key="next key"
+            session_id=uuid.uuid4(),
+            version=20,
+            current_key="current key",
+            next_key="next key",
+            previous_file_hashes={"file": "hash"},
         )
         self.dh.record_nrtm4_client_status("TEST2", nrtm4_client_status)
         nrtm4_server_status = NRTM4ServerDatabaseStatus(
