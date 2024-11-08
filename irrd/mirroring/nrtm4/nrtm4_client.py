@@ -94,15 +94,17 @@ class NRTM4Client:
                 f" {self.last_status.current_key} to {used_key}"
             )
 
-        self.database_handler.record_nrtm4_client_status(
-            self.source,
-            NRTM4ClientDatabaseStatus(
-                session_id=unf.session_id,
-                version=unf.version,
-                current_key=used_key,
-                next_key=unf.next_signing_key,
-            ),
+        new_status = NRTM4ClientDatabaseStatus(
+            session_id=unf.session_id,
+            version=unf.version,
+            current_key=used_key,
+            next_key=unf.next_signing_key,
         )
+        if self.last_status != new_status:
+            self.database_handler.record_nrtm4_client_status(
+                self.source,
+                new_status,
+            )
         return has_loaded_snapshot
 
     def _retrieve_unf(self) -> Tuple[NRTM4UpdateNotificationFile, Optional[str]]:

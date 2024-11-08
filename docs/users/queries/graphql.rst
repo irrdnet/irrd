@@ -276,9 +276,12 @@ are an alias. Other sources have the the following fields for each valid source:
   This number can be compared to the serials reported by the mirror
   directly, to see whether IRRd is up to date. This number is independent
   from the range in the local journal.
-* ``lastUpdate``: the time of the last change to this source. This may be
-  an authoritative change, an update from a mirror, a re-import, a change
-  in the RPKI status of an object, or something else.
+* ``rpslDataUpdated``: the last time when the RPSL data for this source
+  changed, due to adding, updating or removing an RPSL object.
+  This includes changes in visibility due to object suppression status.
+* ``lastUpdate``: the last time when the internal state of this
+  source was changed, either by an NRTM import or export, full import or export,
+  recording an error, RPKI status change, or user submitted changes.
 * ``synchronisedSerials``: whether or not a mirrored source is running with
   :ref:`synchronised serials <mirroring-nrtm-serials>`.
 

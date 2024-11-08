@@ -575,6 +575,7 @@ class DatabaseStatusQuery(BaseDatabaseQuery):
                 self.columns.synchronised_serials,
                 self.columns.last_error,
                 self.columns.last_error_timestamp,
+                self.columns.rpsl_data_updated,
                 self.columns.created,
                 self.columns.updated,
             ]

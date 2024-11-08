@@ -1021,7 +1021,14 @@ class TestDatabaseHandlerLive:
         assert len(list(dh.execute_query(RPSLDatabaseJournalQuery()))) == 2  # no new entry since last test
 
     def _clean_result(self, results):
-        variable_fields = ["pk", "timestamp", "created", "updated", "last_error_timestamp"]
+        variable_fields = [
+            "pk",
+            "timestamp",
+            "created",
+            "updated",
+            "last_error_timestamp",
+            "rpsl_data_updated",
+        ]
         return [{k: v for k, v in result.items() if k not in variable_fields} for result in list(results)]
 
     def test_suspension(
