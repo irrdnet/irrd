@@ -589,6 +589,7 @@ class TestQueryResolver:
                     2020, 1, 1, tzinfo=datetime.timezone.utc
                 ),
                 "nrtm4_server_last_snapshot_version": 21,
+                "rpsl_data_updated": datetime.datetime(2019, 1, 1, tzinfo=timezone("UTC")),
                 "updated": datetime.datetime(2020, 1, 1, tzinfo=timezone("UTC")),
             },
             {
@@ -603,6 +604,7 @@ class TestQueryResolver:
                 "nrtm4_server_version": None,
                 "nrtm4_server_last_update_notification_file_update": None,
                 "nrtm4_server_last_snapshot_version": None,
+                "rpsl_data_updated": datetime.datetime(2019, 1, 1, tzinfo=timezone("UTC")),
                 "updated": datetime.datetime(2020, 1, 1, tzinfo=timezone("UTC")),
             },
         ]
@@ -630,6 +632,7 @@ class TestQueryResolver:
                     ("nrtm4_server_version", 22),
                     ("nrtm4_server_last_update_notification_file_update", "2020-01-01T00:00:00+00:00"),
                     ("nrtm4_server_last_snapshot_version", 21),
+                    ("rpsl_data_updated", "2019-01-01T00:00:00+00:00"),
                     ("last_update", "2020-01-01T00:00:00+00:00"),
                     ("synchronised_serials", False),
                 ]
@@ -659,6 +662,7 @@ class TestQueryResolver:
                             ("nrtm4_server_version", None),
                             ("nrtm4_server_last_update_notification_file_update", None),
                             ("nrtm4_server_last_snapshot_version", None),
+                            ("rpsl_data_updated", "2019-01-01T00:00:00+00:00"),
                             ("last_update", "2020-01-01T00:00:00+00:00"),
                             ("synchronised_serials", False),
                         ]

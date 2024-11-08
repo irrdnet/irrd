@@ -106,6 +106,7 @@ class TestStatusGenerator:
                         "nrtm4_server_last_snapshot_version": 21,
                         "nrtm4_server_previous_deltas": ["d1", "d2"],
                         "last_error_timestamp": datetime(2018, 1, 1, tzinfo=timezone.utc),
+                        "rpsl_data_updated": datetime(2017, 6, 1, tzinfo=timezone.utc),
                         "updated": datetime(2018, 6, 1, tzinfo=timezone.utc),
                     },
                     {
@@ -124,6 +125,7 @@ class TestStatusGenerator:
                         "nrtm4_server_last_snapshot_version": None,
                         "nrtm4_server_previous_deltas": None,
                         "last_error_timestamp": datetime(2019, 1, 1, tzinfo=timezone.utc),
+                        "rpsl_data_updated": datetime(2018, 6, 1, tzinfo=timezone.utc),
                         "updated": datetime(2019, 6, 1, tzinfo=timezone.utc),
                     },
                     {
@@ -142,6 +144,7 @@ class TestStatusGenerator:
                         "nrtm4_server_last_snapshot_version": None,
                         "nrtm4_server_previous_deltas": None,
                         "last_error_timestamp": None,
+                        "rpsl_data_updated": None,
                         "updated": None,
                     },
                     {
@@ -160,6 +163,7 @@ class TestStatusGenerator:
                         "nrtm4_server_last_snapshot_version": None,
                         "nrtm4_server_previous_deltas": None,
                         "last_error_timestamp": None,
+                        "rpsl_data_updated": None,
                         "updated": None,
                     },
                     {
@@ -178,6 +182,7 @@ class TestStatusGenerator:
                         "nrtm4_server_last_snapshot_version": None,
                         "nrtm4_server_previous_deltas": None,
                         "last_error_timestamp": None,
+                        "rpsl_data_updated": None,
                         "updated": None,
                     },
                 ],
@@ -221,7 +226,8 @@ class TestStatusGenerator:
                 NRTMv4 server: last snapshot version: 21
                 NRTMv4 server: number of deltas: 2
                 Synchronised NRTM serials: No
-                Last update: 2018-06-01 00:00:00+00:00
+                Last change to RPSL data: 2017-06-01 00:00:00+00:00
+                Last internal status update: 2018-06-01 00:00:00+00:00
                 Local journal kept: Yes
                 Last import error occurred at: 2018-01-01 00:00:00+00:00
                 RPKI validation enabled: No
@@ -255,7 +261,8 @@ class TestStatusGenerator:
                 NRTMv4 server: last snapshot version: None
                 NRTMv4 server: number of deltas: 0
                 Synchronised NRTM serials: No
-                Last update: 2019-06-01 00:00:00+00:00
+                Last change to RPSL data: 2018-06-01 00:00:00+00:00
+                Last internal status update: 2019-06-01 00:00:00+00:00
                 Local journal kept: No
                 Last import error occurred at: 2019-01-01 00:00:00+00:00
                 RPKI validation enabled: Yes
@@ -286,7 +293,8 @@ class TestStatusGenerator:
                 NRTMv4 server: last snapshot version: None
                 NRTMv4 server: number of deltas: 0
                 Synchronised NRTM serials: No
-                Last update: None
+                Last change to RPSL data: None
+                Last internal status update: None
                 Local journal kept: No
                 Last import error occurred at: None
                 RPKI validation enabled: Yes
@@ -317,7 +325,8 @@ class TestStatusGenerator:
                 NRTMv4 server: last snapshot version: None
                 NRTMv4 server: number of deltas: 0
                 Synchronised NRTM serials: No
-                Last update: None
+                Last change to RPSL data: None
+                Last internal status update: None
                 Local journal kept: No
                 Last import error occurred at: None
                 RPKI validation enabled: Yes
@@ -347,7 +356,8 @@ class TestStatusGenerator:
                 NRTMv4 server: last snapshot version: None
                 NRTMv4 server: number of deltas: 0
                 Synchronised NRTM serials: No
-                Last update: None
+                Last change to RPSL data: None
+                Last internal status update: None
                 Local journal kept: No
                 Last import error occurred at: None
                 RPKI validation enabled: Yes

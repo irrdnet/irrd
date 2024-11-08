@@ -37,6 +37,19 @@ was added to the HTTP server in IRRD, on ``/metrics/``.
 This page is only accessible to IPs :doc:`configured </admins/configuration>`
 in the access list set in the ``server.http.status_access_list`` setting.
 
+New "RPSL data updated" status timestamp
+----------------------------------------
+Various status overviews of IRRD would show a "last update" per source.
+While there are uses for this, many users checked this to ensure mirroring
+from a remote source was still active. However, that is not what this
+indicates. This timestamp updates for any internal change to database
+status, including any exports.
+
+To cover the common use, a new timestamp was added for the last time
+the RPSL data for a source changed. This updates when objects are added,
+modified or deleted through any method, including a change in visibility
+due to object suppression status.
+
 Other changes
 -------------
 * The ``sources.{name}.object_class_filter`` setting can now also be used

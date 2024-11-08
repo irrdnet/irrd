@@ -877,6 +877,7 @@ class DatabaseHandler:
     def record_nrtm4_client_status(self, source: str, status: NRTM4ClientDatabaseStatus) -> None:
         """
         Record the status of NRTMv4 mirroring for clients.
+        Only call this if the data has actually changed, as it updates rpsl_data_updated.
         """
         self._check_write_permitted()
         self.status_tracker.record_nrtm4_client_status(source, status)
@@ -939,6 +940,7 @@ class DatabaseStatusTracker:
     journaling_enabled: bool
     _new_serials_per_source: Dict[str, Set[int]]
     _sources_seen: Set[str]
+    _sources_rpsl_data_updated: Set[str]
     _newest_mirror_serials: Dict[str, int]
     _mirroring_error: Dict[str, str]
     _exported_serials: Dict[str, int]
@@ -1031,6 +1033,7 @@ class DatabaseStatusTracker:
         gapless set of NRTM serials.
         """
         self._sources_seen.add(source)
+        self._sources_rpsl_data_updated.add(source)
         if self.journaling_enabled and get_setting(f"sources.{source}.keep_journal"):
             serial_nrtm: Union[int, sa.sql.expression.Select]
             journal_tablename = RPSLDatabaseJournal.__tablename__
@@ -1092,7 +1095,7 @@ class DatabaseStatusTracker:
                 source=source,
                 force_reload=False,
                 synchronised_serials=self._is_serial_synchronised(source),
-                updated=datetime.now(timezone.utc),
+                rpsl_data_updated=datetime.now(timezone.utc),
             )
             stmt = stmt.on_conflict_do_update(
                 index_elements=["source"],
@@ -1100,6 +1103,16 @@ class DatabaseStatusTracker:
                     "force_reload": False,
                     "synchronised_serials": self._is_serial_synchronised(source),
                 },
+            )
+            self.database_handler.execute_statement(stmt)
+
+        for source in self._sources_rpsl_data_updated:
+            stmt = (
+                RPSLDatabaseStatus.__table__.update()
+                .where(self.c_status.source == source)
+                .values(
+                    rpsl_data_updated=datetime.now(timezone.utc),
+                )
             )
             self.database_handler.execute_statement(stmt)
 
@@ -1139,7 +1152,7 @@ class DatabaseStatusTracker:
                     serial_newest_seen=serial_newest_seen,
                     serial_oldest_journal=serial_oldest_journal,
                     serial_newest_journal=serial_newest_journal,
-                    updated=datetime.now(timezone.utc),
+                    rpsl_data_updated=datetime.now(timezone.utc),
                 )
             )
             self.database_handler.execute_statement(stmt)
@@ -1151,7 +1164,6 @@ class DatabaseStatusTracker:
                 .values(
                     last_error=error,
                     last_error_timestamp=datetime.now(timezone.utc),
-                    updated=datetime.now(timezone.utc),
                 )
             )
             self.database_handler.execute_statement(stmt)
@@ -1162,7 +1174,7 @@ class DatabaseStatusTracker:
                 .where(self.c_status.source == source)
                 .values(
                     serial_newest_mirror=serial,
-                    updated=datetime.now(timezone.utc),
+                    rpsl_data_updated=datetime.now(timezone.utc),
                 )
             )
             self.database_handler.execute_statement(stmt)
@@ -1186,6 +1198,7 @@ class DatabaseStatusTracker:
                     nrtm4_client_version=status.version,
                     nrtm4_client_current_key=status.current_key,
                     nrtm4_client_next_key=status.next_key,
+                    rpsl_data_updated=datetime.now(timezone.utc),
                 )
             )
             self.database_handler.execute_statement(stmt)
@@ -1229,6 +1242,7 @@ class DatabaseStatusTracker:
         self._journal_table_locked = False
         self._new_serials_per_source = defaultdict(set)
         self._sources_seen = set()
+        self._sources_rpsl_data_updated = set()
         self._newest_mirror_serials = dict()
         self._mirroring_error = dict()
         self._exported_serials = dict()

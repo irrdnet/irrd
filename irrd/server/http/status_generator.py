@@ -142,7 +142,8 @@ class StatusGenerator:
                 NRTMv4 server: last snapshot version: {status_result['nrtm4_server_last_snapshot_version']}
                 NRTMv4 server: number of deltas: {len(status_result['nrtm4_server_previous_deltas'] or [])}
                 Synchronised NRTM serials: {synchronised_serials_str}
-                Last update: {status_result['updated']}
+                Last change to RPSL data: {status_result['rpsl_data_updated']}
+                Last internal status update: {status_result['updated']}
                 Local journal kept: {keep_journal}
                 Last import error occurred at: {status_result['last_error_timestamp']}
                 RPKI validation enabled: {rpki_enabled_str}

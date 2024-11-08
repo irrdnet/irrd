@@ -405,6 +405,9 @@ class QueryResolver:
             results[source]["nrtm4_server_last_snapshot_version"] = query_result[
                 "nrtm4_server_last_snapshot_version"
             ]
+            results[source]["rpsl_data_updated"] = (
+                query_result["rpsl_data_updated"].astimezone(timezone("UTC")).isoformat()
+            )
             results[source]["last_update"] = query_result["updated"].astimezone(timezone("UTC")).isoformat()
             results[source]["synchronised_serials"] = is_serial_synchronised(self.database_handler, source)
 

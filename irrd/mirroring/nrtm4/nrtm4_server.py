@@ -1,3 +1,4 @@
+import copy
 import datetime
 import gzip
 import logging
@@ -84,6 +85,7 @@ class NRTM4ServerWriter:
 
     def _update_status(self):
         self.status = None
+        self.original_status = None
         try:
             database_status = next(
                 self.database_handler.execute_query(DatabaseStatusQuery().source(self.source))
@@ -95,6 +97,7 @@ class NRTM4ServerWriter:
             return
         self.force_reload = database_status["force_reload"]
         self.status = NRTM4ServerDatabaseStatus.from_dict(database_status)
+        self.original_status = copy.deepcopy(self.status)
 
     def run(self):
         status_lockfile = get_lockfile(self.status_lockfile_path, blocking=False)
@@ -210,7 +213,8 @@ class NRTM4ServerWriter:
         self._expire_deltas()
         self._write_unf()
 
-        self.database_handler.record_nrtm4_server_status(self.source, self.status)
+        if self.status != self.original_status:
+            self.database_handler.record_nrtm4_server_status(self.source, self.status)
         self._expire_snapshots()
         self.database_handler.commit()
 

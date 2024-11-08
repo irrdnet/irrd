@@ -49,6 +49,7 @@ class TestMetricsGenerator:
                         "nrtm4_client_session_id": None,
                         "nrtm4_client_version": None,
                         "last_error_timestamp": datetime.fromtimestamp(10, UTC),
+                        "rpsl_data_updated": datetime.fromtimestamp(17, UTC),
                         "updated": datetime.fromtimestamp(18, UTC),
                     },
                     {
@@ -62,6 +63,7 @@ class TestMetricsGenerator:
                         "nrtm4_client_session_id": nrtm4_client_session_id,
                         "nrtm4_client_version": 14,
                         "last_error_timestamp": None,
+                        "rpsl_data_updated": datetime.fromtimestamp(14, UTC),
                         "updated": datetime.fromtimestamp(15, UTC),
                     },
                 ],
@@ -93,12 +95,22 @@ class TestMetricsGenerator:
             irrd_object_class_total{source="TEST1", object_class="route"} 10
             irrd_object_class_total{source="TEST2", object_class="route"} 42
             
-            # HELP irrd_last_update_seconds Seconds since the last update
+            # HELP irrd_last_rpsl_data_update_seconds Seconds since the last update to RPSL data
+            # TYPE irrd_last_rpsl_data_update_seconds gauge
+            irrd_last_rpsl_data_update_seconds{source="TEST1"} 33
+            irrd_last_rpsl_data_update_seconds{source="TEST2"} 36
+            
+            # HELP irrd_last_rpsl_data_update_timestamp Timestamp of the last update to RPSL data in seconds since UNIX epoch
+            # TYPE irrd_last_rpsl_data_update_timestamp gauge
+            irrd_last_rpsl_data_update_timestamp{source="TEST1"} 17
+            irrd_last_rpsl_data_update_timestamp{source="TEST2"} 14
+            
+            # HELP irrd_last_update_seconds Seconds since the last internal status change
             # TYPE irrd_last_update_seconds gauge
             irrd_last_update_seconds{source="TEST1"} 32
             irrd_last_update_seconds{source="TEST2"} 35
             
-            # HELP irrd_last_update_timestamp Timestamp of the last update in seconds since UNIX epoch
+            # HELP irrd_last_update_timestamp Timestamp of the last internal status change in seconds since UNIX epoch
             # TYPE irrd_last_update_timestamp gauge
             irrd_last_update_timestamp{source="TEST1"} 18
             irrd_last_update_timestamp{source="TEST2"} 15

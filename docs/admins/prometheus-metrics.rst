@@ -66,21 +66,49 @@ Source updates and errors
 The next part exposes information on when the source was last updated and
 when the last error occurred.
 
-* `irrd_last_update_seconds`: seconds since the last update
+The ``irrd_last_update_*`` and ``irrd_last_rpsl_data_update_*`` fields
+sounds similar, but have significant differences: the former updates when
+anything is changed in the internal state of the source. That includes RPSL
+data changes, but also recording an error, making an export, etc.
+The ``irrd_last_rpsl_data_update_*`` fields only update after a modification
+to the RPSL data. This includes changes in visibility due to object
+suppression status.
+
+* `irrd_last_update_seconds`: seconds since the last update to RPSL data
 
     .. code-block::
 
-        # HELP irrd_last_update_seconds Seconds since the last update
+        # HELP irrd_last_rpsl_data_update_seconds Seconds since the last update to RPSL data
+        # TYPE irrd_last_rpsl_data_update_seconds gauge
+        irrd_last_rpsl_data_update_seconds{source="SOURCE1"} 2289
+        irrd_last_rpsl_data_update_seconds{source="SOURCE2"} 4301
+        irrd_last_rpsl_data_update_seconds{source="RPKI"} 10
+
+* `irrd_last_update_timestamp`: UNIX timestamp of the last update to RPSL data
+
+    .. code-block::
+
+        # HELP irrd_last_rpsl_data_update_timestamp Timestamp of the last update to RPSL data in seconds since UNIX epoch
+        # TYPE irrd_last_rpsl_data_update_timestamp gauge
+        irrd_last_rpsl_data_update_timestamp{source="SOURCE1"} 1699965265
+        irrd_last_rpsl_data_update_timestamp{source="SOURCE2"} 1699963253
+        irrd_last_rpsl_data_update_timestamp{source="RPKI"} 1699967543
+
+* `irrd_last_update_seconds`: seconds since the last internal status change
+
+    .. code-block::
+
+        # HELP irrd_last_update_seconds Seconds since the last internal status change
         # TYPE irrd_last_update_seconds gauge
         irrd_last_update_seconds{source="SOURCE1"} 2289
         irrd_last_update_seconds{source="SOURCE2"} 4301
         irrd_last_update_seconds{source="RPKI"} 10
 
-* `irrd_last_update_timestamp`: UNIX timestamp of the last update
+* `irrd_last_update_timestamp`: UNIX timestamp of the last internal status change
 
     .. code-block::
 
-        # HELP irrd_last_update_timestamp Timestamp of the last update in seconds since UNIX epoch
+        # HELP irrd_last_update_timestamp Timestamp of the last internal status change in seconds since UNIX epoch
         # TYPE irrd_last_update_timestamp gauge
         irrd_last_update_timestamp{source="SOURCE1"} 1699965265
         irrd_last_update_timestamp{source="SOURCE2"} 1699963253

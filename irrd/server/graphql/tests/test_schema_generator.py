@@ -59,6 +59,7 @@ enum RoutePreferenceStatus {
                 nrtm4ServerVersion: Int
                 nrtm4ServerLastUpdateNotificationFileUpdate: String
                 nrtm4ServerLastSnapshotVersion: Int
+                rpslDataUpdated: String
                 lastUpdate: String
                 synchronisedSerials: Boolean!
                 aliased_sources: [String!]

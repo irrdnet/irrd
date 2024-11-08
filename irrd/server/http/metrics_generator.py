@@ -30,6 +30,7 @@ class MetricsGenerator:
         results = [
             self._generate_header(),
             self._generate_object_counts(statistics),
+            self._generate_rpsl_data_updated(status),
             self._generate_updated(status),
             self._generate_last_error(status),
             self._generate_field(
@@ -91,13 +92,47 @@ class MetricsGenerator:
         # TYPE irrd_object_class_total gauge
         """).lstrip() + "\n".join(lines) + "\n"
 
+    def _generate_rpsl_data_updated(self, status: Iterable[Dict[str, Any]]) -> str:
+        """
+        Generate statistics about the time since last update
+        """
+        now = datetime.datetime.now(tz=datetime.timezone.utc)
+        lines = [
+            "# HELP irrd_last_rpsl_data_update_seconds Seconds since the last update to RPSL data",
+            "# TYPE irrd_last_rpsl_data_update_seconds gauge",
+        ]
+        for stat in status:
+            if stat.get("rpsl_data_updated"):
+                diff = now - stat["rpsl_data_updated"]
+                lines.append(
+                    f"""irrd_last_rpsl_data_update_seconds{{source="{stat['source']}"}} {int(diff.total_seconds())}"""
+                )
+
+        lines += [
+            "",
+            (
+                "# HELP irrd_last_rpsl_data_update_timestamp Timestamp of the last update to RPSL data in"
+                " seconds since UNIX epoch"
+            ),
+            "# TYPE irrd_last_rpsl_data_update_timestamp gauge",
+        ]
+
+        for stat in status:
+            if stat.get("rpsl_data_updated"):
+                lines.append(
+                    f"""irrd_last_rpsl_data_update_timestamp{{source="{stat['source']}"}} """
+                    f"""{int(stat['rpsl_data_updated'].timestamp())}"""
+                )
+
+        return "\n".join(lines) + "\n"
+
     def _generate_updated(self, status: Iterable[Dict[str, Any]]) -> str:
         """
         Generate statistics about the time since last update
         """
         now = datetime.datetime.now(tz=datetime.timezone.utc)
         lines = [
-            "# HELP irrd_last_update_seconds Seconds since the last update",
+            "# HELP irrd_last_update_seconds Seconds since the last internal status change",
             "# TYPE irrd_last_update_seconds gauge",
         ]
         for stat in status:
@@ -109,7 +144,10 @@ class MetricsGenerator:
 
         lines += [
             "",
-            "# HELP irrd_last_update_timestamp Timestamp of the last update in seconds since UNIX epoch",
+            (
+                "# HELP irrd_last_update_timestamp Timestamp of the last internal status change in seconds"
+                " since UNIX epoch"
+            ),
             "# TYPE irrd_last_update_timestamp gauge",
         ]
 
