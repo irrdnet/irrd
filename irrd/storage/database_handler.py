@@ -1199,7 +1199,6 @@ class DatabaseStatusTracker:
                     nrtm4_client_current_key=status.current_key,
                     nrtm4_client_next_key=status.next_key,
                     nrtm4_client_previous_file_hashes=status.previous_file_hashes,
-                    rpsl_data_updated=datetime.now(timezone.utc),
                 )
             )
             self.database_handler.execute_statement(stmt)

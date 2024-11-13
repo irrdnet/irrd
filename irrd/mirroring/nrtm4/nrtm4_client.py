@@ -101,11 +101,10 @@ class NRTM4Client:
             next_key=unf.next_signing_key,
             previous_file_hashes=self._validate_aggregate_previous_file_hashes_from_unf(unf),
         )
-        if self.last_status != new_status:
-            self.database_handler.record_nrtm4_client_status(
-                self.source,
-                new_status,
-            )
+        self.database_handler.record_nrtm4_client_status(
+            self.source,
+            new_status,
+        )
         return has_loaded_snapshot
 
     def _retrieve_unf(self) -> Tuple[NRTM4UpdateNotificationFile, Optional[str]]:
