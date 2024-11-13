@@ -1,6 +1,5 @@
 import datetime
 from functools import cached_property
-from pathlib import Path
 from typing import Any, List, Literal, Optional
 from urllib.parse import urlparse, urlunparse
 from uuid import UUID
@@ -75,7 +74,7 @@ class NRTM4FileReference(pydantic.main.BaseModel):
     """
 
     version: pydantic.PositiveInt
-    url: Path
+    url: str  # Convert to Path when RIPE db is fixed
     hash: str
 
     def full_url(self, unf_url: str) -> str:
