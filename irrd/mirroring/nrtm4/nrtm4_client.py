@@ -119,7 +119,7 @@ class NRTM4Client:
         unf_signed, _ = retrieve_file(self.notification_file_url, return_contents=True)
         if "nrtm.db.ripe.net" in self.notification_file_url:  # pragma: no cover
             # When removing this, also remove Optional[] from return type
-            logger.warning("Expecting raw UNF as source is RIPE*, signature not checked")
+            logger.warning("Expecting raw UNF as URL is nrtm.db.ripe.net, signature not checked")
             unf_payload = unf_signed.encode("ascii")
             used_key = None
         else:
@@ -285,8 +285,11 @@ class NRTM4Client:
         Load a snapshot into the database.
         Deals with the usual things for bulk loading, like deleting old objects.
         """
+        url = unf.snapshot.full_url(self.notification_file_url)
+        if "nrtm.db.ripe.net" in self.notification_file_url:  # pragma: no cover
+            url = unf.snapshot.url
         snapshot_path, should_delete = retrieve_file(
-            unf.snapshot.full_url(self.notification_file_url),
+            url,
             return_contents=False,
             expected_hash=unf.snapshot.hash,
         )
@@ -340,9 +343,10 @@ class NRTM4Client:
         for delta in unf.deltas:
             if delta.version < next_version:
                 continue
-            delta_path, should_delete = retrieve_file(
-                delta.full_url(self.notification_file_url), return_contents=False, expected_hash=delta.hash
-            )
+            url = delta.full_url(self.notification_file_url)
+            if "nrtm.db.ripe.net" in self.notification_file_url:  # pragma: no cover
+                url = delta.url
+            delta_path, should_delete = retrieve_file(url, return_contents=False, expected_hash=delta.hash)
             try:
                 delta_file = open(delta_path, "rb")
                 delta_iterator = jsonseq_decode(delta_file)
