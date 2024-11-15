@@ -70,6 +70,8 @@ async def startup():
         async_redis_prefix = ""
         if get_setting("redis_url").startswith("redis://"):
             async_redis_prefix = "async+"
+        elif get_setting("redis_url").startswith("rediss://"):
+            async_redis_prefix = "async+"
         elif get_setting("redis_url").startswith("unix://"):
             async_redis_prefix = "async+redis+"
         app.state.rate_limiter_storage = limits.storage.storage_from_string(
