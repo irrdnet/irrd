@@ -2,7 +2,7 @@ import textwrap
 from datetime import datetime
 from unittest.mock import Mock
 
-import freezegun
+import time_machine
 from pytz import UTC
 
 from irrd import ENV_MAIN_STARTUP_TIME, __version__
@@ -11,7 +11,7 @@ from ..metrics_generator import MetricsGenerator
 
 
 class TestMetricsGenerator:
-    @freezegun.freeze_time(datetime.fromtimestamp(50, UTC))
+    @time_machine.travel(datetime.fromtimestamp(50, UTC))
     def test_request(self, monkeypatch):
         mock_database_handler = Mock()
         monkeypatch.setattr(

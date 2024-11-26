@@ -8,6 +8,7 @@ from typing import Tuple, Union
 from unittest.mock import create_autospec
 
 import pytest
+import time_machine
 from coredis.response.types import StreamEntry
 from starlette.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
@@ -38,7 +39,7 @@ def create_autospec_async_compat(spec):  # pragma: no cover
 
 
 class TestEventStreamInitialDownloadEndpoint:
-    @pytest.mark.freeze_time("2022-03-14 12:34:56")
+    @time_machine.travel(datetime(2022, 3, 14, 12, 34, 56), tick=False)
     async def test_endpoint_success(self, monkeypatch, config_override):
         config_override(
             {
@@ -131,7 +132,7 @@ class TestEventStreamInitialDownloadEndpoint:
 
 
 class TestEventStreamEndpoint:
-    @pytest.mark.freeze_time("2022-03-14 12:34:56")
+    @time_machine.travel(datetime(2022, 3, 14, 12, 34, 56), tick=False)
     async def test_endpoint(self, monkeypatch, config_override):
         config_override(
             {
