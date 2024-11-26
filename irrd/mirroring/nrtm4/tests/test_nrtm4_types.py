@@ -1,8 +1,10 @@
 import copy
+import datetime
 import uuid
 
 import pydantic
 import pytest
+import time_machine
 
 from irrd.mirroring.nrtm4.nrtm4_types import (
     NRTM4DeltaHeader,
@@ -138,7 +140,7 @@ class TestNRTM4UpdateNotificationFile:
         "update_notification_file_scheme": "https",
     }
 
-    @pytest.mark.freeze_time("2022-03-14 12:34:56")
+    @time_machine.travel(datetime.datetime(2022, 3, 14, 12, 34, 56), tick=False)
     def test_valid(self):
         model = NRTM4UpdateNotificationFile.model_validate(
             self.valid_data,
@@ -158,7 +160,7 @@ class TestNRTM4UpdateNotificationFile:
         assert model.min_delta_version is None
         assert model.max_delta_version is None
 
-    @pytest.mark.freeze_time("2022-03-14 12:34:56")
+    @time_machine.travel(datetime.datetime(2022, 3, 14, 12, 34, 56), tick=False)
     def test_invalid_missing_snapshot(self):
         data = copy.deepcopy(self.valid_data)
         del data["snapshot"]
@@ -169,7 +171,7 @@ class TestNRTM4UpdateNotificationFile:
             )
         assert "snapshot: Field required" in format_pydantic_errors(ve.value)
 
-    @pytest.mark.freeze_time("2022-03-14 12:34:56")
+    @time_machine.travel(datetime.datetime(2022, 3, 14, 12, 34, 56), tick=False)
     def test_invalid_unf_older_than_snapshot(self):
         data = copy.deepcopy(self.valid_data)
         data["snapshot"]["version"] = 10
@@ -180,7 +182,7 @@ class TestNRTM4UpdateNotificationFile:
             )
         assert "version 4 should have " in str(ve)
 
-    @pytest.mark.freeze_time("2022-03-14 12:34:56")
+    @time_machine.travel(datetime.datetime(2022, 3, 14, 12, 34, 56), tick=False)
     def test_invalid_unf_older_than_deltas(self):
         data = copy.deepcopy(self.valid_data)
         data["version"] = 1
@@ -192,7 +194,7 @@ class TestNRTM4UpdateNotificationFile:
             )
         assert "version 1 should have " in str(ve)
 
-    @pytest.mark.freeze_time("2022-03-14 12:34:56")
+    @time_machine.travel(datetime.datetime(2022, 3, 14, 12, 34, 56), tick=False)
     def test_invalid_deltas_not_contiguous(self):
         data = copy.deepcopy(self.valid_data)
         data["version"] = 5
@@ -204,7 +206,7 @@ class TestNRTM4UpdateNotificationFile:
             )
         assert "do not have contiguous serials" in str(format_pydantic_errors(ve.value))
 
-    @pytest.mark.freeze_time("2022-03-14 12:34:56")
+    @time_machine.travel(datetime.datetime(2022, 3, 14, 12, 34, 56), tick=False)
     def test_invalid_timestamp_too_old(self):
         data = copy.deepcopy(self.valid_data)
         data["timestamp"] = "2022-05-15 00:00:00+00:00"
@@ -215,7 +217,7 @@ class TestNRTM4UpdateNotificationFile:
             )
         assert "older than 24 hours" in str(format_pydantic_errors(ve.value))
 
-    @pytest.mark.freeze_time("2022-03-14 12:34:56")
+    @time_machine.travel(datetime.datetime(2022, 3, 14, 12, 34, 56), tick=False)
     def test_invalid_next_signing_key(self):
         data = copy.deepcopy(self.valid_data)
         data["next_signing_key"] = "invalid"

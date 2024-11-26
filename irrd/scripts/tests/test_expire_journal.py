@@ -1,8 +1,8 @@
 import io
 from datetime import datetime
 
-import pytest
 import pytz
+import time_machine
 
 from irrd.storage.queries import RPSLDatabaseJournalQuery
 from irrd.utils.test_utils import MockDatabaseHandler
@@ -96,7 +96,7 @@ class TestExpireJournal:
         ).entries_before_date(EXPIRY_DATE)
         assert not mock_dh.other_calls
 
-    @pytest.mark.freeze_time("2022-03-14 12:34:56")
+    @time_machine.travel(datetime(2022, 3, 14, 12, 34, 56), tick=False)
     def test_expire_too_recent(self, capsys, monkeypatch):
         exit_code = expire_journal(
             skip_confirmation=False,
