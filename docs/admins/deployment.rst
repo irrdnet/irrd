@@ -67,10 +67,10 @@ You need to change a few PostgreSQL settings from their default:
 * ``random_page_cost`` should be set to ``1.0``. Otherwise, PostgreSQL is
   too reluctant to use the efficient indexes in the IRRd database, and
   will opt for slow full table scans.
-* ``work_mem`` should be set to 50MB to allow PostgreSQL to do in-memory
-  sorting and merging.
+* ``work_mem`` should be set to at least 50MB to allow PostgreSQL to do in-memory
+  sorting and merging of IRRD queries. It can be set higher.
 * ``shared_buffers`` should be set to around 1/8th - 1/4th of the system
-  memory to benefit from caching, with a max of a few GB.
+  memory to benefit from caching.
 * ``max_connections`` may need to be increased from 100. Generally, there
   will be one open connection for:
   * Each permitted whois connection
@@ -86,6 +86,11 @@ You need to change a few PostgreSQL settings from their default:
   Note that initial imports of data produce significant logs if all queries
   are logged - importing 1GB of data can result in 2-3GB of logs.
 
+For detailed PostgreSQL tuning, you could refer to `existing resources`_.
+The ``random_page_cost`` is a somewhat unusual setting, but without it,
+PostgreSQL has seen to become to estimate the cost of full table scans
+too low.
+
 The transaction isolation level should be set to "Read committed". This is
 the default in PostgreSQL.
 
@@ -96,6 +101,8 @@ size of the RPSL text imported.
 
     The PostgreSQL database is the only source of IRRd's data.
     This means you need to run regular backups of the database.
+
+..  _existing resources: https://www.enterprisedb.com/postgres-tutorials/introduction-postgresql-performance-tuning-and-optimization
 
 .. _deployment-redis-configuration:
 
