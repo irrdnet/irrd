@@ -1,5 +1,5 @@
 import itertools
-from typing import Iterable, List
+from collections.abc import Iterable
 
 import pydantic
 
@@ -16,7 +16,7 @@ def chunked_iterable(iterable: Iterable, size: int) -> Iterable:
         yield chunk
 
 
-def format_pydantic_errors(exception: pydantic.ValidationError) -> List[str]:
+def format_pydantic_errors(exception: pydantic.ValidationError) -> list[str]:
     """
     Format a rich pydantic ValidationError into a list of strings
     with reasonable formatting, suitable for user output or logs.

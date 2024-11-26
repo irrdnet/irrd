@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import List, Optional, Set
+from typing import Optional
 
 from irrd.conf import get_object_class_filter_for_source, get_setting
 from irrd.rpki.validators import BulkRouteROAValidator
@@ -44,7 +44,7 @@ class MirrorFileImportParserBase:
     obj_errors = 0  # Objects with errors
     obj_ignored_class = 0  # Objects ignored due to object_class_filter setting
     obj_unknown = 0  # Objects with unknown classes
-    unknown_object_classes: Set[str] = set()  # Set of encountered unknown classes
+    unknown_object_classes: set[str] = set()  # Set of encountered unknown classes
 
     def __init__(
         self,
@@ -63,7 +63,7 @@ class MirrorFileImportParserBase:
         self.obj_errors = 0  # Objects with errors
         self.obj_ignored_class = 0  # Objects ignored due to object_class_filter setting
         self.obj_unknown = 0  # Objects with unknown classes
-        self.unknown_object_classes: Set[str] = set()  # Set of encountered unknown classes
+        self.unknown_object_classes: set[str] = set()  # Set of encountered unknown classes
         self.scopefilter_validator = ScopeFilterValidator()
         self.strict_validation_key_cert = get_setting(
             f"sources.{self.source}.strict_import_keycert_objects", False
@@ -332,7 +332,7 @@ class NRTMStreamParser:
         )
         self.object_class_filter = get_object_class_filter_for_source(source)
         super().__init__()
-        self.operations: List[NRTMOperation] = []
+        self.operations: list[NRTMOperation] = []
         self._split_stream(nrtm_data)
 
     def _split_stream(self, data: str) -> None:

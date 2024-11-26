@@ -4,7 +4,7 @@ import secrets
 import sys
 from base64 import urlsafe_b64decode, urlsafe_b64encode
 from datetime import date, timedelta
-from typing import Optional, Tuple, Union
+from typing import Optional, Union
 
 import passlib
 import wtforms
@@ -82,7 +82,7 @@ def verify_password(user: AuthUser, plain: str) -> bool:
     return password_handler.verify(plain, user.get_hashed_password())
 
 
-def validate_password_strength(plain: str) -> Tuple[bool, str]:
+def validate_password_strength(plain: str) -> tuple[bool, str]:
     if len(plain) > WEBAUTH_MAX_PASSWORD_LEN:
         return False, "This password is too long."
     evaluation = zxcvbn(plain[:100])

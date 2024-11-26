@@ -5,7 +5,7 @@ import sys
 import threading
 import time
 from collections import defaultdict, namedtuple
-from typing import Dict, List, Optional, Set, Union
+from typing import Optional, Union
 
 import redis
 from setproctitle import setproctitle
@@ -105,7 +105,7 @@ class Preloader:
                 # from Redis right away instead of waiting for a signal.
                 self._load_preload_data_into_memory()
 
-    def signal_reload(self, object_classes_changed: Optional[Set[str]] = None) -> None:
+    def signal_reload(self, object_classes_changed: Optional[set[str]] = None) -> None:
         """
         Perform a (re)load.
         Should be called after changes to the DB have been committed.
@@ -123,7 +123,7 @@ class Preloader:
         )
         self._redis_conn.publish(REDIS_PRELOAD_RELOAD_CHANNEL, message)
 
-    def set_members(self, set_pk: str, sources: List[str], object_classes: List[str]) -> Optional[SetMembers]:
+    def set_members(self, set_pk: str, sources: list[str], object_classes: list[str]) -> Optional[SetMembers]:
         """
         Retrieve all members of set set_pk in given sources from in memory store.
 
@@ -150,8 +150,8 @@ class Preloader:
         return None
 
     def routes_for_origins(
-        self, origins: Union[List[str], Set[str]], sources: List[str], ip_version: Optional[int] = None
-    ) -> Set[str]:
+        self, origins: Union[list[str], set[str]], sources: list[str], ip_version: Optional[int] = None
+    ) -> set[str]:
         """
         Retrieve all prefixes (in str format) originating from the provided origins,
         from the given sources.
@@ -170,7 +170,7 @@ class Preloader:
         if not origins or not sources:
             return set()
 
-        prefix_sets: Set[str] = set()
+        prefix_sets: set[str] = set()
         for source in sources:
             for origin in origins:
                 if (
@@ -499,8 +499,8 @@ class PreloadUpdater(threading.Thread):
         dh.close()
 
     def _update_routes(self, dh):
-        new_origin_route4_store: Dict[str, set] = defaultdict(set)
-        new_origin_route6_store: Dict[str, set] = defaultdict(set)
+        new_origin_route4_store: dict[str, set] = defaultdict(set)
+        new_origin_route6_store: dict[str, set] = defaultdict(set)
 
         q = RPSLDatabaseQuery(
             column_names=["ip_version", "ip_first", "prefix_length", "asn_first", "source"],
@@ -540,7 +540,7 @@ class PreloadUpdater(threading.Thread):
             .default_suppression()
         )
 
-        member_store: Dict[str, set] = {}
+        member_store: dict[str, set] = {}
         mbrs_by_ref_per_set = {}
 
         for row in dh.execute_query(q):

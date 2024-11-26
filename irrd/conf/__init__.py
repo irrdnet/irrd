@@ -8,7 +8,7 @@ import signal
 import sys
 import time
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, Optional
 from urllib.parse import urlparse
 
 import limits
@@ -207,7 +207,7 @@ class Configuration:
         if hasattr(sys, "_called_from_test"):
             logging.getLogger("").setLevel("DEBUG")
 
-    def _staging_reload_check(self, log_success=True) -> List[str]:
+    def _staging_reload_check(self, log_success=True) -> list[str]:
         """
         Reload the staging configuration, and run the config checks on it.
         Returns a list of errors if any were found, or an empty list of the
@@ -239,7 +239,7 @@ class Configuration:
             )
         return errors
 
-    def _check_staging_config(self) -> List[str]:
+    def _check_staging_config(self) -> list[str]:
         """
         Validate the current staging configuration.
         Returns a list of any errors, or an empty list for a valid config.
@@ -649,7 +649,7 @@ def get_setting(setting_name: str, default: Optional[Any] = None) -> Any:
     return configuration.get_setting_live(setting_name, default)
 
 
-def get_object_class_filter_for_source(source: str) -> Optional[List[str]]:
+def get_object_class_filter_for_source(source: str) -> Optional[list[str]]:
     """
     Helper method to get the cleaned object class filter for a source, if any.
     """

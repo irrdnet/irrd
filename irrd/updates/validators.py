@@ -1,7 +1,7 @@
 import functools
 import logging
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 import sqlalchemy.orm as saorm
 from IPy import IP
@@ -42,10 +42,10 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ValidatorResult:
     # OrderedSet has some obscure issues with mypy
-    error_messages: Set[str] = field(default_factory=OrderedSet)  # type: ignore
-    info_messages: Set[str] = field(default_factory=OrderedSet)  # type: ignore
+    error_messages: set[str] = field(default_factory=OrderedSet)  # type: ignore
+    info_messages: set[str] = field(default_factory=OrderedSet)  # type: ignore
     # mntners that may need to be notified
-    mntners_notify: List[RPSLMntner] = field(default_factory=list)
+    mntners_notify: list[RPSLMntner] = field(default_factory=list)
     # Details of how authentication was provided
     auth_method: AuthMethod = AuthMethod.NONE
     auth_through_mntner: Optional[str] = None
@@ -57,7 +57,7 @@ class ValidatorResult:
         return len(self.error_messages) == 0
 
     def to_change_log(self) -> ChangeLog:
-        kwargs: Dict[str, Union[str, bool, None]] = {
+        kwargs: dict[str, Union[str, bool, None]] = {
             "auth_through_rpsl_mntner_pk": self.auth_through_mntner,
             "auth_by_rpsl_mntner_password": self.auth_method == AuthMethod.MNTNER_PASSWORD,
             "auth_by_rpsl_mntner_pgp_key": self.auth_method == AuthMethod.MNTNER_PGP_KEY,
@@ -80,7 +80,7 @@ class ValidatorResult:
 @dataclass
 class MntnerCheckResult:
     valid: bool
-    associated_mntners: List[RPSLMntner] = field(default_factory=list)
+    associated_mntners: list[RPSLMntner] = field(default_factory=list)
     auth_method: AuthMethod = AuthMethod.NONE
     mntner_pk: Optional[str] = None
     auth_mntner: Optional[AuthMntner] = None
@@ -99,11 +99,11 @@ class ReferenceValidator:
 
     def __init__(self, database_handler: DatabaseHandler) -> None:
         self.database_handler = database_handler
-        self._cache: Set[Tuple[str, str, str]] = set()
-        self._preloaded_new: Set[Tuple[str, str, str]] = set()
-        self._preloaded_deleted: Set[Tuple[str, str, str]] = set()
+        self._cache: set[tuple[str, str, str]] = set()
+        self._preloaded_new: set[tuple[str, str, str]] = set()
+        self._preloaded_deleted: set[tuple[str, str, str]] = set()
 
-    def preload(self, results: List[Union["ChangeRequest", "SuspensionRequest"]]) -> None:
+    def preload(self, results: list[Union["ChangeRequest", "SuspensionRequest"]]) -> None:
         """Preload an iterable of ChangeRequest objects to be considered valid, or to be considered deleted."""
         self._preloaded_new = set()
         self._preloaded_deleted = set()
@@ -148,7 +148,7 @@ class ReferenceValidator:
                     )
         return result
 
-    def _check_reference_to_others(self, object_classes: List[str], object_pk: str, source: str) -> bool:
+    def _check_reference_to_others(self, object_classes: list[str], object_pk: str, source: str) -> bool:
         """
         Check whether one reference to a particular object class/source/PK is valid,
         i.e. such an object exists in the database.
@@ -250,7 +250,7 @@ class ReferenceValidator:
         return result
 
     def _check_references_from_others(
-        self, rpsl_obj: RPSLObject, message_target: Set[str], message_format: str
+        self, rpsl_obj: RPSLObject, message_target: set[str], message_format: str
     ) -> ValidatorResult:
         """
         Check for any references to this object in the DB.
@@ -293,9 +293,9 @@ class AuthValidator:
     with a list of UpdateRequests.
     """
 
-    passwords: List[str]
-    overrides: List[str]
-    api_keys: List[str]
+    passwords: list[str]
+    overrides: list[str]
+    api_keys: list[str]
     keycert_obj_pk: Optional[str] = None
 
     def __init__(
@@ -312,12 +312,12 @@ class AuthValidator:
         self.api_keys = []
         self.origin = origin
         self.remote_ip = remote_ip
-        self._mntner_db_cache: Set[RPSLMntner] = set()
-        self._pre_approved: Set[str] = set()
+        self._mntner_db_cache: set[RPSLMntner] = set()
+        self._pre_approved: set[str] = set()
         self.keycert_obj_pk = keycert_obj_pk
         self._internal_authenticated_user = internal_authenticated_user
 
-    def pre_approve(self, presumed_valid_new_mntners: List[RPSLMntner]) -> None:
+    def pre_approve(self, presumed_valid_new_mntners: list[RPSLMntner]) -> None:
         """
         Pre-approve certain maintainers that are part of this batch of updates.
         This is required for creating new maintainers along with other objects.
@@ -463,7 +463,7 @@ class AuthValidator:
         return AuthMethod.NONE
 
     def _check_mntners(
-        self, rpsl_obj_new: RPSLObject, mntner_pk_list: List[str], source: str
+        self, rpsl_obj_new: RPSLObject, mntner_pk_list: list[str], source: str
     ) -> MntnerCheckResult:
         """
         Check whether authentication passes for a list of maintainers.
@@ -474,17 +474,17 @@ class AuthValidator:
         to prevent double retrieval of maintainers.
         """
         mntner_pk_set = set(mntner_pk_list)
-        mntner_objs: List[RPSLMntner] = [
+        mntner_objs: list[RPSLMntner] = [
             m for m in self._mntner_db_cache if m.pk() in mntner_pk_set and m.source() == source
         ]
-        mntner_pks_to_resolve: Set[str] = mntner_pk_set - {m.pk() for m in mntner_objs}
+        mntner_pks_to_resolve: set[str] = mntner_pk_set - {m.pk() for m in mntner_objs}
 
         if mntner_pks_to_resolve:
             query = RPSLDatabaseQuery().sources([source])
             query = query.object_classes(["mntner"]).rpsl_pks(mntner_pks_to_resolve)
             results = self.database_handler.execute_query(query)
 
-            retrieved_mntner_objs: List[RPSLMntner] = [rpsl_object_from_text(r["object_text"], strict_validation=False) for r in results]  # type: ignore
+            retrieved_mntner_objs: list[RPSLMntner] = [rpsl_object_from_text(r["object_text"], strict_validation=False) for r in results]  # type: ignore
             self._mntner_db_cache.update(retrieved_mntner_objs)
             mntner_objs += retrieved_mntner_objs
 
@@ -574,7 +574,7 @@ class AuthValidator:
     def _generate_failure_message(
         self,
         result: ValidatorResult,
-        failed_mntner_list: List[str],
+        failed_mntner_list: list[str],
         rpsl_obj,
         related_object_class: Optional[str] = None,
         related_pk: Optional[str] = None,
@@ -588,7 +588,7 @@ class AuthValidator:
 
     def _find_related_mntners(
         self, rpsl_obj_new: RPSLObject, result: ValidatorResult
-    ) -> Optional[Tuple[str, str, List[str]]]:
+    ) -> Optional[tuple[str, str, list[str]]]:
         """
         Find the maintainers of the related object to rpsl_obj_new, if any.
         This is used to authorise creating objects - authentication may be

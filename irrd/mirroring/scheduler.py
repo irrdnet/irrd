@@ -4,7 +4,7 @@ import multiprocessing
 import signal
 import time
 from collections import defaultdict
-from typing import Dict, Optional
+from typing import Optional
 
 from setproctitle import setproctitle
 
@@ -54,13 +54,13 @@ class MirrorScheduler:
     the case in some full imports).
     """
 
-    processes: Dict[str, ScheduledTaskProcess]
-    last_started_time: Dict[str, int]
+    processes: dict[str, ScheduledTaskProcess]
+    last_started_time: dict[str, int]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.processes = dict()
-        self.last_started_time = defaultdict(lambda: 0)
+        self.last_started_time = defaultdict(int)
         self.previous_scopefilter_prefixes = None
         self.previous_scopefilter_asns = None
         self.previous_scopefilter_excluded = None

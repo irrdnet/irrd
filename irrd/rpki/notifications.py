@@ -1,7 +1,6 @@
 import itertools
 import logging
 from collections import defaultdict
-from typing import Dict, List, Set
 
 from irrd.conf import get_setting
 from irrd.rpki.status import RPKIStatus
@@ -15,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 def notify_rpki_invalid_owners(
-    database_handler: DatabaseHandler, rpsl_dicts_now_invalid: List[Dict[str, str]]
+    database_handler: DatabaseHandler, rpsl_dicts_now_invalid: list[dict[str, str]]
 ) -> int:
     """
     Notify the owners/contacts of newly RPKI invalid objects.
@@ -28,7 +27,7 @@ def notify_rpki_invalid_owners(
     if not get_setting("rpki.notify_invalid_enabled"):
         return 0
 
-    rpsl_objs: List[RPSLObject] = []
+    rpsl_objs: list[RPSLObject] = []
     for obj in rpsl_dicts_now_invalid:
         source = obj["source"]
         authoritative = get_setting(f"sources.{source}.authoritative")
@@ -100,7 +99,7 @@ def notify_rpki_invalid_owners(
     # With mntners_emails_by_source filled with per source, per maintainer,
     # all relevant emails, categorise the RPSL objects on which email
     # addresses they need to be sent to.
-    objs_per_email: Dict[str, Set[RPSLObject]] = defaultdict(set)
+    objs_per_email: dict[str, set[RPSLObject]] = defaultdict(set)
     for rpsl_obj in rpsl_objs:
         mntners = rpsl_obj.parsed_data.get("mnt-by", [])
         source = rpsl_obj.parsed_data["source"]

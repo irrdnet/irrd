@@ -1,7 +1,7 @@
 import codecs
 import socket
 from collections import defaultdict
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 import datrie
 from IPy import IP
@@ -47,7 +47,7 @@ class BulkRouteROAValidator:
     not be included in the validation process.
     """
 
-    def __init__(self, dh: DatabaseHandler, roas: Optional[List[ROA]] = None):
+    def __init__(self, dh: DatabaseHandler, roas: Optional[list[ROA]] = None):
         """
         Create a validator object. Can use either a list of ROA objects,
         or if not given, generates this from the database.
@@ -71,8 +71,8 @@ class BulkRouteROAValidator:
             self._build_roa_tree_from_roa_objs(roas)
 
     def validate_all_routes(
-        self, sources: Optional[List[str]] = None
-    ) -> Tuple[List[Dict[str, str]], List[Dict[str, str]], List[Dict[str, str]]]:
+        self, sources: Optional[list[str]] = None
+    ) -> tuple[list[dict[str, str]], list[dict[str, str]], list[dict[str, str]]]:
         """
         Validate all RPSL route/route6 objects.
 
@@ -94,7 +94,7 @@ class BulkRouteROAValidator:
             q = q.sources(sources)
         routes = self.database_handler.execute_query(q)
 
-        objs_changed: Dict[RPKIStatus, List[Dict[str, str]]] = defaultdict(list)
+        objs_changed: dict[RPKIStatus, list[dict[str, str]]] = defaultdict(list)
 
         for result_mapping in routes:
             result = dict(result_mapping)
@@ -153,7 +153,7 @@ class BulkRouteROAValidator:
                     return RPKIStatus.valid
         return RPKIStatus.invalid
 
-    def _build_roa_tree_from_roa_objs(self, roas: List[ROA]):
+    def _build_roa_tree_from_roa_objs(self, roas: list[ROA]):
         """
         Build the tree of all ROAs from ROA objects.
         """
@@ -180,7 +180,7 @@ class BulkRouteROAValidator:
             else:
                 roa_tree[key] = [(roa["prefix"], roa["asn"], roa["max_length"])]
 
-    def _ip_to_binary_str(self, ip: str) -> Tuple[int, str]:
+    def _ip_to_binary_str(self, ip: str) -> tuple[int, str]:
         """
         Convert an IP string to a binary string, e.g.
         192.0.2.139 to 11000000000000000000001010001011

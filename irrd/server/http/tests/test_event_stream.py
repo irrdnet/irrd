@@ -4,7 +4,7 @@ import json
 import unittest
 from collections import OrderedDict
 from datetime import datetime
-from typing import Tuple, Union
+from typing import Union
 from unittest.mock import create_autospec
 
 import pytest
@@ -193,7 +193,7 @@ class MockAsyncEventStreamRedisClient:
         self.closed = False
         self.has_returned_entries = False
 
-    async def get_entries(self, after_event_id: str) -> Tuple[StreamEntry, ...]:
+    async def get_entries(self, after_event_id: str) -> tuple[StreamEntry, ...]:
         if self.has_returned_entries:
             await asyncio.sleep(10)
         self.has_returned_entries = True

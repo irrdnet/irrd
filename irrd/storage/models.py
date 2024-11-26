@@ -1,7 +1,7 @@
 import dataclasses
 import datetime
 import enum
-from typing import Dict, List, Optional
+from typing import Optional
 from uuid import UUID
 
 import sqlalchemy as sa
@@ -56,7 +56,7 @@ class NRTM4ClientDatabaseStatus:
     version: Optional[int]
     current_key: Optional[str]
     next_key: Optional[str]
-    previous_file_hashes: Optional[Dict[str, List[str]]]
+    previous_file_hashes: Optional[dict[str, list[str]]]
 
 
 @dataclasses.dataclass
@@ -69,7 +69,7 @@ class NRTM4ServerDatabaseStatus:
     last_snapshot_filename: Optional[str]
     last_snapshot_timestamp: Optional[datetime.datetime]
     last_snapshot_hash: Optional[str]
-    previous_deltas: List[Dict]
+    previous_deltas: list[dict]
 
     @classmethod
     def from_dict(cls, env):

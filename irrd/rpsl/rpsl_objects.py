@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from typing import List, Optional, Set, Union
+from typing import Optional, Union
 
 from irrd.conf import (
     AUTH_SET_CREATION_COMMON_KEY,
@@ -467,7 +467,7 @@ class RPSLMntner(RPSLObject):
                 "Either all password auth hashes in a submitted mntner must be dummy objects, or none."
             )
 
-    def verify_auth(self, passwords: List[str], keycert_obj_pk: Optional[str] = None) -> Optional[str]:
+    def verify_auth(self, passwords: list[str], keycert_obj_pk: Optional[str] = None) -> Optional[str]:
         return verify_auth_lines(self.parsed_data.get("auth", []), passwords, keycert_obj_pk)
 
     def has_dummy_auth_value(self) -> bool:
@@ -498,7 +498,7 @@ class RPSLMntner(RPSLObject):
         auths = [RPSL_MNTNER_AUTH_INTERNAL] + self.parsed_data.get("auth", [])
         self._update_attribute_value("auth", auths, flatten=False)
 
-    def _auth_lines(self, password_hashes=True) -> List[Union[str, List[str]]]:
+    def _auth_lines(self, password_hashes=True) -> list[Union[str, list[str]]]:
         """
         Return a list of auth values in this object.
         If password_hashes=False, returns only non-hash (i.e. PGPKEY) lines.
@@ -837,7 +837,7 @@ RPKI_RELEVANT_OBJECT_CLASSES = [
 ]
 
 
-def lookup_field_names() -> Set[str]:
+def lookup_field_names() -> set[str]:
     """Return all unique names of all lookup keys in all objects, plus 'origin'."""
     names = {"origin"}
     for object_class in OBJECT_CLASS_MAPPING.values():

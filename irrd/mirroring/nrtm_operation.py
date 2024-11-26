@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional
+from typing import Optional
 
 from irrd.rpki.validators import SingleRouteROAValidator
 from irrd.rpsl.parser import UnknownRPSLObjectClassException
@@ -33,7 +33,7 @@ class NRTMOperation:
         object_class: Optional[str] = None,
         strict_validation_key_cert: bool = False,
         rpki_aware: bool = False,
-        object_class_filter: Optional[List[str]] = None,
+        object_class_filter: Optional[list[str]] = None,
     ) -> None:
         self.source = source
         self.operation = operation

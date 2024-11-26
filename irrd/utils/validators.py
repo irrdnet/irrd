@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Union
 
 import pydantic
 
@@ -6,7 +6,7 @@ from irrd.conf import get_setting
 from irrd.updates.parser_state import SuspensionRequestType
 
 
-def parse_as_number(value: Union[str, int], permit_plain=False, asdot_permitted=False) -> Tuple[str, int]:
+def parse_as_number(value: Union[str, int], permit_plain=False, asdot_permitted=False) -> tuple[str, int]:
     """
     Validate and clean an AS number. Returns it in ASxxxx and numeric format.
     asdot is permitted (#790) if asdot_permitted is passed and compatibility.asdot_queries is set
@@ -67,7 +67,7 @@ class RPSLChangeSubmissionObjectAttribute(pydantic.BaseModel):
     """
 
     name: str
-    value: Union[str, List[str]]
+    value: Union[str, list[str]]
 
     @pydantic.field_validator("value")
     @classmethod
@@ -82,7 +82,7 @@ class RPSLChangeSubmissionObject(pydantic.BaseModel):
     """Model for a single object in an RPSL change submission"""
 
     object_text: Optional[str] = None
-    attributes: Optional[List[RPSLChangeSubmissionObjectAttribute]] = None
+    attributes: Optional[list[RPSLChangeSubmissionObjectAttribute]] = None
 
     @pydantic.model_validator(mode="before")
     def check_text_xor_attributes_present(cls, values):  # noqa: N805
@@ -94,10 +94,10 @@ class RPSLChangeSubmissionObject(pydantic.BaseModel):
 class RPSLChangeSubmission(pydantic.main.BaseModel):
     """Model for an RPSL change submission"""
 
-    objects: List[RPSLChangeSubmissionObject]
-    passwords: List[str] = []
+    objects: list[RPSLChangeSubmissionObject]
+    passwords: list[str] = []
     override: Optional[str] = None
-    api_keys: List[str] = []
+    api_keys: list[str] = []
     delete_reason: str = "(No reason provided)"
 
 
@@ -115,5 +115,5 @@ class RPSLSuspensionSubmissionObject(pydantic.main.BaseModel):
 class RPSLSuspensionSubmission(pydantic.main.BaseModel):
     """Model for an RPSL suspension submission"""
 
-    objects: List[RPSLSuspensionSubmissionObject]
+    objects: list[RPSLSuspensionSubmissionObject]
     override: Optional[str] = None

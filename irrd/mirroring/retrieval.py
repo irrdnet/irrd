@@ -6,7 +6,7 @@ import pathlib
 import shutil
 from io import BytesIO
 from tempfile import NamedTemporaryFile
-from typing import IO, Any, Optional, Tuple, Union
+from typing import IO, Any, Optional, Union
 from urllib import request
 from urllib.error import URLError
 from urllib.parse import urlparse
@@ -23,7 +23,7 @@ DOWNLOAD_TIMEOUT = 10
 
 def retrieve_file(
     url: Union[Url, str], return_contents=True, expected_hash: Optional[str] = None
-) -> Tuple[str, bool]:
+) -> tuple[str, bool]:
     """
     Retrieve a file from either HTTP(s), FTP or local disk.
 
@@ -50,7 +50,7 @@ def retrieve_file(
 
 def _retrieve_file_download(
     url: str, url_parsed, return_contents=False, expected_hash: Optional[str] = None
-) -> Tuple[str, bool]:
+) -> tuple[str, bool]:
     """
     Retrieve a file from HTTP(s) or FTP
 
@@ -110,7 +110,7 @@ def _download_file(destination: IO[Any], url: str, url_parsed):
 
 def _retrieve_file_local(
     path, return_contents=False, expected_hash: Optional[str] = None
-) -> Tuple[str, bool]:
+) -> tuple[str, bool]:
     if not return_contents:
         check_file_hash_sha256(path, expected_hash)
         if path.endswith(".gz"):

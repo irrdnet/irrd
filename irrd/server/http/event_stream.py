@@ -5,7 +5,7 @@ import logging
 import socket
 import sys
 import tempfile
-from typing import Any, Callable, List, Literal, Optional
+from typing import Any, Callable, Literal, Optional
 
 import pydantic
 import ujson
@@ -59,7 +59,7 @@ class EventStreamInitialDownloadEndpoint(HTTPEndpoint):
 
 
 class EventStreamInitialDownloadGenerator:
-    def __init__(self, host: str, sources: List[str], object_classes: List[str]):
+    def __init__(self, host: str, sources: list[str], object_classes: list[str]):
         self.host = host
         self.sources = sources
         self.object_classes = object_classes

@@ -1,6 +1,6 @@
 import logging
 import socket
-from typing import List, Optional, Tuple
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -9,7 +9,7 @@ class WhoisQueryError(ValueError):
     pass
 
 
-def whois_query(host: str, port: int, query: str, end_markings: Optional[List[str]] = None) -> str:
+def whois_query(host: str, port: int, query: str, end_markings: Optional[list[str]] = None) -> str:
     """
     Perform a query on a whois server, connecting to the specified host and port.
 
@@ -103,7 +103,7 @@ def whois_query_irrd(host: str, port: int, query: str) -> Optional[str]:
 
 def whois_query_source_status(
     host: str, port: int, source: str
-) -> Tuple[Optional[bool], int, int, Optional[int]]:
+) -> tuple[Optional[bool], int, int, Optional[int]]:
     """
     Query the status of a particular source against an NRTM server,
     which supports IRRD-style !j queries.

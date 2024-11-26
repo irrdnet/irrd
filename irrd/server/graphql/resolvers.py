@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from typing import Dict, List, Optional, Set
+from typing import Optional
 
 import ariadne
 import graphql
@@ -28,7 +28,7 @@ schema = SchemaGenerator()
 lookup_fields = lookup_field_names()
 
 
-def resolve_rpsl_object_type(obj: Dict[str, str], *_) -> str:
+def resolve_rpsl_object_type(obj: dict[str, str], *_) -> str:
     """
     Find the GraphQL name for an object given its object class.
     (GraphQL names match RPSL class names.)
@@ -154,7 +154,7 @@ def resolve_rpsl_object_members_objs(rpsl_object, info: GraphQLResolveInfo):
 
 
 def _resolve_subquery(
-    rpsl_object, info: GraphQLResolveInfo, object_classes: List[str], pk_field: str, sticky_source=True
+    rpsl_object, info: GraphQLResolveInfo, object_classes: list[str], pk_field: str, sticky_source=True
 ):
     """
     Resolve a subquery, like techCobjs, on an RPSL object, considering
@@ -234,7 +234,7 @@ def _rpsl_db_query_to_graphql_out(query: RPSLDatabaseQuery, info: GraphQLResolve
 
 
 @ariadne.convert_kwargs_to_snake_case
-def resolve_database_status(_, info: GraphQLResolveInfo, sources: Optional[List[str]] = None):
+def resolve_database_status(_, info: GraphQLResolveInfo, sources: Optional[list[str]] = None):
     """Resolve a databaseStatus query"""
     query_resolver = QueryResolver(
         info.context["request"].app.state.preloader, info.context["request"].app.state.database_handler
@@ -251,9 +251,9 @@ def resolve_database_status(_, info: GraphQLResolveInfo, sources: Optional[List[
 def resolve_asn_prefixes(
     _,
     info: GraphQLResolveInfo,
-    asns: List[int],
+    asns: list[int],
     ip_version: Optional[int] = None,
-    sources: Optional[List[str]] = None,
+    sources: Optional[list[str]] = None,
 ):
     """Resolve an asnPrefixes query"""
     query_resolver = QueryResolver(
@@ -268,10 +268,10 @@ def resolve_asn_prefixes(
 def resolve_as_set_prefixes(
     _,
     info: GraphQLResolveInfo,
-    set_names: List[str],
-    sources: Optional[List[str]] = None,
+    set_names: list[str],
+    sources: Optional[list[str]] = None,
     ip_version: Optional[int] = None,
-    exclude_sets: Optional[List[str]] = None,
+    exclude_sets: Optional[list[str]] = None,
     sql_trace: bool = False,
 ):
     """Resolve an asSetPrefixes query"""
@@ -294,10 +294,10 @@ def resolve_as_set_prefixes(
 def resolve_recursive_set_members(
     _,
     info: GraphQLResolveInfo,
-    set_names: List[str],
+    set_names: list[str],
     depth: int = 0,
-    sources: Optional[List[str]] = None,
-    exclude_sets: Optional[List[str]] = None,
+    sources: Optional[list[str]] = None,
+    exclude_sets: Optional[list[str]] = None,
     sql_trace: bool = False,
 ):
     """Resolve an recursiveSetMembers query"""
@@ -319,7 +319,7 @@ def resolve_recursive_set_members(
         info.context["sql_queries"] = query_resolver.retrieve_sql_trace()
 
 
-def _columns_for_graphql_selection(info: GraphQLResolveInfo) -> Set[str]:
+def _columns_for_graphql_selection(info: GraphQLResolveInfo) -> set[str]:
     """
     Based on the selected GraphQL fields, determine which database
     columns should be retrieved.

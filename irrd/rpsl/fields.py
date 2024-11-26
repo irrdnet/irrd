@@ -1,6 +1,6 @@
 import datetime
 import re
-from typing import List, Optional, Type
+from typing import Optional
 from urllib.parse import urlparse
 
 from IPy import IP
@@ -85,7 +85,7 @@ class RPSLTextField:
     """
 
     keep_case = True
-    extracts: List[str] = []
+    extracts: list[str] = []
 
     def __init__(
         self,
@@ -513,7 +513,7 @@ class RPSLGenericNameField(RPSLTextField):
     keep_case = False
 
     def __init__(
-        self, allowed_prefixes: Optional[List[str]] = None, non_strict_allow_any=False, *args, **kwargs
+        self, allowed_prefixes: Optional[list[str]] = None, non_strict_allow_any=False, *args, **kwargs
     ) -> None:
         self.non_strict_allow_any = non_strict_allow_any
         if allowed_prefixes:
@@ -567,13 +567,13 @@ class RPSLReferenceField(RPSLTextField):
 
     keep_case = False
 
-    def __init__(self, referring: List[str], strong=True, *args, **kwargs) -> None:
+    def __init__(self, referring: list[str], strong=True, *args, **kwargs) -> None:
         from .parser import RPSLObject
 
         self.referring = referring
         self.strong = strong
-        self.referring_object_classes: List[Type[RPSLObject]] = []
-        self.referring_identifier_fields: List[RPSLTextField] = []
+        self.referring_object_classes: list[type[RPSLObject]] = []
+        self.referring_identifier_fields: list[RPSLTextField] = []
         super().__init__(*args, **kwargs)
 
     def parse(
@@ -646,11 +646,11 @@ class RPSLAuthField(RPSLTextField):
 
 
 def parse_set_name(
-    prefixes: List[str], value: str, messages: RPSLParserMessages, strict_validation=True
+    prefixes: list[str], value: str, messages: RPSLParserMessages, strict_validation=True
 ) -> Optional[RPSLFieldParseResult]:
     assert all([prefix in reserved_prefixes for prefix in prefixes])
     input_components = value.split(":")
-    output_components: List[str] = []
+    output_components: list[str] = []
     prefix_display = "/".join(prefixes)
 
     if strict_validation and len(input_components) > 5:

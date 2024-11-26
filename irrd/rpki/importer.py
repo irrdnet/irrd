@@ -1,6 +1,6 @@
 import logging
 from collections import defaultdict
-from typing import Dict, List, Optional, Set
+from typing import Optional
 
 import ujson
 from IPy import IP, IPSet
@@ -37,10 +37,10 @@ class ROADataImporter:
     """
 
     def __init__(self, rpki_json_str: str, slurm_json_str: Optional[str], database_handler: DatabaseHandler):
-        self.roa_objs: List[ROA] = []
-        self._filtered_asns: Set[int] = set()
+        self.roa_objs: list[ROA] = []
+        self._filtered_asns: set[int] = set()
         self._filtered_prefixes: IPSet = IPSet()
-        self._filtered_combined: Dict[int, IPSet] = defaultdict(IPSet)
+        self._filtered_combined: dict[int, IPSet] = defaultdict(IPSet)
 
         self._load_roa_dicts(rpki_json_str)
         if slurm_json_str:

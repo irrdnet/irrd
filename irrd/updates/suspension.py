@@ -1,6 +1,5 @@
 import functools
 import logging
-from typing import Dict, List, Tuple
 
 from irrd.conf import get_setting
 from irrd.rpki.validators import SingleRouteROAValidator
@@ -16,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 def suspend_for_mntner(
     database_handler: DatabaseHandler, suspended_mntner: RPSLMntner
-) -> List[Dict[str, str]]:
+) -> list[dict[str, str]]:
     """
     Suspend all RPSL objects for a mntner and return details of suspended objects.
 
@@ -86,7 +85,7 @@ def suspend_for_mntner(
 
 def reactivate_for_mntner(
     database_handler: DatabaseHandler, reactivated_mntner: RPSLMntner
-) -> Tuple[List[RPSLObject], List[str]]:
+) -> tuple[list[RPSLObject], list[str]]:
     """
     Reactivate previously suspended mntners and return the restored objects.
 
@@ -148,7 +147,7 @@ def reactivate_for_mntner(
 
     restored_row_pk_uuids = set()
     restored_objects = []
-    info_messages: List[str] = []
+    info_messages: list[str] = []
 
     for result in results:
         if result["pk"] in restored_row_pk_uuids:

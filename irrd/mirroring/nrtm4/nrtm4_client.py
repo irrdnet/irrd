@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 import pydantic
 from joserfc.rfc7515.model import CompactSignature
@@ -70,7 +70,7 @@ class NRTM4Client:
         except pydantic.ValidationError as ve:
             raise NRTM4ClientError.from_pydantic_error(ve)
         except ValueError as ve:
-            raise NRTM4ClientError((str(ve)))
+            raise NRTM4ClientError(str(ve))
 
     def _run_client(self) -> bool:
         has_loaded_snapshot = False
@@ -107,7 +107,7 @@ class NRTM4Client:
         )
         return has_loaded_snapshot
 
-    def _retrieve_unf(self) -> Tuple[NRTM4UpdateNotificationFile, Optional[str]]:
+    def _retrieve_unf(self) -> tuple[NRTM4UpdateNotificationFile, Optional[str]]:
         """
         Retrieve, verify and parse the Update Notification File.
         Returns the UNF object and the used key in base64 string.
@@ -134,7 +134,7 @@ class NRTM4Client:
         )
         return unf, used_key
 
-    def _deserialize_unf(self, unf_content: str) -> Tuple[bytes, str]:
+    def _deserialize_unf(self, unf_content: str) -> tuple[bytes, str]:
         """
         Verify the Update Notification File signature,
         given the content (before JWS deserialize).
@@ -192,7 +192,7 @@ class NRTM4Client:
             f"{self.source}: No valid signature found for any known keys, considered public keys: {keys_pem}"
         )
 
-    def _current_db_status(self) -> Tuple[bool, NRTM4ClientDatabaseStatus]:
+    def _current_db_status(self) -> tuple[bool, NRTM4ClientDatabaseStatus]:
         """Look up the current status of self.source in the database."""
         query = DatabaseStatusQuery(
             DatabaseStatusQuery.get_default_columns()
@@ -255,7 +255,7 @@ class NRTM4Client:
 
     def _validate_aggregate_previous_file_hashes_from_unf(
         self, unf: NRTM4UpdateNotificationFile
-    ) -> Dict[str, List[str]]:
+    ) -> dict[str, list[str]]:
         """
         Check if the server hasn't been rewriting history, which is obviously not allowed.
         Also produces the new value for "previous_file_hashes"
@@ -378,12 +378,12 @@ class NRTM4Client:
                     os.unlink(delta_path)
 
     def _process_delta_item(
-        self, header: NRTM4DeltaHeader, delta_item: dict, object_class_filter: Optional[List[str]]
+        self, header: NRTM4DeltaHeader, delta_item: dict, object_class_filter: Optional[list[str]]
     ) -> None:
         """Process a single item from a delta file into an NRTMOperation."""
         try:
             operation = NRTM4_OPERATION_MAPPING[delta_item["action"]]
-            nrtm_kwargs: Dict[str, Any] = {
+            nrtm_kwargs: dict[str, Any] = {
                 "source": self.source,
                 "operation": operation,
                 "serial": None,

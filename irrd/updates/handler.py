@@ -1,7 +1,7 @@
 import logging
 import textwrap
 from collections import defaultdict
-from typing import Dict, List, Optional, Union
+from typing import Optional, Union
 
 from IPy import IP
 from ordered_set import OrderedSet
@@ -35,7 +35,7 @@ class ChangeSubmissionHandler:
         origin: AuthoritativeChangeOrigin,
         pgp_fingerprint: Optional[str] = None,
         internal_authenticated_user: Optional[AuthUser] = None,
-        request_meta: Optional[Dict[str, Optional[str]]] = None,
+        request_meta: Optional[dict[str, Optional[str]]] = None,
     ):
         self.database_handler = DatabaseHandler()
         self.request_meta = request_meta if request_meta else {}
@@ -63,7 +63,7 @@ class ChangeSubmissionHandler:
         data: RPSLChangeSubmission,
         origin: AuthoritativeChangeOrigin,
         delete=False,
-        request_meta: Optional[Dict[str, Optional[str]]] = None,
+        request_meta: Optional[dict[str, Optional[str]]] = None,
         remote_ip: Optional[IP] = None,
     ):
         self.database_handler = DatabaseHandler()
@@ -71,7 +71,7 @@ class ChangeSubmissionHandler:
 
         reference_validator = ReferenceValidator(self.database_handler)
         auth_validator = AuthValidator(self.database_handler, origin, remote_ip=remote_ip)
-        change_requests: List[Union[ChangeRequest, SuspensionRequest]] = []
+        change_requests: list[Union[ChangeRequest, SuspensionRequest]] = []
 
         delete_reason = None
         if delete:
@@ -109,14 +109,14 @@ class ChangeSubmissionHandler:
         return self
 
     def load_suspension_submission(
-        self, data: RPSLSuspensionSubmission, request_meta: Optional[Dict[str, Optional[str]]] = None
+        self, data: RPSLSuspensionSubmission, request_meta: Optional[dict[str, Optional[str]]] = None
     ):
         self.database_handler = DatabaseHandler()
         self.request_meta = request_meta if request_meta else {}
 
         reference_validator = ReferenceValidator(self.database_handler)
         auth_validator = AuthValidator(self.database_handler)
-        change_requests: List[Union[ChangeRequest, SuspensionRequest]] = []
+        change_requests: list[Union[ChangeRequest, SuspensionRequest]] = []
 
         auth_validator.overrides = [data.override] if data.override else []
 
@@ -140,7 +140,7 @@ class ChangeSubmissionHandler:
 
     def _handle_change_requests(
         self,
-        change_requests: List[Union[ChangeRequest, SuspensionRequest]],
+        change_requests: list[Union[ChangeRequest, SuspensionRequest]],
         reference_validator: ReferenceValidator,
         auth_validator: AuthValidator,
     ) -> None:
@@ -159,7 +159,7 @@ class ChangeSubmissionHandler:
         # will mark B invalid due to the reference to an invalid C, etc. This continues until
         # all references are resolved and repeated scans lead to the same conclusions.
         valid_changes = [r for r in change_requests if r.is_valid()]
-        previous_valid_changes: List[Union[ChangeRequest, SuspensionRequest]] = []
+        previous_valid_changes: list[Union[ChangeRequest, SuspensionRequest]] = []
         loop_count = 0
         loop_max = len(change_requests) + 10
 
@@ -283,7 +283,7 @@ class ChangeSubmissionHandler:
     def send_notification_target_reports(self):
         # First key is e-mail address of recipient, second is UpdateRequestStatus.SAVED
         # or UpdateRequestStatus.ERROR_AUTH
-        reports_per_recipient: Dict[str, Dict[UpdateRequestStatus, OrderedSet]] = defaultdict(dict)
+        reports_per_recipient: dict[str, dict[UpdateRequestStatus, OrderedSet]] = defaultdict(dict)
         sources: OrderedSet[str] = OrderedSet()
 
         for result in self.results:

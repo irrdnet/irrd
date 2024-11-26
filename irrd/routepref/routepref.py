@@ -1,5 +1,6 @@
 import logging
-from typing import Dict, Iterable, List, Optional, Tuple
+from collections.abc import Iterable
+from typing import Optional
 
 import radix
 from IPy import IP
@@ -26,7 +27,7 @@ class RoutePreferenceValidator:
     the changed objects and any overlapping route objects.
     """
 
-    def __init__(self, existing_route_objects: Iterable[Dict[str, str]]):
+    def __init__(self, existing_route_objects: Iterable[dict[str, str]]):
         """
         Initialise the validator with an iterable of route objects as dicts.
         The route object dict must have prefix, source, pk and route_preference_status columns.
@@ -39,10 +40,10 @@ class RoutePreferenceValidator:
         self.max_preference = max(self.source_preferences.values()) if self.source_preferences else None
 
         self.rtree = radix.Radix()
-        self.excluded_currently_suppressed: List[str] = []
+        self.excluded_currently_suppressed: list[str] = []
         self._build_tree(existing_route_objects)
 
-    def _build_tree(self, route_objects: Iterable[Dict[str, str]]) -> None:
+    def _build_tree(self, route_objects: Iterable[dict[str, str]]) -> None:
         """
         Build the tree of route objects and their preferences.
         Also sets self.excluded_currently_suppressed as a side effect.
@@ -60,7 +61,7 @@ class RoutePreferenceValidator:
                 rnode.data = {}
             rnode.data[route_object["pk"]] = (preference, route_object["route_preference_status"])
 
-    def validate_known_routes(self) -> Tuple[List[str], List[str]]:
+    def validate_known_routes(self) -> tuple[list[str], list[str]]:
         """
         Validate all routes known to this validator, based on the
         previously built tree. Returns a tuple of two lists:
@@ -89,7 +90,7 @@ class RoutePreferenceValidator:
         return to_be_visible, to_be_suppressed
 
     def _evaluate_route(
-        self, route_preference: int, overlapping_nodes: List[RadixNode]
+        self, route_preference: int, overlapping_nodes: list[RadixNode]
     ) -> RoutePreferenceStatus:
         """
         Given a preference, evaluate the correct state of a route based
@@ -131,7 +132,7 @@ def build_validator(
 
 
 def update_route_preference_status(
-    database_handler: DatabaseHandler, filter_prefixes: Optional[List[IP]] = None
+    database_handler: DatabaseHandler, filter_prefixes: Optional[list[IP]] = None
 ) -> None:
     """
     Update the route preference status, given a database handler
@@ -171,7 +172,7 @@ def update_route_preference_status(
         )
 
 
-def enrich_pks(database_handler: DatabaseHandler, pks_to_enrich: List[str]):
+def enrich_pks(database_handler: DatabaseHandler, pks_to_enrich: list[str]):
     """
     Enrich objects based on a set of row PKs.
     This is used for early retrieval of a subset of columns to analyse,

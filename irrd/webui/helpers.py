@@ -2,7 +2,7 @@ import functools
 import hashlib
 import logging
 import secrets
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import limits
 from starlette.requests import Request
@@ -84,7 +84,7 @@ def get_messages(request: Request):
 
 
 def send_template_email(
-    recipient: str, template_key: str, request: Optional[Request], template_kwargs: Dict[str, Any]
+    recipient: str, template_key: str, request: Optional[Request], template_kwargs: dict[str, Any]
 ) -> None:
     """
     Send an email rendered from a template.

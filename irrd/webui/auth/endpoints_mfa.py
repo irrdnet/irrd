@@ -2,7 +2,7 @@ import base64
 import logging
 import os
 from datetime import datetime, timezone
-from typing import Optional, Tuple
+from typing import Optional
 from urllib.parse import urlparse
 
 import pyotp
@@ -48,7 +48,7 @@ ENV_WEBAUTHN_TESTING_RP_OVERRIDE = "ENV_WEBAUTHN_TESTING_RP_OVERRIDE"
 ENV_WEBAUTHN_TESTING_CHALLENGE_OVERRIDE = "ENV_WEBAUTHN_TESTING_CHALLENGE_OVERRIDE"
 
 
-def get_webauthn_origin_rpid() -> Tuple[str, str]:
+def get_webauthn_origin_rpid() -> tuple[str, str]:
     """
     Determine the WebAuthn origin and Relying Party ID.
     This is either taken from env for tests, or from

@@ -1,7 +1,6 @@
 import os
 import signal
 import textwrap
-from typing import Dict
 
 import pytest
 import yaml
@@ -24,7 +23,7 @@ from . import (
 
 @pytest.fixture()
 def save_yaml_config(tmpdir, monkeypatch):
-    def _save(config: Dict, run_init=True):
+    def _save(config: dict, run_init=True):
         tmp_file = tmpdir + "/config.yaml"
         with open(tmp_file, "w") as fh:
             fh.write(yaml.safe_dump(config))
