@@ -1,5 +1,5 @@
 from collections import OrderedDict, defaultdict
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 import ariadne
 
@@ -211,7 +211,7 @@ class SchemaGenerator:
         schema = self._generate_schema_str("RPSLContact", "interface", common_field_dict)
         self.rpsl_contact_schema = schema
 
-    def _dict_for_common_fields(self, common_fields: List[str]):
+    def _dict_for_common_fields(self, common_fields: list[str]):
         common_field_dict = OrderedDict()
         for field_name in sorted(common_fields):
             try:
@@ -285,7 +285,7 @@ class SchemaGenerator:
 
     def _grapql_type_for_reference_field(
         self, field_name: str, rpsl_field: RPSLTextField
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> tuple[Optional[str], Optional[str]]:
         """
         Return the GraphQL name and type for a reference field.
         For example, for a field "admin-c" that refers to person/role,
@@ -309,7 +309,7 @@ class SchemaGenerator:
         return None, None
 
     def _generate_schema_str(
-        self, name: str, graphql_type: str, fields: Dict[str, str], implements: Optional[str] = None
+        self, name: str, graphql_type: str, fields: dict[str, str], implements: Optional[str] = None
     ) -> str:
         """
         Generate a schema string for a given name, object type and dict of fields.

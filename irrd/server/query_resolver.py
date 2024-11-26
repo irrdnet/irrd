@@ -1,7 +1,7 @@
 import logging
 from collections import OrderedDict
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Optional
 
 from IPy import IP
 from ordered_set import OrderedSet
@@ -53,9 +53,9 @@ class QuerySourceManager:
         self.all_valid_aliases = dict(get_setting("source_aliases", {}))
         self.all_valid_sources = self.all_valid_real_sources + list(self.all_valid_aliases.keys())
         self.sources_default = list(get_setting("sources_default", []))
-        self.sources: List[str] = self.sources_default if self.sources_default else self.all_valid_sources
+        self.sources: list[str] = self.sources_default if self.sources_default else self.all_valid_sources
 
-    def set_query_sources(self, sources: Optional[List[str]]) -> None:
+    def set_query_sources(self, sources: Optional[list[str]]) -> None:
         """Set the sources for future queries.
         If sources is None, default source list is set.
         May include alias names."""
@@ -66,7 +66,7 @@ class QuerySourceManager:
         self.sources = sources
 
     @property
-    def sources_resolved(self) -> List[str]:
+    def sources_resolved(self) -> list[str]:
         """
         Returns a list of all resolved source names, i.e. real names
         with aliases resolved into their individual sources.
@@ -96,7 +96,7 @@ class QueryResolver:
 
     def __init__(self, preloader: Preloader, database_handler: DatabaseHandler) -> None:
         self.source_manager = QuerySourceManager()
-        self.object_class_filter: List[str] = []
+        self.object_class_filter: list[str] = []
         self.rpki_aware = bool(get_setting("rpki.roa_source"))
         self.rpki_invalid_filter_enabled = self.rpki_aware
         self.out_scope_filter_enabled = True
@@ -104,10 +104,10 @@ class QueryResolver:
         self.user_agent: Optional[str] = None
         self.preloader = preloader
         self.database_handler = database_handler
-        self.sql_queries: List[str] = []
+        self.sql_queries: list[str] = []
         self.sql_trace = False
 
-    def set_query_sources(self, sources: Optional[List[str]]) -> None:
+    def set_query_sources(self, sources: Optional[list[str]]) -> None:
         self.source_manager.set_query_sources(sources)
 
     def disable_rpki_filter(self) -> None:
@@ -119,7 +119,7 @@ class QueryResolver:
     def disable_route_preference_filter(self) -> None:
         self.route_preference_filter_enabled = False
 
-    def set_object_class_filter_next_query(self, object_classes: List[str]) -> None:
+    def set_object_class_filter_next_query(self, object_classes: list[str]) -> None:
         """Restrict object classes for the next query, comma-seperated"""
         self.object_class_filter = object_classes
 
@@ -160,7 +160,7 @@ class QueryResolver:
         query = self._prepare_query(ordered_by_sources=False).lookup_attr(attribute, value)
         return self._execute_query(query)
 
-    def routes_for_origin(self, origin: str, ip_version: Optional[int] = None) -> Set[str]:
+    def routes_for_origin(self, origin: str, ip_version: Optional[int] = None) -> set[str]:
         """
         Resolve all route(6)s prefixes for an origin, returning a set
         of all prefixes. Origin must be in 'ASxxx' format.
@@ -171,8 +171,8 @@ class QueryResolver:
         return prefixes
 
     def routes_for_as_set(
-        self, set_name: str, ip_version: Optional[int] = None, exclude_sets: Optional[Set[str]] = None
-    ) -> Set[str]:
+        self, set_name: str, ip_version: Optional[int] = None, exclude_sets: Optional[set[str]] = None
+    ) -> set[str]:
         """
         Find all originating prefixes for all members of an AS-set. May be restricted
         to IPv4 or IPv6. Returns a set of all prefixes.
@@ -186,8 +186,8 @@ class QueryResolver:
         )
 
     def members_for_set_per_source(
-        self, parameter: str, exclude_sets: Optional[Set[str]] = None, depth=0, recursive=False
-    ) -> Dict[str, List[str]]:
+        self, parameter: str, exclude_sets: Optional[set[str]] = None, depth=0, recursive=False
+    ) -> dict[str, list[str]]:
         """
         Find all members of an as-set or route-set, possibly recursively, distinguishing
         between multiple root objects in different sources with the same name.
@@ -213,11 +213,11 @@ class QueryResolver:
     def members_for_set(
         self,
         parameter: str,
-        exclude_sets: Optional[Set[str]] = None,
+        exclude_sets: Optional[set[str]] = None,
         depth=0,
         recursive=False,
         root_source: Optional[str] = None,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Find all members of an as-set or route-set, possibly recursively.
         Returns a list of all members, including leaf members.
@@ -252,8 +252,8 @@ class QueryResolver:
         return sorted(members)
 
     def _recursive_set_resolve(
-        self, members: Set[str], sets_seen=None, root_source: Optional[str] = None
-    ) -> Set[str]:
+        self, members: set[str], sets_seen=None, root_source: Optional[str] = None
+    ) -> set[str]:
         """
         Resolve all members of a number of sets, recursively.
 
@@ -317,8 +317,8 @@ class QueryResolver:
         return set_members
 
     def _find_set_members(
-        self, set_names: Set[str], limit_source: Optional[str] = None
-    ) -> Tuple[Set[str], Set[str]]:
+        self, set_names: set[str], limit_source: Optional[str] = None
+    ) -> tuple[set[str], set[str]]:
         """
         Find all members of a number of route-sets or as-sets. Includes both
         direct members listed in members attribute, but also
@@ -332,7 +332,7 @@ class QueryResolver:
           names for which no further data could be found - for
           example references to non-existent other sets
         """
-        members: Set[str] = set()
+        members: set[str] = set()
         leaf_members = set()
 
         sources = self.source_manager.sources_resolved if not limit_source else [limit_source]
@@ -355,7 +355,7 @@ class QueryResolver:
         return members, leaf_members
 
     def database_status(
-        self, sources: Optional[List[str]] = None
+        self, sources: Optional[list[str]] = None
     ) -> "OrderedDict[str, OrderedDict[str, Any]]":
         """Database status. If sources is None, return all valid sources."""
         if sources is None:
@@ -434,7 +434,7 @@ class QueryResolver:
     def enable_sql_trace(self):
         self.sql_trace = True
 
-    def retrieve_sql_trace(self) -> List[str]:
+    def retrieve_sql_trace(self) -> list[str]:
         trace = self.sql_queries
         self.sql_trace = False
         self.sql_queries = []

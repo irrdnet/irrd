@@ -1,9 +1,10 @@
 import logging
 from collections import defaultdict
+from collections.abc import Iterable, Iterator
 from datetime import datetime, timezone
 from functools import lru_cache
 from io import StringIO
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Set, Tuple, Union
+from typing import Any, Optional, Union
 
 import sqlalchemy as sa
 from asgiref.sync import sync_to_async
@@ -57,7 +58,7 @@ QueryType = Union[
 logger = logging.getLogger(__name__)
 MAX_RECORDS_BUFFER_BEFORE_INSERT = 15000
 ROUTEPREF_STATUS_UPDATE_CHUNK_SIZE = 5000
-RPSLDatabaseResponse = Iterator[Dict[str, Any]]
+RPSLDatabaseResponse = Iterator[dict[str, Any]]
 
 
 def object_is_visible(
@@ -85,13 +86,13 @@ class DatabaseHandler:
 
     journaling_enabled: bool
     _transaction: sa.engine.base.Transaction
-    _rpsl_pk_source_seen: Set[str]
+    _rpsl_pk_source_seen: set[str]
     # The RPSL upsert buffer is a list of tuples. Each tuple first has a dict
     # with all database column names and their values, and then the origin of the change
     # and the serial of the change at the NRTM source, if any.
-    _rpsl_upsert_buffer: List[Tuple[dict, JournalEntryOrigin, Optional[int]]]
+    _rpsl_upsert_buffer: list[tuple[dict, JournalEntryOrigin, Optional[int]]]
     # The ROA insert buffer is a list of dicts with columm names and their values.
-    _roa_insert_buffer: List[Dict[str, Union[str, int]]]
+    _roa_insert_buffer: list[dict[str, Union[str, int]]]
 
     def __init__(self, readonly=False):
         """
@@ -143,7 +144,7 @@ class DatabaseHandler:
     def _start_transaction(self) -> None:
         """Start a fresh transaction."""
         self._transaction = self._connection.begin()
-        self._rpsl_pk_source_seen: Set[str] = set()
+        self._rpsl_pk_source_seen: set[str] = set()
         self._rpsl_upsert_buffer = []
         self._roa_insert_buffer = []
         self._rpsl_guaranteed_no_existing = True
@@ -343,9 +344,9 @@ class DatabaseHandler:
 
     def update_rpki_status(
         self,
-        rpsl_objs_now_valid: List[Dict[str, Any]] = [],
-        rpsl_objs_now_invalid: List[Dict[str, Any]] = [],
-        rpsl_objs_now_not_found: List[Dict[str, Any]] = [],
+        rpsl_objs_now_valid: list[dict[str, Any]] = [],
+        rpsl_objs_now_invalid: list[dict[str, Any]] = [],
+        rpsl_objs_now_not_found: list[dict[str, Any]] = [],
     ) -> None:
         """
         Update the RPKI status for the given RPSL PKs.
@@ -413,9 +414,9 @@ class DatabaseHandler:
 
     def update_scopefilter_status(
         self,
-        rpsl_objs_now_in_scope: List[Dict[str, Any]] = [],
-        rpsl_objs_now_out_scope_as: List[Dict[str, Any]] = [],
-        rpsl_objs_now_out_scope_prefix: List[Dict[str, Any]] = [],
+        rpsl_objs_now_in_scope: list[dict[str, Any]] = [],
+        rpsl_objs_now_out_scope_as: list[dict[str, Any]] = [],
+        rpsl_objs_now_out_scope_prefix: list[dict[str, Any]] = [],
     ) -> None:
         """
         Update the scopefilter status for the given RPSL PKs.
@@ -496,8 +497,8 @@ class DatabaseHandler:
 
     def update_route_preference_status(
         self,
-        rpsl_objs_now_visible: Iterable[Dict[str, Any]] = [],
-        rpsl_objs_now_suppressed: Iterable[Dict[str, Any]] = [],
+        rpsl_objs_now_visible: Iterable[dict[str, Any]] = [],
+        rpsl_objs_now_suppressed: Iterable[dict[str, Any]] = [],
     ) -> None:
         """
         Update the route object preference status for the object dicts.
@@ -692,7 +693,7 @@ class DatabaseHandler:
             result._mapping, origin=JournalEntryOrigin.suspension
         )
 
-    def delete_suspended_rpsl_objects(self, pk_uuids: Set[str]) -> None:
+    def delete_suspended_rpsl_objects(self, pk_uuids: set[str]) -> None:
         """
         Remove suspended RPSL objects from the suspended store,
         typically used after reactivation. An actual reactivation happens
@@ -948,14 +949,14 @@ class DatabaseStatusTracker:
     """
 
     journaling_enabled: bool
-    _new_serials_per_source: Dict[str, Set[int]]
-    _sources_seen: Set[str]
-    _sources_rpsl_data_updated: Set[str]
-    _newest_mirror_serials: Dict[str, int]
-    _mirroring_error: Dict[str, str]
-    _exported_serials: Dict[str, int]
-    _nrtm4_client_status: Dict[str, NRTM4ClientDatabaseStatus]
-    _nrtm4_server_status: Dict[str, NRTM4ServerDatabaseStatus]
+    _new_serials_per_source: dict[str, set[int]]
+    _sources_seen: set[str]
+    _sources_rpsl_data_updated: set[str]
+    _newest_mirror_serials: dict[str, int]
+    _mirroring_error: dict[str, str]
+    _exported_serials: dict[str, int]
+    _nrtm4_client_status: dict[str, NRTM4ClientDatabaseStatus]
+    _nrtm4_server_status: dict[str, NRTM4ServerDatabaseStatus]
     _journal_table_locked = False
 
     c_journal = RPSLDatabaseJournal.__table__.c
@@ -1006,7 +1007,7 @@ class DatabaseStatusTracker:
         self._nrtm4_server_status[source] = status
 
     def record_operation_from_rpsl_dict(
-        self, operation: DatabaseOperation, rpsl_obj: Dict[str, Any], origin: JournalEntryOrigin
+        self, operation: DatabaseOperation, rpsl_obj: dict[str, Any], origin: JournalEntryOrigin
     ) -> None:
         """
         Convenience wrapper method to record operations from an RPSL object dict,
@@ -1279,7 +1280,7 @@ class SessionChangedObjectsTracker:
         self.preloader = Preloader(enable_queries=False)
         self.reset()
 
-    def object_modified_dict(self, rpsl_obj: Dict[str, str], origin: Optional[JournalEntryOrigin] = None):
+    def object_modified_dict(self, rpsl_obj: dict[str, str], origin: Optional[JournalEntryOrigin] = None):
         try:
             prefix = rpsl_obj["prefix"]
         except (KeyError, AttributeError):

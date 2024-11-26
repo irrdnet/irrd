@@ -1,6 +1,6 @@
 import difflib
 import logging
-from typing import Dict, List, Optional, Set, Union
+from typing import Optional, Union
 
 import sqlalchemy.orm as saorm
 
@@ -42,8 +42,8 @@ class ChangeRequest:
     status = UpdateRequestStatus.PROCESSING
     request_type: Optional[UpdateRequestType] = None
 
-    error_messages: List[str]
-    info_messages: List[str]
+    error_messages: list[str]
+    info_messages: list[str]
 
     def __init__(
         self,
@@ -52,7 +52,7 @@ class ChangeRequest:
         auth_validator: AuthValidator,
         reference_validator: ReferenceValidator,
         delete_reason: Optional[str],
-        request_meta: Dict[str, Optional[str]],
+        request_meta: dict[str, Optional[str]],
     ) -> None:
         """
         Initialise a new change request for a single RPSL object.
@@ -236,7 +236,7 @@ class ChangeRequest:
             report += "".join([f"INFO: {e}\n" for e in self.info_messages])
         return report
 
-    def submitter_report_json(self) -> Dict[str, Union[None, bool, str, List[str]]]:
+    def submitter_report_json(self) -> dict[str, Union[None, bool, str, list[str]]]:
         """Produce a dict suitable for reporting back status and messages in JSON."""
         new_object_text = None
         if self.rpsl_obj_new and not self.error_messages:
@@ -294,13 +294,13 @@ class ChangeRequest:
     def object_class_str(self) -> str:
         return self.rpsl_obj_new.rpsl_object_class if self.rpsl_obj_new else "(unreadable object class)"
 
-    def notification_targets(self) -> Set[str]:
+    def notification_targets(self) -> set[str]:
         """
         Produce a set of e-mail addresses that should be notified
         about the change to this object.
         May include mntner upd-to or mnt-nfy, and notify of existing object.
         """
-        targets: Set[str] = set()
+        targets: set[str] = set()
         status_qualifies_notification = self.is_valid() or self.status == UpdateRequestStatus.ERROR_AUTH
         used_override = self._auth_result and self._auth_result.auth_method.used_override()
         if used_override or not status_qualifies_notification:
@@ -483,8 +483,8 @@ class SuspensionRequest:
     rpsl_obj_new: Optional[RPSLObject]
     status = UpdateRequestStatus.PROCESSING
 
-    error_messages: List[str]
-    info_messages: List[str]
+    error_messages: list[str]
+    info_messages: list[str]
 
     def __init__(
         self,
@@ -593,7 +593,7 @@ class SuspensionRequest:
             report += "".join([f"INFO: {e}\n" for e in self.info_messages])
         return report
 
-    def submitter_report_json(self) -> Dict[str, Union[None, bool, str, List[str]]]:
+    def submitter_report_json(self) -> dict[str, Union[None, bool, str, list[str]]]:
         """Produce a dict suitable for reporting back status and messages in JSON."""
         return {
             "successful": self.is_valid(),
@@ -617,7 +617,7 @@ class SuspensionRequest:
     def object_class_str(self) -> str:
         return self.rpsl_obj_new.rpsl_object_class if self.rpsl_obj_new else "(unreadable object class)"
 
-    def notification_targets(self) -> Set[str]:
+    def notification_targets(self) -> set[str]:
         # We never message notification targets
         return set()
 
@@ -637,8 +637,8 @@ def parse_change_requests(
     database_handler: DatabaseHandler,
     auth_validator: AuthValidator,
     reference_validator: ReferenceValidator,
-    request_meta: Dict[str, Optional[str]],
-) -> List[Union[ChangeRequest, SuspensionRequest]]:
+    request_meta: dict[str, Optional[str]],
+) -> list[Union[ChangeRequest, SuspensionRequest]]:
     """
     Parse change requests, a text of RPSL objects along with metadata like
     passwords or deletion requests.
@@ -649,7 +649,7 @@ def parse_change_requests(
     :param reference_validator: a ReferenceValidator instance
     :return: a list of ChangeRequest instances
     """
-    results: List[Union[ChangeRequest, SuspensionRequest]] = []
+    results: list[Union[ChangeRequest, SuspensionRequest]] = []
     passwords = []
     overrides = []
     api_keys = []

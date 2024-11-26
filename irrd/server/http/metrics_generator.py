@@ -3,7 +3,8 @@ import logging
 import os
 import textwrap
 import time
-from typing import Any, Dict, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 from irrd import ENV_MAIN_STARTUP_TIME, __version__
 from irrd.storage.database_handler import DatabaseHandler
@@ -76,7 +77,7 @@ class MetricsGenerator:
         irrd_startup_timestamp {os.environ[ENV_MAIN_STARTUP_TIME]}
         """).strip() + "\n"
 
-    def _generate_object_counts(self, statistics: Iterable[Dict[str, Any]]) -> str:
+    def _generate_object_counts(self, statistics: Iterable[dict[str, Any]]) -> str:
         """
         Generate statistics about the number of object types per source
         """
@@ -92,7 +93,7 @@ class MetricsGenerator:
         # TYPE irrd_object_class_total gauge
         """).lstrip() + "\n".join(lines) + "\n"
 
-    def _generate_rpsl_data_updated(self, status: Iterable[Dict[str, Any]]) -> str:
+    def _generate_rpsl_data_updated(self, status: Iterable[dict[str, Any]]) -> str:
         """
         Generate statistics about the time since last update
         """
@@ -126,7 +127,7 @@ class MetricsGenerator:
 
         return "\n".join(lines) + "\n"
 
-    def _generate_updated(self, status: Iterable[Dict[str, Any]]) -> str:
+    def _generate_updated(self, status: Iterable[dict[str, Any]]) -> str:
         """
         Generate statistics about the time since last update
         """
@@ -160,7 +161,7 @@ class MetricsGenerator:
 
         return "\n".join(lines) + "\n"
 
-    def _generate_last_error(self, status: Iterable[Dict[str, Any]]) -> str:
+    def _generate_last_error(self, status: Iterable[dict[str, Any]]) -> str:
         """
         Generate statistics about the time since last update
         """
@@ -194,7 +195,7 @@ class MetricsGenerator:
 
         return "\n".join(lines) + "\n"
 
-    def _generate_field(self, status: Iterable[Dict[str, Any]], status_key, metric_key, help_text) -> str:
+    def _generate_field(self, status: Iterable[dict[str, Any]], status_key, metric_key, help_text) -> str:
         """
         Generate simple statistics for various fields
         """

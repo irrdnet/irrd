@@ -1,19 +1,9 @@
 """A module for basic mocking of SQLAlchemy sessions and calls."""
-from __future__ import absolute_import, print_function, unicode_literals
 
+from collections.abc import Iterator, Sequence
 from functools import partial
 from itertools import chain, takewhile
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Iterator,
-    List,
-    Optional,
-    Sequence,
-    Set,
-    overload,
-)
+from typing import Any, Callable, Optional, overload
 from unittest import mock
 
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
@@ -84,7 +74,7 @@ class UnorderedCall(Call):
             **{k.replace("_mock_", ""): v for k, v in vars(other).items()},
         )
 
-        return super(UnorderedCall, self).__eq__(other)
+        return super().__eq__(other)
 
 
 def sqlalchemy_call(call: Call, with_name: bool = False, base_call: Any = Call) -> Any:
@@ -176,7 +166,7 @@ class AlchemyMagicMock(mock.MagicMock):
     def __init__(self, *args, **kwargs) -> None:
         """Creates AlchemyMagicMock that can be used as limited SQLAlchemy session."""
         kwargs.setdefault("__name__", "Session")
-        super(AlchemyMagicMock, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def _format_mock_call_signature(self, args: Any, kwargs: Any) -> str:
         """Formats the mock call into a string."""
@@ -187,7 +177,7 @@ class AlchemyMagicMock(mock.MagicMock):
     def assert_called_with(self, *args: Any, **kwargs: Any) -> None:
         """Assert for a specific call to have happened."""
         args, kwargs = sqlalchemy_call(mock.call(*args, **kwargs))
-        return super(AlchemyMagicMock, self).assert_called_with(*args, **kwargs)
+        return super().assert_called_with(*args, **kwargs)
 
     def assert_any_call(self, *args: Any, **kwargs: Any) -> None:
         """Assert for a specific call to have happened."""
@@ -197,9 +187,9 @@ class AlchemyMagicMock(mock.MagicMock):
             "call_args_list",
             [sqlalchemy_call(i) for i in self.call_args_list],
         ):
-            return super(AlchemyMagicMock, self).assert_any_call(*args, **kwargs)
+            return super().assert_any_call(*args, **kwargs)
 
-    def assert_has_calls(self, calls: List[Call], any_order: bool = False) -> None:
+    def assert_has_calls(self, calls: list[Call], any_order: bool = False) -> None:
         """Assert for a list of calls to have happened."""
         calls = [sqlalchemy_call(i) for i in calls]
         with setattr_tmp(
@@ -207,7 +197,7 @@ class AlchemyMagicMock(mock.MagicMock):
             "mock_calls",
             type(self.mock_calls)([sqlalchemy_call(i) for i in self.mock_calls]),
         ):
-            return super(AlchemyMagicMock, self).assert_has_calls(calls, any_order)
+            return super().assert_has_calls(calls, any_order)
 
 
 class UnifiedAlchemyMagicMock(AlchemyMagicMock):
@@ -425,7 +415,7 @@ class UnifiedAlchemyMagicMock(AlchemyMagicMock):
     are not unified.
     """
 
-    boundary: Dict[str, Callable] = {
+    boundary: dict[str, Callable] = {
         "all": lambda x: x,
         "__iter__": lambda x: iter(x),
         "count": lambda x: len(x),
@@ -455,7 +445,7 @@ class UnifiedAlchemyMagicMock(AlchemyMagicMock):
         "scalar": lambda x: get_scalar(x),
         "update": lambda x, *args, **kwargs: None,
     }
-    unify: Dict[str, Optional[UnorderedCall]] = {
+    unify: dict[str, Optional[UnorderedCall]] = {
         "add_columns": None,
         "distinct": None,
         "execute": None,
@@ -472,7 +462,7 @@ class UnifiedAlchemyMagicMock(AlchemyMagicMock):
         "where": None,
     }
 
-    mutate: Set[str] = {"add", "add_all", "delete"}
+    mutate: set[str] = {"add", "add_all", "delete"}
 
     @overload
     def __init__(
@@ -519,7 +509,7 @@ class UnifiedAlchemyMagicMock(AlchemyMagicMock):
             }
         )
 
-        super(UnifiedAlchemyMagicMock, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def _get_previous_calls(self, calls: Sequence[Call]) -> Iterator:
         """Gets the previous calls on the same line."""

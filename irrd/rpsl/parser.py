@@ -3,7 +3,7 @@ import itertools
 import json
 import re
 from collections import Counter, OrderedDict
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Optional
 
 from IPy import IP
 
@@ -17,7 +17,7 @@ from ..conf import get_setting
 from .fields import RPSLTextField
 
 RPSL_ATTRIBUTE_TEXT_WIDTH = 16
-TypeRPSLObjectData = List[Tuple[str, str, List[str]]]
+TypeRPSLObjectData = list[tuple[str, str, list[str]]]
 
 
 class RPSLObjectMeta(type):
@@ -68,12 +68,12 @@ class RPSLObject(metaclass=RPSLObjectMeta):
     subclasses should also be added to OBJECT_CLASS_MAPPING.
     """
 
-    fields: Dict[str, RPSLTextField] = OrderedDict()
+    fields: dict[str, RPSLTextField] = OrderedDict()
     rpsl_object_class: str
-    pk_fields: List[str] = []
-    attrs_allowed: List[str] = []
-    attrs_required: List[str] = []
-    attrs_multiple: List[str] = []
+    pk_fields: list[str] = []
+    attrs_allowed: list[str] = []
+    attrs_required: list[str] = []
+    attrs_multiple: list[str] = []
     ip_first: IP = None
     ip_last: IP = None
     asn_first: Optional[int] = None
@@ -89,10 +89,10 @@ class RPSLObject(metaclass=RPSLObjectMeta):
     # should be included in RPKI and route preference status. Enabled for route/route6.
     is_route = False
     # Fields whose values are discarded during parsing
-    discarded_fields: List[str] = []
+    discarded_fields: list[str] = []
     # Fields that are ignored in validation even
     # for authoritative objects (see #587 for example).
-    ignored_validation_fields: List[str] = ["last-modified"]
+    ignored_validation_fields: list[str] = ["last-modified"]
 
     _re_attr_name = re.compile(r"^[a-z0-9_-]+$")
 
@@ -144,7 +144,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
             return self.ip_first.version()
         return None
 
-    def referred_strong_objects(self) -> List[Tuple[str, List, List]]:
+    def referred_strong_objects(self) -> list[tuple[str, list, list]]:
         """
         Get all objects that this object refers to (e.g. an admin-c attribute
         on this object, that refers to person/role) along with the data this
@@ -166,7 +166,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
             result.append((field_name, referred_objects, data))
         return result
 
-    def references_strong_inbound(self) -> Set[str]:
+    def references_strong_inbound(self) -> set[str]:
         """
         Get a set of field names under which other objects refer to
         this object. E.g. for a person object, this would typically
@@ -271,7 +271,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         continuation_chars = (" ", "+", "\t")
         current_attr = None
         current_value = ""
-        current_continuation_chars: List[str] = []
+        current_continuation_chars: list[str] = []
 
         for line_no, line in enumerate(splitline_unicodesafe(text.strip())):
             if not line:
@@ -314,7 +314,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         Validate an object. The strictness depends on self.strict_validation
         (see the docstring for __init__).
         """
-        self.parsed_data: Dict[str, Any[str, List]] = {}
+        self.parsed_data: dict[str, Any[str, list]] = {}
         if not self.messages.errors():
             self._validate_attribute_counts()
         self._parse_attribute_data(allow_invalid_metadata=bool(self.messages.errors()))

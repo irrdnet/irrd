@@ -2,7 +2,7 @@ import enum
 import inspect
 from collections import abc
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any
 
 from irrd.rpsl.parser import RPSLObject
 from irrd.storage.database_handler import (
@@ -45,7 +45,7 @@ def flatten_mock_calls(mock, flatten_objects=False):
 
 
 class Singleton(type):
-    _instances: Dict[Any, Any] = {}
+    _instances: dict[Any, Any] = {}
 
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:

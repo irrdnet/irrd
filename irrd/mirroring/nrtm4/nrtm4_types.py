@@ -1,6 +1,6 @@
 import datetime
 from functools import cached_property
-from typing import Any, List, Literal, Optional
+from typing import Any, Literal, Optional
 from urllib.parse import urlparse, urlunparse
 from uuid import UUID
 
@@ -100,7 +100,7 @@ class NRTM4UpdateNotificationFile(NRTM4Common):
     timestamp: datetime.datetime
     type: Literal["notification"]
     snapshot: NRTM4FileReference
-    deltas: List[NRTM4FileReference]
+    deltas: list[NRTM4FileReference]
     next_signing_key: Optional[str] = None
 
     @pydantic.computed_field  # type: ignore[misc]

@@ -1,6 +1,5 @@
 from base64 import b64decode
 from io import BytesIO
-from typing import List
 from unittest.mock import Mock, create_autospec
 from urllib.error import URLError
 
@@ -450,7 +449,7 @@ class MockUrlopenResponse(BytesIO):
 
 
 class MockMirrorFileImportParser:
-    rpsl_data_calls: List[str] = []
+    rpsl_data_calls: list[str] = []
 
     def __init__(
         self, source, filename, serial, database_handler, direct_error_return=False, roa_validator=None

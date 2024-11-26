@@ -1,9 +1,9 @@
 """A module for comparing SQLAlchemy expressions."""
-from __future__ import absolute_import, annotations, print_function, unicode_literals
+from __future__ import annotations
 
 import itertools
 from collections.abc import Mapping
-from typing import Any, Optional
+from typing import Any
 from unittest import mock
 
 from sqlalchemy import func
@@ -25,7 +25,7 @@ ALCHEMY_TYPES = (
 )
 
 
-class PrettyExpression(object):
+class PrettyExpression:
     """Wrapper around given expression with pretty representations.
 
     Wraps any expression in order to represent in a string in a pretty
@@ -156,7 +156,7 @@ class ExpressionMatcher(PrettyExpression):
 
         return True
 
-    def _equals_alchemy(self, other: Any) -> Optional[bool]:
+    def _equals_alchemy(self, other: Any) -> bool | None:
         """Compares for equality in the case of non ALCHEMY_TYPES."""
         if not isinstance(self.expr, ALCHEMY_TYPES):
 

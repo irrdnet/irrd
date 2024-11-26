@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 import sqlalchemy as sa
 import sqlalchemy.dialects.postgresql as pg
@@ -61,7 +61,7 @@ class BaseRPSLObjectDatabaseQuery(BaseDatabaseQuery):
         """Filter on an exact object PK (UUID)."""
         return self._filter(self.columns.pk == pk)
 
-    def pks(self, pks: List[str]):
+    def pks(self, pks: list[str]):
         """Filter on exact object PKs (UUID)."""
         return self._filter(self.columns.pk.in_(pks))
 
@@ -69,12 +69,12 @@ class BaseRPSLObjectDatabaseQuery(BaseDatabaseQuery):
         """Filter on an exact RPSL PK (e.g. 192.0.2.0/24AS65537)."""
         return self.rpsl_pks([rpsl_pk])
 
-    def rpsl_pks(self, rpsl_pks: List[str]):
+    def rpsl_pks(self, rpsl_pks: list[str]):
         """Filter on an exact RPSL PK (e.g. 192.0.2.0/24,AS65537) - will match any PK in the list."""
         rpsl_pks = [p.upper().strip() for p in rpsl_pks]
         return self._filter(self.columns.rpsl_pk.in_(rpsl_pks))
 
-    def sources(self, sources: List[str]):
+    def sources(self, sources: list[str]):
         """
         Filter on one or more sources.
 
@@ -86,7 +86,7 @@ class BaseRPSLObjectDatabaseQuery(BaseDatabaseQuery):
         fltr = self.columns.source.in_(self._sources_list)
         return self._filter(fltr)
 
-    def object_classes(self, object_classes: List[str]):
+    def object_classes(self, object_classes: list[str]):
         """
         Filter on one or more object classes.
 
@@ -195,7 +195,7 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         """
         return self.lookup_attrs_in([attr_name], [attr_value])
 
-    def lookup_attrs_in(self, attr_names: List[str], attr_values: List[Union[str, bool]]):
+    def lookup_attrs_in(self, attr_names: list[str], attr_values: list[Union[str, bool]]):
         """
         Filter on one or more lookup attributes, e.g. mnt-by, or ['admin-c', 'tech-c']
         At least one of the values for at least one of the lookup attributes must
@@ -347,7 +347,7 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         fltr = sa.and_(self.columns.asn_first == asn, self.columns.asn_last == asn)
         return self._filter(fltr)
 
-    def asns_first(self, asns: List[int]):
+    def asns_first(self, asns: list[int]):
         """
         Filter for asn_first being in a list of ASNs.
         This is useful when also restricting object class to 'route' for instance.
@@ -365,21 +365,21 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         fltr = sa.and_(self.columns.asn_first <= asn, self.columns.asn_last >= asn)
         return self._filter(fltr)
 
-    def rpki_status(self, status: List[RPKIStatus]):
+    def rpki_status(self, status: list[RPKIStatus]):
         """
         Filter for RPSL objects with a specific RPKI validation status.
         """
         fltr = self.columns.rpki_status.in_(status)
         return self._filter(fltr)
 
-    def scopefilter_status(self, status: List[ScopeFilterStatus]):
+    def scopefilter_status(self, status: list[ScopeFilterStatus]):
         """
         Filter for RPSL objects with a specific scope filter status.
         """
         fltr = self.columns.scopefilter_status.in_(status)
         return self._filter(fltr)
 
-    def route_preference_status(self, status: List[RoutePreferenceStatus]):
+    def route_preference_status(self, status: list[RoutePreferenceStatus]):
         """
         Filter for RPSL objects with a specific route preference filter status.
         """
@@ -545,7 +545,7 @@ class DatabaseStatusQuery(BaseDatabaseQuery):
     columns = RPSLDatabaseStatus.__table__.c
 
     def __init__(self, columns=None):
-        self._sources_list: List[str] = []
+        self._sources_list: list[str] = []
         self.statement = sa.select(*(columns if columns else self.get_default_columns()))
 
     @classmethod
@@ -585,7 +585,7 @@ class DatabaseStatusQuery(BaseDatabaseQuery):
         """Filter on a source."""
         return self.sources([source])
 
-    def sources(self, sources: List[str]):
+    def sources(self, sources: list[str]):
         """Filter on one or more sources."""
         self._sources_list = [s.upper() for s in sources]
         return self

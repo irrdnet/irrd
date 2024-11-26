@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import List, Optional
+from typing import Optional
 
 import ujson
 from IPy import IP
@@ -50,7 +50,7 @@ class WhoisQueryParser:
         self.multiple_command_mode = False
         self.timeout = SOCKET_DEFAULT_TIMEOUT
         self.key_fields_only = False
-        self.excluded_sets: List[str] = []
+        self.excluded_sets: list[str] = []
         self.client_ip = client_ip
         self.client_str = client_str
         self.database_handler = database_handler

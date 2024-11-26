@@ -1,12 +1,11 @@
 """A module for asserting SQLAlchemy expressions for unittests."""
-from __future__ import absolute_import, print_function, unicode_literals
 
 from typing import Any, Optional
 
 from .comparison import ALCHEMY_TYPES, ExpressionMatcher, PrettyExpression
 
 
-class AlchemyUnittestMixin(object):
+class AlchemyUnittestMixin:
     """A unittest class for asserting SQLAlchemy expressions.
 
     Unittest class mixin for asserting that different SQLAlchemy
@@ -36,7 +35,7 @@ params={'column_1': 10})
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Creates an AlchemyUnittestMixin object for asserting."""
-        super(AlchemyUnittestMixin, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         # add sqlalchemy expression type which will allow to
         # use self.assertEqual
@@ -61,6 +60,4 @@ params={'column_1': 10})
                 expressions are displayed.
         """
         if ExpressionMatcher(left) != right:
-            raise self.failureException(
-                msg or "{!r} != {!r}".format(PrettyExpression(left), PrettyExpression(right))
-            )
+            raise self.failureException(msg or f"{PrettyExpression(left)!r} != {PrettyExpression(right)!r}")

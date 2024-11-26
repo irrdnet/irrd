@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Optional, Tuple
+from typing import Optional
 
 from irrd.conf import RPKI_IRR_PSEUDO_SOURCE, get_setting
 from irrd.conf.defaults import DEFAULT_SOURCE_NRTM_PORT
@@ -96,7 +96,7 @@ class RPSLMirrorImportUpdateRunner:
             self.update_stream_runner.run(serial_newest_mirror, database_handler=self.database_handler)
         return full_reload
 
-    def _status(self) -> Tuple[Optional[int], Optional[bool]]:
+    def _status(self) -> tuple[Optional[int], Optional[bool]]:
         query = DatabaseStatusQuery().source(self.source)
         result = self.database_handler.execute_query(query)
         try:

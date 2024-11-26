@@ -1,5 +1,6 @@
 import re
-from typing import Iterator, List, Optional, Set, TextIO, Union
+from collections.abc import Iterator
+from typing import Optional, TextIO, Union
 
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
 from irrd.rpsl.auth import PASSWORD_HASHERS_ALL
@@ -76,7 +77,7 @@ def split_paragraphs_rpsl(input: Union[str, TextIO], strip_comments=True) -> Ite
         yield current_paragraph
 
 
-def snake_to_camel_case(snake: Union[Set[str], List[str], str]):
+def snake_to_camel_case(snake: Union[set[str], list[str], str]):
     """
     Convert a snake case string to camel case, with lowercase first
     letter. Can also accept a list or set of strings.

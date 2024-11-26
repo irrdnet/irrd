@@ -127,7 +127,7 @@ class DottedCollection(metaclass=ABCMeta):
         elif isinstance(initial, dict):
             for key, item in initial.items():
                 if is_dotted_key(key):
-                    raise ValueError("{} is not a valid key inside a DottedCollection!".format(key))
+                    raise ValueError(f"{key} is not a valid key inside a DottedCollection!")
                 self._validate_initial(item)
 
     def __len__(self):
@@ -178,7 +178,7 @@ class DottedList(DottedCollection, collections.abc.MutableSequence):
 
             # required by the dotted path
             if not isinstance(target, DottedCollection):
-                raise IndexError('cannot get "{}" in "{}" ({})'.format(alt_index, my_index, repr(target)))
+                raise IndexError(f'cannot get "{alt_index}" in "{my_index}" ({repr(target)})')
 
             return target[alt_index]
 
@@ -203,14 +203,12 @@ class DottedList(DottedCollection, collections.abc.MutableSequence):
                 self.store.append(DottedCollection._factory_by_index(alt_index))
 
             if not isinstance(self[int(my_index)], DottedCollection):
-                raise IndexError(
-                    'cannot set "{}" in "{}" ({})'.format(alt_index, my_index, repr(self[int(my_index)]))
-                )
+                raise IndexError(f'cannot set "{alt_index}" in "{my_index}" ({repr(self[int(my_index)])})')
 
             self[int(my_index)][alt_index] = DottedCollection.factory(value)
 
         else:
-            raise IndexError("cannot use {} as index in {}".format(index, repr(self.store)))
+            raise IndexError(f"cannot use {index} as index in {repr(self.store)}")
 
     def __delitem__(self, index):
         if isinstance(index, int) or (isinstance(index, str) and index.isdigit()):
@@ -222,12 +220,12 @@ class DottedList(DottedCollection, collections.abc.MutableSequence):
 
             # required by the dotted path
             if not isinstance(target, DottedCollection):
-                raise IndexError('cannot delete "{}" in "{}" ({})'.format(alt_index, my_index, repr(target)))
+                raise IndexError(f'cannot delete "{alt_index}" in "{my_index}" ({repr(target)})')
 
             del target[alt_index]
 
         else:
-            raise IndexError("cannot delete {} in {}".format(index, repr(self.store)))
+            raise IndexError(f"cannot delete {index} in {repr(self.store)}")
 
     def to_python(self):
         """Returns a plain python list and converts to plain python objects all
@@ -262,7 +260,7 @@ class DottedDict(DottedCollection, collections.abc.MutableMapping):
 
         # required by the dotted path
         if not isinstance(target, DottedCollection):
-            raise KeyError('cannot get "{}" in "{}" ({})'.format(alt_key, my_key, repr(target)))
+            raise KeyError(f'cannot get "{alt_key}" in "{my_key}" ({repr(target)})')
 
         return target[alt_key]
 
@@ -292,7 +290,7 @@ class DottedDict(DottedCollection, collections.abc.MutableMapping):
             target = self.store[my_key]
 
             if not isinstance(target, DottedCollection):
-                raise KeyError('cannot delete "{}" in "{}" ({})'.format(alt_key, my_key, repr(target)))
+                raise KeyError(f'cannot delete "{alt_key}" in "{my_key}" ({repr(target)})')
 
             del target[alt_key]
 

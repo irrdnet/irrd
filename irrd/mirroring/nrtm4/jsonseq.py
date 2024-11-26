@@ -1,5 +1,6 @@
+from collections.abc import Generator, Iterable
 from gzip import GzipFile
-from typing import IO, Any, Generator, Iterable, Union
+from typing import IO, Any, Union
 
 import ujson
 

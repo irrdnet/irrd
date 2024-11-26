@@ -1,5 +1,3 @@
-from typing import Tuple
-
 import coredis
 import redis
 from coredis.response.types import StreamEntry
@@ -28,7 +26,7 @@ class AsyncEventStreamRedisClient:
     def __init__(self, redis_conn: coredis.Redis):
         self.redis_conn = redis_conn
 
-    async def get_entries(self, after_event_id: str) -> Tuple[StreamEntry, ...]:
+    async def get_entries(self, after_event_id: str) -> tuple[StreamEntry, ...]:
         entries = await self.redis_conn.xread(
             streams={REDIS_STREAM_RPSL: after_event_id},
             block=EVENT_STREAM_MAX_WAIT_MS,

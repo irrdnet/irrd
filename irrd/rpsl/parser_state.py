@@ -1,4 +1,4 @@
-from typing import List, Optional, TypeVar
+from typing import Optional, TypeVar
 
 from IPy import IP
 
@@ -9,19 +9,19 @@ class RPSLParserMessages:
     levels = ["INFO", "ERROR"]
 
     def __init__(self) -> None:
-        self._messages: List[tuple] = []
+        self._messages: list[tuple] = []
 
     def __str__(self) -> str:
         messages_str = [f"{msg[0]}: {msg[1]}" for msg in self._messages]
         return "\n".join(messages_str)
 
-    def messages(self) -> List[str]:
+    def messages(self) -> list[str]:
         return [msg[1] for msg in self._messages]
 
-    def infos(self) -> List[str]:
+    def infos(self) -> list[str]:
         return [msg[1] for msg in self._messages if msg[0] == "INFO"]
 
-    def errors(self) -> List[str]:
+    def errors(self) -> list[str]:
         return [msg[1] for msg in self._messages if msg[0] == "ERROR"]
 
     def info(self, msg: str) -> None:
@@ -41,7 +41,7 @@ class RPSLFieldParseResult:
     def __init__(
         self,
         value: str,
-        values_list: Optional[List[str]] = None,
+        values_list: Optional[list[str]] = None,
         ip_first: Optional[IP] = None,
         ip_last: Optional[IP] = None,
         prefix: Optional[IP] = None,

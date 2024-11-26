@@ -1,14 +1,14 @@
 """A module for utils for the ``mock-alchemy`` library."""
-from __future__ import absolute_import, print_function, unicode_literals
 
+from collections.abc import Sequence
 from contextlib import contextmanager
-from typing import Any, Dict, Sequence, Tuple, Type, Union
+from typing import Any, Union
 
 from sqlalchemy import inspect
 from sqlalchemy.orm.exc import MultipleResultsFound
 
 
-def match_type(s: Union[bytes, str], t: Union[Type[bytes], Type[str]]) -> Union[bytes, str]:
+def match_type(s: Union[bytes, str], t: Union[type[bytes], type[str]]) -> Union[bytes, str]:
     """Match the string type.
 
     Matches the string type with the provided type and returns the string
@@ -36,7 +36,7 @@ def match_type(s: Union[bytes, str], t: Union[Type[bytes], Type[str]]) -> Union[
         return s.encode("utf-8")
 
 
-def copy_and_update(target: Dict, updater: Dict) -> Dict:
+def copy_and_update(target: dict, updater: dict) -> dict:
     """Copy and update dictionary.
 
     Copy dictionary and update it all in one operation.
@@ -95,7 +95,7 @@ def indexof(needle: Any, haystack: Sequence[Any]) -> int:
     for i, item in enumerate(haystack):
         if needle is item:
             return i
-    raise ValueError("{!r} is not in {!r}".format(needle, haystack))
+    raise ValueError(f"{needle!r} is not in {haystack!r}")
 
 
 @contextmanager
@@ -146,7 +146,7 @@ def setattr_tmp(obj: object, name: str, value: Any) -> Any:
         setattr(obj, name, original)
 
 
-def raiser(exp: Type[Exception], *args: Any, **kwargs: Any) -> Type[Exception]:
+def raiser(exp: type[Exception], *args: Any, **kwargs: Any) -> type[Exception]:
     """Raises an exception with the given args.
 
     Utility for raising exceptions
@@ -172,7 +172,7 @@ def raiser(exp: Type[Exception], *args: Any, **kwargs: Any) -> Type[Exception]:
     raise exp(*args, **kwargs)
 
 
-def build_identity_map(items: Sequence[Any]) -> Dict:
+def build_identity_map(items: Sequence[Any]) -> dict:
     """Builds identity map.
 
     Utility for building identity map from given SQLAlchemy models.
@@ -212,7 +212,7 @@ def build_identity_map(items: Sequence[Any]) -> Dict:
     return idmap
 
 
-def get_item_attr(idmap: Dict, access: Union[Dict, Tuple, Any]) -> Any:
+def get_item_attr(idmap: dict, access: Union[dict, tuple, Any]) -> Any:
     """Access dictionary in different methods.
 
     Utility for accessing dict by different key types (for get).

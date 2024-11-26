@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 from IPy import IP
 
@@ -67,7 +67,7 @@ class ScopeFilterValidator:
 
     def _validate_rpsl_data(
         self, source: str, object_class: str, prefix: Optional[IP], asn_first: Optional[int]
-    ) -> Tuple[ScopeFilterStatus, str]:
+    ) -> tuple[ScopeFilterStatus, str]:
         """
         Validate whether a particular set of RPSL data is in scope.
         Returns a ScopeFilterStatus.
@@ -88,7 +88,7 @@ class ScopeFilterValidator:
 
         return ScopeFilterStatus.in_scope, ""
 
-    def validate_rpsl_object(self, rpsl_object: RPSLObject) -> Tuple[ScopeFilterStatus, str]:
+    def validate_rpsl_object(self, rpsl_object: RPSLObject) -> tuple[ScopeFilterStatus, str]:
         """
         Validate whether an RPSLObject is in scope.
         Returns a tuple of a ScopeFilterStatus and an explanation string.
@@ -102,7 +102,7 @@ class ScopeFilterValidator:
 
     def validate_all_rpsl_objects(
         self, database_handler: DatabaseHandler
-    ) -> Tuple[List[Dict[str, str]], List[Dict[str, str]], List[Dict[str, str]]]:
+    ) -> tuple[list[dict[str, str]], list[dict[str, str]], list[dict[str, str]]]:
         """
         Apply the scope filter to all relevant objects.
 
@@ -119,7 +119,7 @@ class ScopeFilterValidator:
         """
         columns = ["pk", "rpsl_pk", "prefix", "asn_first", "source", "object_class", "scopefilter_status"]
 
-        objs_changed: Dict[ScopeFilterStatus, List[Dict[str, str]]] = defaultdict(list)
+        objs_changed: dict[ScopeFilterStatus, list[dict[str, str]]] = defaultdict(list)
 
         q = RPSLDatabaseQuery(column_names=columns, enable_ordering=False)
         q = q.object_classes(["route", "route6", "aut-num"])
