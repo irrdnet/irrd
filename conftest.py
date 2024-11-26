@@ -7,6 +7,8 @@ import pytest
 from typing import Dict, Any
 
 import redis
+import sqlalchemy
+from sqlalchemy.engine import reflection
 from sqlalchemy.exc import ProgrammingError
 
 from irrd import conf
@@ -99,13 +101,14 @@ def irrd_database_create_destroy():
         conf.testing_overrides = None
 
     engine = get_engine()
+    connection = engine.connect().execution_options(isolation_level="AUTOCOMMIT")
+    inspector = sqlalchemy.inspect(engine)
     try:
-        engine.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
+        connection.execute(sqlalchemy.text("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
     except ProgrammingError as pe:  # pragma: no cover
         print(f"WARNING: unable to create extension pgcrypto on the database. Queries may fail: {pe}")
-
     table_name = RPSLDatabaseObject.__tablename__
-    if engine.has_table(engine, table_name):  # pragma: no cover
+    if inspector.has_table(table_name):  # pragma: no cover
         if engine.url.database not in ["irrd_test", "circle_test"]:
             print(
                 f"The database on URL {engine.url} already has a table named {table_name} - "
@@ -117,6 +120,7 @@ def irrd_database_create_destroy():
         RPSLDatabaseObject.metadata.drop_all(engine)
 
     RPSLDatabaseObject.metadata.create_all(engine)
+    connection.close()
 
     yield engine
 
@@ -128,8 +132,9 @@ def irrd_database_create_destroy():
 def irrd_db(irrd_database_create_destroy):
     engine = irrd_database_create_destroy
     dh = DatabaseHandler()
-    for table in engine.table_names():
-        dh.execute_statement(f"TRUNCATE {table} CASCADE")
+    inspector = sqlalchemy.inspect(engine)
+    for table in inspector.get_table_names():
+        dh.execute_statement(sqlalchemy.text(f"TRUNCATE {table} CASCADE"))
     dh.commit()
     dh.close()
 
@@ -147,7 +152,7 @@ def irrd_db_session_with_user(irrd_db):
     set_factory_session(provider.session)
     user = AuthUserFactory()
     provider.session.commit()
-    provider.session.connection().execute("COMMIT")
+    provider.session.connection().execute(sqlalchemy.text("COMMIT"))
 
     yield provider, user
 

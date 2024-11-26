@@ -232,7 +232,7 @@ class DatabaseHandler:
         result_partition = result.fetchmany()
         while result_partition:
             for row in result_partition:
-                yield dict(row)
+                yield row._mapping
             result_partition = result.fetchmany()
         result.close()
 
@@ -584,17 +584,21 @@ class DatabaseHandler:
             rpsl_pk = rpsl_object.pk()
         if not object_class and rpsl_object:
             object_class = rpsl_object.rpsl_object_class
-        stmt = table.delete(
-            sa.and_(
-                table.c.rpsl_pk == rpsl_pk, table.c.object_class == object_class, table.c.source == source
-            ),
-        ).returning(
-            table.c.pk,
-            table.c.rpsl_pk,
-            table.c.source,
-            table.c.object_class,
-            table.c.prefix,
-            table.c.object_text,
+        stmt = (
+            table.delete()
+            .where(
+                sa.and_(
+                    table.c.rpsl_pk == rpsl_pk, table.c.object_class == object_class, table.c.source == source
+                ),
+            )
+            .returning(
+                table.c.pk,
+                table.c.rpsl_pk,
+                table.c.source,
+                table.c.object_class,
+                table.c.prefix,
+                table.c.object_text,
+            )
         )
         results = self.execute_statement(stmt)
 
@@ -604,14 +608,14 @@ class DatabaseHandler:
         result = results.fetchone()
         self.status_tracker.record_operation(
             operation=DatabaseOperation.delete,
-            rpsl_pk=result["rpsl_pk"],
-            source=result["source"],
-            object_class=result["object_class"],
-            object_text=result["object_text"],
+            rpsl_pk=result.rpsl_pk,
+            source=result.source,
+            object_class=result.object_class,
+            object_text=result.object_text,
             origin=origin,
             source_serial=source_serial,
         )
-        self.changed_objects_tracker.object_modified_dict(result, origin)
+        self.changed_objects_tracker.object_modified_dict(result._mapping, origin)
 
         if (
             protect_rpsl_name
@@ -620,10 +624,10 @@ class DatabaseHandler:
         ):
             self.execute_statement(
                 ProtectedRPSLName.__table__.insert().values(
-                    rpsl_pk=result["rpsl_pk"],
-                    source=result["source"],
-                    object_class=result["object_class"],
-                    protected_name=result["rpsl_pk"],
+                    rpsl_pk=result.rpsl_pk,
+                    source=result.source,
+                    object_class=result.object_class,
+                    protected_name=result.rpsl_pk,
                 )
             )
 
@@ -641,16 +645,20 @@ class DatabaseHandler:
         self._flush_rpsl_object_writing_buffer()
 
         rpsl_table = RPSLDatabaseObject.__table__
-        stmt = rpsl_table.delete(rpsl_table.c.pk == pk_uuid).returning(
-            rpsl_table.c.pk,
-            rpsl_table.c.rpsl_pk,
-            rpsl_table.c.source,
-            rpsl_table.c.prefix,
-            rpsl_table.c.object_class,
-            rpsl_table.c.object_text,
-            rpsl_table.c.parsed_data,
-            rpsl_table.c.created,
-            rpsl_table.c.updated,
+        stmt = (
+            rpsl_table.delete()
+            .where(rpsl_table.c.pk == pk_uuid)
+            .returning(
+                rpsl_table.c.pk,
+                rpsl_table.c.rpsl_pk,
+                rpsl_table.c.source,
+                rpsl_table.c.prefix,
+                rpsl_table.c.object_class,
+                rpsl_table.c.object_text,
+                rpsl_table.c.parsed_data,
+                rpsl_table.c.created,
+                rpsl_table.c.updated,
+            )
         )
         results = self._connection.execute(stmt)
 
@@ -661,26 +669,28 @@ class DatabaseHandler:
 
         self.execute_statement(
             RPSLDatabaseObjectSuspended.__table__.insert().values(
-                rpsl_pk=result["rpsl_pk"],
-                source=result["source"],
-                object_class=result["object_class"],
-                object_text=result["object_text"],
-                mntners=result["parsed_data"]["mnt-by"],
-                original_created=result["created"],
-                original_updated=result["updated"],
+                rpsl_pk=result.rpsl_pk,
+                source=result.source,
+                object_class=result.object_class,
+                object_text=result.object_text,
+                mntners=result.parsed_data["mnt-by"],
+                original_created=result.created,
+                original_updated=result.updated,
             )
         )
 
         self.status_tracker.record_operation(
             operation=DatabaseOperation.delete,
-            rpsl_pk=result["rpsl_pk"],
-            source=result["source"],
-            object_class=result["object_class"],
-            object_text=result["object_text"],
+            rpsl_pk=result.rpsl_pk,
+            source=result.source,
+            object_class=result.object_class,
+            object_text=result.object_text,
             origin=JournalEntryOrigin.suspension,
             source_serial=None,
         )
-        self.changed_objects_tracker.object_modified_dict(result, origin=JournalEntryOrigin.suspension)
+        self.changed_objects_tracker.object_modified_dict(
+            result._mapping, origin=JournalEntryOrigin.suspension
+        )
 
     def delete_suspended_rpsl_objects(self, pk_uuids: Set[str]) -> None:
         """
@@ -692,7 +702,7 @@ class DatabaseHandler:
         self._flush_rpsl_object_writing_buffer()
 
         suspended_table = RPSLDatabaseObjectSuspended.__table__
-        stmt = suspended_table.delete(suspended_table.c.pk.in_(pk_uuids))
+        stmt = suspended_table.delete().where(suspended_table.c.pk.in_(pk_uuids))
         self._connection.execute(stmt)
 
     def _flush_rpsl_object_writing_buffer(self) -> None:
@@ -781,7 +791,7 @@ class DatabaseHandler:
         self._check_write_permitted()
         self._flush_rpsl_object_writing_buffer()
         table = RPSLDatabaseJournal.__table__
-        stmt = table.delete(sa.and_(table.c.source == source, table.c.timestamp < timestamp))
+        stmt = table.delete().where(sa.and_(table.c.source == source, table.c.timestamp < timestamp))
         self._connection.execute(stmt)
 
     def delete_all_rpsl_objects_with_journal(self, source, journal_guaranteed_empty=False):
@@ -794,14 +804,14 @@ class DatabaseHandler:
         self._check_write_permitted()
         self._flush_rpsl_object_writing_buffer()
         table = RPSLDatabaseObject.__table__
-        stmt = table.delete(table.c.source == source)
+        stmt = table.delete().where(table.c.source == source)
         self._connection.execute(stmt)
         if not journal_guaranteed_empty:
             table = RPSLDatabaseJournal.__table__
-            stmt = table.delete(table.c.source == source)
+            stmt = table.delete().where(table.c.source == source)
             self._connection.execute(stmt)
         table = RPSLDatabaseStatus.__table__
-        stmt = table.delete(table.c.source == source)
+        stmt = table.delete().where(table.c.source == source)
         self._connection.execute(stmt)
         # All objects are presumed to have been changed.
         self.changed_objects_tracker.all_object_classes_updated()
@@ -842,8 +852,8 @@ class DatabaseHandler:
         )
 
     def timestamp_last_committed_transaction(self) -> datetime:
-        result = self.execute_statement("SELECT timestamp FROM pg_last_committed_xact()")
-        return result.fetchone()["timestamp"]
+        result = self.execute_statement(sa.text("SELECT timestamp FROM pg_last_committed_xact()"))
+        return result.fetchone().timestamp
 
     def record_serial_newest_mirror(self, source: str, serial: int) -> None:
         """
@@ -1035,12 +1045,14 @@ class DatabaseStatusTracker:
         self._sources_seen.add(source)
         self._sources_rpsl_data_updated.add(source)
         if self.journaling_enabled and get_setting(f"sources.{source}.keep_journal"):
-            serial_nrtm: Union[int, sa.sql.expression.Select]
+            serial_nrtm: Union[Optional[int], sa.sql.expression.Select, sa.sql.expression.ScalarSelect]
             journal_tablename = RPSLDatabaseJournal.__tablename__
 
             # Locking this table is one of the few ways to guarantee serial_global in order (#685)
             if not self._journal_table_locked:
-                self.database_handler.execute_statement(f"LOCK TABLE {journal_tablename} IN EXCLUSIVE MODE")
+                self.database_handler.execute_statement(
+                    sa.text(f"LOCK TABLE {journal_tablename} IN EXCLUSIVE MODE")
+                )
                 self._journal_table_locked = True
 
             if self._is_serial_synchronised(source):
@@ -1050,17 +1062,14 @@ class DatabaseStatusTracker:
                     serial_nrtm = max(self._new_serials_per_source[source]) + 1
                 else:
                     serial_nrtm = sa.select(
-                        [sa.text("COALESCE(MAX(serial_nrtm), MAX(serial_newest_seen), 0) + 1")]
+                        sa.text("COALESCE(MAX(serial_nrtm), MAX(serial_newest_seen), 0) + 1")
                     )
                     serial_nrtm = serial_nrtm.select_from(
                         RPSLDatabaseStatus.__table__.outerjoin(
                             RPSLDatabaseJournal.__table__, self.c_status.source == self.c_journal.source
                         )
                     )
-                    serial_nrtm = serial_nrtm.where(self.c_status.source == source)
-                    # as_scalar() method is deprecated since version 1.4 and will be removed in a future release.
-                    # Use scalar_subquery() instead when upgrading the sqlalchemy.
-                    serial_nrtm = serial_nrtm.as_scalar()
+                    serial_nrtm = serial_nrtm.where(self.c_status.source == source).scalar_subquery()
 
             timestamp = datetime.now(timezone.utc)
 
@@ -1080,7 +1089,7 @@ class DatabaseStatusTracker:
             )
             insert_result = self.database_handler.execute_statement(stmt).fetchone()
 
-            self._new_serials_per_source[source].add(insert_result["serial_nrtm"])
+            self._new_serials_per_source[source].add(insert_result.serial_nrtm)
 
     def finalise_transaction(self):
         """
@@ -1117,32 +1126,36 @@ class DatabaseStatusTracker:
             self.database_handler.execute_statement(stmt)
 
         for source, serials in self._new_serials_per_source.items():
-            serial_oldest_journal_q = sa.select([sa.func.min(self.c_journal.serial_nrtm)]).where(
+            serial_oldest_journal_q = sa.select(sa.func.min(self.c_journal.serial_nrtm)).where(
                 self.c_journal.source == source
             )
             result = self.database_handler.execute_statement(serial_oldest_journal_q)
             serial_oldest_journal = next(result)[0]
 
-            serial_newest_journal_q = sa.select([sa.func.max(self.c_journal.serial_nrtm)]).where(
+            serial_newest_journal_q = sa.select(sa.func.max(self.c_journal.serial_nrtm)).where(
                 self.c_journal.source == source
             )
             result = self.database_handler.execute_statement(serial_newest_journal_q)
             serial_newest_journal = next(result)[0]
 
-            serial_oldest_seen = sa.select(
-                [
+            serial_oldest_seen = (
+                sa.select(
                     sa.func.least(
                         sa.func.min(self.c_status.serial_oldest_seen), serial_oldest_journal, min(serials)
                     )
-                ]
-            ).where(self.c_status.source == source)
-            serial_newest_seen = sa.select(
-                [
+                )
+                .where(self.c_status.source == source)
+                .scalar_subquery()
+            )
+            serial_newest_seen = (
+                sa.select(
                     sa.func.greatest(
                         sa.func.max(self.c_status.serial_newest_seen), serial_newest_journal, max(serials)
                     ),
-                ]
-            ).where(self.c_status.source == source)
+                )
+                .where(self.c_status.source == source)
+                .scalar_subquery()
+            )
 
             stmt = (
                 RPSLDatabaseStatus.__table__.update()

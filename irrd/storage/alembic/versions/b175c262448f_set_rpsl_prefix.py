@@ -5,6 +5,7 @@ Revises: f4c837d8258c
 Create Date: 2021-03-01 15:40:03.546705
 
 """
+import sqlalchemy
 from alembic import op
 
 # revision identifiers, used by Alembic.
@@ -17,8 +18,10 @@ depends_on = None
 def upgrade():
     connection = op.get_bind()
     connection.execute(
-        "update rpsl_objects set prefix=(host(ip_first) || '/' || prefix_length)::cidr where object_class in"
-        " ('route', 'route6', 'inet6num');"
+        sqlalchemy.text(
+            "update rpsl_objects set prefix=(host(ip_first) || '/' || prefix_length)::cidr where object_class"
+            " in ('route', 'route6', 'inet6num');"
+        )
     )
 
 

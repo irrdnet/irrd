@@ -136,7 +136,6 @@ def test_update_route_preference_status(config_override, monkeypatch):
         "prefix",
         "origin",
         "object_class",
-        "object_text",
         "scopefilter_status",
         "rpki_status",
     ]

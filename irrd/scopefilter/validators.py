@@ -125,7 +125,8 @@ class ScopeFilterValidator:
         q = q.object_classes(["route", "route6", "aut-num"])
         results = database_handler.execute_query(q)
 
-        for result in results:
+        for result_mapping in results:
+            result = dict(result_mapping)
             current_status = result["scopefilter_status"]
             result["old_status"] = current_status
             prefix = None

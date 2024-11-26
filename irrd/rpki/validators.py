@@ -96,7 +96,8 @@ class BulkRouteROAValidator:
 
         objs_changed: Dict[RPKIStatus, List[Dict[str, str]]] = defaultdict(list)
 
-        for result in routes:
+        for result_mapping in routes:
+            result = dict(result_mapping)
             # RPKI_IRR_PSEUDO_SOURCE objects are ROAs, and don't need validation.
             if result["source"] == RPKI_IRR_PSEUDO_SOURCE:
                 continue
