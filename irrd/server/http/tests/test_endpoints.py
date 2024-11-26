@@ -190,7 +190,7 @@ class TestObjectSubmissionEndpoint:
         expected_data = RPSLChangeSubmission.model_validate(data)
 
         response_post = client.post(
-            "/v1/submit/", data=ujson.dumps(data), headers={"X-irrd-metadata": '{"meta": 2}'}
+            "/v1/submit/", content=ujson.dumps(data), headers={"X-irrd-metadata": '{"meta": 2}'}
         )
         assert response_post.status_code == 200
         assert response_post.text == '{"response":true}'
@@ -204,7 +204,7 @@ class TestObjectSubmissionEndpoint:
         mock_handler.send_notification_target_reports.assert_called_once()
         mock_handler.reset_mock()
 
-        response_delete = client.request("DELETE", "/v1/submit/", data=ujson.dumps(data))
+        response_delete = client.request("DELETE", "/v1/submit/", content=ujson.dumps(data))
         assert response_delete.status_code == 200
         assert response_delete.text == '{"response":true}'
         mock_handler.load_change_submission.assert_called_once_with(
@@ -243,7 +243,7 @@ class TestSuspensionSubmissionEndpoint:
         }
         expected_data = RPSLSuspensionSubmission.model_validate(data)
 
-        response_post = client.post("/v1/suspension/", data=ujson.dumps(data))
+        response_post = client.post("/v1/suspension/", content=ujson.dumps(data))
         assert response_post.status_code == 200
         assert response_post.text == '{"response":true}'
         mock_handler.load_suspension_submission.assert_called_once_with(

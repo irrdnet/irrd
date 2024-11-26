@@ -25,7 +25,7 @@ def template_context_render(template_name, request, context) -> Response:
     if "user" not in context:
         context["user"] = request.auth.user if request.auth.is_authenticated else None
 
-    return templates.TemplateResponse(template_name, context)
+    return templates.TemplateResponse(request, template_name, context)
 
 
 def render_form(form: wtforms.Form) -> Markup:

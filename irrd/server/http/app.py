@@ -1,3 +1,4 @@
+import contextlib
 import logging
 import os
 import signal
@@ -51,7 +52,8 @@ and then the app is started in each process.
 """
 
 
-async def startup():
+@contextlib.asynccontextmanager
+async def lifespan(app):
     """
     Prepare the database connection and preloader, which
     is shared between different queries in this process.
@@ -60,7 +62,6 @@ async def startup():
     """
     setproctitle("irrd-http-server-listener")
     set_traceback_handler()
-    global app
     config_path = os.getenv(ENV_UVICORN_WORKER_CONFIG_PATH)
     config_init(config_path)
     set_middleware(app)
@@ -92,9 +93,8 @@ async def startup():
             logger.error("Failed to terminate IRRd, unable to find main process PID")
         return
 
+    yield
 
-async def shutdown():
-    global app
     app.state.database_handler.close()
     app.state.preloader = None
     app.state.rate_limiter = None
@@ -139,8 +139,7 @@ class MemoryTrimMiddleware:
 app = Starlette(
     debug=False,
     routes=routes,
-    on_startup=[startup],
-    on_shutdown=[shutdown],
+    lifespan=lifespan,
 )
 
 
