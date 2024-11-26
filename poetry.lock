@@ -2319,14 +2319,18 @@ files = [
 ]
 
 [[package]]
-name = "py-radix-sr"
-version = "1.0.0.post1"
+name = "py-radix"
+version = "1.0.2"
 description = "Radix tree implementation"
 optional = false
 python-versions = "*"
 files = [
-    {file = "py-radix-sr-1.0.0.post1.tar.gz", hash = "sha256:e0c0f922380856bbdf785c701f67661f1b5c5cb6779308532ce3c27a6204cd7d"},
+    {file = "v1.0.2.tar.gz", hash = "sha256:a5cd2e3e4ee87d593584526485553693a9b2b7bc6680b3de88f540334aa75d1c"},
 ]
+
+[package.source]
+type = "url"
+url = "https://github.com/SEKOIA-IO/py-radix/archive/refs/tags/v1.0.2.tar.gz"
 
 [[package]]
 name = "pycparser"
@@ -4157,4 +4161,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "bdb3b480befa2144651f9170746a50853c5a578f24cf7d31b064fc318b4bb451"
+content-hash = "93ba88a9a8769086162d07043205beda1b1dc4e128b7f301bee418d11190d858"
