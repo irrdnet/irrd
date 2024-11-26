@@ -40,7 +40,6 @@ class AsyncEventStreamRedisClient:
 
     async def close(self):
         if self.redis_conn:
-            await self.redis_conn.quit()
             self.redis_conn = None
 
 

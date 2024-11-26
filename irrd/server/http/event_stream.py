@@ -170,7 +170,7 @@ class EventStreamEndpoint(WebSocketEndpoint):
         host = websocket.client.host if websocket.client else STARLETTE_TEST_CLIENT_HOST
         logger.debug(f"event stream {host}: received {data}")
         try:
-            request = EventStreamSubscriptionRequest.parse_raw(data)
+            request = EventStreamSubscriptionRequest.model_validate_json(data)
         except pydantic.ValidationError as exc:
             await websocket.send_json(
                 {

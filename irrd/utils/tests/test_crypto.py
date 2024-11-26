@@ -11,6 +11,7 @@ from irrd.utils.crypto import (
 )
 
 
+@pytest.mark.filterwarnings("ignore:Please use a Key object instead of bytes or string.")
 def test_crypto_eckey(config_override):
     private_key = ECKey.generate_key()
     config_override(

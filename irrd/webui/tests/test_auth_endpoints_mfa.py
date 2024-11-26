@@ -128,7 +128,7 @@ class TestWebAuthnAuthenticate(WebRequestTest):
                 "clientExtensionResults": {},
             }
         )
-        response = test_client.post(self.verify_url, data=verification_body)
+        response = test_client.post(self.verify_url, content=verification_body)
         assert response.json()["verified"]
 
         response = test_client.get("/ui/user/", follow_redirects=False)
@@ -165,7 +165,7 @@ class TestWebAuthnAuthenticate(WebRequestTest):
                 "clientExtensionResults": {},
             }
         )
-        response = test_client.post(self.verify_url, data=verification_body)
+        response = test_client.post(self.verify_url, content=verification_body)
         assert not response.json()["verified"]
 
         response = test_client.get("/ui/user/", follow_redirects=False)
