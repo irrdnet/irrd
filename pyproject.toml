@@ -15,7 +15,7 @@ documentation = "https://irrd.readthedocs.io/"
 exclude = ['irrd/*/tests', 'irrd/*/*/tests', 'irrd/integration_tests']
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.9"
 # For installation dependencies, this project pins on exact
 # versions. This is because it's an application rather than
 # a library, so we assume that irrd is the only tool installed
