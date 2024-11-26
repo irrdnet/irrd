@@ -50,6 +50,11 @@ the RPSL data for a source changed. This updates when objects are added,
 modified or deleted through any method, including a change in visibility
 due to object suppression status.
 
+Minimum Python version and PyPy
+-------------------------------
+The minimum Python version for IRRd is now 3.9. Python 3.8 is end of life
+as of 7 October 2024 and therefore no longer supported.
+
 Other changes
 -------------
 * The ``sources.{name}.object_class_filter`` setting can now also be used
