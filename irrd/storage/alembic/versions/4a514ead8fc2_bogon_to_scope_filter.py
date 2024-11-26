@@ -5,9 +5,9 @@ Revises: 39e4f15ed80c
 Create Date: 2020-07-09 20:11:45.873381
 
 """
+import sqlalchemy
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.engine.reflection import Inspector
 from sqlalchemy.exc import ProgrammingError
 
 revision = "4a514ead8fc2"
@@ -34,7 +34,7 @@ def upgrade():
     )
 
     conn = op.get_bind()
-    inspector = Inspector.from_engine(conn)
+    inspector = sqlalchemy.inspect(conn)
     columns = inspector.get_columns("rpsl_objects")
 
     # This is a somewhat strange migration: the bogon_status column may or may

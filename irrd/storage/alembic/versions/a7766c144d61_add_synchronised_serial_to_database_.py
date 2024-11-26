@@ -26,7 +26,7 @@ def upgrade():
     connection = op.get_bind()
     t_db_status = RPSLDatabaseStatus.__table__
 
-    for row in connection.execute(sa.select([t_db_status.c.source])):
+    for row in connection.execute(sa.select(t_db_status.c.source)):
         synchronised_serials = is_serial_synchronised(None, row["source"], settings_only=True)
         connection.execute(
             t_db_status.update()

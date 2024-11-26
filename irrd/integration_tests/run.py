@@ -11,6 +11,7 @@ import unittest
 from pathlib import Path
 
 import requests
+import sqlalchemy
 import sqlalchemy as sa
 import ujson
 import yaml
@@ -991,10 +992,10 @@ class TestIntegration:
             command.upgrade(alembic_cfg, "head")
 
             connection = sa.create_engine(database_url).connect()
-            connection.execute("DELETE FROM rpsl_objects")
-            connection.execute("DELETE FROM rpsl_database_journal")
-            connection.execute("DELETE FROM database_status")
-            connection.execute("DELETE FROM roa_object")
+            connection.execute(sqlalchemy.text("DELETE FROM rpsl_objects"))
+            connection.execute(sqlalchemy.text("DELETE FROM rpsl_database_journal"))
+            connection.execute(sqlalchemy.text("DELETE FROM database_status"))
+            connection.execute(sqlalchemy.text("DELETE FROM roa_object"))
 
     def _submit_update(self, config_path, request):
         """

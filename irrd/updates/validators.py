@@ -513,7 +513,7 @@ class AuthValidator:
                     auth_method=AuthMethod.MNTNER_API_KEY,
                     auth_mntner=api_key.mntner,
                     mntner_pk=mntner_name,
-                    api_key=api_key.pk,
+                    api_key=api_key,
                 )
 
         for mntner_obj in mntner_objs:

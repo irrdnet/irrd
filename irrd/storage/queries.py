@@ -130,7 +130,7 @@ class BaseRPSLObjectDatabaseQuery(BaseDatabaseQuery):
                 for idx, source in enumerate(self._sources_list):
                     case_elements.append((self.columns.source == source, idx + 1))
 
-                criterion = sa.case(case_elements, else_=100000)
+                criterion = sa.case(*case_elements, else_=100000)
                 order_by.insert(0, criterion)
 
             self.statement = self.statement.order_by(*order_by)
@@ -183,7 +183,7 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
             ]
         else:
             columns = [self.columns.get(name) for name in column_names]
-        self.statement = sa.select(columns)
+        self.statement = sa.select(*columns)
         self._lookup_attr_counter = 0
 
     def lookup_attr(self, attr_name: str, attr_value: Union[str, bool]):
@@ -277,7 +277,7 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         )
         self.statement = self.statement.where(fltr)
 
-        size_subquery = self.statement.with_only_columns([self.columns.ip_size])
+        size_subquery = self.statement.with_only_columns(self.columns.ip_size)
         size_subquery = size_subquery.order_by(self.columns.ip_size.asc())
         size_subquery = size_subquery.limit(1)
 
@@ -474,7 +474,7 @@ class RPSLDatabaseJournalQuery(BaseRPSLObjectDatabaseQuery):
             ]
         else:
             columns = [self.columns.get(name) for name in column_names]
-        self.statement = sa.select(columns).order_by(
+        self.statement = sa.select(*columns).order_by(
             self.columns.source.asc(), self.columns.serial_nrtm.asc()
         )
 
@@ -514,10 +514,8 @@ class RPSLDatabaseJournalStatisticsQuery(BaseDatabaseQuery):
 
     def __init__(self):
         self.statement = sa.select(
-            [
-                sa.func.max(self.columns.serial_global).label("max_serial_global"),
-                sa.func.max(self.columns.timestamp).label("max_timestamp"),
-            ]
+            sa.func.max(self.columns.serial_global).label("max_serial_global"),
+            sa.func.max(self.columns.timestamp).label("max_timestamp"),
         )
 
 
@@ -532,7 +530,7 @@ class RPSLDatabaseSuspendedQuery(BaseRPSLObjectDatabaseQuery):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.statement = sa.select(self.columns).order_by(self.columns.timestamp.asc())
+        self.statement = sa.select(*self.columns).order_by(self.columns.timestamp.asc())
 
     def mntner(self, mntner_rpsl_pk: str):
         """
@@ -548,7 +546,7 @@ class DatabaseStatusQuery(BaseDatabaseQuery):
 
     def __init__(self, columns=None):
         self._sources_list: List[str] = []
-        self.statement = sa.select(columns if columns else self.get_default_columns())
+        self.statement = sa.select(*(columns if columns else self.get_default_columns()))
 
     @classmethod
     def get_default_columns(cls):
@@ -603,7 +601,7 @@ class DatabaseStatusQuery(BaseDatabaseQuery):
             for idx, source in enumerate(self._sources_list):
                 case_elements.append((self.columns.source == source, idx + 1))
 
-            criterion = sa.case(case_elements, else_=100000)
+            criterion = sa.case(*case_elements, else_=100000)
             order_by.insert(0, criterion)
 
         self.statement = self.statement.order_by(*order_by)
@@ -625,11 +623,9 @@ class RPSLDatabaseObjectStatisticsQuery(BaseDatabaseQuery):
 
     def __init__(self):
         self.statement = sa.select(
-            [
-                self.columns.source,
-                self.columns.object_class,
-                sa.func.count(self.columns.pk).label("count"),
-            ]
+            self.columns.source,
+            self.columns.object_class,
+            sa.func.count(self.columns.pk).label("count"),
         ).group_by(self.columns.source, self.columns.object_class)
 
 
@@ -643,14 +639,12 @@ class ROADatabaseObjectQuery(BaseDatabaseQuery):
 
     def __init__(self, *args, **kwargs):
         self.statement = sa.select(
-            [
-                self.columns.pk,
-                self.columns.prefix,
-                self.columns.asn,
-                self.columns.max_length,
-                self.columns.trust_anchor,
-                self.columns.ip_version,
-            ]
+            self.columns.pk,
+            self.columns.prefix,
+            self.columns.asn,
+            self.columns.max_length,
+            self.columns.trust_anchor,
+            self.columns.ip_version,
         )
 
     def ip_less_specific_or_exact(self, ip: IP):
@@ -670,7 +664,7 @@ class ProtectedRPSLNameQuery(BaseRPSLObjectDatabaseQuery):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.statement = sa.select(self.columns)
+        self.statement = sa.select(*self.columns)
 
     def protected_name(self, protected_name: str):
         fltr = self.columns.protected_name == protected_name

@@ -7,7 +7,7 @@ from uuid import UUID
 import sqlalchemy as sa
 from IPy import IP
 from sqlalchemy.dialects import postgresql as pg
-from sqlalchemy.ext.declarative import declarative_base, declared_attr
+from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import relationship
 
 from irrd.routepref.status import RoutePreferenceStatus
@@ -86,7 +86,7 @@ class NRTM4ServerDatabaseStatus:
         )
 
 
-Base = declarative_base()
+Base = sa.orm.declarative_base()
 
 
 class Setting(Base):  # type: ignore

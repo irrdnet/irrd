@@ -41,7 +41,7 @@ def test_set_last_modified(capsys, monkeypatch, config_override):
     assert flatten_mock_calls(mock_dq) == [["sources", (["TEST"],), {}]]
     assert mock_dh.mock_calls[0][0] == "execute_statement"
     statement = mock_dh.mock_calls[0][1][0]
-    new_text = statement.parameters["object_text"]
+    new_text = statement._values["object_text"].value
     assert new_text == SAMPLE_RTR_SET + "last-modified:  2020-01-01T00:00:00Z\n"
 
     assert flatten_mock_calls(mock_dh)[1:] == [["commit", (), {}], ["close", (), {}]]
