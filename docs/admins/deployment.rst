@@ -143,6 +143,11 @@ You may want to run ``pipx ensurepath`` to make sure your user
 has the installed commands in the path. See the pipx
 documentation for further details.
 
+For either,
+instead of ``irrd``, which pulls the latest version from PyPI, it's also
+possible specify a specific version, e.g. ``irrd==4.0.1``, or provide a
+path to a local distribution file.
+
 .. _pipx: https://pypa.github.io/pipx/
 
 Manual virtualenv
@@ -166,10 +171,9 @@ To install the latest version of IRRd inside the virtualenv, use pip3::
 
     /home/irrd/irrd-venv/bin/pip3 install irrd
 
-Instead of ``irrd``, which pulls the latest version from PyPI, it's also
-possible specify a specific version, e.g. ``irrd==4.0.1``, or provide a
-path to a local distribution file.
-
+For commands further in this documentation, if you are not activating
+the virtualenv, you need to add ``/home/irrd/irrd-venv/bin/`` as
+their path.
 
 Creating a configuration file
 -----------------------------
@@ -202,7 +206,7 @@ Creating tables
 IRRd uses database migrations to create and manage tables. To create
 the SQL tables, "upgrade" to the latest version::
 
-    /home/irrd/irrd-venv/bin/irrd_database_upgrade
+    irrd_database_upgrade
 
 The same command is used to upgrade the database after upgrading IRRd.
 
@@ -248,7 +252,7 @@ Starting IRRd
 -------------
 IRRd runs as a daemon, and can be started with::
 
-    /home/irrd/irrd-venv/bin/irrd
+    irrd
 
 Useful options:
 
@@ -363,7 +367,7 @@ using setcap, to be created in ``/lib/systemd/system/irrd.service``::
     WorkingDirectory=/home/irrd
     User=root
     PIDFile=/home/irrd/irrd.pid  # must match piddir config in the settings
-    ExecStart=/home/irrd/irrd-venv/bin/irrd --foreground
+    ExecStart=/path/to/bin/irrd --foreground
     Restart=on-failure
     ExecReload=/bin/kill -HUP $MAINPID
 
