@@ -851,6 +851,14 @@ class TestRulesValidator:
         validator = RulesValidator(mock_dh)
         yield validator, mock_dsq, mock_dh
 
+    def test_check_rejects_default_gateway_route(self, prepare_mocks):
+        validator, mock_dsq, mock_dh = prepare_mocks
+        route = rpsl_object_from_text(SAMPLE_ROUTE.replace("192.0.02.0/24", "0.0.0.0/0"))
+        invalid = validator.validate(route, UpdateRequestType.CREATE)
+        assert not invalid.is_valid()
+        assert set(invalid.error_messages) == {"Route(6) objects for 0.0.0.0/0 are not permitted."}
+        assert validator.validate(route, UpdateRequestType.DELETE).is_valid()
+
     def test_check_suspended_mntner_with_same_pk(self, prepare_mocks, monkeypatch):
         validator, mock_dsq, mock_dh = prepare_mocks
         monkeypatch.setattr(

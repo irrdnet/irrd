@@ -13,6 +13,8 @@ from irrd.rpsl.parser import RPSLObject
 from irrd.rpsl.rpsl_objects import (
     PROTECTED_NAME_OBJECT_CLASSES,
     RPSLMntner,
+    RPSLRoute,
+    RPSLRoute6,
     RPSLSet,
     rpsl_object_from_text,
 )
@@ -694,6 +696,13 @@ class RulesValidator:
     This means: anything that is not authentication, references, RPKI or scope filter.
     """
 
+    BLOCKLIST_ROUTES = [
+        IP("0.0.0.0/0"),
+        IP("0.0.0.0/32"),
+        IP("::/0"),
+        IP("::/128"),
+    ]
+
     def __init__(self, database_handler: DatabaseHandler) -> None:
         self.database_handler = database_handler
 
@@ -701,8 +710,15 @@ class RulesValidator:
         result = ValidatorResult()
 
         if (
+            request_type != UpdateRequestType.DELETE
+            and (isinstance(rpsl_obj, RPSLRoute) or isinstance(rpsl_obj, RPSLRoute6))
+            and rpsl_obj.prefix in self.BLOCKLIST_ROUTES
+        ):
+            result.error_messages.add(f"Route(6) objects for {rpsl_obj.prefix} are not permitted.")
+
+        if (
             request_type == UpdateRequestType.CREATE
-            and rpsl_obj.rpsl_object_class == "mntner"
+            and isinstance(rpsl_obj, RPSLMntner)
             and self._check_suspended_mntner_with_same_pk(rpsl_obj.pk(), rpsl_obj.source())
         ):
             result.error_messages.add(
