@@ -66,6 +66,8 @@ Other changes
   This makes it easier to delete objects created under a legacy IRRD that
   do not meet current validation requirements. Authentication requirements
   have not been changed.
+* Authoritative creation or updating of route(6) objects for 0.0.0.0/0,
+  0.0.0.0/32, ::/0 and ::/128 is no longer allowed.
 * The ``sources.{name}.nrtm_query_serial_days_limit`` setting was added to
   limit the age of the oldest serial that can be requested over NRTMv3.
 * The ``irrd_update_database`` command now starts counting serials from
