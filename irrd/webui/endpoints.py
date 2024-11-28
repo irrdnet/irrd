@@ -3,7 +3,7 @@ from collections import defaultdict
 from asgiref.sync import sync_to_async
 from starlette.requests import Request
 from starlette.responses import Response
-from starlette_wtf import csrf_protect, csrf_token
+from starlette_wtf import csrf_token
 
 from irrd import META_KEY_HTTP_CLIENT_IP
 from irrd.conf import get_setting
@@ -18,6 +18,7 @@ from irrd.storage.models import (
 from irrd.storage.orm_provider import ORMSessionProvider, session_provider_manager
 from irrd.storage.queries import RPSLDatabaseQuery
 from irrd.updates.handler import ChangeSubmissionHandler
+from irrd.utils.pgp import validate_pgp_signature
 from irrd.webui.auth.decorators import authentication_required, mark_user_mfa_incomplete
 from irrd.webui.helpers import filter_auth_hash_non_mntner
 from irrd.webui.rendering import template_context_render
@@ -101,7 +102,6 @@ async def rpsl_detail(request: Request, user_mfa_incomplete: bool, session_provi
         )
 
 
-@csrf_protect
 @mark_user_mfa_incomplete
 @session_provider_manager
 async def rpsl_update(
@@ -147,6 +147,7 @@ async def rpsl_update(
 
     elif request.method == "POST":
         form_data = await request.form()
+        submission = form_data.get("data", form_data.get("DATA"))
         request_meta = {
             META_KEY_HTTP_CLIENT_IP: request.client.host if request.client else "",
             "HTTP-User-Agent": request.headers.get("User-Agent"),
@@ -160,8 +161,10 @@ async def rpsl_update(
         # and therefore needs wrapping in a thread
         @sync_to_async
         def save():
+            signed_submission, pgp_fingerprint = validate_pgp_signature(submission)
             return ChangeSubmissionHandler().load_text_blob(
-                object_texts_blob=form_data["data"],
+                object_texts_blob=signed_submission if signed_submission else submission,
+                pgp_fingerprint=pgp_fingerprint,
                 origin=AuthoritativeChangeOrigin.webui,
                 request_meta=request_meta,
                 internal_authenticated_user=active_user,
@@ -172,7 +175,7 @@ async def rpsl_update(
             "rpsl_form.html",
             request,
             {
-                "existing_data": form_data["data"],
+                "existing_data": submission,
                 "status": handler.status(),
                 "report": handler.submitter_report_human(),
                 "mntner_perms": mntner_perms,
