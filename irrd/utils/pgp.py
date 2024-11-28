@@ -79,5 +79,5 @@ def validate_pgp_signature(
     logger.info(f"checked PGP signature, response: {log_message}")
     if result.valid and result.key_status is None:
         logger.info(f"Found valid PGP signature, fingerprint {result.fingerprint}")
-        return new_message, result.fingerprint
+        return new_message, result.pubkey_fingerprint
     return None, None
