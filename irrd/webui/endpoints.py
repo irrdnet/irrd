@@ -1,9 +1,10 @@
+import functools
 from collections import defaultdict
 
 from asgiref.sync import sync_to_async
 from starlette.requests import Request
 from starlette.responses import Response
-from starlette_wtf import csrf_token
+from starlette_wtf import csrf_protect, csrf_token
 
 from irrd import META_KEY_HTTP_CLIENT_IP
 from irrd.conf import get_setting
@@ -102,10 +103,24 @@ async def rpsl_detail(request: Request, user_mfa_incomplete: bool, session_provi
         )
 
 
+def optional_csrf_protect(func):
+    @functools.wraps(func)
+    async def wrapper(*args, **kwargs):
+        try:
+            decorated_func = csrf_protect(func)
+            return await decorated_func(*args, csrf_protected=True, **kwargs)
+        except Exception as e:
+            print(f"Exception captured: {e}")
+            return await func(*args, csrf_protected=False, **kwargs)
+
+    return wrapper
+
+
+@optional_csrf_protect
 @mark_user_mfa_incomplete
 @session_provider_manager
 async def rpsl_update(
-    request: Request, user_mfa_incomplete: bool, session_provider: ORMSessionProvider
+    request: Request, user_mfa_incomplete: bool, session_provider: ORMSessionProvider, csrf_protected: bool
 ) -> Response:
     """
     Web form for submitting RPSL updates.
@@ -113,7 +128,11 @@ async def rpsl_update(
     but with pre-authentication through the logged in user or override.
     Can also be used anonymously.
     """
-    active_user = request.auth.user if request.auth.is_authenticated and not user_mfa_incomplete else None
+    active_user = (
+        request.auth.user
+        if request.auth.is_authenticated and not user_mfa_incomplete and csrf_protected
+        else None
+    )
     mntner_perms = defaultdict(list)
     if active_user:
         for mntner in request.auth.user.mntners_user_management:
