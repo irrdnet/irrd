@@ -4,7 +4,7 @@ from collections import defaultdict
 from asgiref.sync import sync_to_async
 from starlette.requests import Request
 from starlette.responses import Response
-from starlette_wtf import csrf_protect, csrf_token
+from starlette_wtf import CSRFError, csrf_protect, csrf_token
 
 from irrd import META_KEY_HTTP_CLIENT_IP
 from irrd.conf import get_setting
@@ -104,13 +104,20 @@ async def rpsl_detail(request: Request, user_mfa_incomplete: bool, session_provi
 
 
 def optional_csrf_protect(func):
+    """
+    The RPSL update endpoint is special re CSRF: it may be called from
+    a browser, with typically a valid CSRF token, or from an API call,
+    without CSRF. Therefore, this decorator tries to validate CSRF,
+    and if not, tells the endpoint, which will then ignore user session
+    info and only look at the post data.
+    """
+
     @functools.wraps(func)
     async def wrapper(*args, **kwargs):
         try:
             decorated_func = csrf_protect(func)
             return await decorated_func(*args, csrf_protected=True, **kwargs)
-        except Exception as e:
-            print(f"Exception captured: {e}")
+        except CSRFError:
             return await func(*args, csrf_protected=False, **kwargs)
 
     return wrapper

@@ -3,12 +3,14 @@ from datetime import datetime, timezone
 from unittest.mock import create_autospec
 
 import pytest
+from starlette.testclient import TestClient
 
 from irrd.updates.handler import ChangeSubmissionHandler
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
 from irrd.webui import datetime_format
 
 from ...rpsl.rpsl_objects import rpsl_object_from_text
+from ...server.http.app import app
 from ...storage.database_handler import DatabaseHandler
 from ...storage.models import JournalEntryOrigin
 from ...updates.parser_state import UpdateRequestType
@@ -141,7 +143,11 @@ class TestRpslUpdateNoInitial(WebRequestTest):
     requires_mfa = False
 
     def test_valid_mntner_logged_in_mfa_complete_no_user_management(
-        self, irrd_db_session_with_user, test_client, mock_change_submission_handler
+        self,
+        irrd_db_session_with_user,
+        test_client,
+        mock_change_submission_handler,
+        tmp_gpg_dir,
     ):
         session_provider, user = irrd_db_session_with_user
         self._login(test_client, user)
@@ -154,7 +160,11 @@ class TestRpslUpdateNoInitial(WebRequestTest):
         assert "(you can not update this mntner itself)" in response.text
 
     def test_valid_mntner_logged_in_mfa_complete_user_management(
-        self, irrd_db_session_with_user, test_client, mock_change_submission_handler
+        self,
+        irrd_db_session_with_user,
+        test_client,
+        mock_change_submission_handler,
+        tmp_gpg_dir,
     ):
         session_provider, user = irrd_db_session_with_user
         self._login(test_client, user)
@@ -173,8 +183,37 @@ class TestRpslUpdateNoInitial(WebRequestTest):
         assert mock_handler_kwargs["object_texts_blob"] == SAMPLE_MNTNER
         assert mock_handler_kwargs["internal_authenticated_user"].pk == user.pk
 
+    def test_valid_mntner_logged_in_mfa_complete_user_management_no_csrf(
+        self,
+        irrd_db_session_with_user,
+        test_client,
+        mock_change_submission_handler,
+        tmp_gpg_dir,
+    ):
+        # print(test_client.app.user_middleware)
+        # raise Exception()
+        session_provider, user = irrd_db_session_with_user
+        self._login(test_client, user)
+        self._verify_mfa(test_client)
+        create_permission(session_provider, user)
+
+        app.force_csrf_in_testing = True
+        with TestClient(app, cookies=test_client.cookies) as client_csrf:
+            app.force_csrf_in_testing = False
+            client_csrf.cookies = test_client.cookies
+            response = client_csrf.post(self.url, data={"data": SAMPLE_MNTNER})
+            assert response.status_code == 200
+            assert mock_change_submission_handler.mock_calls[1][0] == "().load_text_blob"
+            mock_handler_kwargs = mock_change_submission_handler.mock_calls[1][2]
+            assert mock_handler_kwargs["object_texts_blob"] == SAMPLE_MNTNER
+            assert mock_handler_kwargs["internal_authenticated_user"] is None
+
     def test_valid_mntner_logged_in_mfa_incomplete_user_management(
-        self, irrd_db_session_with_user, test_client, mock_change_submission_handler
+        self,
+        irrd_db_session_with_user,
+        test_client,
+        mock_change_submission_handler,
+        tmp_gpg_dir,
     ):
         session_provider, user = irrd_db_session_with_user
         self._login(test_client, user)
@@ -192,7 +231,11 @@ class TestRpslUpdateNoInitial(WebRequestTest):
         assert mock_handler_kwargs["internal_authenticated_user"] is None
 
     def test_valid_mntner_not_logged_in(
-        self, irrd_db_session_with_user, test_client, mock_change_submission_handler
+        self,
+        irrd_db_session_with_user,
+        test_client,
+        mock_change_submission_handler,
+        tmp_gpg_dir,
     ):
         session_provider, user = irrd_db_session_with_user
         response = test_client.get(self.url)
@@ -213,7 +256,10 @@ class TestRpslUpdateWithInitial(WebRequestTest):
     requires_mfa = False
 
     def test_valid_mntner_logged_in_mfa_complete_no_user_management(
-        self, irrd_db_session_with_user, test_client
+        self,
+        irrd_db_session_with_user,
+        test_client,
+        tmp_gpg_dir,
     ):
         session_provider, user = irrd_db_session_with_user
         self._login(test_client, user)
@@ -227,7 +273,10 @@ class TestRpslUpdateWithInitial(WebRequestTest):
         assert "DUMMYVALUE" in response.text.upper()
 
     def test_valid_mntner_logged_in_mfa_complete_user_management(
-        self, irrd_db_session_with_user, test_client
+        self,
+        irrd_db_session_with_user,
+        test_client,
+        tmp_gpg_dir,
     ):
         session_provider, user = irrd_db_session_with_user
         self._login(test_client, user)
@@ -241,7 +290,10 @@ class TestRpslUpdateWithInitial(WebRequestTest):
         assert "DUMMYVALUE" not in response.text.upper()
 
     def test_valid_mntner_logged_in_mfa_incomplete_user_management(
-        self, irrd_db_session_with_user, test_client
+        self,
+        irrd_db_session_with_user,
+        test_client,
+        tmp_gpg_dir,
     ):
         session_provider, user = irrd_db_session_with_user
         self._login(test_client, user)
@@ -252,7 +304,7 @@ class TestRpslUpdateWithInitial(WebRequestTest):
         assert "TEST-MNT" in response.text
         assert "DUMMYVALUE" in response.text.upper()
 
-    def test_valid_mntner_not_logged_in(self, irrd_db_session_with_user, test_client):
+    def test_valid_mntner_not_logged_in(self, irrd_db_session_with_user, test_client, tmp_gpg_dir):
         session_provider, user = irrd_db_session_with_user
         response = test_client.get(self.url)
         assert response.status_code == 200
