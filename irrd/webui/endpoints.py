@@ -105,9 +105,10 @@ async def rpsl_detail(request: Request, user_mfa_incomplete: bool, session_provi
 
 def optional_csrf_protect(func):
     """
-    The RPSL update endpoint is special re CSRF: it may be called from
-    a browser, with typically a valid CSRF token, or from an API call,
-    without CSRF. Therefore, this decorator tries to validate CSRF,
+    The RPSL update endpoint is special re CSRF: while not entirely supported,
+    users sometimes call this through curl, and miss the CSRF token.
+    It does need CSRF protection, because a logged in user gets additional
+    mntner access. Therefore, this decorator tries to validate CSRF,
     and if not, tells the endpoint, which will then ignore user session
     info and only look at the post data.
     """
@@ -115,8 +116,8 @@ def optional_csrf_protect(func):
     @functools.wraps(func)
     async def wrapper(*args, **kwargs):
         try:
-            decorated_func = csrf_protect(func)
-            return await decorated_func(*args, csrf_protected=True, **kwargs)
+            csrf_protected_func = csrf_protect(func)
+            return await csrf_protected_func(*args, csrf_protected=True, **kwargs)
         except CSRFError:
             return await func(*args, csrf_protected=False, **kwargs)
 

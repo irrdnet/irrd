@@ -190,8 +190,6 @@ class TestRpslUpdateNoInitial(WebRequestTest):
         mock_change_submission_handler,
         tmp_gpg_dir,
     ):
-        # print(test_client.app.user_middleware)
-        # raise Exception()
         session_provider, user = irrd_db_session_with_user
         self._login(test_client, user)
         self._verify_mfa(test_client)
