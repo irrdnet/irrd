@@ -1,5 +1,6 @@
 import datetime
 import re
+import sys
 from typing import Optional
 from urllib.parse import urlparse
 
@@ -18,7 +19,7 @@ re_ipv6_prefix = re.compile(r"^[A-F\d:]+/\d+$", re.IGNORECASE)
 
 # This regex is not designed to catch every possible invalid variation,
 # but rather meant to protect against unintentional mistakes.
-#                         # Validate local-part           @ domain         | or IPv4 address        | or IPv6
+#               # Validate local-part           @ domain         | or IPv4 address        | or IPv6
 re_email = re.compile(
     r"^[A-Z0-9$!#%&\"*+\/=?^_`{|}~\\.-]+@(([A-Z0-9\\.-]+)|(\[\d+\.\d+\.\d+\.\d+\])|(\[[A-f\d:]+\]))$",
     re.IGNORECASE,
@@ -53,6 +54,15 @@ reserved_words = [
     "OUTBOUND",
 ]
 reserved_prefixes = ["AS-", "RS-", "RTRS-", "FLTR-", "PRNG-"]
+
+ALLOWED_CONTROL_CHARS = {"\n", "\r", "\t", "\u200d"}
+NOPRINT_TRANS_TABLE = str.maketrans(
+    {
+        i: None
+        for i in range(0, sys.maxunicode + 1)
+        if not chr(i).isprintable() and chr(i) not in ALLOWED_CONTROL_CHARS
+    }
+)
 
 """
 Fields for RPSL data.
@@ -102,7 +112,7 @@ class RPSLTextField:
     def parse(
         self, value: str, messages: RPSLParserMessages, strict_validation=True
     ) -> Optional[RPSLFieldParseResult]:
-        return RPSLFieldParseResult(value)
+        return RPSLFieldParseResult(value.translate(NOPRINT_TRANS_TABLE))
 
 
 class RPSLFieldListMixin:

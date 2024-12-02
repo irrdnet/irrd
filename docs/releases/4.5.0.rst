@@ -80,3 +80,4 @@ Other changes
   was added, to force an authoritative database into non-strict mode.
   As it's name notes, this disables many checks and all referential integrity
   and is therefore strongly discouraged.
+* Most non-printable characters are now stripped from all RPSL attribute values.
