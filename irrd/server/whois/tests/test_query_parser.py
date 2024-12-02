@@ -902,6 +902,12 @@ class TestWhoisQueryParserIRRD:
         )
         mock_query_resolver.set_query_sources = Mock()
 
+        response = parser.handle_query("!s-*")
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert not response.result
+        mock_query_resolver.set_query_sources.assert_not_called()
+
         response = parser.handle_query("!stest1")
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
