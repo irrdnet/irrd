@@ -51,7 +51,8 @@ def assert_validation_err(expected_errors, callable, *args, **kwargs):
 def test_rpsl_text_field():
     field = RPSLTextField()
     messages = RPSLParserMessages()
-    assert field.parse("AS-FOO$", messages).value, "AS-FOO$"
+    # U+200F is RTL marker, U+200B zero width space
+    assert field.parse("AS-FOO🎉🏳️‍🌈\u200f\u200b\x07$ \t", messages).value == "AS-FOO🎉🏳️‍🌈$ \t"
     assert not messages.errors()
 
 
