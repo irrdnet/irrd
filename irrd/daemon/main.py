@@ -10,6 +10,7 @@ import pwd
 import signal
 import sys
 import time
+import warnings
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -21,6 +22,8 @@ from daemon.daemon import change_process_owner
 
 logger = logging.getLogger(__name__)
 sys.path.append(str(Path(__file__).resolve().parents[2]))
+
+import sqlalchemy.exc as sa_exc
 
 from irrd import ENV_MAIN_PROCESS_PID, ENV_MAIN_STARTUP_TIME, __version__
 from irrd.conf import CONFIG_PATH_DEFAULT, config_init, get_configuration, get_setting
@@ -119,12 +122,16 @@ def main():
         try:
             with PidFile(pidname="irrd", piddir=piddir):
                 logger.info(f"IRRd {__version__} starting, PID {os.getpid()}, PID file in {piddir}")
-                run_irrd(
-                    mirror_frequency=MIRROR_FREQUENCY,
-                    config_file_path=args.config_file_path if args.config_file_path else CONFIG_PATH_DEFAULT,
-                    uid=uid,
-                    gid=gid,
-                )
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", category=sa_exc.SAWarning)
+                    run_irrd(
+                        mirror_frequency=MIRROR_FREQUENCY,
+                        config_file_path=(
+                            args.config_file_path if args.config_file_path else CONFIG_PATH_DEFAULT
+                        ),
+                        uid=uid,
+                        gid=gid,
+                    )
         except PidFileError as pfe:
             logger.error(f"Failed to start IRRd, unable to lock PID file irrd.pid in {piddir}: {pfe}")
         except Exception as e:
