@@ -1,9 +1,10 @@
+import functools
 from collections import defaultdict
 
 from asgiref.sync import sync_to_async
 from starlette.requests import Request
 from starlette.responses import Response
-from starlette_wtf import csrf_protect, csrf_token
+from starlette_wtf import CSRFError, csrf_protect, csrf_token
 
 from irrd import META_KEY_HTTP_CLIENT_IP
 from irrd.conf import get_setting
@@ -18,6 +19,7 @@ from irrd.storage.models import (
 from irrd.storage.orm_provider import ORMSessionProvider, session_provider_manager
 from irrd.storage.queries import RPSLDatabaseQuery
 from irrd.updates.handler import ChangeSubmissionHandler
+from irrd.utils.pgp import validate_pgp_signature
 from irrd.webui.auth.decorators import authentication_required, mark_user_mfa_incomplete
 from irrd.webui.helpers import filter_auth_hash_non_mntner
 from irrd.webui.rendering import template_context_render
@@ -101,11 +103,32 @@ async def rpsl_detail(request: Request, user_mfa_incomplete: bool, session_provi
         )
 
 
-@csrf_protect
+def optional_csrf_protect(func):
+    """
+    The RPSL update endpoint is special re CSRF: while not entirely supported,
+    users sometimes call this through curl, and miss the CSRF token.
+    It does need CSRF protection, because a logged in user gets additional
+    mntner access. Therefore, this decorator tries to validate CSRF,
+    and if not, tells the endpoint, which will then ignore user session
+    info and only look at the post data.
+    """
+
+    @functools.wraps(func)
+    async def wrapper(*args, **kwargs):
+        try:
+            csrf_protected_func = csrf_protect(func)
+            return await csrf_protected_func(*args, csrf_protected=True, **kwargs)
+        except CSRFError:
+            return await func(*args, csrf_protected=False, **kwargs)
+
+    return wrapper
+
+
+@optional_csrf_protect
 @mark_user_mfa_incomplete
 @session_provider_manager
 async def rpsl_update(
-    request: Request, user_mfa_incomplete: bool, session_provider: ORMSessionProvider
+    request: Request, user_mfa_incomplete: bool, session_provider: ORMSessionProvider, csrf_protected: bool
 ) -> Response:
     """
     Web form for submitting RPSL updates.
@@ -113,7 +136,11 @@ async def rpsl_update(
     but with pre-authentication through the logged in user or override.
     Can also be used anonymously.
     """
-    active_user = request.auth.user if request.auth.is_authenticated and not user_mfa_incomplete else None
+    active_user = (
+        request.auth.user
+        if request.auth.is_authenticated and not user_mfa_incomplete and csrf_protected
+        else None
+    )
     mntner_perms = defaultdict(list)
     if active_user:
         for mntner in request.auth.user.mntners_user_management:
@@ -147,6 +174,7 @@ async def rpsl_update(
 
     elif request.method == "POST":
         form_data = await request.form()
+        submission = form_data.get("data", form_data.get("DATA"))
         request_meta = {
             META_KEY_HTTP_CLIENT_IP: request.client.host if request.client else "",
             "HTTP-User-Agent": request.headers.get("User-Agent"),
@@ -160,8 +188,10 @@ async def rpsl_update(
         # and therefore needs wrapping in a thread
         @sync_to_async
         def save():
+            signed_submission, pgp_fingerprint = validate_pgp_signature(submission)
             return ChangeSubmissionHandler().load_text_blob(
-                object_texts_blob=form_data["data"],
+                object_texts_blob=signed_submission if signed_submission else submission,
+                pgp_fingerprint=pgp_fingerprint,
                 origin=AuthoritativeChangeOrigin.webui,
                 request_meta=request_meta,
                 internal_authenticated_user=active_user,
@@ -172,7 +202,7 @@ async def rpsl_update(
             "rpsl_form.html",
             request,
             {
-                "existing_data": form_data["data"],
+                "existing_data": submission,
                 "status": handler.status(),
                 "report": handler.submitter_report_human(),
                 "mntner_perms": mntner_perms,

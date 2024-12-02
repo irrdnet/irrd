@@ -145,7 +145,8 @@ app = Starlette(
 
 def set_middleware(app):
     testing = os.environ.get("TESTING", False)
-    if testing:
+    csrf_disabled = testing and not getattr(app, "force_csrf_in_testing", False)
+    if csrf_disabled:
         logger.info("Running in testing mode, disabling CSRF.")
     app.user_middleware = [
         # Use asgi-log to work around https://github.com/encode/uvicorn/issues/1384
@@ -157,7 +158,9 @@ def set_middleware(app):
         Middleware(MemoryTrimMiddleware),
         Middleware(SessionMiddleware, secret_key=secret_key_derive("web.session_middleware")),
         Middleware(
-            CSRFProtectMiddleware, csrf_secret=secret_key_derive("web.csrf_middleware"), enabled=not testing
+            CSRFProtectMiddleware,
+            csrf_secret=secret_key_derive("web.csrf_middleware"),
+            enabled=not csrf_disabled,
         ),
         auth_middleware,
     ]

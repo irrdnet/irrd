@@ -57,6 +57,8 @@ as of 7 October 2024 and therefore no longer supported.
 
 Other changes
 -------------
+* The RPSL update submission page, on `/rpsl/update/`, now also accepts
+  inline PGP signed messages for mntner authentication.
 * The ``sources.{name}.object_class_filter`` setting can now also be used
   to restrict permitted changes to authoritative objects.
 * The setting ``sources.{name}.authoritative_retain_last_modified`` was
