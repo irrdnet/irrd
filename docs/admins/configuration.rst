@@ -633,7 +633,8 @@ Sources
   used to sign the Update Notification File for an NRTMv4 server, in PEM format.
   You may find the ``irrdctl nrtmv4 generate-private-key`` and
   ``irrdctl nrtmv4 server-show-public-key`` convenience commands helpful.
-  Note the use of the pipe character (``|``) to enter this multi-line data.
+  Note the use of the pipe character (``|``) in the sample to enter this
+  multi-line data.
   |br| **Default**: not defined, no NRTMv4 server runs.
   |br| **Change takes effect**: after SIGHUP, at the next mirror update.
 * ``sources.{name}.nrtm4_server_private_key_next``: the next private
@@ -641,7 +642,8 @@ Sources
   setting is used for key rotation. PEM format.
   See the :doc:`mirroring documentation </users/mirroring>` for details on
   key rotation.
-  Note the use of the pipe character (``|``) to enter this multi-line data.
+  Note the use of the pipe character (``|``) in the sample to enter this
+  multi-line data.
   |br| **Default**: not defined, no key rotation signalled.
   |br| **Change takes effect**: after SIGHUP, at the next mirror update.
 * ``sources.{name}.nrtm4_server_local_path``: the path where the NRTMv4 server
@@ -653,12 +655,14 @@ Sources
   |br| **Default**: 4 hours.
   |br| **Change takes effect**: after SIGHUP, at the next mirror update.
 * ``sources.{name}.nrtm4_client_notification_file_url``: the HTTPS or file URL of
-  an NRTMv4 Update Notification File, when the source is used as an NRTMv4 client.
+  an NRTMv4 Update Notification File, when this source is configured as an
+  NRTMv4 mirror client.
   |br| **Default**: not defined, no NRTMv4 updates attempted.
   |br| **Change takes effect**: after SIGHUP, at the next mirror update.
 * ``sources.{name}.nrtm4_client_initial_public_key``: the initial public
   key expected to match the Update Notification File signature, in PEM format.
-  Note the use of the pipe character (``|``) to enter this multi-line data.
+  Note the use of the pipe character (``|``) in the sample to enter this
+  multi-line data.
   |br| **Default**: not defined, no NRTMv4 updates attempted.
   |br| **Change takes effect**: after SIGHUP, at the next mirror update.
 * ``sources.{name}.nrtm_host``: the hostname or IP to connect to for an NRTMv3 stream.
