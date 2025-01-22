@@ -101,7 +101,7 @@ def clean_ip_value_error(value_error):
     return re.sub(re_clean_ip_error, "", str(value_error))
 
 
-def get_nrtm_response_dummy_object_class_for_source(source: str) -> List[str]:
+def get_nrtm_response_dummy_object_class_for_source(source: str) -> list[str]:
     """
     Helper method to get the cleaned dummy object class in NRTMv3 reponse for a source, if any.
     """
