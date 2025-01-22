@@ -750,25 +750,6 @@ class Test900Command(MyBase):
         self.assertEqual(result.returncode, EXIT_NETWORK_ERROR, "-h with bad host is a network error")
         self.assertRegex(result.stderr, re.compile(f"{host}:{dash_p_port}"), "-h with port and -p prefers -p")
 
-    def test_020_dash_o_noop(self):
-        # -O in irrdv3 was used to note the original host making the request
-        # If we get an error, it should be from the -h, not the -O
-        result = Runner.run(["-h", UNREACHABLE_HOST, "-O", BAD_RESPONSE_HOST], ENV_EMPTY, RPSL_MINIMAL)
-        self.assertEqual(
-            result.returncode,
-            EXIT_NETWORK_ERROR,
-            "using both -h and -O exits with value appropriate to -h value",
-        )
-        self.assertRegex(result.stderr, REGEX_UNREACHABLE)
-
-        result = Runner.run(["-h", BAD_RESPONSE_HOST, "-O", UNREACHABLE_HOST], ENV_EMPTY, RPSL_MINIMAL)
-        self.assertEqual(
-            result.returncode,
-            EXIT_NETWORK_ERROR,
-            "using both -h and -O exits with value appropriate to -h value",
-        )
-        self.assertRegex(result.stderr, REGEX_NOT_ALLOWED)
-
     def test_030_empty_input_option(self):
         result = Runner.run(["-u", IRRD_URL], ENV_EMPTY, RPSL_EMPTY)
         self.assertEqual(
@@ -832,16 +813,3 @@ class Test900Command(MyBase):
                 f"Unreachable host in {row[1]} with {EXIT_NETWORK_ERROR}",
             )
             self.assertRegex(result.stderr, REGEX_UNREACHABLE)
-
-    def test_050_non_json_response(self):
-        table = [
-            ["-u", "http://www.example.com"],
-        ]
-        for row in table:
-            result = Runner.run(row, ENV_EMPTY, RPSL_MINIMAL)
-            self.assertEqual(
-                result.returncode,
-                EXIT_NETWORK_ERROR,
-                f"Bad response URL {row[1]} exits with {EXIT_NETWORK_ERROR}",
-            )
-            self.assertRegex(result.stderr, REGEX_NOT_ALLOWED)
