@@ -8,6 +8,7 @@ from tempfile import NamedTemporaryFile
 from irrd.conf import get_setting
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import DatabaseStatusQuery, RPSLDatabaseQuery
+from irrd.utils.text import dummify_object_text as dummify_object_text_func
 from irrd.utils.text import remove_auth_hashes as remove_auth_hashes_func
 
 EXPORT_PERMISSIONS = 0o644
@@ -75,6 +76,10 @@ class SourceExportRunner:
                 object_text = obj["object_text"]
                 if remove_auth_hashes:
                     object_text = remove_auth_hashes_func(object_text)
+
+                object_text = dummify_object_text_func(
+                    object_text, obj["object_class"], self.source, obj["rpsl_pk"]
+                )
                 object_bytes = object_text.encode("utf-8")
                 fh.write(object_bytes + b"\n")
             fh.write(b"# EOF\n")

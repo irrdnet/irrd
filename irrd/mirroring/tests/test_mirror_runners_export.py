@@ -16,6 +16,10 @@ class TestSourceExportRunner:
                 "sources": {
                     "TEST": {
                         "export_destination": str(tmpdir),
+                        "nrtm_response_dummy_object_class": "mntner",
+                        "nrtm_response_dummy_attributes": {
+                            "descr": "Dummy description for %s",
+                        },
                     }
                 }
             }
@@ -34,8 +38,12 @@ class TestSourceExportRunner:
                 repeat({"serial_newest_seen": "424242"}),
                 [
                     # The CRYPT-PW hash must not appear in the output
-                    {"object_text": "object 1 🦄\nauth: CRYPT-PW foobar\n"},
-                    {"object_text": "object 2 🌈\n"},
+                    {
+                        "object_text": "object 1 🦄\ndescr: description\nauth: CRYPT-PW foobar\n",
+                        "object_class": "mntner",
+                        "rpsl_pk": "TEST-MNT",
+                    },
+                    {"object_text": "object 2 🌈\n", "object_class": "person", "rpsl_pk": "PERSON-TEST"},
                 ],
             ]
         )
@@ -55,7 +63,8 @@ class TestSourceExportRunner:
         with gzip.open(export_filename) as fh:
             assert (
                 fh.read().decode("utf-8")
-                == "object 1 🦄\nauth: CRYPT-PW DummyValue  # Filtered for security\n\nobject 2 🌈\n\n# EOF\n"
+                == "object 1 🦄\ndescr:          Dummy description for TEST-MNT\nauth: CRYPT-PW DummyValue  #"
+                " Filtered for security\n\nobject 2 🌈\n\n# EOF\n"
             )
 
         assert flatten_mock_calls(mock_dh) == [
@@ -99,8 +108,12 @@ class TestSourceExportRunner:
                 repeat({"serial_newest_seen": "424242"}),
                 [
                     # The CRYPT-PW hash should appear in the output
-                    {"object_text": "object 1 🦄\nauth: CRYPT-PW foobar\n"},
-                    {"object_text": "object 2 🌈\n"},
+                    {
+                        "object_text": "object 1 🦄\nauth: CRYPT-PW foobar\n",
+                        "object_class": "mntner",
+                        "rpsl_pk": "TEST-MNT",
+                    },
+                    {"object_text": "object 2 🌈\n", "object_class": "person", "rpsl_pk": "PERSON-TEST"},
                 ],
             ]
         )
@@ -166,8 +179,12 @@ class TestSourceExportRunner:
                 iter([]),
                 [
                     # The CRYPT-PW hash must not appear in the output
-                    {"object_text": "object 1 🦄\nauth: CRYPT-PW foobar\n"},
-                    {"object_text": "object 2 🌈\n"},
+                    {
+                        "object_text": "object 1 🦄\nauth: CRYPT-PW foobar\n",
+                        "object_class": "mntner",
+                        "rpsl_pk": "TEST-MNT",
+                    },
+                    {"object_text": "object 2 🌈\n", "object_class": "person", "rpsl_pk": "PERSON-TEST"},
                 ],
             ]
         )
