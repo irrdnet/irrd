@@ -95,6 +95,7 @@ KNOWN_SOURCES_KEYS = {
     "object_class_filter",
     "export_destination",
     "export_destination_unfiltered",
+    "export_dummy_object",
     "export_timer",
     "nrtm_access_list",
     "nrtm_access_list_unfiltered",

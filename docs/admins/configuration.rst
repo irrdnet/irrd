@@ -729,6 +729,11 @@ Sources
   also the granularity of the timer.
   |br| **Default**: ``3600``.
   |br| **Change takes effect**: after SIGHUP
+* ``sources.{name}.export_dummy_object``: a boolean for whether to export dummy
+  objects. This setting is effective only if both ``nrtm_response_dummy_object_class``
+  and ``nrtm_response_dummy_attributes`` are defined.
+  |br| **Default**: not defined, no dummy object exported.
+  |br| **Change takes effect**: after SIGHUP, at the next ``export_timer``.
 * ``sources.{name}.nrtm_access_list``: a reference to an access list in the
   configuration, where only IPs in the access list are permitted filtered access
   to the NRTMv3 stream for this particular source (``-g`` queries).

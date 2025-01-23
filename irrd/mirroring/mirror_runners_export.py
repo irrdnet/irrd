@@ -77,9 +77,11 @@ class SourceExportRunner:
                 if remove_auth_hashes:
                     object_text = remove_auth_hashes_func(object_text)
 
-                object_text = dummify_object_text_func(
-                    object_text, obj["object_class"], self.source, obj["rpsl_pk"]
-                )
+                export_dummy_object = get_setting(f"sources.{self.source}.export_dummy_object")
+                if export_dummy_object:
+                    object_text = dummify_object_text_func(
+                        object_text, obj["object_class"], self.source, obj["rpsl_pk"]
+                    )
                 object_bytes = object_text.encode("utf-8")
                 fh.write(object_bytes + b"\n")
             fh.write(b"# EOF\n")

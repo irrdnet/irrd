@@ -16,6 +16,7 @@ class TestSourceExportRunner:
                 "sources": {
                     "TEST": {
                         "export_destination": str(tmpdir),
+                        "export_dummy_object": True,
                         "nrtm_response_dummy_object_class": "mntner",
                         "nrtm_response_dummy_attributes": {
                             "descr": "Dummy description for %s",
