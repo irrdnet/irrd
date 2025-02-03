@@ -359,9 +359,9 @@ NRTM response header line2""",
                 "sources": {
                     "TEST": {
                         "keep_journal": True,
-                        "nrtm_response_dummy_object_class": "mntner",
-                        "nrtm_response_dummy_attributes": {"descr": "Dummy description"},
-                        "nrtm_response_dummy_remarks": "THIS OBJECT IS NOT VALID",
+                        "nrtm_dummified_object_classes": "mntner",
+                        "nrtm_dummified_attributes": {"descr": "Dummy description"},
+                        "nrtm_dummified_remarks": "THIS OBJECT IS NOT VALID",
                     }
                 }
             }
@@ -393,8 +393,8 @@ NRTM response header line2""",
                 "sources": {
                     "TEST": {
                         "keep_journal": True,
-                        "nrtm_response_dummy_object_class": "mntner",
-                        "nrtm_response_dummy_attributes": {"descr": "Dummy description"},
+                        "nrtm_dummified_object_classes": "mntner",
+                        "nrtm_dummified_attributes": {"descr": "Dummy description"},
                     }
                 }
             }

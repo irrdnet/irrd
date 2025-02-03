@@ -126,9 +126,7 @@ class NRTMGenerator:
                 text = remove_auth_hashes_func(text)
 
             if not client_is_dummifying_exempt:
-                object_class = operation["object_class"]
-                pk = operation["rpsl_pk"]
-                text = dummify_object_text_func(text, object_class, source, pk)
+                text = dummify_object_text_func(text, operation["object_class"], source, operation["rpsl_pk"])
 
             operation_str += "\n\n" + text
             output.append(operation_str)

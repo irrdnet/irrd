@@ -577,9 +577,6 @@ class WhoisQueryParser:
         if not in_access_list and not in_unfiltered_access_list:
             raise InvalidQueryException("Access denied")
 
-        in_nrtm_original_data_access_list = is_client_permitted(
-            self.client_ip, f"sources.{source}.nrtm_original_data_access_list", log=False
-        )
         try:
             return NRTMGenerator().generate(
                 source,
@@ -588,7 +585,7 @@ class WhoisQueryParser:
                 serial_end,
                 self.database_handler,
                 remove_auth_hashes=not in_unfiltered_access_list,
-                client_is_dummifying_exempt=in_nrtm_original_data_access_list,
+                client_is_dummifying_exempt=in_unfiltered_access_list,
             )
         except NRTMGeneratorException as nge:
             raise InvalidQueryException(str(nge))

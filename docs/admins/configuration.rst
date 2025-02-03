@@ -717,7 +717,7 @@ Sources
 * ``sources.{name}.export_destination_unfiltered``: a path to save full exports,
   including a serial file, of this source. This is identical to
   ``export_destination``, except that the files saved here contain full unfiltered
-  password hashes from mntner objects.
+  password hashes from mntner objects and objects are never dummified.
   Sharing password hashes externally is a security risk, the unfiltered data
   is intended only to support
   :doc:`availability and data migration </admins/availability-and-migration>`.
@@ -729,11 +729,6 @@ Sources
   also the granularity of the timer.
   |br| **Default**: ``3600``.
   |br| **Change takes effect**: after SIGHUP
-* ``sources.{name}.export_dummy_object``: a boolean for whether to export dummy
-  objects. This setting is effective only if both ``nrtm_response_dummy_object_class``
-  and ``nrtm_response_dummy_attributes`` are defined.
-  |br| **Default**: not defined, no dummy object exported.
-  |br| **Change takes effect**: after SIGHUP, at the next ``export_timer``.
 * ``sources.{name}.nrtm_access_list``: a reference to an access list in the
   configuration, where only IPs in the access list are permitted filtered access
   to the NRTMv3 stream for this particular source (``-g`` queries).
@@ -746,7 +741,7 @@ Sources
 * ``sources.{name}.nrtm_access_list_unfiltered``: a reference to an access list
   in the configuration, where IPs in the access list are permitted unfiltered
   access to the NRTMv3 stream for this particular source (``-g`` queries).
-  Unfiltered means full password hashes are included.
+  Unfiltered means full password hashes are included and objects are never dummified.
   Sharing password hashes externally is a security risk, the unfiltered data
   is intended only to support
   :doc:`availability and data migration </admins/availability-and-migration>`.
@@ -780,32 +775,24 @@ Sources
   use the `|` style to preserve newlines.
   |br| **Default**: not defined, no additional header added.
   |br| **Change takes effect**: after SIGHUP, upon next request.
-* ``sources.{name}.nrtm_original_data_access_list``: a reference to an access 
-  list in the configuration, where only IPs in the list are permitted access
-  to the original data in the NRTMv3 stream for this particular source (``-g`` queries),
-  regardless of any dummy data defined.
-  IPs not in the list will get the dummy data if defined.
-  |br| **Default**: not defined, all NRTMv3 clients get the dummy data if defined.
-* ``sources.{name}.nrtm_response_dummy_object_class``: a list of object classes
-  that will contain the dummy data within the NRTMv3 responses.
-  IRRD will dummy an object class only if the ``nrtm_response_dummy_attributes``
-  is defined and the object class attribute keys are in the dummy attributes.
-  |br| **Default**: not defined, no objects dummied.
-  |br| **Change takes effect**: after SIGHUP, upon next request.
-* ``sources.{name}.nrtm_response_dummy_attributes``: object attributes that contain
-  dummy data. This is a dictionary with the attribute keys and corresponding dummy 
-  attribute string values.
-  The attributes will be replaced only if ``nrtm_response_dummy_object_class``
-  is defined and the attributes are in the defined object class.
-  If the attribute value has the ``%s``, IRRD will replace it by the object primary key,
-  e.g. ``person: Dummy name for %s``.
-  
-  |br| **Default**: not defined. no objects dummied.
-  |br| **Change takes effect**: after SIGHUP, upon next request.
-* ``sources.{name}.nrtm_response_dummy_remarks``: an additional remarks to be added 
-  to the end of the dummied object in the NRTMv3 response.
-  IRRD will only add the remarks to the object classes defined in the 
-  ``nrtm_response_dummy_object_class``.
+* ``sources.{name}.nrtm_dummified_object_classes``: a list of object classes
+  that will be dummified in exports and NRTM, i.e. any values
+  of attributes listed in ``nrtm_dummified_attributes`` are removed.
+  This affects exports, NRTMv3 responses, and NRTMv4.
+  |br| **Default**: not defined, no objects dummified.
+  |br| **Change takes effect**: after SIGHUP, upon next request/export.
+* ``sources.{name}.nrtm_dummified_attributes``: a dictionary where keys are names
+  of attributes to dummify, and values are the dummy data.
+  If the attribute value contains ``%s``, IRRD will replace it by the object primary key,
+  e.g. key ``person``, value ``Dummy name for person %s``.
+  This is only applied when the RPSL object class is listed in
+  ``nrtm_dummified_object_classes``.
+  This affects exports, NRTMv3 responses, and NRTMv4.
+  |br| **Default**: not defined. no objects dummified.
+  |br| **Change takes effect**: after SIGHUP, upon next request/export.
+* ``sources.{name}.nrtm_dummified_remarks``: additional remarks to add
+  when an object is dummified, e.g. to indicate this is not the
+  original object.
   This can have multiple lines. When adding this to the configuration,
   use the `|` style to preserve newlines.
   |br| **Default**: not defined, no additional remarks added.

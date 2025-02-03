@@ -107,4 +107,6 @@ validator
 validators
 virtualenv
 whois
-dummied
+dummified
+dummify
+dummification

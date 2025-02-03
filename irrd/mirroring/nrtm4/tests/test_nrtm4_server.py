@@ -64,12 +64,12 @@ class TestNRTM4ServerWriter:
                         "nrtm4_server_private_key": MOCK_UNF_PRIVATE_KEY_STR,
                         "nrtm4_server_local_path": str(nrtm_path),
                         # "nrtm4_server_snapshot_frequency": 0,
-                        "nrtm_response_dummy_object_class": "mntner",
-                        "nrtm_response_dummy_attributes": {
+                        "nrtm_dummified_object_classes": "mntner",
+                        "nrtm_dummified_attributes": {
                             "descr": "Dummy description for %s",
                             "upd-to": "unread@ripe.net",
                         },
-                        "nrtm_response_dummy_remarks": "Invalid object",
+                        "nrtm_dummified_remarks": "Invalid object",
                     }
                 },
             }

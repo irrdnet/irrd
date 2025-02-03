@@ -361,13 +361,13 @@ class NRTM4ServerWriter:
             )
             for journal_entry in journal_entries:
                 if journal_entry["operation"] == DatabaseOperation.add_or_update:
-                    text = remove_auth_hashes(journal_entry["object_text"])
-                    text = dummify_object_text(
-                        text, journal_entry["object_class"], self.source, journal_entry["rpsl_pk"]
+                    object_text = remove_auth_hashes(journal_entry["object_text"])
+                    object_text = dummify_object_text(
+                        object_text, journal_entry["object_class"], self.source, journal_entry["rpsl_pk"]
                     )
                     entry_encoded = {
                         "action": "add_modify",
-                        "object": text,
+                        "object": object_text,
                     }
                 elif journal_entry["operation"] == DatabaseOperation.delete:
                     entry_encoded = {

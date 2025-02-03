@@ -47,7 +47,7 @@ class SourceExportRunner:
                     f"Starting an unfiltered source export for {self.source} "
                     f"to {export_destination_unfiltered}"
                 )
-                self._export(export_destination_unfiltered, remove_auth_hashes=False)
+                self._export(export_destination_unfiltered, remove_auth_hashes=False, dummify_object=False)
 
             self.database_handler.commit()
         except Exception as exc:
@@ -58,7 +58,7 @@ class SourceExportRunner:
         finally:
             self.database_handler.close()
 
-    def _export(self, export_destination, remove_auth_hashes=True):
+    def _export(self, export_destination, remove_auth_hashes=True, dummify_object=True):
         filename_export = Path(export_destination) / f"{self.source.lower()}.db.gz"
         export_tmpfile = NamedTemporaryFile(delete=False)
         filename_serial = Path(export_destination) / f"{self.source.upper()}.CURRENTSERIAL"
@@ -77,8 +77,7 @@ class SourceExportRunner:
                 if remove_auth_hashes:
                     object_text = remove_auth_hashes_func(object_text)
 
-                export_dummy_object = get_setting(f"sources.{self.source}.export_dummy_object")
-                if export_dummy_object:
+                if dummify_object:
                     object_text = dummify_object_text_func(
                         object_text, obj["object_class"], self.source, obj["rpsl_pk"]
                     )

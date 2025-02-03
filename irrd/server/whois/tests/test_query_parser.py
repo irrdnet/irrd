@@ -366,7 +366,7 @@ class TestWhoisQueryParserRIPE:
         response = parser.handle_query("-g TEST1:3:1-LAST")
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.RIPE
-        assert response.result == "TEST1/3/1/None/False/False"
+        assert response.result == "TEST1/3/1/None/False/True"
         assert not response.remove_auth_hashes
 
         config_override(
@@ -386,7 +386,7 @@ class TestWhoisQueryParserRIPE:
         response = parser.handle_query("-g TEST1:3:1-LAST")
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.RIPE
-        assert response.result == "TEST1/3/1/None/False/False"
+        assert response.result == "TEST1/3/1/None/False/True"
         assert not response.remove_auth_hashes
 
         response = parser.handle_query("-g TEST1:9:1-LAST")

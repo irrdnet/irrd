@@ -75,21 +75,25 @@ def test_dummify_object_text(config_override):
             "sources": {
                 "TEST": {
                     "keep_journal": True,
-                    "nrtm_response_dummy_object_class": "role",
+                    "nrtm_dummified_object_classes": "person",
                 }
             }
         }
     )
     assert (
         dummify_object_text(
-            "person:         Test person\naddress:        address\nnic-hdl:        PERSON-TEST\nphone:       "
-            "   +31 20 000 0000",
+            "person:         Test person\n"
+            "address:        address\n"
+            "nic-hdl:        PERSON-TEST\n"
+            "phone:          +31 20 000 0000",
             "person",
             "TEST",
             "PERSON-TEST",
         )
-        == "person:         Test person\naddress:        address\nnic-hdl:        PERSON-TEST\nphone:        "
-        "  +31 20 000 0000"
+        == "person:         Test person\n"
+        "address:        address\n"
+        "nic-hdl:        PERSON-TEST\n"
+        "phone:          +31 20 000 0000"
     )
 
     config_override(
@@ -97,8 +101,8 @@ def test_dummify_object_text(config_override):
             "sources": {
                 "TEST": {
                     "keep_journal": True,
-                    "nrtm_response_dummy_object_class": "person",
-                    "nrtm_response_dummy_attributes": {
+                    "nrtm_dummified_object_classes": "person",
+                    "nrtm_dummified_attributes": {
                         "person": "Dummy person for %s",
                         "address": "Dummy address",
                         "phone": 1234,
@@ -109,14 +113,18 @@ def test_dummify_object_text(config_override):
     )
     assert (
         dummify_object_text(
-            "person:         Test person\naddress:        address\nnic-hdl:        PERSON-TEST\nphone:       "
-            "   +31 20 000 0000",
+            "person:         Test person\n"
+            "address:        address\n"
+            "nic-hdl:        PERSON-TEST\n"
+            "phone:          +31 20 000 0000",
             "person",
             "TEST",
             "PERSON-TEST",
         )
-        == "person:         Dummy person for PERSON-TEST\naddress:        Dummy address\nnic-hdl:       "
-        " PERSON-TEST\nphone:          1234\n"
+        == "person:         Dummy person for PERSON-TEST\n"
+        "address:        Dummy address\n"
+        "nic-hdl:        PERSON-TEST\n"
+        "phone:          1234\n"
     )
 
     config_override(
@@ -124,25 +132,30 @@ def test_dummify_object_text(config_override):
             "sources": {
                 "TEST": {
                     "keep_journal": True,
-                    "nrtm_response_dummy_object_class": "person",
-                    "nrtm_response_dummy_attributes": {
+                    "nrtm_dummified_object_classes": "person",
+                    "nrtm_dummified_attributes": {
                         "person": "Dummy person for %s",
                         "address": "Dummy address",
                         "phone": 1234,
                     },
-                    "nrtm_response_dummy_remarks": "Invalid object",
+                    "nrtm_dummified_remarks": "Invalid object",
                 }
             }
         }
     )
     assert (
         dummify_object_text(
-            "person:         Test person\naddress:        address\nnic-hdl:        PERSON-TEST\nphone:       "
-            "   +31 20 000 0000",
+            "person:         Test person\n"
+            "address:        address\n"
+            "nic-hdl:        PERSON-TEST\n"
+            "phone:          +31 20 000 0000",
             "person",
             "TEST",
             "PERSON-TEST",
         )
-        == "person:         Dummy person for PERSON-TEST\naddress:        Dummy address\nnic-hdl:       "
-        " PERSON-TEST\nphone:          1234\nremarks:        Invalid object\n"
+        == "person:         Dummy person for PERSON-TEST\n"
+        "address:        Dummy address\n"
+        "nic-hdl:        PERSON-TEST\n"
+        "phone:          1234\n"
+        "remarks:        Invalid object\n"
     )
