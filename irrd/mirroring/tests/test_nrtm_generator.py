@@ -36,14 +36,21 @@ def prepare_generator(monkeypatch, config_override):
             [
                 {
                     # The CRYPT-PW hash must not appear in the output
-                    "object_text": "object 1 🦄\nauth: CRYPT-PW foobar\n",
+                    "object_text": (
+                        "mntner:         TEST-MNT\ndescr:          description\nnotify:        "
+                        " notify@example.com\nauth:           CRYPT-PW foobar\n"
+                    ),
                     "operation": DatabaseOperation.add_or_update,
                     "serial_nrtm": 120,
+                    "object_class": "mntner",
+                    "rpsl_pk": "TEST-MNT",
                 },
                 {
-                    "object_text": "object 2 🌈\n",
+                    "object_text": "mntner:         TEST-MNT\n",
                     "operation": DatabaseOperation.delete,
                     "serial_nrtm": 180,
+                    "object_class": "mntner",
+                    "rpsl_pk": "TEST-MNT",
                 },
             ],
         ]
@@ -63,12 +70,14 @@ class TestNRTMGenerator:
 
         ADD 120
 
-        object 1 🦄
-        auth: CRYPT-PW DummyValue  # Filtered for security
+        mntner:         TEST-MNT
+        descr:          description
+        notify:         notify@example.com
+        auth:           CRYPT-PW DummyValue  # Filtered for security
 
         DEL 180
 
-        object 2 🌈
+        mntner:         TEST-MNT
 
         %END TEST""").strip()
 
@@ -81,12 +90,14 @@ class TestNRTMGenerator:
 
         ADD
 
-        object 1 🦄
-        auth: CRYPT-PW DummyValue  # Filtered for security
+        mntner:         TEST-MNT
+        descr:          description
+        notify:         notify@example.com
+        auth:           CRYPT-PW DummyValue  # Filtered for security
 
         DEL
 
-        object 2 🌈
+        mntner:         TEST-MNT
 
         %END TEST""").strip()
 
@@ -99,12 +110,14 @@ class TestNRTMGenerator:
 
         ADD 120
 
-        object 1 🦄
-        auth: CRYPT-PW DummyValue  # Filtered for security
+        mntner:         TEST-MNT
+        descr:          description
+        notify:         notify@example.com
+        auth:           CRYPT-PW DummyValue  # Filtered for security
 
         DEL 180
 
-        object 2 🌈
+        mntner:         TEST-MNT
 
         %END TEST""").strip()
 
@@ -199,12 +212,14 @@ class TestNRTMGenerator:
 
         ADD 120
 
-        object 1 🦄
-        auth: CRYPT-PW DummyValue  # Filtered for security
+        mntner:         TEST-MNT
+        descr:          description
+        notify:         notify@example.com
+        auth:           CRYPT-PW DummyValue  # Filtered for security
 
         DEL 180
 
-        object 2 🌈
+        mntner:         TEST-MNT
 
         %END TEST""").strip()
 
@@ -234,12 +249,14 @@ class TestNRTMGenerator:
 
         ADD 120
 
-        object 1 🦄
-        auth: CRYPT-PW foobar
+        mntner:         TEST-MNT
+        descr:          description
+        notify:         notify@example.com
+        auth:           CRYPT-PW foobar
 
         DEL 180
 
-        object 2 🌈
+        mntner:         TEST-MNT
 
         %END TEST""").strip()
 
@@ -266,12 +283,14 @@ NRTM response header line2""",
 
         ADD 120
 
-        object 1 🦄
-        auth: CRYPT-PW DummyValue  # Filtered for security
+        mntner:         TEST-MNT
+        descr:          description
+        notify:         notify@example.com
+        auth:           CRYPT-PW DummyValue  # Filtered for security
 
         DEL 180
 
-        object 2 🌈
+        mntner:         TEST-MNT
 
         %END TEST""").strip()
 
@@ -332,3 +351,69 @@ NRTM response header line2""",
         with pytest.raises(NRTMGeneratorException) as nge:
             generator.generate("TEST", "3", 110, 190, mock_dh)
         assert "Requesting serials older than 14 days will be rejected" in str(nge.value)
+
+    def test_nrtm_response_dummy_object(self, prepare_generator, config_override):
+        generator, mock_dh = prepare_generator
+        config_override(
+            {
+                "sources": {
+                    "TEST": {
+                        "keep_journal": True,
+                        "nrtm_dummified_object_classes": "mntner",
+                        "nrtm_dummified_attributes": {"descr": "Dummy description"},
+                        "nrtm_dummified_remarks": "THIS OBJECT IS NOT VALID",
+                    }
+                }
+            }
+        )
+
+        result = generator.generate("TEST", "3", 110, 190, mock_dh)
+
+        assert result == textwrap.dedent("""
+        %START Version: 3 TEST 110-190
+
+        ADD 120
+
+        mntner:         TEST-MNT
+        descr:          Dummy description
+        notify:         notify@example.com
+        auth:           CRYPT-PW DummyValue  # Filtered for security
+        remarks:        THIS OBJECT IS NOT VALID
+
+        DEL 180
+
+        mntner:         TEST-MNT
+
+        %END TEST""").strip()
+
+    def test_nrtm_response_dummy_object_without_remarks(self, prepare_generator, config_override):
+        generator, mock_dh = prepare_generator
+        config_override(
+            {
+                "sources": {
+                    "TEST": {
+                        "keep_journal": True,
+                        "nrtm_dummified_object_classes": "mntner",
+                        "nrtm_dummified_attributes": {"descr": "Dummy description"},
+                    }
+                }
+            }
+        )
+
+        result = generator.generate("TEST", "3", 110, 190, mock_dh)
+
+        assert result == textwrap.dedent("""
+        %START Version: 3 TEST 110-190
+
+        ADD 120
+
+        mntner:         TEST-MNT
+        descr:          Dummy description
+        notify:         notify@example.com
+        auth:           CRYPT-PW DummyValue  # Filtered for security
+
+        DEL 180
+
+        mntner:         TEST-MNT
+
+        %END TEST""").strip()

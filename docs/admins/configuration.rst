@@ -717,7 +717,7 @@ Sources
 * ``sources.{name}.export_destination_unfiltered``: a path to save full exports,
   including a serial file, of this source. This is identical to
   ``export_destination``, except that the files saved here contain full unfiltered
-  password hashes from mntner objects.
+  password hashes from mntner objects and objects are never dummified.
   Sharing password hashes externally is a security risk, the unfiltered data
   is intended only to support
   :doc:`availability and data migration </admins/availability-and-migration>`.
@@ -741,7 +741,7 @@ Sources
 * ``sources.{name}.nrtm_access_list_unfiltered``: a reference to an access list
   in the configuration, where IPs in the access list are permitted unfiltered
   access to the NRTMv3 stream for this particular source (``-g`` queries).
-  Unfiltered means full password hashes are included.
+  Unfiltered means full password hashes are included and objects are never dummified.
   Sharing password hashes externally is a security risk, the unfiltered data
   is intended only to support
   :doc:`availability and data migration </admins/availability-and-migration>`.
@@ -774,6 +774,28 @@ Sources
   This can have multiple lines.  When adding this to the configuration,
   use the `|` style to preserve newlines.
   |br| **Default**: not defined, no additional header added.
+  |br| **Change takes effect**: after SIGHUP, upon next request.
+* ``sources.{name}.nrtm_dummified_object_classes``: a list of object classes
+  that will be dummified in exports and NRTM, i.e. any values
+  of attributes listed in ``nrtm_dummified_attributes`` are removed.
+  This affects exports, NRTMv3 responses, and NRTMv4.
+  |br| **Default**: not defined, no objects dummified.
+  |br| **Change takes effect**: after SIGHUP, upon next request/export.
+* ``sources.{name}.nrtm_dummified_attributes``: a dictionary where keys are names
+  of attributes to dummify, and values are the dummy data.
+  If the attribute value contains ``%s``, IRRD will replace it by the object primary key,
+  e.g. key ``person``, value ``Dummy name for person %s``.
+  This is only applied when the RPSL object class is listed in
+  ``nrtm_dummified_object_classes``.
+  This affects exports, NRTMv3 responses, and NRTMv4.
+  |br| **Default**: not defined. no objects dummified.
+  |br| **Change takes effect**: after SIGHUP, upon next request/export.
+* ``sources.{name}.nrtm_dummified_remarks``: additional remarks to add
+  when an object is dummified, e.g. to indicate this is not the
+  original object.
+  This can have multiple lines. When adding this to the configuration,
+  use the `|` style to preserve newlines.
+  |br| **Default**: not defined, no additional remarks added.
   |br| **Change takes effect**: after SIGHUP, upon next request.
 * ``sources.{name}.strict_import_keycert_objects``: a setting used when
   migrating authoritative data that may contain `key-cert` objects.

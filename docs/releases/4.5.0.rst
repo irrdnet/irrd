@@ -37,6 +37,17 @@ was added to the HTTP server in IRRD, on ``/metrics/``.
 This page is only accessible to IPs :doc:`configured </admins/configuration>`
 in the access list set in the ``server.http.status_access_list`` setting.
 
+RPSL object text dummification for exports and NRTM
+---------------------------------------------------
+IRRD can now dummify RPSL object text in exports and NRTM, to remove
+sensitive or personal information. This is controlled by the new
+``sources.{name}.nrtm_dummified_object_classes`` and
+``sources.{name}.nrtm_dummified_attributes`` settings.
+
+Dummification applies to exports, NRTMv3 responses, and NRTMv4. It does
+not apply to interactive query responses like whois or GraphQL.
+By default, dummification is disabled.
+
 New "RPSL data updated" status timestamp
 ----------------------------------------
 Various status overviews of IRRD would show a "last update" per source.

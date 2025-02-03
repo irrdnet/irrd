@@ -784,6 +784,7 @@ class Test900Command(MyBase):
         )
         self.assertRegex(result.stderr, REGEX_MIXED_DELETE)
 
+    # test DNS failure
     def test_040_unresolvable_host(self):
         table = [
             ["-u", UNRESOVABLE_URL],

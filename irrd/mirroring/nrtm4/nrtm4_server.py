@@ -24,7 +24,7 @@ from irrd.storage.queries import (
     RPSLDatabaseQuery,
 )
 from irrd.utils.crypto import eckey_from_config, eckey_public_key_as_str, jws_serialize
-from irrd.utils.text import remove_auth_hashes
+from irrd.utils.text import dummify_object_text, remove_auth_hashes
 
 from ...utils.process_support import get_lockfile
 from ..retrieval import file_hash_sha256
@@ -318,7 +318,17 @@ class NRTM4ServerWriter:
                 header.model_dump(mode="json", include=header.model_fields_set),
                 outstream,
             )
-            objs_filtered = ({"object": remove_auth_hashes(obj["object_text"])} for obj in objs)
+            objs_filtered = (
+                {
+                    "object": dummify_object_text(
+                        remove_auth_hashes(obj["object_text"]),
+                        obj["object_class"],
+                        self.source,
+                        obj["rpsl_pk"],
+                    )
+                }
+                for obj in objs
+            )
             jsonseq_encode(objs_filtered, outstream)
         return filename
 
@@ -351,9 +361,13 @@ class NRTM4ServerWriter:
             )
             for journal_entry in journal_entries:
                 if journal_entry["operation"] == DatabaseOperation.add_or_update:
+                    object_text = remove_auth_hashes(journal_entry["object_text"])
+                    object_text = dummify_object_text(
+                        object_text, journal_entry["object_class"], self.source, journal_entry["rpsl_pk"]
+                    )
                     entry_encoded = {
                         "action": "add_modify",
-                        "object": remove_auth_hashes(journal_entry["object_text"]),
+                        "object": object_text,
                     }
                 elif journal_entry["operation"] == DatabaseOperation.delete:
                     entry_encoded = {

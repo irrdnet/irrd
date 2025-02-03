@@ -1,12 +1,13 @@
 import re
-from collections.abc import Iterator
-from typing import Optional, TextIO, Union
+import textwrap
+from typing import Iterator, Optional, TextIO, Union
 
-from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
+from irrd.conf import PASSWORD_HASH_DUMMY_VALUE, get_setting
 from irrd.rpsl.auth import PASSWORD_HASHERS_ALL
 
 re_remove_passwords = re.compile(r"(%s)[^\n]+" % "|".join(PASSWORD_HASHERS_ALL.keys()), flags=re.IGNORECASE)
 re_remove_last_modified = re.compile(r"^last-modified: [^\n]+\n", flags=re.MULTILINE)
+RPSL_ATTRIBUTE_TEXT_WIDTH = 16
 
 
 def remove_auth_hashes(input: Optional[str]):
@@ -98,3 +99,69 @@ re_clean_ip_error = re.compile(r"IP\('[A-F0-9:./]+'\) has ", re.IGNORECASE)
 
 def clean_ip_value_error(value_error):
     return re.sub(re_clean_ip_error, "", str(value_error))
+
+
+def get_nrtm_dummified_object_classes_for_source(source: str) -> list[str]:
+    """
+    Helper method to get the cleaned dummy object classes for a source, if any.
+    """
+    dummy_object_class = get_setting(f"sources.{source}.nrtm_dummified_object_classes")
+    if dummy_object_class:
+        if isinstance(dummy_object_class, str):
+            dummy_object_class = [dummy_object_class]
+        return [c.strip().lower() for c in dummy_object_class]
+    else:
+        return []
+
+
+def dummify_object_text(rpsl_text: str, object_class: str, source: str, pk: str):
+    """
+    Dummifiy the provided RPSL text by replacing certain attributes with dummy values,
+    based on the configuration defined for the given source.
+
+    This function retrieves the configuration for dummy object class, dummy attributes
+    and remarks from the settings corresponding to the provided source. If dummy object class
+    and attributes are configured for the provided object class, attributes will be replaced
+    in the RPSL text with dummy values. Additionally, if dummy remarks are configured,
+    they will be appended to the end of the dummified object.
+    """
+
+    if not rpsl_text:
+        return rpsl_text
+
+    nrtm_dummified_object_classes = get_nrtm_dummified_object_classes_for_source(source)
+    if object_class not in nrtm_dummified_object_classes:
+        return rpsl_text
+
+    dummified_attributes = get_setting(f"sources.{source}.nrtm_dummified_attributes")
+    if not dummified_attributes:
+        return rpsl_text
+
+    if get_setting(f"sources.{source}.nrtm_dummified_remarks"):
+        dummy_remarks = (
+            textwrap.indent(
+                get_setting(f"sources.{source}.nrtm_dummified_remarks"),
+                "remarks:".ljust(RPSL_ATTRIBUTE_TEXT_WIDTH),
+            ).strip()
+            + "\n"
+        )
+    else:
+        dummy_remarks = None
+
+    lines = rpsl_text.splitlines()
+
+    for index, line in enumerate(lines):
+        for key, value in dummified_attributes.items():
+            if "%s" in str(value):
+                value = str(value).replace("%s", pk)
+
+            if line.startswith(f"{key}:"):
+                format_key = f"{key}:".ljust(RPSL_ATTRIBUTE_TEXT_WIDTH)
+                lines[index] = format_key + str(value)
+
+    dummified_rpsl_object = "\n".join(lines) + "\n"
+
+    if rpsl_text != dummified_rpsl_object and dummy_remarks:
+        dummified_rpsl_object += dummy_remarks
+
+    return dummified_rpsl_object

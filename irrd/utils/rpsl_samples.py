@@ -509,6 +509,7 @@ SAMPLE_MNTNER_MD5 = "md5-password"
 SAMPLE_MNTNER_CRYPT = "crypt-password"
 SAMPLE_MNTNER_BCRYPT = "bcrypt-password"
 SAMPLE_MNTNER = """mntner:         TEST-MNT
+descr:          description
 admin-c:        PERSON-TEST
 notify:         notify@example.net
 upd-to:         upd-to@example.net

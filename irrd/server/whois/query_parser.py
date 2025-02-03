@@ -585,6 +585,7 @@ class WhoisQueryParser:
                 serial_end,
                 self.database_handler,
                 remove_auth_hashes=not in_unfiltered_access_list,
+                client_is_dummifying_exempt=in_unfiltered_access_list,
             )
         except NRTMGeneratorException as nge:
             raise InvalidQueryException(str(nge))

@@ -22,7 +22,7 @@ from irrd.storage.queries import (
 from irrd.utils.crypto import jws_deserialize
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
 from irrd.utils.test_utils import MockDatabaseHandler
-from irrd.utils.text import remove_auth_hashes
+from irrd.utils.text import dummify_object_text, remove_auth_hashes
 
 
 class TestNRTM4Server:
@@ -64,6 +64,12 @@ class TestNRTM4ServerWriter:
                         "nrtm4_server_private_key": MOCK_UNF_PRIVATE_KEY_STR,
                         "nrtm4_server_local_path": str(nrtm_path),
                         # "nrtm4_server_snapshot_frequency": 0,
+                        "nrtm_dummified_object_classes": "mntner",
+                        "nrtm_dummified_attributes": {
+                            "descr": "Dummy description for %s",
+                            "upd-to": "unread@ripe.net",
+                        },
+                        "nrtm_dummified_remarks": "Invalid object",
                     }
                 },
             }
@@ -107,7 +113,9 @@ class TestNRTM4ServerWriter:
         assert snapshot[0]["type"] == "snapshot"
         assert snapshot[0]["session_id"] == unf["session_id"]
         assert snapshot[0]["version"] == unf["snapshot"]["version"]
-        assert snapshot[1]["object"] == remove_auth_hashes(SAMPLE_MNTNER)
+        assert snapshot[1]["object"] == dummify_object_text(
+            remove_auth_hashes(SAMPLE_MNTNER), "mntner", "TEST", "TEST-MNT"
+        )
         assert PASSWORD_HASH_DUMMY_VALUE in snapshot[1]["object"]
 
         assert len(mock_dh.other_calls) == 2
@@ -131,6 +139,8 @@ class TestNRTM4ServerWriter:
                 {
                     "operation": DatabaseOperation.add_or_update,
                     "object_text": SAMPLE_MNTNER,
+                    "object_class": "mntner",
+                    "rpsl_pk": "TEST-MNT",
                 }
             ],
         )
@@ -156,7 +166,9 @@ class TestNRTM4ServerWriter:
         assert delta[0]["type"] == "delta"
         assert delta[0]["session_id"] == unf["session_id"]
         assert delta[0]["version"] == new_unf["version"]
-        assert delta[1]["object"] == remove_auth_hashes(SAMPLE_MNTNER)
+        assert delta[1]["object"] == dummify_object_text(
+            remove_auth_hashes(SAMPLE_MNTNER), "mntner", "TEST", "TEST-MNT"
+        )
         assert delta[1]["action"] == "add_modify"
         assert PASSWORD_HASH_DUMMY_VALUE in delta[1]["object"]
 
@@ -268,6 +280,8 @@ class TestNRTM4ServerWriter:
             [
                 {
                     "object_text": SAMPLE_MNTNER,
+                    "object_class": "mntner",
+                    "rpsl_pk": "TEST-MNT",
                 }
             ]
         )

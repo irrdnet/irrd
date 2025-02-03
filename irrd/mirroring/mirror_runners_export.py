@@ -8,6 +8,7 @@ from tempfile import NamedTemporaryFile
 from irrd.conf import get_setting
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import DatabaseStatusQuery, RPSLDatabaseQuery
+from irrd.utils.text import dummify_object_text as dummify_object_text_func
 from irrd.utils.text import remove_auth_hashes as remove_auth_hashes_func
 
 EXPORT_PERMISSIONS = 0o644
@@ -46,7 +47,7 @@ class SourceExportRunner:
                     f"Starting an unfiltered source export for {self.source} "
                     f"to {export_destination_unfiltered}"
                 )
-                self._export(export_destination_unfiltered, remove_auth_hashes=False)
+                self._export(export_destination_unfiltered, remove_auth_hashes=False, dummify_object=False)
 
             self.database_handler.commit()
         except Exception as exc:
@@ -57,7 +58,7 @@ class SourceExportRunner:
         finally:
             self.database_handler.close()
 
-    def _export(self, export_destination, remove_auth_hashes=True):
+    def _export(self, export_destination, remove_auth_hashes=True, dummify_object=True):
         filename_export = Path(export_destination) / f"{self.source.lower()}.db.gz"
         export_tmpfile = NamedTemporaryFile(delete=False)
         filename_serial = Path(export_destination) / f"{self.source.upper()}.CURRENTSERIAL"
@@ -75,6 +76,11 @@ class SourceExportRunner:
                 object_text = obj["object_text"]
                 if remove_auth_hashes:
                     object_text = remove_auth_hashes_func(object_text)
+
+                if dummify_object:
+                    object_text = dummify_object_text_func(
+                        object_text, obj["object_class"], self.source, obj["rpsl_pk"]
+                    )
                 object_bytes = object_text.encode("utf-8")
                 fh.write(object_bytes + b"\n")
             fh.write(b"# EOF\n")
