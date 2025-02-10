@@ -68,24 +68,24 @@ One uses the ``object_text`` option to provide a single string,
 the other specifies individual attributes::
 
     {
-        'objects': [
+        "objects": [
             {
-                'object_text': 'person: PERSON1-TEST\n...'
+                "object_text": "person: PERSON1-TEST\n..."
             },
             {
-                'attributes': [
+                "attributes": [
                     {
-                        'name': 'person',
-                        'value': 'PERSON2-TEST'
+                        "name": "person",
+                        "value": "PERSON2-TEST"
                     },
                     {
-                        'name': 'mnt-by',
-                        'value': ['DEMO-TEST', 'DEMO2-TEST']
+                        "name": "mnt-by",
+                        "value": ["DEMO-TEST", "DEMO2-TEST"]
                     }
                 ]
             }
         ],
-        'passwords': ['password1', 'password2']
+        "passwords": ["password1", "password2"]
     }
 
 .. _database-changes-http-api-response:
@@ -137,7 +137,7 @@ Here is an example of a JSON response::
                 "error_messages": [
                     "Mandatory attribute \"address\" on object person is missing"
                 ],
-                "new_object_text": None,
+                "new_object_text": null,
                 "submitted_object_text": "[trimmed]"
             }
         ]
@@ -240,8 +240,8 @@ referential integrity like any other change.
 In HTTP submission, provide the override password in the root object, e.g.::
 
     {
-        'objects': [....],
-        'override': '<override password>'
+        "objects": [....],
+        "override": "<override password>"
     }
 
 In e-mails, provide the password in the override pseudo-attribute, e.g.::
