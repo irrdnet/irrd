@@ -73,6 +73,17 @@ class WhoisQueryParser:
                 result="Queries may not contain null bytes",
             )
 
+        if query.startswith("-V "):
+            # Special case for https://github.com/irrdnet/irrd/issues/985 - strip the user agent,
+            # then process remainder as normal.
+            try:
+                _, user_agent, remainder = query.split(" ", 2)
+                if remainder.startswith("!"):
+                    query = remainder
+                    self.handle_user_agent(user_agent)
+            except ValueError:
+                pass
+
         if query.startswith("!"):
             try:
                 return self.handle_irrd_command(query[1:])

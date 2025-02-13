@@ -246,7 +246,8 @@ class TestWhoisQueryParserRIPE:
         mock_query_resolver, mock_dh, parser = prepare_parser
         mock_query_resolver.set_query_sources = Mock()
 
-        response = parser.handle_query("-s test1")
+        # Includes user-agent for variation
+        response = parser.handle_query("-V user-agent -s test1")
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert not response.result
@@ -948,6 +949,17 @@ class TestWhoisQueryParserIRRD:
         mock_query_resolver, mock_dh, parser = prepare_parser
 
         response = parser.handle_query("!v")
+        assert response.response_type == WhoisQueryResponseType.SUCCESS
+        assert response.mode == WhoisQueryResponseMode.IRRD
+        assert response.result.startswith("IRRd")
+
+    def test_irrd_command_prefixed_V(self, prepare_parser):
+        # https://github.com/irrdnet/irrd/issues/985
+        # Note that -V is for communicating the user-agent, but !v is to ask the server version.
+        # We just use !v here as it's the simplest command.
+        mock_query_resolver, mock_dh, parser = prepare_parser
+
+        response = parser.handle_query("-V user-agent !v")
         assert response.response_type == WhoisQueryResponseType.SUCCESS
         assert response.mode == WhoisQueryResponseMode.IRRD
         assert response.result.startswith("IRRd")
