@@ -41,6 +41,12 @@ IRRd supports two styles of queries:
 The two styles can not be combined in a single query, but can be mixed in
 a single TCP connection.
 
+There is one special case: if a query starts
+with the RIPE style flag ``-V <user-agent>``, followed by an IRRD style query,
+the IRRD style query will be processed, e.g. ``-V my-client !aAS-EXAMPLE``.
+This is for backward compatibility with whois clients that assume only
+RIPE style queries exist, and always prepend this flag to the user's query.
+
 IRRd style queries
 ------------------
 * ``!!`` activates multiple command mode for raw TCP sockets. The connection

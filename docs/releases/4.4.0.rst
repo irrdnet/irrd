@@ -140,6 +140,9 @@ Other changes
 * The deployment documentation now also suggests pipx for
   installing IRRD, which can be easier than managing the virtualenv
   manually.
+* All IRRD style queries may be prepended with ``-V <user-agent>``,
+  even though that is a RIPE style flag, for backwards compatibility
+  with whois clients that always prepend this to the user's query.
 
 Upgrading to IRRd 4.4.0 from 4.3.x
 ----------------------------------
