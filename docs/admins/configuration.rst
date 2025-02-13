@@ -292,8 +292,8 @@ Servers
 * ``server.http.forwarded_allowed_ips``: a single IP or list of IPs from
   which IRRd will trust the ``X-Forwarded-For`` header. This header is used
   for IRRd to know the real client address, rather than the address of a
-  proxy.
-  |br| **Default**: ``127.0.0.1``.
+  proxy. Comma-separated.
+  |br| **Default**: ``127.0.0.1,::ffff:127.0.0.1,::1``.
   |br| **Change takes effect**: after full IRRd restart.
 
 
