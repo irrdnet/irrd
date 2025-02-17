@@ -52,8 +52,15 @@ class NRTM4Server:
 
     def run(self) -> None:
         database_handler = DatabaseHandler()
-        NRTM4ServerWriter(self.source, database_handler).run()
-        database_handler.close()
+        try:
+            NRTM4ServerWriter(self.source, database_handler).run()
+        except Exception as exc:  # pragma: no cover
+            logger.error(
+                f"{self.source}: An exception occurred during an NRTMv4 server update: {exc}", exc_info=exc
+            )
+            raise
+        finally:
+            database_handler.close()
 
 
 class NRTM4ServerWriter:
@@ -102,7 +109,9 @@ class NRTM4ServerWriter:
     def run(self):
         status_lockfile = get_lockfile(self.status_lockfile_path, blocking=False)
         if not status_lockfile:  # pragma: no cover - covered in integration
-            logger.debug(f"{self.source}: NRTMv4 server not running, status changes locked by other server")
+            logger.debug(
+                f"{self.source}: NRTMv4 server update cancelled, status changes locked by other server"
+            )
             return
 
         self._update_status()
@@ -110,7 +119,8 @@ class NRTM4ServerWriter:
             return
         if self.force_reload:
             logger.debug(
-                f"{self.source}: NRTMv4 server not running, as force_reload is set - waiting on new import"
+                f"{self.source}: NRTMv4 server update cancelled, as force_reload is set - waiting on new"
+                " import"
             )
             return
 
