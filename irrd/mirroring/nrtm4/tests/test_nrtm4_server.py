@@ -95,7 +95,9 @@ class TestNRTM4ServerWriter:
         assert mock_dh.queries == [
             RPSLDatabaseJournalStatisticsQuery(),
             DatabaseStatusQuery().source("TEST"),
-            RPSLDatabaseQuery(["object_text"]).sources(["TEST"]).default_suppression(),
+            RPSLDatabaseQuery(["object_text", "object_class", "rpsl_pk"])
+            .sources(["TEST"])
+            .default_suppression(),
         ]
 
         unf = self._load_unf(nrtm_path)

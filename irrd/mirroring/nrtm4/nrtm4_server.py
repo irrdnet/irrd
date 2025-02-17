@@ -99,7 +99,14 @@ class NRTM4ServerWriter:
         self.status = NRTM4ServerDatabaseStatus.from_dict(database_status)
         self.original_status = copy.deepcopy(self.status)
 
-    def run(self):
+    def run(self) -> None:
+        try:
+            self.server_update()
+        except Exception as e:  # pragma: no cover
+            logger.error(f"{self.source}: NRTMv4 server update failed: {e}")
+            raise
+
+    def server_update(self):
         status_lockfile = get_lockfile(self.status_lockfile_path, blocking=False)
         if not status_lockfile:  # pragma: no cover - covered in integration
             logger.debug(f"{self.source}: NRTMv4 server not running, status changes locked by other server")
@@ -114,7 +121,7 @@ class NRTM4ServerWriter:
             )
             return
 
-        logger.debug(f"{self.source}: NRTMv4 server preparing to update in {self.path}")
+        logger.debug(f"{self.source}: NRTMv4 server starting update in {self.path}")
 
         if not self._verify_integrity():
             logger.error(f"{self.source}: integrity check failed, discarding existing session")
@@ -303,7 +310,11 @@ class NRTM4ServerWriter:
         """
         assert self.status
         filename = f"nrtm-snapshot.{self.status.session_id}.{version}.{secrets.token_hex(16)}.json.gz"
-        query = RPSLDatabaseQuery(["object_text"]).sources([self.source]).default_suppression()
+        query = (
+            RPSLDatabaseQuery(["object_text", "object_class", "rpsl_pk"])
+            .sources([self.source])
+            .default_suppression()
+        )
         objs = self.database_handler.execute_query(query)
 
         with gzip.open(self.path / filename, "wb") as outstream:
