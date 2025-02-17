@@ -99,7 +99,14 @@ class NRTM4ServerWriter:
         self.status = NRTM4ServerDatabaseStatus.from_dict(database_status)
         self.original_status = copy.deepcopy(self.status)
 
-    def run(self):
+    def run(self) -> None:
+        try:
+            self.server_update()
+        except Exception as e:  # pragma: no cover
+            logger.error(f"{self.source}: NRTMv4 server update failed: {e}")
+            raise
+
+    def server_update(self):
         status_lockfile = get_lockfile(self.status_lockfile_path, blocking=False)
         if not status_lockfile:  # pragma: no cover - covered in integration
             logger.debug(f"{self.source}: NRTMv4 server not running, status changes locked by other server")
