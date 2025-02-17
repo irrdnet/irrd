@@ -14,12 +14,12 @@ Submission format
 There are three ways to submit changes directly to IRRd:
 
 * By sending an e-mail with the RPSL objects. This method supports BCRYPT-PW,
-  MD5-PW, CRYPT-PW and PGPKEY authentication. You will receive a reply by
+  MD5-PW, CRYPT-PW, PGPKEY and API key authentication. You will receive a reply by
   e-mail with the result.
-* Over HTTPS, through a REST API. This method supports BCRYPT-PW, MD5-PW and
-  CRYPT-PW authentication. You receive the results in the HTTP response.
+* Over HTTPS, through a REST API. This method supports BCRYPT-PW, MD5-PW,
+  CRYPT-PW and API key authentication. You receive the results in the HTTP response.
 * Over HTTPS, through a web form. This method supports BCRYPT-PW, MD5-PW,
-  CRYPT-PW and IRRD-INTERNAL-AUTH authentication.
+  CRYPT-PW, PGPKEY and :doc:`web interface </admins/webui>` authentication.
 
 Your IRRD operator may restrict which password hashing methods are available.
 
