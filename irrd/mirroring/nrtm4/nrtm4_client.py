@@ -107,7 +107,7 @@ class NRTM4Client:
         )
         return has_loaded_snapshot
 
-    def _retrieve_unf(self) -> tuple[NRTM4UpdateNotificationFile, Optional[str]]:
+    def _retrieve_unf(self) -> tuple[NRTM4UpdateNotificationFile, str]:
         """
         Retrieve, verify and parse the Update Notification File.
         Returns the UNF object and the used key in base64 string.
@@ -116,13 +116,7 @@ class NRTM4Client:
             raise RuntimeError("NRTM4 client called for a source without a Update Notification File URL")
 
         unf_signed, _ = retrieve_file(self.notification_file_url, return_contents=True)
-        if "nrtm.db.ripe.net" in self.notification_file_url:  # pragma: no cover
-            # When removing this, also remove Optional[] from return type
-            logger.warning("Expecting raw UNF as URL is nrtm.db.ripe.net, signature not checked")
-            unf_payload = unf_signed.encode("ascii")
-            used_key = None
-        else:
-            unf_payload, used_key = self._deserialize_unf(unf_signed)
+        unf_payload, used_key = self._deserialize_unf(unf_signed)
 
         unf = NRTM4UpdateNotificationFile.model_validate_json(
             unf_payload,
@@ -285,8 +279,6 @@ class NRTM4Client:
         Deals with the usual things for bulk loading, like deleting old objects.
         """
         url = unf.snapshot.full_url(self.notification_file_url)
-        if "nrtm.db.ripe.net" in self.notification_file_url:  # pragma: no cover
-            url = unf.snapshot.url
         snapshot_path, should_delete = retrieve_file(
             url,
             return_contents=False,
@@ -343,8 +335,6 @@ class NRTM4Client:
             if delta.version < next_version:
                 continue
             url = delta.full_url(self.notification_file_url)
-            if "nrtm.db.ripe.net" in self.notification_file_url:  # pragma: no cover
-                url = delta.url
             delta_path, should_delete = retrieve_file(url, return_contents=False, expected_hash=delta.hash)
             try:
                 delta_file = open(delta_path, "rb")
