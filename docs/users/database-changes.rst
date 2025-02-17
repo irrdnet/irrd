@@ -19,7 +19,7 @@ There are three ways to submit changes directly to IRRd:
 * Over HTTPS, through a REST API. This method supports BCRYPT-PW, MD5-PW,
   CRYPT-PW and API key authentication. You receive the results in the HTTP response.
 * Over HTTPS, through a web form. This method supports BCRYPT-PW, MD5-PW,
-  CRYPT-PW, PGPKEY and IRRD-INTERNAL-AUTH authentication.
+  CRYPT-PW, PGPKEY and :doc:`web interface </admins/webui>` authentication.
 
 Your IRRD operator may restrict which password hashing methods are available.
 
