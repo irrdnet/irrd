@@ -114,7 +114,7 @@ class NRTM4ServerWriter:
             )
             return
 
-        logger.debug(f"{self.source}: NRTMv4 server preparing to update in {self.path}")
+        logger.debug(f"{self.source}: NRTMv4 server starting update in {self.path}")
 
         if not self._verify_integrity():
             logger.error(f"{self.source}: integrity check failed, discarding existing session")
@@ -303,7 +303,11 @@ class NRTM4ServerWriter:
         """
         assert self.status
         filename = f"nrtm-snapshot.{self.status.session_id}.{version}.{secrets.token_hex(16)}.json.gz"
-        query = RPSLDatabaseQuery(["object_text"]).sources([self.source]).default_suppression()
+        query = (
+            RPSLDatabaseQuery(["object_text", "object_class", "rpsl_pk"])
+            .sources([self.source])
+            .default_suppression()
+        )
         objs = self.database_handler.execute_query(query)
 
         with gzip.open(self.path / filename, "wb") as outstream:
