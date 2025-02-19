@@ -179,9 +179,11 @@ class NRTM4ServerWriter:
                 DEFAULT_SOURCE_NRTM4_SERVER_SNAPSHOT_FREQUENCY,
             )
         )
+        # If the data has changed since the last snapshot, Deltas will have been generated,
+        # therefore the version will have been incremented.
+        data_has_changed = self.status.last_snapshot_version != self.status.version
         should_create_snapshot = not self.status.last_snapshot_version or (
-            self.status.last_snapshot_version != self.status.version
-            and (self.timestamp - self.status.last_snapshot_timestamp) > snapshot_frequency
+            data_has_changed and (self.timestamp - self.status.last_snapshot_timestamp) > snapshot_frequency
         )
         if should_create_snapshot:
             snapshot_lockfile = get_lockfile(self.snapshot_lockfile_path, blocking=False)
@@ -218,6 +220,11 @@ class NRTM4ServerWriter:
             self._commit_status()
             status_lockfile.close()
             snapshot_lockfile.close()
+
+        # Ensure UNF is updated at least every 24h - this can only execute
+        # if none of the code above has written an updated UNF.
+        if self.status.last_update_notification_file_update <= self.timestamp - datetime.timedelta(hours=24):
+            self._commit_status()
 
     def _commit_status(self) -> None:
         self._expire_deltas()
