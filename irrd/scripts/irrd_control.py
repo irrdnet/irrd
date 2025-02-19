@@ -3,25 +3,28 @@
 import logging
 import sys
 import textwrap
+import warnings
 from functools import update_wrapper
 from pathlib import Path
 
 import click
 from joserfc.rfc7518.ec_key import ECKey
-
-from irrd.utils.crypto import (
-    eckey_from_config,
-    eckey_private_key_as_str,
-    eckey_public_key_as_str,
-)
-from irrd.webui.helpers import send_authentication_change_mail
+from sqlalchemy.exc import SAWarning
 
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from irrd.conf import CONFIG_PATH_DEFAULT, config_init, get_setting
 from irrd.storage.models import AuthUser, RPSLDatabaseStatus
 from irrd.storage.orm_provider import ORMSessionProvider, session_provider_manager_sync
+from irrd.utils.crypto import (
+    eckey_from_config,
+    eckey_private_key_as_str,
+    eckey_public_key_as_str,
+)
 from irrd.webui import UI_DEFAULT_DATETIME_FORMAT
+from irrd.webui.helpers import send_authentication_change_mail
+
+warnings.filterwarnings("ignore", category=SAWarning)
 
 logger = logging.getLogger(__name__)
 
