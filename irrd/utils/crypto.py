@@ -2,8 +2,8 @@ from typing import Optional, Union
 
 from joserfc import jws
 from joserfc.errors import JoseError
-from joserfc.rfc7515.model import CompactSignature
-from joserfc.rfc7518.ec_key import ECKey
+from joserfc.jwk import ECKey
+from joserfc.jws import CompactSignature
 
 from irrd.conf import get_setting
 
