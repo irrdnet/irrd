@@ -39,7 +39,7 @@ from .nrtm4_types import (
 
 logger = logging.getLogger(__name__)
 
-DANGLING_SNAPSHOT_EXPIRY_TIME = datetime.timedelta(minutes=5)
+DANGLING_SNAPSHOT_EXPIRY_TIME = datetime.timedelta(hours=24)
 
 
 class NRTM4Server:

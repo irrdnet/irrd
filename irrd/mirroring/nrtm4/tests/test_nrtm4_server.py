@@ -80,7 +80,7 @@ class TestNRTM4ServerWriter:
         snapshot_outdated_path = nrtm_path / "nrtm-snapshot.aaaaa.json.gz"
         for path in delta_dangling_path, snapshot_outdated_path:
             path.touch()
-            os.utime(path, (time.time() - 3600, time.time() - 3600))
+            os.utime(path, (time.time() - 86400, time.time() - 86400))
 
         # Initial run, no data, no action
         self._run_writer(mock_dh, [])
