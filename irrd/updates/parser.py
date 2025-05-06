@@ -1,3 +1,4 @@
+import datetime
 import difflib
 import logging
 from typing import Optional, Union
@@ -27,6 +28,7 @@ from .validators import (
 )
 
 logger = logging.getLogger(__name__)
+DATETIME_SENTINEL = datetime.datetime(1970, 1, 1)
 
 
 class ChangeRequest:
@@ -191,6 +193,13 @@ class ChangeRequest:
                 origin=JournalEntryOrigin.auth_change,
                 protect_rpsl_name=True,
             )
+        elif self.rpsl_obj_current and self.rpsl_obj_new.render_rpsl_text(
+            last_modified=DATETIME_SENTINEL
+        ) == self.rpsl_obj_current.render_rpsl_text(last_modified=DATETIME_SENTINEL):
+            self.info_messages.append("Submitted object was identical to current object, no change recorded.")
+            logger.info(f"{id(self)}: Not saving change for {self.rpsl_obj_new}: identical to current object")
+            self.status = UpdateRequestStatus.SAVED
+            return  # Do not create auth log entry
         else:
             logger.info(
                 f"{id(self)}: Saving change for {self.rpsl_obj_new}: inserting/updating current object"
@@ -200,7 +209,6 @@ class ChangeRequest:
         if self._auth_result:
             session = saorm.Session(bind=self.database_handler._connection)
             change_log = self._auth_result.to_change_log()
-            # TODO: extract constant
             change_log.from_ip = self.request_meta.get(META_KEY_HTTP_CLIENT_IP, None)
             change_log.from_email = self.request_meta.get("From", None)
             change_log.rpsl_target_request_type = self.request_type

@@ -1,6 +1,7 @@
 import itertools
 import textwrap
 from unittest.mock import Mock
+from uuid import uuid4
 
 import pytest
 from passlib.hash import bcrypt
@@ -93,7 +94,7 @@ class TestSingleChangeRequestHandling:
         assert "reformatted as" in result_inetnum.info_messages[0]
         assert not result_inetnum.error_messages
 
-        assert result_as_set.status == UpdateRequestStatus.PROCESSING, result_inetnum.error_messages
+        assert result_as_set.status == UpdateRequestStatus.PROCESSING, result_as_set.error_messages
         assert result_as_set.is_valid()
         assert result_as_set.rpsl_text_submitted.startswith("as-set:")
         assert result_as_set.rpsl_obj_new.rpsl_object_class == "as-set"
@@ -1763,7 +1764,7 @@ class TestSingleChangeRequestHandling:
         invalid_object = "aut-num: pw1\n"
 
         request_text = "password: pw1\n" + SAMPLE_INETNUM + "delete: delete\n\r\n\r\n\r\n"
-        request_text += SAMPLE_AS_SET + "password: pw2\n\n"
+        request_text += SAMPLE_AS_SET + f"descr: {uuid4()}\npassword: pw2\n\n"
         request_text += "password: pw3\n" + unknown_class + "\r\n"
         request_text += invalid_object + "\noverride: override-pw"
         return request_text

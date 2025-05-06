@@ -168,7 +168,7 @@ class TestChangeSubmissionHandler:
         person_text = textwrap.dedent("""
         person:         Placeholder Person Object
         address:        The Netherlands
-        phone:          +31 20 000 0000
+        phone:          +31 20 000 001
         nic-hdl:        PERSON-TEST
         mnt-by:         TEST-MNT
         e-mail:         email@example.com
@@ -179,7 +179,7 @@ class TestChangeSubmissionHandler:
         mntner_text = textwrap.dedent("""
         mntner:         TEST-MNT
         admin-c:        PERSON-TEST
-        upd-to:         upd-to@example.com
+        upd-to:         upd-to2@example.com
         mnt-nfy:        mnt-nfy@example.com
         auth:           PGPKey-80F238C6
         mnt-by:         TEST-MNT
