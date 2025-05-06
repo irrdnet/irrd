@@ -150,7 +150,7 @@ class TestNRTM4Client:
                 }
             ]
         )
-        NRTM4Client("TEST", mock_dh).run_client()
+        NRTM4Client("TEST", mock_dh).run_client(force_load_delta_even_after_snapshot=True)
         self._assert_import_queries(mock_dh, expect_reload=True)
         assert "No previous known session ID or version, reloading from snapshot" in caplog.text
         assert "import of snapshot at version 3" in caplog.text
@@ -172,7 +172,7 @@ class TestNRTM4Client:
                 }
             ]
         )
-        NRTM4Client("TEST", mock_dh).run_client()
+        NRTM4Client("TEST", mock_dh).run_client(force_load_delta_even_after_snapshot=True)
         self._assert_import_queries(mock_dh, expect_reload=False)
         assert "Updating from deltas, starting from version 3" in caplog.text
 
@@ -192,7 +192,7 @@ class TestNRTM4Client:
         mock_dh.reset_mock()
         mock_dh.query_responses[DatabaseStatusQuery] = iter([])
         with pytest.raises(NRTM4ClientError):
-            NRTM4Client("TEST", mock_dh).run_client()
+            NRTM4Client("TEST", mock_dh).run_client(force_load_delta_even_after_snapshot=True)
 
     def test_invalid_empty_delta(self, prepare_nrtm4_test, tmp_path, monkeypatch):
         mock_responses = {
@@ -221,7 +221,7 @@ class TestNRTM4Client:
         )
 
         with pytest.raises(ValueError) as ve:
-            NRTM4Client("TEST", mock_dh).run_client()
+            NRTM4Client("TEST", mock_dh).run_client(force_load_delta_even_after_snapshot=True)
         assert "did not contain any entries" in str(ve)
 
     def test_invalid_delta_key_error(self, prepare_nrtm4_test, tmp_path, monkeypatch):
@@ -251,7 +251,7 @@ class TestNRTM4Client:
         )
 
         with pytest.raises(ValueError) as ve:
-            NRTM4Client("TEST", mock_dh).run_client()
+            NRTM4Client("TEST", mock_dh).run_client(force_load_delta_even_after_snapshot=True)
         assert "contained invalid entry" in str(ve)
 
     def test_invalid_unf_version_too_low(self, prepare_nrtm4_test):
@@ -271,7 +271,7 @@ class TestNRTM4Client:
         )
 
         with pytest.raises(ValueError) as ve:
-            NRTM4Client("TEST", mock_dh).run_client()
+            NRTM4Client("TEST", mock_dh).run_client(force_load_delta_even_after_snapshot=True)
         assert "but version 4 is older than local version 6" in str(ve)
 
     def test_session_id_mismatch(self, prepare_nrtm4_test, caplog):
@@ -289,7 +289,7 @@ class TestNRTM4Client:
                 }
             ]
         )
-        NRTM4Client("TEST", mock_dh).run_client()
+        NRTM4Client("TEST", mock_dh).run_client(force_load_delta_even_after_snapshot=True)
         self._assert_import_queries(mock_dh, expect_reload=True)
         assert "Session ID has changed" in caplog.text
         assert "import of snapshot at version 3" in caplog.text
@@ -310,7 +310,7 @@ class TestNRTM4Client:
                 }
             ]
         )
-        NRTM4Client("TEST", mock_dh).run_client()
+        NRTM4Client("TEST", mock_dh).run_client(force_load_delta_even_after_snapshot=True)
         self._assert_import_queries(mock_dh, expect_reload=True)
         assert "Deltas from current version 1 not available on server, reloading from snapshot" in caplog.text
         assert "import of snapshot at version 3" in caplog.text
@@ -331,7 +331,7 @@ class TestNRTM4Client:
                 }
             ]
         )
-        NRTM4Client("TEST", mock_dh).run_client()
+        NRTM4Client("TEST", mock_dh).run_client(force_load_delta_even_after_snapshot=True)
         self._assert_import_queries(mock_dh, expect_reload=True)
         assert "Forced reload flag set, reloading from snapshot" in caplog.text
         assert "import of snapshot at version 3" in caplog.text
@@ -341,7 +341,7 @@ class TestNRTM4Client:
         mock_dh = MockDatabaseHandler()
         mock_dh.reset_mock()
         mock_dh.query_responses[DatabaseStatusQuery] = iter([])
-        NRTM4Client("TEST", mock_dh).run_client()
+        NRTM4Client("TEST", mock_dh).run_client(force_load_delta_even_after_snapshot=True)
         self._assert_import_queries(mock_dh, expect_reload=True)
         assert "No previous known session ID or version" in caplog.text
         assert "import of snapshot at version 3" in caplog.text
@@ -362,7 +362,7 @@ class TestNRTM4Client:
                 }
             ]
         )
-        NRTM4Client("TEST", mock_dh).run_client()
+        NRTM4Client("TEST", mock_dh).run_client(force_load_delta_even_after_snapshot=True)
         assert mock_dh.other_calls == [
             (
                 "record_nrtm4_client_status",
@@ -385,11 +385,11 @@ class TestNRTM4Client:
         mock_dh.reset_mock()
         mock_dh.query_responses[DatabaseStatusQuery] = iter([])
         with pytest.raises(NRTM4ClientError):
-            NRTM4Client("DIFFERENT-SOURCE", mock_dh).run_client()
+            NRTM4Client("DIFFERENT-SOURCE", mock_dh).run_client(force_load_delta_even_after_snapshot=True)
 
         MOCK_SNAPSHOT[0]["source"] = "DIFFERENT-SOURCE"
         with pytest.raises(NRTM4ClientError) as err:
-            NRTM4Client("TEST", mock_dh).run_client()
+            NRTM4Client("TEST", mock_dh).run_client(force_load_delta_even_after_snapshot=True)
         assert "Mismatch in source field" in str(err)
         MOCK_SNAPSHOT[0]["source"] = "TEST"
 
@@ -410,7 +410,7 @@ class TestNRTM4Client:
         mock_dh.reset_mock()
         mock_dh.query_responses[DatabaseStatusQuery] = iter([])
         with pytest.raises(NRTM4ClientError) as exc:
-            NRTM4Client("TEST", mock_dh).run_client()
+            NRTM4Client("TEST", mock_dh).run_client(force_load_delta_even_after_snapshot=True)
         assert "any known keys" in str(exc)
 
     def test_invalid_hash_change_history_rewrite(self, prepare_nrtm4_test, config_override):
@@ -431,7 +431,7 @@ class TestNRTM4Client:
             ]
         )
         with pytest.raises(NRTM4ClientError) as exc:
-            NRTM4Client("TEST", mock_dh).run_client()
+            NRTM4Client("TEST", mock_dh).run_client(force_load_delta_even_after_snapshot=True)
         assert "rewriting history" in str(exc)
 
     def test_invalid_filename_change_history_rewrite(self, prepare_nrtm4_test, config_override):
@@ -451,7 +451,7 @@ class TestNRTM4Client:
             ]
         )
         with pytest.raises(NRTM4ClientError) as exc:
-            NRTM4Client("TEST", mock_dh).run_client()
+            NRTM4Client("TEST", mock_dh).run_client(force_load_delta_even_after_snapshot=True)
         assert "rewriting history" in str(exc)
 
     def test_invalid_current_db_key_with_valid_config_key(self, prepare_nrtm4_test, config_override):
@@ -483,7 +483,7 @@ class TestNRTM4Client:
             ]
         )
         with pytest.raises(NRTM4ClientError) as exc:
-            NRTM4Client("TEST", mock_dh).run_client()
+            NRTM4Client("TEST", mock_dh).run_client(force_load_delta_even_after_snapshot=True)
         assert "is valid for" in str(exc)
 
     def test_uses_current_db_key(self, prepare_nrtm4_test, config_override):
@@ -513,7 +513,7 @@ class TestNRTM4Client:
                 }
             ]
         )
-        NRTM4Client("TEST", mock_dh).run_client()
+        NRTM4Client("TEST", mock_dh).run_client(force_load_delta_even_after_snapshot=True)
 
     def test_key_rotation(self, prepare_nrtm4_test, config_override, caplog):
         config_override(
@@ -543,7 +543,7 @@ class TestNRTM4Client:
                 }
             ]
         )
-        NRTM4Client("TEST", mock_dh).run_client()
+        NRTM4Client("TEST", mock_dh).run_client(force_load_delta_even_after_snapshot=True)
         assert mock_dh.other_calls == [
             (
                 "record_nrtm4_client_status",
