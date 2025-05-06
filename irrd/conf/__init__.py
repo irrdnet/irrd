@@ -69,7 +69,7 @@ LOGGING = {
         # "sqlalchemy.engine.base.Engine": {
         #     "level": "INFO",
         # },
-        "multipart": {
+        "python_multipart": {
             "level": "INFO",
         },
         "": {
