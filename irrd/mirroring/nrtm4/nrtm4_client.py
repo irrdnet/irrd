@@ -57,7 +57,7 @@ class NRTM4Client:
         self.notification_file_url = get_setting(f"sources.{self.source}.nrtm4_client_notification_file_url")
         self.force_reload, self.last_status = self._current_db_status()
 
-    def run_client(self) -> bool:
+    def run_client(self, force_load_delta_even_after_snapshot=False) -> bool:
         """
         Run the client based on the parameters provided to init().
         Returns True to indicate that a full reload has happened,
@@ -66,23 +66,28 @@ class NRTM4Client:
         errors and convert them appropriately.
         """
         try:
-            return self._run_client()
+            return self._run_client(force_load_delta_even_after_snapshot)
         except pydantic.ValidationError as ve:
             raise NRTM4ClientError.from_pydantic_error(ve)
         except ValueError as ve:
             raise NRTM4ClientError(str(ve))
 
-    def _run_client(self) -> bool:
+    def _run_client(self, force_load_delta_even_after_snapshot=False) -> bool:
         has_loaded_snapshot = False
 
         unf, used_key = self._retrieve_unf()
         next_delta_version = self._find_next_version(unf)
         if next_delta_version is None:
             self._load_snapshot(unf)
-            next_delta_version = self._find_next_version(unf, unf.snapshot.version)
             has_loaded_snapshot = True
+            next_delta_version = self._find_next_version(unf, unf.snapshot.version)
 
-        if unf.max_delta_version and next_delta_version <= unf.max_delta_version:
+        if has_loaded_snapshot and not force_load_delta_even_after_snapshot:  # pragma: no cover
+            logger.info(
+                f"{self.source}: Loaded snapshot at version {unf.snapshot.version},"
+                " deferring deltas to next run"
+            )
+        elif unf.max_delta_version and next_delta_version <= unf.max_delta_version:
             logger.info(f"{self.source}: Updating from deltas, starting from version {next_delta_version}")
             self._load_deltas(unf, next_delta_version)
         else:
