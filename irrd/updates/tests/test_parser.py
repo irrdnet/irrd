@@ -1,7 +1,6 @@
 import itertools
 import textwrap
 from unittest.mock import Mock
-from uuid import uuid4
 
 import pytest
 from passlib.hash import bcrypt
@@ -75,7 +74,7 @@ class TestSingleChangeRequestHandling:
         query_results = iter(
             [
                 [{"object_text": SAMPLE_INETNUM}],
-                [{"object_text": SAMPLE_AS_SET}],
+                [{"object_text": SAMPLE_AS_SET.replace("description", "description existing")}],
             ]
         )
         mock_dh.execute_query = lambda query: next(query_results)
@@ -1764,7 +1763,7 @@ class TestSingleChangeRequestHandling:
         invalid_object = "aut-num: pw1\n"
 
         request_text = "password: pw1\n" + SAMPLE_INETNUM + "delete: delete\n\r\n\r\n\r\n"
-        request_text += SAMPLE_AS_SET + f"descr: {uuid4()}\npassword: pw2\n\n"
+        request_text += SAMPLE_AS_SET + "\npassword: pw2\n\n"
         request_text += "password: pw3\n" + unknown_class + "\r\n"
         request_text += invalid_object + "\noverride: override-pw"
         return request_text
