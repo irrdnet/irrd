@@ -101,3 +101,6 @@ Other changes
   As it's name notes, this disables many checks and all referential integrity
   and is therefore strongly discouraged.
 * Most non-printable characters are now stripped from all RPSL attribute values.
+* The order in which authoritative sources are listed in the select field in
+  the maintainer migration form now follows the order of the configuration
+  file. Previously, this was alphabetically ordered.

@@ -422,10 +422,9 @@ class MntnerMigrateInitiateForm(StarletteForm):
         self.session_provider = session_provider
         self.rpsl_mntner = None
         self.rpsl_mntner_db_pk = None
-        auth_sources = [
+        self.mntner_source.choices = [
             name for name, settings in get_setting("sources").items() if settings.get("authoritative")
         ]
-        self.mntner_source.choices = sorted([(source, source) for source in auth_sources])
 
     mntner_key = wtforms.StringField(
         "Mntner name",
