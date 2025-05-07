@@ -1792,7 +1792,7 @@ class TestSingleChangeRequestHandling:
         invalid_object = "aut-num: pw1\n"
 
         request_text = "password: pw1\n" + SAMPLE_INETNUM + "delete: delete\n\r\n\r\n\r\n"
-        request_text += SAMPLE_AS_SET + "\npassword: pw2\n\n"
+        request_text += SAMPLE_AS_SET + "password: pw2\n\n"
         request_text += "password: pw3\n" + unknown_class + "\r\n"
         request_text += invalid_object + "\noverride: override-pw"
         return request_text
