@@ -186,7 +186,7 @@ class TestChangeSubmissionHandler:
         changed:        changed@example.com 20190701 # comment
         source:         TEST
         """)
-        rpsl_text = person_text + "\n\n" + mntner_text
+        rpsl_text = person_text + "\n\n" + mntner_text.replace("upd-to@", "upd-to-new@")
 
         query_responses = iter(
             [
@@ -296,13 +296,20 @@ class TestChangeSubmissionHandler:
             ---
             Modify succeeded for object below: [mntner] TEST-MNT:
             
-            
+            @@ -1,6 +1,6 @@
+             mntner:         TEST-MNT
+             admin-c:        PERSON-TEST
+            -upd-to:         upd-to@example.com
+            +upd-to:         upd-to-new@example.com
+             mnt-nfy:        mnt-nfy@example.com
+             auth:           PGPKey-80F238C6
+             mnt-by:         TEST-MNT
             
             New version of this object:
             
             mntner:         TEST-MNT
             admin-c:        PERSON-TEST
-            upd-to:         upd-to@example.com
+            upd-to:         upd-to-new@example.com
             mnt-nfy:        mnt-nfy@example.com
             auth:           PGPKey-80F238C6
             mnt-by:         TEST-MNT
