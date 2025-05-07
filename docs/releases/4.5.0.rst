@@ -75,6 +75,12 @@ Other changes
 * The setting ``sources.{name}.authoritative_retain_last_modified`` was
   added to skip updating `last-modified` in authoritative databases,
   and retain the original value (if any) instead.
+* Updates submitted to objects where there is no change to the existing
+  values, are no longer saved. This means they do not create a journal entry.
+  They are included in reports and notifications to the submitter and maintainers,
+  with an info message. The `last-modified` field is ignored when determining
+  if the object has changed, except when
+  ``sources.{name}.authoritative_retain_last_modified`` is set for the source.
 * Deleted objects no longer have to meet all strict validation requirements.
   This makes it easier to delete objects created under a legacy IRRD that
   do not meet current validation requirements. Authentication requirements
