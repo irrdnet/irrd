@@ -142,6 +142,35 @@ class TestSingleChangeRequestHandling:
             ["upsert_rpsl_object", (result_as_set.rpsl_obj_new, JournalEntryOrigin.auth_change), {}],
         ]
 
+    def test_no_save_for_identical_object(self, prepare_mocks):
+        mock_dq, mock_dh = prepare_mocks
+
+        query_results = iter(
+            [
+                [{"object_text": SAMPLE_AS_SET}],
+            ]
+        )
+        mock_dh.execute_query = lambda query: next(query_results)
+
+        auth_validator = AuthValidator(mock_dh)
+        request_text = SAMPLE_AS_SET + "\noverride: override-pw"
+
+        result_as_set = parse_change_requests(request_text, mock_dh, auth_validator, None, {})[0]
+
+        mock_dh.reset_mock()
+        result_as_set.save()
+
+        assert result_as_set.status == UpdateRequestStatus.SAVED, result_as_set.error_messages
+        assert result_as_set.is_valid()
+        assert result_as_set.rpsl_obj_new.rpsl_object_class == "as-set"
+        assert result_as_set.request_type == UpdateRequestType.MODIFY
+        assert result_as_set.info_messages == [
+            "Submitted object was identical to current object, no change recorded."
+        ]
+        assert not result_as_set.error_messages
+
+        assert flatten_mock_calls(mock_dh) == []
+
     def test_parse_non_strict(self, prepare_mocks, config_override):
         mock_dq, mock_dh = prepare_mocks
 
@@ -246,7 +275,7 @@ class TestSingleChangeRequestHandling:
         assert len(result.error_messages) == 1
         assert "rules fault" in result.error_messages[0]
 
-    def test_save_nonexistent_object(self, prepare_mocks):
+    def test_delete_nonexistent_object(self, prepare_mocks):
         mock_dq, mock_dh = prepare_mocks
         mock_dh.execute_query = lambda query: []
 
@@ -270,7 +299,7 @@ class TestSingleChangeRequestHandling:
         query_result_existing_obj = {
             "object_text": SAMPLE_INETNUM,
         }
-        query_result_dumy_person = {
+        query_result_dummy_person = {
             "rpsl_pk": "PERSON-TEST",
             "object_class": "person",
         }
@@ -280,7 +309,7 @@ class TestSingleChangeRequestHandling:
             "parsed_data": {"mntner": "INTERDB-MNT"},
         }
         query_results = iter(
-            [query_result_existing_obj, query_result_dumy_person, query_result_interdb_mntner]
+            [query_result_existing_obj, query_result_dummy_person, query_result_interdb_mntner]
         )
         mock_dh.execute_query = lambda query: [next(query_results)]
 
