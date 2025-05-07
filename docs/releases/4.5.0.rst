@@ -59,7 +59,9 @@ status, including any exports.
 To cover the common use, a new timestamp was added for the last time
 the RPSL data for a source changed. This updates when objects are added,
 modified or deleted through any method, including a change in visibility
-due to object suppression status.
+due to object suppression status. Do note that some IRR registries
+have a low frequency of object changes, which will be visible
+in this timestamp.
 
 Minimum Python version and PyPy
 -------------------------------
@@ -72,9 +74,6 @@ Other changes
   inline PGP signed messages for mntner authentication.
 * The ``sources.{name}.object_class_filter`` setting can now also be used
   to restrict permitted changes to authoritative objects.
-* The setting ``sources.{name}.authoritative_retain_last_modified`` was
-  added to skip updating `last-modified` in authoritative databases,
-  and retain the original value (if any) instead.
 * When a user submits an update to an authoritative object, which is identical to
   the current version, these changes are no longer saved.
   This means they do not create a journal entry.
@@ -84,10 +83,13 @@ Other changes
   ``sources.{name}.authoritative_retain_last_modified`` is set for the source.
   Processing of other updates, such as those received from mirrors, is not
   affected.
-* Deleted objects no longer have to meet all strict validation requirements.
-  This makes it easier to delete objects created under a legacy IRRD that
-  do not meet current validation requirements. Authentication requirements
-  have not been changed.
+* Deletions submitted authoritative objects no longer have to
+  meet all strict validation requirements. This makes it easier to delete
+  objects created under a legacy IRRD that do not meet current validation
+  requirements. Authentication requirements have not been changed.
+* The setting ``sources.{name}.authoritative_retain_last_modified`` was
+  added to skip updating `last-modified` in authoritative databases,
+  and retain the original value (if any) instead.
 * Authoritative creation or updating of route(6) objects for 0.0.0.0/0,
   0.0.0.0/32, ::/0 and ::/128 is no longer allowed.
 * The ``sources.{name}.nrtm_query_serial_days_limit`` setting was added to
@@ -95,11 +97,12 @@ Other changes
 * The ``irrd_update_database`` command now starts counting serials from
   the serial provided to a previous ``irrd_load_database``.
 * The combination of ``readonly_standby`` and ``sources.{name}.export_destination``
-  is explicitly invalid in the configuration.
+  has become explicitly invalid in the configuration.
 * The ``sources.{name}.authoritative_non_strict_mode_dangerous`` setting
   was added, to force an authoritative database into non-strict mode.
   As it's name notes, this disables many checks and all referential integrity
-  and is therefore strongly discouraged.
+  and is therefore strongly discouraged. However, some unusual setups
+  for specific IRRD users benefit from this.
 * Most non-printable characters are now stripped from all RPSL attribute values.
 * The order in which authoritative sources are listed in the select field in
   the maintainer migration form now follows the order of the configuration
