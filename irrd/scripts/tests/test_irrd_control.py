@@ -1,6 +1,6 @@
 import pytest
 from click.testing import CliRunner
-from joserfc.rfc7518.ec_key import ECKey
+from joserfc.jwk import ECKey
 
 from irrd.scripts.irrd_control import (
     cli,

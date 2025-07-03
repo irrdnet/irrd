@@ -8,7 +8,7 @@ from functools import update_wrapper
 from pathlib import Path
 
 import click
-from joserfc.rfc7518.ec_key import ECKey
+from joserfc.jwk import ECKey
 from sqlalchemy.exc import SAWarning
 
 sys.path.append(str(Path(__file__).resolve().parents[2]))
@@ -74,12 +74,12 @@ def user_mfa_clear(email, session_provider: ORMSessionProvider):
     click.echo(textwrap.dedent(f"""
     You are about to remove multi-factor authentication for user:
     {user.name} ({user.email})
-    
+
     The user currently has the following methods enabled:
     - {auth_methods}
-    
+
     After this, the user will be able to log in with their password.
-    
+
     It is your own responsibility to determine that the legitimate
     user has lost access to their two-factor methods.
     The user will be notified of this change.
@@ -124,7 +124,7 @@ def user_change_override(email: str, enable: bool, session_provider: ORMSessionP
         click.echo(textwrap.dedent(f"""
         You are about to assign override permission for user:
         {user.name} ({user.email})
-    
+
         This will allow the user to edit any object in the database.
         """))
         click.confirm(f"Are you sure you want to assign this permission to {email}?", abort=True)

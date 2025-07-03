@@ -16,7 +16,7 @@ import sqlalchemy as sa
 import ujson
 import yaml
 from alembic import command, config
-from joserfc.rfc7518.ec_key import ECKey
+from joserfc.jwk import ECKey
 from python_graphql_client import GraphqlClient
 
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE, config_init
@@ -827,7 +827,7 @@ class TestIntegration:
 
         print(textwrap.dedent(f"""
             Preparing to start IRRd for integration test.
-            
+
             IRRd #1 running on HTTP port {self.port_http1}, whois port {self.port_whois1}
             Config in: {self.config_path1}
             Database URL: {self.database_url1}
@@ -839,7 +839,7 @@ class TestIntegration:
             Database URL: {self.database_url2}
             PID file: {self.pidfile2}
             Logfile: {self.logfile2}
-            
+
             IRRd #3 running on HTTP port {self.port_http3}, whois port {self.port_whois3}
             Config in: {self.config_path3}
             Database URL: {self.database_url3}
