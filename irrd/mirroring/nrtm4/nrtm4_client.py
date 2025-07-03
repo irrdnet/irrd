@@ -3,7 +3,7 @@ import os
 from typing import Any, Optional
 
 import pydantic
-from joserfc.rfc7515.model import CompactSignature
+from joserfc.jws import CompactSignature
 
 from irrd.conf import get_setting
 from irrd.mirroring.nrtm4.jsonseq import jsonseq_decode

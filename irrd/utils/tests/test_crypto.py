@@ -1,5 +1,5 @@
 import pytest
-from joserfc.rfc7518.ec_key import ECKey
+from joserfc.jwk import ECKey
 
 from irrd.utils.crypto import (
     eckey_from_config,

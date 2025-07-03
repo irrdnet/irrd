@@ -5,7 +5,7 @@ from urllib.parse import urlparse, urlunparse
 from uuid import UUID
 
 import pydantic
-from joserfc.rfc7518.ec_key import ECKey
+from joserfc.jwk import ECKey
 from pytz import UTC
 from typing_extensions import Self
 
