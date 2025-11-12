@@ -67,8 +67,11 @@ User registration
 Users can register their own account through the interface, after verifying
 their e-mail address. Users can also independently change their details or
 request a link to reset. Two-factor authentication is
-supported with WebAuthn tokens (SoloKeys, YubiKey, PassKey, etc.) or
-one time password (TOTP, through Google Authenticator, Authy, etc.)
+supported with WebAuthn tokens (SoloKeys, YubiKey, PassKey, etc) or
+one time password (TOTP, through Google Authenticator, Authy, etc).
+
+Passwords can be up to 1000 bytes, and entropy is checked through
+`zxcvbn`_ where the minimum score is 2.
 
 Significant changes and authentication failures are logged in IRRD's log file,
 and a notification is mailed to the user.
@@ -77,6 +80,8 @@ Important endpoints (e.g. login attempts) have rate limiting.
 If a user loses access to all their two-factor authentication methods,
 an IRRD operator needs to reset this for them. You can do this with
 the ``irrdctl user-mfa-clear`` command.
+
+.. _zxcvbn: https://github.com/dropbox/zxcvbn
 
 Maintainer migration
 --------------------
