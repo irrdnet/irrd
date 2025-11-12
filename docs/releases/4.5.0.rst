@@ -107,3 +107,5 @@ Other changes
 * The order in which authoritative sources are listed in the select field in
   the maintainer migration form now follows the order of the configuration
   file. Previously, this was alphabetically ordered.
+* The timeout for HTTP and FTP downloads for mirroring and RPKI is now
+  configurable in the optional ``download_timeout`` setting.

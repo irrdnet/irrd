@@ -2,6 +2,7 @@
 # in conf/defaults.py.
 irrd:
     database_url: null
+    download_timeout: 10
     route_object_preference:
         update_timer: 3600
     rpki:

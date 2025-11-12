@@ -15,10 +15,10 @@ import requests
 from cryptography.hazmat.primitives import constant_time
 from pydantic_core import Url
 
+from irrd.conf import get_setting
 from irrd.conf.defaults import HTTP_USER_AGENT
 
 logger = logging.getLogger(__name__)
-DOWNLOAD_TIMEOUT = 10
 
 
 def retrieve_file(
@@ -93,14 +93,15 @@ def _download_file(destination: IO[Any], url: str, url_parsed):
     The file contents are written to the destination parameter,
     which can be a BytesIO() or a regular file.
     """
+    download_timeout = int(get_setting("download_timeout"))
     if url_parsed.scheme == "ftp":
         try:
-            r = request.urlopen(url, timeout=DOWNLOAD_TIMEOUT)
+            r = request.urlopen(url, timeout=download_timeout)
             shutil.copyfileobj(r, destination)
         except URLError as error:
             raise OSError(f"Failed to download {url}: {str(error)}")
     elif url_parsed.scheme in ["http", "https"]:
-        r = requests.get(url, stream=True, timeout=DOWNLOAD_TIMEOUT, headers={"User-Agent": HTTP_USER_AGENT})
+        r = requests.get(url, stream=True, timeout=download_timeout, headers={"User-Agent": HTTP_USER_AGENT})
         if r.status_code == 200:
             for chunk in r.iter_content(10240):
                 destination.write(chunk)
