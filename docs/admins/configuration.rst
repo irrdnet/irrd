@@ -236,6 +236,10 @@ General settings
   need for IRRd to bind to port 80 or 443.
   |br| **Default**: not defined, IRRd does not drop privileges.
   |br| **Change takes effect**: after full IRRd restart.
+* ``download_timeout``: the timeout in seconds for downloads over HTTP or FTP,
+  specifically for mirroring and RPKI imports.
+  |br| **Default**: 10 seconds.
+  |br| **Change takes effect**: after full IRRd restart.
 
 
 Servers

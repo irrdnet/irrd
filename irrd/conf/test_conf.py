@@ -266,6 +266,7 @@ class TestConfiguration:
                 "readonly_standby": True,
                 "piddir": str(tmpdir + "/does-not-exist"),
                 "user": "a",
+                "download_timeout": "not-number",
                 "server": {
                     "whois": {
                         "access_list": "doesnotexist",
@@ -369,6 +370,7 @@ class TestConfiguration:
         assert "Setting database_url is required." in str(ce.value)
         assert "Setting redis_url is required." in str(ce.value)
         assert "Setting piddir is required and must point to an existing directory." in str(ce.value)
+        assert "Setting download_timeout must be a number." in str(ce.value)
         assert "Setting email.from is required and must be an email address." in str(ce.value)
         assert "Setting email.smtp is required." in str(ce.value)
         assert "Setting email.footer must be a string, if defined." in str(ce.value)

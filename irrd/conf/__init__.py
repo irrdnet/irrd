@@ -278,6 +278,9 @@ class Configuration:
         if not str(config.get("route_object_preference.update_timer", "0")).isnumeric():
             errors.append("Setting route_object_preference.update_timer must be a number.")
 
+        if not str(config.get("download_timeout", "0")).isnumeric():
+            errors.append("Setting download_timeout must be a number.")
+
         expected_access_lists = {
             config.get("server.whois.access_list"),
             config.get("server.http.status_access_list"),

@@ -12,6 +12,7 @@ KNOWN_CONFIG_KEYS = DottedDict(
         "piddir": {},
         "user": {},
         "group": {},
+        "download_timeout": {},
         "server": {
             "http": {
                 "interface": {},
