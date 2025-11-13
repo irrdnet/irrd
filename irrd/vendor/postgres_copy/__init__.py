@@ -53,7 +53,8 @@ def copy_to(source, dest, engine_or_conn, **flags):
     """
     dialect = postgresql.dialect()
     statement = getattr(source, "statement", source)
-    compiled = statement.compile(dialect=dialect)
+    # see https://github.com/irrdnet/irrd/issues/1005 re binds
+    compiled = statement.compile(dialect=dialect, compile_kwargs={"render_postcompile": True})
     conn, autoclose = raw_connection_from(engine_or_conn)
     cursor = conn.cursor()
     query = cursor.mogrify(compiled.string, compiled.params).decode()
