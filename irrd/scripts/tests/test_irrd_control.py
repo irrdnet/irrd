@@ -18,7 +18,8 @@ from irrd.utils.factories import AuthWebAuthnFactory
 def test_cli():
     runner = CliRunner()
     result = runner.invoke(cli)
-    assert result.exit_code == 0
+    assert "Usage: cli" in result.output
+    assert result.exit_code == 2
 
 
 @pytest.fixture
