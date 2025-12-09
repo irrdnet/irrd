@@ -4,7 +4,6 @@ import multiprocessing
 import signal
 import time
 from collections import defaultdict
-from typing import Optional
 
 from setproctitle import setproctitle
 
@@ -157,7 +156,7 @@ class MirrorScheduler:
             return True
         return False
 
-    def run_if_relevant(self, source: Optional[str], runner_class, timer: int, allow_multiple=False) -> bool:
+    def run_if_relevant(self, source: str | None, runner_class, timer: int, allow_multiple=False) -> bool:
         process_name = runner_class.__name__
         if source:
             process_name += f"-{source}"

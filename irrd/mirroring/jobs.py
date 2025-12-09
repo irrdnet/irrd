@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime
-from typing import Optional
 
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.preload import Preloader
@@ -13,7 +12,7 @@ class TransactionTimePreloadSignaller:
     Signal a preload based on the last transaction time.
     """
 
-    last_time: Optional[datetime] = None
+    last_time: datetime | None = None
 
     def run(self):
         self.database_handler = DatabaseHandler()

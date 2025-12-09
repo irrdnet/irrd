@@ -2,7 +2,7 @@ import functools
 import hashlib
 import logging
 import secrets
-from typing import Any, Optional
+from typing import Any
 
 import limits
 from starlette.requests import Request
@@ -84,7 +84,7 @@ def get_messages(request: Request):
 
 
 def send_template_email(
-    recipient: str, template_key: str, request: Optional[Request], template_kwargs: dict[str, Any]
+    recipient: str, template_key: str, request: Request | None, template_kwargs: dict[str, Any]
 ) -> None:
     """
     Send an email rendered from a template.
@@ -99,7 +99,7 @@ def send_template_email(
 
 
 def send_authentication_change_mail(
-    user: AuthUser, request: Optional[Request], msg: str, recipient_override: Optional[str] = None
+    user: AuthUser, request: Request | None, msg: str, recipient_override: str | None = None
 ) -> None:
     """
     Email a user that authentication data has changed.
@@ -114,7 +114,7 @@ def send_authentication_change_mail(
     )
 
 
-def filter_auth_hash_non_mntner(user: Optional[AuthUser], rpsl_object: RPSLDatabaseObject) -> str:
+def filter_auth_hash_non_mntner(user: AuthUser | None, rpsl_object: RPSLDatabaseObject) -> str:
     """
     Filter the auth hashes from rpsl_object unless user is a user_management mntner for it.
     Returns the modified text, and sets hashes_hidden on the object.
@@ -132,7 +132,7 @@ def filter_auth_hash_non_mntner(user: Optional[AuthUser], rpsl_object: RPSLDatab
     return remove_auth_hashes(rpsl_object.object_text)
 
 
-def client_ip_str(request: Optional[Request]) -> str:
+def client_ip_str(request: Request | None) -> str:
     """Small wrapper to wrap client IP in a loggable str."""
     ip = client_ip(request)
     if ip:  # pragma: no cover
@@ -140,7 +140,7 @@ def client_ip_str(request: Optional[Request]) -> str:
     return ""  # pragma: no cover
 
 
-def client_ip(request: Optional[Request]) -> Optional[str]:
+def client_ip(request: Request | None) -> str | None:
     """Small wrapper to get the client IP from a request."""
     if request:
         return request.client.host if request.client and request.client.host != "testclient" else "127.0.0.1"

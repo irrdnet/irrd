@@ -1,4 +1,4 @@
-from _pytest.python_api import raises
+from pytest import raises
 
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
@@ -15,7 +15,7 @@ class TestWhoisQueryResponse:
         response = WhoisQueryResponse(
             mode=WhoisQueryResponseMode.IRRD, response_type=WhoisQueryResponseType.SUCCESS, result="test💃"
         ).generate_response()
-        assert response == "A9\ntest💃\nC\n".encode("utf-8")
+        assert response == "A9\ntest💃\nC\n".encode()
         response = WhoisQueryResponse(
             mode=WhoisQueryResponseMode.IRRD, response_type=WhoisQueryResponseType.SUCCESS, result=""
         ).generate_response()

@@ -1,6 +1,7 @@
 import re
 import textwrap
-from typing import Iterator, Optional, TextIO, Union
+from collections.abc import Iterator
+from typing import TextIO
 
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE, get_setting
 from irrd.rpsl.auth import PASSWORD_HASHERS_ALL
@@ -10,7 +11,7 @@ re_remove_last_modified = re.compile(r"^last-modified: [^\n]+\n", flags=re.MULTI
 RPSL_ATTRIBUTE_TEXT_WIDTH = 16
 
 
-def remove_auth_hashes(input: Optional[str]):
+def remove_auth_hashes(input: str | None):
     if not input:
         return input
     if not isinstance(input, str):
@@ -46,7 +47,7 @@ def splitline_unicodesafe(input: str) -> Iterator[str]:
         yield line.strip("\r")
 
 
-def split_paragraphs_rpsl(input: Union[str, TextIO], strip_comments=True) -> Iterator[str]:
+def split_paragraphs_rpsl(input: str | TextIO, strip_comments=True) -> Iterator[str]:
     """
     Split an input into paragraphs, and return an iterator of the paragraphs.
 
@@ -78,7 +79,7 @@ def split_paragraphs_rpsl(input: Union[str, TextIO], strip_comments=True) -> Ite
         yield current_paragraph
 
 
-def snake_to_camel_case(snake: Union[set[str], list[str], str]):
+def snake_to_camel_case(snake: set[str] | list[str] | str):
     """
     Convert a snake case string to camel case, with lowercase first
     letter. Can also accept a list or set of strings.

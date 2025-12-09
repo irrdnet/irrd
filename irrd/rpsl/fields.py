@@ -1,7 +1,6 @@
 import datetime
 import re
 import sys
-from typing import Optional
 from urllib.parse import urlparse
 
 from IPy import IP
@@ -111,7 +110,7 @@ class RPSLTextField:
 
     def parse(
         self, value: str, messages: RPSLParserMessages, strict_validation=True
-    ) -> Optional[RPSLFieldParseResult]:
+    ) -> RPSLFieldParseResult | None:
         return RPSLFieldParseResult(value.translate(NOPRINT_TRANS_TABLE))
 
 
@@ -129,7 +128,7 @@ class RPSLFieldListMixin:
 
     def parse(
         self, value: str, messages: RPSLParserMessages, strict_validation=True
-    ) -> Optional[RPSLFieldParseResult]:
+    ) -> RPSLFieldParseResult | None:
         parse_results = []
         for single_value in value.split(","):
             single_value = single_value.strip()
@@ -149,7 +148,7 @@ class RPSLIPv4PrefixField(RPSLTextField):
 
     def parse(
         self, value: str, messages: RPSLParserMessages, strict_validation=True
-    ) -> Optional[RPSLFieldParseResult]:
+    ) -> RPSLFieldParseResult | None:
         if not re_ipv4_prefix.match(value):
             messages.error(f"Invalid address prefix: {value}")
             return None
@@ -184,7 +183,7 @@ class RPSLIPv6PrefixField(RPSLTextField):
 
     def parse(
         self, value: str, messages: RPSLParserMessages, strict_validation=True
-    ) -> Optional[RPSLFieldParseResult]:
+    ) -> RPSLFieldParseResult | None:
         if not re_ipv6_prefix.match(value):
             messages.error(f"Invalid address prefix: {value}")
             return None
@@ -224,7 +223,7 @@ class RPSLIPv4AddressRangeField(RPSLTextField):
 
     def parse(
         self, value: str, messages: RPSLParserMessages, strict_validation=True
-    ) -> Optional[RPSLFieldParseResult]:
+    ) -> RPSLFieldParseResult | None:
         value = value.replace(",", "")  # #311, process multiline PK correctly
         if "-" in value:
             ip1_input, ip2_input = value.split("-", 1)
@@ -269,7 +268,7 @@ class RPSLRouteSetMemberField(RPSLTextField):
 
     keep_case = True
 
-    def __init__(self, ip_version: Optional[int], *args, **kwargs) -> None:
+    def __init__(self, ip_version: int | None, *args, **kwargs) -> None:
         if ip_version and ip_version not in [4, 6]:
             raise ValueError(f"Invalid IP version: {ip_version}")
         self.ip_version = ip_version
@@ -277,7 +276,7 @@ class RPSLRouteSetMemberField(RPSLTextField):
 
     def parse(
         self, value: str, messages: RPSLParserMessages, strict_validation=True
-    ) -> Optional[RPSLFieldParseResult]:
+    ) -> RPSLFieldParseResult | None:
         if "^" in value:
             address, range_operator = value.split("^", maxsplit=1)
             if not range_operator:
@@ -370,7 +369,7 @@ class RPSLASNumberField(RPSLTextField):
 
     def parse(
         self, value: str, messages: RPSLParserMessages, strict_validation=True
-    ) -> Optional[RPSLFieldParseResult]:
+    ) -> RPSLFieldParseResult | None:
         try:
             parsed_str, parsed_int = parse_as_number(value)
         except ValidationError as ve:
@@ -388,7 +387,7 @@ class RPSLASBlockField(RPSLTextField):
 
     def parse(
         self, value: str, messages: RPSLParserMessages, strict_validation=True
-    ) -> Optional[RPSLFieldParseResult]:
+    ) -> RPSLFieldParseResult | None:
         if "-" not in value:
             messages.error(f"Invalid AS range: {value}: does not contain a hyphen")
             return None
@@ -434,7 +433,7 @@ class RPSLSetNameField(RPSLTextField):
 
     def parse(
         self, value: str, messages: RPSLParserMessages, strict_validation=True
-    ) -> Optional[RPSLFieldParseResult]:
+    ) -> RPSLFieldParseResult | None:
         return parse_set_name([self.prefix], value, messages, strict_validation)
 
 
@@ -443,7 +442,7 @@ class RPSLEmailField(RPSLTextField):
 
     def parse(
         self, value: str, messages: RPSLParserMessages, strict_validation=True
-    ) -> Optional[RPSLFieldParseResult]:
+    ) -> RPSLFieldParseResult | None:
         if not re_email.match(value):
             messages.error(f"Invalid e-mail address: {value}")
             return None
@@ -455,8 +454,8 @@ class RPSLChangedField(RPSLTextField):
 
     def parse(
         self, value: str, messages: RPSLParserMessages, strict_validation=True
-    ) -> Optional[RPSLFieldParseResult]:
-        date: Optional[str]
+    ) -> RPSLFieldParseResult | None:
+        date: str | None
         try:
             email, date = value.split(" ")
         except ValueError:
@@ -482,7 +481,7 @@ class RPSLDNSNameField(RPSLTextField):
 
     def parse(
         self, value: str, messages: RPSLParserMessages, strict_validation=True
-    ) -> Optional[RPSLFieldParseResult]:
+    ) -> RPSLFieldParseResult | None:
         if not re_dnsname.match(value):
             messages.error(f"Invalid DNS name: {value}")
             return None
@@ -497,7 +496,7 @@ class RPSLURLField(RPSLTextField):
 
     def parse(
         self, value: str, messages: RPSLParserMessages, strict_validation=True
-    ) -> Optional[RPSLFieldParseResult]:
+    ) -> RPSLFieldParseResult | None:
         result = urlparse(value)
         if all([result.scheme in self.permitted_schemes, result.netloc]):
             return RPSLFieldParseResult(value)
@@ -523,7 +522,7 @@ class RPSLGenericNameField(RPSLTextField):
     keep_case = False
 
     def __init__(
-        self, allowed_prefixes: Optional[list[str]] = None, non_strict_allow_any=False, *args, **kwargs
+        self, allowed_prefixes: list[str] | None = None, non_strict_allow_any=False, *args, **kwargs
     ) -> None:
         self.non_strict_allow_any = non_strict_allow_any
         if allowed_prefixes:
@@ -534,7 +533,7 @@ class RPSLGenericNameField(RPSLTextField):
 
     def parse(
         self, value: str, messages: RPSLParserMessages, strict_validation=True
-    ) -> Optional[RPSLFieldParseResult]:
+    ) -> RPSLFieldParseResult | None:
         if not strict_validation and self.non_strict_allow_any:
             return RPSLFieldParseResult(value)
 
@@ -588,7 +587,7 @@ class RPSLReferenceField(RPSLTextField):
 
     def parse(
         self, value: str, messages: RPSLParserMessages, strict_validation=True
-    ) -> Optional[RPSLFieldParseResult]:
+    ) -> RPSLFieldParseResult | None:
         if not self.referring_identifier_fields:
             self.resolve_references()
 
@@ -627,7 +626,7 @@ class RPSLReferenceListField(RPSLFieldListMixin, RPSLReferenceField):
 
     def parse(
         self, value: str, messages: RPSLParserMessages, strict_validation=True
-    ) -> Optional[RPSLFieldParseResult]:
+    ) -> RPSLFieldParseResult | None:
         if self.allow_kw_any and value.upper() == "ANY":
             return RPSLFieldParseResult("ANY", values_list=["ANY"])
         return super().parse(value, messages, strict_validation)
@@ -638,7 +637,7 @@ class RPSLAuthField(RPSLTextField):
 
     def parse(
         self, value: str, messages: RPSLParserMessages, strict_validation=True
-    ) -> Optional[RPSLFieldParseResult]:
+    ) -> RPSLFieldParseResult | None:
         hashers = get_password_hashers(permit_legacy=not strict_validation)
         valid_beginnings = [hasher + " " for hasher in hashers.keys()]
         has_valid_beginning = any(value.upper().startswith(b) for b in valid_beginnings)
@@ -657,7 +656,7 @@ class RPSLAuthField(RPSLTextField):
 
 def parse_set_name(
     prefixes: list[str], value: str, messages: RPSLParserMessages, strict_validation=True
-) -> Optional[RPSLFieldParseResult]:
+) -> RPSLFieldParseResult | None:
     assert all([prefix in reserved_prefixes for prefix in prefixes])
     input_components = value.split(":")
     output_components: list[str] = []

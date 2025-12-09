@@ -1,6 +1,5 @@
 import logging
 import os
-from typing import Optional
 
 from irrd.conf import RPKI_IRR_PSEUDO_SOURCE, get_setting
 from irrd.conf.defaults import DEFAULT_SOURCE_NRTM_PORT
@@ -96,7 +95,7 @@ class RPSLMirrorImportUpdateRunner:
             self.update_stream_runner.run(serial_newest_mirror, database_handler=self.database_handler)
         return full_reload
 
-    def _status(self) -> tuple[Optional[int], Optional[bool]]:
+    def _status(self) -> tuple[int | None, bool | None]:
         query = DatabaseStatusQuery().source(self.source)
         result = self.database_handler.execute_query(query)
         try:
@@ -122,7 +121,7 @@ class RPSLMirrorFullImportRunner:
     def run(
         self,
         database_handler: DatabaseHandler,
-        serial_newest_mirror: Optional[int] = None,
+        serial_newest_mirror: int | None = None,
         force_reload=False,
     ):
         import_sources = get_setting(f"sources.{self.source}.import_source")

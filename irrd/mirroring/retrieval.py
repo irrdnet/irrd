@@ -6,7 +6,7 @@ import pathlib
 import shutil
 from io import BytesIO
 from tempfile import NamedTemporaryFile
-from typing import IO, Any, Optional, Union
+from typing import IO, Any
 from urllib import request
 from urllib.error import URLError
 from urllib.parse import urlparse
@@ -21,9 +21,7 @@ from irrd.conf.defaults import HTTP_USER_AGENT
 logger = logging.getLogger(__name__)
 
 
-def retrieve_file(
-    url: Union[Url, str], return_contents=True, expected_hash: Optional[str] = None
-) -> tuple[str, bool]:
+def retrieve_file(url: Url | str, return_contents=True, expected_hash: str | None = None) -> tuple[str, bool]:
     """
     Retrieve a file from either HTTP(s), FTP or local disk.
 
@@ -49,7 +47,7 @@ def retrieve_file(
 
 
 def _retrieve_file_download(
-    url: str, url_parsed, return_contents=False, expected_hash: Optional[str] = None
+    url: str, url_parsed, return_contents=False, expected_hash: str | None = None
 ) -> tuple[str, bool]:
     """
     Retrieve a file from HTTP(s) or FTP
@@ -109,9 +107,7 @@ def _download_file(destination: IO[Any], url: str, url_parsed):
             raise OSError(f"Failed to download {url}: {r.status_code}: {str(r.content)}")
 
 
-def _retrieve_file_local(
-    path, return_contents=False, expected_hash: Optional[str] = None
-) -> tuple[str, bool]:
+def _retrieve_file_local(path, return_contents=False, expected_hash: str | None = None) -> tuple[str, bool]:
     if not return_contents:
         check_file_hash_sha256(path, expected_hash)
         if path.endswith(".gz"):
@@ -128,7 +124,7 @@ def _retrieve_file_local(
     return value, False
 
 
-def check_file_hash_sha256(filename: str, expected_hash: Optional[str]) -> None:
+def check_file_hash_sha256(filename: str, expected_hash: str | None) -> None:
     """
     Check whether the contents of a file match an expected SHA256 hash.
     expected_hash should be a hex digest.
@@ -143,7 +139,7 @@ def check_file_hash_sha256(filename: str, expected_hash: Optional[str]) -> None:
         )
 
 
-def file_hash_sha256(filename: Union[str, pathlib.Path]):
+def file_hash_sha256(filename: str | pathlib.Path):
     """Calculate the SHA256 hash of a file."""
     sha256_hash = hashlib.sha256()
     with open(filename, "rb") as f:

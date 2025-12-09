@@ -5,7 +5,6 @@ import sys
 import threading
 import time
 from collections import defaultdict, namedtuple
-from typing import Optional, Union
 
 import redis
 from setproctitle import setproctitle
@@ -105,7 +104,7 @@ class Preloader:
                 # from Redis right away instead of waiting for a signal.
                 self._load_preload_data_into_memory()
 
-    def signal_reload(self, object_classes_changed: Optional[set[str]] = None) -> None:
+    def signal_reload(self, object_classes_changed: set[str] | None = None) -> None:
         """
         Perform a (re)load.
         Should be called after changes to the DB have been committed.
@@ -123,7 +122,7 @@ class Preloader:
         )
         self._redis_conn.publish(REDIS_PRELOAD_RELOAD_CHANNEL, message)
 
-    def set_members(self, set_pk: str, sources: list[str], object_classes: list[str]) -> Optional[SetMembers]:
+    def set_members(self, set_pk: str, sources: list[str], object_classes: list[str]) -> SetMembers | None:
         """
         Retrieve all members of set set_pk in given sources from in memory store.
 
@@ -150,7 +149,7 @@ class Preloader:
         return None
 
     def routes_for_origins(
-        self, origins: Union[list[str], set[str]], sources: list[str], ip_version: Optional[int] = None
+        self, origins: list[str] | set[str], sources: list[str], ip_version: int | None = None
     ) -> set[str]:
         """
         Retrieve all prefixes (in str format) originating from the provided origins,

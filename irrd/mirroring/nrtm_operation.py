@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from irrd.rpki.validators import SingleRouteROAValidator
 from irrd.rpsl.parser import UnknownRPSLObjectClassException
@@ -26,14 +25,14 @@ class NRTMOperation:
         self,
         source: str,
         operation: DatabaseOperation,
-        serial: Optional[int],
-        origin_identifier: Optional[str] = None,
-        object_text: Optional[str] = None,
-        rpsl_pk: Optional[str] = None,
-        object_class: Optional[str] = None,
+        serial: int | None,
+        origin_identifier: str | None = None,
+        object_text: str | None = None,
+        rpsl_pk: str | None = None,
+        object_class: str | None = None,
         strict_validation_key_cert: bool = False,
         rpki_aware: bool = False,
-        object_class_filter: Optional[list[str]] = None,
+        object_class_filter: list[str] | None = None,
     ) -> None:
         self.source = source
         self.operation = operation

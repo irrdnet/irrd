@@ -1,6 +1,5 @@
 import logging
 import textwrap
-from typing import Optional
 
 from irrd.utils import email
 
@@ -10,7 +9,7 @@ from .handler import ChangeSubmissionHandler
 logger = logging.getLogger(__name__)
 
 
-def handle_email_submission(email_txt: str) -> Optional[ChangeSubmissionHandler]:
+def handle_email_submission(email_txt: str) -> ChangeSubmissionHandler | None:
     handler = None
     try:
         msg = email.EmailParser(email_txt)

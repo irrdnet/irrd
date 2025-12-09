@@ -5,7 +5,8 @@ import logging
 import socket
 import sys
 import tempfile
-from typing import Any, Callable, Literal, Optional
+from collections.abc import Callable
+from typing import Any, Literal, Optional
 
 import pydantic
 import ujson
@@ -202,13 +203,13 @@ class EventStreamEndpoint(WebSocketEndpoint):
 
 class EventStreamSubscriptionRequest(pydantic.main.BaseModel):
     message_type: Literal["subscribe"]
-    after_global_serial: Optional[int] = None
+    after_global_serial: int | None = None
 
 
 class AsyncEventStreamFollower:
     @classmethod
     async def create(
-        cls, host: str, after_global_serial: Optional[int], callback: Callable
+        cls, host: str, after_global_serial: int | None, callback: Callable
     ) -> Optional["AsyncEventStreamFollower"]:
         database_handler = await DatabaseHandler.create_async(readonly=True)
         stream_client = await AsyncEventStreamRedisClient.create()
@@ -241,7 +242,7 @@ class AsyncEventStreamFollower:
         stream_client: AsyncEventStreamRedisClient,
         callback: Callable,
     ):
-        self.streaming_task: Optional[asyncio.Task] = None
+        self.streaming_task: asyncio.Task | None = None
         self.host = host
         self.database_handler = database_handler
         self.stream_client = stream_client

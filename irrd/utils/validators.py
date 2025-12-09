@@ -1,12 +1,10 @@
-from typing import Optional, Union
-
 import pydantic
 
 from irrd.conf import get_setting
 from irrd.updates.parser_state import SuspensionRequestType
 
 
-def parse_as_number(value: Union[str, int], permit_plain=False, asdot_permitted=False) -> tuple[str, int]:
+def parse_as_number(value: str | int, permit_plain=False, asdot_permitted=False) -> tuple[str, int]:
     """
     Validate and clean an AS number. Returns it in ASxxxx and numeric format.
     asdot is permitted (#790) if asdot_permitted is passed and compatibility.asdot_queries is set
@@ -67,7 +65,7 @@ class RPSLChangeSubmissionObjectAttribute(pydantic.BaseModel):
     """
 
     name: str
-    value: Union[str, list[str]]
+    value: str | list[str]
 
     @pydantic.field_validator("value")
     @classmethod
@@ -81,8 +79,8 @@ class RPSLChangeSubmissionObjectAttribute(pydantic.BaseModel):
 class RPSLChangeSubmissionObject(pydantic.BaseModel):
     """Model for a single object in an RPSL change submission"""
 
-    object_text: Optional[str] = None
-    attributes: Optional[list[RPSLChangeSubmissionObjectAttribute]] = None
+    object_text: str | None = None
+    attributes: list[RPSLChangeSubmissionObjectAttribute] | None = None
 
     @pydantic.model_validator(mode="before")
     def check_text_xor_attributes_present(cls, values):  # noqa: N805
@@ -96,7 +94,7 @@ class RPSLChangeSubmission(pydantic.main.BaseModel):
 
     objects: list[RPSLChangeSubmissionObject]
     passwords: list[str] = []
-    override: Optional[str] = None
+    override: str | None = None
     api_keys: list[str] = []
     delete_reason: str = "(No reason provided)"
 
@@ -116,4 +114,4 @@ class RPSLSuspensionSubmission(pydantic.main.BaseModel):
     """Model for an RPSL suspension submission"""
 
     objects: list[RPSLSuspensionSubmissionObject]
-    override: Optional[str] = None
+    override: str | None = None

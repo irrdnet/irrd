@@ -1,4 +1,3 @@
-import socket
 import textwrap
 from datetime import datetime, timezone
 from unittest.mock import Mock
@@ -37,7 +36,7 @@ class TestStatusGenerator:
             elif source == "TEST2":
                 raise ValueError()
             elif source == "TEST3":
-                raise socket.timeout()
+                raise TimeoutError()
 
         monkeypatch.setattr("irrd.server.http.status_generator.whois_query_source_status", mock_whois_query)
 

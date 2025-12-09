@@ -65,8 +65,8 @@ in this timestamp.
 
 Minimum Python version and PyPy
 -------------------------------
-The minimum Python version for IRRd is now 3.9. Python 3.8 is end of life
-as of 7 October 2024 and therefore no longer supported.
+The minimum Python version for IRRd is now 3.10. Python 3.9 is end of life
+as of 31 October 2025 and therefore no longer supported.
 
 Other changes
 -------------

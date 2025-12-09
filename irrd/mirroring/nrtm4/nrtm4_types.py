@@ -1,6 +1,6 @@
 import datetime
 from functools import cached_property
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 from urllib.parse import urlparse, urlunparse
 from uuid import UUID
 
@@ -12,7 +12,7 @@ from typing_extensions import Self
 from irrd.mirroring.nrtm4 import UPDATE_NOTIFICATION_FILENAME
 
 
-def get_from_pydantic_context(info: pydantic.ValidationInfo, key: str) -> Optional[Any]:
+def get_from_pydantic_context(info: pydantic.ValidationInfo, key: str) -> Any | None:
     """
     This is a little helper to get a key from the pydantic context,
     as it's a bit convoluted and needs some type guarding.
@@ -101,16 +101,16 @@ class NRTM4UpdateNotificationFile(NRTM4Common):
     type: Literal["notification"]
     snapshot: NRTM4FileReference
     deltas: list[NRTM4FileReference]
-    next_signing_key: Optional[str] = None
+    next_signing_key: str | None = None
 
     @pydantic.computed_field  # type: ignore[misc]
     @property
-    def min_delta_version(self) -> Optional[int]:
+    def min_delta_version(self) -> int | None:
         return self.deltas[0].version if self.deltas else None
 
     @pydantic.computed_field  # type: ignore[misc]
     @property
-    def max_delta_version(self) -> Optional[int]:
+    def max_delta_version(self) -> int | None:
         return self.deltas[-1].version if self.deltas else None
 
     @pydantic.model_validator(mode="after")
@@ -143,7 +143,7 @@ class NRTM4UpdateNotificationFile(NRTM4Common):
 
     @pydantic.field_validator("next_signing_key")
     @classmethod
-    def validate_next_signing_key(cls, next_signing_key: Optional[str]):
+    def validate_next_signing_key(cls, next_signing_key: str | None):
         if next_signing_key:
             try:
                 ECKey.import_key(next_signing_key)

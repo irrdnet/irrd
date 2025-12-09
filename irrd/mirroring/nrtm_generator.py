@@ -1,6 +1,5 @@
 import textwrap
 from datetime import datetime, timedelta, timezone
-from typing import Optional
 
 from irrd.conf import get_setting
 from irrd.storage.database_handler import DatabaseHandler
@@ -19,7 +18,7 @@ class NRTMGenerator:
         source: str,
         version: str,
         serial_start_requested: int,
-        serial_end_requested: Optional[int],
+        serial_end_requested: int | None,
         database_handler: DatabaseHandler,
         remove_auth_hashes=True,
         client_is_dummifying_exempt=False,

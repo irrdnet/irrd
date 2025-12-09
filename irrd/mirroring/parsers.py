@@ -1,6 +1,5 @@
 import logging
 import re
-from typing import Optional
 
 from irrd.conf import get_object_class_filter_for_source, get_setting
 from irrd.rpki.validators import BulkRouteROAValidator
@@ -52,7 +51,7 @@ class MirrorFileImportParserBase:
         filename: str,
         database_handler: DatabaseHandler,
         direct_error_return: bool = False,
-        roa_validator: Optional[BulkRouteROAValidator] = None,
+        roa_validator: BulkRouteROAValidator | None = None,
     ) -> None:
         self.source = source
         self.filename = filename
@@ -71,7 +70,7 @@ class MirrorFileImportParserBase:
         self.object_class_filter = get_object_class_filter_for_source(source)
         super().__init__()
 
-    def parse_object(self, rpsl_text: str) -> Optional[RPSLObject]:
+    def parse_object(self, rpsl_text: str) -> RPSLObject | None:
         """
         Parse and validate a single object and return it.
         If there is a parsing error, unknown object class, invalid source:
@@ -167,12 +166,12 @@ class MirrorFileImportParser(MirrorFileImportParserBase):
     string.
     """
 
-    def __init__(self, serial: Optional[int] = None, *args, **kwargs):
+    def __init__(self, serial: int | None = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.serial = serial
         logger.debug(f"Starting file import of {self.source} from {self.filename}")
 
-    def run_import(self) -> Optional[str]:
+    def run_import(self) -> str | None:
         """
         Run the actual import. If direct_error_return is set, returns an error
         string on encountering the first error. Otherwise, returns None.
@@ -221,7 +220,7 @@ class MirrorUpdateFileImportParser(MirrorFileImportParserBase):
         self.obj_retained = 0  # Retained and possibly modified objects
         self.obj_deleted = 0  # Deleted objects
 
-    def run_import(self) -> Optional[str]:
+    def run_import(self) -> str | None:
         """
         Run the actual import. If direct_error_return is set, returns an error
         string on encountering the first error. Otherwise, returns None.
@@ -320,7 +319,7 @@ class NRTMStreamParser:
 
     first_serial = -1
     last_serial = -1
-    nrtm_source: Optional[str] = None
+    nrtm_source: str | None = None
     _current_op_serial = -1
 
     def __init__(self, source: str, nrtm_data: str, database_handler: DatabaseHandler) -> None:

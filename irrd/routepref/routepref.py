@@ -1,6 +1,5 @@
 import logging
 from collections.abc import Iterable
-from typing import Optional
 
 import radix
 from IPy import IP
@@ -107,7 +106,7 @@ class RoutePreferenceValidator:
 
 
 def build_validator(
-    database_handler: DatabaseHandler, filter_prefixes: Optional[Iterable[IP]] = None
+    database_handler: DatabaseHandler, filter_prefixes: Iterable[IP] | None = None
 ) -> RoutePreferenceValidator:
     """
     Build a RouteValidator instance given a database handler
@@ -132,7 +131,7 @@ def build_validator(
 
 
 def update_route_preference_status(
-    database_handler: DatabaseHandler, filter_prefixes: Optional[list[IP]] = None
+    database_handler: DatabaseHandler, filter_prefixes: list[IP] | None = None
 ) -> None:
     """
     Update the route preference status, given a database handler

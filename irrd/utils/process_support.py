@@ -8,7 +8,7 @@ import threading
 import traceback
 from multiprocessing import Process
 from pathlib import Path
-from typing import Optional, TextIO
+from typing import TextIO
 
 from setproctitle import getproctitle
 
@@ -58,7 +58,7 @@ def set_traceback_handler():  # pragma: no cover
         signal.signal(signal.SIGUSR1, sigusr1_handler)
 
 
-def get_lockfile(path: Path, blocking: bool) -> Optional[TextIO]:
+def get_lockfile(path: Path, blocking: bool) -> TextIO | None:
     file_handle = open(path, "w")
     operation = fcntl.LOCK_EX
     if not blocking:

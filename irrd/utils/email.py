@@ -3,7 +3,6 @@ import logging
 import socket
 from email.mime.text import MIMEText
 from smtplib import SMTP
-from typing import Optional
 
 from irrd import __version__
 from irrd.conf import get_setting
@@ -17,15 +16,15 @@ class EmailParser:
     Parse a raw email.
     """
 
-    body: Optional[str] = None
-    pgp_fingerprint: Optional[str] = None
-    message_id: Optional[str] = None
-    message_from: Optional[str] = None
-    message_date: Optional[str] = None
-    message_subject: Optional[str] = None
+    body: str | None = None
+    pgp_fingerprint: str | None = None
+    message_id: str | None = None
+    message_from: str | None = None
+    message_date: str | None = None
+    message_subject: str | None = None
     _default_encoding = "ascii"
-    _raw_body: Optional[str] = None
-    _pgp_signature: Optional[str] = None
+    _raw_body: str | None = None
+    _pgp_signature: str | None = None
 
     def __init__(self, email_txt: str) -> None:
         """

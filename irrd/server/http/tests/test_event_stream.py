@@ -4,7 +4,6 @@ import json
 import unittest
 from collections import OrderedDict
 from datetime import datetime
-from typing import Union
 from unittest.mock import create_autospec
 
 import pytest
@@ -197,7 +196,7 @@ class MockAsyncEventStreamRedisClient:
         if self.has_returned_entries:
             await asyncio.sleep(10)
         self.has_returned_entries = True
-        field_values: OrderedDict[Union[str, bytes], Union[str, bytes]] = OrderedDict(
+        field_values: OrderedDict[str | bytes, str | bytes] = OrderedDict(
             {"source": "TEST", "operation": OPERATION_JOURNAL_EXTENDED}
         )
         return (StreamEntry(identifier=after_event_id, field_values=field_values),)

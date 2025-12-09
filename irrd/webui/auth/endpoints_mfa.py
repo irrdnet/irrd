@@ -2,7 +2,6 @@ import base64
 import logging
 import os
 from datetime import datetime, timezone
-from typing import Optional
 from urllib.parse import urlparse
 
 import pyotp
@@ -63,7 +62,7 @@ def get_webauthn_origin_rpid() -> tuple[str, str]:
     return origin, rpid
 
 
-def webauthn_challenge_override() -> Optional[bytes]:
+def webauthn_challenge_override() -> bytes | None:
     """
     Override option for the WebAuthn challenge. Used only in tests.
     """
@@ -332,7 +331,7 @@ class TOTPRegisterForm(CurrentPasswordForm):
     )
     submit = wtforms.SubmitField("Enable one time password")
 
-    async def validate(self, current_user: AuthUser, totp: Optional[pyotp.totp.TOTP] = None):
+    async def validate(self, current_user: AuthUser, totp: pyotp.totp.TOTP | None = None):
         if not await super().validate(current_user):
             return False
 

@@ -2,7 +2,6 @@ import logging
 import os
 import re
 from tempfile import NamedTemporaryFile
-from typing import Optional
 
 # isort: off
 import gnupg
@@ -26,8 +25,8 @@ def get_gpg_instance() -> gnupg.GPG:  # type: ignore
 
 
 def validate_pgp_signature(
-    message: str, detached_signature: Optional[str] = None
-) -> tuple[Optional[str], Optional[str]]:
+    message: str, detached_signature: str | None = None
+) -> tuple[str | None, str | None]:
     """
     Verify a PGP signature in a message.
 

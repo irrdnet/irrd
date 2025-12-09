@@ -1,5 +1,3 @@
-from typing import Optional, Union
-
 from joserfc import jws
 from joserfc.errors import JoseError
 from joserfc.jwk import ECKey
@@ -13,7 +11,7 @@ and decode/encode them for (at this time) NRTMv4 usage.
 """
 
 
-def eckey_from_config(setting: str, permit_empty=False) -> Optional[ECKey]:
+def eckey_from_config(setting: str, permit_empty=False) -> ECKey | None:
     value = get_setting(setting)
     if not value and permit_empty:
         return None
@@ -35,15 +33,15 @@ def eckey_private_key_as_str(key: ECKey) -> str:
     return key.as_pem(private=True).decode("ascii")
 
 
-def jws_deserialize(value: Union[bytes, str], public_key: ECKey) -> CompactSignature:
+def jws_deserialize(value: bytes | str, public_key: ECKey) -> CompactSignature:
     try:
         return jws.deserialize_compact(value, public_key)
     except JoseError as error:
         raise ValueError(error)
 
 
-def jws_serialize(value: Union[bytes, str], private_key: ECKey) -> str:
+def jws_serialize(value: bytes | str, private_key: ECKey) -> str:
     try:
         return jws.serialize_compact({"alg": "ES256"}, value, private_key)
-    except JoseError as error:
+    except JoseError as error:  # pragma: no cover
         raise ValueError(error)
