@@ -1,6 +1,5 @@
 import logging
 import re
-from typing import Optional
 
 import ujson
 from IPy import IP
@@ -230,7 +229,7 @@ class WhoisQueryParser:
         """!6 query - find all originating IPv6 prefixes from an origin, e.g. !6as65537"""
         return self._routes_for_origin(origin, 6)
 
-    def _routes_for_origin(self, origin: str, ip_version: Optional[int] = None) -> str:
+    def _routes_for_origin(self, origin: str, ip_version: int | None = None) -> str:
         """
         Resolve all route(6)s prefixes for an origin, returning a space-separated list
         of all originating prefixes, not including duplicates.
@@ -247,7 +246,7 @@ class WhoisQueryParser:
         """
         !a query - find all originating prefixes for all members of an AS-set, e.g. !a4AS-FOO or !a6AS-FOO
         """
-        ip_version: Optional[int] = None
+        ip_version: int | None = None
         if set_name.startswith("4"):
             set_name = set_name[1:]
             ip_version = 4
@@ -342,7 +341,7 @@ class WhoisQueryParser:
            !r192.0.2.0/24,L returns all less specific objects, including exact
            !r192.0.2.0/24,M returns all more specific objects, not including exact
         """
-        option: Optional[str] = None
+        option: str | None = None
         if "," in parameter:
             address, option = parameter.split(",")
         else:
@@ -370,7 +369,7 @@ class WhoisQueryParser:
             return " ".join(prefixes)
         return self._flatten_query_output(result)
 
-    def handle_irrd_sources_list(self, parameter: str) -> Optional[str]:
+    def handle_irrd_sources_list(self, parameter: str) -> str | None:
         """
         !s query - set used sources
            !s-* no-op, backwards compatibility https://github.com/irrtoolset/irrtoolset/issues/65
@@ -387,7 +386,7 @@ class WhoisQueryParser:
         self.query_resolver.set_query_sources(sources)
         return None
 
-    def handle_irrd_set_exclusion(self, parameter: str) -> Optional[str]:
+    def handle_irrd_set_exclusion(self, parameter: str) -> str | None:
         """
         !e query - set excluded set names for deep resolving
            !e-lc returns all excluded sets, comma separated
@@ -488,7 +487,7 @@ class WhoisQueryParser:
         result = self.query_resolver.route_search(address, lookup_type)
         return self._flatten_query_output(result)
 
-    def handle_ripe_sources_list(self, sources_list: Optional[str]) -> None:
+    def handle_ripe_sources_list(self, sources_list: str | None) -> None:
         """-s/-a parameter - set sources list. Empty list enables all sources."""
         if sources_list:
             sources = sources_list.upper().split(",")

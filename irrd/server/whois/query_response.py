@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import Optional
 
 from irrd.utils.text import remove_auth_hashes
 
@@ -38,13 +37,13 @@ class WhoisQueryResponse:
 
     response_type: WhoisQueryResponseType = WhoisQueryResponseType.SUCCESS
     mode: WhoisQueryResponseMode = WhoisQueryResponseMode.RIPE
-    result: Optional[str] = None
+    result: str | None = None
 
     def __init__(
         self,
         response_type: WhoisQueryResponseType,
         mode: WhoisQueryResponseMode,
-        result: Optional[str],
+        result: str | None,
         remove_auth_hashes=True,
     ) -> None:
         self.response_type = response_type
@@ -73,32 +72,32 @@ class WhoisQueryResponse:
         if self.remove_auth_hashes:
             self.result = remove_auth_hashes(self.result)
 
-    def _generate_response_irrd(self) -> Optional[bytes]:
+    def _generate_response_irrd(self) -> bytes | None:
         if self.response_type == WhoisQueryResponseType.SUCCESS:
             if self.result:
                 result_bytes = self.result.encode("utf-8")
                 result_len = len(result_bytes) + 1
-                return f"A{result_len}\n".encode("utf-8") + result_bytes + b"\nC\n"
+                return f"A{result_len}\n".encode() + result_bytes + b"\nC\n"
             else:
                 return b"C\n"
         elif self.response_type == WhoisQueryResponseType.KEY_NOT_FOUND:
             return b"D\n"
         elif self.response_type in ERROR_TYPES:
-            return f"F {self.result}\n".encode("utf-8")
+            return f"F {self.result}\n".encode()
         elif self.response_type == WhoisQueryResponseType.NO_RESPONSE:
             return b""
         return None
 
-    def _generate_response_ripe(self) -> Optional[bytes]:
+    def _generate_response_ripe(self) -> bytes | None:
         # RIPE-style responses need two empty lines at the end, hence
         # the multiple newlines for each response (#335)
         # # https://www.ripe.net/manage-ips-and-asns/db/support/documentation/ripe-database-query-reference-manual#2-0-querying-the-ripe-database
         if self.response_type == WhoisQueryResponseType.SUCCESS:
             if self.result:
                 return (self.result + "\n\n\n").encode("utf-8")
-            return "%  No entries found for the selected source(s).\n\n\n".encode("utf-8")
+            return b"%  No entries found for the selected source(s).\n\n\n"
         elif self.response_type == WhoisQueryResponseType.KEY_NOT_FOUND:
-            return "%  No entries found for the selected source(s).\n\n\n".encode("utf-8")
+            return b"%  No entries found for the selected source(s).\n\n\n"
         elif self.response_type in ERROR_TYPES:
-            return f"%% ERROR: {self.result}\n\n\n".encode("utf-8")
+            return f"%% ERROR: {self.result}\n\n\n".encode()
         return None

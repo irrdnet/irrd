@@ -2,13 +2,13 @@
 
 from collections.abc import Sequence
 from contextlib import contextmanager
-from typing import Any, Union
+from typing import Any
 
 from sqlalchemy import inspect
 from sqlalchemy.orm.exc import MultipleResultsFound
 
 
-def match_type(s: Union[bytes, str], t: Union[type[bytes], type[str]]) -> Union[bytes, str]:
+def match_type(s: bytes | str, t: type[bytes] | type[str]) -> bytes | str:
     """Match the string type.
 
     Matches the string type with the provided type and returns the string
@@ -212,7 +212,7 @@ def build_identity_map(items: Sequence[Any]) -> dict:
     return idmap
 
 
-def get_item_attr(idmap: dict, access: Union[dict, tuple, Any]) -> Any:
+def get_item_attr(idmap: dict, access: dict | tuple | Any) -> Any:
     """Access dictionary in different methods.
 
     Utility for accessing dict by different key types (for get).

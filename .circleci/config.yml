@@ -17,14 +17,14 @@ workflows:
           name: unit-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
           matrix:
             parameters:
-              python_version: ["3.9", "3.12"]
+              python_version: ["3.10", "3.14"]
               postgres_version: ["15.0"]
               redis_version: ["5.0"]
       - integration_tests_cpython:
           name: integration-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
           matrix:
             parameters:
-              python_version: ["3.9", "3.12"]
+              python_version: ["3.10", "3.14"]
               postgres_version: ["15.0"]
               redis_version: ["5.0"]
       - lint:
@@ -42,15 +42,15 @@ workflows:
           name: unit-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
           matrix:
             parameters:
-              python_version: [3.9", "3.10", "3.11", "3.12"]
-              postgres_version: ["9.6", "11.16", "13.7", "15.0"]
+              python_version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+              postgres_version: ["9.6", "11.16", "13.7", "15.0", "18"]
               redis_version: ["5.0", "6.2", "7.0"]
       - integration_tests_cpython:
           name: integration-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
           matrix:
             parameters:
-              python_version: ["3.9", "3.10", "3.11", "3.12"]
-              postgres_version: ["9.6", "11.16", "13.7", "15.0"]
+              python_version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+              postgres_version: ["9.6", "11.16", "13.7", "15.0", "18"]
               redis_version: ["5.0", "6.2", "7.0"]
       - lint:
           name: lint-cpython-3-10
@@ -71,7 +71,7 @@ commands:
 
       - run:
           name: Installing psql client, enchant, netcat, rust
-          command: $SUDO apt -y install postgresql-client netcat python3-enchant rustc
+          command: $SUDO apt -y install postgresql-client netcat-traditional python3-enchant rustc
 
       - run:
           name: Installing poetry if needed

@@ -6,7 +6,6 @@ import os
 import secrets
 import uuid
 from pathlib import Path
-from typing import Optional
 
 from pytz import UTC
 
@@ -346,7 +345,7 @@ class NRTM4ServerWriter:
             jsonseq_encode(objs_filtered, outstream)
         return filename
 
-    def _write_delta(self, version: int, serial_global_start: int) -> Optional[str]:
+    def _write_delta(self, version: int, serial_global_start: int) -> str | None:
         """
         Write a delta file, starting at the provided global serial, at NRTMv4 version {version}
         Returns the filename if a delta was written.

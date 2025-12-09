@@ -1,7 +1,7 @@
 import logging
 from collections import OrderedDict
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 from IPy import IP
 from ordered_set import OrderedSet
@@ -55,7 +55,7 @@ class QuerySourceManager:
         self.sources_default = list(get_setting("sources_default", []))
         self.sources: list[str] = self.sources_default if self.sources_default else self.all_valid_sources
 
-    def set_query_sources(self, sources: Optional[list[str]]) -> None:
+    def set_query_sources(self, sources: list[str] | None) -> None:
         """Set the sources for future queries.
         If sources is None, default source list is set.
         May include alias names."""
@@ -92,7 +92,7 @@ class QueryResolver:
 
     lookup_field_names = lookup_field_names()
     database_handler: DatabaseHandler
-    _current_set_root_object_class: Optional[str]
+    _current_set_root_object_class: str | None
 
     def __init__(self, preloader: Preloader, database_handler: DatabaseHandler) -> None:
         self.source_manager = QuerySourceManager()
@@ -101,13 +101,13 @@ class QueryResolver:
         self.rpki_invalid_filter_enabled = self.rpki_aware
         self.out_scope_filter_enabled = True
         self.route_preference_filter_enabled = True
-        self.user_agent: Optional[str] = None
+        self.user_agent: str | None = None
         self.preloader = preloader
         self.database_handler = database_handler
         self.sql_queries: list[str] = []
         self.sql_trace = False
 
-    def set_query_sources(self, sources: Optional[list[str]]) -> None:
+    def set_query_sources(self, sources: list[str] | None) -> None:
         self.source_manager.set_query_sources(sources)
 
     def disable_rpki_filter(self) -> None:
@@ -160,7 +160,7 @@ class QueryResolver:
         query = self._prepare_query(ordered_by_sources=False).lookup_attr(attribute, value)
         return self._execute_query(query)
 
-    def routes_for_origin(self, origin: str, ip_version: Optional[int] = None) -> set[str]:
+    def routes_for_origin(self, origin: str, ip_version: int | None = None) -> set[str]:
         """
         Resolve all route(6)s prefixes for an origin, returning a set
         of all prefixes. Origin must be in 'ASxxx' format.
@@ -171,7 +171,7 @@ class QueryResolver:
         return prefixes
 
     def routes_for_as_set(
-        self, set_name: str, ip_version: Optional[int] = None, exclude_sets: Optional[set[str]] = None
+        self, set_name: str, ip_version: int | None = None, exclude_sets: set[str] | None = None
     ) -> set[str]:
         """
         Find all originating prefixes for all members of an AS-set. May be restricted
@@ -186,7 +186,7 @@ class QueryResolver:
         )
 
     def members_for_set_per_source(
-        self, parameter: str, exclude_sets: Optional[set[str]] = None, depth=0, recursive=False
+        self, parameter: str, exclude_sets: set[str] | None = None, depth=0, recursive=False
     ) -> dict[str, list[str]]:
         """
         Find all members of an as-set or route-set, possibly recursively, distinguishing
@@ -213,10 +213,10 @@ class QueryResolver:
     def members_for_set(
         self,
         parameter: str,
-        exclude_sets: Optional[set[str]] = None,
+        exclude_sets: set[str] | None = None,
         depth=0,
         recursive=False,
-        root_source: Optional[str] = None,
+        root_source: str | None = None,
     ) -> list[str]:
         """
         Find all members of an as-set or route-set, possibly recursively.
@@ -252,7 +252,7 @@ class QueryResolver:
         return sorted(members)
 
     def _recursive_set_resolve(
-        self, members: set[str], sets_seen=None, root_source: Optional[str] = None
+        self, members: set[str], sets_seen=None, root_source: str | None = None
     ) -> set[str]:
         """
         Resolve all members of a number of sets, recursively.
@@ -317,7 +317,7 @@ class QueryResolver:
         return set_members
 
     def _find_set_members(
-        self, set_names: set[str], limit_source: Optional[str] = None
+        self, set_names: set[str], limit_source: str | None = None
     ) -> tuple[set[str], set[str]]:
         """
         Find all members of a number of route-sets or as-sets. Includes both
@@ -354,9 +354,7 @@ class QueryResolver:
 
         return members, leaf_members
 
-    def database_status(
-        self, sources: Optional[list[str]] = None
-    ) -> "OrderedDict[str, OrderedDict[str, Any]]":
+    def database_status(self, sources: list[str] | None = None) -> "OrderedDict[str, OrderedDict[str, Any]]":
         """Database status. If sources is None, return all valid sources."""
         if sources is None:
             sources = self.source_manager.all_valid_sources

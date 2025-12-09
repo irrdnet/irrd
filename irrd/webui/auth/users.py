@@ -4,7 +4,6 @@ import secrets
 import sys
 from base64 import urlsafe_b64decode, urlsafe_b64encode
 from datetime import date, timedelta
-from typing import Optional, Union
 
 import passlib
 import wtforms
@@ -32,7 +31,7 @@ WEBAUTH_MAX_PASSWORD_LEN = 1000
 
 
 class AuthProvider(UserProvider):
-    async def find_by_id(self, connection: HTTPConnection, identifier: str) -> Optional[UserLike]:
+    async def find_by_id(self, connection: HTTPConnection, identifier: str) -> UserLike | None:
         session_provider = ORMSessionProvider()
         target = session_provider.session.query(AuthUser).filter_by(email=identifier).options(joinedload("*"))
         user = await session_provider.run(target.one)
@@ -40,12 +39,10 @@ class AuthProvider(UserProvider):
         session_provider.commit_close()
         return user
 
-    async def find_by_username(
-        self, connection: HTTPConnection, username_or_email: str
-    ) -> Optional[UserLike]:
+    async def find_by_username(self, connection: HTTPConnection, username_or_email: str) -> UserLike | None:
         return await self.find_by_id(connection, username_or_email)
 
-    async def find_by_token(self, connection: HTTPConnection, token: str) -> Optional[UserLike]:
+    async def find_by_token(self, connection: HTTPConnection, token: str) -> UserLike | None:
         return None  # pragma: no cover
 
 
@@ -161,6 +158,6 @@ class PasswordResetToken:
         except ValueError:
             return False
 
-    def _hash(self, expiry_days: Union[int, str]) -> bytes:
+    def _hash(self, expiry_days: int | str) -> bytes:
         hash_data = secret_key_derive("web.password_reset_token") + self.user_key + str(expiry_days)
         return hashlib.sha224(hash_data.encode("utf-8")).digest()

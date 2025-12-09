@@ -1,9 +1,9 @@
 """A module for basic mocking of SQLAlchemy sessions and calls."""
 
-from collections.abc import Iterator, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from functools import partial
 from itertools import chain, takewhile
-from typing import Any, Callable, Optional, overload
+from typing import Any, overload
 from unittest import mock
 
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
@@ -149,16 +149,16 @@ class AlchemyMagicMock(mock.MagicMock):
     @overload
     def __init__(
         self,
-        spec: Optional[Any] = ...,
-        side_effect: Optional[Any] = ...,
+        spec: Any | None = ...,
+        side_effect: Any | None = ...,
         return_value: Any = ...,
-        wraps: Optional[Any] = ...,
-        name: Optional[Any] = ...,
-        spec_set: Optional[Any] = ...,
-        parent: Optional[Any] = ...,
-        _spec_state: Optional[Any] = ...,
+        wraps: Any | None = ...,
+        name: Any | None = ...,
+        spec_set: Any | None = ...,
+        parent: Any | None = ...,
+        _spec_state: Any | None = ...,
         _new_name: Any = ...,
-        _new_parent: Optional[Any] = ...,
+        _new_parent: Any | None = ...,
         **kwargs: Any,
     ) -> None:
         ...  # pragma: no cover
@@ -445,7 +445,7 @@ class UnifiedAlchemyMagicMock(AlchemyMagicMock):
         "scalar": lambda x: get_scalar(x),
         "update": lambda x, *args, **kwargs: None,
     }
-    unify: dict[str, Optional[UnorderedCall]] = {
+    unify: dict[str, UnorderedCall | None] = {
         "add_columns": None,
         "distinct": None,
         "execute": None,
@@ -467,16 +467,16 @@ class UnifiedAlchemyMagicMock(AlchemyMagicMock):
     @overload
     def __init__(
         self,
-        spec: Optional[Any] = ...,
-        side_effect: Optional[Any] = ...,
+        spec: Any | None = ...,
+        side_effect: Any | None = ...,
         return_value: Any = ...,
-        wraps: Optional[Any] = ...,
-        name: Optional[Any] = ...,
-        spec_set: Optional[Any] = ...,
-        parent: Optional[Any] = ...,
-        _spec_state: Optional[Any] = ...,
+        wraps: Any | None = ...,
+        name: Any | None = ...,
+        spec_set: Any | None = ...,
+        parent: Any | None = ...,
+        _spec_state: Any | None = ...,
         _new_name: Any = ...,
-        _new_parent: Optional[Any] = ...,
+        _new_parent: Any | None = ...,
         **kwargs: Any,
     ) -> None:
         ...  # pragma: no cover
@@ -517,7 +517,7 @@ class UnifiedAlchemyMagicMock(AlchemyMagicMock):
         call_enders = list(self.boundary.keys()) + ["delete"]
         return iter(takewhile(lambda i: i[0] not in call_enders, reversed(calls)))
 
-    def _get_previous_call(self, name: str, calls: Sequence[Call]) -> Optional[Call]:
+    def _get_previous_call(self, name: str, calls: Sequence[Call]) -> Call | None:
         """Gets the previous call right before the current call."""
         # get all previous session calls within same session query
         previous_calls = self._get_previous_calls(calls)
@@ -531,8 +531,8 @@ class UnifiedAlchemyMagicMock(AlchemyMagicMock):
     def _unify(
         self,
         value: Any = ...,
-        name: Optional[Any] = ...,
-        parent: Optional[Any] = ...,
+        name: Any | None = ...,
+        parent: Any | None = ...,
         two: bool = ...,
         from_kall: bool = ...,
     ) -> None:
@@ -607,7 +607,7 @@ class UnifiedAlchemyMagicMock(AlchemyMagicMock):
 
         return self.boundary[_mock_name](_mock_default, *args, **kwargs)
 
-    def _mutate_data(self, *args: Any, **kwargs: Any) -> Optional[int]:
+    def _mutate_data(self, *args: Any, **kwargs: Any) -> int | None:
         """Alter the data for the SQLAlchemy expression."""
         _mock_name = kwargs.get("_mock_name")
         _mock_data = self._mock_data = self._mock_data or []

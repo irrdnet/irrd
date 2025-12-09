@@ -1,6 +1,6 @@
 """A module for asserting SQLAlchemy expressions for unittests."""
 
-from typing import Any, Optional
+from typing import Any
 
 from .comparison import ALCHEMY_TYPES, ExpressionMatcher, PrettyExpression
 
@@ -42,7 +42,7 @@ params={'column_1': 10})
         for t in ALCHEMY_TYPES:
             self.addTypeEqualityFunc(t, "assert_alchemy_expression_equal")
 
-    def assert_alchemy_expression_equal(self, left: Any, right: Any, msg: Optional[str] = None) -> None:
+    def assert_alchemy_expression_equal(self, left: Any, right: Any, msg: str | None = None) -> None:
         """Assert an SQLAlchemy expression to be equal.
 
         Assert that two given sqlalchemy expressions are equal

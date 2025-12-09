@@ -1,7 +1,7 @@
 import datetime
 import difflib
 import logging
-from typing import Optional, Union
+from typing import Optional
 
 import sqlalchemy.orm as saorm
 
@@ -39,10 +39,10 @@ class ChangeRequest:
     """
 
     rpsl_text_submitted: str
-    rpsl_obj_new: Optional[RPSLObject]
-    rpsl_obj_current: Optional[RPSLObject] = None
+    rpsl_obj_new: RPSLObject | None
+    rpsl_obj_current: RPSLObject | None = None
     status = UpdateRequestStatus.PROCESSING
-    request_type: Optional[UpdateRequestType] = None
+    request_type: UpdateRequestType | None = None
 
     error_messages: list[str]
     info_messages: list[str]
@@ -53,8 +53,8 @@ class ChangeRequest:
         database_handler: DatabaseHandler,
         auth_validator: AuthValidator,
         reference_validator: ReferenceValidator,
-        delete_reason: Optional[str],
-        request_meta: dict[str, Optional[str]],
+        delete_reason: str | None,
+        request_meta: dict[str, str | None],
     ) -> None:
         """
         Initialise a new change request for a single RPSL object.
@@ -78,8 +78,8 @@ class ChangeRequest:
         self.auth_validator = auth_validator
         self.reference_validator = reference_validator
         self.rpsl_text_submitted = rpsl_text_submitted
-        self._auth_result: Optional[ValidatorResult] = None
-        self._cached_roa_validity: Optional[bool] = None
+        self._auth_result: ValidatorResult | None = None
+        self._cached_roa_validity: bool | None = None
         self.roa_validator = SingleRouteROAValidator(database_handler)
         self.scopefilter_validator = ScopeFilterValidator()
         self.rules_validator = RulesValidator(database_handler)
@@ -244,7 +244,7 @@ class ChangeRequest:
             report += "".join([f"INFO: {e}\n" for e in self.info_messages])
         return report
 
-    def submitter_report_json(self) -> dict[str, Union[None, bool, str, list[str]]]:
+    def submitter_report_json(self) -> dict[str, None | bool | str | list[str]]:
         """Produce a dict suitable for reporting back status and messages in JSON."""
         new_object_text = None
         if self.rpsl_obj_new and not self.error_messages:
@@ -488,7 +488,7 @@ class SuspensionRequest:
     """
 
     rpsl_text_submitted: str
-    rpsl_obj_new: Optional[RPSLObject]
+    rpsl_obj_new: RPSLObject | None
     status = UpdateRequestStatus.PROCESSING
 
     error_messages: list[str]
@@ -601,7 +601,7 @@ class SuspensionRequest:
             report += "".join([f"INFO: {e}\n" for e in self.info_messages])
         return report
 
-    def submitter_report_json(self) -> dict[str, Union[None, bool, str, list[str]]]:
+    def submitter_report_json(self) -> dict[str, None | bool | str | list[str]]:
         """Produce a dict suitable for reporting back status and messages in JSON."""
         return {
             "successful": self.is_valid(),
@@ -645,8 +645,8 @@ def parse_change_requests(
     database_handler: DatabaseHandler,
     auth_validator: AuthValidator,
     reference_validator: ReferenceValidator,
-    request_meta: dict[str, Optional[str]],
-) -> list[Union[ChangeRequest, SuspensionRequest]]:
+    request_meta: dict[str, str | None],
+) -> list[ChangeRequest | SuspensionRequest]:
     """
     Parse change requests, a text of RPSL objects along with metadata like
     passwords or deletion requests.
@@ -657,7 +657,7 @@ def parse_change_requests(
     :param reference_validator: a ReferenceValidator instance
     :return: a list of ChangeRequest instances
     """
-    results: list[Union[ChangeRequest, SuspensionRequest]] = []
+    results: list[ChangeRequest | SuspensionRequest] = []
     passwords = []
     overrides = []
     api_keys = []

@@ -1,4 +1,4 @@
-from typing import Optional, TypeVar
+from typing import TypeVar
 
 from IPy import IP
 
@@ -41,13 +41,13 @@ class RPSLFieldParseResult:
     def __init__(
         self,
         value: str,
-        values_list: Optional[list[str]] = None,
-        ip_first: Optional[IP] = None,
-        ip_last: Optional[IP] = None,
-        prefix: Optional[IP] = None,
-        prefix_length: Optional[int] = None,
-        asn_first: Optional[int] = None,
-        asn_last: Optional[int] = None,
+        values_list: list[str] | None = None,
+        ip_first: IP | None = None,
+        ip_last: IP | None = None,
+        prefix: IP | None = None,
+        prefix_length: int | None = None,
+        asn_first: int | None = None,
+        asn_last: int | None = None,
     ) -> None:
         self.value = value
         self.values_list = values_list

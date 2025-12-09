@@ -8,7 +8,7 @@ import signal
 import sys
 import time
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 from urllib.parse import urlparse
 
 import limits
@@ -103,7 +103,7 @@ class Configuration:
     user_config_staging: DottedDict
     user_config_live: DottedDict
 
-    def __init__(self, user_config_path: Optional[str] = None, commit=True):
+    def __init__(self, user_config_path: str | None = None, commit=True):
         """
         Load the default config and load and check the user provided config.
         If a logfile was specified, direct logs there.
@@ -152,7 +152,7 @@ class Configuration:
             # Re-commit to apply loglevel
             self._commit_staging()
 
-    def get_setting_live(self, setting_name: str, default: Optional[Any] = None) -> Any:
+    def get_setting_live(self, setting_name: str, default: Any | None = None) -> Any:
         """
         Get a setting from the live config.
         In order, this will look in:
@@ -613,10 +613,10 @@ class Configuration:
         return config.get(key) is None or isinstance(config.get(key), str)
 
 
-configuration: Optional[Configuration] = None
+configuration: Configuration | None = None
 
 
-def get_configuration() -> Optional[Configuration]:
+def get_configuration() -> Configuration | None:
     """
     Get the Configuration object, if initialised.
     """
@@ -642,7 +642,7 @@ def is_config_initialised() -> bool:
     return configuration is not None
 
 
-def get_setting(setting_name: str, default: Optional[Any] = None) -> Any:
+def get_setting(setting_name: str, default: Any | None = None) -> Any:
     """
     Convenience wrapper to get the value of a setting.
     """
@@ -652,7 +652,7 @@ def get_setting(setting_name: str, default: Optional[Any] = None) -> Any:
     return configuration.get_setting_live(setting_name, default)
 
 
-def get_object_class_filter_for_source(source: str) -> Optional[list[str]]:
+def get_object_class_filter_for_source(source: str) -> list[str] | None:
     """
     Helper method to get the cleaned object class filter for a source, if any.
     """

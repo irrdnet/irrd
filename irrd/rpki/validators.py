@@ -1,7 +1,6 @@
 import codecs
 import socket
 from collections import defaultdict
-from typing import Optional
 
 import datrie
 from IPy import IP
@@ -47,7 +46,7 @@ class BulkRouteROAValidator:
     not be included in the validation process.
     """
 
-    def __init__(self, dh: DatabaseHandler, roas: Optional[list[ROA]] = None):
+    def __init__(self, dh: DatabaseHandler, roas: list[ROA] | None = None):
         """
         Create a validator object. Can use either a list of ROA objects,
         or if not given, generates this from the database.
@@ -71,7 +70,7 @@ class BulkRouteROAValidator:
             self._build_roa_tree_from_roa_objs(roas)
 
     def validate_all_routes(
-        self, sources: Optional[list[str]] = None
+        self, sources: list[str] | None = None
     ) -> tuple[list[dict[str, str]], list[dict[str, str]], list[dict[str, str]]]:
         """
         Validate all RPSL route/route6 objects.

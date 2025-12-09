@@ -1,6 +1,5 @@
 import logging
 import socket
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -9,7 +8,7 @@ class WhoisQueryError(ValueError):
     pass
 
 
-def whois_query(host: str, port: int, query: str, end_markings: Optional[list[str]] = None) -> str:
+def whois_query(host: str, port: int, query: str, end_markings: list[str] | None = None) -> str:
     """
     Perform a query on a whois server, connecting to the specified host and port.
 
@@ -31,7 +30,7 @@ def whois_query(host: str, port: int, query: str, end_markings: Optional[list[st
     while not any([end_marking in buffer for end_marking in end_markings_bytes]):
         try:
             data = s.recv(1024 * 1024)
-        except socket.timeout:
+        except TimeoutError:
             break
         if not data:
             break
@@ -41,7 +40,7 @@ def whois_query(host: str, port: int, query: str, end_markings: Optional[list[st
     return buffer.decode("utf-8", errors="backslashreplace")
 
 
-def whois_query_irrd(host: str, port: int, query: str) -> Optional[str]:
+def whois_query_irrd(host: str, port: int, query: str) -> str | None:
     """
     Perform a whois query, expecting an IRRD-style output format.
 
@@ -63,7 +62,7 @@ def whois_query_irrd(host: str, port: int, query: str) -> Optional[str]:
     while True:
         try:
             data = s.recv(1024)
-        except (socket.timeout, ConnectionError):
+        except (TimeoutError, ConnectionError):
             break
         if not data:
             break
@@ -101,9 +100,7 @@ def whois_query_irrd(host: str, port: int, query: str) -> Optional[str]:
     )
 
 
-def whois_query_source_status(
-    host: str, port: int, source: str
-) -> tuple[Optional[bool], int, int, Optional[int]]:
+def whois_query_source_status(host: str, port: int, source: str) -> tuple[bool | None, int, int, int | None]:
     """
     Query the status of a particular source against an NRTM server,
     which supports IRRD-style !j queries.
@@ -130,7 +127,7 @@ def whois_query_source_status(
     mirrorable = mirrorable_choices.get(fields[1].upper())
 
     serial_oldest, serial_newest = fields[2].split("-")
-    export_serial: Optional[int]
+    export_serial: int | None
     try:
         export_serial = int(fields[3])
     except IndexError:

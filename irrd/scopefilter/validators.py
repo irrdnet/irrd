@@ -1,5 +1,4 @@
 from collections import defaultdict
-from typing import Optional
 
 from IPy import IP
 
@@ -38,9 +37,7 @@ class ScopeFilterValidator:
             else:
                 self.filtered_asns.add(int(asn_filter))
 
-    def validate(
-        self, source: str, prefix: Optional[IP] = None, asn: Optional[int] = None
-    ) -> ScopeFilterStatus:
+    def validate(self, source: str, prefix: IP | None = None, asn: int | None = None) -> ScopeFilterStatus:
         """
         Validate a prefix and/or ASN, for a particular source.
         Returns a tuple of a ScopeFilterStatus and an explanation string.
@@ -66,7 +63,7 @@ class ScopeFilterValidator:
         return ScopeFilterStatus.in_scope
 
     def _validate_rpsl_data(
-        self, source: str, object_class: str, prefix: Optional[IP], asn_first: Optional[int]
+        self, source: str, object_class: str, prefix: IP | None, asn_first: int | None
     ) -> tuple[ScopeFilterStatus, str]:
         """
         Validate whether a particular set of RPSL data is in scope.

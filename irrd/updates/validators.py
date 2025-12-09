@@ -1,7 +1,7 @@
 import functools
 import logging
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Union
 
 import sqlalchemy.orm as saorm
 from IPy import IP
@@ -50,16 +50,16 @@ class ValidatorResult:
     mntners_notify: list[RPSLMntner] = field(default_factory=list)
     # Details of how authentication was provided
     auth_method: AuthMethod = AuthMethod.NONE
-    auth_through_mntner: Optional[str] = None
-    auth_through_internal_mntner: Optional[AuthMntner] = None
-    auth_through_api_key: Optional[AuthApiToken] = None
-    auth_through_internal_user: Optional[AuthUser] = None
+    auth_through_mntner: str | None = None
+    auth_through_internal_mntner: AuthMntner | None = None
+    auth_through_api_key: AuthApiToken | None = None
+    auth_through_internal_user: AuthUser | None = None
 
     def is_valid(self):
         return len(self.error_messages) == 0
 
     def to_change_log(self) -> ChangeLog:
-        kwargs: dict[str, Union[str, bool, None]] = {
+        kwargs: dict[str, str | bool | None] = {
             "auth_through_rpsl_mntner_pk": self.auth_through_mntner,
             "auth_by_rpsl_mntner_password": self.auth_method == AuthMethod.MNTNER_PASSWORD,
             "auth_by_rpsl_mntner_pgp_key": self.auth_method == AuthMethod.MNTNER_PGP_KEY,
@@ -84,9 +84,9 @@ class MntnerCheckResult:
     valid: bool
     associated_mntners: list[RPSLMntner] = field(default_factory=list)
     auth_method: AuthMethod = AuthMethod.NONE
-    mntner_pk: Optional[str] = None
-    auth_mntner: Optional[AuthMntner] = None
-    api_key: Optional[AuthApiToken] = None
+    mntner_pk: str | None = None
+    auth_mntner: AuthMntner | None = None
+    api_key: AuthApiToken | None = None
 
 
 class ReferenceValidator:
@@ -298,15 +298,15 @@ class AuthValidator:
     passwords: list[str]
     overrides: list[str]
     api_keys: list[str]
-    keycert_obj_pk: Optional[str] = None
+    keycert_obj_pk: str | None = None
 
     def __init__(
         self,
         database_handler: DatabaseHandler,
         origin: AuthoritativeChangeOrigin = AuthoritativeChangeOrigin.other,
         keycert_obj_pk=None,
-        internal_authenticated_user: Optional[AuthUser] = None,
-        remote_ip: Optional[IP] = None,
+        internal_authenticated_user: AuthUser | None = None,
+        remote_ip: IP | None = None,
     ) -> None:
         self.database_handler = database_handler
         self.passwords = []
@@ -332,9 +332,7 @@ class AuthValidator:
         """
         self._pre_approved = {obj.pk() for obj in presumed_valid_new_mntners}
 
-    def process_auth(
-        self, rpsl_obj_new: RPSLObject, rpsl_obj_current: Optional[RPSLObject]
-    ) -> ValidatorResult:
+    def process_auth(self, rpsl_obj_new: RPSLObject, rpsl_obj_current: RPSLObject | None) -> ValidatorResult:
         """
         Check whether authentication passes for all required objects.
         Returns a ValidatorResult object with error/info messages, and fills
@@ -433,7 +431,7 @@ class AuthValidator:
 
         return result
 
-    def check_override(self) -> Optional[AuthMethod]:
+    def check_override(self) -> AuthMethod | None:
         if self._internal_authenticated_user and self._internal_authenticated_user.override:
             logger.info(
                 "Authenticated by valid override from internally authenticated "
@@ -535,7 +533,7 @@ class AuthValidator:
 
     def _mntner_matches_internal_auth(
         self, rpsl_obj_new: RPSLObject, rpsl_pk: str, source: str
-    ) -> Optional[AuthMntner]:
+    ) -> AuthMntner | None:
         if not self._internal_authenticated_user:
             return None
         if rpsl_obj_new.pk() == rpsl_pk and rpsl_obj_new.source() == source:
@@ -552,7 +550,7 @@ class AuthValidator:
 
     def _api_key_match_for_mntner(
         self, rpsl_obj_new: RPSLObject, rpsl_pk: str, source: str
-    ) -> Optional[AuthApiToken]:
+    ) -> AuthApiToken | None:
         if not self.api_keys or isinstance(rpsl_obj_new, RPSLMntner):
             return None
 
@@ -578,8 +576,8 @@ class AuthValidator:
         result: ValidatorResult,
         failed_mntner_list: list[str],
         rpsl_obj,
-        related_object_class: Optional[str] = None,
-        related_pk: Optional[str] = None,
+        related_object_class: str | None = None,
+        related_pk: str | None = None,
     ) -> None:
         mntner_str = ", ".join(failed_mntner_list)
         msg = f"Authorisation for {rpsl_obj.rpsl_object_class} {rpsl_obj.pk()} failed: "
@@ -590,7 +588,7 @@ class AuthValidator:
 
     def _find_related_mntners(
         self, rpsl_obj_new: RPSLObject, result: ValidatorResult
-    ) -> Optional[tuple[str, str, list[str]]]:
+    ) -> tuple[str, str, list[str]] | None:
         """
         Find the maintainers of the related object to rpsl_obj_new, if any.
         This is used to authorise creating objects - authentication may be

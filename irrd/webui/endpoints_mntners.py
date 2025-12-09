@@ -1,7 +1,6 @@
 import logging
 import secrets
 import textwrap
-from typing import Optional
 
 import wtforms
 from IPy import IP
@@ -253,7 +252,7 @@ class PermissionAddForm(CurrentPasswordForm):
     )
     submit = wtforms.SubmitField("Authorise this user")
 
-    async def validate(self, current_user: AuthUser, mntner: Optional[AuthMntner] = None):
+    async def validate(self, current_user: AuthUser, mntner: AuthMntner | None = None):
         if not await super().validate(current_user=current_user):
             return False
 

@@ -4,7 +4,7 @@ from collections.abc import Iterable, Iterator
 from datetime import datetime, timezone
 from functools import lru_cache
 from io import StringIO
-from typing import Any, Optional, Union
+from typing import Any, Union
 
 import sqlalchemy as sa
 from asgiref.sync import sync_to_async
@@ -90,9 +90,9 @@ class DatabaseHandler:
     # The RPSL upsert buffer is a list of tuples. Each tuple first has a dict
     # with all database column names and their values, and then the origin of the change
     # and the serial of the change at the NRTM source, if any.
-    _rpsl_upsert_buffer: list[tuple[dict, JournalEntryOrigin, Optional[int]]]
+    _rpsl_upsert_buffer: list[tuple[dict, JournalEntryOrigin, int | None]]
     # The ROA insert buffer is a list of dicts with columm names and their values.
-    _roa_insert_buffer: list[dict[str, Union[str, int]]]
+    _roa_insert_buffer: list[dict[str, str | int]]
 
     def __init__(self, readonly=False):
         """
@@ -246,8 +246,8 @@ class DatabaseHandler:
         rpsl_object: RPSLObject,
         origin: JournalEntryOrigin,
         rpsl_guaranteed_no_existing=False,
-        source_serial: Optional[int] = None,
-        forced_created_value: Optional[str] = None,
+        source_serial: int | None = None,
+        forced_created_value: str | None = None,
     ) -> None:
         """
         Schedule an RPSLObject for insertion/updating.
@@ -563,11 +563,11 @@ class DatabaseHandler:
     def delete_rpsl_object(
         self,
         origin: JournalEntryOrigin,
-        rpsl_object: Optional[RPSLObject] = None,
-        source: Optional[str] = None,
-        rpsl_pk: Optional[str] = None,
-        object_class: Optional[str] = None,
-        source_serial: Optional[int] = None,
+        rpsl_object: RPSLObject | None = None,
+        source: str | None = None,
+        rpsl_pk: str | None = None,
+        object_class: str | None = None,
+        source_serial: int | None = None,
         protect_rpsl_name: bool = False,
     ) -> None:
         """
@@ -1031,7 +1031,7 @@ class DatabaseStatusTracker:
         object_class: str,
         object_text: str,
         origin: JournalEntryOrigin,
-        source_serial: Optional[int],
+        source_serial: int | None,
     ) -> None:
         """
         Make a record in the journal of a change to an object.
@@ -1046,7 +1046,7 @@ class DatabaseStatusTracker:
         self._sources_seen.add(source)
         self._sources_rpsl_data_updated.add(source)
         if self.journaling_enabled and get_setting(f"sources.{source}.keep_journal"):
-            serial_nrtm: Union[Optional[int], sa.sql.expression.Select, sa.sql.expression.ScalarSelect]
+            serial_nrtm: Any  # int | None | sa.sql.expression.Select | sa.sql.expression.ScalarSelect
             journal_tablename = RPSLDatabaseJournal.__tablename__
 
             # Locking this table is one of the few ways to guarantee serial_global in order (#685)
@@ -1280,7 +1280,7 @@ class SessionChangedObjectsTracker:
         self.preloader = Preloader(enable_queries=False)
         self.reset()
 
-    def object_modified_dict(self, rpsl_obj: dict[str, str], origin: Optional[JournalEntryOrigin] = None):
+    def object_modified_dict(self, rpsl_obj: dict[str, str], origin: JournalEntryOrigin | None = None):
         try:
             prefix = rpsl_obj["prefix"]
         except (KeyError, AttributeError):
@@ -1291,8 +1291,8 @@ class SessionChangedObjectsTracker:
         self,
         object_class: str,
         source: str,
-        prefix: Optional[IP],
-        origin: Optional[JournalEntryOrigin] = None,
+        prefix: IP | None,
+        origin: JournalEntryOrigin | None = None,
     ):
         self._object_classes.add(object_class)
         if all(

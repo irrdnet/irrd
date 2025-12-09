@@ -1,7 +1,6 @@
 import dataclasses
 import datetime
 import enum
-from typing import Optional
 from uuid import UUID
 
 import sqlalchemy as sa
@@ -52,23 +51,23 @@ class AuthoritativeChangeOrigin(enum.Enum):
 
 @dataclasses.dataclass
 class NRTM4ClientDatabaseStatus:
-    session_id: Optional[UUID]
-    version: Optional[int]
-    current_key: Optional[str]
-    next_key: Optional[str]
-    previous_file_hashes: Optional[dict[str, list[str]]]
+    session_id: UUID | None
+    version: int | None
+    current_key: str | None
+    next_key: str | None
+    previous_file_hashes: dict[str, list[str]] | None
 
 
 @dataclasses.dataclass
 class NRTM4ServerDatabaseStatus:
-    session_id: Optional[UUID]
-    version: Optional[int]
-    last_update_notification_file_update: Optional[datetime.datetime]
-    last_snapshot_version: Optional[int]
-    last_snapshot_global_serial: Optional[int]
-    last_snapshot_filename: Optional[str]
-    last_snapshot_timestamp: Optional[datetime.datetime]
-    last_snapshot_hash: Optional[str]
+    session_id: UUID | None
+    version: int | None
+    last_update_notification_file_update: datetime.datetime | None
+    last_snapshot_version: int | None
+    last_snapshot_global_serial: int | None
+    last_snapshot_filename: str | None
+    last_snapshot_timestamp: datetime.datetime | None
+    last_snapshot_hash: str | None
     previous_deltas: list[dict]
 
     @classmethod

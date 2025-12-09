@@ -1,5 +1,3 @@
-import socket
-from typing import Optional
 from unittest.mock import Mock
 
 import pytest
@@ -66,7 +64,7 @@ class TestWhoisQuery:
         def mock_socket_recv(bytes) -> bytes:
             self.recv_calls += 1
             if self.recv_calls > 2:
-                raise socket.timeout
+                raise TimeoutError
             return str(self.recv_calls).encode("utf-8")
 
         mock_socket.recv = mock_socket_recv
@@ -211,7 +209,7 @@ class TestWhoisQueryIRRD:
         def mock_socket_recv(bytes) -> bytes:
             self.recv_calls += 1
             if self.recv_calls > 2:
-                raise socket.timeout
+                raise TimeoutError
             if self.recv_calls == 1:
                 return b"A2\n"
             return str(self.recv_calls).encode("utf-8")
@@ -227,7 +225,7 @@ class TestWhoisQueryIRRD:
 
 class TestQuerySourceStatus:
     def test_query_valid_with_export(self, monkeypatch):
-        def mock_whois_query_irrd(host: str, port: int, query: str) -> Optional[str]:
+        def mock_whois_query_irrd(host: str, port: int, query: str) -> str | None:
             assert host == "host"
             assert port == 43
             assert query == "!jTEST"
@@ -244,7 +242,7 @@ class TestQuerySourceStatus:
         assert export_serial == 1
 
     def test_query_valid_without_export(self, monkeypatch):
-        def mock_whois_query_irrd(host: str, port: int, query: str) -> Optional[str]:
+        def mock_whois_query_irrd(host: str, port: int, query: str) -> str | None:
             assert host == "host"
             assert port == 43
             assert query == "!jTEST"
@@ -261,7 +259,7 @@ class TestQuerySourceStatus:
         assert export_serial is None
 
     def test_query_invalid_source(self, monkeypatch):
-        def mock_whois_query_irrd(host: str, port: int, query: str) -> Optional[str]:
+        def mock_whois_query_irrd(host: str, port: int, query: str) -> str | None:
             assert host == "host"
             assert port == 43
             assert query == "!jTEST"
@@ -274,7 +272,7 @@ class TestQuerySourceStatus:
         assert "Received invalid source NOT-TEST" in str(ve.value)
 
     def test_query_empty_response(self, monkeypatch):
-        def mock_whois_query_irrd(host: str, port: int, query: str) -> Optional[str]:
+        def mock_whois_query_irrd(host: str, port: int, query: str) -> str | None:
             assert host == "host"
             assert port == 43
             assert query == "!jTEST"

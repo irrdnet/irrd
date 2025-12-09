@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Any, Optional
+from typing import Any
 
 import pydantic
 from joserfc.jws import CompactSignature
@@ -139,7 +139,7 @@ class NRTM4Client:
         given the content (before JWS deserialize).
         Returns the deserialized payload and used key in PEM string.
         """
-        compact_signature: Optional[CompactSignature]
+        compact_signature: CompactSignature | None
         unf_content_bytes = unf_content.encode("utf-8")
         config_key = get_setting(f"sources.{self.source}.nrtm4_client_initial_public_key")
 
@@ -210,7 +210,7 @@ class NRTM4Client:
         except StopIteration:
             return False, NRTM4ClientDatabaseStatus(None, None, None, None, None)
 
-    def _find_next_version(self, unf: NRTM4UpdateNotificationFile, last_version: Optional[int] = None):
+    def _find_next_version(self, unf: NRTM4UpdateNotificationFile, last_version: int | None = None):
         """
         Find the next version to look for, if any.
         If last_version is supplied, it overrides the last version from the DB.
@@ -373,7 +373,7 @@ class NRTM4Client:
                     os.unlink(delta_path)
 
     def _process_delta_item(
-        self, header: NRTM4DeltaHeader, delta_item: dict, object_class_filter: Optional[list[str]]
+        self, header: NRTM4DeltaHeader, delta_item: dict, object_class_filter: list[str] | None
     ) -> None:
         """Process a single item from a delta file into an NRTMOperation."""
         try:

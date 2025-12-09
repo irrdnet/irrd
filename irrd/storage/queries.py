@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime
-from typing import Optional, Union
 
 import sqlalchemy as sa
 import sqlalchemy.dialects.postgresql as pg
@@ -186,7 +185,7 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         self.statement = sa.select(*columns)
         self._lookup_attr_counter = 0
 
-    def lookup_attr(self, attr_name: str, attr_value: Union[str, bool]):
+    def lookup_attr(self, attr_name: str, attr_value: str | bool):
         """
         Filter on a lookup attribute, e.g. mnt-by.
         At least one of the values for the lookup attribute must match attr_value.
@@ -195,7 +194,7 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         """
         return self.lookup_attrs_in([attr_name], [attr_value])
 
-    def lookup_attrs_in(self, attr_names: list[str], attr_values: list[Union[str, bool]]):
+    def lookup_attrs_in(self, attr_names: list[str], attr_values: list[str | bool]):
         """
         Filter on one or more lookup attributes, e.g. mnt-by, or ['admin-c', 'tech-c']
         At least one of the values for at least one of the lookup attributes must
@@ -484,19 +483,19 @@ class RPSLDatabaseJournalQuery(BaseRPSLObjectDatabaseQuery):
         """
         return self._filter(self.columns.timestamp < timestamp)
 
-    def serial_nrtm_range(self, start: int, end: Optional[int] = None):
+    def serial_nrtm_range(self, start: int, end: int | None = None):
         """
         Filter for NRTM serials within a specific range, inclusive.
         """
         return self._filter_range(self.columns.serial_nrtm, start, end)
 
-    def serial_global_range(self, start: int, end: Optional[int] = None):
+    def serial_global_range(self, start: int, end: int | None = None):
         """
         Filter for journal-wide serials within a specific range, inclusive.
         """
         return self._filter_range(self.columns.serial_global, start, end)
 
-    def _filter_range(self, target: sa.Column, start: int, end: Optional[int] = None):
+    def _filter_range(self, target: sa.Column, start: int, end: int | None = None):
         if end is not None:
             fltr = sa.and_(target >= start, target <= end)
         else:

@@ -1,6 +1,5 @@
 import logging
 from collections import defaultdict
-from typing import Optional
 
 import ujson
 from IPy import IP, IPSet
@@ -36,7 +35,7 @@ class ROADataImporter:
         database_handler.delete_all_rpsl_objects_with_journal(RPKI_IRR_PSEUDO_SOURCE)
     """
 
-    def __init__(self, rpki_json_str: str, slurm_json_str: Optional[str], database_handler: DatabaseHandler):
+    def __init__(self, rpki_json_str: str, slurm_json_str: str | None, database_handler: DatabaseHandler):
         self.roa_objs: list[ROA] = []
         self._filtered_asns: set[int] = set()
         self._filtered_prefixes: IPSet = IPSet()

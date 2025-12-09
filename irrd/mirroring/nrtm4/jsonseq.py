@@ -1,6 +1,6 @@
 from collections.abc import Generator, Iterable
 from gzip import GzipFile
-from typing import IO, Any, Union
+from typing import IO, Any
 
 import ujson
 
@@ -34,7 +34,7 @@ def jsonseq_decode(input_stream: IO[bytes]) -> Generator[dict, None, None]:
         yield from yield_buffer()
 
 
-def jsonseq_encode(input_stream: Iterable[Any], output_stream: Union[IO[bytes], GzipFile]):
+def jsonseq_encode(input_stream: Iterable[Any], output_stream: IO[bytes] | GzipFile):
     """
     Encode a byte stream with RFC7464 JSON sequences.
     Reads objects from the input iterable, writes the bytes to the output stream.
@@ -43,7 +43,7 @@ def jsonseq_encode(input_stream: Iterable[Any], output_stream: Union[IO[bytes], 
         jsonseq_encode_one(input_item, output_stream)
 
 
-def jsonseq_encode_one(input_item: Any, output_stream: Union[IO[bytes], GzipFile]):
+def jsonseq_encode_one(input_item: Any, output_stream: IO[bytes] | GzipFile):
     """
     Encode a byte stream with RFC7464 JSON sequences.
     Reads a single object and writes the bytes to the output stream.

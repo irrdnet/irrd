@@ -1,5 +1,4 @@
 from collections import OrderedDict
-from typing import Optional, Union
 
 from irrd.conf import (
     AUTH_SET_CREATION_COMMON_KEY,
@@ -41,7 +40,7 @@ RPSL_ROUTE_OBJECT_CLASS_FOR_IP_VERSION = {
 PROTECTED_NAME_OBJECT_CLASSES = ["person", "role", "mntner"]
 
 
-def rpsl_object_from_text(text, strict_validation=True, default_source: Optional[str] = None) -> RPSLObject:
+def rpsl_object_from_text(text, strict_validation=True, default_source: str | None = None) -> RPSLObject:
     rpsl_object_class = text.split(":", maxsplit=1)[0].strip()
     try:
         klass = OBJECT_CLASS_MAPPING[rpsl_object_class]
@@ -467,7 +466,7 @@ class RPSLMntner(RPSLObject):
                 "Either all password auth hashes in a submitted mntner must be dummy objects, or none."
             )
 
-    def verify_auth(self, passwords: list[str], keycert_obj_pk: Optional[str] = None) -> Optional[str]:
+    def verify_auth(self, passwords: list[str], keycert_obj_pk: str | None = None) -> str | None:
         return verify_auth_lines(self.parsed_data.get("auth", []), passwords, keycert_obj_pk)
 
     def has_dummy_auth_value(self) -> bool:
@@ -498,7 +497,7 @@ class RPSLMntner(RPSLObject):
         auths = [RPSL_MNTNER_AUTH_INTERNAL] + self.parsed_data.get("auth", [])
         self._update_attribute_value("auth", auths, flatten=False)
 
-    def _auth_lines(self, password_hashes=True) -> list[Union[str, list[str]]]:
+    def _auth_lines(self, password_hashes=True) -> list[str | list[str]]:
         """
         Return a list of auth values in this object.
         If password_hashes=False, returns only non-hash (i.e. PGPKEY) lines.

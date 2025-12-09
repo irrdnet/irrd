@@ -1,5 +1,4 @@
 from collections import OrderedDict
-from typing import Optional
 
 import ariadne
 import graphql
@@ -234,7 +233,7 @@ def _rpsl_db_query_to_graphql_out(query: RPSLDatabaseQuery, info: GraphQLResolve
 
 
 @ariadne.convert_kwargs_to_snake_case
-def resolve_database_status(_, info: GraphQLResolveInfo, sources: Optional[list[str]] = None):
+def resolve_database_status(_, info: GraphQLResolveInfo, sources: list[str] | None = None):
     """Resolve a databaseStatus query"""
     query_resolver = QueryResolver(
         info.context["request"].app.state.preloader, info.context["request"].app.state.database_handler
@@ -252,8 +251,8 @@ def resolve_asn_prefixes(
     _,
     info: GraphQLResolveInfo,
     asns: list[int],
-    ip_version: Optional[int] = None,
-    sources: Optional[list[str]] = None,
+    ip_version: int | None = None,
+    sources: list[str] | None = None,
 ):
     """Resolve an asnPrefixes query"""
     query_resolver = QueryResolver(
@@ -269,9 +268,9 @@ def resolve_as_set_prefixes(
     _,
     info: GraphQLResolveInfo,
     set_names: list[str],
-    sources: Optional[list[str]] = None,
-    ip_version: Optional[int] = None,
-    exclude_sets: Optional[list[str]] = None,
+    sources: list[str] | None = None,
+    ip_version: int | None = None,
+    exclude_sets: list[str] | None = None,
     sql_trace: bool = False,
 ):
     """Resolve an asSetPrefixes query"""
@@ -296,8 +295,8 @@ def resolve_recursive_set_members(
     info: GraphQLResolveInfo,
     set_names: list[str],
     depth: int = 0,
-    sources: Optional[list[str]] = None,
-    exclude_sets: Optional[list[str]] = None,
+    sources: list[str] | None = None,
+    exclude_sets: list[str] | None = None,
     sql_trace: bool = False,
 ):
     """Resolve an recursiveSetMembers query"""

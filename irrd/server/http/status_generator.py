@@ -1,6 +1,5 @@
 import logging
 import textwrap
-from typing import Optional
 
 from beautifultable import BeautifulTable
 
@@ -70,7 +69,7 @@ class StatusGenerator:
 
         return str(table)
 
-    def _statistics_for_source(self, source: Optional[str]):
+    def _statistics_for_source(self, source: str | None):
         """
         Extract counts of total objects, route objects and aut-num objects,
         from the results of a previous SQL query.
@@ -156,9 +155,9 @@ class StatusGenerator:
 
     def _generate_remote_status_info(
         self,
-        nrtm_host: Optional[str],
+        nrtm_host: str | None,
         nrtm_port: int,
-        nrtm4_notification_file_url: Optional[str],
+        nrtm4_notification_file_url: str | None,
         source: str,
     ) -> str:
         """

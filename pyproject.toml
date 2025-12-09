@@ -15,7 +15,7 @@ documentation = "https://irrd.readthedocs.io/"
 exclude = ['irrd/*/tests', 'irrd/*/*/tests', 'irrd/integration_tests']
 
 [tool.poetry.dependencies]
-python = ">3.9.0,<3.9.1 || >3.9.1,<4.0"
+python = ">3.10.0,<4.0"
 # For installation dependencies, this project pins on exact
 # versions. This is because it's an application rather than
 # a library, so we assume that irrd is the only tool installed
@@ -43,8 +43,8 @@ uvicorn = { extras = ["standard"], version = "0.34.2" }
 starlette = "0.46.2"
 psutil = "7.0.0"
 asgiref = "3.8.1"
-pydantic = "2.11.4"
-typing-extensions = "4.13.2"
+pydantic = "2.12.5"
+typing-extensions = "4.15.0"
 py-radix = { url = "https://github.com/SEKOIA-IO/py-radix/archive/refs/tags/v1.0.2.tar.gz" }
 psycopg2-binary = "2.9.10"
 sqlalchemy = "1.4.54"
@@ -105,17 +105,17 @@ irrd_load_pgp_keys = 'irrd.scripts.load_pgp_keys:main'
 
 [tool.isort]
 profile = "black"
-py_version = 38
+py_version = 310
 src_paths = "irrd"
 
 [tool.ruff]
 line-length = 110
 ignore = ["E501"]
-target-version = "py38"
+target-version = "py310"
 
 [tool.black]
 line-length = 110
-target-version = ['py38']
+target-version = ['py310']
 preview = true
 
 [tool.pytest.ini_options]

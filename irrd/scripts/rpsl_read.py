@@ -25,7 +25,7 @@ class RPSLParse:
     obj_errors = 0
     obj_unknown = 0
     unknown_object_classes: set[str] = set()
-    database_handler: Optional[DatabaseHandler] = None
+    database_handler: DatabaseHandler | None = None
 
     def main(self, filename, strict_validation, database, show_info=True):
         self.show_info = show_info

@@ -144,7 +144,7 @@ def main():
             os.kill(os.getpid(), signal.SIGTERM)
 
 
-def run_irrd(mirror_frequency: int, config_file_path: str, uid: Optional[int], gid: Optional[int]):
+def run_irrd(mirror_frequency: int, config_file_path: str, uid: int | None, gid: int | None):
     terminated = False
 
     if sys.platform == "darwin":
@@ -241,7 +241,7 @@ def run_irrd(mirror_frequency: int, config_file_path: str, uid: Optional[int], g
     logging.info(f"Main process exiting")
 
 
-def get_configured_owner(from_staging=False) -> tuple[Optional[int], Optional[int]]:
+def get_configured_owner(from_staging=False) -> tuple[int | None, int | None]:
     uid = gid = None
     if not from_staging:
         user = get_setting("user")

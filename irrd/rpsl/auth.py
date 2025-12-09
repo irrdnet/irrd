@@ -1,5 +1,4 @@
 from enum import Enum, unique
-from typing import Optional
 
 from passlib.hash import bcrypt, des_crypt, md5_crypt
 
@@ -43,8 +42,8 @@ PASSWORD_REPLACEMENT_HASH = ("BCRYPT-PW", bcrypt)
 
 
 def verify_auth_lines(
-    auth_lines: list[str], passwords: list[str], keycert_obj_pk: Optional[str] = None
-) -> Optional[str]:
+    auth_lines: list[str], passwords: list[str], keycert_obj_pk: str | None = None
+) -> str | None:
     """
     Verify whether one of a given list of passwords matches
     any of the auth lines in the provided list, or match the

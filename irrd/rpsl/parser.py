@@ -3,7 +3,7 @@ import itertools
 import json
 import re
 from collections import Counter, OrderedDict
-from typing import Any, Optional
+from typing import Any
 
 from IPy import IP
 
@@ -76,15 +76,15 @@ class RPSLObject(metaclass=RPSLObjectMeta):
     attrs_multiple: list[str] = []
     ip_first: IP = None
     ip_last: IP = None
-    asn_first: Optional[int] = None
-    asn_last: Optional[int] = None
+    asn_first: int | None = None
+    asn_last: int | None = None
     prefix: IP = None
-    prefix_length: Optional[int] = None
+    prefix_length: int | None = None
     rpki_status: RPKIStatus = RPKIStatus.not_found
     scopefilter_status: ScopeFilterStatus = ScopeFilterStatus.in_scope
     route_preference_status: RoutePreferenceStatus = RoutePreferenceStatus.visible
-    pk_asn_segment: Optional[str] = None
-    default_source: Optional[str] = None
+    pk_asn_segment: str | None = None
+    default_source: str | None = None
     # Shortcut for whether this object is a route-like object, and therefore
     # should be included in RPKI and route preference status. Enabled for route/route6.
     is_route = False
@@ -96,7 +96,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
 
     _re_attr_name = re.compile(r"^[a-z0-9_-]+$")
 
-    def __init__(self, from_text: Optional[str] = None, strict_validation=True, default_source=None) -> None:
+    def __init__(self, from_text: str | None = None, strict_validation=True, default_source=None) -> None:
         """
         Create a new RPSL object, optionally instantiated from a string.
 
@@ -135,7 +135,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         except KeyError:
             raise ValueError("RPSL object has no known source")
 
-    def ip_version(self) -> Optional[int]:
+    def ip_version(self) -> int | None:
         """
         Get the IP version to which this object relates, or None for
         e.g. person or as-block objects.
@@ -181,7 +181,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                     result.add(field_name)
         return result
 
-    def render_rpsl_text(self, last_modified: Optional[datetime.datetime] = None) -> str:
+    def render_rpsl_text(self, last_modified: datetime.datetime | None = None) -> str:
         """
         Render the RPSL object as an RPSL string.
         If last_modified is provided, removes existing last-modified:

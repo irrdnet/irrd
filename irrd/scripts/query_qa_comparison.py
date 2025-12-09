@@ -128,7 +128,7 @@ class QueryComparison:
             f"{self.queries_mirror} NRTM queries were skipped"
         )
 
-    def clean(self, query: str, response: Optional[str]) -> Optional[str]:
+    def clean(self, query: str, response: str | None) -> str | None:
         """Clean the query response, so that the text can be compared."""
         if not response:
             return response
@@ -168,7 +168,7 @@ class QueryComparison:
         report.write("\n=================================================================\n")
         report.close()
 
-    def render_diff(self, query: str, cleaned_reference: str, cleaned_tested: str) -> Optional[str]:
+    def render_diff(self, query: str, cleaned_reference: str, cleaned_tested: str) -> str | None:
         """Produce a diff between the results, either by line or with queries like !i, by element returned."""
         if not cleaned_reference or not cleaned_tested:
             return None
