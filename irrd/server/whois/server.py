@@ -220,7 +220,7 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
             return False
 
         response = self.query_parser.handle_query(query)
-        response_bytes = response.generate_response().encode("utf-8")
+        response_bytes = response.generate_response()
         try:
             self.wfile.write(response_bytes)
         except OSError:

@@ -109,3 +109,7 @@ Other changes
   file. Previously, this was alphabetically ordered.
 * The timeout for HTTP and FTP downloads for mirroring and RPKI is now
   configurable in the optional ``download_timeout`` setting.
+* A bug was fixed where `the answer size in the A response was wrong`_
+  when the response contained Unicode.
+
+.. _the answer size in the A response was wrong: https://github.com/irrdnet/irrd/issues/1019
