@@ -248,7 +248,7 @@ jobs:
 
       - run:
           name: run ruff
-          command: poetry -n --no-ansi run ruff irrd
+          command: poetry -n --no-ansi run ruff check irrd
 
       - run:
           name: run isort

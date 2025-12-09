@@ -8,7 +8,6 @@ from pathlib import Path
 
 import uvicorn
 from setproctitle import setproctitle
-from uvicorn import _subprocess
 
 from irrd.webui.helpers import secret_key_derive
 

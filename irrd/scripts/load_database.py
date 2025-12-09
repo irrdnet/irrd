@@ -64,9 +64,9 @@ def main():  # pragma: no cover
         type=str,
         help=f"use a different IRRd config file (default: {CONFIG_PATH_DEFAULT})",
     )
-    parser.add_argument("--serial", dest="serial", type=int, help=f"serial number (optional)")
+    parser.add_argument("--serial", dest="serial", type=int, help="serial number (optional)")
     parser.add_argument(
-        "--source", dest="source", type=str, required=True, help=f"name of the source, e.g. NTTCOM"
+        "--source", dest="source", type=str, required=True, help="name of the source, e.g. NTTCOM"
     )
     parser.add_argument("input_file", type=str, help="the name of a file to read")
     args = parser.parse_args()

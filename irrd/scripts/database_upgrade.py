@@ -17,7 +17,7 @@ def run(version):
     alembic_cfg = Config()
     alembic_cfg.set_main_option("script_location", f"{irrd_root}/irrd/storage/alembic")
     command.upgrade(alembic_cfg, version)
-    print(f"Upgrade successful, or already on latest version.")
+    print("Upgrade successful, or already on latest version.")
 
 
 def main():  # pragma: no cover
@@ -34,7 +34,7 @@ def main():  # pragma: no cover
         dest="version",
         type=str,
         default="head",
-        help=f"version to upgrade to (default: head, i.e. latest)",
+        help="version to upgrade to (default: head, i.e. latest)",
     )
     args = parser.parse_args()
 

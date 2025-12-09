@@ -7,7 +7,6 @@ insert it into the database.
 import argparse
 import sys
 from pathlib import Path
-from typing import Optional, Set
 
 from irrd.storage.models import JournalEntryOrigin
 

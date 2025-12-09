@@ -164,7 +164,7 @@ class MockDatabaseHandler(metaclass=MockSingletonMeta):
         self.serial_global += 2
         self.queries.append(query)
 
-        if type(query) == RPSLDatabaseJournalStatisticsQuery:
+        if type(query) is RPSLDatabaseJournalStatisticsQuery:
             return iter(
                 [
                     {
@@ -176,7 +176,7 @@ class MockDatabaseHandler(metaclass=MockSingletonMeta):
         else:
             try:
                 result = self.query_responses[type(query)]
-                if type(result) == list:
+                if type(result) is list:
                     return iter(result)
                 return result
             except KeyError:  # pragma: no cover
