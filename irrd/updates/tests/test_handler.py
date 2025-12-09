@@ -1139,7 +1139,7 @@ class TestChangeSubmissionHandler:
 
         ChangeSubmissionHandler().load_suspension_submission(submission_object)
         assert mock_handle_change_requests.assert_called_once
-        (requests, reference_validator, auth_validator) = mock_handle_change_requests.call_args[0]
+        requests, reference_validator, auth_validator = mock_handle_change_requests.call_args[0]
         assert len(requests) == 1
         assert "DASHCARE-MNT" in requests[0].rpsl_text_submitted
         assert requests[0].request_type == SuspensionRequestType.REACTIVATE

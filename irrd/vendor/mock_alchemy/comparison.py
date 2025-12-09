@@ -1,4 +1,5 @@
 """A module for comparing SQLAlchemy expressions."""
+
 from __future__ import annotations
 
 import itertools

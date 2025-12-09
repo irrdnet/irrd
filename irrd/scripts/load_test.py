@@ -5,6 +5,7 @@
 A simple load tester for IRRd.
 Sends random !g queries.
 """
+
 import argparse
 import random
 import socket

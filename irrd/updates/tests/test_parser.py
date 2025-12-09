@@ -1831,7 +1831,7 @@ class TestSuspensionRequest:
             prepare_suspension_request_test
         )
 
-        (r, *_) = parse_change_requests(default_request, mock_dh, mock_auth_validator, None, {})
+        r, *_ = parse_change_requests(default_request, mock_dh, mock_auth_validator, None, {})
 
         assert r.request_type == SuspensionRequestType.SUSPEND
         assert r.status == UpdateRequestStatus.PROCESSING, r.error_messages
@@ -1874,7 +1874,7 @@ class TestSuspensionRequest:
         )
 
         request = default_request.replace("suspend", "reactivate")
-        (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None, {})
+        r, *_ = parse_change_requests(request, mock_dh, mock_auth_validator, None, {})
 
         assert r.request_type == SuspensionRequestType.REACTIVATE
         assert r.status == UpdateRequestStatus.PROCESSING, r.error_messages
@@ -1900,7 +1900,7 @@ class TestSuspensionRequest:
         )
 
         request = default_request.replace("suspend", "reactivate")
-        (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None, {})
+        r, *_ = parse_change_requests(request, mock_dh, mock_auth_validator, None, {})
 
         mock_reactivate_for_mntner.side_effect = ValueError("failure")
         r.save()
@@ -1915,7 +1915,7 @@ class TestSuspensionRequest:
         )
         config_override({"sources": {"TEST": {"suspension_enabled": False}}})
 
-        (r, *_) = parse_change_requests(default_request, mock_dh, mock_auth_validator, None, {})
+        r, *_ = parse_change_requests(default_request, mock_dh, mock_auth_validator, None, {})
 
         assert r.request_type == SuspensionRequestType.SUSPEND
         assert r.status == UpdateRequestStatus.ERROR_NON_AUTHORITIVE
@@ -1933,7 +1933,7 @@ class TestSuspensionRequest:
         )
 
         request = default_request.replace("suspend", "invalid")
-        (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None, {})
+        r, *_ = parse_change_requests(request, mock_dh, mock_auth_validator, None, {})
 
         assert not r.request_type
         assert r.status == UpdateRequestStatus.ERROR_PARSING
@@ -1948,7 +1948,7 @@ class TestSuspensionRequest:
         )
 
         request = "suspension: suspend\nmntner: TEST"
-        (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None, {})
+        r, *_ = parse_change_requests(request, mock_dh, mock_auth_validator, None, {})
 
         assert r.status == UpdateRequestStatus.ERROR_PARSING
         assert r.error_messages == [
@@ -1962,7 +1962,7 @@ class TestSuspensionRequest:
         )
 
         request = "suspension: suspend\nsource: TEST"
-        (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None, {})
+        r, *_ = parse_change_requests(request, mock_dh, mock_auth_validator, None, {})
 
         assert r.status == UpdateRequestStatus.ERROR_UNKNOWN_CLASS
         assert r.error_messages == [
@@ -1976,7 +1976,7 @@ class TestSuspensionRequest:
         )
 
         request = "override: override-pw\n\nsuspension: suspend\n" + SAMPLE_INETNUM
-        (r, *_) = parse_change_requests(request, mock_dh, mock_auth_validator, None, {})
+        r, *_ = parse_change_requests(request, mock_dh, mock_auth_validator, None, {})
 
         assert r.status == UpdateRequestStatus.ERROR_PARSING
         assert r.error_messages == [
@@ -1990,7 +1990,7 @@ class TestSuspensionRequest:
         )
         mock_auth_validator.check_override.return_value = None
 
-        (r, *_) = parse_change_requests(default_request, mock_dh, mock_auth_validator, None, {})
+        r, *_ = parse_change_requests(default_request, mock_dh, mock_auth_validator, None, {})
 
         assert not r.is_valid()
         assert r.status == UpdateRequestStatus.ERROR_AUTH

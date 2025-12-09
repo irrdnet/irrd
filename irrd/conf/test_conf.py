@@ -408,13 +408,11 @@ class TestConfiguration:
         )
         assert (
             "Setting authoritative for source TESTDB2 can not be enabled when either nrtm_host,"
-            " import_source, or nrtm4_client_notification_file_url are set."
-            in str(ce.value)
+            " import_source, or nrtm4_client_notification_file_url are set." in str(ce.value)
         )
         assert (
             "Setting authoritative for source TESTDB3 can not be enabled when either nrtm_host,"
-            " import_source, or nrtm4_client_notification_file_url are set."
-            in str(ce.value)
+            " import_source, or nrtm4_client_notification_file_url are set." in str(ce.value)
         )
         assert (
             "Setting nrtm4_client_notification_file_url for source TESTDB2 is not a valid https or file URL."
@@ -422,23 +420,19 @@ class TestConfiguration:
         )
         assert (
             "Setting nrtm4_client_notification_file_url for source TESTDB2 must be set together with"
-            " nrtm4_client_initial_public_key."
-            in str(ce.value)
+            " nrtm4_client_initial_public_key." in str(ce.value)
         )
         assert (
             "Settings nrtm_host/import_serial_source for TESTDB2 can not both be set together with"
-            " nrtm4_client_notification_file_url."
-            in str(ce.value)
+            " nrtm4_client_notification_file_url." in str(ce.value)
         )
         assert (
             "Source TESTDB can not have authoritative, import_source, nrtm_host,"
-            " or NRTMv4 client or server set when readonly_standby is enabled."
-            in str(ce.value)
+            " or NRTMv4 client or server set when readonly_standby is enabled." in str(ce.value)
         )
         assert (
             "Source TESTDB3 can not have authoritative, import_source, nrtm_host,"
-            " or NRTMv4 client or server set when readonly_standby is enabled."
-            in str(ce.value)
+            " or NRTMv4 client or server set when readonly_standby is enabled." in str(ce.value)
         )
         assert "Setting nrtm_port for source TESTDB2 must be a number." in str(ce.value)
         assert "Setting rpki.roa_import_timer must be set to a number." in str(ce.value)
@@ -468,8 +462,7 @@ class TestConfiguration:
         assert "Invalid value for setting nrtm4_server_private_key_next for source TESTDB:" in str(ce.value)
         assert (
             "Setting nrtm4_server_local_path for source TESTDB is required and must point to an existing"
-            " directory."
-            in str(ce.value)
+            " directory." in str(ce.value)
         )
         assert "nrtm4_server_snapshot_frequency for source TESTDB must be between 1 and 24 hours" in str(
             ce.value
@@ -477,8 +470,7 @@ class TestConfiguration:
         assert (
             "When setting any nrtm4_server setting, all of"
             " nrtm4_server_private_key/nrtm4_server_local_path must be set for source"
-            " TESTDB2."
-            in str(ce.value)
+            " TESTDB2." in str(ce.value)
         )
         assert f"Duplicate value(s) {tmpdir}/invalid for source setting nrtm4_server_local_path." in str(
             ce.value

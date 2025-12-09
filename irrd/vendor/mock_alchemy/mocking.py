@@ -160,8 +160,7 @@ class AlchemyMagicMock(mock.MagicMock):
         _new_name: Any = ...,
         _new_parent: Any | None = ...,
         **kwargs: Any,
-    ) -> None:
-        ...  # pragma: no cover
+    ) -> None: ...  # pragma: no cover
 
     def __init__(self, *args, **kwargs) -> None:
         """Creates AlchemyMagicMock that can be used as limited SQLAlchemy session."""
@@ -478,8 +477,7 @@ class UnifiedAlchemyMagicMock(AlchemyMagicMock):
         _new_name: Any = ...,
         _new_parent: Any | None = ...,
         **kwargs: Any,
-    ) -> None:
-        ...  # pragma: no cover
+    ) -> None: ...  # pragma: no cover
 
     def __init__(self, *args, **kwargs) -> None:
         """Creates an UnifiedAlchemyMagicMock to mock a SQLAlchemy session."""
@@ -535,8 +533,7 @@ class UnifiedAlchemyMagicMock(AlchemyMagicMock):
         parent: Any | None = ...,
         two: bool = ...,
         from_kall: bool = ...,
-    ) -> None:
-        ...  # pragma: no cover
+    ) -> None: ...  # pragma: no cover
 
     def _unify(self, *args, **kwargs) -> Any:
         """Unify the SQLAlchemy expressions."""

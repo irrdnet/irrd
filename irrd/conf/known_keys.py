@@ -50,8 +50,7 @@ KNOWN_CONFIG_KEYS = DottedDict(
                     set_object.rpsl_object_class
                     for set_object in OBJECT_CLASS_MAPPING.values()
                     if issubclass(set_object, RPSLSet)
-                ]
-                + [AUTH_SET_CREATION_COMMON_KEY]
+                ] + [AUTH_SET_CREATION_COMMON_KEY]
             },
             "password_hashers": {hasher_name.lower(): {} for hasher_name in PASSWORD_HASHERS_ALL.keys()},
         },

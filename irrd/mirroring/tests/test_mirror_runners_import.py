@@ -529,8 +529,7 @@ class TestROAImportRunner:
         ]
         assert (
             "2 newly valid, 2 newly invalid, 2 newly not_found routes, 1 emails sent to contacts of newly"
-            " invalid authoritative objects"
-            in caplog.text
+            " invalid authoritative objects" in caplog.text
         )
 
     def test_run_import_http_file_failed_download(self, monkeypatch, config_override, tmpdir, caplog):

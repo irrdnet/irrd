@@ -63,10 +63,13 @@ class ValidatorResult:
             "auth_through_rpsl_mntner_pk": self.auth_through_mntner,
             "auth_by_rpsl_mntner_password": self.auth_method == AuthMethod.MNTNER_PASSWORD,
             "auth_by_rpsl_mntner_pgp_key": self.auth_method == AuthMethod.MNTNER_PGP_KEY,
-            "auth_by_override": self.auth_method in [
-                AuthMethod.OVERRIDE_PASSWORD,
-                AuthMethod.OVERRIDE_INTERNAL_AUTH,
-            ],
+            "auth_by_override": (
+                self.auth_method
+                in [
+                    AuthMethod.OVERRIDE_PASSWORD,
+                    AuthMethod.OVERRIDE_INTERNAL_AUTH,
+                ]
+            ),
         }
         if self.auth_through_internal_user:
             kwargs["auth_by_user_id"] = str(self.auth_through_internal_user.pk)
