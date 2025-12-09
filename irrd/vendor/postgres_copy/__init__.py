@@ -21,6 +21,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from enum import Enum
+from typing import Iterable
 
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.exc import SQLAlchemyError
@@ -31,36 +33,51 @@ __version__ = "0.5.0"
 
 
 def copy_to(source, dest, engine_or_conn, **flags):
-    """Export a query or select to a file. For flags, see the PostgreSQL
-    documentation at http://www.postgresql.org/docs/9.5/static/sql-copy.html.
-
-    Examples: ::
-        select = MyTable.select()
-        with open('/path/to/file.tsv', 'w') as fp:
-            copy_to(select, fp, conn)
-
-        query = session.query(MyModel)
-        with open('/path/to/file/csv', 'w') as fp:
-            copy_to(query, fp, engine, format='csv', null='.')
+    """
+    Export a SQLAlchemy query or select to a file using PostgreSQL COPY TO STDOUT.
 
     :param source: SQLAlchemy query or select
-    :param dest: Destination file pointer, in write mode
+    :param dest: Destination file pointer in write mode
     :param engine_or_conn: SQLAlchemy engine, connection, or raw_connection
-    :param **flags: Options passed through to COPY
-
-    If an existing connection is passed to `engine_or_conn`, it is the caller's
-    responsibility to commit and close.
+    :param flags: COPY options passed to PostgreSQL (format, null, delimiter, etc)
     """
     dialect = postgresql.dialect()
     statement = getattr(source, "statement", source)
-    # see https://github.com/irrdnet/irrd/issues/1005 re binds
     compiled = statement.compile(dialect=dialect, compile_kwargs={"render_postcompile": True})
+
+    # Our enums require a bunch of special handling as they do not play nice with render_postcompile
+    def convert_value(val):
+        if isinstance(val, Enum):
+            return val.name
+        elif isinstance(val, str):
+            return val
+        elif isinstance(val, Iterable) and not isinstance(val, (str, bytes)):
+            return [convert_value(v) for v in val]
+        else:
+            return val
+
+    # Recursively convert all bound params
+    processed_params = {}
+    for key, value in compiled.params.items():
+        processed_value = convert_value(value)
+        processor = compiled._bind_processors.get(key)
+        if processor:
+            processed_value = processor(processed_value)
+        processed_params[key] = processed_value
+
     conn, autoclose = raw_connection_from(engine_or_conn)
     cursor = conn.cursor()
-    query = cursor.mogrify(compiled.string, compiled.params).decode()
-    formatted_flags = f"({format_flags(flags)})" if flags else ""
-    copy = f"COPY ({query}) TO STDOUT {formatted_flags}"
-    cursor.copy_expert(copy, dest)
+
+    query = cursor.mogrify(compiled.string, processed_params).decode()
+
+    formatted_flags = ""
+    if flags:
+        formatted_flags = "(" + ", ".join(f"{k} '{v}'" for k, v in flags.items()) + ")"
+
+    copy_sql = f"COPY ({query}) TO STDOUT {formatted_flags}"
+
+    cursor.copy_expert(copy_sql, dest)
+
     if autoclose:
         conn.close()
 
