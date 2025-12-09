@@ -5,6 +5,7 @@ Revises: 64a3d6faf6d4
 Create Date: 2019-03-04 16:14:17.862510
 
 """
+
 import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql as pg
@@ -18,7 +19,7 @@ depends_on = None
 Base = declarative_base()
 
 
-class RPSLDatabaseObject(Base):  # type:ignore
+class RPSLDatabaseObject(Base):  # type: ignore
     __tablename__ = "rpsl_objects"
 
     pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)

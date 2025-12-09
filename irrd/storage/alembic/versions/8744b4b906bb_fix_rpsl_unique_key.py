@@ -8,6 +8,7 @@ Revises: 893d0d5363b3
 Create Date: 2021-11-30 19:46:01.195353
 
 """
+
 from alembic import op
 
 # revision identifiers, used by Alembic.

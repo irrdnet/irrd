@@ -11,6 +11,7 @@ The message is always read from stdin.
 Prints a report of the results, which would otherwise
 be sent to a user by e-mail.
 """
+
 import argparse
 import sys
 from pathlib import Path

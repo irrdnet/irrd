@@ -4,6 +4,7 @@
 This is a helper script to run RPSL data through the parser and, optionally,
 insert it into the database.
 """
+
 import argparse
 import sys
 from pathlib import Path

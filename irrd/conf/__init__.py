@@ -140,13 +140,13 @@ class Configuration:
                 self.logging_config = config_module.LOGGING  # type: ignore
                 logging.config.dictConfig(self.logging_config)
             elif logfile_path:
-                LOGGING["handlers"]["file"] = {  # type:ignore
+                LOGGING["handlers"]["file"] = {  # type: ignore
                     "class": "logging.handlers.WatchedFileHandler",
                     "filename": logfile_path,
                     "formatter": "verbose",
                 }
                 # noinspection PyTypeChecker
-                LOGGING["loggers"][""]["handlers"] = ["file"]  # type:ignore
+                LOGGING["loggers"][""]["handlers"] = ["file"]  # type: ignore
                 logging.config.dictConfig(LOGGING)
 
             # Re-commit to apply loglevel

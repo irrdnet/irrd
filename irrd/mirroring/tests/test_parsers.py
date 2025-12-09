@@ -277,8 +277,7 @@ class TestMirrorUpdateFileImportParser:
         assert "Invalid address prefix" in caplog.text
         assert (
             "File update for TEST: 6 objects read, 3 objects processed, 1 objects newly inserted, 1 objects"
-            " newly deleted, 2 objects retained, of which 1 modified"
-            in caplog.text
+            " newly deleted, 2 objects retained, of which 1 modified" in caplog.text
         )
         assert "ignored 0 due to object_class_filter" in caplog.text
         assert "Ignored 1 objects found in import for TEST due to unknown object classes" in caplog.text
