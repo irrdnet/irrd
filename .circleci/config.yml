@@ -43,14 +43,14 @@ workflows:
           matrix:
             parameters:
               python_version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
-              postgres_version: ["9.6", "11.16", "13.7", "15.0", "18"]
-              redis_version: ["5.0", "6.2", "7.0"]
+              postgres_version: ["9.6", "11.16", "13.7", "15.0", "18.0"]
+              redis_version: ["5.0", "6.2", "7.0", "8.4"]
       - integration_tests_cpython:
           name: integration-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
           matrix:
             parameters:
               python_version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
-              postgres_version: ["9.6", "11.16", "13.7", "15.0", "18"]
+              postgres_version: ["9.6", "11.16", "13.7", "15.0", "18.0"]
               redis_version: ["5.0", "6.2", "7.0"]
       - lint:
           name: lint-cpython-3-10
