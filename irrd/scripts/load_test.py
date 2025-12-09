@@ -42,7 +42,7 @@ if __name__ == "__main__":  # pragma: no cover
     description = """A simple load tester for IRRd. Sends random !g queries."""
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument(
-        "--count", dest="count", type=int, default=5000, help=f"number of queries to run (default: 5000)"
+        "--count", dest="count", type=int, default=5000, help="number of queries to run (default: 5000)"
     )
     parser.add_argument("host", type=str, help="hostname of instance")
     parser.add_argument("port", type=int, help="port of instance")

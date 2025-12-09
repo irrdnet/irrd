@@ -10,7 +10,6 @@ import difflib
 import re
 import sys
 from pathlib import Path
-from typing import Optional
 
 from IPy import IP
 from ordered_set import OrderedSet
@@ -159,7 +158,7 @@ class QueryComparison:
         report.write(query.strip() + "\n")
         report.write("\n=================================================================\n")
         if diff_str:
-            report.write(f"~~~~~~~~~[ diff clean ref->tst ]~~~~~~~~~\n")
+            report.write("~~~~~~~~~[ diff clean ref->tst ]~~~~~~~~~\n")
             report.write(diff_str + "\n")
         report.write(f"~~~~~~~~~[ clean ref {self.host_reference}:{self.port_reference} ]~~~~~~~~~\n")
         report.write(str(cleaned_reference) + "\n")

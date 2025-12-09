@@ -21,7 +21,6 @@ import re
 import socket
 import sys
 import textwrap
-from json import JSONDecodeError
 from urllib import request
 from urllib.error import HTTPError, URLError
 
@@ -572,7 +571,6 @@ def create_request_body(rpsl: str):
 
     delete_reason = ""
     delete_object_count = 0
-    delete_line_re = re.compile(r"^delete:", re.M)
 
     rpsl = rpsl.replace("\r", "")
     for object_text in rpsl.split("\n\n"):
@@ -701,7 +699,7 @@ def preprocess_args(options):
     elif os.getenv("IRR_RPSL_SUBMIT_HOST") and not has_u_or_h:
         options.extend(["-h", os.getenv("IRR_RPSL_SUBMIT_HOST")])
 
-    if os.getenv("IRR_RPSL_SUBMIT_DEBUG") and not "-d" in options:
+    if os.getenv("IRR_RPSL_SUBMIT_DEBUG") and "-d" not in options:
         options.extend(["-d"])
 
     return options

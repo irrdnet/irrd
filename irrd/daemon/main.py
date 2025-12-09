@@ -12,7 +12,6 @@ import sys
 import time
 import warnings
 from pathlib import Path
-from typing import Optional, Tuple
 
 import psutil
 from pid import PidFile, PidFileError
@@ -56,7 +55,7 @@ def main():
         "--foreground",
         dest="foreground",
         action="store_true",
-        help=f"run IRRd in the foreground, don't detach",
+        help="run IRRd in the foreground, don't detach",
     )
     args = parser.parse_args()
 
@@ -139,7 +138,7 @@ def main():
         except PidFileError as pfe:
             logger.error(f"Failed to start IRRd, unable to lock PID file irrd.pid in {piddir}: {pfe}")
         except Exception as e:
-            logger.error(f"Error occurred in main process, terminating. Error follows:")
+            logger.error("Error occurred in main process, terminating. Error follows:")
             logger.exception(e)
             os.kill(os.getpid(), signal.SIGTERM)
 
@@ -220,7 +219,7 @@ def run_irrd(mirror_frequency: int, config_file_path: str, uid: int | None, gid:
         time.sleep(1)
         sleeps += 1
 
-    logging.debug(f"Main process waiting for child processes to terminate")
+    logging.debug("Main process waiting for child processes to terminate")
     for child_process in whois_process, uvicorn_process, preload_manager:
         if child_process:
             child_process.join(timeout=3)
@@ -238,7 +237,7 @@ def run_irrd(mirror_frequency: int, config_file_path: str, uid: int | None, gid:
             f"child processes {[c.pid for c in children]}"
         )
 
-    logging.info(f"Main process exiting")
+    logging.info("Main process exiting")
 
 
 def get_configured_owner(from_staging=False) -> tuple[int | None, int | None]:

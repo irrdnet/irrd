@@ -17,7 +17,7 @@ def run(version):
     alembic_cfg = Config()
     alembic_cfg.set_main_option("script_location", f"{irrd_root}/irrd/storage/alembic")
     command.downgrade(alembic_cfg, version)
-    print(f"Downgrade successful, or already on this version.")
+    print("Downgrade successful, or already on this version.")
 
 
 def main():  # pragma: no cover
@@ -34,7 +34,7 @@ def main():  # pragma: no cover
         dest="version",
         type=str,
         required=True,
-        help=f"version to downgrade to (see release notes)",
+        help="version to downgrade to (see release notes)",
     )
     args = parser.parse_args()
 
