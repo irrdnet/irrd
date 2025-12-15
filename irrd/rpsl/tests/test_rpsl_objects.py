@@ -534,6 +534,28 @@ class TestRPSLRoute:
         expected_text = expected_text.replace("rpki-ov-state: valid  # should be discarded\n", "")
         assert obj.render_rpsl_text() == expected_text
 
+    # https://github.com/irrdnet/irrd/issues/1014
+    def test_parse_prefixlen_extremes(self):
+        rpsl_text = object_sample_mapping[RPSLRoute().rpsl_object_class].replace("AS65537", "AS0")
+
+        obj_zero = rpsl_object_from_text(rpsl_text.replace("192.0.02.0/24", "0.0.0.0/0"))
+        assert obj_zero.pk() == "0.0.0.0/0AS0"
+        assert obj_zero.ip_first == IP("0.0.0.0")
+        assert obj_zero.ip_last == IP("255.255.255.255")
+        assert obj_zero.prefix == IP("0.0.0.0/0")
+        assert obj_zero.prefix_length == 0
+        assert obj_zero.asn_first == 0
+        assert obj_zero.asn_last == 0
+        assert obj_zero.ip_version() == 4
+
+        obj_32 = rpsl_object_from_text(rpsl_text.replace("192.0.02.0/24", "0.0.0.0/32"))
+        assert obj_32.pk() == "0.0.0.0/32AS0"
+        assert obj_32.ip_first == IP("0.0.0.0")
+        assert obj_32.ip_last == IP("0.0.0.0")
+        assert obj_32.prefix == IP("0.0.0.0/32")
+        assert obj_32.prefix_length == 32
+        assert obj_32.ip_version() == 4
+
     def test_missing_pk_nonstrict(self):
         # In non-strict mode, the parser should not fail validation for missing
         # attributes, except for those part of the PK. Route is one of the few

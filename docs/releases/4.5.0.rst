@@ -92,6 +92,8 @@ Other changes
   and retain the original value (if any) instead.
 * Authoritative creation or updating of route(6) objects for 0.0.0.0/0,
   0.0.0.0/32, ::/0 and ::/128 is no longer allowed.
+  Related, a bug was fixed where route(6) objects with prefix length zero could
+  `be incorrectly indexed and displayed in !g/!6/!a queries`_.
 * The ``sources.{name}.nrtm_query_serial_days_limit`` setting was added to
   limit the age of the oldest serial that can be requested over NRTMv3.
 * The ``irrd_update_database`` command now starts counting serials from
@@ -113,3 +115,4 @@ Other changes
   when the response contained Unicode.
 
 .. _the answer size in the A response was wrong: https://github.com/irrdnet/irrd/issues/1019
+.. _be incorrectly indexed and displayed in !g/!6/!a queries: https://github.com/irrdnet/irrd/issues/1014
