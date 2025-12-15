@@ -18,8 +18,8 @@ REDIS_STREAM_END_IDENTIFIER = "$"
 class AsyncEventStreamRedisClient:
     @classmethod
     async def create(cls):
-        redis_conn = await coredis.Redis(
-            **redis.connection.parse_url(get_setting("redis_url")), protocol_version=2, decode_responses=True
+        redis_conn = await coredis.Redis.from_url(
+            get_setting("redis_url"), protocol_version=2, decode_responses=True
         )
         return cls(redis_conn)
 
