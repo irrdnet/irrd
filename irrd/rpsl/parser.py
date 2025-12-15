@@ -425,7 +425,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
                     if field.primary_key or field.lookup_key:
                         for attr in "ip_first", "ip_last", "asn_first", "asn_last", "prefix", "prefix_length":
                             attr_value = getattr(parsed_value, attr, None)
-                            if attr_value:
+                            if attr_value is not None:
                                 existing_attr_value = getattr(self, attr, None)
                                 if existing_attr_value and not allow_invalid_metadata:  # pragma: no cover
                                     raise ValueError(
