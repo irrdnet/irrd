@@ -525,6 +525,7 @@ class Configuration:
                 "nrtm_query_serial_range_limit",
                 "nrtm_query_serial_days_limit",
                 "nrtm4_server_snapshot_frequency",
+                "whois_query_timeout",
             ]
             for field_name in number_fields:
                 if not str(details.get(field_name, 0)).isnumeric():

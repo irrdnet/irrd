@@ -118,6 +118,7 @@ class TestConfiguration:
                         "route_object_preference": 200,
                         "object_class_filter": ["ROUTE"],
                         "nrtm_dummified_object_classes": ["PERSON"],
+                        "whois_socket_timeout": 10,
                     },
                     "TESTDB3": {
                         "export_destination_unfiltered": "/tmp",
@@ -337,6 +338,7 @@ class TestConfiguration:
                         "nrtm_query_serial_range_limit": "not-a-number",
                         "nrtm4_client_notification_file_url": "http://invalid",
                         "nrtm4_server_local_path": str(tmpdir / "invalid"),
+                        "whois_socket_timeout": "ten",
                     },
                     "TESTDB3": {
                         "keep_journal": False,
@@ -451,6 +453,7 @@ class TestConfiguration:
             ce.value
         )
         assert "Source alias name TESTDB2 conflicts with an already configured real source" in str(ce.value)
+        assert "Setting whois_query_timeout for source TESTDB2 must be a number." in str(ce.value)
         assert "Invalid source alias name: invalid name" in str(ce.value)
         assert "Invalid log.level: INVALID" in str(ce.value)
         assert "Setting log.logging_config_path can not be combined" in str(ce.value)
