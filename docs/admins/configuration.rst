@@ -843,6 +843,10 @@ Sources
   |br| **Default**: ``false``, last-modified is set/replaced when saving
   authoritative objects.
   |br| **Change takes effect**: after SIGHUP, for all subsequent changes.
+* ``sources.{name}.whois_socket_timeout``: timeout for whois socket 
+  established to pull updates from NRTM stream.
+  |br| **Default**: ``5`` seconds.
+  |br| **Change takes effect**: after SIGHUP, at the next NRTM update.
 
 
 For more detail on mirroring other sources, and providing mirroring services
