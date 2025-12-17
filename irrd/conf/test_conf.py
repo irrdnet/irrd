@@ -437,6 +437,7 @@ class TestConfiguration:
             " or NRTMv4 client or server set when readonly_standby is enabled." in str(ce.value)
         )
         assert "Setting nrtm_port for source TESTDB2 must be a number." in str(ce.value)
+        assert "Setting whois_socket_timeout for source TESTDB2 must be a number." in str(ce.value)
         assert "Setting rpki.roa_import_timer must be set to a number." in str(ce.value)
         assert "Setting rpki.notify_invalid_subject must be a string, if defined." in str(ce.value)
         assert "Setting rpki.notify_invalid_header must be a string, if defined." in str(ce.value)
@@ -453,7 +454,6 @@ class TestConfiguration:
             ce.value
         )
         assert "Source alias name TESTDB2 conflicts with an already configured real source" in str(ce.value)
-        assert "Setting whois_query_timeout for source TESTDB2 must be a number." in str(ce.value)
         assert "Invalid source alias name: invalid name" in str(ce.value)
         assert "Invalid log.level: INVALID" in str(ce.value)
         assert "Setting log.logging_config_path can not be combined" in str(ce.value)

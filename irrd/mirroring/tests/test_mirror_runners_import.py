@@ -703,21 +703,15 @@ class TestRoutePreferenceUpdateRunner:
 class TestNRTMImportUpdateStreamRunner:
     def test_run_import(self, monkeypatch, config_override):
         config_override(
-            {
-                "sources": {
-                    "TEST": {
-                        "nrtm_host": "192.0.2.1",
-                        "nrtm_port": 43,
-                    }
-                }
-            }
+            {"sources": {"TEST": {"nrtm_host": "192.0.2.1", "nrtm_port": 43, "whois_socket_timeout": 10}}}
         )
 
-        def mock_whois_query(host, port, query, end_markings) -> str:
+        def mock_whois_query(host, port, query, end_markings, timeout) -> str:
             assert host == "192.0.2.1"
             assert port == 43
             assert query == "-g TEST:3:424243-LAST"
             assert "TEST" in end_markings[0]
+            assert timeout == 10
             return "response"
 
         mock_dh = Mock()
