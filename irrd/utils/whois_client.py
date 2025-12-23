@@ -1,6 +1,8 @@
 import logging
 import socket
 
+DEFAULT_WHOIS_TIMEOUT = 5
+
 logger = logging.getLogger(__name__)
 
 
@@ -8,7 +10,13 @@ class WhoisQueryError(ValueError):
     pass
 
 
-def whois_query(host: str, port: int, query: str, end_markings: list[str] | None = None) -> str:
+def whois_query(
+    host: str,
+    port: int,
+    query: str,
+    end_markings: list[str] | None = None,
+    socket_timeout: int = DEFAULT_WHOIS_TIMEOUT,
+) -> str:
     """
     Perform a query on a whois server, connecting to the specified host and port.
 
@@ -23,7 +31,7 @@ def whois_query(host: str, port: int, query: str, end_markings: list[str] | None
     else:
         end_markings_bytes = []
 
-    s = socket.create_connection((host, port), timeout=5)
+    s = socket.create_connection((host, port), timeout=socket_timeout)
     s.sendall(query.encode("utf-8"))
 
     buffer = b""
@@ -31,6 +39,7 @@ def whois_query(host: str, port: int, query: str, end_markings: list[str] | None
         try:
             data = s.recv(1024 * 1024)
         except TimeoutError:
+            logger.warning(f"Whois query {query.strip()} timed out on {host} port {port}")
             break
         if not data:
             break
@@ -40,7 +49,9 @@ def whois_query(host: str, port: int, query: str, end_markings: list[str] | None
     return buffer.decode("utf-8", errors="backslashreplace")
 
 
-def whois_query_irrd(host: str, port: int, query: str) -> str | None:
+def whois_query_irrd(
+    host: str, port: int, query: str, socket_timeout: int = DEFAULT_WHOIS_TIMEOUT
+) -> str | None:
     """
     Perform a whois query, expecting an IRRD-style output format.
 
@@ -51,7 +62,7 @@ def whois_query_irrd(host: str, port: int, query: str) -> str | None:
     query = query.strip() + "\n"
     logger.debug(f"Running IRRD whois query {query.strip()} on {host} port {port}")
 
-    s = socket.create_connection((host, port), timeout=5)
+    s = socket.create_connection((host, port), timeout=socket_timeout)
     s.sendall(query.encode("utf-8"))
 
     buffer = b""
@@ -62,7 +73,10 @@ def whois_query_irrd(host: str, port: int, query: str) -> str | None:
     while True:
         try:
             data = s.recv(1024)
-        except (TimeoutError, ConnectionError):
+        except TimeoutError:
+            logger.warning(f"Whois query {query.strip()} timed out on {host} port {port}")
+            break
+        except ConnectionError:
             break
         if not data:
             break

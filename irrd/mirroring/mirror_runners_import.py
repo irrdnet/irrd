@@ -2,7 +2,10 @@ import logging
 import os
 
 from irrd.conf import RPKI_IRR_PSEUDO_SOURCE, get_setting
-from irrd.conf.defaults import DEFAULT_SOURCE_NRTM_PORT
+from irrd.conf.defaults import (
+    DEFAULT_SOURCE_NRTM3_CLIENT_TIMEOUT,
+    DEFAULT_SOURCE_NRTM_PORT,
+)
 from irrd.mirroring.nrtm4.nrtm4_client import NRTM4Client, NRTM4ClientError
 from irrd.routepref.routepref import update_route_preference_status
 from irrd.rpki.importer import ROADataImporter, ROAParserException
@@ -341,11 +344,15 @@ class NRTMImportUpdateStreamRunner:
             "\n% Warning (1): there are no newer updates available",
         ]
 
+        socket_timeout = int(
+            get_setting(f"sources.{self.source}.nrtm3_client_timeout", DEFAULT_SOURCE_NRTM3_CLIENT_TIMEOUT)
+        )
+
         logger.info(
             f"Retrieving NRTM updates for {self.source} from serial {serial_start} on {nrtm_host}:{nrtm_port}"
         )
         query = f"-g {self.source}:3:{serial_start}-LAST"
-        response = whois_query(nrtm_host, nrtm_port, query, end_markings)
+        response = whois_query(nrtm_host, nrtm_port, query, end_markings, socket_timeout)
         logger.debug(f"Received NRTM response for {self.source}: {response.strip()}")
 
         stream_parser = NRTMStreamParser(self.source, response, database_handler)

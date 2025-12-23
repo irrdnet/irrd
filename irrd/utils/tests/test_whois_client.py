@@ -222,6 +222,29 @@ class TestWhoisQueryIRRD:
         assert flatten_mock_calls(mock_socket) == [["sendall", (b"query\n",), {}], ["close", (), {}]]
         assert self.recv_calls == 3
 
+    def test_connection_error(self, monkeypatch):
+        self.recv_calls = 0
+        mock_socket = Mock()
+        monkeypatch.setattr(
+            "irrd.utils.whois_client.socket.create_connection", lambda address, timeout: mock_socket
+        )
+
+        def mock_socket_recv(bytes) -> bytes:
+            self.recv_calls += 1
+            if self.recv_calls > 2:
+                raise ConnectionError
+            if self.recv_calls == 1:
+                return b"A2\n"
+            return str(self.recv_calls).encode("utf-8")
+
+        mock_socket.recv = mock_socket_recv
+        with pytest.raises(ValueError) as ve:
+            whois_query_irrd("192.0.2.1", 43, "query")
+        assert "Unable to receive " in str(ve.value)
+
+        assert flatten_mock_calls(mock_socket) == [["sendall", (b"query\n",), {}], ["close", (), {}]]
+        assert self.recv_calls == 3
+
 
 class TestQuerySourceStatus:
     def test_query_valid_with_export(self, monkeypatch):
