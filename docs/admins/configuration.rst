@@ -700,6 +700,10 @@ Sources
   |br| **Default**: ``60`` for sources configured as NRTMv4 client,
   ``300`` for any others.
   |br| **Change takes effect**: after SIGHUP.
+* ``sources.{name}.nrtm3_client_timeout``: the timeout for an NRTMv3
+  client query for this source.
+  |br| **Default**: ``5`` seconds.
+  |br| **Change takes effect**: after SIGHUP, at the next NRTM update.
 * ``sources.{name}.object_class_filter``: a list of object classes that will
   be mirrored and allowed modification for authoritative source. Objects of
   other RPSL object classes will be ignored immediately when encountered in full
@@ -843,10 +847,6 @@ Sources
   |br| **Default**: ``false``, last-modified is set/replaced when saving
   authoritative objects.
   |br| **Change takes effect**: after SIGHUP, for all subsequent changes.
-* ``sources.{name}.whois_socket_timeout``: timeout for whois socket 
-  established to pull updates from NRTM stream.
-  |br| **Default**: ``5`` seconds.
-  |br| **Change takes effect**: after SIGHUP, at the next NRTM update.
 
 
 For more detail on mirroring other sources, and providing mirroring services

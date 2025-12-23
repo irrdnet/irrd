@@ -118,7 +118,7 @@ class TestConfiguration:
                         "route_object_preference": 200,
                         "object_class_filter": ["ROUTE"],
                         "nrtm_dummified_object_classes": ["PERSON"],
-                        "whois_socket_timeout": 10,
+                        "nrtm3_client_timeout": 10,
                     },
                     "TESTDB3": {
                         "export_destination_unfiltered": "/tmp",
@@ -338,7 +338,7 @@ class TestConfiguration:
                         "nrtm_query_serial_range_limit": "not-a-number",
                         "nrtm4_client_notification_file_url": "http://invalid",
                         "nrtm4_server_local_path": str(tmpdir / "invalid"),
-                        "whois_socket_timeout": "ten",
+                        "nrtm3_client_timeout": "ten",
                     },
                     "TESTDB3": {
                         "keep_journal": False,
@@ -437,7 +437,7 @@ class TestConfiguration:
             " or NRTMv4 client or server set when readonly_standby is enabled." in str(ce.value)
         )
         assert "Setting nrtm_port for source TESTDB2 must be a number." in str(ce.value)
-        assert "Setting whois_socket_timeout for source TESTDB2 must be a number." in str(ce.value)
+        assert "Setting nrtm3_client_timeout for source TESTDB2 must be a number." in str(ce.value)
         assert "Setting rpki.roa_import_timer must be set to a number." in str(ce.value)
         assert "Setting rpki.notify_invalid_subject must be a string, if defined." in str(ce.value)
         assert "Setting rpki.notify_invalid_header must be a string, if defined." in str(ce.value)

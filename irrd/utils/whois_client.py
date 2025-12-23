@@ -1,7 +1,7 @@
 import logging
 import socket
 
-from irrd.conf.defaults import DEFAULT_SOURCE_WHOIS_SOCKET_TIMEOUT
+DEFAULT_WHOIS_TIMEOUT = 5
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +15,7 @@ def whois_query(
     port: int,
     query: str,
     end_markings: list[str] | None = None,
-    socket_timeout: int = DEFAULT_SOURCE_WHOIS_SOCKET_TIMEOUT,
+    socket_timeout: int = DEFAULT_WHOIS_TIMEOUT,
 ) -> str:
     """
     Perform a query on a whois server, connecting to the specified host and port.
@@ -50,7 +50,7 @@ def whois_query(
 
 
 def whois_query_irrd(
-    host: str, port: int, query: str, socket_timeout: int = DEFAULT_SOURCE_WHOIS_SOCKET_TIMEOUT
+    host: str, port: int, query: str, socket_timeout: int = DEFAULT_WHOIS_TIMEOUT
 ) -> str | None:
     """
     Perform a whois query, expecting an IRRD-style output format.

@@ -116,5 +116,5 @@ KNOWN_SOURCES_KEYS = {
     "suspension_enabled",
     "route_object_preference",
     "authoritative_retain_last_modified",
-    "whois_socket_timeout",
+    "nrtm3_client_timeout",
 }

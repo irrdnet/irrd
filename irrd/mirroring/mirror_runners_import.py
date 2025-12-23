@@ -3,8 +3,8 @@ import os
 
 from irrd.conf import RPKI_IRR_PSEUDO_SOURCE, get_setting
 from irrd.conf.defaults import (
+    DEFAULT_SOURCE_NRTM3_CLIENT_TIMEOUT,
     DEFAULT_SOURCE_NRTM_PORT,
-    DEFAULT_SOURCE_WHOIS_SOCKET_TIMEOUT,
 )
 from irrd.mirroring.nrtm4.nrtm4_client import NRTM4Client, NRTM4ClientError
 from irrd.routepref.routepref import update_route_preference_status
@@ -345,7 +345,7 @@ class NRTMImportUpdateStreamRunner:
         ]
 
         socket_timeout = int(
-            get_setting(f"sources.{self.source}.whois_socket_timeout", DEFAULT_SOURCE_WHOIS_SOCKET_TIMEOUT)
+            get_setting(f"sources.{self.source}.nrtm3_client_timeout", DEFAULT_SOURCE_NRTM3_CLIENT_TIMEOUT)
         )
 
         logger.info(
