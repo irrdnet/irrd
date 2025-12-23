@@ -1,6 +1,6 @@
-==================================
-DRAFT Release notes for IRRD 4.5.0
-==================================
+============================
+Release notes for IRRD 4.5.0
+============================
 
 NRTMv4
 ------
@@ -16,7 +16,11 @@ There are several new settings to enable NRTMv4. You will also need to
 be aware of key management.
 For all details, see the :doc:`mirroring documentation </users/mirroring>`.
 
+IRRD 4.5.0 implements `draft-ietf-grow-nrtm-v4-07`_ specifically.
+Future releases may use newer versions of this draft.
+
 .. _NRTMv4: https://datatracker.ietf.org/doc/draft-ietf-grow-nrtm-v4/
+.. _draft-ietf-grow-nrtm-v4-07: https://datatracker.ietf.org/doc/draft-ietf-grow-nrtm-v4/07/
 
 New irt and organisation object classes
 ---------------------------------------
