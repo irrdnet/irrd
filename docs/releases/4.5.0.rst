@@ -107,6 +107,7 @@ Other changes
   for specific IRRD users benefit from this.
 * The ``sources.{name}.nrtm3_client_timeout`` setting was added, to handle situations
   where mirrors may be slow, busy, or sending many serial updates at once.
+  The default for this is 15 seconds, updated from 5 in previous versions.
 * Most non-printable characters are now stripped from all RPSL attribute values.
 * The order in which authoritative sources are listed in the select field in
   the maintainer migration form now follows the order of the configuration

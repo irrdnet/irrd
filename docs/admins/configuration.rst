@@ -702,7 +702,7 @@ Sources
   |br| **Change takes effect**: after SIGHUP.
 * ``sources.{name}.nrtm3_client_timeout``: the timeout for an NRTMv3
   client query for this source.
-  |br| **Default**: ``5`` seconds.
+  |br| **Default**: ``15`` seconds.
   |br| **Change takes effect**: after SIGHUP, at the next NRTM update.
 * ``sources.{name}.object_class_filter``: a list of object classes that will
   be mirrored and allowed modification for authoritative source. Objects of
