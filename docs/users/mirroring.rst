@@ -37,7 +37,8 @@ NRTMv4 overview
 
 The recommended method of mirroring to/from other databases is NRTM version 4.
 
-NRTMv4 uses `draft-ietf-grow-nrtm-v4`_ which loads JSON-ish files over HTTPS.
+NRTMv4 uses `draft-ietf-grow-nrtm-v4-07`_ which loads JSON-ish files over HTTPS.
+Future releases may use newer versions of this draft.
 
 The basic building blocks of NRTMv4 are:
 
@@ -58,7 +59,7 @@ The basic building blocks of NRTMv4 are:
 NRTMv4 is reliable, detects errors, secure, and recovers automatically
 from loss of synchronisation.
 
-.. _draft-ietf-grow-nrtm-v4: https://datatracker.ietf.org/doc/draft-ietf-grow-nrtm-v4/
+.. _draft-ietf-grow-nrtm-v4-07: https://datatracker.ietf.org/doc/draft-ietf-grow-nrtm-v4/07/
 
 
 Mirroring services for others (exporting)
