@@ -151,6 +151,7 @@ class NRTM4Client:
         else:
             keys_pem = [get_setting(f"sources.{self.source}.nrtm4_client_initial_public_key")]
 
+        errors = {}
         for key_pem in keys_pem:
             if not key_pem:  # pragma: no cover
                 continue
@@ -158,7 +159,8 @@ class NRTM4Client:
             try:
                 compact_signature = jws_deserialize(unf_content_bytes, pubkey)
                 return compact_signature.payload, key_pem
-            except ValueError:
+            except ValueError as ve:
+                errors[key_pem] = ve
                 continue
 
         if self.last_status.current_key:
@@ -186,9 +188,8 @@ class NRTM4Client:
                     " client-clear-known-keys' command."
                 )
                 raise NRTM4ClientError(msg)
-        raise NRTM4ClientError(
-            f"{self.source}: No valid signature found for any known keys, considered public keys: {keys_pem}"
-        )
+        error_messages = [f"; attempting {key} resulted in error: {ve}" for key, ve in errors.items()]
+        raise NRTM4ClientError(f"{self.source}: No valid signature found for any known keys{error_messages}")
 
     def _current_db_status(self) -> tuple[bool, NRTM4ClientDatabaseStatus]:
         """Look up the current status of self.source in the database."""
