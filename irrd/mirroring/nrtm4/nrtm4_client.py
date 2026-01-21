@@ -176,16 +176,15 @@ class NRTM4Client:
             if compact_signature:
                 # While technically just a "signature not valid case", it is a rather
                 # confusing situation for the user, so gets a special message.
+                msg_next_key = f" or {self.last_status.next_key}" if self.last_status.next_key else ""
                 msg = (
                     f"{self.source}: No valid signature found for the Update Notification File. The signature"
                     f" is valid for public key {config_key} set in the nrtm4_client_initial_public_key"
                     " setting, but that is only used for initial validation. IRRD is currently expecting the"
-                    f" public key {self.last_status.current_key}. If you want to clear IRRDs key information"
+                    f" public key {self.last_status.current_key}{msg_next_key}. If you want to clear IRRDs key information"
                     " and revert to nrtm4_client_initial_public_key, use the 'irrdctl nrtmv4"
                     " client-clear-known-keys' command."
                 )
-                if self.last_status.next_key:
-                    msg += f" or {self.last_status.next_key}"
                 raise NRTM4ClientError(msg)
         raise NRTM4ClientError(
             f"{self.source}: No valid signature found for any known keys, considered public keys: {keys_pem}"
