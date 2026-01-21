@@ -1,7 +1,7 @@
 from joserfc import jws
 from joserfc.errors import JoseError
 from joserfc.jwk import ECKey
-from joserfc.jws import CompactSignature
+from joserfc.jws import CompactSignature, JWSRegistry
 
 from irrd.conf import get_setting
 
@@ -9,6 +9,9 @@ from irrd.conf import get_setting
 Convenience functions for handling ECKey private keys,
 and decode/encode them for (at this time) NRTMv4 usage.
 """
+
+jws_registry = JWSRegistry()
+jws_registry.max_payload_length = 10 * 1024 * 1024
 
 
 def eckey_from_config(setting: str, permit_empty=False) -> ECKey | None:
@@ -35,13 +38,13 @@ def eckey_private_key_as_str(key: ECKey) -> str:
 
 def jws_deserialize(value: bytes | str, public_key: ECKey) -> CompactSignature:
     try:
-        return jws.deserialize_compact(value, public_key)
+        return jws.deserialize_compact(value, public_key, registry=jws_registry)
     except JoseError as error:
         raise ValueError(error)
 
 
 def jws_serialize(value: bytes | str, private_key: ECKey) -> str:
     try:
-        return jws.serialize_compact({"alg": "ES256"}, value, private_key)
+        return jws.serialize_compact({"alg": "ES256"}, value, private_key, registry=jws_registry)
     except JoseError as error:  # pragma: no cover
         raise ValueError(error)
