@@ -22,7 +22,7 @@ python = ">3.10.0,<4.0"
 # in the venv. Pinning exact versions increases reproducability
 # in our distributed packages.
 # https://github.com/python-poetry/poetry/issues/2778 may fix this
-python-gnupg = "0.5.5"
+python-gnupg = "0.5.6"
 passlib = "1.7.4"
 bcrypt = "4.3.0"  # pinned <5, passlib is not compatible with newer
 ipy = "1.1"
@@ -38,17 +38,17 @@ hiredis = "3.3.0"
 coredis = "5.4.0"
 requests = "2.32.5"
 pytz = "2025.2"
-ariadne = "0.26.2"
+ariadne = "0.27.0"
 uvicorn = { extras = ["standard"], version = "0.40.0" }
-starlette = "0.50.0"
-psutil = "7.1.3"
+starlette = "0.52.1"
+psutil = "7.2.1"
 asgiref = "3.11.0"
 pydantic = "2.12.5"
 typing-extensions = "4.15.0"
 py-radix = { url = "https://github.com/SEKOIA-IO/py-radix/archive/refs/tags/v1.0.2.tar.gz" }
 psycopg2-binary = "2.9.11"
 sqlalchemy = "1.4.54"
-alembic = "1.17.2"
+alembic = "1.18.1"
 ujson = "5.11.0"
 wheel = "0.45.1"
 jinja2 = "3.1.6"
@@ -63,8 +63,8 @@ zxcvbn = "4.5.0"
 wtforms-bootstrap5 = "0.3.0"
 email-validator = "2.3.0"
 asgi-logger = "0.1.0"
-joserfc = "^1.6.0"
-time-machine = "^3.2.0"
+joserfc = "1.6.1"
+time-machine = "3.2.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.2"
