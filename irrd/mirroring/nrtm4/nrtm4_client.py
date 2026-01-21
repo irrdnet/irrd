@@ -188,8 +188,14 @@ class NRTM4Client:
                     " client-clear-known-keys' command."
                 )
                 raise NRTM4ClientError(msg)
-        error_messages = [f"; attempting {key} resulted in error: {ve}" for key, ve in errors.items()]
-        raise NRTM4ClientError(f"{self.source}: No valid signature found for any known keys{error_messages}")
+
+        error_messages = [
+            "; attempting '" + key.replace("\n", "\\n") + f"' resulted in error: '{ve}'"
+            for key, ve in errors.items()
+        ]
+        raise NRTM4ClientError(
+            f"{self.source}: No valid signature found for any known keys{''.join(error_messages)}"
+        )
 
     def _current_db_status(self) -> tuple[bool, NRTM4ClientDatabaseStatus]:
         """Look up the current status of self.source in the database."""
