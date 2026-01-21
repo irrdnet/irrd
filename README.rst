@@ -28,8 +28,8 @@ This IRRd version 4 project was originally commissioned in 2018 by NTT_ and
 designed and developed by `Reliably Coded`_ (known as DashCare until 2021).
 Since then, `Reliably Coded`_ has been maintaining and extending IRRd significantly,
 for, or with support of, NTT_, ARIN_, Merit_, `RIPE NCC Community Projects Fund`_,
-LACNIC_, Netnod_ and Internetstiftelsen_. This has taken place in the form of
-development contracts, support contracts, or grants.
+LACNIC_, Netnod_, Internetstiftelsen_ and `Job Snijders`_. This has mainly taken place
+in the form of development contracts, support contracts, or grants.
 
 `Older versions`_ of IRRd are or were in use by various IRR operators.
 Difficulties with continued maintenance and extension of these
@@ -47,3 +47,4 @@ Please see the extensive documentation_ for more on how to deploy and use IRRd.
 .. _Internetstiftelsen: https://internetstiftelsen.se/
 .. _Older versions: https://github.com/irrdnet/irrd-legacy
 .. _documentation: http://irrd.readthedocs.io/en/stable/
+.. _Job Snijders: https://www.bsd.nl/
