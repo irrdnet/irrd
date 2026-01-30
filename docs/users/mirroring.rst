@@ -104,24 +104,27 @@ which IRRD will create in the provided path. You can serve them
 using the same nginx instance used for other parts of IRRD,
 or through an entirely different web server or CDN, depending on your
 scalability needs. So in a way, the actual "serving" part of an
-NRTMv4 server is not performed by IRRD, as it's just static files over HTTPS.
+NRTMv4 server is not performed by IRRD, it only produces files for you
+to serve over HTTPS
 
 NRTMv4 has support for in-band key rotation. Use the following process:
 
 * Generate a new private key.
-* Save the new key in ``nrtm4_server_private_key_next`` on the source.
+* Save the new key in the ``nrtm4_server_private_key_next`` setting
+  for your authoritative source.
 * IRRD will automatically add the public key to the ``next_signing_key``
   field in the Update Notification File.
 * On their next update of the Update Notification File, clients will
   see the next key, and store it.
-* After some time (recommended: one week), set the new key in
-  ``nrtm4_server_private_key`` and remove ``nrtm4_server_private_key_next``.
+* After some time (recommended: one week), set the new key in the
+  ``nrtm4_server_private_key`` setting and remove
+  ``nrtm4_server_private_key_next``.
 * Key rotation is now complete.
 
 The private key(s) stored in your IRRD configuration should never be
 shared publicly. Clients should only have the public key.
 At any time you can use the ``irrdctl nrtmv4 server-show-public-key``
-command to see the public key of the configured private key(s).
+command to see the public key for the configured private key(s).
 
 
 NRTMv3 mode
@@ -208,24 +211,25 @@ A single source can only use one mirroring mode.
 
 NRTMv4 mode
 ~~~~~~~~~~~
-To configure an NRTMv4 source, you set the ``nrtm4_client_notification_file_url``
+To configure an NRTMv4 source, set the ``nrtm4_client_notification_file_url``
 setting on the source to the Update Notification File URL.
-and the ``nrtm4_client_notification_file_url`` setting to the initial public key.
-Both of these will be published by the mirror server operator.
+and the ``nrtm4_client_notification_file_url`` setting to the initial public key
+(in PEM format). Both of these will be provided by the mirror server operator.
 
 When running the NRTMv4 client process, IRRD will:
 
 * Retrieve and validate the Update Notification File and its signature.
 * Check if the force reload flag was set by the ``irrd_mirror_force_reload`` command,
-  if so, IRRD reloads from snapshot.
+  if so, IRRD reloads from the snapshot.
 * Check if the session ID is the same as previously known. If not,
-  IRRD reloads from snapshot.
+  IRRD reloads from the snapshot.
 * Check if there is a version update. If not, IRRD is up to date and
   no action is needed.
 * Check if there are deltas available to update from the current local
   version to the latest. If not, IRRD was lagging too far behind, and
-  reloads from snapshot.
-* Download and process any relevant delta files.
+  reloads from the snapshot.
+* Otherwise, IRRD can update using the relevant delta files.
+  It will download and process these.
 
 Whenever IRRD reloads from the snapshot, all local RPSL objects and
 journal entries for the source are discarded.
