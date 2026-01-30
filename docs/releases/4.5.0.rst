@@ -123,3 +123,50 @@ Other changes
 
 .. _the answer size in the A response was wrong: https://github.com/irrdnet/irrd/issues/1019
 .. _be incorrectly indexed and displayed in !g/!6/!a queries: https://github.com/irrdnet/irrd/issues/1014
+
+
+Upgrading to IRRd 4.5.0 from 4.4.x
+----------------------------------
+As with any other major IRRd release, depending on the availability
+needs of your setup, it is recommended to first thoroughly test the upgrade
+and operation on a testing/acceptance setup with similar data size.
+
+The recommended steps to upgrade are:
+
+* Read the release notes above, particularly for any settings
+  you may want to change.
+* Make sure your Python (minimum 3.10) version is recent enough.
+* Stop the IRRd process.
+* Upgrade the IRRd package. If using pipx, run ``pip install irrd==4.5.0``.
+  If using a manual virtualenv, from within the virtualenv, run:
+  ``pip install irrd==4.5.0``
+* Run the database migrations, using the
+  :ref:`irrd_database_upgrade <deployment-database-upgrade>` command.
+  The migrations modify only status tables, and should be fairly quick.
+* Restart IRRd.
+* If you run an authoritative database, you are recommended to enable
+  the NRTMv4 server. If you mirror from others, NRTMv4 is now recommended
+  over NRTMv3 where available.
+  See the :doc:`mirroring documentation </users/mirroring>` for details.
+
+It should be safe to keep cron and e-mail triggered tasks active
+during the upgrade, but during installation, tasks may fail.
+To prevent this, disable these during the upgrade.
+
+Downgrading from 4.5 to 4.4.x
+-----------------------------
+If you are running IRRd 4.5, and would like to downgrade back to 4.4.x,
+the database schema needs to be modified. You can either restore an older
+copy of your database, start with a fresh database, or use the database
+migrations.
+
+If you want to use the database migrations, run this command **before**
+downgrading your local package installation to 4.4.x::
+
+    irrd_database_downgrade --version 2353e60e63f8
+
+Note that any NRTMv4 status will be lost.
+
+If you would like to re-upgrade to 4.5 later on, you will need to run
+the database migrations again, as listed in the upgrade steps.
+
