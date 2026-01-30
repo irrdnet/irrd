@@ -11,7 +11,7 @@ report it in the GitHub repository, but email irrd@reliablycoded.nl.
 Supported Versions
 ------------------
 
-The current main branch, latest minor version (currently 4.4.x) and one older
+The current main branch, latest minor version and one older
 minor version are always supported for security updates. Older versions
 may be supported for longer in support contracts or specific agreements.
 
@@ -22,10 +22,12 @@ may be supported for longer in support contracts or specific agreements.
      - Supported
    * - Main branch
      - Yes
+   * - 4.5.x
+     - Yes
    * - 4.4.x
      - Yes
    * - 4.3.x
-     - Yes
+     - No
    * - 4.2.x
      - No
    * - 4.1.x
