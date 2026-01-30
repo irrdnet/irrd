@@ -45,7 +45,7 @@ psutil = "7.2.1"
 asgiref = "3.11.0"
 pydantic = "2.12.5"
 typing-extensions = "4.15.0"
-py-radix = { url = "https://github.com/SEKOIA-IO/py-radix/archive/refs/tags/v1.0.2.tar.gz" }
+py-radix-sr = "1.0.2"
 psycopg2-binary = "2.9.11"
 sqlalchemy = "1.4.54"
 alembic = "1.18.1"
