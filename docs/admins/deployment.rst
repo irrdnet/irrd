@@ -20,9 +20,9 @@ Requirements
 IRRd requires:
 
 * Linux, OpenBSD or MacOS. Other platforms are untested, but may work.
-* CPython ("regular" Python) 3.8 through 3.11 with `pip` and `virtualenv`
+* CPython ("regular" Python) 3.10 through 3.14 with `pip` and `virtualenv`
   installed. PyPy was previously supported, but not anymore.
-* A recent version of PostgreSQL. Versions 9.6, 11.16, 13.7, 15.0 are all
+* A recent version of PostgreSQL. Versions 9.6, 11.16, 13.7, 15.0, and 18.0 are all
   tested before release. 11 or higher is strongly recommended, due to faster
   database migrations during upgrades.
 * Redis 5 or newer.
