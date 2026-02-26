@@ -19,7 +19,6 @@ pull_request_rules:
         branches:
           - stable/4.3.x
 
-
   - name: backport patches to stable/4.4.x
     conditions:
       - base=main
@@ -29,3 +28,13 @@ pull_request_rules:
         title: "[4.4.x] {{ title }} (backport #{{ number }})"
         branches:
           - stable/4.4.x
+
+  - name: backport patches to stable/4.5.x
+    conditions:
+      - base=main
+      - label=backport-to-4.5
+    actions:
+      backport:
+        title: "[4.5.x] {{ title }} (backport #{{ number }})"
+        branches:
+          - stable/4.5.x
