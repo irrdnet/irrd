@@ -209,7 +209,7 @@ class TestNRTM4UpdateNotificationFile:
     @time_machine.travel(datetime.datetime(2022, 3, 14, 12, 34, 56), tick=False)
     def test_invalid_timestamp_too_old(self):
         data = copy.deepcopy(self.valid_data)
-        data["timestamp"] = "2022-05-15 00:00:00+00:00"
+        data["timestamp"] = "2022-03-12 00:00:00+00:00"
         with pytest.raises(pydantic.ValidationError) as ve:
             NRTM4UpdateNotificationFile.model_validate(
                 data,
