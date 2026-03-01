@@ -159,5 +159,6 @@ class PasswordResetToken:
             return False
 
     def _hash(self, expiry_days: int | str) -> bytes:
-        hash_data = secret_key_derive("web.password_reset_token") + self.user_key + str(expiry_days)
+        # https://github.com/irrdnet/irrd/security/advisories/GHSA-22m3-c7vp-49fj
+        hash_data = secret_key_derive("web.password_reset_token2") + self.user_key + str(expiry_days)
         return hashlib.sha224(hash_data.encode("utf-8")).digest()

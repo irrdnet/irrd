@@ -581,8 +581,8 @@ class TestIntegration:
         self.check_graphql()
 
     def check_http(self):
-        status1 = requests.get(f"http://127.0.0.1:{self.port_http1}/v1/status/")
-        status2 = requests.get(f"http://127.0.0.1:{self.port_http2}/v1/status/")
+        status1 = requests.get(f"http://localhost:{self.port_http1}/v1/status/")
+        status2 = requests.get(f"http://localhost:{self.port_http2}/v1/status/")
         assert status1.status_code == 200
         assert status2.status_code == 200
         assert "IRRD version" in status1.text
@@ -594,8 +594,14 @@ class TestIntegration:
         assert "Authoritative: Yes" in status1.text
         assert "Authoritative: Yes" not in status2.text
 
+        # GHSA-22m3-c7vp-49fj CVE-2026-28681
+        wrong_host = requests.get(
+            f"http://localhost:{self.port_http1}/v1/status/", headers={"Host": "attacker.com"}
+        )
+        assert wrong_host.status_code == 400
+
     def check_graphql(self):
-        client = GraphqlClient(endpoint=f"http://127.0.0.1:{self.port_http1}/graphql/")
+        client = GraphqlClient(endpoint=f"http://localhost:{self.port_http1}/graphql/")
         # Regular rpslObjects query including journal and several references
         query = """query {
           rpslObjects(rpslPk: "PERSON-TEST") {
@@ -858,8 +864,6 @@ class TestIntegration:
                     "http": {
                         "status_access_list": "localhost",
                         "interface": "::1",
-                        "port": 8080,
-                        "url": "https://localhost:8080/",
                     },
                     "whois": {"interface": "::1", "max_connections": 10, "port": 8043},
                 },
@@ -907,6 +911,7 @@ class TestIntegration:
         config1["irrd"]["redis_url"] = self.redis_url1
         config1["irrd"]["server"]["http"]["interface"] = "127.0.0.1"  # #306
         config1["irrd"]["server"]["http"]["port"] = self.port_http1
+        config1["irrd"]["server"]["http"]["url"] = f"https://localhost:{self.port_http1}/"
         config1["irrd"]["server"]["whois"]["interface"] = "127.0.0.1"
         config1["irrd"]["server"]["whois"]["port"] = self.port_whois1
         config1["irrd"]["auth"]["gnupg_keyring"] = str(self.tmpdir) + "/gnupg1"
@@ -928,6 +933,7 @@ class TestIntegration:
         config2["irrd"]["database_url"] = self.database_url2
         config2["irrd"]["redis_url"] = self.redis_url2
         config2["irrd"]["server"]["http"]["port"] = self.port_http2
+        config1["irrd"]["server"]["http"]["url"] = f"https://localhost:{self.port_http2}/"
         config2["irrd"]["server"]["whois"]["port"] = self.port_whois2
         config2["irrd"]["auth"]["gnupg_keyring"] = str(self.tmpdir) + "/gnupg2"
         config2["irrd"]["log"]["logfile_path"] = self.logfile2
@@ -954,6 +960,7 @@ class TestIntegration:
         config3["irrd"]["database_url"] = self.database_url3
         config3["irrd"]["redis_url"] = self.redis_url3
         config3["irrd"]["server"]["http"]["port"] = self.port_http3
+        config1["irrd"]["server"]["http"]["url"] = f"https://localhost:{self.port_http3}/"
         config3["irrd"]["server"]["whois"]["port"] = self.port_whois3
         config3["irrd"]["auth"]["gnupg_keyring"] = str(self.tmpdir) + "/gnupg3"
         config3["irrd"]["log"]["logfile_path"] = self.logfile3
