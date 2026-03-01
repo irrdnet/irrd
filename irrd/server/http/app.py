@@ -2,6 +2,7 @@ import logging
 import os
 import signal
 from pathlib import Path
+from urllib.parse import urlparse
 
 import limits
 from ariadne.asgi import GraphQL
@@ -11,6 +12,7 @@ from setproctitle import setproctitle
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.sessions import SessionMiddleware
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.responses import RedirectResponse
 from starlette.routing import Mount, Route, WebSocketRoute
 from starlette.staticfiles import StaticFiles
@@ -144,6 +146,7 @@ def set_middleware(app):
     testing = os.environ.get("TESTING", False)
     if testing:
         logger.info("Running in testing mode, disabling CSRF.")
+    allowed_host = urlparse(get_setting("server.http.url")).hostname
     app.user_middleware = [
         # Use asgi-log to work around https://github.com/encode/uvicorn/issues/1384
         Middleware(
@@ -151,6 +154,7 @@ def set_middleware(app):
             logger=logger,
             format='%(client_addr)s - "%(request_line)s" %(status_code)s - %(L)ss',
         ),
+        Middleware(TrustedHostMiddleware, allowed_hosts=[allowed_host]),
         Middleware(MemoryTrimMiddleware),
         Middleware(SessionMiddleware, secret_key=secret_key_derive("web.session_middleware")),
         Middleware(
