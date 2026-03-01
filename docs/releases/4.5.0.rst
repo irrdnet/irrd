@@ -2,7 +2,7 @@
 Release notes for IRRD 4.5.0
 ============================
 
-IRRD 4.4.0 was released on January 30, 2026. Highlights of new features:
+IRRD 4.5.0 was released on January 30, 2026. Highlights of new features:
 
 * NRTMv4, a new IRR mirroring protocol with much improved
   reliability, security, and error detection over NRTMv3.
