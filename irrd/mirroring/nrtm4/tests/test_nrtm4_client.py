@@ -1,8 +1,10 @@
+import datetime
 import json
 from tempfile import NamedTemporaryFile
 from uuid import UUID, uuid4
 
 import pytest
+import time_machine
 from joserfc import jws
 
 from irrd.mirroring.nrtm4 import UPDATE_NOTIFICATION_FILENAME
@@ -132,6 +134,11 @@ def prepare_nrtm4_test(config_override, monkeypatch, tmp_path):
             "rpki": {"roa_source": None},
         }
     )
+
+    with time_machine.travel(
+        datetime.datetime(2022, 1, 1, 15, 0, 1, tzinfo=datetime.timezone.utc), tick=False
+    ):
+        yield
 
 
 class TestNRTM4Client:

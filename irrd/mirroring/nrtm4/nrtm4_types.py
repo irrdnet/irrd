@@ -135,7 +135,7 @@ class NRTM4UpdateNotificationFile(NRTM4Common):
     @pydantic.field_validator("timestamp")
     @classmethod
     def validate_timestamp(cls, timestamp: datetime.datetime):
-        if timestamp - datetime.datetime.now(tz=UTC) > datetime.timedelta(hours=24):
+        if datetime.datetime.now(tz=UTC) - timestamp > datetime.timedelta(hours=24):
             raise ValueError(
                 f"Update Notification File is older than 24 hours, timestamp {timestamp.isoformat()}"
             )
