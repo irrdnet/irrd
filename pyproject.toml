@@ -65,6 +65,7 @@ email-validator = "2.3.0"
 asgi-logger = "0.1.0"
 joserfc = "1.6.3"
 time-machine = "3.2.0"
+service-identity = "^24.2.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.2"
