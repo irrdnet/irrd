@@ -1832,14 +1832,14 @@ i18n = ["Babel (>=2.7)"]
 
 [[package]]
 name = "joserfc"
-version = "1.6.1"
+version = "1.6.3"
 description = "The ultimate Python library for JOSE RFCs, including JWS, JWE, JWK, JWA, JWT"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "joserfc-1.6.1-py3-none-any.whl", hash = "sha256:74d158c9d56be54c710cdcb2a0741372254b682ad2101a0f72e5bd0e925695f0"},
-    {file = "joserfc-1.6.1.tar.gz", hash = "sha256:7759a14d732d93503317468c0dd258510c4f64b30759cf42e96016c97b38c4b7"},
+    {file = "joserfc-1.6.3-py3-none-any.whl", hash = "sha256:6beab3635358cbc565cb94fb4c53d0557e6d10a15b933e2134939351590bda9a"},
+    {file = "joserfc-1.6.3.tar.gz", hash = "sha256:c00c2830db969b836cba197e830e738dd9dda0955f1794e55d3c636f17f5c9a6"},
 ]
 
 [package.dependencies]
@@ -4904,4 +4904,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">3.10.0,<4.0"
-content-hash = "ca1e04d26e874ee60565a092d1fceb62d088f51e9295f4554ec855b22ce01c28"
+content-hash = "0a4f6b5c571ab1345e6b2dd5e346823db1fb1b20320903ddda660d002c79d865"

@@ -63,7 +63,7 @@ zxcvbn = "4.5.0"
 wtforms-bootstrap5 = "0.3.0"
 email-validator = "2.3.0"
 asgi-logger = "0.1.0"
-joserfc = "1.6.1"
+joserfc = "1.6.3"
 time-machine = "3.2.0"
 
 [tool.poetry.group.dev.dependencies]
