@@ -63,12 +63,6 @@ zxcvbn = "4.4.28"
 wtforms-bootstrap5 = "0.2.3"
 email-validator = "2.0.0post2"
 asgi-logger = "0.1.0"
-<<<<<<< HEAD
-=======
-joserfc = "1.6.3"
-time-machine = "3.2.0"
-service-identity = "^24.2.0"
->>>>>>> 1045a2f (Add Host header invalidation and invalidate all pw reset tokens)
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.2.1"
@@ -172,6 +166,7 @@ omit = [
     "irrd/integration_tests/*",
     "irrd/vendor/*",
     "irrd/*/tests/*",
+    "irrd/scripts/irr_rpsl_submit.py",
 ]
 
 [build-system]

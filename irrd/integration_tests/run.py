@@ -931,27 +931,6 @@ class TestIntegration:
         with open(self.config_path2, "w") as yaml_file:
             yaml.safe_dump(config2, yaml_file)
 
-<<<<<<< HEAD
-=======
-        config3 = base_config.copy()
-        config3["irrd"]["piddir"] = self.piddir3
-        config3["irrd"]["database_url"] = self.database_url3
-        config3["irrd"]["redis_url"] = self.redis_url3
-        config3["irrd"]["server"]["http"]["port"] = self.port_http3
-        config1["irrd"]["server"]["http"]["url"] = f"https://localhost:{self.port_http3}/"
-        config3["irrd"]["server"]["whois"]["port"] = self.port_whois3
-        config3["irrd"]["auth"]["gnupg_keyring"] = str(self.tmpdir) + "/gnupg3"
-        config3["irrd"]["log"]["logfile_path"] = self.logfile3
-        config3["irrd"]["rpki"]["roa_source"] = None
-        config3["irrd"]["sources"]["TEST"] = {
-            "keep_journal": True,
-            "nrtm4_client_notification_file_url": f"file://{self.nrtm4_dir2}{UPDATE_NOTIFICATION_FILENAME}",
-            "nrtm4_client_initial_public_key": eckey_public_key_as_str(self.nrtm4_private_key),
-        }
-        with open(self.config_path3, "w") as yaml_file:
-            yaml.safe_dump(config3, yaml_file)
-
->>>>>>> 1045a2f (Add Host header invalidation and invalidate all pw reset tokens)
         self._prepare_database()
 
         assert not subprocess.call(["irrd/daemon/main.py", f"--config={self.config_path1}"])
