@@ -161,12 +161,7 @@ class PasswordResetToken:
         except ValueError:
             return False
 
-<<<<<<< HEAD
     def _hash(self, expiry_days: Union[int, str]) -> bytes:
-        hash_data = secret_key_derive("web.password_reset_token") + self.user_key + str(expiry_days)
-=======
-    def _hash(self, expiry_days: int | str) -> bytes:
         # https://github.com/irrdnet/irrd/security/advisories/GHSA-22m3-c7vp-49fj
         hash_data = secret_key_derive("web.password_reset_token2") + self.user_key + str(expiry_days)
->>>>>>> 1045a2f (Add Host header invalidation and invalidate all pw reset tokens)
         return hashlib.sha224(hash_data.encode("utf-8")).digest()
