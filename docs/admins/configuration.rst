@@ -635,8 +635,8 @@ Sources
   |br| **Change takes effect**: after SIGHUP, for all subsequent changes.
 * ``sources.{name}.nrtm4_server_private_key``: the private key
   used to sign the Update Notification File for an NRTMv4 server, in PEM format.
-  You may find the ``irrdctl nrtmv4 generate-private-key`` and
-  ``irrdctl nrtmv4 server-show-public-key`` convenience commands helpful.
+  You may find the ``irrdctl nrtm4 generate-private-key`` and
+  ``irrdctl nrtm4 server-show-public-key`` convenience commands helpful.
   Note the use of the pipe character (``|``) in the sample to enter this
   multi-line data.
   |br| **Default**: not defined, no NRTMv4 server runs.

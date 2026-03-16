@@ -75,7 +75,7 @@ and ``nrtm4_server_local_path`` settings on the
 source. The local path is where IRRD will write the files, the base URL
 is the full HTTPS URL under which you will be serving the files.
 The private key must be a JWK private key in PEM. You can use the
-``irrdctl nrtmv4 generate-private-key`` command generate such a key,
+``irrdctl nrtm4 generate-private-key`` command generate such a key,
 though does not store the key in the configuration for you.
 You need to use a separate base URL and local path for each
 IRR source.
@@ -123,7 +123,7 @@ NRTMv4 has support for in-band key rotation. Use the following process:
 
 The private key(s) stored in your IRRD configuration should never be
 shared publicly. Clients should only have the public key.
-At any time you can use the ``irrdctl nrtmv4 server-show-public-key``
+At any time you can use the ``irrdctl nrtm4 server-show-public-key``
 command to see the public key for the configured private key(s).
 
 
@@ -245,7 +245,7 @@ key rotation to be processed entirely automatically without changing your
 client configuration. If you missed a key rotation window, or want to
 pull NRTMv4 data from a different server, you may need to clear the
 key information from the IRRD database.
-You can do this with the ``irrdctl nrtmv4 client-clear-known-keys``
+You can do this with the ``irrdctl nrtm4 client-clear-known-keys``
 command. After that, IRRD will revert back to using the public key from the
 ``nrtm4_client_initial_public_key`` setting, until the next successful UNF
 retrieval.
