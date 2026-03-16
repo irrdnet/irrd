@@ -184,7 +184,7 @@ class NRTM4Client:
                     f" is valid for public key {config_key} set in the nrtm4_client_initial_public_key"
                     " setting, but that is only used for initial validation. IRRD is currently expecting the"
                     f" public key {self.last_status.current_key}{msg_next_key}. If you want to clear IRRDs key information"
-                    " and revert to nrtm4_client_initial_public_key, use the 'irrdctl nrtmv4"
+                    " and revert to nrtm4_client_initial_public_key, use the 'irrdctl nrtm4"
                     " client-clear-known-keys' command."
                 )
                 raise NRTM4ClientError(msg)
