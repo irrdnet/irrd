@@ -16,6 +16,7 @@ from irrd.webui.auth.users import (
     PasswordResetToken,
     get_login_manager,
     password_handler,
+    update_session_hash,
     validate_password_strength,
 )
 from irrd.webui.helpers import (
@@ -60,6 +61,7 @@ async def login(request: Request):
         password = data["password"]
         default_next = "ui:auth:mfa_authenticate"
 
+        request.session.clear()
         user_token = await get_login_manager().login(request, email, password)
         if user_token:
             logger.info(f"{client_ip_str(request)}{email}: successfully logged in")
@@ -81,7 +83,9 @@ async def login(request: Request):
 @authentication_required(mfa_check=False)
 async def logout(request: Request):
     await get_login_manager().logout(request)
-    return RedirectResponse(request.url_for("ui:index"), status_code=302)
+    response = RedirectResponse(request.url_for("ui:index"), status_code=302)
+    response.headers["Clear-Site-Data"] = '"cache", "storage"'
+    return response
 
 
 class CreateAccountForm(StarletteForm):
@@ -208,6 +212,7 @@ async def change_password(request: Request, session_provider: ORMSessionProvider
 
     request.auth.user.password = password_handler.hash(form.new_password.data)
     session_provider.session.add(request.auth.user)
+    update_session_hash(request, request.auth.user)
     message(request, "Your password has been changed.")
     logger.info(f"{client_ip_str(request)}{request.auth.user.email}: password changed successfully")
     send_authentication_change_mail(request.auth.user, request, "Your password was changed.")
