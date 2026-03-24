@@ -7,7 +7,7 @@
                 To set up your one time password, scan the QR code with
                 an app like Authy, 1Password or Google Authenticator.
             </p>
-            <canvas id="canvas"></canvas>
+            <canvas id="canvas" data-totp-url="{{ totp_url }}"></canvas>
             <p>
                 Your TOTP secret, in case you want to configure this manually, is:
                 <code>{{ secret }}</code>
@@ -16,9 +16,5 @@
         </div>
     </div>
     <script src="/static/js/qrcode.js"></script>
-    <script>
-        QRCode.toCanvas(canvas, "{{ totp_url }}", function (error) {
-            if (error) console.error(error)
-        })
-    </script>
+    <script src="/static/js/totp_register.js"></script>
 {% endblock %}
