@@ -8,7 +8,7 @@
                 If you have lost access to all your two-factor methods, contact
                 the operator of this IRRD instance.
             </p>
-            <div id="error-box" class="alert alert-danger" role="alert" style="display: none">
+            <div id="error-box" class="alert alert-danger d-none" role="alert">
                 Authentication did not succeed.
                 This may be because you cancelled authentication, used an unknown key,
                 or entered an incorrect token.
@@ -27,36 +27,11 @@
         </div>
     </div>
     {% if has_webauthn %}
+        <div id="webauthn-authenticate-data"
+             data-options="{{ webauthn_options_json }}"
+             data-next="{{ next }}"
+             data-verify-url="{{ url_for('ui:auth:webauthn_verify_authentication_response') }}"></div>
         <script src="/static/js/simplewebauthn-browser-es5-umd.js"></script>
-        <script>
-            document.getElementById('webauthn-authenticate').addEventListener('click', async () => {
-                document.getElementById('error-box').style.display = "none";
-                const {startAuthentication} = SimpleWebAuthnBrowser;
-
-                const opts = {{ webauthn_options_json|safe }};
-                const next = "{{ next|safe }}";
-                let asseResp;
-                try {
-                    asseResp = await startAuthentication(opts);
-                } catch (error) {
-                    document.getElementById('error-box').style.display = "block";
-                    return;
-                }
-                const verificationResp = await fetch(
-                    "{{ url_for('ui:auth:webauthn_verify_authentication_response') }}",
-                    {
-                        method: "POST",
-                        headers: {"Content-Type": "application/json"},
-                        body: JSON.stringify(asseResp),
-                    }
-                );
-                const verificationResult = await verificationResp.json();
-                if (verificationResult.verified) {
-                    window.location.href = next;
-                } else {
-                    document.getElementById('error-box').style.display = "block";
-                }
-            });
-        </script>
+        <script src="/static/js/webauthn_authenticate.js"></script>
     {% endif %}
 {% endblock %}
