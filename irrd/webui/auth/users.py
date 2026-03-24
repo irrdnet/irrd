@@ -1,4 +1,5 @@
 import hashlib
+import hmac
 import logging
 import secrets
 import sys
@@ -8,6 +9,7 @@ from datetime import date, timedelta
 import passlib
 import wtforms
 from imia import (
+    SESSION_HASH,
     AuthenticationMiddleware,
     LoginManager,
     SessionAuthenticator,
@@ -68,8 +70,59 @@ def get_login_manager() -> LoginManager:
     return LoginManager(user_provider, password_handler, secret_key_derive("web.login_manager"))
 
 
+def update_session_hash(request: HTTPConnection, user: AuthUser) -> None:
+    """
+    Refresh the session hash after a password change.
+    This keeps the current session valid while all other sessions are invalidated
+    by HashValidatingSessionAuthenticator on their next request.
+    Mirrors imia's internal _get_password_hmac_from_user algorithm.
+    """
+    secret = secret_key_derive("web.login_manager")
+    key = hashlib.sha256(("imia.session.hash" + secret).encode()).digest()
+    request.session[SESSION_HASH] = hmac.new(
+        key, msg=user.get_hashed_password().encode(), digestmod=hashlib.sha1
+    ).hexdigest()
+
+
+class HashValidatingSessionAuthenticator(SessionAuthenticator):
+    """
+    SessionAuthenticator that also verifies the session hash on every request.
+    This ensures active sessions are invalidated immediately when a user's password changes.
+    imia stores the hash but its default SessionAuthenticator never checks it after login.
+    """
+
+    def __init__(self, user_provider: UserProvider) -> None:
+        super().__init__(user_provider=user_provider)
+        self._hmac_key: bytes | None = None
+
+    def _get_hmac_key(self) -> bytes:
+        # Mirror imia's internal _get_password_hmac_from_user key derivation.
+        # Cached in production where the secret key is set once and never changes.
+        # Not cached during testing, where the database is reset between tests.
+        if self._hmac_key is None or getattr(sys, "_called_from_test", None):
+            secret = secret_key_derive("web.login_manager")
+            self._hmac_key = hashlib.sha256(("imia.session.hash" + secret).encode()).digest()
+        return self._hmac_key
+
+    async def authenticate(self, connection: HTTPConnection) -> UserLike | None:
+        user = await super().authenticate(connection)
+        if user is None:
+            return None
+        stored_hash = connection.session.get(SESSION_HASH)
+        if not stored_hash:
+            return None  # pragma: no cover - sessions without a hash predate 4.5.2
+        expected_hash = hmac.new(
+            self._get_hmac_key(),
+            msg=user.get_hashed_password().encode(),
+            digestmod=hashlib.sha1,
+        ).hexdigest()
+        if not secrets.compare_digest(stored_hash, expected_hash):
+            return None
+        return user
+
+
 authenticators = [
-    SessionAuthenticator(user_provider=user_provider),
+    HashValidatingSessionAuthenticator(user_provider=user_provider),
 ]
 
 auth_middleware = Middleware(AuthenticationMiddleware, authenticators=authenticators)

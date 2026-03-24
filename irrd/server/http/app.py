@@ -11,9 +11,11 @@ from ariadne.asgi.handlers import GraphQLHTTPHandler
 from asgi_logger import AccessLoggerMiddleware
 from setproctitle import setproctitle
 from starlette.applications import Starlette
+from starlette.datastructures import Headers
 from starlette.middleware import Middleware
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
+from starlette.requests import Request
 from starlette.responses import RedirectResponse
 from starlette.routing import Mount, Route, WebSocketRoute
 from starlette.staticfiles import StaticFiles
@@ -138,17 +140,35 @@ class MemoryTrimMiddleware:
         memory_trim()
 
 
-CONTENT_SECURITY_POLICY = "; ".join([
-    "default-src 'none'",
-    "script-src 'self'",
-    "style-src 'self'",
-    "img-src 'self'",
-    "font-src 'self'",
-    "connect-src 'self'",
-    "form-action 'self'",
-    "base-uri 'none'",
-    "frame-ancestors 'none'",
-])
+CONTENT_SECURITY_POLICY = "; ".join(
+    [
+        "default-src 'none'",
+        "script-src 'self'",
+        "style-src 'self'",
+        "img-src 'self'",
+        "font-src 'self'",
+        "connect-src 'self'",
+        "form-action 'self'",
+        "base-uri 'none'",
+        "frame-ancestors 'none'",
+    ]
+)
+
+
+SECURITY_HEADERS = {
+    b"content-security-policy": CONTENT_SECURITY_POLICY.encode(),
+    b"x-content-type-options": b"nosniff",
+    b"x-frame-options": b"DENY",
+    b"referrer-policy": b"strict-origin-when-cross-origin",
+    b"origin-agent-cluster": b"?1",
+    b"cross-origin-opener-policy": b"same-origin",
+    # same-origin is correct for the web UI. If CORS is ever added to the API routes
+    # (/graphql, /v1/*), this header must be changed to cross-origin for those routes,
+    # otherwise CORP will override CORS and block cross-origin browser clients.
+    b"cross-origin-resource-policy": b"same-origin",
+    b"cross-origin-embedder-policy": b"require-corp",
+    b"x-permitted-cross-domain-policies": b"none",
+}
 
 
 class SecurityHeadersMiddleware:
@@ -160,13 +180,22 @@ class SecurityHeadersMiddleware:
             await self.app(scope, receive, send)
             return
 
+        has_session_cookie = "session" in Request(scope).cookies
+
         async def send_with_security_headers(message):
             if message["type"] == "http.response.start":
-                headers = dict(message.get("headers", []))
-                headers[b"content-security-policy"] = CONTENT_SECURITY_POLICY.encode()
-                headers[b"x-content-type-options"] = b"nosniff"
-                headers[b"x-frame-options"] = b"DENY"
-                message = {**message, "headers": list(headers.items())}
+                response_headers = message.get("headers", [])
+                sets_session_cookie = any(
+                    v.startswith("session=") for v in Headers(raw=response_headers).getlist("set-cookie")
+                )
+                headers = SECURITY_HEADERS.copy()
+                if has_session_cookie or sets_session_cookie:
+                    headers[b"cache-control"] = b"no-store"
+                # Keep all existing headers except those we're overriding,
+                # preserving duplicates (e.g. multiple Set-Cookie headers)
+                merged = [(k, v) for k, v in response_headers if k.lower() not in headers]
+                merged.extend(headers.items())
+                message = {**message, "headers": merged}
             await send(message)
 
         await self.app(scope, receive, send_with_security_headers)
@@ -184,7 +213,11 @@ def set_middleware(app):
     csrf_disabled = testing and not getattr(app, "force_csrf_in_testing", False)
     if csrf_disabled:
         logger.info("Running in testing mode, disabling CSRF.")
-    allowed_host = urlparse(get_setting("server.http.url")).hostname
+
+    configured_url = urlparse(get_setting("server.http.url"))
+    allowed_host = configured_url.hostname
+    https_only = configured_url.scheme == "https"
+
     app.user_middleware = [
         # Use asgi-log to work around https://github.com/encode/uvicorn/issues/1384
         Middleware(
@@ -195,7 +228,12 @@ def set_middleware(app):
         Middleware(TrustedHostMiddleware, allowed_hosts=[allowed_host]),
         Middleware(SecurityHeadersMiddleware),
         Middleware(MemoryTrimMiddleware),
-        Middleware(SessionMiddleware, secret_key=secret_key_derive("web.session_middleware")),
+        Middleware(
+            SessionMiddleware,
+            secret_key=secret_key_derive("web.session_middleware"),
+            same_site="strict",
+            https_only=https_only,
+        ),
         Middleware(
             CSRFProtectMiddleware,
             csrf_secret=secret_key_derive("web.csrf_middleware"),
