@@ -138,6 +138,40 @@ class MemoryTrimMiddleware:
         memory_trim()
 
 
+CONTENT_SECURITY_POLICY = "; ".join([
+    "default-src 'none'",
+    "script-src 'self'",
+    "style-src 'self'",
+    "img-src 'self'",
+    "font-src 'self'",
+    "connect-src 'self'",
+    "form-action 'self'",
+    "base-uri 'none'",
+    "frame-ancestors 'none'",
+])
+
+
+class SecurityHeadersMiddleware:
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        async def send_with_security_headers(message):
+            if message["type"] == "http.response.start":
+                headers = dict(message.get("headers", []))
+                headers[b"content-security-policy"] = CONTENT_SECURITY_POLICY.encode()
+                headers[b"x-content-type-options"] = b"nosniff"
+                headers[b"x-frame-options"] = b"DENY"
+                message = {**message, "headers": list(headers.items())}
+            await send(message)
+
+        await self.app(scope, receive, send_with_security_headers)
+
+
 app = Starlette(
     debug=False,
     routes=routes,
@@ -159,6 +193,7 @@ def set_middleware(app):
             format='%(client_addr)s - "%(request_line)s" %(status_code)s - %(L)ss',
         ),
         Middleware(TrustedHostMiddleware, allowed_hosts=[allowed_host]),
+        Middleware(SecurityHeadersMiddleware),
         Middleware(MemoryTrimMiddleware),
         Middleware(SessionMiddleware, secret_key=secret_key_derive("web.session_middleware")),
         Middleware(
