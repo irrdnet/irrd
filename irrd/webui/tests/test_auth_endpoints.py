@@ -70,6 +70,45 @@ class TestLogin:
         response = test_client.get("/ui/user/")
         assert response.url.path == "/ui/user/"
 
+    def test_login_session_invalidated_on_password_change(self, irrd_db_session_with_user, test_client):
+        session_provider, user = irrd_db_session_with_user
+        user.totp_secret = None
+        session_provider.session.commit()
+
+        test_client.post(
+            self.url,
+            data={"email": user.email, "password": SAMPLE_USER_PASSWORD},
+            follow_redirects=False,
+        )
+        assert test_client.get("/ui/user/").url.path == "/ui/user/"
+
+        # Simulate a password change from another session (no update_session_hash)
+        user.password = "changed"
+        session_provider.session.add(user)
+        session_provider.session.commit()
+
+        # The stored session hash no longer matches the new password hash
+        assert test_client.get("/ui/user/").url.path == "/ui/auth/login/"
+
+    def test_login_session_fixation_prevention(self, irrd_db_session_with_user, test_client):
+        # session.clear() is called before login_user() so pre-login session data
+        # cannot survive into the authenticated session.
+        session_provider, user = irrd_db_session_with_user
+        user.totp_secret = None
+        session_provider.session.commit()
+        # Establish a pre-login session by visiting the login page
+        pre_login_cookie = test_client.get("/ui/auth/login/").cookies.get("session")
+        test_client.post(
+            self.url,
+            data={"email": user.email, "password": SAMPLE_USER_PASSWORD},
+            follow_redirects=False,
+        )
+        post_login_cookie = test_client.cookies.get("session")
+        # The session cookie must change on login (old session was cleared)
+        assert pre_login_cookie != post_login_cookie
+        # And the new session is a valid authenticated session
+        assert test_client.get("/ui/user/").url.path == "/ui/user/"
+
     def test_login_invalid(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         response = test_client.post(
@@ -89,9 +128,9 @@ class TestLogout(WebRequestTest):
     def test_logout(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self._login_if_needed(test_client, user)
-        response = test_client.get(self.url)
-        assert response.status_code == 200
-        assert user.email not in response.text
+        response = test_client.get(self.url, follow_redirects=False)
+        assert response.status_code == 302
+        assert response.headers.get("Clear-Site-Data") == '"cache", "storage"'
 
 
 class TestCreateAccount:
@@ -223,6 +262,8 @@ class TestChangePassword(WebRequestTest):
             follow_redirects=False,
         )
         assert response.status_code == 302
+        # The changer's own session must remain valid (update_session_hash was called)
+        assert test_client.get("/ui/user/").url.path == "/ui/user/"
         self._login(test_client, user, new_password)
         assert len(smtpd.messages) == 1
         assert "password was changed" in smtpd.messages[0].as_string()
