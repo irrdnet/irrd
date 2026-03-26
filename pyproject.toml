@@ -36,7 +36,7 @@ pid = "3.0.4"
 redis = "7.1.0"
 hiredis = "3.3.0"
 coredis = "5.4.0"
-requests = "2.32.5"
+requests = "2.33.0"
 pytz = "2025.2"
 ariadne = "0.27.0"
 uvicorn = { extras = ["standard"], version = "0.40.0" }
