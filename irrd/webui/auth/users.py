@@ -96,7 +96,7 @@ class HashValidatingSessionAuthenticator(SessionAuthenticator):
 
     def __init__(self, user_provider: UserProvider) -> None:
         super().__init__(user_provider=user_provider)
-        self._hmac_key: bytes | None = None
+        self._hmac_key: Optional[bytes] = None
 
     def _get_hmac_key(self) -> bytes:
         # Mirror imia's internal _get_password_hmac_from_user key derivation.
@@ -107,7 +107,7 @@ class HashValidatingSessionAuthenticator(SessionAuthenticator):
             self._hmac_key = hashlib.sha256(("imia.session.hash" + secret).encode()).digest()
         return self._hmac_key
 
-    async def authenticate(self, connection: HTTPConnection) -> UserLike | None:
+    async def authenticate(self, connection: HTTPConnection) -> Optional[UserLike]:
         user = await super().authenticate(connection)
         if user is None:
             return None
