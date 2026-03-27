@@ -488,6 +488,8 @@ class TestIntegration:
         assert "route:192.0.2.0/24" not in query_result.replace(" ", "")
 
         # These queries should produce identical answers on all instances.
+        # Wait for irrd #3 to have synced via NRTMv4 from irrd #2.
+        time.sleep(3)
         for port in self.port_whois1, self.port_whois2, self.port_whois3:
             query_result = whois_query_irrd("127.0.0.1", port, "!iAS65537:AS-SETTEST")
             assert set(query_result.split(" ")) == {"AS65537", "AS65538", "AS65539", "AS-OTHERSET"}
