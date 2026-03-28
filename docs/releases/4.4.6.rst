@@ -1,0 +1,33 @@
+============================
+Release notes for IRRD 4.4.6
+============================
+
+IRRD 4.4.6 was released on March 28, 2026, and contains web UI security
+hardening. There is no known exploitable vulnerability addressed by this
+release; these are proactive measures to improve the security posture of
+the web UI. All users of 4.4 are recommended to upgrade.
+
+IRRD 4.3 and earlier are not affected, as they did not include the web UI.
+
+Web UI security hardening
+-------------------------
+
+* A strict ``Content-Security-Policy`` header is now set, preventing
+  execution of inline scripts and styles. Inline scripts and styles in
+  templates have been refactored to external files to comply with this
+  policy.
+* Additional HTTP security headers are now set on all responses:
+  ``Cross-Origin-Opener-Policy``, ``Cross-Origin-Embedder-Policy``,
+  ``Cross-Origin-Resource-Policy``, ``Referrer-Policy``,
+  ``Origin-Agent-Cluster``, ``X-Permitted-Cross-Domain-Policies``,
+  ``X-Frame-Options``, and ``X-Content-Type-Options``.
+* Session cookies are now set with ``SameSite=Strict``. On deployments
+  where ``server.http.url`` uses an ``https://`` scheme, the ``Secure``
+  flag is also set.
+* The session is now cleared on login to prevent session fixation.
+* Responses to authenticated requests now include
+  ``Cache-Control: no-store`` to prevent browsers and intermediate proxies
+  from caching pages that may contain user-specific data.
+* Active sessions are now invalidated immediately when a user's password
+  changes. Previously, existing sessions remained valid until they
+  expired. The session of the user who performed the change remains valid.
