@@ -163,6 +163,41 @@ class TestNRTM4Client:
         assert "import of snapshot at version 3" in caplog.text
         assert "Updating from deltas, starting from version 4" in caplog.text
 
+    def test_valid_from_snapshot_deferring_deltas(self, prepare_nrtm4_test, caplog):
+        # #1087
+        mock_dh = MockDatabaseHandler()
+        mock_dh.reset_mock()
+        mock_dh.query_responses[DatabaseStatusQuery] = iter(
+            [
+                {
+                    "force_reload": True,
+                    "nrtm4_client_session_id": UUID(MOCK_SESSION_ID),
+                    "nrtm4_client_version": 2,
+                    "nrtm4_client_current_key": None,
+                    "nrtm4_client_next_key": None,
+                    "nrtm4_client_previous_file_hashes": None,
+                }
+            ]
+        )
+        NRTM4Client("TEST", mock_dh).run_client()
+        assert "import of snapshot at version 3" in caplog.text
+        assert "Loaded snapshot at version 3, deferring deltas to next run" in caplog.text
+        assert "Updating from deltas" not in caplog.text
+        assert "delete_rpsl_object" not in {call[0] for call in mock_dh.other_calls}
+        assert (
+            "record_nrtm4_client_status",
+            {
+                "source": "TEST",
+                "status": NRTM4ClientDatabaseStatus(
+                    session_id=UUID(MOCK_SESSION_ID),
+                    version=3,
+                    current_key=MOCK_UNF_PUBLIC_KEY,
+                    next_key=MOCK_UNF_PUBLIC_KEY_OTHER,
+                    previous_file_hashes=VALID_PREVIOUS_FILE_HASHES,
+                ),
+            },
+        ) in mock_dh.other_calls
+
     def test_valid_from_delta(self, prepare_nrtm4_test, caplog):
         mock_dh = MockDatabaseHandler()
         mock_dh.reset_mock()
