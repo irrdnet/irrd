@@ -82,7 +82,8 @@ class NRTM4Client:
             has_loaded_snapshot = True
             next_delta_version = self._find_next_version(unf, unf.snapshot.version)
 
-        if has_loaded_snapshot and not force_load_delta_even_after_snapshot:  # pragma: no cover
+        deltas_deferred = has_loaded_snapshot and not force_load_delta_even_after_snapshot
+        if deltas_deferred:
             logger.info(
                 f"{self.source}: Loaded snapshot at version {unf.snapshot.version},"
                 " deferring deltas to next run"
@@ -101,7 +102,7 @@ class NRTM4Client:
 
         new_status = NRTM4ClientDatabaseStatus(
             session_id=unf.session_id,
-            version=unf.version,
+            version=unf.snapshot.version if deltas_deferred else unf.version,
             current_key=used_key,
             next_key=unf.next_signing_key,
             previous_file_hashes=self._validate_aggregate_previous_file_hashes_from_unf(unf),
