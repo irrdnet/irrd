@@ -26,6 +26,7 @@ from irrd import ENV_MAIN_PROCESS_PID
 from irrd.conf import config_init, get_setting
 from irrd.server.graphql import ENV_UVICORN_WORKER_CONFIG_PATH
 from irrd.server.graphql.extensions import QueryMetadataExtension, error_formatter
+from irrd.server.graphql.graphiql_csp import GRAPHIQL_CDN_ORIGIN, build_explorer
 from irrd.server.graphql.schema_builder import build_executable_schema
 from irrd.server.http.endpoints_api import (
     ObjectSubmissionEndpoint,
@@ -46,12 +47,9 @@ from irrd.webui.routes import UI_ROUTES
 
 logger = logging.getLogger(__name__)
 
-"""
-Starlette app and GraphQL sub-app.
 
-This module is imported once for each Uvicorn worker process,
-and then the app is started in each process.
-"""
+# Starlette app and GraphQL sub-app. This module is imported once for each
+# Uvicorn worker process, and then the app is started in each process.
 
 
 async def startup():
@@ -101,16 +99,19 @@ async def shutdown():
     app.state.rate_limiter = None
 
 
+_graphiql = build_explorer()
+
 graphql = GraphQL(
     build_executable_schema(),
     debug=False,
     http_handler=GraphQLHTTPHandler(
         extensions=[QueryMetadataExtension],
     ),
+    explorer=_graphiql.explorer,
     error_formatter=error_formatter,
 )
 
-STATIC_DIR = templates = Path(__file__).parent.parent.parent / "webui" / "static"
+STATIC_DIR = Path(__file__).parent.parent.parent / "webui" / "static"
 
 
 routes = [
@@ -139,8 +140,13 @@ class MemoryTrimMiddleware:
 CONTENT_SECURITY_POLICY = "; ".join(
     [
         "default-src 'none'",
-        "script-src 'self'",
-        "style-src 'self'",
+        # GraphiQL's inline <script>/<style> blocks (emitted by ariadne's stock
+        # ExplorerGraphiQL) are allowed by content hash so we don't need
+        # 'unsafe-inline'. The React + GraphiQL bundles and stylesheets loaded
+        # from the CDN are pinned via SRI integrity attributes injected by
+        # build_explorer().
+        " ".join(["script-src 'self'", *_graphiql.script_hashes, GRAPHIQL_CDN_ORIGIN]),
+        " ".join(["style-src 'self'", *_graphiql.style_hashes, GRAPHIQL_CDN_ORIGIN]),
         "img-src 'self'",
         "font-src 'self'",
         "connect-src 'self'",
@@ -151,8 +157,45 @@ CONTENT_SECURITY_POLICY = "; ".join(
 )
 
 
+PERMISSIONS_POLICY = ", ".join(
+    [
+        # publickey-credentials-* are required for WebAuthn registration and
+        # authentication; everything else IRRD does not use.
+        "publickey-credentials-create=(self)",
+        "publickey-credentials-get=(self)",
+        "accelerometer=()",
+        "ambient-light-sensor=()",
+        "autoplay=()",
+        "battery=()",
+        "camera=()",
+        "display-capture=()",
+        "document-domain=()",
+        "encrypted-media=()",
+        "fullscreen=()",
+        "gamepad=()",
+        "geolocation=()",
+        "gyroscope=()",
+        "hid=()",
+        "idle-detection=()",
+        "magnetometer=()",
+        "microphone=()",
+        "midi=()",
+        "otp-credentials=()",
+        "payment=()",
+        "picture-in-picture=()",
+        "screen-wake-lock=()",
+        "serial=()",
+        "speaker-selection=()",
+        "usb=()",
+        "web-share=()",
+        "xr-spatial-tracking=()",
+    ]
+)
+
+
 SECURITY_HEADERS = {
     b"content-security-policy": CONTENT_SECURITY_POLICY.encode(),
+    b"permissions-policy": PERMISSIONS_POLICY.encode(),
     b"x-content-type-options": b"nosniff",
     b"x-frame-options": b"DENY",
     b"referrer-policy": b"strict-origin-when-cross-origin",
@@ -168,21 +211,23 @@ SECURITY_HEADERS = {
 
 
 class SecurityHeadersMiddleware:
-    def __init__(self, app: ASGIApp) -> None:
+    def __init__(self, app: ASGIApp, session_cookie_name: str) -> None:
         self.app = app
+        self.session_cookie_name = session_cookie_name
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
 
-        has_session_cookie = "session" in Request(scope).cookies
+        has_session_cookie = self.session_cookie_name in Request(scope).cookies
 
         async def send_with_security_headers(message):
             if message["type"] == "http.response.start":
                 response_headers = message.get("headers", [])
                 sets_session_cookie = any(
-                    v.startswith("session=") for v in Headers(raw=response_headers).getlist("set-cookie")
+                    v.startswith(self.session_cookie_name + "=")
+                    for v in Headers(raw=response_headers).getlist("set-cookie")
                 )
                 headers = SECURITY_HEADERS.copy()
                 if has_session_cookie or sets_session_cookie:
@@ -213,6 +258,16 @@ def set_middleware(app):
     configured_url = urlparse(get_setting("server.http.url"))
     allowed_host = configured_url.hostname
     https_only = configured_url.scheme == "https"
+    if not https_only and not testing:
+        logger.warning(
+            "server.http.url is not https://; the session cookie will be sent without the"
+            " Secure flag and without the __Host- prefix. Set server.http.url to your"
+            " external https:// URL for any production deployment."
+        )
+    # __Host- is browser-enforced: the cookie is rejected unless Set-Cookie has
+    # Secure, no Domain attribute, and Path=/. We pass path="/" and rely on
+    # SessionMiddleware's domain=None default; https_only=True provides Secure.
+    session_cookie_name = "__Host-session" if https_only else "session"
 
     app.user_middleware = [
         # Use asgi-log to work around https://github.com/encode/uvicorn/issues/1384
@@ -222,12 +277,14 @@ def set_middleware(app):
             format='%(client_addr)s - "%(request_line)s" %(status_code)s - %(L)ss',
         ),
         Middleware(TrustedHostMiddleware, allowed_hosts=[allowed_host]),
-        Middleware(SecurityHeadersMiddleware),
+        Middleware(SecurityHeadersMiddleware, session_cookie_name=session_cookie_name),
         Middleware(MemoryTrimMiddleware),
         Middleware(
             SessionMiddleware,
             secret_key=secret_key_derive("web.session_middleware"),
-            same_site="strict",
+            session_cookie=session_cookie_name,
+            path="/",
+            same_site="lax",
             https_only=https_only,
         ),
         Middleware(
