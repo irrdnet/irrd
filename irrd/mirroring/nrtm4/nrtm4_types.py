@@ -5,11 +5,11 @@ from urllib.parse import urlparse, urlunparse
 from uuid import UUID
 
 import pydantic
-from joserfc.jwk import ECKey
 from pytz import UTC
 from typing_extensions import Self
 
 from irrd.mirroring.nrtm4 import UPDATE_NOTIFICATION_FILENAME
+from irrd.utils.crypto import eckey_from_str
 
 
 def get_from_pydantic_context(info: pydantic.ValidationInfo, key: str) -> Any | None:
@@ -146,7 +146,7 @@ class NRTM4UpdateNotificationFile(NRTM4Common):
     def validate_next_signing_key(cls, next_signing_key: str | None):
         if next_signing_key:
             try:
-                ECKey.import_key(next_signing_key)
+                eckey_from_str(next_signing_key)
             except ValueError as ve:
                 raise ValueError(
                     f"Update Notification File has invalid next_signing_key {next_signing_key}: {ve}"
