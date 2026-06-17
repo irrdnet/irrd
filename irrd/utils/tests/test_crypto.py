@@ -1,4 +1,5 @@
 import pytest
+from cryptography.exceptions import UnsupportedAlgorithm
 from joserfc.jwk import ECKey
 
 from irrd.utils.crypto import (
@@ -47,3 +48,24 @@ def test_crypto_eckey(config_override):
 
     with pytest.raises(ValueError):
         jws_serialize(payload, "invalid")
+
+
+def test_unsupported_algorithm_translated_to_valueerror(monkeypatch):
+    # cryptography >=47 raises UnsupportedAlgorithm (no longer a ValueError
+    # subclass) for keys using removed algorithms. The crypto.py wrappers
+    # translate it so callers' existing `except ValueError` keeps working.
+    def raise_unsupported(*args, **kwargs):
+        raise UnsupportedAlgorithm("removed algorithm")
+
+    monkeypatch.setattr(ECKey, "import_key", raise_unsupported)
+    with pytest.raises(ValueError):
+        eckey_from_str("anything")
+
+    class _FakeKey:
+        def as_pem(self, **kwargs):
+            raise UnsupportedAlgorithm("removed algorithm")
+
+    with pytest.raises(ValueError):
+        eckey_public_key_as_str(_FakeKey())
+    with pytest.raises(ValueError):
+        eckey_private_key_as_str(_FakeKey())
