@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from functools import wraps
 from typing import Dict, List, Optional, Set
 
 import ariadne
@@ -28,6 +29,19 @@ schema = SchemaGenerator()
 lookup_fields = lookup_field_names()
 
 
+def convert_kwargs_to_snake_case(func):
+    # Replaces ariadne.convert_kwargs_to_snake_case (removed in ariadne 0.29).
+    # Ariadne's schema-level `convert_names_case=True` is the documented
+    # alternative, but it also installs a default resolver that looks up
+    # snake_case keys on returned dicts, which breaks IRRD fields that emit
+    # camelCase keys.
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        return func(*args, **{ariadne.convert_camel_case_to_snake(k): v for k, v in kwargs.items()})
+
+    return wrapper
+
+
 def resolve_rpsl_object_type(obj: Dict[str, str], *_) -> str:
     """
     Find the GraphQL name for an object given its object class.
@@ -36,7 +50,7 @@ def resolve_rpsl_object_type(obj: Dict[str, str], *_) -> str:
     return OBJECT_CLASS_MAPPING[obj.get("objectClass", obj.get("object_class", ""))].__name__
 
 
-@ariadne.convert_kwargs_to_snake_case
+@convert_kwargs_to_snake_case
 def resolve_rpsl_objects(_, info: GraphQLResolveInfo, **kwargs):
     """
     Resolve a `rpslObjects` query. This query has a considerable
@@ -233,7 +247,7 @@ def _rpsl_db_query_to_graphql_out(query: RPSLDatabaseQuery, info: GraphQLResolve
         yield graphql_result
 
 
-@ariadne.convert_kwargs_to_snake_case
+@convert_kwargs_to_snake_case
 def resolve_database_status(_, info: GraphQLResolveInfo, sources: Optional[List[str]] = None):
     """Resolve a databaseStatus query"""
     query_resolver = QueryResolver(
@@ -247,7 +261,7 @@ def resolve_database_status(_, info: GraphQLResolveInfo, sources: Optional[List[
         yield camel_case_data
 
 
-@ariadne.convert_kwargs_to_snake_case
+@convert_kwargs_to_snake_case
 def resolve_asn_prefixes(
     _,
     info: GraphQLResolveInfo,
@@ -264,7 +278,7 @@ def resolve_asn_prefixes(
         yield dict(asn=asn, prefixes=list(query_resolver.routes_for_origin(f"AS{asn}", ip_version)))
 
 
-@ariadne.convert_kwargs_to_snake_case
+@convert_kwargs_to_snake_case
 def resolve_as_set_prefixes(
     _,
     info: GraphQLResolveInfo,
@@ -290,7 +304,7 @@ def resolve_as_set_prefixes(
         info.context["sql_queries"] = query_resolver.retrieve_sql_trace()
 
 
-@ariadne.convert_kwargs_to_snake_case
+@convert_kwargs_to_snake_case
 def resolve_recursive_set_members(
     _,
     info: GraphQLResolveInfo,

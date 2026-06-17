@@ -1,4 +1,4 @@
-from _pytest.python_api import raises
+from pytest import raises
 
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
