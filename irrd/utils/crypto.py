@@ -1,3 +1,4 @@
+from cryptography.exceptions import UnsupportedAlgorithm
 from joserfc import jws
 from joserfc.errors import JoseError
 from joserfc.jwk import ECKey
@@ -22,29 +23,38 @@ def eckey_from_config(setting: str, permit_empty=False) -> ECKey | None:
 
 
 def eckey_from_str(encoded: str, require_private=False) -> ECKey:
-    key = ECKey.import_key(encoded)
+    try:
+        key = ECKey.import_key(encoded)
+    except UnsupportedAlgorithm as exc:
+        raise ValueError(exc)
     if require_private and not key.is_private:
         raise ValueError("ECKey is a public key, but must be a private key")
     return key
 
 
 def eckey_public_key_as_str(key: ECKey) -> str:
-    return key.as_pem(private=False).decode("ascii")
+    try:
+        return key.as_pem(private=False).decode("ascii")
+    except UnsupportedAlgorithm as exc:
+        raise ValueError(exc)
 
 
 def eckey_private_key_as_str(key: ECKey) -> str:
-    return key.as_pem(private=True).decode("ascii")
+    try:
+        return key.as_pem(private=True).decode("ascii")
+    except UnsupportedAlgorithm as exc:
+        raise ValueError(exc)
 
 
 def jws_deserialize(value: bytes | str, public_key: ECKey) -> CompactSignature:
     try:
         return jws.deserialize_compact(value, public_key, registry=jws_registry)
-    except JoseError as error:
+    except (JoseError, UnsupportedAlgorithm) as error:
         raise ValueError(error)
 
 
 def jws_serialize(value: bytes | str, private_key: ECKey) -> str:
     try:
         return jws.serialize_compact({"alg": "ES256"}, value, private_key, registry=jws_registry)
-    except JoseError as error:  # pragma: no cover
+    except (JoseError, UnsupportedAlgorithm) as error:  # pragma: no cover
         raise ValueError(error)
