@@ -24,6 +24,7 @@ hasher
 hashers
 hostname
 http
+HTTPS
 incrementing
 integrations
 IPtables
