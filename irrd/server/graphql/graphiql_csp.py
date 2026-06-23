@@ -11,6 +11,7 @@ Regenerate the SRI dict via `python -m irrd.server.graphql.graphiql_csp`.
 
 import base64
 import hashlib
+import re
 from html.parser import HTMLParser
 from typing import NamedTuple
 
@@ -96,6 +97,25 @@ class _ExplorerScan(HTMLParser):
         self._capturing = None
 
 
+def _hoist_importmap(html: str) -> str:
+    # Ariadne's inline module script imports bare specifiers like `from 'react'`;
+    # its <script type="importmap"> maps those names to URLs. Per spec the
+    # importmap must come before any module reference, but ariadne emits
+    # <link rel="modulepreload"> tags first, so the map is ignored and imports
+    # fail. Move the importmap to just before the first modulepreload.
+    # See https://github.com/mirumee/ariadne/issues/1326
+    match = re.search(r'<script type="importmap">.*?</script>\n', html, re.DOTALL)
+    if not match or '<link rel="modulepreload"' not in html[: match.start()]:
+        return html
+    importmap = match.group(0)
+    html = html.replace(importmap, "", 1)
+    return html.replace(
+        '<link rel="modulepreload"',
+        importmap + '    <link rel="modulepreload"',
+        1,
+    )
+
+
 def _inject_sri(html: str) -> str:
     # ariadne already emits `crossorigin="anonymous"` on its external loads;
     # we add `integrity=` so SRI verification runs. If ariadne ever changes
@@ -119,6 +139,7 @@ def build_explorer() -> GraphiQLExplorerBuild:
     import time so the failure is loud.
     """
     explorer = ExplorerGraphiQL(title="IRRD GraphQL", explorer_plugin=True)
+    explorer.parsed_html = _hoist_importmap(explorer.parsed_html)
     explorer.parsed_html = _inject_sri(explorer.parsed_html)
 
     scan = _ExplorerScan()

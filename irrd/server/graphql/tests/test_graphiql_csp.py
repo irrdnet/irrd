@@ -34,6 +34,10 @@ class TestBuildExplorer:
         with pytest.raises(RuntimeError, match="integrity"):
             build_explorer()
 
+    def test_hoist_importmap_noop_when_already_correct(self):
+        html = '<script type="importmap"></script>\n<link rel="modulepreload" />'
+        assert graphiql_csp._hoist_importmap(html) == html
+
     def test_explorer_scan_captures_script_src(self):
         # ariadne 1.1.0 emits ESM via <link rel=modulepreload>, but _ExplorerScan
         # still recognises <script src=...> as defense if ariadne ever reverts.
