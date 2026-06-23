@@ -22,9 +22,6 @@ GRAPHIQL_EXTERNAL_SRI = {
     "https://unpkg.com/graphiql@3.3.2/graphiql.min.css": (
         "sha384-PNLpacmXJKoE7OSGX9OropkrZb2wdZx12taF1om8oQKkwJmzbqWEW9rKK8WT7IZ1"
     ),
-    "https://unpkg.com/@graphiql/plugin-explorer@3.1.0/dist/style.css": (
-        "sha384-YN9MumWidbWKuNj8VfH5ggrFvm9YqAoIOMnKYpeGL3dr7Eg1qnQ+SAqSthdNZCjz"
-    ),
     "https://unpkg.com/react@17/umd/react.production.min.js": (
         "sha384-7Er69WnAl0+tY5MWEvnQzWHeDFjgHSnlQfDDeWUvv8qlRXtzaF/pNo18Q2aoZNiO"
     ),
@@ -33,9 +30,6 @@ GRAPHIQL_EXTERNAL_SRI = {
     ),
     "https://unpkg.com/graphiql@3.3.2/graphiql.min.js": (
         "sha384-/jufPMBJpSyP7vyv2ht40LRJmcmVS5SWfhAYFyfsumlltrrnl/XjZljb5+cxgZUM"
-    ),
-    "https://unpkg.com/@graphiql/plugin-explorer@3.1.0/dist/index.umd.js": (
-        "sha384-vzwQ46f1E2uHaJFa97UTJK8OjEVtvAg+E0Rf9p+5G34Q4ZfUjYIqy7ZV7SBZE2Bz"
     ),
 }
 
@@ -109,7 +103,10 @@ def build_explorer() -> GraphiQLExplorerBuild:
     references an unpinned URL or if SRI injection silently no-ops; call at
     import time so the failure is loud.
     """
-    explorer = ExplorerGraphiQL(title="IRRD GraphQL", explorer_plugin=True)
+    # Ariadne 0.25.2's GraphiQL explorer plugin template is broken: it calls a
+    # `useExplorerPlugin` hook that no longer exists in plugin-explorer 3.1.0
+    # (the same version ariadne's template references). Disable the plugin.
+    explorer = ExplorerGraphiQL(title="IRRD GraphQL", explorer_plugin=False)
     explorer.parsed_html = _inject_sri(explorer.parsed_html)
 
     scan = _ExplorerScan()
@@ -137,7 +134,7 @@ def _print_regenerated_sri() -> None:  # pragma: no cover
     import urllib.request
 
     scan = _ExplorerScan()
-    scan.feed(ExplorerGraphiQL(explorer_plugin=True).parsed_html)
+    scan.feed(ExplorerGraphiQL(explorer_plugin=False).parsed_html)
     urls = sorted({attrs["src"] if "src" in attrs else attrs["href"] for attrs in scan.external_loads})
     rows = []
     for url in urls:
