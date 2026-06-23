@@ -209,7 +209,9 @@ SECURITY_HEADERS = {
     # (/graphql, /v1/*), this header must be changed to cross-origin for those routes,
     # otherwise CORP will override CORS and block cross-origin browser clients.
     b"cross-origin-resource-policy": b"same-origin",
-    b"cross-origin-embedder-policy": b"require-corp",
+    # Cross-Origin-Embedder-Policy is intentionally not set: esm.sh, which
+    # serves the GraphiQL bundles, does not send Cross-Origin-Resource-Policy,
+    # so `require-corp` would block GraphiQL.
     b"x-permitted-cross-domain-policies": b"none",
 }
 
