@@ -6551,20 +6551,20 @@ anyio = ">=3.0.0"
 
 [[package]]
 name = "webauthn"
-version = "1.10.1"
+version = "1.11.1"
 description = "Pythonic WebAuthn"
 optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
-    {file = "webauthn-1.10.1-py3-none-any.whl", hash = "sha256:1d6b2c0753344df4c067a478f0e7f0e6cbb561f3d40342472f421657cdd16d41"},
-    {file = "webauthn-1.10.1.tar.gz", hash = "sha256:94fc8265cccce88e1e43dc2008f3d8bb1f05fdd547246efa1be8ef684a6c3a7b"},
+    {file = "webauthn-1.11.1-py3-none-any.whl", hash = "sha256:13592ee71489b571cb6e4a5d8b3c34f7b040cd3539a9d94b6b7d23fa88df5dfb"},
+    {file = "webauthn-1.11.1.tar.gz", hash = "sha256:24eda57903897369797f52a377f8c470e7057e79da5525779d0720a9fcc11926"},
 ]
 
 [package.dependencies]
 asn1crypto = ">=1.4.0"
-cbor2 = ">=5.4.2.post1"
-cryptography = ">=41.0.1"
+cbor2 = ">=5.4.6"
+cryptography = ">=41.0.4"
 pydantic = ">=1.10.11"
 pyOpenSSL = ">=23.2.0"
 
@@ -7591,4 +7591,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.8"
-content-hash = "879f4eb8dee80dd1ea9bb1439e80138ded883c8e383edf60fcb80c1dc1cb157c"
+content-hash = "6ef75da5f0d492da6608bdac8200ef28d24d909e6de7fd2394370cafcb0f4df1"
