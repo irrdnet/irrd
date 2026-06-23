@@ -1,0 +1,20 @@
+============================
+Release notes for IRRD 4.4.7
+============================
+
+IRRD 4.4.7 was released on June 23, 2026, and restores
+the GraphiQL explorer that was broken by the 4.4.6
+Content-Security-Policy and tweaks session cookie handling. All users
+of 4.4 are recommended to upgrade.
+
+* The `GraphiQL explorer at /graphql/ was broken`_ in 4.4.6 by the
+  strict Content-Security-Policy.
+* Security headers and cookie settings were adjusted further.
+  Note that on deployments
+  where ``server.http.url`` uses an ``https://`` scheme,
+  the session cookie name has changed. Existing sessions are
+  invalidated and all users will need to log in again.
+  Administrators are strongly recommended to use HTTPS, and on non-HTTPS
+  deployments, a startup warning is now logged.
+
+.. _GraphiQL explorer at /graphql/ was broken: https://github.com/irrdnet/irrd/issues/1078
