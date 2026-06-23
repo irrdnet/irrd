@@ -1,0 +1,31 @@
+============================
+Release notes for IRRD 4.5.3
+============================
+
+IRRD 4.5.3 was released on June 23, 2026, and
+contains a fix for an NRTMv4 client bug, restores
+the GraphiQL explorer that was broken by the 4.5.2
+Content-Security-Policy, and tweaks session cookie handling. All users
+of 4.5 are recommended to upgrade.
+
+* The `NRTMv4 client could silently skip deltas`_ whenever it loaded
+  a snapshot. After loading a snapshot at version ``N``, IRRD recorded
+  the latest version listed in the Update Notification File as the
+  local version, instead of the snapshot version. On the next run,
+  deltas were applied starting from the recorded version + 1, skipping
+  all deltas between ``N+1`` and the UNF version at import time.
+  This could result in data loss. After upgrading, operators running
+  NRTMv4 mirror clients should reload them with
+  ``irrd_mirror_force_reload`` to recover any potentially missed data.
+* The `GraphiQL explorer at /graphql/ was broken`_ in 4.5.2 by the
+  strict Content-Security-Policy.
+* Security headers and cookie settings were adjusted further.
+  Note that on deployments
+  where ``server.http.url`` uses an ``https://`` scheme,
+  the session cookie name has changed. Existing sessions are
+  invalidated and all users will need to log in again.
+  Administrators are strongly recommended to use HTTPS, and on non-HTTPS
+  deployments, a startup warning is now logged.
+
+.. _NRTMv4 client could silently skip deltas: https://github.com/irrdnet/irrd/issues/1087
+.. _GraphiQL explorer at /graphql/ was broken: https://github.com/irrdnet/irrd/issues/1078
