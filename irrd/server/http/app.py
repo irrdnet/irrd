@@ -26,8 +26,8 @@ from starlette_wtf import CSRFProtectMiddleware
 from irrd import ENV_MAIN_PROCESS_PID
 from irrd.conf import config_init, get_setting
 from irrd.server.graphql import ENV_UVICORN_WORKER_CONFIG_PATH
+from irrd.server.graphql.explorer import IRRDGraphiQLExplorer
 from irrd.server.graphql.extensions import QueryMetadataExtension, error_formatter
-from irrd.server.graphql.graphiql_csp import GRAPHIQL_CDN_ORIGIN, build_explorer
 from irrd.server.graphql.schema_builder import build_executable_schema
 from irrd.server.http.endpoints_api import (
     MetricsEndpoint,
@@ -102,7 +102,7 @@ async def lifespan(app):
     app.state.rate_limiter = None
 
 
-_graphiql = build_explorer()
+_graphiql = IRRDGraphiQLExplorer()
 
 graphql = GraphQL(
     build_executable_schema(),
@@ -110,7 +110,7 @@ graphql = GraphQL(
     http_handler=GraphQLHTTPHandler(
         extensions=[QueryMetadataExtension],
     ),
-    explorer=_graphiql.explorer,
+    explorer=_graphiql,
     error_formatter=error_formatter,
 )
 
@@ -144,15 +144,12 @@ class MemoryTrimMiddleware:
 CONTENT_SECURITY_POLICY = "; ".join(
     [
         "default-src 'none'",
-        # GraphiQL's inline <script>/<style> blocks (emitted by ariadne's stock
-        # ExplorerGraphiQL) are allowed by content hash so we don't need
-        # 'unsafe-inline'. The React + GraphiQL bundles and stylesheets loaded
-        # from the CDN are pinned via SRI integrity attributes injected by
-        # build_explorer().
-        " ".join(["script-src 'self'", *_graphiql.script_hashes, GRAPHIQL_CDN_ORIGIN]),
-        " ".join(["style-src 'self'", *_graphiql.style_hashes, GRAPHIQL_CDN_ORIGIN]),
-        "img-src 'self'",
-        "font-src 'self'",
+        "script-src 'self'",
+        "style-src 'self'",
+        # graphiql.min.css/js embed fonts and images inline as data: URIs; data:
+        # in img-src/font-src cannot execute code, unlike data: in script-src.
+        "img-src 'self' data:",
+        "font-src 'self' data:",
         "connect-src 'self'",
         "form-action 'self'",
         "base-uri 'none'",
@@ -164,16 +161,16 @@ CONTENT_SECURITY_POLICY = "; ".join(
 PERMISSIONS_POLICY = ", ".join(
     [
         # publickey-credentials-* are required for WebAuthn registration and
-        # authentication; everything else IRRD does not use.
+        # authentication; everything else IRRD does not use. Tokens Chrome does
+        # not recognise (ambient-light-sensor, battery, document-domain,
+        # speaker-selection) are omitted to avoid console warnings; they have no
+        # effect there and, for document.domain, Origin-Agent-Cluster covers it.
         "publickey-credentials-create=(self)",
         "publickey-credentials-get=(self)",
         "accelerometer=()",
-        "ambient-light-sensor=()",
         "autoplay=()",
-        "battery=()",
         "camera=()",
         "display-capture=()",
-        "document-domain=()",
         "encrypted-media=()",
         "fullscreen=()",
         "gamepad=()",
@@ -189,7 +186,6 @@ PERMISSIONS_POLICY = ", ".join(
         "picture-in-picture=()",
         "screen-wake-lock=()",
         "serial=()",
-        "speaker-selection=()",
         "usb=()",
         "web-share=()",
         "xr-spatial-tracking=()",
@@ -209,9 +205,8 @@ SECURITY_HEADERS = {
     # (/graphql, /v1/*), this header must be changed to cross-origin for those routes,
     # otherwise CORP will override CORS and block cross-origin browser clients.
     b"cross-origin-resource-policy": b"same-origin",
-    # Cross-Origin-Embedder-Policy is intentionally not set: esm.sh, which
-    # serves the GraphiQL bundles, does not send Cross-Origin-Resource-Policy,
-    # so `require-corp` would block GraphiQL.
+    # Cross-Origin-Embedder-Policy is intentionally left unset: it only enables
+    # cross-origin isolation (e.g. SharedArrayBuffer), which IRRD does not use.
     b"x-permitted-cross-domain-policies": b"none",
 }
 
@@ -227,6 +222,7 @@ class SecurityHeadersMiddleware:
             return
 
         has_session_cookie = self.session_cookie_name in Request(scope).cookies
+        is_static = scope["path"].startswith("/static/")
 
         async def send_with_security_headers(message):
             if message["type"] == "http.response.start":
@@ -236,7 +232,9 @@ class SecurityHeadersMiddleware:
                     for v in Headers(raw=response_headers).getlist("set-cookie")
                 )
                 headers = SECURITY_HEADERS.copy()
-                if has_session_cookie or sets_session_cookie:
+                if is_static:
+                    headers[b"cache-control"] = b"no-cache"
+                elif has_session_cookie or sets_session_cookie:
                     headers[b"cache-control"] = b"no-store"
                 # Keep all existing headers except those we're overriding,
                 # preserving duplicates (e.g. multiple Set-Cookie headers)

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<!--
+  Self-hosted GraphiQL explorer, adapted for IRRD (self-hosted /static paths,
+  the explorer plugin, our /graphql endpoint and welcome query) from the
+  graphiql CDN example, whose markup/script/style are split here across this
+  file, mount.js and page.css:
+  https://github.com/graphql/graphiql/blob/graphiql@3.9.0/examples/graphiql-cdn/index.html
+  See irrd/server/graphql/explorer.py.
+  -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IRRD GraphQL</title>
+    <link rel="stylesheet" href="/static/js/graphiql/page.css" />
+    <link rel="stylesheet" href="/static/js/graphiql/graphiql.min.css" />
+    <link rel="stylesheet" href="/static/js/graphiql/plugin-explorer.style.css" />
+  </head>
+  <body>
+    <div id="graphiql">
+      <div id="graphiql-loading">Loading IRRD GraphQL&hellip;</div>
+    </div>
+    <script src="/static/js/graphiql/react.production.min.js"></script>
+    <script src="/static/js/graphiql/react-dom.production.min.js"></script>
+    <script src="/static/js/graphiql/graphiql.min.js"></script>
+    <script src="/static/js/graphiql/plugin-explorer.umd.js"></script>
+    <script src="/static/js/graphiql/mount.js"></script>
+  </body>
+</html>
