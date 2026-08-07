@@ -1,0 +1,5 @@
+# Vendored third-party bundle: opaque minified blobs, don't diff or rewrite EOLs.
+irrd/webui/static/js/graphiql/*.min.js binary
+irrd/webui/static/js/graphiql/*.min.css binary
+irrd/webui/static/js/graphiql/*.umd.js binary
+irrd/webui/static/js/graphiql/*.style.css binary
