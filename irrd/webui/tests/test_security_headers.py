@@ -50,10 +50,30 @@ class TestSecurityHeaders:
         assert "samesite=lax" in lower, cookie
         assert "domain=" not in lower, cookie
 
-    def test_csp_no_unsafe_inline(self, https_client):
+    def test_csp(self, https_client):
         csp = https_client.get("/ui/auth/login/").headers["content-security-policy"]
+        directives = csp.split("; ")
+
         assert "'unsafe-inline'" not in csp, csp
         assert "'unsafe-eval'" not in csp, csp
+
+        assert "font-src 'self' data:" in directives
+        assert "img-src 'self' data:" in directives
+
+        # data: in font/img-src is safe, but not in others
+        for directive in directives:
+            if directive.startswith(("default-src", "script-src")):
+                assert "data:" not in directive, directive
+
+    def test_graphql_page_served(self, https_client):
+        from irrd.server.graphql.explorer import IRRDGraphiQLExplorer
+
+        resp = https_client.get("/graphql/")
+        assert resp.status_code == 200
+        assert resp.text == IRRDGraphiQLExplorer().html(None)
+        csp = resp.headers["content-security-policy"]
+        assert "script-src 'self'" in csp.split("; ")
+        assert "'sha256-" not in csp
 
     def test_permissions_policy_grants_webauthn(self, https_client):
         policy = https_client.get("/ui/auth/login/").headers["permissions-policy"]
