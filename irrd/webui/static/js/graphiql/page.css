@@ -1,0 +1,13 @@
+/* Adapted for IRRD from the graphiql CDN example; see graphiql.html. */
+body { height: 100%; margin: 0; overflow: hidden; }
+#graphiql { height: 100vh; }
+#graphiql-loading {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #545454;
+  font-family: sans-serif;
+  font-size: 1.5em;
+  font-weight: bold;
+}
