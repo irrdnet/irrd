@@ -146,8 +146,8 @@ CONTENT_SECURITY_POLICY = "; ".join(
         "default-src 'none'",
         "script-src 'self'",
         "style-src 'self'",
-        # graphiql.min.css/js embed fonts and images inline as data: URIs; data:
-        # in img-src/font-src cannot execute code, unlike data: in script-src.
+        # graphiql.min.css/js embed fonts and images inline as `data:` URIs, acceptable as
+        # `data:` in img-src/font-src cannot execute code, unlike data: in script-src.
         "img-src 'self' data:",
         "font-src 'self' data:",
         "connect-src 'self'",
@@ -161,10 +161,8 @@ CONTENT_SECURITY_POLICY = "; ".join(
 PERMISSIONS_POLICY = ", ".join(
     [
         # publickey-credentials-* are required for WebAuthn registration and
-        # authentication; everything else IRRD does not use. Tokens Chrome does
-        # not recognise (ambient-light-sensor, battery, document-domain,
-        # speaker-selection) are omitted to avoid console warnings; they have no
-        # effect there and, for document.domain, Origin-Agent-Cluster covers it.
+        # authentication; everything else IRRD does not use, so we disable it
+        # to minimise attack surface
         "publickey-credentials-create=(self)",
         "publickey-credentials-get=(self)",
         "accelerometer=()",
@@ -270,7 +268,7 @@ def set_middleware(app):
         )
     # __Host- is browser-enforced: the cookie is rejected unless Set-Cookie has
     # Secure, no Domain attribute, and Path=/. We pass path="/" and rely on
-    # SessionMiddleware's domain=None default; https_only=True provides Secure.
+    # SessionMiddleware's domain=None default. https_only=True provides Secure.
     session_cookie_name = "__Host-session" if https_only else "session"
 
     app.user_middleware = [
