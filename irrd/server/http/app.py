@@ -199,9 +199,13 @@ SECURITY_HEADERS = {
     b"referrer-policy": b"strict-origin-when-cross-origin",
     b"origin-agent-cluster": b"?1",
     b"cross-origin-opener-policy": b"same-origin",
-    # same-origin is correct for the web UI. If CORS is ever added to the API routes
-    # (/graphql, /v1/*), this header must be changed to cross-origin for those routes,
-    # otherwise CORP will override CORS and block cross-origin browser clients.
+    # same-origin: only IRRD's own pages may embed these responses (no-cors loads
+    # like <script>/<img>/fonts). Browser-only; non-browser API clients ignore it.
+    # - To let cross-origin browser clients call the API (/graphql, /v1/*): add CORS
+    #   headers on those routes. CORP does not need changing, as it only gates
+    #   no-cors embeds, not the cors-mode fetches such clients use.
+    # - Only relax CORP to cross-origin (per-route) if other origins must embed IRRD
+    #   resources, e.g. hotlinked /static assets or a require-corp isolated app.
     b"cross-origin-resource-policy": b"same-origin",
     # Cross-Origin-Embedder-Policy is intentionally left unset: it only enables
     # cross-origin isolation (e.g. SharedArrayBuffer), which IRRD does not use.
