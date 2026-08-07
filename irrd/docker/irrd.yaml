@@ -1,0 +1,213 @@
+---
+# This YAML configuration file sets up the IRRd (Internet Routing Registry daemon) application. It defines the following key configuration settings:
+#
+# - Database connection details for the PostgreSQL database used by IRRd.
+# - Authentication settings, including the GnuPG keyring location, a password override, and password hashing configuration.
+# - Logging settings, including the log level.
+# - Redis connection details.
+# - Process user and group.
+# - Preferences for route object updates and RPKI (Resource Public Key Infrastructure) integration.
+# - Access control lists for the HTTP and WHOIS servers.
+# - Server settings for the HTTP and WHOIS interfaces.
+# - Email notification settings, including the from address, SMTP server, and notification templates.
+# - Default and specific source configurations for various IRR (Internet Routing Registry) sources, including full import and NRTM (Notification of Changes) update settings.
+irrd:
+  database_url: postgresql://irrd:irrd@postgres_irrd:5432/irrd?keepalives=1&keepalives_idle=5
+  auth:
+      gnupg_keyring: /root/gnupg-keyring/
+      override_password: "so_safe"
+      webui_auth_failure_rate_limit: "30/hour"
+      password_hashers:
+          md5-pw: legacy
+  log:
+    level: DEBUG
+  redis_url: "redis://redis_irrd:6379"
+  piddir: /var/run/irrd/
+  user: daemon
+  group: daemon
+  route_object_preference:
+      update_timer: 3600
+  rpki:
+      roa_source: https://rpki.gin.ntt.net/api/export.json
+      roa_import_timer: 3600
+      pseudo_irr_remarks: |
+          This AS{asn} route object represents routing data retrieved
+          from the RPKI. This route object is the result of an automated
+          RPKI-to-IRR conversion process performed by IRRd.
+      notify_invalid_subject: route(6) objects in {sources_str} marked RPKI invalid
+      notify_invalid_header: |
+          This is to notify that {object_count} route(6) objects for which you are a
+          contact have been marked as RPKI invalid. This concerns
+          objects in the {sources_str} database.
+
+          You have received this message because your e-mail address is
+          listed in one or more of the tech-c or admin-c contacts, on
+          the maintainer(s) for these route objects.
+
+          The {object_count} route(6) objects listed below have been validated using
+          RPKI origin validation, and found to be invalid. This means that
+          these objects are no longer visible on the IRRd instance that
+          sent this e-mail.
+
+          This may affect routing filters based on queries to this IRRd
+          instance. It is also no longer possible to modify these objects.
+
+          To resolve this situation, create or modify ROA objects that
+          result in these route(6) being valid, or not_found. If this
+          happens, the route(6) objects will return to being visible.
+          You may also delete these objects if they are no longer
+          relevant.
+  access_lists:
+    http_database_status:
+      - "::/0"
+      - "0.0.0.0/0"
+  server:
+    http:
+      interface: "::0"
+      port: 8080
+      status_access_list: http_database_status
+      url: "http://localhost/"
+    whois:
+      interface: "::0"
+      port: 8043
+      # max_connections: 50
+  # log:
+  #   logfile_path: /var/log/irrd.log
+  #   level: WARNING
+  email:
+    from: irrd@example.com
+    smtp: localhost
+    footer: ''
+    notification_header: |
+      This is to notify you of changes in the {sources_str} database
+      or object authorisation failures.
+
+      You may receive this message because you are listed in
+      the notify attribute on the changed object(s), because
+      you are listed in the mnt-nfy or upd-to attribute on a maintainer
+      of the object(s), or the upd-to attribute on the maintainer of a
+      parent of newly created object(s).
+  sources_default:
+    - RPKI
+    - ALTDB
+    - AFRINIC
+    - APNIC
+    - ARIN
+    - LACNIC
+    - RIPE
+    - RADB
+    - TC
+  sources:
+    # if you need to add a new routing registry, check https://irr.net/registry/
+    ALTDB:
+      # Run a full import at first, then periodic NRTM updates.
+      authoritative: false
+      keep_journal: true
+      import_source: "ftp://ftp.altdb.net/pub/altdb/altdb.db.gz"
+      import_serial_source: "ftp://ftp.altdb.net/pub/altdb/ALTDB.CURRENTSERIAL"
+      nrtm_host: whois.altdb.net
+      nrtm_port: 43
+      import_timer: 900 # every 15 minutes
+    AFRINIC:
+      # Run a full import at first, then periodic NRTM updates.
+      authoritative: false
+      keep_journal: true
+      import_source: "https://ftp.afrinic.net/pub/dbase/afrinic.db.gz"
+      import_serial_source: "https://ftp.afrinic.net/pub/dbase/AFRINIC.CURRENTSERIAL"
+      nrtm_host: whois.afrinic.net
+      nrtm_port: 43003
+      import_timer: 900 # every 15 minutes
+    APNIC:
+      # Run a full import at first, then periodic NRTM updates.
+      authoritative: false
+      keep_journal: true
+      import_source:
+        - "ftp://ftp.apnic.net/apnic/whois/apnic.db.as-block.gz"
+        - "ftp://ftp.apnic.net/apnic/whois/apnic.db.as-set.gz"
+        - "ftp://ftp.apnic.net/apnic/whois/apnic.db.aut-num.gz"
+        - "ftp://ftp.apnic.net/apnic/whois/apnic.db.domain.gz"
+        - "ftp://ftp.apnic.net/apnic/whois/apnic.db.filter-set.gz"
+        - "ftp://ftp.apnic.net/apnic/whois/apnic.db.inet-rtr.gz"
+        - "ftp://ftp.apnic.net/apnic/whois/apnic.db.inet6num.gz"
+        - "ftp://ftp.apnic.net/apnic/whois/apnic.db.inetnum.gz"
+        - "ftp://ftp.apnic.net/apnic/whois/apnic.db.irt.gz"
+        - "ftp://ftp.apnic.net/apnic/whois/apnic.db.key-cert.gz"
+        - "ftp://ftp.apnic.net/apnic/whois/apnic.db.limerick.gz"
+        - "ftp://ftp.apnic.net/apnic/whois/apnic.db.mntner.gz"
+        - "ftp://ftp.apnic.net/apnic/whois/apnic.db.organisation.gz"
+        - "ftp://ftp.apnic.net/apnic/whois/apnic.db.peering-set.gz"
+        - "ftp://ftp.apnic.net/apnic/whois/apnic.db.role.gz"
+        - "ftp://ftp.apnic.net/apnic/whois/apnic.db.route-set.gz"
+        - "ftp://ftp.apnic.net/apnic/whois/apnic.db.route.gz"
+        - "ftp://ftp.apnic.net/apnic/whois/apnic.db.route6.gz"
+        - "ftp://ftp.apnic.net/apnic/whois/apnic.db.rtr-set.gz"
+      import_serial_source: "ftp://ftp.apnic.net/pub/apnic/whois/APNIC.CURRENTSERIAL"
+      nrtm_host: whois.apnic.net
+      nrtm_port: 43
+      import_timer: 900 # every 15 minutes
+    ARIN:
+      # Run a full import at first, then periodic NRTM updates.
+      authoritative: false
+      keep_journal: true
+      import_source: "https://ftp.arin.net/pub/rr/arin.db.gz"
+      import_serial_source: "https://ftp.arin.net/pub/rr/ARIN.CURRENTSERIAL"
+      nrtm_host: rr.arin.net
+      nrtm_port: 43
+      import_timer: 900 # every 15 minutes
+    LACNIC:
+      # Run a full import at first, then periodic NRTM updates.
+      authoritative: false
+      keep_journal: true
+      import_source: "https://irr.lacnic.net/lacnic.db.gz"
+      import_serial_source: "https://irr.lacnic.net/LACNIC.CURRENTSERIAL"
+      nrtm_host: irr.lacnic.net
+      nrtm_port: 43
+      import_timer: 900 # every 15 minutes
+    RIPE:
+      # Run a full import at first, then periodic NRTM updates.
+      authoritative: false
+      keep_journal: true
+      import_source:
+        - "https://ftp.ripe.net/ripe/dbase/split/ripe.db.as-block.gz"
+        - "https://ftp.ripe.net/ripe/dbase/split/ripe.db.as-set.gz"
+        - "https://ftp.ripe.net/ripe/dbase/split/ripe.db.aut-num.gz"
+        - "https://ftp.ripe.net/ripe/dbase/split/ripe.db.domain.gz"
+        - "https://ftp.ripe.net/ripe/dbase/split/ripe.db.filter-set.gz"
+        - "https://ftp.ripe.net/ripe/dbase/split/ripe.db.inet-rtr.gz"
+        - "https://ftp.ripe.net/ripe/dbase/split/ripe.db.inet6num.gz"
+        - "https://ftp.ripe.net/ripe/dbase/split/ripe.db.inetnum.gz"
+        - "https://ftp.ripe.net/ripe/dbase/split/ripe.db.irt.gz"
+        - "https://ftp.ripe.net/ripe/dbase/split/ripe.db.key-cert.gz"
+        - "https://ftp.ripe.net/ripe/dbase/split/ripe.db.mntner.gz"
+        - "https://ftp.ripe.net/ripe/dbase/split/ripe.db.organisation.gz"
+        - "https://ftp.ripe.net/ripe/dbase/split/ripe.db.peering-set.gz"
+        - "https://ftp.ripe.net/ripe/dbase/split/ripe.db.person.gz"
+        - "https://ftp.ripe.net/ripe/dbase/split/ripe.db.poem.gz"
+        - "https://ftp.ripe.net/ripe/dbase/split/ripe.db.poetic-form.gz"
+        - "https://ftp.ripe.net/ripe/dbase/split/ripe.db.role.gz"
+        - "https://ftp.ripe.net/ripe/dbase/split/ripe.db.route-set.gz"
+        - "https://ftp.ripe.net/ripe/dbase/split/ripe.db.route.gz"
+        - "https://ftp.ripe.net/ripe/dbase/split/ripe.db.route6.gz"
+        - "https://ftp.ripe.net/ripe/dbase/split/ripe.db.rtr-set.gz"
+      import_serial_source: "https://ftp.ripe.net/ripe/dbase/RIPE.CURRENTSERIAL"
+      nrtm_host: whois.ripe.net
+      nrtm_port: 4444
+      import_timer: 900 # every 15 minutes
+    RADB:
+      # Run a full import at first, then periodic NRTM updates.
+      authoritative: false
+      keep_journal: true
+      import_source: "ftp://ftp.radb.net/radb/dbase/radb.db.gz"
+      import_serial_source: "ftp://ftp.radb.net/radb/dbase/RADB.CURRENTSERIAL"
+      nrtm_host: nrtm.radb.net
+      nrtm_port: 43
+      import_timer: 900 # every 15 minutes
+    TC:
+      # Run a full import at first, then periodic NRTM updates.
+      authoritative: false
+      keep_journal: true
+      import_source: "https://ftp.bgp.net.br/tc.db.gz"
+      import_serial_source: "https://ftp.bgp.net.br/TC.CURRENTSERIAL"
+      nrtm_host: irr.bgp.net.br
+      nrtm_port: 43
+      import_timer: 900 # every 15 minutes

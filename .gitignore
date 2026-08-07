@@ -21,3 +21,5 @@ syntax: glob
 __pycache__
 _build
 twisted/plugins/dropin.cache
+
+irrd/docker/data
