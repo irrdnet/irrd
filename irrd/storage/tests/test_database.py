@@ -64,6 +64,15 @@ def database_handler_with_route():
     dh.close()
 
 
+def test_connection_closed_on_init_failure(monkeypatch):
+    connection = Mock(execution_options=Mock(side_effect=ValueError))
+    monkeypatch.setattr("irrd.storage.database_handler.get_engine", lambda: Mock(connect=lambda: connection))
+
+    with raises(ValueError):
+        DatabaseHandler(readonly=True)
+    assert connection.close.called
+
+
 # noinspection PyTypeChecker
 class TestDatabaseHandlerLive:
     """

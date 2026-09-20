@@ -1,3 +1,4 @@
+import contextlib
 import logging
 import random
 import signal
@@ -492,14 +493,13 @@ class PreloadUpdater(threading.Thread):
         else:
             dh = mock_database_handler
 
-        if self.update_routes:
-            self._update_routes(dh)
-        self._update_all_sets(dh)
+        with contextlib.closing(dh):
+            if self.update_routes:
+                self._update_routes(dh)
+            self._update_all_sets(dh)
 
         if self.preloader.signal_redis_store_updated():
             logger.info(f"Completed preload store update from thread {self}, notified workers")
-
-        dh.close()
 
     def _update_routes(self, dh):
         new_origin_route4_store: Dict[str, set] = defaultdict(set)
