@@ -25,6 +25,15 @@ ROUTEPREF_IMPORT_TIME = 3600
 AUTH_SET_CREATION_COMMON_KEY = "COMMON"
 SOCKET_DEFAULT_TIMEOUT = 30
 RPSL_MNTNER_AUTH_INTERNAL = "IRRD-INTERNAL-AUTH"
+# Maximum cost for newly submitted bcrypt hashes: ample room above the
+# passlib default of 12, while limiting the verification time an attacker
+# can force on the server (GHSA-pcwp-hhmm-c58f). OWASP recommends hashing
+# take under one second, cost 16 takes a few seconds on 2026 hardware:
+# https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+BCRYPT_MAX_ROUNDS = 16
+# Limits the distinct passwords or override passwords evaluated
+# per submission (GHSA-pcwp-hhmm-c58f)
+MAX_CREDENTIALS_PER_SUBMISSION = 20
 
 
 LOGGING = {

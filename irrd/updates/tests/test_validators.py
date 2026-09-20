@@ -6,7 +6,11 @@ from unittest.mock import Mock
 import pytest
 from IPy import IP
 
-from irrd.conf import AUTH_SET_CREATION_COMMON_KEY, RPSL_MNTNER_AUTH_INTERNAL
+from irrd.conf import (
+    AUTH_SET_CREATION_COMMON_KEY,
+    MAX_CREDENTIALS_PER_SUBMISSION,
+    RPSL_MNTNER_AUTH_INTERNAL,
+)
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseSuspendedQuery
@@ -298,6 +302,36 @@ class TestAuthValidator:
         validator.api_keys = ["not-a-uuid"]
         result = validator.process_auth(person, None)
         assert not result.is_valid()
+
+    def test_too_many_credentials(self, prepare_mocks, config_override):
+        validator, mock_dq, mock_dh = prepare_mocks
+        person = rpsl_object_from_text(SAMPLE_PERSON)
+        expected_error = {
+            f"Submissions may include at most {MAX_CREDENTIALS_PER_SUBMISSION} distinct passwords."
+        }
+
+        validator.passwords = [f"pw-{i}" for i in range(MAX_CREDENTIALS_PER_SUBMISSION + 1)]
+        result = validator.process_auth(person, None)
+        assert not result.is_valid()
+        assert result.error_messages == expected_error
+
+        # Make sure deduplication works
+        mock_dh.execute_query = lambda q: []
+        validator.passwords = ["password"] * (MAX_CREDENTIALS_PER_SUBMISSION * 3)
+        result = validator.process_auth(person, None)
+        assert result.error_messages != expected_error
+        assert validator.passwords == ["password"]
+
+        # A valid override is honored regardless of password count
+        config_override({"auth": {"override_password": VALID_PW_MD5}})
+        validator.passwords = [f"pw-{i}" for i in range(MAX_CREDENTIALS_PER_SUBMISSION + 1)]
+        validator.overrides = [VALID_PW]
+        result = validator.process_auth(person, None)
+        assert result.is_valid(), result.error_messages
+
+        # Excessive distinct overrides shoulod be rejected too
+        validator.overrides = [f"ov-{i}" for i in range(MAX_CREDENTIALS_PER_SUBMISSION)] + [VALID_PW]
+        assert validator.check_override() == AuthMethod.NONE
 
     def test_existing_person_mntner_change(self, prepare_mocks):
         validator, mock_dq, mock_dh = prepare_mocks
