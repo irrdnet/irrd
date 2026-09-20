@@ -1,3 +1,4 @@
+import contextlib
 import logging
 import textwrap
 
@@ -18,19 +19,18 @@ class StatusGenerator:
         """
         Generate a human-readable overview of database status.
         """
-        database_handler = DatabaseHandler()
+        database_handler = DatabaseHandler(readonly=True)
+        with contextlib.closing(database_handler):
+            statistics_query = RPSLDatabaseObjectStatisticsQuery()
+            self.statistics_results = list(database_handler.execute_query(statistics_query))
+            status_query = DatabaseStatusQuery()
+            self.status_results = list(database_handler.execute_query(status_query))
 
-        statistics_query = RPSLDatabaseObjectStatisticsQuery()
-        self.statistics_results = list(database_handler.execute_query(statistics_query))
-        status_query = DatabaseStatusQuery()
-        self.status_results = list(database_handler.execute_query(status_query))
-
-        results = [
-            self._generate_header(),
-            self._generate_statistics_table(),
-            self._generate_source_detail(database_handler),
-        ]
-        database_handler.close()
+            results = [
+                self._generate_header(),
+                self._generate_statistics_table(),
+                self._generate_source_detail(database_handler),
+            ]
         return "\n\n".join(results)
 
     def _generate_header(self) -> str:
