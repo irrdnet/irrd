@@ -111,6 +111,8 @@ src_paths = "irrd"
 
 [tool.ruff]
 line-length = 110
+# B019: lru_cache on methods leaks the instance and all it references (GHSA-cvm7-qcww-5m59)
+lint.extend-select = ["B019"]
 lint.ignore = ["E501"]
 target-version = "py310"
 

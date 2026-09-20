@@ -1,5 +1,6 @@
 import functools
 import logging
+import uuid
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Union
 
@@ -321,6 +322,12 @@ class AuthValidator:
         self._pre_approved: set[str] = set()
         self.keycert_obj_pk = keycert_obj_pk
         self._internal_authenticated_user = internal_authenticated_user
+        # Cache per instance: a class level lru_cache would leak self,
+        # and thereby the database handler (GHSA-cvm7-qcww-5m59)
+        self._find_related_object_route = functools.lru_cache(maxsize=50)(  # type: ignore
+            self._find_related_object_route
+        )
+        self._find_related_autnum = functools.lru_cache(maxsize=50)(self._find_related_autnum)  # type: ignore
 
     def pre_approve(self, presumed_valid_new_mntners: list[RPSLMntner]) -> None:
         """
@@ -557,6 +564,16 @@ class AuthValidator:
         if not self.api_keys or isinstance(rpsl_obj_new, RPSLMntner):
             return None
 
+        api_keys = []
+        for api_key in self.api_keys:
+            try:
+                api_keys.append(uuid.UUID(api_key))
+            except ValueError:
+                logger.info("Ignoring API key in submission: not a valid UUID")
+                continue
+        if not api_keys:
+            return None
+
         session = saorm.Session(bind=self.database_handler._connection)
         query = (
             session.query(AuthApiToken)
@@ -564,7 +581,7 @@ class AuthValidator:
             .filter(
                 AuthMntner.rpsl_mntner_pk == rpsl_pk,
                 AuthMntner.rpsl_mntner_source == source,
-                AuthApiToken.token.in_(self.api_keys),
+                AuthApiToken.token.in_(api_keys),
             )
         )
         for api_token in query.all():
@@ -617,7 +634,6 @@ class AuthValidator:
 
         return None
 
-    @functools.lru_cache(maxsize=50)
     def _find_related_object_route(self, rpsl_obj_new: RPSLObject):
         """
         Find the related inetnum/route object to rpsl_obj_new, which must be a route(6).
@@ -654,20 +670,24 @@ class AuthValidator:
 
         return None
 
+    def _find_related_autnum(self, pk_asn_segment: str, source: str):
+        query = (
+            RPSLDatabaseQuery()
+            .sources([source])
+            .object_classes(["aut-num"])
+            .first_only()
+            .rpsl_pk(pk_asn_segment)
+        )
+        aut_nums = list(self.database_handler.execute_query(query))
+        if aut_nums:
+            return aut_nums[0]
+
     def _find_related_object_set(self, rpsl_obj_new: RPSLObject, result: ValidatorResult):
         """
         Find the related aut-num object to rpsl_obj_new, which must be a set object,
         depending on settings.
         Returns a dict as returned by the database handler.
         """
-
-        @functools.lru_cache(maxsize=50)
-        def _find_in_db():
-            query = _init_related_object_query("aut-num", rpsl_obj_new).rpsl_pk(rpsl_obj_new.pk_asn_segment)
-            aut_nums = list(self.database_handler.execute_query(query))
-            if aut_nums:
-                return aut_nums[0]
-
         if not rpsl_obj_new.pk_asn_segment:
             return None
 
@@ -675,7 +695,7 @@ class AuthValidator:
         if mode == RPSLSetAutnumAuthenticationMode.DISABLED:
             return None
 
-        aut_num = _find_in_db()
+        aut_num = self._find_related_autnum(rpsl_obj_new.pk_asn_segment, rpsl_obj_new.source())
         if aut_num:
             return aut_num
         elif mode == RPSLSetAutnumAuthenticationMode.REQUIRED:
@@ -741,12 +761,10 @@ class RulesValidator:
 
         return result
 
-    @functools.lru_cache(maxsize=50)
     def _check_suspended_mntner_with_same_pk(self, pk: str, source: str) -> bool:
         q = RPSLDatabaseSuspendedQuery().object_classes(["mntner"]).rpsl_pk(pk).sources([source]).first_only()
         return bool(list(self.database_handler.execute_query(q)))
 
-    @functools.lru_cache(maxsize=50)
     def _check_mntner_migrated(self, pk: str, source: str) -> bool:
         session = saorm.Session(bind=self.database_handler._connection)
         query = session.query(AuthMntner).filter(
