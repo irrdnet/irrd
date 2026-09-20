@@ -1,3 +1,4 @@
+import contextlib
 import logging
 import textwrap
 from collections import defaultdict
@@ -37,24 +38,24 @@ class ChangeSubmissionHandler:
         request_meta: dict[str, str | None] | None = None,
     ):
         self.database_handler = DatabaseHandler()
-        self.request_meta = request_meta if request_meta else {}
-        self._pgp_key_id = self._resolve_pgp_key_id(pgp_fingerprint) if pgp_fingerprint else None
+        with contextlib.closing(self.database_handler):
+            self.request_meta = request_meta if request_meta else {}
+            self._pgp_key_id = self._resolve_pgp_key_id(pgp_fingerprint) if pgp_fingerprint else None
 
-        reference_validator = ReferenceValidator(self.database_handler)
-        auth_validator = AuthValidator(
-            self.database_handler, origin, self._pgp_key_id, internal_authenticated_user
-        )
-        change_requests = parse_change_requests(
-            object_texts_blob,
-            self.database_handler,
-            auth_validator,
-            reference_validator,
-            self.request_meta,
-        )
+            reference_validator = ReferenceValidator(self.database_handler)
+            auth_validator = AuthValidator(
+                self.database_handler, origin, self._pgp_key_id, internal_authenticated_user
+            )
+            change_requests = parse_change_requests(
+                object_texts_blob,
+                self.database_handler,
+                auth_validator,
+                reference_validator,
+                self.request_meta,
+            )
 
-        self._handle_change_requests(change_requests, reference_validator, auth_validator)
-        self.database_handler.commit()
-        self.database_handler.close()
+            self._handle_change_requests(change_requests, reference_validator, auth_validator)
+            self.database_handler.commit()
         return self
 
     def load_change_submission(
@@ -66,75 +67,75 @@ class ChangeSubmissionHandler:
         remote_ip: IP | None = None,
     ):
         self.database_handler = DatabaseHandler()
-        self.request_meta = request_meta if request_meta else {}
+        with contextlib.closing(self.database_handler):
+            self.request_meta = request_meta if request_meta else {}
 
-        reference_validator = ReferenceValidator(self.database_handler)
-        auth_validator = AuthValidator(self.database_handler, origin, remote_ip=remote_ip)
-        change_requests: list[ChangeRequest | SuspensionRequest] = []
+            reference_validator = ReferenceValidator(self.database_handler)
+            auth_validator = AuthValidator(self.database_handler, origin, remote_ip=remote_ip)
+            change_requests: list[ChangeRequest | SuspensionRequest] = []
 
-        delete_reason = None
-        if delete:
-            delete_reason = data.delete_reason
+            delete_reason = None
+            if delete:
+                delete_reason = data.delete_reason
 
-        auth_validator.passwords = data.passwords
-        auth_validator.overrides = [data.override] if data.override else []
-        auth_validator.api_keys = data.api_keys
+            auth_validator.passwords = data.passwords
+            auth_validator.overrides = [data.override] if data.override else []
+            auth_validator.api_keys = data.api_keys
 
-        for rpsl_obj in data.objects:
-            object_text = rpsl_obj.object_text
-            if rpsl_obj.attributes:
-                # We don't have a neat way to process individual attribute pairs,
-                # so construct a pseudo-object by appending the text.
-                composite_object = []
-                for attribute in rpsl_obj.attributes:
-                    composite_object.append(attribute.name + ": " + attribute.value)  # type: ignore
-                object_text = "\n".join(composite_object) + "\n"
+            for rpsl_obj in data.objects:
+                object_text = rpsl_obj.object_text
+                if rpsl_obj.attributes:
+                    # We don't have a neat way to process individual attribute pairs,
+                    # so construct a pseudo-object by appending the text.
+                    composite_object = []
+                    for attribute in rpsl_obj.attributes:
+                        composite_object.append(attribute.name + ": " + attribute.value)  # type: ignore
+                    object_text = "\n".join(composite_object) + "\n"
 
-            assert object_text  # enforced by pydantic
-            change_requests.append(
-                ChangeRequest(
-                    object_text,
-                    self.database_handler,
-                    auth_validator,
-                    reference_validator,
-                    delete_reason,
-                    self.request_meta,
+                assert object_text  # enforced by pydantic
+                change_requests.append(
+                    ChangeRequest(
+                        object_text,
+                        self.database_handler,
+                        auth_validator,
+                        reference_validator,
+                        delete_reason,
+                        self.request_meta,
+                    )
                 )
-            )
 
-        self._handle_change_requests(change_requests, reference_validator, auth_validator)
-        self.database_handler.commit()
-        self.database_handler.close()
+            self._handle_change_requests(change_requests, reference_validator, auth_validator)
+            self.database_handler.commit()
         return self
 
     def load_suspension_submission(
         self, data: RPSLSuspensionSubmission, request_meta: dict[str, str | None] | None = None
     ):
         self.database_handler = DatabaseHandler()
-        self.request_meta = request_meta if request_meta else {}
+        with contextlib.closing(self.database_handler):
+            self.request_meta = request_meta if request_meta else {}
 
-        reference_validator = ReferenceValidator(self.database_handler)
-        auth_validator = AuthValidator(self.database_handler)
-        change_requests: list[ChangeRequest | SuspensionRequest] = []
+            reference_validator = ReferenceValidator(self.database_handler)
+            auth_validator = AuthValidator(self.database_handler)
+            change_requests: list[ChangeRequest | SuspensionRequest] = []
 
-        auth_validator.overrides = [data.override] if data.override else []
+            auth_validator.overrides = [data.override] if data.override else []
 
-        for rpsl_obj in data.objects:
-            # We don't have a neat way to process individual attribute pairs,
-            # so construct a pseudo-object by appending the text.
-            object_text = f"mntner: {rpsl_obj.mntner}\nsource: {rpsl_obj.source}\n"
-            change_requests.append(
-                SuspensionRequest(
-                    object_text,
-                    self.database_handler,
-                    auth_validator,
-                    rpsl_obj.request_type.value,
+            for rpsl_obj in data.objects:
+                # We don't have a neat way to process individual attribute pairs,
+                # so construct a pseudo-object by appending the text.
+                object_text = f"mntner: {rpsl_obj.mntner}\nsource: {rpsl_obj.source}\n"
+                change_requests.append(
+                    SuspensionRequest(
+                        object_text,
+                        self.database_handler,
+                        auth_validator,
+                        rpsl_obj.request_type.value,
+                    )
                 )
-            )
 
-        self._handle_change_requests(change_requests, reference_validator, auth_validator)
-        self.database_handler.commit()
-        self.database_handler.close()
+            self._handle_change_requests(change_requests, reference_validator, auth_validator)
+            self.database_handler.commit()
         return self
 
     def _handle_change_requests(

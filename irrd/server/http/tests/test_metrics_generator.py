@@ -15,7 +15,7 @@ class TestMetricsGenerator:
     def test_request(self, monkeypatch):
         mock_database_handler = Mock()
         monkeypatch.setattr(
-            "irrd.server.http.metrics_generator.DatabaseHandler", lambda: mock_database_handler
+            "irrd.server.http.metrics_generator.DatabaseHandler", lambda readonly: mock_database_handler
         )
         mock_status_query = Mock()
         monkeypatch.setattr(
