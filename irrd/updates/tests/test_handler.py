@@ -1123,6 +1123,17 @@ class TestChangeSubmissionHandler:
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         """)
 
+    def test_database_handler_closed_on_error(self, prepare_mocks, monkeypatch):
+        # An error during submission processing must not leak the checked out
+        # database connection (GHSA-cvm7-qcww-5m59)
+        mock_dq, mock_dh, mock_email = prepare_mocks
+        monkeypatch.setattr("irrd.updates.handler.ChangeRequest", Mock(side_effect=RuntimeError("expected")))
+        data = RPSLChangeSubmission.model_validate({"objects": [{"object_text": SAMPLE_MNTNER}]})
+        with pytest.raises(RuntimeError):
+            ChangeSubmissionHandler().load_change_submission(data, AuthoritativeChangeOrigin.webapi)
+        assert mock_dh.close.called
+        assert not mock_dh.commit.called
+
     def test_load_suspension_submission(self, prepare_mocks, monkeypatch):
         mock_dq, mock_dh, mock_email = prepare_mocks
         mock_handle_change_requests = Mock(ChangeSubmissionHandler._handle_change_requests)

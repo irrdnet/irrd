@@ -1,3 +1,4 @@
+import contextlib
 import datetime
 import logging
 import os
@@ -18,12 +19,12 @@ class MetricsGenerator:
         """
         Generate a machine-readable overview of database status.
         """
-        database_handler = DatabaseHandler()
-
-        statistics_query = RPSLDatabaseObjectStatisticsQuery()
-        statistics_results = list(database_handler.execute_query(statistics_query))
-        status_query = DatabaseStatusQuery()
-        status_results = list(database_handler.execute_query(status_query))
+        database_handler = DatabaseHandler(readonly=True)
+        with contextlib.closing(database_handler):
+            statistics_query = RPSLDatabaseObjectStatisticsQuery()
+            statistics_results = list(database_handler.execute_query(statistics_query))
+            status_query = DatabaseStatusQuery()
+            status_results = list(database_handler.execute_query(status_query))
 
         statistics = sorted(statistics_results, key=lambda item: f"{item['source']}-{item['object_class']}")
         status = sorted(status_results, key=lambda item: item["source"])
@@ -56,7 +57,6 @@ class MetricsGenerator:
                 status, "serial_newest_journal", "irrd_newest_journal_serial", "Newest serial in the journal"
             ),
         ]
-        database_handler.close()
         return "\n".join(results) + "\n"
 
     def _generate_header(self) -> str:
