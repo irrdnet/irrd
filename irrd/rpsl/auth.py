@@ -2,7 +2,7 @@ from enum import Enum, unique
 
 from passlib.hash import bcrypt, des_crypt, md5_crypt
 
-from irrd.conf import get_setting
+from irrd.conf import BCRYPT_MAX_ROUNDS, get_setting
 
 
 @unique
@@ -17,6 +17,19 @@ PASSWORD_HASHERS_ALL = {
     "MD5-PW": md5_crypt,
     "BCRYPT-PW": bcrypt,
 }
+
+
+def bcrypt_rounds_excessive(auth_value: str) -> bool:
+    """Check whether an auth attribute value is a BCRYPT-PW hash with cost over BCRYPT_MAX_ROUNDS."""
+    scheme, _, password_hash = auth_value.partition(" ")
+    if scheme.upper() != "BCRYPT-PW":
+        return False
+    try:
+        return bcrypt.from_string(password_hash).rounds > BCRYPT_MAX_ROUNDS
+    except ValueError:
+        # Hashes passlib can not parse, including cost over 31, can never
+        # verify and are treated like any other unverifiable hash
+        return False
 
 
 def get_password_hashers(permit_legacy=True):
