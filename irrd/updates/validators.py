@@ -9,7 +9,11 @@ from IPy import IP
 from ordered_set import OrderedSet
 from passlib.hash import bcrypt, md5_crypt
 
-from irrd.conf import RPSL_MNTNER_AUTH_INTERNAL, get_setting
+from irrd.conf import (
+    MAX_CREDENTIALS_PER_SUBMISSION,
+    RPSL_MNTNER_AUTH_INTERNAL,
+    get_setting,
+)
 from irrd.rpsl.parser import RPSLObject
 from irrd.rpsl.rpsl_objects import (
     PROTECTED_NAME_OBJECT_CLASSES,
@@ -364,6 +368,15 @@ class AuthValidator:
             logger.info("Found valid override password.")
             return result
 
+        # Deduplicate first: the same password: line may be repeated for
+        # each object, and repeats should not count against the limit
+        self.passwords = list(dict.fromkeys(self.passwords))
+        if len(self.passwords) > MAX_CREDENTIALS_PER_SUBMISSION:
+            result.error_messages.add(
+                f"Submissions may include at most {MAX_CREDENTIALS_PER_SUBMISSION} distinct passwords."
+            )
+            return result
+
         mntners_new = rpsl_obj_new.parsed_data["mnt-by"]
         logger.debug(f"Checking auth for new object {rpsl_obj_new}, mntners in new object: {mntners_new}")
         new_mntners_result = self._check_mntners(rpsl_obj_new, mntners_new, source)
@@ -451,6 +464,15 @@ class AuthValidator:
 
         override_hash = get_setting("auth.override_password")
         if override_hash:
+            # Overrides are always limited: this is their single point of
+            # consumption for all submission paths (GHSA-pcwp-hhmm-c58f)
+            self.overrides = list(dict.fromkeys(self.overrides))
+            if len(self.overrides) > MAX_CREDENTIALS_PER_SUBMISSION:
+                logger.info(
+                    f"Ignoring override passwords: more than {MAX_CREDENTIALS_PER_SUBMISSION} distinct"
+                    " values in submission"
+                )
+                return AuthMethod.NONE
             for override in self.overrides:
                 try:
                     if bcrypt.verify(override, override_hash):
