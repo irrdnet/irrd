@@ -892,7 +892,9 @@ Tips
   ``asSetPrefixes`` and ``recursiveSetMembers`` already support retrieving
   for multiple ASNs/sets in one query. However, you can send multiple
   queries of any type in one request, with different parameters, using
-  aliases_. This reduces latency.
+  aliases_. This reduces latency. One request may ask for at most 2500
+  fields in total, over all its queries, including through aliases and
+  fragments.
 * Many queries will be based on user input. Composing a string to embed
   the query arguments is frowned upon in GraphQL. You can use variables_
   to work with user input.
