@@ -30,6 +30,19 @@ def test_query_metedata_extension(caplog):
     assert result["sql_queries"] == ["sql query"]
 
 
+def test_query_metadata_extension_malformed_bodies():
+    extension = QueryMetadataExtension()
+    mock_request = HTTPConnection(
+        {
+            "type": "http",
+            "client": ("127.0.0.1", "8000"),
+        }
+    )
+    for body in ({}, {"query": 123}, [], None):
+        mock_request._json = body
+        assert extension.format({"request": mock_request}) == {}
+
+
 def test_error_formatter():
     # Regular GraphQL error should always be passed
     error = GraphQLError(message="error")
