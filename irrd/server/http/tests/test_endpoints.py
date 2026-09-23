@@ -248,3 +248,12 @@ class TestSuspensionSubmissionEndpoint:
         response_invalid_json = client.post("/v1/suspension/", content="invalid")
         assert response_invalid_json.status_code == 400
         assert "expect" in response_invalid_json.text.lower()
+
+
+class TestGraphQLValidation:
+    def test_excessive_query_cost_rejected(self):
+        client = TestClient(app)
+        aliases = " ".join(f"a{i}: databaseStatus {{ source }}" for i in range(1500))
+        response = client.post("/graphql/", json={"query": "query { " + aliases + " }"})
+        assert response.status_code == 400
+        assert "maximum cost" in response.text
