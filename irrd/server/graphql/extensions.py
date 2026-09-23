@@ -31,12 +31,14 @@ class QueryMetadataExtension(Extension):
             data["sql_query_count"] = len(context["sql_queries"])
             data["sql_queries"] = context["sql_queries"]
 
-        query = context["request"]._json
-        if context["request"]._json.get("operationName") != "IntrospectionQuery":
+        request_json = context["request"]._json
+        if isinstance(request_json, dict) and request_json.get("operationName") != "IntrospectionQuery":
             # Reformat the query to make it fit neatly on a single log line
-            query["query"] = query["query"].replace(" ", "").replace("\n", " ").replace("\t", "")
+            query = dict(request_json)
+            query["query"] = str(query.get("query", "")).replace(" ", "").replace("\n", " ").replace("\t", "")
             client = context["request"].client.host
-            logger.info(f'{client} ran query in {data.get("execution")}s: {query}')
+            # Truncated, as rejected queries can be of any size
+            logger.info(f'{client} ran query in {data.get("execution")}s: {query}'[:5000])
         return data
 
 
