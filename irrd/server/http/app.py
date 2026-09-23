@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 import limits
 from ariadne.asgi import GraphQL
 from ariadne.asgi.handlers import GraphQLHTTPHandler
+from ariadne.validation import cost_validator
 from asgi_logger import AccessLoggerMiddleware
 from setproctitle import setproctitle
 from starlette.applications import Starlette
@@ -101,6 +102,11 @@ async def shutdown():
 
 _graphiql = build_explorer()
 
+# Bounds the fields one request may ask for, over all its queries, including
+# through aliases and fragments. Requesting every field of every object class
+# costs about 1100. Introspection fields are not counted.
+MAX_GRAPHQL_QUERY_COST = 2500
+
 graphql = GraphQL(
     build_executable_schema(),
     debug=False,
@@ -109,6 +115,7 @@ graphql = GraphQL(
     ),
     explorer=_graphiql.explorer,
     error_formatter=error_formatter,
+    validation_rules=[cost_validator(maximum_cost=MAX_GRAPHQL_QUERY_COST, default_cost=1)],
 )
 
 STATIC_DIR = Path(__file__).parent.parent.parent / "webui" / "static"
