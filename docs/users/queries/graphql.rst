@@ -357,50 +357,31 @@ For which the result is::
 As the result shows, you can send one GraphQL query and get the results for
 one or multiple ASNs, separated by ASN.
 
-.. _graphql-registry-scoped-lookups:
-
 Registry-scoped lookups
 ~~~~~~~~~~~~~~~~~~~~~~~
-The ``asns`` argument of ``asnPrefixes``, and the ``setNames`` argument of
-``asSetPrefixes`` and ``recursiveSetMembers`` (covered below), normally
-look up their initial object across all configured sources, or the sources
-given in the ``sources`` argument.
+The queries ``asSetPrefixes`` and ``recursiveSetMembers`` (covered below),
+normally look up their initial object across all configured
+sources, or the sources given in the ``sources`` argument.
 
-Sometimes, e.g. when there are multiple objects with the same primary key
-in different sources, you may want the *initial* lookup of an ASN or
-AS-SET/route-set name to be restricted to a single, specific source, while
-still resolving any further recursion (e.g. the members of an AS-SET) using
-all sources, or the sources given in ``sources``.
+Sometimes when there are multiple objects with the same primary key
+in different sources, you may want the initial lookup of an AS-SET/route-set
+name to be restricted to a single, specific source, while still resolving any
+further recursion (e.g. the members of an AS-SET) using all sources, or the
+sources given in ``sources``.
 
-To do this, instead of a plain ``ASN`` or set name value, you can use a
-string value prefixed with a source name and ``::``, e.g. ``"RIPE::AS65540"``
-or ``"RIPE::AS-FOO"``. Internally, this is parsed into a ``RegistryScopedASN``
-or ``RegistryScopedAsSet`` value, which behaves exactly like a plain ASN or
-set name everywhere else, but also carries the given source.
+To do this, you can specify the ``rootSource`` string on ``asSetPrefixes``
+and ``recursiveSetMembers`` queries with a source configured on the server e.g.,
+``"RIPE"``.
 
-Each list argument accepts a mix of plain and source-scoped values. For
-example::
+For example::
 
     query {
-      asnPrefixes(asns: ["65539", "RIPE::AS65540"]) {
-        asn
-        prefixes
+      recursiveSetMembers(setNames: ["AS-FOO"], rootSource: "RIPE") {
+        rpslPk, rootSource, members
       }
     }
 
-Here, ``65539`` is looked up across all sources as usual, while ``65540``
-is only looked up in ``RIPE``. Similarly, for ``asSetPrefixes`` and
-``recursiveSetMembers``::
-
-    query {
-      recursiveSetMembers(setNames: ["AS-FOO", "RIPE::AS-BAR"]) {
-        rpslPk
-        rootSource
-        members
-      }
-    }
-
-This resolves ``AS-BAR`` as it exists in ``RIPE`` only,
+This resolves ``AS-FOO`` as it exists in ``RIPE`` only,
 but its members are still resolved recursively using all sources (or
 those given in ``sources``, if provided).
 
@@ -413,7 +394,7 @@ The GraphQL query definition is::
 
     type Query {
       recursiveSetMembers(
-        setNames: [AsSetName!]!
+        setNames: [String!]!
         depth: Int
         sources: [String!]
         excludeSets: [String!]
@@ -450,9 +431,6 @@ An example query::
 
 This query has a new argument, ``sqlTrace``, which is explained later on.
 
-Individual entries in ``setNames`` may also be registry-scoped, see
-:ref:`registry-scoped lookups <graphql-registry-scoped-lookups>`.
-
 AS set prefixes query
 ---------------------
 This query first recursively resolves all members an as-set
@@ -466,7 +444,7 @@ The GraphQL query definition is::
 
     type Query {
       asSetPrefixes(
-        setNames: [AsSetName!]!
+        setNames: [String!]!
         ipVersion: Int
         excludeSets: [String!]
         sources: [String!]
@@ -493,9 +471,6 @@ An example query::
         prefixes
       }
     }
-
-Individual entries in ``setNames`` may also be registry-scoped, see
-:ref:`registry-scoped lookups <graphql-registry-scoped-lookups>`.
 
 RPSL objects query
 ------------------
