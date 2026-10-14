@@ -87,7 +87,9 @@ the following steps:
 * The user requests migration with the maintainer name and one of the
   current valid passwords on the maintainer.
 * IRRD will mail all `admin-c` contacts on the maintainer with the
-  confirmation link (all will receive the same link).
+  confirmation link (all will receive the same link). The request is
+  refused when no e-mail address is found for any `admin-c` contact in
+  the same source.
 * The same user must open the confirmation link, and confirm again with
   a current valid password.
 * The maintainer is now migrated. Existing methods are kept.
