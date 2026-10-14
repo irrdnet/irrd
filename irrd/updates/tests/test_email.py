@@ -92,7 +92,7 @@ class TestHandleEmailSubmission:
 
         handle_email_submission(self.default_email)
         assert not mock_email.mock_calls
-        assert "An exception occurred while attempting to send a reply to an submission: FAILED"
+        assert "An exception occurred while attempting to parse the following update e-mail" in caplog.text
         assert "traceback for test-error follows" in caplog.text
         assert "test-error" in caplog.text
 
@@ -110,7 +110,7 @@ class TestHandleEmailSubmission:
         assert mock_email.mock_calls[0][1][1] == "ERROR: my subject"
         assert "internal error" in mock_email.mock_calls[0][1][2]
 
-        assert "An exception occurred while attempting to send a reply to an submission: FAILED"
+        assert "An exception occurred while attempting to process the following update" in caplog.text
         assert "traceback for test-error follows" in caplog.text
         assert "test-error" in caplog.text
 
@@ -125,7 +125,7 @@ class TestHandleEmailSubmission:
         assert mock_email.mock_calls[0][1][1] == "FAILED: my subject"
         assert "DETAILED EXPLANATION" in mock_email.mock_calls[0][1][2]
 
-        assert "An exception occurred while attempting to send a reply to an submission: FAILED"
+        assert "An exception occurred while attempting to send a reply to an update" in caplog.text
         assert "traceback for test-error follows" in caplog.text
         assert "test-error" in caplog.text
 
