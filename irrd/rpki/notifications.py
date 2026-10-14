@@ -112,7 +112,7 @@ def notify_rpki_invalid_owners(
                 pass
 
     header_template = get_setting("rpki.notify_invalid_header", "")
-    subject_template = get_setting("rpki.notify_invalid_subject", "").replace("\n", " ")
+    subject_template = get_setting("rpki.notify_invalid_subject", "")
     for email, objs in objs_per_email.items():
         sources_str = ", ".join({obj.parsed_data["source"] for obj in objs})
         subject = subject_template.format(sources_str=sources_str, object_count=len(objs))
