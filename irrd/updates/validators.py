@@ -1,3 +1,4 @@
+import contextlib
 import functools
 import logging
 import uuid
@@ -771,9 +772,9 @@ class RulesValidator:
         return bool(list(self.database_handler.execute_query(q)))
 
     def _check_mntner_migrated(self, pk: str, source: str) -> bool:
-        session = saorm.Session(bind=self.database_handler._connection)
-        query = session.query(AuthMntner).filter(
-            AuthMntner.rpsl_mntner_pk == pk,
-            AuthMntner.rpsl_mntner_source == source,
-        )
-        return bool(query.count())
+        with contextlib.closing(saorm.Session(bind=self.database_handler._connection)) as session:
+            query = session.query(AuthMntner).filter(
+                AuthMntner.rpsl_mntner_pk == pk,
+                AuthMntner.rpsl_mntner_source == source,
+            )
+            return bool(query.count())
