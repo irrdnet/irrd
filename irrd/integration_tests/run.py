@@ -135,7 +135,7 @@ class TestIntegration:
         mail_text = self._extract_message_body(messages[0])
         assert messages[0]["Subject"] == "FAILED: my subject"
         assert messages[0]["From"] == "from@example.com"
-        assert messages[0]["To"] == "Sasha <sasha@example.com>"
+        assert messages[0]["To"] == "sasha@example.com"
         assert "\nCreate FAILED: [mntner] TEST-MNT\n" in mail_text
         assert (
             "\nERROR: Object PERSON-TEST referenced in field admin-c not found in database TEST - must"
@@ -163,7 +163,7 @@ class TestIntegration:
         mail_text = self._extract_message_body(messages[0])
         assert messages[0]["Subject"] == "SUCCESS: my subject"
         assert messages[0]["From"] == "from@example.com"
-        assert messages[0]["To"] == "Sasha <sasha@example.com>"
+        assert messages[0]["To"] == "sasha@example.com"
         assert "\nCreate succeeded: [mntner] TEST-MNT\n" in mail_text
         assert "\nCreate succeeded: [person] PERSON-TEST\n" in mail_text
         assert "email footer" in mail_text
@@ -193,7 +193,7 @@ class TestIntegration:
         assert len(messages) == 3
         assert messages[0]["Subject"] == "SUCCESS: my subject"
         assert messages[0]["From"] == "from@example.com"
-        assert messages[0]["To"] == "Sasha <sasha@example.com>"
+        assert messages[0]["To"] == "sasha@example.com"
         assert "Create succeeded: [key-cert] PGPKEY-80F238C6" in self._extract_message_body(messages[0])
 
         self._check_recipients_in_mails(messages[1:], ["mnt-nfy@example.net", "mnt-nfy2@example.net"])
@@ -220,7 +220,7 @@ class TestIntegration:
         mail_text = self._extract_message_body(messages[0])
         assert messages[0]["Subject"] == "SUCCESS: my subject"
         assert messages[0]["From"] == "from@example.com"
-        assert messages[0]["To"] == "Sasha <sasha@example.com>"
+        assert messages[0]["To"] == "sasha@example.com"
         assert "\nModify succeeded: [person] PERSON-TEST\n" in mail_text
 
         self._check_recipients_in_mails(
@@ -264,7 +264,7 @@ class TestIntegration:
         mail_text = self._extract_message_body(messages[0])
         assert messages[0]["Subject"] == "FAILED: my subject"
         assert messages[0]["From"] == "from@example.com"
-        assert messages[0]["To"] == "Sasha <sasha@example.com>"
+        assert messages[0]["To"] == "sasha@example.com"
         assert "\nModify FAILED: [person] PERSON-TEST\n" in mail_text
         assert (
             "\nERROR: Authorisation for person PERSON-TEST failed: must be authenticated by one of:"
@@ -291,7 +291,7 @@ class TestIntegration:
         mail_text = self._extract_message_body(messages[0])
         assert messages[0]["Subject"] == "FAILED: my subject"
         assert messages[0]["From"] == "from@example.com"
-        assert messages[0]["To"] == "Sasha <sasha@example.com>"
+        assert messages[0]["To"] == "sasha@example.com"
         assert "\nDelete FAILED: [person] PERSON-TEST\n" in mail_text
         assert (
             "\nERROR: Object PERSON-TEST to be deleted, but still referenced by mntner TEST-MNT\n"
@@ -320,7 +320,7 @@ class TestIntegration:
         mail_text = self._extract_message_body(messages[0])
         assert messages[0]["Subject"] == "SUCCESS: my subject"
         assert messages[0]["From"] == "from@example.com"
-        assert messages[0]["To"] == "Sasha <sasha@example.com>"
+        assert messages[0]["To"] == "sasha@example.com"
         assert "\nDelete succeeded: [person] PERSON-TEST\n" in mail_text
         assert "\nDelete succeeded: [mntner] TEST-MNT\n" in mail_text
         assert "\nDelete succeeded: [key-cert] PGPKEY-80F238C6\n" in mail_text
@@ -388,7 +388,7 @@ class TestIntegration:
         mail_text = self._extract_message_body(messages[0])
         assert messages[0]["Subject"] == "SUCCESS: my subject"
         assert messages[0]["From"] == "from@example.com"
-        assert messages[0]["To"] == "Sasha <sasha@example.com>"
+        assert messages[0]["To"] == "sasha@example.com"
         assert "\nCreate succeeded: [mntner] TEST-MNT\n" in mail_text
         assert "\nCreate succeeded: [person] PERSON-TEST\n" in mail_text
         assert "email footer" in mail_text
@@ -401,7 +401,7 @@ class TestIntegration:
         mail_text = self._extract_message_body(messages[0])
         assert messages[0]["Subject"] == "SUCCESS: my subject"
         assert messages[0]["From"] == "from@example.com"
-        assert messages[0]["To"] == "Sasha <sasha@example.com>"
+        assert messages[0]["To"] == "sasha@example.com"
         assert "\nINFO: AS number as065537 was reformatted as AS65537\n" in mail_text
         assert "\nCreate succeeded: [filter-set] FLTR-SETTEST\n" in mail_text
         assert (

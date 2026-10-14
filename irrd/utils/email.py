@@ -2,6 +2,7 @@ import email
 import logging
 import socket
 from email.mime.text import MIMEText
+from email.utils import parseaddr
 from smtplib import SMTP
 
 from irrd import __version__
@@ -69,6 +70,13 @@ class EmailParser:
 def send_email(recipient, subject, body) -> None:
     if get_setting("email.recipient_override"):
         recipient = get_setting("email.recipient_override")
+
+    # A newline in either header is passed on to the generated message.
+    _, recipient_address = parseaddr(recipient)
+    if not recipient_address or set("\r\n") & set(recipient):
+        logger.error(f"Not sending e-mail {subject!r}: {recipient!r} is not a single valid recipient")
+        return
+    subject = " ".join(subject.split())
 
     logger.debug(f"Sending email to {recipient}, subject {subject}")
     body += "\n" + get_setting("email.footer")
