@@ -403,6 +403,8 @@ class AuthUser(Base):  # type: ignore
     totp_secret = sa.Column(sa.String, nullable=True)
     totp_last_used = sa.Column(sa.String, nullable=True)
 
+    # Not used: accounts are unusable until a password is set through an
+    # emailed token. Filtering on it requires setting it on all accounts first.
     active = sa.Column(sa.Boolean, default=False, nullable=False)
     override = sa.Column(sa.Boolean, default=False, nullable=False)
 
