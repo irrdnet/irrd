@@ -113,7 +113,9 @@ class DatabaseHandler:
                 self._start_transaction()
                 self.changed_objects_tracker = SessionChangedObjectsTracker(self)
         except Exception:
-            self._connection.close()
+            # _start_transaction() may have set a status tracker, which holds
+            # connections of its own (GHSA-cvm7-qcww-5m59)
+            self.close()
             raise
 
     @classmethod
