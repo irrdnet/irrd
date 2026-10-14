@@ -65,6 +65,19 @@ class TestTOTPAuthenticate(WebRequestTest):
         assert response.status_code == 200
         assert "Incorrect token." in response.text
 
+    def test_reused_totp(self, irrd_db_session_with_user, test_client, monkeypatch):
+        session_provider, user = irrd_db_session_with_user
+        self._login_if_needed(test_client, user)
+        token = pyotp.TOTP(SAMPLE_USER_TOTP_TOKEN).now()
+        response = test_client.post(self.url, data={"token": token}, follow_redirects=False)
+        assert response.status_code == 302
+
+        # conftest sets TESTING for the suite, which disables the replay check
+        monkeypatch.delenv("TESTING")
+        response = test_client.post(self.url, data={"token": token}, follow_redirects=False)
+        assert response.status_code == 200
+        assert "Token already used" in response.text
+
     def test_missing_totp(self, irrd_db_session_with_user, test_client):
         session_provider, user = irrd_db_session_with_user
         self._login_if_needed(test_client, user)
