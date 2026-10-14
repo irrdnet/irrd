@@ -428,7 +428,7 @@ def test_rpsl_auth_field(config_override):
     field = RPSLAuthField()
     messages = RPSLParserMessages()
     assert field.parse("MD5-pw hashhash", messages).value == "MD5-pw hashhash"
-    assert field.parse("bcrypt-pw hashhash", messages).value == "bcrypt-pw hashhash"
+    assert field.parse("bcrypt-pw hashhash", messages, strict_validation=False).value == "bcrypt-pw hashhash"
     assert field.parse("PGPKEY-AABB0011", messages).value == "PGPKEY-AABB0011"
     assert not messages.errors()
 
@@ -448,10 +448,10 @@ def test_rpsl_auth_field(config_override):
     assert field.parse(hash_17, messages, strict_validation=False).value == hash_17
     assert_validation_err("bcrypt cost factor", field.parse, hash_17)
 
-    # Hashes passlib can not parse, like cost over 31, are accepted like
-    # any other unverifiable hash (they will fail matching later, in a real update)
+    # Hashes passlib can not parse, like cost over 31, can never verify
     hash_32 = "BCRYPT-PW $2b$32$yQOkoMGbAoUW2Hkl3S6GfOzHrz6NYsucgRkLJZu3r8790X/1kwIMu"
-    assert field.parse(hash_32, messages).value == hash_32
+    assert field.parse(hash_32, messages, strict_validation=False).value == hash_32
+    assert_validation_err("invalid bcrypt hash", field.parse, hash_32)
 
     config_override({"auth": {"password_hashers": {"crypt-pw": "enabled"}}})
     assert field.parse("CRYPT-PW hashhash", messages).value == "CRYPT-PW hashhash"
