@@ -99,6 +99,10 @@ the following steps:
   a current valid password.
 * The maintainer is now migrated. Existing methods are kept.
 
+A migration can be restarted 12 hours after the last attempt, in case the
+confirmation link is lost. This mails a new link, invalidating the
+previous one, and moves access to the user restarting it.
+
 A migrated maintainer must have ``IRRD-INTERNAL-AUTH`` as one of
 the ``auth`` methods. This is added as part of the migration process.
 
