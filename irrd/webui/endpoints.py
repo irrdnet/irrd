@@ -1,6 +1,7 @@
 import functools
 from collections import defaultdict
 
+import sqlalchemy as sa
 from asgiref.sync import sync_to_async
 from starlette.requests import Request
 from starlette.responses import Response
@@ -248,6 +249,7 @@ async def change_log_mntner(request: Request, session_provider: ORMSessionProvid
 async def change_log_entry(request: Request, session_provider: ORMSessionProvider) -> Response:
     mntners = list(request.auth.user.mntners_user_management)
     if not mntners:
+        # Also keeps sa.or_() below from being called without clauses
         return Response(status_code=404)
 
     query = session_provider.session.query(ChangeLog)
@@ -255,9 +257,12 @@ async def change_log_entry(request: Request, session_provider: ORMSessionProvide
         (ChangeLog.pk == request.path_params["entry"])
         & (
             (ChangeLog.auth_through_mntner_id.in_([str(mntner.pk) for mntner in mntners]))
-            | (
-                ChangeLog.auth_through_rpsl_mntner_pk.in_([mntner.rpsl_mntner_pk for mntner in mntners])
-                & ChangeLog.rpsl_target_source.in_([mntner.rpsl_mntner_source for mntner in mntners])
+            | sa.or_(
+                *[
+                    (ChangeLog.auth_through_rpsl_mntner_pk == mntner.rpsl_mntner_pk)
+                    & (ChangeLog.rpsl_target_source == mntner.rpsl_mntner_source)
+                    for mntner in mntners
+                ]
             )
         )
     )
