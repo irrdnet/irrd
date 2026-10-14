@@ -2,7 +2,13 @@ import uuid
 
 from irrd.conf import RPSL_MNTNER_AUTH_INTERNAL
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
-from irrd.storage.models import AuthApiToken, AuthPermission
+from irrd.storage.database_handler import DatabaseHandler
+from irrd.storage.models import (
+    AuthApiToken,
+    AuthMntner,
+    AuthPermission,
+    JournalEntryOrigin,
+)
 from irrd.utils.factories import (
     SAMPLE_USER_PASSWORD,
     AuthApiTokenFactory,
@@ -537,6 +543,35 @@ class TestMntnerMigrateInitiate(WebRequestTest):
         new_permission = session_provider.run_sync(session_provider.session.query(AuthPermission).one)
         assert not new_permission
 
+    def test_admin_c_not_found(self, irrd_db_session_with_user, test_client_with_smtp):
+        test_client, smtpd = test_client_with_smtp
+        session_provider, user = irrd_db_session_with_user
+        self.pre_login(session_provider, user)
+        self._login_if_needed(test_client, user)
+
+        dh = DatabaseHandler()
+        dh.upsert_rpsl_object(
+            rpsl_object_from_text(SAMPLE_MNTNER.replace("PERSON-TEST", "UNKNOWN-TEST")),
+            origin=JournalEntryOrigin.unknown,
+        )
+        dh.commit()
+        dh.close()
+
+        response = test_client.post(
+            self.url,
+            data={
+                "mntner_key": self.mntner_obj.pk(),
+                "mntner_source": self.mntner_obj.source(),
+                "mntner_password": SAMPLE_MNTNER_BCRYPT,
+                "confirm": "1",
+            },
+            follow_redirects=False,
+        )
+        assert response.status_code == 200
+        assert "Unable to find an email address" in response.text
+        assert not smtpd.messages
+        assert not session_provider.run_sync(session_provider.session.query(AuthMntner).one)
+
     def test_already_migrated(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
@@ -592,7 +627,7 @@ class TestMntnerMigrateInitiate(WebRequestTest):
             follow_redirects=False,
         )
         assert response.status_code == 200
-        assert "Unable to find" in response.text
+        assert "Unable to find this mntner object" in response.text
 
         new_permission = session_provider.run_sync(session_provider.session.query(AuthPermission).one)
         assert not new_permission
