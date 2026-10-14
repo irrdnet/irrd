@@ -1,3 +1,4 @@
+import datetime
 import uuid
 
 from irrd.conf import RPSL_MNTNER_AUTH_INTERNAL
@@ -12,6 +13,7 @@ from irrd.storage.models import (
 from irrd.utils.factories import (
     SAMPLE_USER_PASSWORD,
     AuthApiTokenFactory,
+    AuthMntnerFactory,
     AuthUserFactory,
 )
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER, SAMPLE_MNTNER_BCRYPT
@@ -572,14 +574,8 @@ class TestMntnerMigrateInitiate(WebRequestTest):
         assert not smtpd.messages
         assert not session_provider.run_sync(session_provider.session.query(AuthMntner).one)
 
-    def test_already_migrated(self, irrd_db_session_with_user, test_client_with_smtp):
-        test_client, smtpd = test_client_with_smtp
-        session_provider, user = irrd_db_session_with_user
-        create_permission(session_provider, user)
-        self.pre_login(session_provider, user)
-        self._login_if_needed(test_client, user)
-
-        response = test_client.post(
+    def _submit_migration(self, test_client):
+        return test_client.post(
             self.url,
             data={
                 "mntner_key": self.mntner_obj.pk(),
@@ -589,6 +585,40 @@ class TestMntnerMigrateInitiate(WebRequestTest):
             },
             follow_redirects=False,
         )
+
+    def test_restart(self, irrd_db_session_with_user, test_client_with_smtp):
+        test_client, smtpd = test_client_with_smtp
+        session_provider, user = irrd_db_session_with_user
+        self.pre_login(session_provider, user)
+        auth_mntner = AuthMntnerFactory(migration_token="old-token")
+        create_permission(session_provider, AuthUserFactory(), mntner=auth_mntner)
+        self._login_if_needed(test_client, user)
+
+        response = self._submit_migration(test_client)
+        assert response.status_code == 200
+        assert "can be restarted 12 hours" in response.text
+
+        stale = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=13)
+        auth_mntner.updated = stale
+        session_provider.session.commit()
+
+        response = self._submit_migration(test_client)
+        assert response.status_code == 302
+
+        migrated = session_provider.run_sync(session_provider.session.query(AuthMntner).one)
+        assert migrated.migration_token != "old-token"
+        assert migrated.migration_token in smtpd.messages[0].as_string()
+        assert migrated.updated > stale
+        permission = session_provider.run_sync(session_provider.session.query(AuthPermission).one)
+        assert str(permission.user_id) == str(user.pk)
+
+    def test_already_migrated(self, irrd_db_session_with_user, test_client):
+        session_provider, user = irrd_db_session_with_user
+        create_permission(session_provider, user)
+        self.pre_login(session_provider, user)
+        self._login_if_needed(test_client, user)
+
+        response = self._submit_migration(test_client)
         assert response.status_code == 200
         assert "already migrated" in response.text
 
