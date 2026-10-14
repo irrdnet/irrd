@@ -1,0 +1,66 @@
+============================
+Release notes for IRRD 4.4.8
+============================
+
+IRRD 4.4.8 was released on TODO, and fixes two security issues in
+RPSL change submission processing:
+
+* Unbounded password verification work in RPSL submissions
+  (CVE pending, GHSA-pcwp-hhmm-c58f).
+  This affects IRRD 4.3.0 and all later versions.
+* Database connection leak on errors in RPSL submission handling
+  (CVE pending, GHSA-cvm7-qcww-5m59).
+  This affects IRRD 4.4.0 and all later versions.
+
+Both issues were discovered and reported by `T-Chachamaru`_.
+All users of 4.4 are recommended to upgrade.
+
+.. _T-Chachamaru: https://github.com/T-Chachamaru
+
+Unbounded password verification work in RPSL submissions
+---------------------------------------------------------
+IRRD did not limit the number of passwords in an RPSL change
+submission, verified each password against every auth hash of each
+relevant mntner, and did not limit the cost factor of BCRYPT-PW hashes
+in mntner objects. An attacker able to create or modify a mntner in an
+authoritative source could store a bcrypt hash with an extreme cost
+factor, after which anonymous submissions referencing that mntner could
+each consume very large amounts of server CPU time, degrading or
+denying the processing of RPSL submissions. The impact is limited to
+availability.
+
+IRRD now rejects newly submitted BCRYPT-PW hashes with a cost factor
+over 16, and evaluates at most 20 distinct passwords or override
+passwords per submission. Note that:
+
+* Hashes stored before upgrading are not affected by the new limit.
+  Operators can audit existing objects for BCRYPT-PW hashes with a
+  cost factor over 16.
+* Existing mntner objects with such a hash must have it replaced
+  before other modifications to the object are accepted.
+
+Database connection leak on errors in RPSL submission handling
+---------------------------------------------------------------
+A crafted RPSL change submission, for example through the HTTP API,
+could trigger an unhandled error in IRRD, after which the PostgreSQL
+connection used by that request was not returned to the connection
+pool. Internal caches could retain these connections, gradually
+reducing the connections available to the affected worker and to other
+users of the same PostgreSQL instance, degrading or denying IRRD's
+database-backed functionality. No authentication was required. The
+impact is limited to availability, and the effect recovers after a
+restart.
+
+IRRD now releases database connections on all error paths, in
+submission processing and several other places, and no longer retains
+request state in caches.
+
+Other changes
+-------------
+* GraphQL queries are now limited in the total number of fields they
+  request, including through aliases and fragments, which could multiply
+  the work performed for a single query. This was a hardening
+  measure also suggested by `T-Chachamaru`_.
+* The expected network level protections for public IRRD instances are
+  now covered in the :doc:`deployment documentation </admins/deployment>`,
+  and the handling of availability issues in the security policy.
