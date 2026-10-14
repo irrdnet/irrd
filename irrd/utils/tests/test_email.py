@@ -570,6 +570,31 @@ class TestSendEmail:
         assert get_setting("email.footer") in payload
         assert mock_smtp.mock_calls[1][0] == "quit"
 
+    @pytest.mark.parametrize(
+        "recipient",
+        [
+            "sasha@example.com\n Bcc: attacker@example.com",
+            "sasha@example.com, attacker@example.com",
+            # parseaddr() returns this one intact, newline included
+            '"sasha@example.com\n Bcc: attacker@example.com"@example.com',
+            "",
+        ],
+    )
+    def test_send_email_invalid_recipient(self, monkeypatch, config_override, caplog, recipient):
+        config_override({"email": {"from": "irrd@example.net"}})
+        mock_smtp = Mock()
+        monkeypatch.setattr("irrd.utils.email.SMTP", lambda server: mock_smtp)
+        send_email(recipient, "subject", "body")
+        assert not mock_smtp.mock_calls
+        assert "is not a single valid recipient" in caplog.text
+
+    def test_send_email_unfolds_subject(self, monkeypatch, config_override):
+        config_override({"email": {"from": "irrd@example.net"}})
+        mock_smtp = Mock()
+        monkeypatch.setattr("irrd.utils.email.SMTP", lambda server: mock_smtp)
+        send_email("sasha@example.com", "my subject\n Bcc: attacker@example.com", "body")
+        assert mock_smtp.mock_calls[0][1][0]["Subject"] == "my subject Bcc: attacker@example.com"
+
     def test_send_email_with_recipient_override(self, monkeypatch, config_override):
         config_override({"email": {"recipient_override": "override@example.com", "from": "irrd@example.net"}})
         mock_smtp = Mock()

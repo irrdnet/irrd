@@ -45,7 +45,7 @@ class TestHandleEmailSubmission:
         assert len(handler.results) == 1
         assert len(handler.results[0].error_messages)
         assert mock_email.mock_calls[0][0] == ""
-        assert mock_email.mock_calls[0][1][0] == "Sasha <sasha@example.com>"
+        assert mock_email.mock_calls[0][1][0] == "sasha@example.com"
         assert mock_email.mock_calls[0][1][1] == "FAILED: my subject"
         assert "DETAILED EXPLANATION" in mock_email.mock_calls[0][1][2]
 
@@ -79,7 +79,7 @@ class TestHandleEmailSubmission:
         assert handle_email_submission(email) is None
 
         assert mock_email.mock_calls[0][0] == ""
-        assert mock_email.mock_calls[0][1][0] == "Sasha <sasha@example.com>"
+        assert mock_email.mock_calls[0][1][0] == "sasha@example.com"
         assert mock_email.mock_calls[0][1][1] == "FAILED: my subject"
         assert "no text/plain" in mock_email.mock_calls[0][1][2]
 
@@ -106,7 +106,7 @@ class TestHandleEmailSubmission:
         handle_email_submission(self.default_email)
 
         assert mock_email.mock_calls[0][0] == ""
-        assert mock_email.mock_calls[0][1][0] == "Sasha <sasha@example.com>"
+        assert mock_email.mock_calls[0][1][0] == "sasha@example.com"
         assert mock_email.mock_calls[0][1][1] == "ERROR: my subject"
         assert "internal error" in mock_email.mock_calls[0][1][2]
 
@@ -121,13 +121,37 @@ class TestHandleEmailSubmission:
         handle_email_submission(self.default_email)
 
         assert mock_email.mock_calls[0][0] == ""
-        assert mock_email.mock_calls[0][1][0] == "Sasha <sasha@example.com>"
+        assert mock_email.mock_calls[0][1][0] == "sasha@example.com"
         assert mock_email.mock_calls[0][1][1] == "FAILED: my subject"
         assert "DETAILED EXPLANATION" in mock_email.mock_calls[0][1][2]
 
         assert "An exception occurred while attempting to send a reply to an update" in caplog.text
         assert "traceback for test-error follows" in caplog.text
         assert "test-error" in caplog.text
+
+    def test_display_name_with_comma(self, mock_email_dh, tmp_gpg_dir):
+        mock_email, mock_dh = mock_email_dh
+
+        email = self.default_email.replace(
+            "From: Sasha <sasha@example.com>", "From: Romijn, Sasha <sasha@example.com>"
+        )
+        assert handle_email_submission(email)
+        assert mock_email.mock_calls[0][1][0] == "sasha@example.com"
+
+    @pytest.mark.parametrize(
+        "from_header",
+        [
+            "sasha@example.com\n Bcc: attacker@example.com",
+            "sasha@example.com, attacker@example.com",
+        ],
+    )
+    def test_invalid_from_no_reply(self, mock_email_dh, caplog, tmp_gpg_dir, from_header):
+        mock_email, mock_dh = mock_email_dh
+
+        email = self.default_email.replace("From: Sasha <sasha@example.com>", f"From: {from_header}")
+        assert handle_email_submission(email)
+        assert not mock_email.mock_calls
+        assert "Unable to extract a single reply address" in caplog.text
 
     def test_invalid_no_from(self, mock_email_dh, caplog, tmp_gpg_dir):
         mock_email, mock_dh = mock_email_dh
