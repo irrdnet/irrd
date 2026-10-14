@@ -105,3 +105,4 @@ validator
 validators
 virtualenv
 whois
+unhandled
