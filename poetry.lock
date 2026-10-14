@@ -266,27 +266,27 @@ files = [
 
 [[package]]
 name = "ariadne"
-version = "1.1.0"
+version = "1.1.1"
 description = "Ariadne is a Python library for implementing GraphQL servers."
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "ariadne-1.1.0-py3-none-any.whl", hash = "sha256:1f5ee6fa0a2fe855b7587cccb8a5d24ff8c982789b15d860aed58c509aad9b48"},
-    {file = "ariadne-1.1.0.tar.gz", hash = "sha256:847b5b399e56e4781f851b4ee3f3fd443d6c379e64a4828a792e8264b597c9e4"},
+    {file = "ariadne-1.1.1-py3-none-any.whl", hash = "sha256:af71765ac085b333545bbf7a08217308e2f9c5db62737fea03b2de958b1b446c"},
+    {file = "ariadne-1.1.1.tar.gz", hash = "sha256:72fd197925408520f3b22c718396bb3bdaf6ab5deca1cbd2ebb64be7e5b35358"},
 ]
 
 [package.dependencies]
-graphql-core = ">=3.2.0"
+graphql-core = ">=3.2.0,<3.4"
 starlette = ">0.17,<2.0"
 typing-extensions = ">=4.6.0"
 
 [package.extras]
 asgi-file-uploads = ["python-multipart (>=0.0.13)"]
 dev = ["ipdb"]
-sqlalchemy = ["aiodataloader (>=0.2.0)", "sqlalchemy (>=2.0.0)"]
+sqlalchemy = ["aiodataloader (>=0.2.0)", "sqlalchemy[asyncio] (>=2.0.0)"]
 telemetry = ["opentelemetry-api"]
-test = ["aiodataloader", "freezegun", "graphql-sync-dataloaders", "httpx", "opentelemetry-api", "pytest", "pytest-asyncio", "pytest-benchmark", "pytest-cov", "pytest-mock", "python-multipart (>=0.0.13)", "syrupy", "werkzeug"]
+test = ["aiodataloader", "freezegun", "httpx", "opentelemetry-api", "pytest", "pytest-asyncio", "pytest-benchmark", "pytest-cov", "pytest-mock", "python-multipart (>=0.0.13)", "syrupy", "werkzeug"]
 types = ["ty (>=0.0.15)"]
 
 [[package]]
@@ -1372,14 +1372,14 @@ files = [
 
 [[package]]
 name = "graphql-core"
-version = "3.2.7"
-description = "GraphQL implementation for Python, a port of GraphQL.js, the JavaScript reference implementation for GraphQL."
+version = "3.3.0"
+description = "GraphQL-core is a Python port of GraphQL.js, the JavaScript reference implementation for GraphQL."
 optional = false
-python-versions = "<4,>=3.7"
+python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "graphql_core-3.2.7-py3-none-any.whl", hash = "sha256:17fc8f3ca4a42913d8e24d9ac9f08deddf0a0b2483076575757f6c412ead2ec0"},
-    {file = "graphql_core-3.2.7.tar.gz", hash = "sha256:27b6904bdd3b43f2a0556dad5d579bdfdeab1f38e8e8788e555bdcb586a6f62c"},
+    {file = "graphql_core-3.3.0-py3-none-any.whl", hash = "sha256:d37fac6ef4dfc3eaa5daa59dcb498d7cbb118439d240993c68fddc4cb1bade44"},
+    {file = "graphql_core-3.3.0.tar.gz", hash = "sha256:fd3424e88af3f3211931c6ff96350f1cd9069cf0f1a31b9972899e35d39136b5"},
 ]
 
 [[package]]
@@ -4925,4 +4925,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">3.10.0,<4.0"
-content-hash = "27672f7d5fbad8beab38572d7d499679b9b15676159fb798fb34fb78811f80c1"
+content-hash = "846aaa491ee378883d7066ffd8168faac1a8bcc8fb2d9e1c9e8e530d6abc748e"
