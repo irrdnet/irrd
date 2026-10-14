@@ -2,20 +2,22 @@
 Release notes for IRRD 4.4.8
 ============================
 
-IRRD 4.4.8 was released on TODO, and fixes two security issues in
-RPSL change submission processing:
+IRRD 4.4.8 was released on October 14, 2026, and fixes several
+security issues, including two in RPSL change submission processing:
 
 * Unbounded password verification work in RPSL submissions
-  (CVE pending, GHSA-pcwp-hhmm-c58f).
+  (`GHSA-pcwp-hhmm-c58f`_).
   This affects IRRD 4.3.0 and all later versions.
 * Database connection leak on errors in RPSL submission handling
-  (CVE pending, GHSA-cvm7-qcww-5m59).
+  (`GHSA-cvm7-qcww-5m59`_).
   This affects IRRD 4.4.0 and all later versions.
 
 Both issues were discovered and reported by `T-Chachamaru`_.
 All users of 4.4 are recommended to upgrade.
 
 .. _T-Chachamaru: https://github.com/T-Chachamaru
+.. _GHSA-pcwp-hhmm-c58f: https://github.com/irrdnet/irrd/security/advisories/GHSA-pcwp-hhmm-c58f
+.. _GHSA-cvm7-qcww-5m59: https://github.com/irrdnet/irrd/security/advisories/GHSA-cvm7-qcww-5m59
 
 Unbounded password verification work in RPSL submissions
 ---------------------------------------------------------
@@ -46,21 +48,38 @@ could trigger an unhandled error in IRRD, after which the PostgreSQL
 connection used by that request was not returned to the connection
 pool. Internal caches could retain these connections, gradually
 reducing the connections available to the affected worker and to other
-users of the same PostgreSQL instance, degrading or denying IRRD's
-database-backed functionality. No authentication was required. The
-impact is limited to availability, and the effect recovers after a
-restart.
+users of the same PostgreSQL instance, degrading IRRD's database-backed
+functionality. The known trigger is an ``api-key`` attribute that is
+not a valid UUID. No authentication was required. The impact is limited
+to availability, and the effect recovers after a restart.
 
 IRRD now releases database connections on all error paths, in
-submission processing and several other places, and no longer retains
-request state in caches.
+submission processing and several other places, ignores API keys that
+are not valid UUIDs, and no longer retains request state in caches.
 
 Other changes
 -------------
-* GraphQL queries are now limited in the total number of fields they
-  request, including through aliases and fragments, which could multiply
-  the work performed for a single query. This was a hardening
-  measure also suggested by `T-Chachamaru`_.
+* The number of fields a GraphQL request may ask for is now limited,
+  over all queries in the request, including through aliases and
+  fragments, which could multiply the work performed. This was a
+  hardening measure also suggested by `T-Chachamaru`_.
 * The expected network level protections for public IRRD instances are
   now covered in the :doc:`deployment documentation </admins/deployment>`,
   and the handling of availability issues in the security policy.
+* Users with user management permission on mntners in several sources
+  could read change log entries for one of their mntner names in
+  another of their sources, where they do not have permission on that
+  mntner. This also required knowing the randomly generated UUID of the
+  entry, which IRRD only discloses in the change log of a mntner on
+  which the user does have permission, so this is rather theoretical.
+  This affects IRRD 4.4.0 and all later versions.
+* Reuse of a previous one time password now results in a form validation
+  error, rather than an internal server error. This affects IRRD 4.4.0
+  and all later versions.
+* The recipient of all outgoing e-mail must now be a single address,
+  and its subject is unfolded before sending. As the ``From`` header of
+  a submission is a mailbox-list, and the envelope recipients of a reply
+  are taken from its ``To`` header, a submitter could previously have
+  the reply delivered to additional addresses. Submissions whose
+  ``From`` is not exactly one address are still processed, but receive
+  no reply. This affects all IRRD 4 versions.
