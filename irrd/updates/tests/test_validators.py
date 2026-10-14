@@ -329,7 +329,7 @@ class TestAuthValidator:
         result = validator.process_auth(person, None)
         assert result.is_valid(), result.error_messages
 
-        # Excessive distinct overrides shoulod be rejected too
+        # Excessive distinct overrides should be rejected too
         validator.overrides = [f"ov-{i}" for i in range(MAX_CREDENTIALS_PER_SUBMISSION)] + [VALID_PW]
         assert validator.check_override() == AuthMethod.NONE
 
