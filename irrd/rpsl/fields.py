@@ -9,8 +9,8 @@ from irrd.utils.text import clean_ip_value_error
 from irrd.utils.validators import ValidationError, parse_as_number
 
 # The IPv4/IPv6 regexes are for initial screening - not full validators
-from ..conf import BCRYPT_MAX_ROUNDS, RPSL_MNTNER_AUTH_INTERNAL
-from .auth import bcrypt_rounds_excessive, get_password_hashers
+from ..conf import RPSL_MNTNER_AUTH_INTERNAL
+from .auth import bcrypt_hash_error, get_password_hashers
 from .parser_state import RPSLFieldParseResult, RPSLParserMessages
 
 re_ipv4_prefix = re.compile(r"^\d+\.\d+\.\d+\.\d+/\d+$")
@@ -635,11 +635,9 @@ class RPSLAuthField(RPSLTextField):
         is_valid_hash = has_valid_beginning and value.count(" ") == 1 and not value.count(",")
 
         if is_valid_hash or re_pgpkey.match(value.upper()) or value == RPSL_MNTNER_AUTH_INTERNAL:
-            if strict_validation and bcrypt_rounds_excessive(value):
-                messages.error(
-                    f"Invalid auth attribute: {value}: bcrypt cost factor must be"
-                    f" {BCRYPT_MAX_ROUNDS} or lower"
-                )
+            bcrypt_error = bcrypt_hash_error(value) if strict_validation else None
+            if bcrypt_error:
+                messages.error(f"Invalid auth attribute: {value}: {bcrypt_error}")
                 return None
             return RPSLFieldParseResult(value)
 
