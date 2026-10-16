@@ -64,6 +64,31 @@ def database_handler_with_route():
     dh.close()
 
 
+def test_connection_closed_on_init_failure(monkeypatch):
+    connection = Mock(execution_options=Mock(side_effect=ValueError))
+    monkeypatch.setattr("irrd.storage.database_handler.get_engine", lambda: Mock(connect=lambda: connection))
+
+    with raises(ValueError):
+        DatabaseHandler(readonly=True)
+    assert connection.close.called
+
+
+def test_status_tracker_closed_on_init_failure(monkeypatch):
+    connection, tracker = Mock(), Mock()
+    monkeypatch.setattr("irrd.storage.database_handler.get_engine", lambda: Mock(connect=lambda: connection))
+    monkeypatch.setattr(
+        DatabaseHandler, "_start_transaction", lambda self: setattr(self, "status_tracker", tracker)
+    )
+    monkeypatch.setattr(
+        "irrd.storage.database_handler.SessionChangedObjectsTracker", Mock(side_effect=ValueError)
+    )
+
+    with raises(ValueError):
+        DatabaseHandler()
+    assert tracker.close.called
+    assert connection.close.called
+
+
 # noinspection PyTypeChecker
 class TestDatabaseHandlerLive:
     """

@@ -324,6 +324,30 @@ If your service runs on a different host, set
     HTTPS is strongly recommended, particularly so that clients can verify
     the authenticity of query responses.
 
+Availability and abuse protection
+---------------------------------
+IRRD's whois and HTTP services are, by design, open to the public, and
+IRRD itself has limited protection against high query or connection
+volumes from misbehaving or malicious clients. Like other public
+services, IRRD deployments are expected to handle this on the network
+level. Operators of publicly accessible instances are strongly
+recommended to:
+
+* Limit the connection rate and number of concurrent connections per
+  client to the whois port, e.g. with firewall rules. This is
+  particularly relevant as whois connections can be long-lived, and each
+  occupies one of the ``server.whois.max_connections`` workers.
+* Apply rate limiting and a request body size limit per client to the
+  HTTP services, e.g. in the HTTPS reverse proxy.
+* Run PostgreSQL and Redis instances dedicated to IRRD, so that resource
+  consumption in IRRD does not affect other applications.
+
+Resource exhaustion that these measures can mitigate is generally
+treated as hardening rather than a security vulnerability - see the
+`security policy`_ for details.
+
+.. _security policy: https://github.com/irrdnet/irrd/blob/main/SECURITY.rst
+
 Logrotate configuration
 -----------------------
 The following logrotate configuration can be used for IRRd::

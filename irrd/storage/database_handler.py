@@ -106,11 +106,17 @@ class DatabaseHandler:
             self.readonly = readonly
         self.journaling_enabled = not readonly
         self._connection = get_engine().connect()
-        if self.readonly:
-            self._connection.execution_options(isolation_level="AUTOCOMMIT")
-        else:
-            self._start_transaction()
-            self.changed_objects_tracker = SessionChangedObjectsTracker(self)
+        try:
+            if self.readonly:
+                self._connection.execution_options(isolation_level="AUTOCOMMIT")
+            else:
+                self._start_transaction()
+                self.changed_objects_tracker = SessionChangedObjectsTracker(self)
+        except Exception:
+            # _start_transaction() may have set a status tracker, which holds
+            # connections of its own (GHSA-cvm7-qcww-5m59)
+            self.close()
+            raise
 
     @classmethod
     @sync_to_async
@@ -935,6 +941,9 @@ class DatabaseStatusTracker:
         self.database_handler = database_handler
         self.journaling_enabled = journaling_enabled
         self.event_stream_publisher = EventStreamPublisher()
+        # Cache per instance: a class level lru_cache would leak self,
+        # and thereby the database handler (GHSA-cvm7-qcww-5m59)
+        self._is_serial_synchronised = lru_cache(maxsize=100)(self._is_serial_synchronised)  # type: ignore
         self.reset()
 
     def record_serial_newest_mirror(self, source: str, serial: int):
@@ -1151,7 +1160,6 @@ class DatabaseStatusTracker:
         for source in self._new_serials_per_source.keys():
             self.event_stream_publisher.publish_update(source=source)
 
-    @lru_cache(maxsize=100)
     def _is_serial_synchronised(self, source: str) -> bool:
         # Cached wrapper method
         return is_serial_synchronised(self.database_handler, source)

@@ -1,7 +1,7 @@
 import logging
 import secrets
 import textwrap
-from typing import Optional
+from typing import Optional, Set
 
 import wtforms
 from IPy import IP
@@ -422,6 +422,7 @@ class MntnerMigrateInitiateForm(StarletteForm):
         self.session_provider = session_provider
         self.rpsl_mntner = None
         self.rpsl_mntner_db_pk = None
+        self.mail_recipients: Set[str] = set()
         auth_sources = [
             name for name, settings in get_setting("sources").items() if settings.get("authoritative")
         ]
@@ -479,6 +480,19 @@ class MntnerMigrateInitiateForm(StarletteForm):
             self.mntner_password.errors.append("Invalid password for the methods on this mntner object.")
             return False
 
+        self.mail_recipients = await mntner_migrate_mail_recipients(self.session_provider, self.rpsl_mntner)
+        if not self.mail_recipients:
+            logger.info(
+                f"{client_ip_str(self._request)}refused migration of {self.rpsl_mntner.pk()} in"
+                f" {self.mntner_source.data}: no email address found for admin-c"
+                f" {self.rpsl_mntner.parsed_data.get('admin-c', [])}"
+            )
+            self.mntner_key.errors.append(
+                "Unable to find an email address for any admin-c contact of this mntner in"
+                f" {self.mntner_source.data}."
+            )
+            return False
+
         return True
 
 
@@ -519,7 +533,7 @@ async def mntner_migrate_initiate(request: Request, session_provider: ORMSession
     )
     session_provider.session.add(new_permission)
 
-    await send_mntner_migrate_initiate_mail(session_provider, request, new_auth_mntner, form.rpsl_mntner)
+    send_mntner_migrate_initiate_mail(request, new_auth_mntner, form.mail_recipients)
     message(request, "The mntner's admin-c's have been sent a confirmation email to complete the migration.")
     logger.info(
         f"{client_ip_str(request)}{request.auth.user.email}: initiated migration of {form.rpsl_mntner.pk()},"
@@ -670,25 +684,23 @@ async def notify_mntner(session_provider, user: AuthUser, mntner: AuthMntner, ex
         send_email(recipient, subject, body)
 
 
-async def send_mntner_migrate_initiate_mail(
-    session_provider, request: Request, new_auth_mntner: AuthMntner, affected_mntner: RPSLMntner
-):
+async def mntner_migrate_mail_recipients(session_provider, affected_mntner: RPSLMntner) -> Set[str]:
     """
-    Send the mntner migration initiation mail.
-    Looks at admin-c of the existing mntner, and then looks up all emails
-    of all contacts, and mails them the token.
+    The e-mail addresses of all admin-c contacts of a mntner, in the same source.
     """
-    admin_cs = affected_mntner.parsed_data["admin-c"]
     query = session_provider.session.query(RPSLDatabaseObject)
     query = query.filter(
-        RPSLDatabaseObject.rpsl_pk.in_(admin_cs),
+        RPSLDatabaseObject.rpsl_pk.in_(affected_mntner.parsed_data.get("admin-c", [])),
         RPSLDatabaseObject.source == affected_mntner.source(),
     )
-    recipients = {
+    return {
         email
         for admin_c_obj in await session_provider.run(query.all)
         for email in admin_c_obj.parsed_data.get("e-mail", [])
     }
+
+
+def send_mntner_migrate_initiate_mail(request: Request, new_auth_mntner: AuthMntner, recipients: Set[str]):
     for recipient in recipients:
         send_template_email(
             recipient,

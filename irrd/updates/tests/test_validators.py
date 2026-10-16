@@ -6,7 +6,11 @@ from unittest.mock import Mock
 import pytest
 from IPy import IP
 
-from irrd.conf import AUTH_SET_CREATION_COMMON_KEY, RPSL_MNTNER_AUTH_INTERNAL
+from irrd.conf import (
+    AUTH_SET_CREATION_COMMON_KEY,
+    MAX_CREDENTIALS_PER_SUBMISSION,
+    RPSL_MNTNER_AUTH_INTERNAL,
+)
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.queries import RPSLDatabaseSuspendedQuery
@@ -244,7 +248,8 @@ class TestAuthValidator:
         ]
         mock_sa_session.all = lambda: [mock_api_key]
 
-        validator.api_keys = ["key"]
+        api_key = uuid.uuid4()
+        validator.api_keys = [str(api_key), "ignored-invalid-uuid"]
         result = validator.process_auth(person, None)
         assert result.is_valid(), result.error_messages
         assert result.mntners_notify[0].pk() == "TEST-MNT"
@@ -257,7 +262,7 @@ class TestAuthValidator:
                 mock.call(
                     AuthMntner.rpsl_mntner_pk == "TEST-MNT",
                     AuthMntner.rpsl_mntner_source == "TEST",
-                    AuthApiToken.token.in_(["key"]),
+                    AuthApiToken.token.in_([api_key]),
                 ),
             ]
         )
@@ -285,6 +290,48 @@ class TestAuthValidator:
         validator.origin = AuthoritativeChangeOrigin.webapi
         result = validator.process_auth(person, None)
         assert not result.is_valid(), result.error_messages
+
+    def test_new_person_invalid_api_keys_only(self, prepare_mocks):
+        # Non-UUID API keys must be ignored rather than raise DataError
+        # from the database (GHSA-cvm7-qcww-5m59)
+        validator, mock_dq, mock_dh = prepare_mocks
+        person = rpsl_object_from_text(SAMPLE_PERSON)
+        mock_dh.execute_query = lambda q: [
+            {"object_class": "mntner", "object_text": SAMPLE_MNTNER},
+        ]
+        validator.api_keys = ["not-a-uuid"]
+        result = validator.process_auth(person, None)
+        assert not result.is_valid()
+
+    def test_too_many_credentials(self, prepare_mocks, config_override):
+        validator, mock_dq, mock_dh = prepare_mocks
+        person = rpsl_object_from_text(SAMPLE_PERSON)
+        expected_error = {
+            f"Submissions may include at most {MAX_CREDENTIALS_PER_SUBMISSION} distinct passwords."
+        }
+
+        validator.passwords = [f"pw-{i}" for i in range(MAX_CREDENTIALS_PER_SUBMISSION + 1)]
+        result = validator.process_auth(person, None)
+        assert not result.is_valid()
+        assert result.error_messages == expected_error
+
+        # Make sure deduplication works
+        mock_dh.execute_query = lambda q: []
+        validator.passwords = ["password"] * (MAX_CREDENTIALS_PER_SUBMISSION * 3)
+        result = validator.process_auth(person, None)
+        assert result.error_messages != expected_error
+        assert validator.passwords == ["password"]
+
+        # A valid override is honored regardless of password count
+        config_override({"auth": {"override_password": VALID_PW_MD5}})
+        validator.passwords = [f"pw-{i}" for i in range(MAX_CREDENTIALS_PER_SUBMISSION + 1)]
+        validator.overrides = [VALID_PW]
+        result = validator.process_auth(person, None)
+        assert result.is_valid(), result.error_messages
+
+        # Excessive distinct overrides should be rejected too
+        validator.overrides = [f"ov-{i}" for i in range(MAX_CREDENTIALS_PER_SUBMISSION)] + [VALID_PW]
+        assert validator.check_override() == AuthMethod.NONE
 
     def test_existing_person_mntner_change(self, prepare_mocks):
         validator, mock_dq, mock_dh = prepare_mocks
@@ -853,9 +900,7 @@ class TestRulesValidator:
 
     def test_check_suspended_mntner_with_same_pk(self, prepare_mocks, monkeypatch):
         validator, mock_dsq, mock_dh = prepare_mocks
-        monkeypatch.setattr(
-            "irrd.updates.validators.RulesValidator._check_mntner_migrated", lambda slf, pk, source: False
-        )
+        monkeypatch.setattr(validator, "_check_mntner_migrated", lambda pk, source: False)
 
         person = rpsl_object_from_text(SAMPLE_PERSON)
         mntner = rpsl_object_from_text(SAMPLE_MNTNER)
@@ -866,7 +911,6 @@ class TestRulesValidator:
         assert validator.validate(mntner, UpdateRequestType.DELETE).is_valid()
         assert validator.validate(mntner, UpdateRequestType.CREATE).is_valid()
 
-        validator._check_suspended_mntner_with_same_pk.cache_clear()
         mock_dh.execute_query.return_value = [
             {"rpsl_pk": "conflicting entry which is only counted, not used"}
         ]
@@ -895,10 +939,7 @@ class TestRulesValidator:
     def test_check_mntner_migrated(self, prepare_mocks, monkeypatch):
         validator, mock_dsq, mock_dh = prepare_mocks
         mock_dh._connection = None
-        monkeypatch.setattr(
-            "irrd.updates.validators.RulesValidator._check_suspended_mntner_with_same_pk",
-            lambda slf, pk, source: False,
-        )
+        monkeypatch.setattr(validator, "_check_suspended_mntner_with_same_pk", lambda pk, source: False)
         mock_sa_session = UnifiedAlchemyMagicMock(
             data=[
                 (
@@ -928,7 +969,6 @@ class TestRulesValidator:
             ]
         )
 
-        validator._check_mntner_migrated.cache_clear()
         mock_sa_session.count = lambda: True
         assert validator.validate(person, UpdateRequestType.CREATE).is_valid()
         invalid = validator.validate(mntner, UpdateRequestType.CREATE)
@@ -937,11 +977,9 @@ class TestRulesValidator:
             "This maintainer is migrated and must include the IRRD-INTERNAL-AUTH method."
         }
 
-        validator._check_mntner_migrated.cache_clear()
         mock_sa_session.count = lambda: True
         assert validator.validate(mntner_internal, UpdateRequestType.MODIFY).is_valid()
 
-        validator._check_mntner_migrated.cache_clear()
         mock_sa_session.count = lambda: False
         assert validator.validate(person, UpdateRequestType.CREATE).is_valid()
         invalid = validator.validate(mntner_internal, UpdateRequestType.CREATE)

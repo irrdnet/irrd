@@ -395,3 +395,35 @@ class TestChangeLogEntry(WebRequestTest):
         self._login_if_needed(test_client, user)
         response = test_client.get(self.url_template.format(uuid=uuid.uuid4()))
         assert response.status_code == 404
+
+    def test_other_source_same_mntner_pk(self, irrd_db_session_with_user, test_client):
+        session_provider, user = irrd_db_session_with_user
+        self.pre_login(session_provider, user)
+
+        dh = DatabaseHandler()
+        dh.upsert_rpsl_object(
+            rpsl_object_from_text(SAMPLE_MNTNER.replace("TEST", "TEST2")), origin=JournalEntryOrigin.unknown
+        )
+        dh.commit()
+        dh.close()
+        create_permission(
+            session_provider,
+            user,
+            user_management=True,
+            mntner=AuthMntnerFactory(rpsl_mntner_pk="TEST2-MNT", rpsl_mntner_source="TEST2"),
+        )
+        self._login_if_needed(test_client, user)
+
+        # The user manages TEST-MNT in TEST and TEST2-MNT in TEST2,
+        # but not TEST-MNT in TEST2.
+        denied = ChangeLogFactory(
+            auth_through_rpsl_mntner_pk=str(self.permission.mntner.rpsl_mntner_pk),
+            rpsl_target_source="TEST2",
+        )
+        assert test_client.get(self.url_template.format(uuid=denied.pk)).status_code == 404
+
+        permitted = ChangeLogFactory(
+            auth_through_rpsl_mntner_pk="TEST2-MNT",
+            rpsl_target_source="TEST2",
+        )
+        assert test_client.get(self.url_template.format(uuid=permitted.pk)).status_code == 200

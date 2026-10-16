@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from passlib.hash import bcrypt, des_crypt, md5_crypt
 
-from irrd.conf import get_setting
+from irrd.conf import BCRYPT_MAX_ROUNDS, PASSWORD_HASH_DUMMY_VALUE, get_setting
 
 
 @unique
@@ -18,6 +18,22 @@ PASSWORD_HASHERS_ALL = {
     "MD5-PW": md5_crypt,
     "BCRYPT-PW": bcrypt,
 }
+
+
+def bcrypt_hash_error(auth_value: str) -> Optional[str]:
+    """Check a BCRYPT-PW auth attribute value, returning an error if it is unusable."""
+    scheme, _, password_hash = auth_value.partition(" ")
+    # Queries return dummy values, which are submitted back unchanged
+    if scheme.upper() != "BCRYPT-PW" or password_hash == PASSWORD_HASH_DUMMY_VALUE:
+        return None
+    try:
+        rounds = bcrypt.from_string(password_hash).rounds
+    except ValueError:
+        # Includes a cost factor over 31, which passlib refuses to verify
+        return "invalid bcrypt hash"
+    if rounds > BCRYPT_MAX_ROUNDS:
+        return f"bcrypt cost factor must be {BCRYPT_MAX_ROUNDS} or lower"
+    return None
 
 
 def get_password_hashers(permit_legacy=True):

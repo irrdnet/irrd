@@ -1,5 +1,6 @@
 import logging
 import textwrap
+from email.utils import getaddresses
 from typing import Optional
 
 from irrd.utils import email
@@ -75,8 +76,17 @@ def handle_email_submission(email_txt: str) -> Optional[ChangeSubmissionHandler]
         could not be processed, due to an internal error.
         """)
 
+    # From is a mailbox-list, so a submitter could otherwise add recipients
+    # to the reply.
+    addresses = [address for _, address in getaddresses([msg.message_from]) if "@" in address]
     try:
-        email.send_email(msg.message_from, subject, reply_content)
+        if len(addresses) == 1:
+            email.send_email(addresses[0], subject, reply_content)
+        else:
+            logger.warning(
+                f"Unable to extract a single reply address from From header {msg.message_from!r} in"
+                f" e-mail {msg.message_id} - submission was processed, but no reply sent"
+            )
         if handler:
             handler.send_notification_target_reports()
     except Exception as exc:
