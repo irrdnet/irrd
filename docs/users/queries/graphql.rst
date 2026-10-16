@@ -357,6 +357,34 @@ For which the result is::
 As the result shows, you can send one GraphQL query and get the results for
 one or multiple ASNs, separated by ASN.
 
+Registry-scoped lookups
+~~~~~~~~~~~~~~~~~~~~~~~
+The queries ``asSetPrefixes`` and ``recursiveSetMembers`` (covered below),
+normally look up their initial object across all configured
+sources, or the sources given in the ``sources`` argument.
+
+Sometimes when there are multiple objects with the same primary key
+in different sources, you may want the initial lookup of an AS-SET/route-set
+name to be restricted to a single, specific source, while still resolving any
+further recursion (e.g. the members of an AS-SET) using all sources, or the
+sources given in ``sources``.
+
+To do this, you can specify the ``rootSource`` string on ``asSetPrefixes``
+and ``recursiveSetMembers`` queries with a source configured on the server e.g.,
+``"RIPE"``.
+
+For example::
+
+    query {
+      recursiveSetMembers(setNames: ["AS-FOO"], rootSource: "RIPE") {
+        rpslPk, rootSource, members
+      }
+    }
+
+This resolves ``AS-FOO`` as it exists in ``RIPE`` only,
+but its members are still resolved recursively using all sources (or
+those given in ``sources``, if provided).
+
 Recursive set members query
 ---------------------------
 This query recursively resolves all members of an as-set or route-set

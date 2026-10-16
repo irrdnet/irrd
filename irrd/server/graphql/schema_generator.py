@@ -59,8 +59,8 @@ class SchemaGenerator:
             + """): [RPSLObject!]
               databaseStatus(sources: [String!]): [DatabaseStatus]
               asnPrefixes(asns: [ASN!]!, ipVersion: Int, sources: [String!]): [ASNPrefixes!]
-              asSetPrefixes(setNames: [String!]!, ipVersion: Int, sources: [String!], excludeSets: [String!], sqlTrace: Boolean): [AsSetPrefixes!]
-              recursiveSetMembers(setNames: [String!]!, depth: Int, sources: [String!], excludeSets: [String!], sqlTrace: Boolean): [SetMembers!]
+              asSetPrefixes(setNames: [String!]!, ipVersion: Int, rootSource: String, sources: [String!], excludeSets: [String!], sqlTrace: Boolean): [AsSetPrefixes!]
+              recursiveSetMembers(setNames: [String!]!, depth: Int, rootSource: String, sources: [String!], excludeSets: [String!], sqlTrace: Boolean): [SetMembers!]
             }
 
             type DatabaseStatus {
