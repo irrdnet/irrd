@@ -2,7 +2,7 @@
 Release notes for IRRD 4.4.8
 ============================
 
-IRRD 4.4.8 was released on October 14, 2026, and fixes several
+IRRD 4.4.8 was released on October 19, 2026, and fixes several
 security issues, including two in RPSL change submission processing:
 
 * Unbounded password verification work in RPSL submissions
