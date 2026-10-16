@@ -2,7 +2,7 @@
 Release notes for IRRD 4.4.8
 ============================
 
-IRRD 4.4.8 was released on October 14, 2026, and fixes several
+IRRD 4.4.8 was released on October 19, 2026, and fixes several
 security issues, including two in RPSL change submission processing:
 
 * Unbounded password verification work in RPSL submissions
@@ -83,3 +83,6 @@ Other changes
   the reply delivered to additional addresses. Submissions whose
   ``From`` is not exactly one address are still processed, but receive
   no reply. This affects all IRRD 4 versions.
+* Migrating a maintainer is refused when no e-mail address can be found
+  for any ``admin-c`` contact in the same source, rather than starting a
+  migration that can not be completed.
