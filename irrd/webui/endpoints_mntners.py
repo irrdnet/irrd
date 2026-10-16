@@ -1,3 +1,4 @@
+import datetime
 import logging
 import secrets
 import textwrap
@@ -415,12 +416,18 @@ async def permission_delete(request: Request, session_provider: ORMSessionProvid
     return RedirectResponse(request.url_for("ui:user_permissions"), status_code=302)
 
 
+# A migration can be restarted after this, in case the confirmation link is lost.
+MIGRATION_RESTART_AFTER_HOURS = 12
+
+
 class MntnerMigrateInitiateForm(StarletteForm):
     def __init__(self, *args, session_provider: ORMSessionProvider, **kwargs):
         super().__init__(*args, **kwargs)
         self.session_provider = session_provider
         self.rpsl_mntner = None
         self.rpsl_mntner_db_pk = None
+        self.auth_mntner = None
+        self.mail_recipients: set[str] = set()
         self.mntner_source.choices = [
             name for name, settings in get_setting("sources").items() if settings.get("authoritative")
         ]
@@ -460,11 +467,18 @@ class MntnerMigrateInitiateForm(StarletteForm):
         if not mntner_obj:
             self.mntner_key.errors.append("Unable to find this mntner object.")
             return False
-        if mntner_obj.auth_mntner:
-            self.mntner_key.errors.append(
-                "This maintainer was already migrated or a migration is in progress."
-            )
-            return False
+        self.auth_mntner = mntner_obj.auth_mntner
+        if self.auth_mntner:
+            if self.auth_mntner.migration_complete:
+                self.mntner_key.errors.append("This maintainer was already migrated.")
+                return False
+            restart_from = self.auth_mntner.updated + datetime.timedelta(hours=MIGRATION_RESTART_AFTER_HOURS)
+            if datetime.datetime.now(datetime.timezone.utc) < restart_from:
+                self.mntner_key.errors.append(
+                    "A migration for this maintainer is in progress. It can be restarted"
+                    f" {MIGRATION_RESTART_AFTER_HOURS} hours after the last attempt."
+                )
+                return False
         self.rpsl_mntner_db_pk = mntner_obj.pk
         self.rpsl_mntner = RPSLMntner(mntner_obj.object_text, strict_validation=False)
 
@@ -475,6 +489,19 @@ class MntnerMigrateInitiateForm(StarletteForm):
                 " while attempting to start migration"
             )
             self.mntner_password.errors.append("Invalid password for the methods on this mntner object.")
+            return False
+
+        self.mail_recipients = await mntner_migrate_mail_recipients(self.session_provider, self.rpsl_mntner)
+        if not self.mail_recipients:
+            logger.info(
+                f"{client_ip_str(self._request)}refused migration of {self.rpsl_mntner.pk()} in"
+                f" {self.mntner_source.data}: no email address found for admin-c"
+                f" {self.rpsl_mntner.parsed_data.get('admin-c', [])}"
+            )
+            self.mntner_key.errors.append(
+                "Unable to find an email address for any admin-c contact of this mntner in"
+                f" {self.mntner_source.data}."
+            )
             return False
 
         return True
@@ -491,7 +518,7 @@ async def mntner_migrate_initiate(request: Request, session_provider: ORMSession
     Current user gets permission with user_management if successful.
     A random secret token is stored in the DB and mailed to the admin-c's.
 
-    Migration itself consists of creating an AuthMntner.
+    Migration itself consists of creating or reusing an AuthMntner.
     """
     if not get_setting("auth.irrd_internal_migration_enabled"):
         return template_context_render("mntner_migrate_initiate.html", request, {})
@@ -501,12 +528,21 @@ async def mntner_migrate_initiate(request: Request, session_provider: ORMSession
         form_html = render_form(form)
         return template_context_render("mntner_migrate_initiate.html", request, {"form_html": form_html})
 
-    new_auth_mntner = AuthMntner(
-        rpsl_mntner_pk=form.rpsl_mntner.pk(),
-        rpsl_mntner_obj_id=str(form.rpsl_mntner_db_pk),
-        rpsl_mntner_source=form.mntner_source.data,
-        migration_token=secrets.token_urlsafe(24),
-    )
+    if form.auth_mntner:
+        new_auth_mntner = form.auth_mntner
+        new_auth_mntner.migration_token = secrets.token_urlsafe(24)
+        new_auth_mntner.updated = datetime.datetime.now(datetime.timezone.utc)
+        # Replace the previous attempt's permission, so only the user restarting gains access
+        session_provider.session.query(AuthPermission).filter(
+            AuthPermission.mntner_id == str(new_auth_mntner.pk)
+        ).delete()
+    else:
+        new_auth_mntner = AuthMntner(
+            rpsl_mntner_pk=form.rpsl_mntner.pk(),
+            rpsl_mntner_obj_id=str(form.rpsl_mntner_db_pk),
+            rpsl_mntner_source=form.mntner_source.data,
+            migration_token=secrets.token_urlsafe(24),
+        )
     session_provider.session.add(new_auth_mntner)
     session_provider.session.commit()
 
@@ -517,11 +553,12 @@ async def mntner_migrate_initiate(request: Request, session_provider: ORMSession
     )
     session_provider.session.add(new_permission)
 
-    await send_mntner_migrate_initiate_mail(session_provider, request, new_auth_mntner, form.rpsl_mntner)
+    send_mntner_migrate_initiate_mail(request, new_auth_mntner, form.mail_recipients)
     message(request, "The mntner's admin-c's have been sent a confirmation email to complete the migration.")
+    action = "restarted" if form.auth_mntner else "initiated"
     logger.info(
-        f"{client_ip_str(request)}{request.auth.user.email}: initiated migration of {form.rpsl_mntner.pk()},"
-        " pending confirmation"
+        f"{client_ip_str(request)}{request.auth.user.email}: {action} migration of"
+        f" {form.rpsl_mntner.pk()}, pending confirmation"
     )
     session_provider.session.add(
         ChangeLog(
@@ -530,7 +567,7 @@ async def mntner_migrate_initiate(request: Request, session_provider: ORMSession
             auth_through_mntner_id=str(new_auth_mntner.pk),
             auth_through_rpsl_mntner_pk=str(new_auth_mntner.rpsl_mntner_pk),
             from_ip=client_ip(request),
-            auth_change_descr="maintainer migration initiated",
+            auth_change_descr=f"maintainer migration {action}",
             auth_affected_mntner_id=str(new_auth_mntner.pk),
         )
     )
@@ -668,25 +705,23 @@ async def notify_mntner(session_provider, user: AuthUser, mntner: AuthMntner, ex
         send_email(recipient, subject, body)
 
 
-async def send_mntner_migrate_initiate_mail(
-    session_provider, request: Request, new_auth_mntner: AuthMntner, affected_mntner: RPSLMntner
-):
+async def mntner_migrate_mail_recipients(session_provider, affected_mntner: RPSLMntner) -> set[str]:
     """
-    Send the mntner migration initiation mail.
-    Looks at admin-c of the existing mntner, and then looks up all emails
-    of all contacts, and mails them the token.
+    The e-mail addresses of all admin-c contacts of a mntner, in the same source.
     """
-    admin_cs = affected_mntner.parsed_data["admin-c"]
     query = session_provider.session.query(RPSLDatabaseObject)
     query = query.filter(
-        RPSLDatabaseObject.rpsl_pk.in_(admin_cs),
+        RPSLDatabaseObject.rpsl_pk.in_(affected_mntner.parsed_data.get("admin-c", [])),
         RPSLDatabaseObject.source == affected_mntner.source(),
     )
-    recipients = {
+    return {
         email
         for admin_c_obj in await session_provider.run(query.all)
         for email in admin_c_obj.parsed_data.get("e-mail", [])
     }
+
+
+def send_mntner_migrate_initiate_mail(request: Request, new_auth_mntner: AuthMntner, recipients: set[str]):
     for recipient in recipients:
         send_template_email(
             recipient,

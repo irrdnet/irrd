@@ -100,9 +100,9 @@ class TOTPAuthenticateForm(StarletteForm):
             logger.info("user provided incorrect TOTP token")
             return False
 
-        if self.token.data == last_used and not os.environ["TESTING"]:  # pragma: no cover
+        if self.token.data == last_used and not os.environ.get("TESTING"):
             self.token.errors.append("Token already used. Wait for the next token.")
-            logger.info("user attempted to reuse previous TOTP token")
+            logger.info(f"{client_ip_str(self._request)}user attempted to reuse previous TOTP token")
             return False
 
         return True

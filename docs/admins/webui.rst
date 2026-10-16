@@ -92,10 +92,16 @@ the following steps:
 * The user requests migration with the maintainer name and one of the
   current valid passwords on the maintainer.
 * IRRD will mail all `admin-c` contacts on the maintainer with the
-  confirmation link (all will receive the same link).
+  confirmation link (all will receive the same link). The request is
+  refused when no e-mail address is found for any `admin-c` contact in
+  the same source.
 * The same user must open the confirmation link, and confirm again with
   a current valid password.
 * The maintainer is now migrated. Existing methods are kept.
+
+A migration can be restarted 12 hours after the last attempt, in case the
+confirmation link is lost. This mails a new link, invalidating the
+previous one, and moves access to the user restarting it.
 
 A migrated maintainer must have ``IRRD-INTERNAL-AUTH`` as one of
 the ``auth`` methods. This is added as part of the migration process.

@@ -109,7 +109,7 @@ size of the RPSL text imported.
 Redis configuration
 -------------------
 Redis is required for communication and persistence between IRRd's processes.
-IRRd releases are tested on Redis 5, 6 and 7.
+IRRd releases are tested on Redis 5 through 8.
 Beyond a default Redis installation, it is recommended to:
 
 * Increase ``maxmemory`` to 2GB (no limit is also fine). This is a hard
@@ -332,9 +332,37 @@ If your service runs on a different host, set
 ``X-Forwarded-For`` header.
 
 .. warning::
-    While running the HTTP services over plain HTTP is possible, using
-    HTTPS is strongly recommended, particularly so that clients can verify
-    the authenticity of query responses.
+    Running the HTTP services over plain HTTP is only appropriate for
+    testing. The web interface handles user credentials and session
+    cookies, which are unprotected in transit without HTTPS, and
+    WebAuthn two-factor authentication requires HTTPS in browsers.
+    IRRD logs a warning at startup when ``server.http.url`` is not an
+    ``https://`` URL. HTTPS also lets query clients verify the
+    authenticity of query responses.
+
+Availability and abuse protection
+---------------------------------
+IRRD's whois and HTTP services are, by design, open to the public, and
+IRRD itself has limited protection against high query or connection
+volumes from misbehaving or malicious clients. Like other public
+services, IRRD deployments are expected to handle this on the network
+level. Operators of publicly accessible instances are strongly
+recommended to:
+
+* Limit the connection rate and number of concurrent connections per
+  client to the whois port, e.g. with firewall rules. This is
+  particularly relevant as whois connections can be long-lived, and each
+  occupies one of the ``server.whois.max_connections`` workers.
+* Apply rate limiting and a request body size limit per client to the
+  HTTP services, e.g. in the HTTPS reverse proxy.
+* Run PostgreSQL and Redis instances dedicated to IRRD, so that resource
+  consumption in IRRD does not affect other applications.
+
+Resource exhaustion that these measures can mitigate is generally
+treated as hardening rather than a security vulnerability - see the
+`security policy`_ for details.
+
+.. _security policy: https://github.com/irrdnet/irrd/blob/main/SECURITY.rst
 
 Logrotate configuration
 -----------------------
@@ -366,14 +394,15 @@ using setcap, to be created in ``/lib/systemd/system/irrd.service``::
     [Unit]
     Description=IRRD4 Service
     Wants=basic.target
-    Requires=redis-server.service postgresql@11-main.service
-    After=basic.target network.target redis-server.service postgresql@11-main.service
+    Requires=redis-server.service postgresql@15-main.service
+    After=basic.target network.target redis-server.service postgresql@15-main.service
 
     [Service]
     Type=simple
     WorkingDirectory=/home/irrd
     User=root
-    PIDFile=/home/irrd/irrd.pid  # must match piddir config in the settings
+    # PIDFile must match the piddir setting in the IRRD configuration
+    PIDFile=/home/irrd/irrd.pid
     ExecStart=/path/to/bin/irrd --foreground
     Restart=on-failure
     ExecReload=/bin/kill -HUP $MAINPID
@@ -381,10 +410,10 @@ using setcap, to be created in ``/lib/systemd/system/irrd.service``::
     [Install]
     WantedBy=multi-user.target
     WantedBy=redis-server.service
-    WantedBy=postgresql@11-main.service
+    WantedBy=postgresql@15-main.service
 
-If you are not using PostgreSQL 11, you need to amend the service name
-``postgresql@11-main.service`` in both the ``Requires=`` and ``WantedBy=``
+If you are not using PostgreSQL 15, you need to amend the service name
+``postgresql@15-main.service`` in both the ``Requires=`` and ``WantedBy=``
 directive.
 
 Please note that the combination of ``Requires=`` and ``WantedBy=`` in

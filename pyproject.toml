@@ -38,7 +38,7 @@ hiredis = "3.3.0"
 coredis = "5.4.0"
 requests = "2.32.5"
 pytz = "2025.2"
-ariadne = "1.1.0"
+ariadne = "1.1.1"
 uvicorn = { extras = ["standard"], version = "0.40.0" }
 starlette = "1.3.1"
 psutil = "7.2.1"
@@ -111,6 +111,8 @@ src_paths = "irrd"
 
 [tool.ruff]
 line-length = 110
+# B019: lru_cache on methods leaks the instance and all it references (GHSA-cvm7-qcww-5m59)
+lint.extend-select = ["B019"]
 lint.ignore = ["E501"]
 target-version = "py310"
 

@@ -62,6 +62,19 @@ The maintainers do not run production deployments of IRRd. For issues
 with particular instances, rather than the IRRd software, contact
 the security contact of the respective IRRd operator.
 
+Scope of availability issues
+----------------------------
+
+IRRD's whois and HTTP services are open to the public by design, and
+deployments are encouraged to apply network level protections against
+high traffic volumes, as covered in the
+`deployment documentation <https://irrd.readthedocs.io/en/stable/admins/deployment/>`_.
+Reports of resource exhaustion are treated as security issues when they
+involve amplification, where a small request forces disproportionate
+work on the server, or persistence, where the impact remains after the
+abusive traffic stops. Resource exhaustion purely from traffic volume,
+which network level measures can mitigate, is treated as hardening.
+
 Best effort
 -----------
 

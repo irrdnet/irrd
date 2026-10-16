@@ -33,7 +33,7 @@ def set_force_reload(source) -> None:
         print(
             "Note: the reload flag will be set on the source, but existing NRTMv4 client key information is"
             " kept. To revert to the key currently set in the"
-            f" sources.{source}.nrtm4_client_initial_public_key setting, use 'irrdctl nrtmv4"
+            f" sources.{source}.nrtm4_client_initial_public_key setting, use 'irrdctl nrtm4"
             " client-clear-known-keys'"
         )
 
