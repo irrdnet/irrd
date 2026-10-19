@@ -279,6 +279,9 @@ A sample nginx configuration could initially look as follows
         gzip on;
         gzip_types application/json text/plain application/jsonl+json;
 
+        limit_req_zone $binary_remote_addr zone=irrd:10m rate=20r/s;
+        limit_req_status 429;
+
         map $http_upgrade $connection_upgrade {
             default upgrade;
             ''      close;
@@ -287,8 +290,10 @@ A sample nginx configuration could initially look as follows
             server_name  [your hostname];
             listen       80;
             listen       [::]:80;
+            client_max_body_size 5m;
 
             location / {
+                limit_req zone=irrd burst=30 nodelay;
                 proxy_set_header Host $http_host;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
                 proxy_set_header X-Forwarded-Proto $scheme;
@@ -304,6 +309,13 @@ A sample nginx configuration could initially look as follows
             }
         }
     }
+
+These limits are a starting point for public instances. Tune the rate to
+the request volume of your clients, who may share an address, and the
+body size to the largest RPSL submissions you accept, as the nginx
+default is 1MB. The rate limit is keyed on the address nginx sees:
+behind another proxy or CDN, all clients share one limit unless you
+configure the ``realip`` module.
 
 Then, update this configuration to use HTTPS by running
 ``certbot --nginx``, which is available on most platforms,
@@ -338,7 +350,8 @@ recommended to:
   particularly relevant as whois connections can be long-lived, and each
   occupies one of the ``server.whois.max_connections`` workers.
 * Apply rate limiting and a request body size limit per client to the
-  HTTP services, e.g. in the HTTPS reverse proxy.
+  HTTP services, e.g. in the HTTPS reverse proxy, as in the sample
+  configuration above.
 * Run PostgreSQL and Redis instances dedicated to IRRD, so that resource
   consumption in IRRD does not affect other applications.
 
