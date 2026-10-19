@@ -23,6 +23,7 @@ from irrd.storage.models import (
 from irrd.storage.orm_provider import ORMSessionProvider, session_provider_manager
 from irrd.utils.email import send_email
 from irrd.utils.text import clean_ip_value_error
+from irrd.webui import datetime_format
 from irrd.webui.auth.decorators import authentication_required
 from irrd.webui.auth.users import CurrentPasswordForm
 from irrd.webui.helpers import (
@@ -475,8 +476,8 @@ class MntnerMigrateInitiateForm(StarletteForm):
             restart_from = self.auth_mntner.updated + datetime.timedelta(hours=MIGRATION_RESTART_AFTER_HOURS)
             if datetime.datetime.now(datetime.timezone.utc) < restart_from:
                 self.mntner_key.errors.append(
-                    "A migration for this maintainer is in progress. It can be restarted"
-                    f" {MIGRATION_RESTART_AFTER_HOURS} hours after the last attempt."
+                    "A migration for this maintainer is in progress. It can be restarted after"
+                    f" {datetime_format(restart_from)} UTC."
                 )
                 return False
         self.rpsl_mntner_db_pk = mntner_obj.pk
