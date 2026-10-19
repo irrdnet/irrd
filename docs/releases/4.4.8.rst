@@ -83,3 +83,6 @@ Other changes
   the reply delivered to additional addresses. Submissions whose
   ``From`` is not exactly one address are still processed, but receive
   no reply. This affects all IRRD 4 versions.
+* Migrating a maintainer is refused when no e-mail address can be found
+  for any ``admin-c`` contact in the same source, rather than starting a
+  migration that can not be completed.
