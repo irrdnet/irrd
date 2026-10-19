@@ -1,6 +1,8 @@
 import datetime
 import uuid
 
+import time_machine
+
 from irrd.conf import RPSL_MNTNER_AUTH_INTERNAL
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
 from irrd.storage.database_handler import DatabaseHandler
@@ -586,19 +588,23 @@ class TestMntnerMigrateInitiate(WebRequestTest):
             follow_redirects=False,
         )
 
+    @time_machine.travel(datetime.datetime(2026, 3, 14, 12, 0, tzinfo=datetime.timezone.utc), tick=False)
     def test_restart(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
-        auth_mntner = AuthMntnerFactory(migration_token="old-token")
+        auth_mntner = AuthMntnerFactory(
+            migration_token="old-token",
+            updated=datetime.datetime(2026, 3, 14, 10, 0, tzinfo=datetime.timezone.utc),
+        )
         create_permission(session_provider, AuthUserFactory(), mntner=auth_mntner)
         self._login_if_needed(test_client, user)
 
         response = self._submit_migration(test_client)
         assert response.status_code == 200
-        assert "can be restarted 12 hours" in response.text
+        assert "can be restarted after 2026-03-14 22:00 UTC" in response.text
 
-        stale = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=13)
+        stale = datetime.datetime(2026, 3, 13, 23, 0, tzinfo=datetime.timezone.utc)
         auth_mntner.updated = stale
         session_provider.session.commit()
 
