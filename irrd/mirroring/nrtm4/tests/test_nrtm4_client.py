@@ -327,7 +327,12 @@ class TestNRTM4Client:
                     "nrtm4_client_version": 2,
                     "nrtm4_client_current_key": None,
                     "nrtm4_client_next_key": None,
-                    "nrtm4_client_previous_file_hashes": None,
+                    # Stale references from the previous session, these should be ignored
+                    # as the session ID change makes them no longer applicable.
+                    "nrtm4_client_previous_file_hashes": {
+                        "snapshot-3": ["previous-session-snapshot.json", "previous-session-hash"],
+                        "delta-3": ["previous-session-delta.3.json", "previous-session-hash"],
+                    },
                 }
             ]
         )
@@ -369,7 +374,11 @@ class TestNRTM4Client:
                     "nrtm4_client_version": 2,
                     "nrtm4_client_current_key": None,
                     "nrtm4_client_next_key": None,
-                    "nrtm4_client_previous_file_hashes": None,
+                    # These previous hashes mismatch, that should be ignored with force_reload
+                    "nrtm4_client_previous_file_hashes": {
+                        "snapshot-3": [MOCK_SNAPSHOT_FILENAME, "incorrect-hash"],
+                        "delta-3": [MOCK_DELTA3_FILENAME, "incorrect-hash"],
+                    },
                 }
             ]
         )
@@ -463,11 +472,13 @@ class TestNRTM4Client:
                 {
                     "force_reload": False,
                     "nrtm4_client_session_id": UUID(MOCK_SESSION_ID),
-                    "nrtm4_client_version": 4,
+                    # This means our client has a delta gap, forcing snapshot reload.
+                    # However, hash / history rewrite comparison should still happen.
+                    "nrtm4_client_version": 1,
                     "nrtm4_client_current_key": MOCK_UNF_PUBLIC_KEY,
                     "nrtm4_client_next_key": None,
                     "nrtm4_client_previous_file_hashes": {
-                        "delta-3": [MOCK_DELTA3_FILENAME, "incorrect-hash"]
+                        "snapshot-3": [MOCK_SNAPSHOT_FILENAME, "incorrect-hash"]
                     },
                 }
             ]
