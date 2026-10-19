@@ -94,5 +94,9 @@ Other changes
 * Migrating a maintainer is refused when no e-mail address can be found
   for any ``admin-c`` contact in the same source, rather than starting a
   migration that can not be completed.
+* A maintainer migration can be restarted 12 hours after the last
+  attempt, in case the confirmation link is lost. This mails a new link,
+  invalidating the previous one, and moves access to the user restarting
+  it.
 
 .. _GraphiQL explorer at /graphql/ is now served by IRRD itself: https://github.com/irrdnet/irrd/issues/1106
