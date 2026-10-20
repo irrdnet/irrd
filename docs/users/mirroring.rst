@@ -89,10 +89,11 @@ When running the NRTMv4 server process, IRRD will:
 * If ``nrtm4_server_snapshot_frequency`` has expired (default: 4 hours),
   or there was no ongoing session, write a new snapshot.
 * Expire any Delta files older than 24 hours.
-* Remove any dangling Delta files.
-* Remove older Snapshot files (they are kept for a while after no longer
-  being needed, to avoid race conditions).
-* Write the new Update Notification File, which includes its signature.
+* Write and publish the new Update Notification File, which includes its
+  signature.
+* Delete the expired Delta files, any dangling Delta files and older Snapshot
+  files (they are kept for a while after no longer being needed, to avoid
+  race conditions).
 
 You need to serve the files written to ``nrtm4_server_local_path`` on
 HTTPS, so that clients can retrieve them.

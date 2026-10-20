@@ -4,7 +4,9 @@ import json
 import os
 import time
 from pathlib import Path
-from unittest.mock import create_autospec
+from unittest.mock import Mock, create_autospec
+
+import pytest
 
 from irrd.conf import NRTM4_SERVER_DELTA_EXPIRY_TIME, PASSWORD_HASH_DUMMY_VALUE
 from irrd.mirroring.nrtm4 import UPDATE_NOTIFICATION_FILENAME
@@ -222,11 +224,18 @@ class TestNRTM4ServerWriter:
         assert delta[1]["action"] == "delete"
 
         # Final run, no new journal entries, but one delta expired
-        # Most hashes checked at the end, but this one is about to be deleted
-        check_file_hash_sha256(nrtm_path / delta1_filename, new_unf["deltas"][0]["hash"])
-
         status = mock_dh.other_calls[0][1]["status"]
         status.previous_deltas[0]["timestamp"] -= (NRTM4_SERVER_DELTA_EXPIRY_TIME * 2).total_seconds()
+
+        # A failed status commit must not publish the new Update Notification
+        # File, nor delete the files the published one still refers to
+        with pytest.MonkeyPatch.context() as monkeypatch:
+            monkeypatch.setattr(mock_dh, "commit", Mock(side_effect=ValueError))
+            with pytest.raises(ValueError):
+                self._run_writer(mock_dh, [self._status_to_dict(status)])
+            assert self._load_unf(nrtm_path) == newest_unf
+            check_file_hash_sha256(nrtm_path / delta1_filename, new_unf["deltas"][0]["hash"])
+
         self._run_writer(mock_dh, [self._status_to_dict(status)])
         assert mock_dh.queries == [
             RPSLDatabaseJournalStatisticsQuery(),
