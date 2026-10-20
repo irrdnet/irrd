@@ -869,8 +869,10 @@ class TestDatabaseHandlerLive:
     def test_scopefilter_status_storage(self, monkeypatch, irrd_db_mock_preload, database_handler_with_route):
         monkeypatch.setenv("IRRD_SOURCES_TEST_KEEP_JOURNAL", "1")
         dh = database_handler_with_route
+        existing_pk = list(dh.execute_query(RPSLDatabaseQuery()))[0]["pk"]
         route_rpsl_objs = [
             {
+                "pk": existing_pk,
                 "rpsl_pk": "192.0.2.0/24,AS65537",
                 "source": "TEST",
                 "object_class": "route",
@@ -951,6 +953,15 @@ class TestDatabaseHandlerLive:
             == 1
         )
         assert len(list(dh.execute_query(RPSLDatabaseJournalQuery()))) == 2  # no new entry since last test
+
+        # The object PK is used, not the RPSL PK, which is not unique
+        # between sources - see #461
+        route_rpsl_objs[0]["pk"] = str(uuid.uuid4())
+        route_rpsl_objs[0]["scopefilter_status"] = ScopeFilterStatus.out_scope_as
+        dh.update_scopefilter_status(rpsl_objs_now_out_scope_as=route_rpsl_objs)
+        assert not list(
+            dh.execute_query(RPSLDatabaseQuery().scopefilter_status([ScopeFilterStatus.out_scope_as]))
+        )
 
     def test_route_preference_status_storage(
         self, monkeypatch, irrd_db_mock_preload, database_handler_with_route
