@@ -64,6 +64,7 @@ class WhoisQueryParser:
         Not thread safe - only one call must be made to this method at the same time.
         """
         self.key_fields_only = False
+        self.query_resolver.set_object_class_filter([])
 
         if chr(0) in query:
             return WhoisQueryResponse(
@@ -497,7 +498,7 @@ class WhoisQueryParser:
 
     def handle_ripe_restrict_object_class(self, object_classes) -> None:
         """-T parameter - restrict object classes for this query, comma-seperated"""
-        self.query_resolver.set_object_class_filter_next_query(object_classes.split(","))
+        self.query_resolver.set_object_class_filter(object_classes.split(","))
 
     def handle_ripe_request_object_template(self, object_class) -> str:
         """-t query - return the RPSL template for an object class"""

@@ -119,8 +119,8 @@ class QueryResolver:
     def disable_route_preference_filter(self) -> None:
         self.route_preference_filter_enabled = False
 
-    def set_object_class_filter_next_query(self, object_classes: list[str]) -> None:
-        """Restrict object classes for the next query, comma-seperated"""
+    def set_object_class_filter(self, object_classes: list[str]) -> None:
+        """Restrict object classes for the current query"""
         self.object_class_filter = object_classes
 
     def key_lookup(self, object_class: str, rpsl_pk: str) -> RPSLDatabaseResponse:
@@ -451,7 +451,6 @@ class QueryResolver:
             query.scopefilter_status([ScopeFilterStatus.in_scope])
         if self.route_preference_filter_enabled:
             query.route_preference_status([RoutePreferenceStatus.visible])
-        self.object_class_filter = []
         return query
 
     def _execute_query(self, query) -> RPSLDatabaseResponse:
