@@ -1,6 +1,8 @@
 from graphql import GraphQLError
 from starlette.requests import HTTPConnection
 
+from irrd.server.query_resolver import InvalidQueryException
+
 from ..extensions import QueryMetadataExtension, error_formatter
 
 
@@ -57,3 +59,7 @@ def test_error_formatter():
     result = error_formatter(error, debug=True)
     assert result["message"] == "error"
     assert result["extensions"] == {"exception": None}
+
+    error = GraphQLError(message="invalid query", original_error=InvalidQueryException())
+    result = error_formatter(error)
+    assert result["message"] == "invalid query"
