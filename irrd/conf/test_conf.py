@@ -275,6 +275,7 @@ class TestConfiguration:
                     "http": {
                         "url": "💩",
                         "status_access_list": ["foo"],
+                        "event_stream_access_list": "doesnotexist-stream",
                     },
                 },
                 "email": {
@@ -386,8 +387,9 @@ class TestConfiguration:
         assert "Setting auth.set_creation.as-set.autnum_authentication must be one of" in str(ce.value)
         assert "Unknown setting key: auth.password_hashers.unknown-hash" in str(ce.value)
         assert "Setting auth.password_hashers.crypt-pw must be one of" in str(ce.value)
-        assert "Access lists doesnotexist, invalid-list referenced in settings, but not defined." in str(
-            ce.value
+        assert (
+            "Access lists doesnotexist, doesnotexist-stream, invalid-list referenced in settings, but not"
+            " defined." in str(ce.value)
         )
         assert "Setting server.http.url is missing or invalid." in str(ce.value)
         assert "Setting server.http.status_access_list must be a string, if defined." in str(ce.value)
