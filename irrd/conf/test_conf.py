@@ -432,12 +432,15 @@ class TestConfiguration:
         )
         assert (
             "Source TESTDB can not have authoritative, import_source, nrtm_host,"
+            " export_destination, export_destination_unfiltered,"
             " or NRTMv4 client or server set when readonly_standby is enabled." in str(ce.value)
         )
         assert (
             "Source TESTDB3 can not have authoritative, import_source, nrtm_host,"
+            " export_destination, export_destination_unfiltered,"
             " or NRTMv4 client or server set when readonly_standby is enabled." in str(ce.value)
         )
+        assert "NRTMv4 server requires keep_journal to be set for source TESTDB2." in str(ce.value)
         assert "Setting nrtm_port for source TESTDB2 must be a number." in str(ce.value)
         assert "Setting nrtm3_client_timeout for source TESTDB2 must be a number." in str(ce.value)
         assert "Setting rpki.roa_import_timer must be set to a number." in str(ce.value)
@@ -469,7 +472,7 @@ class TestConfiguration:
             "Setting nrtm4_server_local_path for source TESTDB is required and must point to an existing"
             " directory." in str(ce.value)
         )
-        assert "nrtm4_server_snapshot_frequency for source TESTDB must be between 1 and 24 hours" in str(
+        assert "nrtm4_server_snapshot_frequency for source TESTDB must be between 3600 and 86400" in str(
             ce.value
         )
         assert (
