@@ -228,6 +228,7 @@ class NRTM4Client:
 
             if self.force_reload:
                 logger.info(f"{self.source}: Forced reload flag set, reloading from snapshot")
+                self.last_status.previous_file_hashes = None
                 return None
 
             if not self.last_status.session_id or not last_version:
@@ -241,6 +242,7 @@ class NRTM4Client:
                     f"{self.source}: Session ID has changed from {self.last_status.session_id} to"
                     f" {unf.session_id}, reloading from snapshot"
                 )
+                self.last_status.previous_file_hashes = None
                 return None
 
         if last_version > unf.version:
