@@ -171,22 +171,32 @@ class QueryResolver:
         return prefixes
 
     def routes_for_as_set(
-        self, set_name: str, ip_version: int | None = None, exclude_sets: set[str] | None = None
+        self,
+        set_name: str,
+        ip_version: int | None = None,
+        root_source: str | None = None,
+        exclude_sets: set[str] | None = None,
     ) -> set[str]:
         """
         Find all originating prefixes for all members of an AS-set. May be restricted
         to IPv4 or IPv6. Returns a set of all prefixes.
+        If root_source is set, the root as-set is only looked for in that source -
+        resolving is then continued using the currently set sources.
         """
         self._current_set_root_object_class = "as-set"
         self._current_excluded_sets = exclude_sets if exclude_sets else set()
         self._current_set_maximum_depth = 0
-        members = self._recursive_set_resolve({set_name})
+        members = self._recursive_set_resolve(members={set_name}, root_source=root_source)
         return self.preloader.routes_for_origins(
             members, self.source_manager.sources_resolved, ip_version=ip_version
         )
 
     def members_for_set_per_source(
-        self, parameter: str, exclude_sets: set[str] | None = None, depth=0, recursive=False
+        self,
+        parameter: str,
+        exclude_sets: set[str] | None = None,
+        depth=0,
+        recursive=False,
     ) -> dict[str, list[str]]:
         """
         Find all members of an as-set or route-set, possibly recursively, distinguishing

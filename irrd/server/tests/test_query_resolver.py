@@ -377,11 +377,11 @@ class TestQueryResolver:
 
         monkeypatch.setattr(
             "irrd.server.query_resolver.QueryResolver._recursive_set_resolve",
-            lambda self, set_name: {"AS65547", "AS65548"},
+            lambda self, members, root_source: {"AS65547", "AS65548"},
         )
 
         mock_preloader.routes_for_origins = Mock(return_value=[])
-        result = resolver.routes_for_as_set("AS65547", 4)
+        result = resolver.routes_for_as_set("AS65547", 4, None)
         assert flatten_mock_calls(mock_preloader.routes_for_origins) == [
             [
                 "",
@@ -550,6 +550,54 @@ class TestQueryResolver:
             ["set_members", ("AS-TEST", ["TEST1"], ["route-set", "as-set"]), {}],
             ["set_members", ("AS-TEST", ["TEST2"], ["route-set", "as-set"]), {}],
         ]
+
+    def test_recursive_set_resolve_root_source(self, prepare_resolver):
+        mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
+
+        # AS-TEST exists in both sources, with fewer members in TEST2.
+        # AS-SUB only exists in TEST1.
+        mock_set_members_source = {
+            "TEST1": {
+                "AS-TEST": ["AS65547", "AS65548", "AS-SUB"],
+                "AS-SUB": ["AS65549"],
+            },
+            "TEST2": {
+                "AS-TEST": ["AS65547", "AS-SUB"],
+            },
+        }
+
+        def mock_set_members(set_pk, sources, object_classes):
+            for source in sources:
+                if set_pk in mock_set_members_source[source]:
+                    return SetMembers(mock_set_members_source[source][set_pk], "as-set")
+            return None
+
+        mock_preloader.set_members = Mock(side_effect=mock_set_members)
+
+        resolver._current_set_root_object_class = "as-set"
+        resolver._current_excluded_sets = set()
+        resolver._current_set_maximum_depth = 0
+        result = resolver._recursive_set_resolve({"AS-TEST"}, root_source=None)
+        assert result == {"AS65547", "AS65548", "AS65549"}
+        assert flatten_mock_calls(mock_preloader) == [
+            ["set_members", ("AS-TEST", ["TEST1", "TEST2"], ["as-set"]), {}],
+            ["set_members", ("AS-SUB", ["TEST1", "TEST2"], ["as-set"]), {}],
+        ]
+        mock_preloader.reset_mock()
+
+        # With root_source set, only the root object is restricted to TEST2,
+        # so AS65548 is not included. AS-SUB is still resolved from all sources.
+        resolver._current_set_root_object_class = "as-set"
+        resolver._current_excluded_sets = set()
+        resolver._current_set_maximum_depth = 0
+        result = resolver._recursive_set_resolve({"AS-TEST"}, root_source="TEST2")
+        assert result == {"AS65547", "AS65549"}
+        assert flatten_mock_calls(mock_preloader) == [
+            ["set_members", ("AS-TEST", ["TEST2"], ["as-set"]), {}],
+            ["set_members", ("AS-SUB", ["TEST1", "TEST2"], ["as-set"]), {}],
+        ]
+
+        assert not mock_dq.mock_calls
 
     def test_database_status(self, monkeypatch, prepare_resolver, config_override):
         config_override(
