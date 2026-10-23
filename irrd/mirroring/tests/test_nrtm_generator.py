@@ -126,10 +126,8 @@ class TestNRTMGenerator:
 
         with pytest.raises(NRTMGeneratorException) as nge:
             generator.generate("TEST", "3", 200, 190, mock_dh)
-        assert (
-            "Start of the serial range (200) must be lower or equal to end of the serial range (190)"
-            in str(nge.value)
-        )
+        expected = "Start of the serial range (200) must be lower or equal to end of the serial range (190)"
+        assert expected in str(nge.value)
 
     def test_serial_start_too_low(self, prepare_generator):
         generator, mock_dh = prepare_generator
