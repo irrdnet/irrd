@@ -490,6 +490,13 @@ class TestIntegration:
         # These queries should produce identical answers on all instances.
         # Wait for irrd #3 to have synced via NRTMv4 from irrd #2.
         time.sleep(3)
+
+        def check_nrtm4_synced():
+            query_result = whois_query_irrd("127.0.0.1", self.port_whois3, "!iAS65537:AS-SETTEST")
+            assert query_result
+            assert set(query_result.split(" ")) == {"AS65537", "AS65538", "AS65539", "AS-OTHERSET"}
+
+        self._wait_for_asserts(check_nrtm4_synced)
         for port in self.port_whois1, self.port_whois2, self.port_whois3:
             query_result = whois_query_irrd("127.0.0.1", port, "!iAS65537:AS-SETTEST")
             assert set(query_result.split(" ")) == {"AS65537", "AS65538", "AS65539", "AS-OTHERSET"}
@@ -1092,6 +1099,17 @@ class TestIntegration:
                 if message["To"] == recipient:
                     leftover_expected_recipients.remove(recipient)
         assert not leftover_expected_recipients
+
+    def _wait_for_asserts(self, check, timeout=30):
+        """Retry assertions that wait on mirroring, raising the last failure."""
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            try:
+                check()
+                return
+            except AssertionError:
+                time.sleep(0.5)
+        check()
 
     def teardown_method(self, method):
         """
