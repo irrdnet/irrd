@@ -74,7 +74,7 @@ The ``irrd_last_rpsl_data_update_*`` fields only update after a modification
 to the RPSL data. This includes changes in visibility due to object
 suppression status.
 
-* `irrd_last_update_seconds`: seconds since the last update to RPSL data
+* `irrd_last_rpsl_data_update_seconds`: seconds since the last update to RPSL data
 
     .. code-block::
 
@@ -84,7 +84,7 @@ suppression status.
         irrd_last_rpsl_data_update_seconds{source="SOURCE2"} 4301
         irrd_last_rpsl_data_update_seconds{source="RPKI"} 10
 
-* `irrd_last_update_timestamp`: UNIX timestamp of the last update to RPSL data
+* `irrd_last_rpsl_data_update_timestamp`: UNIX timestamp of the last update to RPSL data
 
     .. code-block::
 
@@ -134,11 +134,11 @@ Source serials
 --------------
 The final part exposes information on the latest serials imported/exported.
 
-* `irrd_nrtm4_client_version`: the most recent NRTMv3 serial we mirrored from a remote source
+* `irrd_nrtm4_client_version`: the most recent NRTMv4 version we mirrored from a remote source
 
     .. code-block::
 
-        # HELP irrd_mirrored_serial Newest NRTMv4 version mirrored from upstream
+        # HELP irrd_nrtm4_client_version Newest NRTMv4 version mirrored from upstream
         # TYPE irrd_nrtm4_client_version gauge
         irrd_nrtm4_client_version{source="SOURCE1"} 42
 
@@ -146,7 +146,7 @@ The final part exposes information on the latest serials imported/exported.
 
     .. code-block::
 
-        # HELP irrd_mirrored_serial Newest NRTMv3 serial number mirrored from upstream
+        # HELP irrd_mirrored_serial Newest serial NRTMv3 number mirrored from upstream
         # TYPE irrd_mirrored_serial gauge
         irrd_mirrored_serial{source="SOURCE1"} 1352386
         irrd_mirrored_serial{source="SOURCE2"} 112741
@@ -157,8 +157,8 @@ The final part exposes information on the latest serials imported/exported.
 
         # HELP irrd_last_export_serial Last serial number for full export
         # TYPE irrd_last_export_serial gauge
-        irrd_mirrored_serial{source="SOURCE1"} 1352000
-        irrd_mirrored_serial{source="SOURCE2"} 112000
+        irrd_last_export_serial{source="SOURCE1"} 1352000
+        irrd_last_export_serial{source="SOURCE2"} 112000
 
 * `irrd_oldest_journal_serial`: the oldest serial number in the journal
 
@@ -166,8 +166,8 @@ The final part exposes information on the latest serials imported/exported.
 
         # HELP irrd_oldest_journal_serial Oldest serial in the journal
         # TYPE irrd_oldest_journal_serial gauge
-        irrd_mirrored_serial{source="SOURCE1"} 1300000
-        irrd_mirrored_serial{source="SOURCE2"} 110000
+        irrd_oldest_journal_serial{source="SOURCE1"} 1300000
+        irrd_oldest_journal_serial{source="SOURCE2"} 110000
 
 * `irrd_newest_journal_serial`: the newest serial number in the journal
 
@@ -175,5 +175,5 @@ The final part exposes information on the latest serials imported/exported.
 
         # HELP irrd_newest_journal_serial Newest serial in the journal
         # TYPE irrd_newest_journal_serial gauge
-        irrd_mirrored_serial{source="SOURCE1"} 1360000
-        irrd_mirrored_serial{source="SOURCE2"} 113000
+        irrd_newest_journal_serial{source="SOURCE1"} 1360000
+        irrd_newest_journal_serial{source="SOURCE2"} 113000

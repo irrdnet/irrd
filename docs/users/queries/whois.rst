@@ -93,8 +93,8 @@ IRRd style queries
   For all sources, query ``!j-*``, for a specific source, query
   ``!jEXAMPLE-SOURCE``.
 * ``!J`` returns status information for each source. This can be used to check
-  the mirroring status, which databases are authoritative, whether certain
-  object classes are excluded, and various other settings.
+  the mirroring status, which databases are authoritative, which object
+  classes are accepted, and various other settings.
   The query syntax is identical to ``!j``, the output is JSON data.
   Each entry has a ``source_type`` which is either ``regular`` or ``alias``.
   Alias sources have an ``aliased_sources`` key listing the sources for which they
@@ -103,8 +103,9 @@ IRRd style queries
   * ``authoritative``: true if this source is authoritative in this IRRd
     instance, i.e. whether local changes are allowed. False if the source
     is mirrored from elsewhere.
-  * ``object_class_filter``: may be a list of object classes that are
-    ignored by this IRRd instance, when mirroring from a remote source.
+  * ``object_class_filter``: may be a list of the only object classes that
+    this IRRd instance accepts for this source. Objects of other classes are
+    ignored when mirroring, and rejected in authoritative changes.
   * ``rpki_rov_filter``: whether RPKI validation is enabled for this source.
   * ``scopefilter_enabled``: whether the scope filter is enabled on this instance,
     and is also enabled for this source.
@@ -129,10 +130,23 @@ IRRd style queries
     in the RPKI status of an object, or something else.
   * ``synchronised_serials``: whether or not a mirrored source is running with
     :ref:`synchronised serials <mirroring-nrtm-serials>`.
+  * ``rpsl_data_updated``: the time at which RPSL data for this source was
+    last updated.
+  * ``nrtm4_client_session_id``, ``nrtm4_client_version``: the NRTMv4 session
+    ID and version of the last update, when this source is an NRTMv4 client.
+  * ``nrtm4_server_session_id``, ``nrtm4_server_version``,
+    ``nrtm4_server_last_update_notification_file_update``,
+    ``nrtm4_server_last_snapshot_version``: the NRTMv4 session ID, the current
+    version, when the Update Notification File was last updated, and the
+    version of the most recent snapshot, when this source runs an NRTMv4
+    server.
+
+  For a source that does not exist, the only key is ``error``.
 * ``!m<object-class>,<primary-key>`` searches for objects exactly matching
   the primary key, of the specified RPSL object class. For example:
-  ``!maut-num,AS23456``. Stops at the first object. The key is case
-  sensitive. If the object class is `route` or `route6`, any spaces or dashes
+  ``!maut-num,AS23456``. Stops at the first object. The object class must be
+  in lower case, the key is not case sensitive.
+  If the object class is `route` or `route6`, any spaces or dashes
   in the key are ignored for legacy IRRd compatibility in composite keys.
   This allows querying for e.g. ``!mroute,192.0.2.0/24AS65530``, but also
   the legacy options ``192.0.2.0/24 AS65530`` and ``!mroute,192.0.2.0/24-AS65530``
@@ -158,7 +172,7 @@ IRRd style queries
   sources currently selected. This persists across queries.
 * ``!e<set_names>`` excludes set names from set resolving. During recursive
   resolving as part of ``!i`` and ``!a`` queries, sets with these names are
-  not expanded. The list is comma-separated, e.g. ``!AS-EX1,AS-EX2``.
+  not expanded. The list is comma-separated, e.g. ``!eAS-EX1,AS-EX2``.
   In addition, ``!e-lc`` returns the set names that are currently excluded.
   Exclusion does not apply when the target of the query is an excluded object,
   i.e. with the previous example, ``!aAS-EX1`` is still resolved.
@@ -166,8 +180,10 @@ IRRd style queries
 * ``!v`` returns the current version of IRRd
 * ``!fno-rpki-filter``, ``!fno-scope-filter``, and ``!fno-route-preference-filter``
   disables the filtering of :doc:`suppressed objects </admins/object-suppression>`
-  for the remainder of the connection. Disabling the filter only applies to ``!r``
-  queries and all RIPE style queries. This is only intended as a debugging aid.
+  for the remainder of the connection. This applies to queries answered from
+  the database, like ``!r``, ``!m``, ``!o`` and RIPE style queries, but not to
+  ``!g``, ``!6``, ``!a`` or ``!i``, which never include suppressed objects.
+  This is only intended as a debugging aid.
 
 
 RIPE style queries
@@ -316,7 +332,7 @@ If the query was valid, but no entries were found, the response is::
 
 If the query was invalid::
 
-    %% <error message>
+    %% ERROR: <error message>
 
 Source search order
 -------------------

@@ -122,8 +122,8 @@ setting.
 
 By default, this attribute is only added when an object is changed or
 created. If you have upgraded to IRRd 4.1, you can use the
-``irrd_set_last_modified_auth`` command to set it to the current time on
-all existing authoritative objects.
+``irrd_set_last_modified_auth`` command to add it to all existing
+authoritative objects, set to the time the object was last updated.
 This may take in the order of 10 minutes, depending
 on the number of objects to be updated. This only needs to be done once.
 It is safe to execute while other IRRd processes are running.

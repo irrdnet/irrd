@@ -71,14 +71,12 @@ both of them at the same time for the same source.
 NRTMv4 mode
 ~~~~~~~~~~~
 To configure an NRTMv4 source, you set the ``nrtm4_server_private_key``
-and ``nrtm4_server_local_path`` settings on the
-source. The local path is where IRRD will write the files, the base URL
-is the full HTTPS URL under which you will be serving the files.
+and ``nrtm4_server_local_path`` settings on the source. The local path is
+where IRRD will write the files, which you then serve over HTTPS yourself.
 The private key must be a JWK private key in PEM. You can use the
-``irrdctl nrtm4 generate-private-key`` command generate such a key,
-though does not store the key in the configuration for you.
-You need to use a separate base URL and local path for each
-IRR source.
+``irrdctl nrtm4 generate-private-key`` command to generate such a key,
+though it does not store the key in the configuration for you.
+You need to use a separate local path for each IRR source.
 
 When running the NRTMv4 server process, IRRD will:
 
@@ -86,16 +84,15 @@ When running the NRTMv4 server process, IRRD will:
   If a file is missing, the ongoing session is corrupt and will be reset.
 * If there is no ongoing session, generate a new session ID and start
   from version 1.
-* If there an ongoing session, find any changes since the last Delta file,
+* If there is an ongoing session, find any changes since the last Delta file,
   and if there were changes, write a new Delta file.
 * If ``nrtm4_server_snapshot_frequency`` has expired (default: 4 hours),
   or there was no ongoing session, write a new snapshot.
 * Expire any Delta files older than 24 hours.
 * Remove any dangling Delta files.
-* Remove older UNF signature files and Snapshot (they are kept for a while
-  after no longer being needed, to avoid race conditions).
-* Generate a new Update Notification File signature file.
-* Write the new Update Notification File.
+* Remove older Snapshot files (they are kept for a while after no longer
+  being needed, to avoid race conditions).
+* Write the new Update Notification File, which includes its signature.
 
 You need to serve the files written to ``nrtm4_server_local_path`` on
 HTTPS, so that clients can retrieve them.
@@ -135,8 +132,7 @@ mirroring of authoritative or mirrored data by other users.
 Periodic exports of the database can be produced for all sources. They consist
 of a full export of the text of all objects for a source, gzipped and encoded
 in UTF-8. If a serial is known, another file is exported with the serial
-number of this export. If the database is entirely empty, an error is logged
-and no files are exported.
+number of this export.
 
 NRTMv3 responses can be generated for all sources that have `keep_journal`
 enabled, as the NRTMv3 response is based on the journal, which records changes
@@ -212,8 +208,8 @@ A single source can only use one mirroring mode.
 NRTMv4 mode
 ~~~~~~~~~~~
 To configure an NRTMv4 source, set the ``nrtm4_client_notification_file_url``
-setting on the source to the Update Notification File URL.
-and the ``nrtm4_client_notification_file_url`` setting to the initial public key
+setting on the source to the Update Notification File URL, and the
+``nrtm4_client_initial_public_key`` setting to the initial public key
 (in PEM format). Both of these will be provided by the mirror server operator.
 
 When running the NRTMv4 client process, IRRD will:
@@ -305,7 +301,7 @@ The serial is checked every `import_timer`.
 
 Downloads
 ~~~~~~~~~
-For downloads, FTP and local files are supported. The full copy to be
+For downloads, HTTP(S), FTP and local files are supported. The full copy to be
 imported can consist of one or multiple files.
 
 Validation and filtering
