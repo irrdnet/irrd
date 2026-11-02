@@ -14,6 +14,11 @@ class TestLogin:
         response = test_client.get(self.url)
         assert response.status_code == 200
         assert "password" in response.text
+        assert 'name="csrf_token"' in response.text
+
+    def test_csrf_token_required(self, csrf_client):
+        data = {"email": "user@example.com", "password": "incorrect"}
+        assert csrf_client.post(self.url, data=data, follow_redirects=False).status_code == 403
 
     def test_rate_limit(self, irrd_db_session_with_user, test_client, config_override):
         session_provider, user = irrd_db_session_with_user
