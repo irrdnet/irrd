@@ -2,7 +2,19 @@ import textwrap
 
 import pytest
 
+from irrd.utils.rpsl_samples import KEY_CERT_SIGNED_MESSAGE_VALID
+
 from ..pgp import validate_pgp_signature
+
+KEY_CERT_SIGNED_TEXT = "This example was signed with 8626 1D8D BEBD A4F5 4692  D64D A838 3BA7 80F2 38C6.\n"
+TEST_KEY_FINGERPRINT = "86261D8DBEBDA4F54692D64DA8383BA780F238C6"
+# Unsigned literal data, as produced by gpg --store
+UNSIGNED_PGP_MESSAGE = """-----BEGIN PGP MESSAGE-----
+
+owE7LZLEkPXqT55jSIijs7drkG6Ia0QIFwA=
+=r+yY
+-----END PGP MESSAGE-----
+"""
 
 
 class TestValidatePGPSignature:
@@ -74,6 +86,31 @@ class TestValidatePGPSignature:
         new_message, fingerprint = validate_pgp_signature(message)
         assert new_message.strip() == "test\n1\n\n2\n\n3"
         assert fingerprint == "86261D8DBEBDA4F54692D64DA8383BA780F238C6"
+
+    @pytest.mark.usefixtures("tmp_gpg_dir")
+    def test_valid_inline_signed_ascii_crlf(self, tmp_gpg_dir, preload_gpg_key):
+        message = KEY_CERT_SIGNED_MESSAGE_VALID.replace("\n", "\r\n")
+        new_message, fingerprint = validate_pgp_signature(message)
+        assert new_message == KEY_CERT_SIGNED_TEXT
+        assert fingerprint == TEST_KEY_FINGERPRINT
+
+    @pytest.mark.usefixtures("tmp_gpg_dir")
+    def test_inline_signed_ascii_appended_text(self, tmp_gpg_dir, preload_gpg_key):
+        # Appended after the signature, and closed off so that a pattern for
+        # the signed text would run past it (GHSA-4277-7x4g-p526)
+        message = KEY_CERT_SIGNED_MESSAGE_VALID + "\n\nAPPENDED TEXT\n-----BEGIN PGP SIGNATURE-----\n"
+        new_message, fingerprint = validate_pgp_signature(message)
+        assert new_message == KEY_CERT_SIGNED_TEXT
+        assert fingerprint == TEST_KEY_FINGERPRINT
+
+    @pytest.mark.usefixtures("tmp_gpg_dir")
+    def test_inline_signed_ascii_second_armor_block(self, tmp_gpg_dir, preload_gpg_key):
+        # gpg may return the plaintext of the other block instead
+        assert validate_pgp_signature(KEY_CERT_SIGNED_MESSAGE_VALID + UNSIGNED_PGP_MESSAGE) == (
+            KEY_CERT_SIGNED_TEXT,
+            TEST_KEY_FINGERPRINT,
+        )
+        assert validate_pgp_signature(UNSIGNED_PGP_MESSAGE + KEY_CERT_SIGNED_MESSAGE_VALID) == (None, None)
 
     @pytest.mark.usefixtures("tmp_gpg_dir")
     def test_invalid_inline_signed_ascii_multiple_messages(self, tmp_gpg_dir, preload_gpg_key):
@@ -154,3 +191,14 @@ class TestValidatePGPSignature:
         new_message, fingerprint = validate_pgp_signature(message, signature)
         assert new_message is None
         assert fingerprint is None
+
+    @pytest.mark.usefixtures("tmp_gpg_dir")
+    def test_invalid_inline_signed_ascii_no_signature(self, tmp_gpg_dir, preload_gpg_key):
+        # gpg extracts no text at all when the signature block is missing
+        message = textwrap.dedent("""
+        -----BEGIN PGP SIGNED MESSAGE-----
+        Hash: SHA256
+
+        test 1 2 3
+        """).strip()
+        assert validate_pgp_signature(message) == (None, None)

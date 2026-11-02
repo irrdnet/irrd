@@ -1,6 +1,5 @@
 import logging
 import os
-import re
 from tempfile import NamedTemporaryFile
 
 # isort: off
@@ -11,10 +10,6 @@ from irrd.conf import get_setting
 # isort: on
 
 logger = logging.getLogger(__name__)
-pgp_inline_re = re.compile(
-    r"-----BEGIN PGP SIGNED MESSAGE-----(\n.+)?\n\n((?s:.+))\n-----BEGIN PGP SIGNATURE-----\n",
-    flags=re.MULTILINE,
-)
 
 
 def get_gpg_instance() -> gnupg.GPG:  # type: ignore
@@ -60,23 +55,24 @@ def validate_pgp_signature(
             result = gpg.verify(detached_signature, data_filename=data_file.name)
 
     elif message.count("BEGIN PGP SIGNED MESSAGE") == 1:
-        result = gpg.verify(message)
-        match = pgp_inline_re.search(message.replace("\r\n", "\n").replace("\r", "\n"))
-        if not match:  # pragma: no cover
-            msg = (
-                "message contained an inline PGP signature, but regular expression failed to extract body:"
-                f" {message}"
-            )
-            logger.info(msg)
+        # Only gpg knows which text the signature covers (GHSA-4277-7x4g-p526).
+        # A clearsigned message can not produce more plaintext than twice its size.
+        max_output = 2 * len(message.encode(gpg.encoding, "backslashreplace"))
+        result = gpg.decrypt(message, extra_args=["--max-output", str(max_output)])
+        new_message = (
+            result.data.decode(gpg.encoding, "backslashreplace").replace("\r\n", "\n").replace("\r", "\n")
+        )
+        if not new_message:
+            log_message = result.stderr.replace("\n", " -- ")
+            logger.info(f"no signed text extracted from inline PGP message: {log_message}")
             return None, None
-        new_message = match.group(2) + "\n"
 
     else:
         return None, None
 
     log_message = result.stderr.replace("\n", " -- ").replace("gpg:                ", "")
     logger.info(f"checked PGP signature, response: {log_message}")
-    if result.valid and result.key_status is None:
+    if result.valid and result.key_status is None and not result.returncode:
         logger.info(
             f"Found valid PGP signature, pubkey fingerprint {result.pubkey_fingerprint}, fingerprint"
             f" {result.fingerprint}"
