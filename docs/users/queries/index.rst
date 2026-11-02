@@ -72,7 +72,7 @@ High performance prefix queries are used when IRRd is sure that no
 `inetnum` objects might need to be included in the response. It can
 determine this when you:
 
-* use the ``-t`` parameter in RIPE queries; or
+* use the ``-T`` parameter in RIPE queries, without including `inetnum`; or
 * use type-specific queries like ``!r`` or ``-L``; or
 * as the server admin, set ``compatibility.inetnum_search_disabled``.
 

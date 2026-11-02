@@ -91,6 +91,7 @@ This sample shows most configuration options
         rpki:
             roa_source: https://rpki.gin.ntt.net/api/export.json
             roa_import_timer: 3600
+            notify_invalid_enabled: false
             pseudo_irr_remarks: |
                 This AS{asn} route object represents routing data retrieved
                 from the RPKI. This route object is the result of an automated
@@ -211,7 +212,8 @@ General settings
   in read-only standby mode. See
   :doc:`availability with PostgreSQL replication </admins/availability-and-migration>`
   for further details. Can not be used if any source has ``authoritative``,
-  ``import_source``, ``nrtm_host``, or an NRTMv4 client or server set.
+  ``import_source``, ``nrtm_host``, ``export_destination``,
+  ``export_destination_unfiltered``, or an NRTMv4 client or server set.
   **Do not enable this setting without reading the further documentation on standby setups.**
   |br| **Default**: ``false``.
   |br| **Change takes effect**: after full IRRd restart.
@@ -239,7 +241,7 @@ General settings
 * ``download_timeout``: the timeout in seconds for downloads over HTTP or FTP,
   specifically for mirroring and RPKI imports.
   |br| **Default**: 10 seconds.
-  |br| **Change takes effect**: after full IRRd restart.
+  |br| **Change takes effect**: after SIGHUP, at the next download.
 
 
 Servers
@@ -278,8 +280,8 @@ Servers
   |br| **Default**: not defined, but required.
   |br| **Change takes effect**: after SIGHUP.
 * ``server.whois.max_connections``: the maximum number of simultaneous whois
-  connections permitted. Note that each permitted connection will result in
-  one IRRd whois worker to be started, each of which use about 200-250 MB memory.
+  connections permitted. Note that IRRd starts one whois worker per permitted
+  connection when it starts, each of which use about 200-250 MB memory.
   For example, if you set this to 50, you need about 10-13 GB of memory just for
   IRRd's whois server.
   (and additional memory for other components and PostgreSQL).
@@ -347,7 +349,7 @@ Authentication and validation
   |br| **Change takes effect**: upon the next update attempt.
 * ``auth.gnupg_keyring``: the full path to the gnupg keyring.
   |br| **Default**: not defined, but required.
-  |br| **Change takes effect**: after full IRRd restart.
+  |br| **Change takes effect**: after SIGHUP, upon the next PGP validation.
 * ``auth.irrd_internal_migration_enabled``: whether users can initiate a migration
   their mntners to IRRD-INTERNAL-AUTH authentication through the web interface.
   If this is disabled after some mntners have already been migrated, those
@@ -360,7 +362,7 @@ Authentication and validation
   but also other cases that request passwords. This is a moving window
   in the format of the limits_ library.
   |br| **Default**: ``30/hour``.
-  |br| **Change takes effect**: after full IRRd restart.
+  |br| **Change takes effect**: after SIGHUP, upon next request.
 * ``auth.password_hashers``: which password hashers to allow in mntner objects.
   This is a dictionary with the hashers (``crypt-pw``, ``md5-pw``, ``bcrypt-pw``) as
   possible keys, and ``enabled``, ``legacy``, or ``disabled`` as possible values.
@@ -635,6 +637,8 @@ Sources
   |br| **Change takes effect**: after SIGHUP, for all subsequent changes.
 * ``sources.{name}.nrtm4_server_private_key``: the private key
   used to sign the Update Notification File for an NRTMv4 server, in PEM format.
+  Running an NRTMv4 server requires ``keep_journal`` to be enabled
+  for this source.
   You may find the ``irrdctl nrtm4 generate-private-key`` and
   ``irrdctl nrtm4 server-show-public-key`` convenience commands helpful.
   Note the use of the pipe character (``|``) in the sample to enter this
@@ -695,8 +699,7 @@ Sources
   particularly significant for sources that do not offer an NRTM stream, as
   they will instead run a full import every time this timer expires. The
   default is rather frequent for sources that work exclusively with periodic
-  full imports. The minimum effective time is 15 seconds, and this is also
-  the granularity of the timer.
+  full imports. Timers are accurate to within a few seconds.
   |br| **Default**: ``60`` for sources configured as NRTMv4 client,
   ``300`` for any others.
   |br| **Change takes effect**: after SIGHUP.
@@ -707,7 +710,7 @@ Sources
 * ``sources.{name}.object_class_filter``: a list of object classes that will
   be mirrored and allowed modification for authoritative source. Objects of
   other RPSL object classes will be ignored immediately when encountered in full
-  imports or NRTM streams. Authoritative changes for objects in this filter
+  imports or NRTM streams. Authoritative changes for objects not in this filter
   are rejected.
   Without a filter, all objects of known object classes are mirrored and
   can be changed in authoritative sources.
@@ -716,10 +719,10 @@ Sources
 * ``sources.{name}.export_destination``: a path to save full exports, including
   a serial file, of this source. The data is initially written to a temporary
   file, and then moved to the destination path. The export of RPSL data is always
-  gzipped. If there is no serial information available (i.e. the journal is
-  empty) no serial file is produced. If the database is entirely empty, an error
-  is logged and no files are exported. This directory needs to exist already,
-  IRRd will not create it. File permissions are always set to ``644``.
+  gzipped. If there is no serial information available for the source, no serial
+  file is produced, but the RPSL data is still exported. This directory needs
+  to exist already, IRRd will not create it. File permissions are always set
+  to ``644``.
   |br| **Default**: not defined, no exports made.
   |br| **Change takes effect**: after SIGHUP, at the next ``export_timer``.
 * ``sources.{name}.export_destination_unfiltered``: a path to save full exports,
@@ -729,12 +732,13 @@ Sources
   Sharing password hashes externally is a security risk, the unfiltered data
   is intended only to support
   :doc:`availability and data migration </admins/availability-and-migration>`.
-  **This setting is deprecated and will be removed in IRRD 4.6.**
+  **This setting is deprecated and will be removed in a future release.**
   |br| **Default**: not defined, no exports made.
   |br| **Change takes effect**: after SIGHUP, at the next ``export_timer``.
 * ``sources.{name}.export_timer``: the time between two full exports of all
-  data for this source. The minimum effective time is 15 seconds, and this is
-  also the granularity of the timer.
+  data for this source. Timers are accurate to within a few seconds.
+  This setting does not apply to the NRTMv4 server, which
+  runs once per minute, and publishes a new version when there were changes.
   |br| **Default**: ``3600``.
   |br| **Change takes effect**: after SIGHUP
 * ``sources.{name}.nrtm_access_list``: a reference to an access list in the
@@ -742,9 +746,10 @@ Sources
   to the NRTMv3 stream for this particular source (``-g`` queries).
   Filtered means password hashes are not included.
   This same list is used to restrict access to
-  :ref:`GraphQL journal queries <graphql-journal>`.
-  |br| **Default**: not defined, all access denied except to clients in
-  ``nrtm_access_list_unfiltered``.
+  :ref:`GraphQL journal queries <graphql-journal>`, where
+  ``nrtm_access_list_unfiltered`` is not considered.
+  |br| **Default**: not defined, all NRTMv3 access denied except to clients in
+  ``nrtm_access_list_unfiltered``, and all GraphQL journal access denied.
   |br| **Change takes effect**: after SIGHUP, upon next request.
 * ``sources.{name}.nrtm_access_list_unfiltered``: a reference to an access list
   in the configuration, where IPs in the access list are permitted unfiltered
@@ -753,7 +758,7 @@ Sources
   Sharing password hashes externally is a security risk, the unfiltered data
   is intended only to support
   :doc:`availability and data migration </admins/availability-and-migration>`.
-  **This setting is deprecated and will be removed in IRRD 4.6.**
+  **This setting is deprecated and will be removed in a future release.**
   |br| **Default**: not defined, all access denied. Clients in
   ``nrtm_access_list``, if defined, have filtered access.
   |br| **Change takes effect**: after SIGHUP, upon next request.
@@ -875,11 +880,11 @@ to others, see the :doc:`mirroring documentation </users/mirroring>`.
 
 .. note::
 
-    New sources added are detected after a SIGHUP. However, when adding a large
-    amount of new sources, restarting IRRd is recommended. An internal pool of
-    database connections is based, among other things, on the number of sources,
-    and this pool size is only updated on restart. For adding one or two
-    sources, the impact is insignificant and a restart is not required.
+    New sources added are detected after a SIGHUP. Each source adds processes
+    that run mirror imports or exports, each of which uses its own pool of
+    database connections. When adding a large amount of new sources, you may
+    need to increase ``max_connections`` in PostgreSQL, as discussed in
+    :doc:`the deployment documentation </admins/deployment>`.
 
 
 Logging
