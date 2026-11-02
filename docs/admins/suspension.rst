@@ -22,7 +22,8 @@ following happens:
   IRRD rejects the request.
 * For each object, IRRD checks whether it has any other currently existing
   and non-suspended `mntners`. If it does have other maintainers, the object
-  is left as is.
+  is left as is. The `mntner` you are suspending is always suspended,
+  regardless of its own ``mnt-by`` value.
 * The `mntner` that is suspended and any object that has this maintainer as
   its only active `mnt-by`, is deleted from the active RPSL objects and stored
   in a separate storage.
@@ -51,9 +52,9 @@ When you reactivate an object, the following happens:
   not found in the suspended object store, IRRD rejects the request.
 * For each object, IRRD checks whether there is a (newer) active object with
   the same primary key. If this exists, the object is not restored,
-  but the IRRD will continue to restore the other objects.
-  Note that the `mntner` you are suspending will always be suspended,
-  regardless of its own ``mnt-by`` value.
+  but the IRRD will continue to restore the other objects. The exception is
+  the `mntner` itself: if an active `mntner` with that primary key exists,
+  IRRD rejects the request and restores nothing.
 * IRRD writes NRTM add entries to the journal, causing the suspended objects
   to be reappear on mirrors.
 * The creation time of the reactivated objects is set to the original
@@ -111,7 +112,7 @@ or e-mail submission.
 
 HTTP API
 ^^^^^^^^
-To submit changes over HTTP, make a POST or DELETE request to ``/v1/suspension/``.
+To submit changes over HTTP, make a POST request to ``/v1/suspension/``.
 For example, if the IRRd instance is running on ``rr.example.net``, the URL is::
 
     https://rr.example.net/v1/suspension/

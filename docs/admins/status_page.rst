@@ -36,8 +36,8 @@ The local information shows:
   as when journal keeping is disabled for a source, these numbers still update,
   e.g. when NRTM operations are processed. May be unknown for sources using
   :doc:`periodic full import mode </users/mirroring>`.
-* `Oldest/newest journal serial number`: the oldest and newest serial which
-  this IRRd has in the local journal. This is the range that can be requested
+* `Oldest/newest local journal serial number`: the oldest and newest serial
+  which this IRRd has in the local journal. This is the range that can be requested
   with NRTMv3 queries. Note that for mirrored sources, it is not possible
   to guarantee that all operations in this range are in the local journal.
   NRTMv3 serials can have gaps, which means it is not possible to be certain
@@ -45,6 +45,13 @@ The local information shows:
   or is missing due to temporary disabling of journal keeping.
 * `Last export at serial number`: serial at which this IRRd instance last
   created an export for this source, if any.
+* `Newest serial number mirrored`: the newest serial this IRRd has imported
+  from the mirror source.
+* `NRTMv4 client/server`: the session ID, current version, and for a server
+  also the last Update Notification File update, the last snapshot version
+  and the number of deltas, for sources using NRTMv4.
+* `Synchronised NRTM serials`: whether this mirrored source uses
+  :ref:`synchronised serials <mirroring-nrtm-serials>`.
 * `Last change to RPSL data`: the last time when the RPSL data for this source
   changed, due to adding, updating or removing an RPSL object.
   This includes changes in visibility due to object suppression status.
@@ -56,15 +63,21 @@ The local information shows:
   for mirrored sources. An import error means an object
   :doc:`was invalid </admins/object-validation>`, and therefore could not be
   imported. Full details are provided in the logfile.
+* `RPKI validation enabled`, `Scope filter enabled`, `Route object preference`:
+  which forms of :doc:`object suppression </admins/object-suppression>` apply
+  to this source.
 
 The remote information shows:
 
 * `NRTM host`: the host on which NRTMv3 queries are run, if configured.
-* `Mirror-able`: whether the `!j` response of the NRTMv3 host indicated this
-  source is mirror-able.
+* `Mirrorable`: whether the `!j` response of the NRTMv3 host indicated this
+  source can be mirrored.
 * `Oldest/newest journal serial number`: the oldest and newest serial which
   the NRTMv3 host has in its own journal.
 * `Last export at serial number`: serial at which the NRTMv3 host last created
   an export for this source.
+
+For sources using the NRTMv4 client, the remote information shows the Update
+Notification File URL instead.
 
 Not all remote information may be available for all sources.

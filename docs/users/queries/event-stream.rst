@@ -200,7 +200,7 @@ There are two ways for you to notice that this has happened:
 * The ``last_reload_times`` for a source in the ``stream_status``
   message is more recent than your last full import from an
   initial file.
-* You receive a ``event_rpsl`` message where the ``operation``
+* You receive an ``event`` message where the ``operation``
   is ``full_reload``.
 
 
