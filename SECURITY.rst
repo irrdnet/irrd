@@ -9,7 +9,7 @@ or anything else that may have security implications, please do not
 report it in the GitHub repository:
 
 * email irrd@reliablycoded.nl, or
-* file it as a [GitHub security advisory](https://github.com/irrdnet/irrd/security/advisories/new)
+* file it as a `GitHub security advisory <https://github.com/irrdnet/irrd/security/advisories/new>`_.
 
 Do not create a GitHub issue or pull request.
 If you have a patch, you can attach it to the email or the security advisory.
