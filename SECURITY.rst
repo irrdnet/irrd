@@ -6,7 +6,13 @@ Reporting a Vulnerability
 
 If you have found an issue, strange behaviour, possible oversight,
 or anything else that may have security implications, please do not
-report it in the GitHub repository, but email irrd@reliablycoded.nl.
+report it in the GitHub repository:
+
+* email irrd@reliablycoded.nl, or
+* file it as a [GitHub security advisory](https://github.com/irrdnet/irrd/security/advisories/new)
+
+Do not create a GitHub issue or pull request.
+If you have a patch, you can attach it to the email or the security advisory.
 
 Supported Versions
 ------------------
