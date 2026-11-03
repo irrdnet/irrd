@@ -295,6 +295,7 @@ class SetPasswordForm(StarletteForm):
         return True
 
 
+@rate_limit_post(any_response_code=True)
 @csrf_protect
 @session_provider_manager
 async def set_password(request: Request, session_provider: ORMSessionProvider) -> Response:

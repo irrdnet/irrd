@@ -343,6 +343,7 @@ class TOTPRegisterForm(CurrentPasswordForm):
         return True
 
 
+@rate_limit_post
 @csrf_protect
 @authentication_required
 @session_provider_manager
