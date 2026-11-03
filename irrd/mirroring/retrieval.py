@@ -35,7 +35,12 @@ def retrieve_file(url: Url | str, return_contents=True, expected_hash: str | Non
 
     If the URL ends in .gz, the file is gunzipped before being processed,
     but only for HTTP(s) and FTP downloads.
+
+    An expected_hash can only be verified when the file is written to disk.
     """
+    if expected_hash and return_contents:
+        raise ValueError("Hash verification is not supported when returning contents")
+
     url_parsed = urlparse(str(url))
 
     if url_parsed.scheme in ["ftp", "http", "https"]:
@@ -47,13 +52,13 @@ def retrieve_file(url: Url | str, return_contents=True, expected_hash: str | Non
 
 
 def _retrieve_file_download(
-    url: str, url_parsed, return_contents=False, expected_hash: str | None = None
+    url: str, url_parsed, return_contents: bool, expected_hash: str | None
 ) -> tuple[str, bool]:
     """
     Retrieve a file from HTTP(s) or FTP
 
-    If return_contents is False, the file is read, stripped and then the
-    contents are returned. If return_contents is True, the data is written
+    If return_contents is True, the file is read, stripped and then the
+    contents are returned. If return_contents is False, the data is written
     to a temporary file, and the path of this file is returned.
     It is the responsibility of the caller to unlink this path later.
 
@@ -107,7 +112,7 @@ def _download_file(destination: IO[Any], url: str, url_parsed):
             raise OSError(f"Failed to download {url}: {r.status_code}: {r.content!s}")
 
 
-def _retrieve_file_local(path, return_contents=False, expected_hash: str | None = None) -> tuple[str, bool]:
+def _retrieve_file_local(path, return_contents: bool, expected_hash: str | None) -> tuple[str, bool]:
     if not return_contents:
         check_file_hash_sha256(path, expected_hash)
         if path.endswith(".gz"):

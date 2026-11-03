@@ -5,7 +5,7 @@ from tempfile import NamedTemporaryFile
 
 import pytest
 
-from irrd.mirroring.retrieval import check_file_hash_sha256
+from irrd.mirroring.retrieval import check_file_hash_sha256, retrieve_file
 
 
 def test_check_expected_hash(tmp_path):
@@ -19,3 +19,8 @@ def test_check_expected_hash(tmp_path):
     )
     with pytest.raises(ValueError):
         check_file_hash_sha256(f.name, expected_hash="9f")
+
+
+def test_hash_not_supported_with_contents():
+    with pytest.raises(ValueError):
+        retrieve_file("https://example.com/file", return_contents=True, expected_hash="9f")
