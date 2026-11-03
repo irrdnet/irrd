@@ -502,6 +502,20 @@ class TestSetPassword(WebRequestTest):
         assert response.status_code == 200
         assert "Create account" in response.text
 
+    def test_rate_limit(self, irrd_db_session_with_user, test_client, config_override):
+        session_provider, user = irrd_db_session_with_user
+        config_override(
+            {
+                "server": {"http": {"url": "http://testserver/"}},
+                "secret_key": "s",
+                "auth": {"webui_auth_failure_rate_limit": "1/hour"},
+            }
+        )
+        url = f"/ui/auth/set-password/{user.pk}/invalid-token/0/"
+        # This might already hit the limit from previous tests
+        assert test_client.post(url, data={}).status_code in [404, 403]
+        assert test_client.post(url, data={}).status_code == 403
+
     def test_valid_reset(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
