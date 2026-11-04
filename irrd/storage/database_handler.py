@@ -1,3 +1,4 @@
+import csv
 import logging
 from collections import defaultdict
 from collections.abc import Iterable, Iterator
@@ -786,13 +787,10 @@ class DatabaseHandler:
         self._check_write_permitted()
 
         columns = list(self._roa_insert_buffer[0].keys())
-        roa_rows = []
+        roa_csv = StringIO()
+        csv_writer = csv.writer(roa_csv, lineterminator="\n")
         for roa in self._roa_insert_buffer:
-            # ROA data is very simple, so we can use a naive CSV generator.
-            roa_data = ",".join([str(roa[k]) for k in columns])
-            roa_rows.append(roa_data)
-
-        roa_csv = StringIO("\n".join(roa_rows))
+            csv_writer.writerow([roa[k] for k in columns])
         roa_csv.seek(0)
         postgres_copy.copy_from(roa_csv, ROADatabaseObject, self._connection, columns=columns, format="csv")
         self._roa_insert_buffer = []

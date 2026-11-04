@@ -705,7 +705,12 @@ class TestDatabaseHandlerLive:
     def test_roa_handling_and_query(self, irrd_db_mock_preload):
         self.dh = DatabaseHandler()
         self.dh.insert_roa_object(
-            ip_version=4, prefix_str="192.0.2.0/24", asn=64496, max_length=28, trust_anchor="TEST TA"
+            ip_version=4,
+            prefix_str="192.0.2.0/24",
+            asn=64496,
+            max_length=28,
+            # Characters that need escaping in the CSV used to insert ROAs
+            trust_anchor='TEST, "TA"',
         )
         self.dh.insert_roa_object(
             ip_version=6, prefix_str="2001:db8::/32", asn=64497, max_length=64, trust_anchor="TEST TA"
@@ -718,7 +723,7 @@ class TestDatabaseHandlerLive:
                 "prefix": "192.0.2.0/24",
                 "asn": 64496,
                 "max_length": 28,
-                "trust_anchor": "TEST TA",
+                "trust_anchor": 'TEST, "TA"',
                 "ip_version": 4,
             },
             {
