@@ -41,11 +41,17 @@ class ChangeSubmissionHandler:
         self.database_handler = DatabaseHandler()
         with contextlib.closing(self.database_handler):
             self.request_meta = request_meta if request_meta else {}
-            self._pgp_key_id = self._resolve_pgp_key_id(pgp_fingerprint) if pgp_fingerprint else None
+            keycert_obj_pk, keycert_obj_sources = (
+                self._resolve_pgp_keycert(pgp_fingerprint) if pgp_fingerprint else (None, set())
+            )
 
             reference_validator = ReferenceValidator(self.database_handler)
             auth_validator = AuthValidator(
-                self.database_handler, origin, self._pgp_key_id, internal_authenticated_user
+                self.database_handler,
+                origin,
+                keycert_obj_pk,
+                keycert_obj_sources,
+                internal_authenticated_user,
             )
             change_requests = parse_change_requests(
                 object_texts_blob,
@@ -193,25 +199,29 @@ class ChangeSubmissionHandler:
 
         self.results = change_requests
 
-    def _resolve_pgp_key_id(self, pgp_fingerprint: str) -> str | None:
+    def _resolve_pgp_keycert(self, pgp_fingerprint: str) -> tuple[str | None, set[str]]:
         """
-        Find a PGP key ID for a given fingerprint.
-        This method looks for an actual matching object in the database,
-        and then returns the object's PK.
+        Find a PGP key ID for a given fingerprint, along with the sources
+        in which a key-cert with this fingerprint is published.
+        A key ID is only the last 32 bits of the fingerprint, so the key
+        may only authenticate mntners in those sources.
         """
         clean_fingerprint = pgp_fingerprint.replace(" ", "")
         key_id = "PGPKEY-" + clean_fingerprint[-8:]
         query = RPSLDatabaseQuery().object_classes(["key-cert"]).rpsl_pk(key_id)
-        results = list(self.database_handler.execute_query(query))
+        sources = {
+            result["source"]
+            for result in self.database_handler.execute_query(query)
+            if result["parsed_data"].get("fingerpr", "").replace(" ", "") == clean_fingerprint
+        }
 
-        for result in results:
-            if result["parsed_data"].get("fingerpr", "").replace(" ", "") == clean_fingerprint:
-                return key_id
-        logger.info(
-            f"Message was signed with key {key_id}, but key was not found in the database. Treating message "
-            f"as unsigned. Message metadata: {self.request_meta}"
-        )
-        return None
+        if not sources:
+            logger.info(
+                f"Message was signed with key {key_id}, but key was not found in the database. Treating"
+                f" message as unsigned. Message metadata: {self.request_meta}"
+            )
+            return None, set()
+        return key_id, sources
 
     def status(self) -> str:
         """Provide a simple SUCCESS/FAILED string based - former used if all objects were saved."""
