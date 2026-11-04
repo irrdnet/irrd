@@ -403,6 +403,23 @@ class TestAuthValidator:
         assert len(result.mntners_notify) == 1
         assert result.mntners_notify[0].pk() == "TEST-MNT"
 
+    def test_new_person_preapproved_mntner_other_source(self, prepare_mocks):
+        validator, mock_dq, mock_dh = prepare_mocks
+        person = rpsl_object_from_text(SAMPLE_PERSON)
+        mock_dh.execute_query = lambda q: [
+            {"object_class": "mntner", "object_text": SAMPLE_MNTNER},
+        ]
+        mntner_other_source = rpsl_object_from_text(
+            SAMPLE_MNTNER.replace("source:         TEST", "source:         TEST2")
+        )
+        validator.pre_approve([mntner_other_source])
+
+        result = validator.process_auth(person, None)
+        assert not result.is_valid()
+        assert result.error_messages == {
+            "Authorisation for person PERSON-TEST failed: must be authenticated by one of: TEST-MNT"
+        }
+
     def test_create_mntner_requires_override(self, prepare_mocks, config_override):
         validator, mock_dq, mock_dh = prepare_mocks
         mntner = rpsl_object_from_text(SAMPLE_MNTNER)

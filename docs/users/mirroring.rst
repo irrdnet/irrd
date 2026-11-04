@@ -44,8 +44,7 @@ mirroring of authoritative or mirrored data by other users.
 Periodic exports of the database can be produced for all sources. They consist
 of a full export of the text of all objects for a source, gzipped and encoded
 in UTF-8. If a serial is known, another file is exported with the serial
-number of this export. If the database is entirely empty, an error is logged
-and no files are exported.
+number of this export.
 
 NRTM responses can be generated for all sources that have `keep_journal`
 enabled, as the NRTM response is based on the journal, which records changes
@@ -157,7 +156,7 @@ The serial is checked every `import_timer`.
 
 Downloads
 ~~~~~~~~~
-For downloads, FTP and local files are supported. The full copy to be
+For downloads, HTTP(S), FTP and local files are supported. The full copy to be
 imported can consist of one or multiple files.
 
 Validation and filtering

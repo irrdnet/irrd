@@ -15,7 +15,7 @@ from irrd.server.access_check import is_client_permitted
 from irrd.storage.queries import RPSLDatabaseJournalQuery, RPSLDatabaseQuery
 from irrd.utils.text import remove_auth_hashes, snake_to_camel_case
 
-from ..query_resolver import QueryResolver, QuerySourceManager
+from ..query_resolver import InvalidQueryException, QueryResolver, QuerySourceManager
 from .schema_generator import SchemaGenerator
 
 """
@@ -75,7 +75,7 @@ def resolve_rpsl_objects(_, info: GraphQLResolveInfo, **kwargs):
         ]
     )
     if low_specificity:
-        raise ValueError("Your query must be more specific.")
+        raise InvalidQueryException("Your query must be more specific.")
 
     if kwargs.get("sql_trace"):
         info.context["sql_trace"] = True

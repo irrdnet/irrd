@@ -252,6 +252,7 @@ class TestConfiguration:
                     "http": {
                         "url": "💩",
                         "status_access_list": ["foo"],
+                        "event_stream_access_list": "doesnotexist-stream",
                     },
                 },
                 "email": {
@@ -314,6 +315,9 @@ class TestConfiguration:
                         "nrtm_access_list_unfiltered": "invalid-list",
                         "route_object_preference": "not-a-number",
                     },
+                    "TESTDB4": {
+                        "export_destination": "/tmp",
+                    },
                     # Not permitted, rpki.roa_source is set
                     "RPKI": {},
                     "lowercase": {},
@@ -352,8 +356,10 @@ class TestConfiguration:
         assert "Setting auth.set_creation.as-set.autnum_authentication must be one of" in str(ce.value)
         assert "Unknown setting key: auth.password_hashers.unknown-hash" in str(ce.value)
         assert "Setting auth.password_hashers.crypt-pw must be one of" in str(ce.value)
-        assert "Access lists doesnotexist, invalid-list referenced in settings, but not defined." in str(
-            ce.value
+        assert (
+            "Access lists doesnotexist, doesnotexist-stream, invalid-list referenced in settings, but not"
+            " defined."
+            in str(ce.value)
         )
         assert "Setting server.http.url is missing or invalid." in str(ce.value)
         assert "Setting server.http.status_access_list must be a string, if defined." in str(ce.value)
@@ -382,13 +388,18 @@ class TestConfiguration:
             in str(ce.value)
         )
         assert (
-            "Source TESTDB can not have authoritative, import_source or nrtm_host set when readonly_standby"
-            " is enabled."
+            "Source TESTDB can not have authoritative, import_source, nrtm_host, export_destination or"
+            " export_destination_unfiltered set when readonly_standby is enabled."
             in str(ce.value)
         )
         assert (
-            "Source TESTDB3 can not have authoritative, import_source or nrtm_host set when readonly_standby"
-            " is enabled."
+            "Source TESTDB3 can not have authoritative, import_source, nrtm_host, export_destination or"
+            " export_destination_unfiltered set when readonly_standby is enabled."
+            in str(ce.value)
+        )
+        assert (
+            "Source TESTDB4 can not have authoritative, import_source, nrtm_host, export_destination or"
+            " export_destination_unfiltered set when readonly_standby is enabled."
             in str(ce.value)
         )
         assert "Setting nrtm_port for source TESTDB2 must be a number." in str(ce.value)

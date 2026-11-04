@@ -658,9 +658,9 @@ Sources
 * ``sources.{name}.export_destination``: a path to save full exports, including
   a serial file, of this source. The data is initially written to a temporary
   file, and then moved to the destination path. The export of RPSL data is always
-  gzipped. If there is no serial information available (i.e. the journal is
-  empty) no serial file is produced. If the database is entirely empty, an error
-  is logged and no files are exported. This directory needs to exist already,
+  gzipped. If there is no serial information available for the source, no serial
+  file is produced, but the RPSL data is still exported. This directory needs
+  to exist already,
   IRRd will not create it. File permissions are always set to ``644``.
   |br| **Default**: not defined, no exports made.
   |br| **Change takes effect**: after SIGHUP, at the next ``export_timer``.
@@ -671,7 +671,7 @@ Sources
   Sharing password hashes externally is a security risk, the unfiltered data
   is intended only to support
   :doc:`availability and data migration </admins/availability-and-migration>`.
-  **This setting is deprecated and will be removed in IRRD 4.5.**
+  **This setting is deprecated and will be removed in a future release.**
   |br| **Default**: not defined, no exports made.
   |br| **Change takes effect**: after SIGHUP, at the next ``export_timer``.
 * ``sources.{name}.export_timer``: the time between two full exports of all
@@ -695,7 +695,7 @@ Sources
   Sharing password hashes externally is a security risk, the unfiltered data
   is intended only to support
   :doc:`availability and data migration </admins/availability-and-migration>`.
-  **This setting is deprecated and will be removed in IRRD 4.5.**
+  **This setting is deprecated and will be removed in a future release.**
   |br| **Default**: not defined, all access denied. Clients in
   ``nrtm_access_list``, if defined, have filtered access.
   |br| **Change takes effect**: after SIGHUP, upon next request.

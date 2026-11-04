@@ -278,6 +278,7 @@ class Configuration:
         expected_access_lists = {
             config.get("server.whois.access_list"),
             config.get("server.http.status_access_list"),
+            config.get("server.http.event_stream_access_list"),
         }
 
         if not self._check_is_str(config, "email.from") or "@" not in config.get("email.from", ""):
@@ -297,6 +298,7 @@ class Configuration:
             "email.footer",
             "server.whois.access_list",
             "server.http.status_access_list",
+            "server.http.event_stream_access_list",
             "rpki.notify_invalid_subject",
             "rpki.notify_invalid_header",
             "rpki.slurm_source",
@@ -411,14 +413,13 @@ class Configuration:
             if config.get("readonly_standby") and (
                 details.get("authoritative")
                 or details.get("nrtm_host")
-                or details.get(
-                    "import_source"
-                    or details.get("export_destination")
-                    or details.get("export_destination_unfiltered")
-                )
+                or details.get("import_source")
+                or details.get("export_destination")
+                or details.get("export_destination_unfiltered")
             ):
                 errors.append(
-                    f"Source {name} can not have authoritative, import_source or nrtm_host set "
+                    f"Source {name} can not have authoritative, import_source, nrtm_host, "
+                    "export_destination or export_destination_unfiltered set "
                     "when readonly_standby is enabled."
                 )
 
