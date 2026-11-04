@@ -413,14 +413,13 @@ class Configuration:
             if config.get("readonly_standby") and (
                 details.get("authoritative")
                 or details.get("nrtm_host")
-                or details.get(
-                    "import_source"
-                    or details.get("export_destination")
-                    or details.get("export_destination_unfiltered")
-                )
+                or details.get("import_source")
+                or details.get("export_destination")
+                or details.get("export_destination_unfiltered")
             ):
                 errors.append(
-                    f"Source {name} can not have authoritative, import_source or nrtm_host set "
+                    f"Source {name} can not have authoritative, import_source, nrtm_host, "
+                    "export_destination or export_destination_unfiltered set "
                     "when readonly_standby is enabled."
                 )
 

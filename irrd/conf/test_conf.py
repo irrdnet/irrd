@@ -315,6 +315,9 @@ class TestConfiguration:
                         "nrtm_access_list_unfiltered": "invalid-list",
                         "route_object_preference": "not-a-number",
                     },
+                    "TESTDB4": {
+                        "export_destination": "/tmp",
+                    },
                     # Not permitted, rpki.roa_source is set
                     "RPKI": {},
                     "lowercase": {},
@@ -385,13 +388,18 @@ class TestConfiguration:
             in str(ce.value)
         )
         assert (
-            "Source TESTDB can not have authoritative, import_source or nrtm_host set when readonly_standby"
-            " is enabled."
+            "Source TESTDB can not have authoritative, import_source, nrtm_host, export_destination or"
+            " export_destination_unfiltered set when readonly_standby is enabled."
             in str(ce.value)
         )
         assert (
-            "Source TESTDB3 can not have authoritative, import_source or nrtm_host set when readonly_standby"
-            " is enabled."
+            "Source TESTDB3 can not have authoritative, import_source, nrtm_host, export_destination or"
+            " export_destination_unfiltered set when readonly_standby is enabled."
+            in str(ce.value)
+        )
+        assert (
+            "Source TESTDB4 can not have authoritative, import_source, nrtm_host, export_destination or"
+            " export_destination_unfiltered set when readonly_standby is enabled."
             in str(ce.value)
         )
         assert "Setting nrtm_port for source TESTDB2 must be a number." in str(ce.value)
