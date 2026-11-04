@@ -8,6 +8,7 @@ import os
 import platform
 import pwd
 import signal
+import stat
 import sys
 import time
 import warnings
@@ -121,6 +122,23 @@ def main():
             return
 
         piddir = get_setting("piddir")
+        # piddir has to be writable by the IRRD user, so a symlink, hard link
+        # or other kind of file there could redirect this write to another
+        # path writable by that user. This check is not atomic
+        pidfile_path = os.path.abspath(os.path.join(piddir, "irrd.pid"))
+        try:
+            pidfile_stat = os.lstat(pidfile_path)
+        except FileNotFoundError:
+            pidfile_stat = None
+        except OSError as oe:
+            logger.critical(f"Unable to start: unable to check PID file {pidfile_path}: {oe}")
+            return
+        if pidfile_stat and (not stat.S_ISREG(pidfile_stat.st_mode) or pidfile_stat.st_nlink > 1):
+            logger.critical(
+                f"Unable to start: PID file {pidfile_path} is not a regular file, or is hard linked"
+            )
+            return
+
         logger.info("IRRd attempting to secure PID")
         try:
             with PidFile(pidname="irrd", piddir=piddir):
