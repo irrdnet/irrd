@@ -36,12 +36,16 @@ DEFAULT_REDIRECT_URL = "ui:index"
 def clean_next_url(request: Request, default: str = DEFAULT_REDIRECT_URL):
     """
     Prevent an open redirect by cleaning the redirection URL.
-    This discards everything except the path from the next parameter.
+    This discards everything except the path from the next parameter,
+    and only accepts a single absolute path: browsers read a path like
+    "//example.com" or "/\\example.com" as a URL to another host.
     Not very flexible, but sufficient for IRRD needs.
     """
     next_param = unquote_plus(request.query_params.get("next", ""))
     _, _, next_path, _, _, _ = urlparse(next_param)
-    return next_path if next_path else request.url_for(default)
+    if not next_path.startswith("/") or next_path[1:2] in ("/", "\\"):
+        return request.url_for(default)
+    return next_path
 
 
 @rate_limit_post
