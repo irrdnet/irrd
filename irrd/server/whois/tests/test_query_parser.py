@@ -393,6 +393,16 @@ class TestWhoisQueryParserRIPE:
         assert response.result == "TEST1/3/1/None/False/True"
         assert not response.remove_auth_hashes
 
+        # -g must not disable auth hash removal for other queries
+        response = parser.handle_query("-g TEST1:3:1-LAST -T mntner FOO-MNT")
+        assert response.result == "TEST1/3/1/None/False/True"
+        assert not mock_query_resolver.rpsl_text_search.called
+
+        # Keepalive is not affected by stopping after the NRTM request
+        response = parser.handle_query("-g TEST1:3:1-LAST -k")
+        assert response.result == "TEST1/3/1/None/False/True"
+        assert parser.multiple_command_mode
+
         response = parser.handle_query("-g TEST1:9:1-LAST")
         assert response.response_type == WhoisQueryResponseType.ERROR_USER
         assert response.mode == WhoisQueryResponseMode.RIPE
