@@ -190,7 +190,12 @@ class TestChangeSubmissionHandler:
 
         query_responses = iter(
             [
-                [{"parsed_data": {"fingerpr": "8626 1D8D BEBD A4F5 4692  D64D A838 3BA7 80F2 38C6"}}],
+                [
+                    {
+                        "parsed_data": {"fingerpr": "8626 1D8D BEBD A4F5 4692  D64D A838 3BA7 80F2 38C6"},
+                        "source": "TEST",
+                    }
+                ],
                 [],
                 [{"object_text": mntner_text}],
                 [{"object_text": mntner_text}],
