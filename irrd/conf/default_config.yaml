@@ -50,6 +50,7 @@ irrd:
         authenticate_parents_route_creation: true
         irrd_internal_migration_enabled: false
         webui_auth_failure_rate_limit: "30/hour"
+        submission_auth_failure_rate_limit: "200/hour"
         set_creation:
             COMMON:
                 prefix_required: true

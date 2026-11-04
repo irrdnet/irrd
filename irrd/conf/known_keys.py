@@ -44,6 +44,7 @@ KNOWN_CONFIG_KEYS = DottedDict(
             "gnupg_keyring": {},
             "irrd_internal_migration_enabled": {},
             "webui_auth_failure_rate_limit": {},
+            "submission_auth_failure_rate_limit": {},
             "set_creation": {
                 rpsl_object_class: {"prefix_required": {}, "autnum_authentication": {}}
                 for rpsl_object_class in [

@@ -288,6 +288,7 @@ class TestConfiguration:
                 "auth": {
                     "irrd_internal_migration_enabled": "invalid",
                     "webui_auth_failure_rate_limit": "invalid",
+                    "submission_auth_failure_rate_limit": "invalid",
                     "set_creation": {
                         "as-set": {
                             "prefix_required": "not-a-bool",
@@ -382,6 +383,7 @@ class TestConfiguration:
         assert "Setting auth.gnupg_keyring is required." in str(ce.value)
         assert "Setting auth.irrd_internal_migration_enabled must be a bool." in str(ce.value)
         assert "Setting auth.webui_auth_failure_rate_limit is missing or invalid." in str(ce.value)
+        assert "Setting auth.submission_auth_failure_rate_limit is missing or invalid." in str(ce.value)
         assert "Unknown setting key: auth.set_creation.not-a-real-set.prefix_required" in str(ce.value)
         assert "Setting auth.set_creation.as-set.prefix_required must be a bool" in str(ce.value)
         assert "Setting auth.set_creation.as-set.autnum_authentication must be one of" in str(ce.value)

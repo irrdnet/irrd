@@ -3,6 +3,7 @@ import logging
 import time
 from json import JSONDecodeError
 
+import limits
 import pydantic
 from asgiref.sync import sync_to_async
 from IPy import IP
@@ -10,6 +11,7 @@ from starlette.endpoints import HTTPEndpoint
 from starlette.requests import Request
 from starlette.responses import JSONResponse, PlainTextResponse, Response
 
+from irrd.conf import get_setting
 from irrd.server.access_check import STARLETTE_TEST_CLIENT_HOST, is_client_permitted
 from irrd.updates.handler import ChangeSubmissionHandler
 from irrd.utils.text import remove_control_chars
@@ -23,6 +25,14 @@ from .metrics_generator import MetricsGenerator
 from .status_generator import StatusGenerator
 
 logger = logging.getLogger(__name__)
+
+# Kept separate from the web interface limit, so one can not consume the other
+RATE_LIMIT_SUBMISSION_AUTH_FAILURE_NAMESPACE = "irrd-submission-auth-failure"
+
+
+def _rate_limit_args(host: str):
+    rate_limit = limits.parse(get_setting("auth.submission_auth_failure_rate_limit"))
+    return rate_limit, RATE_LIMIT_SUBMISSION_AUTH_FAILURE_NAMESPACE, host
 
 
 class StatusEndpoint(HTTPEndpoint):
@@ -99,6 +109,12 @@ class ObjectSubmissionEndpoint(HTTPEndpoint):
 
     async def _handle_submission(self, request: Request, delete=False):
         host = request.client.host if request.client else STARLETTE_TEST_CLIENT_HOST
+        limiter = request.app.state.rate_limiter
+        rate_limit_args = _rate_limit_args(host)
+        if not await limiter.test(*rate_limit_args):
+            logger.info(f"{host}: rejecting submission due to rate limiting")
+            return PlainTextResponse("Request denied due to rate limiting", status_code=429)
+
         try:
             request_json = await request.json()
             data = RPSLChangeSubmission.model_validate(request_json)
@@ -129,6 +145,8 @@ class ObjectSubmissionEndpoint(HTTPEndpoint):
             request_meta=meta,
             remote_ip=remote_ip,
         )
+        if handler.has_authentication_failures():
+            await limiter.hit(*rate_limit_args)
         await sync_to_async(handler.send_notification_target_reports)()
         return JSONResponse(handler.submitter_report_json())
 
@@ -136,6 +154,12 @@ class ObjectSubmissionEndpoint(HTTPEndpoint):
 class SuspensionSubmissionEndpoint(HTTPEndpoint):
     async def post(self, request: Request) -> Response:
         host = request.client.host if request.client else STARLETTE_TEST_CLIENT_HOST
+        limiter = request.app.state.rate_limiter
+        rate_limit_args = _rate_limit_args(host)
+        if not await limiter.test(*rate_limit_args):
+            logger.info(f"{host}: rejecting suspension submission due to rate limiting")
+            return PlainTextResponse("Request denied due to rate limiting", status_code=429)
+
         try:
             json = await request.json()
             data = RPSLSuspensionSubmission.model_validate(json)
@@ -148,4 +172,6 @@ class SuspensionSubmissionEndpoint(HTTPEndpoint):
         }
         handler = ChangeSubmissionHandler()
         await sync_to_async(handler.load_suspension_submission)(data=data, request_meta=request_meta)
+        if handler.has_authentication_failures():
+            await limiter.hit(*rate_limit_args)
         return JSONResponse(handler.submitter_report_json())

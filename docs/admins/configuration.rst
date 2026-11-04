@@ -68,6 +68,7 @@ This sample shows most configuration options
             gnupg_keyring: /home/irrd/gnupg-keyring/
             override_password: {hash}
             webui_auth_failure_rate_limit: "30/hour"
+            submission_auth_failure_rate_limit: "200/hour"
             password_hashers:
                 md5-pw: legacy
 
@@ -362,6 +363,14 @@ Authentication and validation
   but also other cases that request passwords. This is a moving window
   in the format of the limits_ library.
   |br| **Default**: ``30/hour``.
+  |br| **Change takes effect**: after SIGHUP, upon next request.
+* ``auth.submission_auth_failure_rate_limit``: the rate limit for RPSL
+  submissions over HTTP that failed authentication, counted per client IP.
+  A submission counts once, regardless of how many objects it contains.
+  Submissions by email are not affected, as they have no client IP.
+  This is a moving window in the format of the limits_ library, kept
+  separately from ``auth.webui_auth_failure_rate_limit``.
+  |br| **Default**: ``200/hour``.
   |br| **Change takes effect**: after SIGHUP, upon next request.
 * ``auth.password_hashers``: which password hashers to allow in mntner objects.
   This is a dictionary with the hashers (``crypt-pw``, ``md5-pw``, ``bcrypt-pw``) as

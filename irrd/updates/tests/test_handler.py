@@ -12,7 +12,7 @@ from irrd.utils.test_utils import flatten_mock_calls
 from ...utils.validators import RPSLChangeSubmission, RPSLSuspensionSubmission
 from ...vendor.mock_alchemy.mocking import UnifiedAlchemyMagicMock
 from ..handler import ChangeSubmissionHandler
-from ..parser_state import SuspensionRequestType
+from ..parser_state import SuspensionRequestType, UpdateRequestStatus
 
 
 @pytest.fixture()
@@ -47,6 +47,13 @@ def prepare_mocks(monkeypatch, config_override):
 class TestChangeSubmissionHandler:
     # NOTE: the scope of this test also includes ChangeRequest, ReferenceValidator and AuthValidator -
     # this is more of an update handler integration test.
+
+    def test_has_authentication_failures(self):
+        handler = ChangeSubmissionHandler()
+        handler.results = [Mock(status=UpdateRequestStatus.SAVED)]
+        assert not handler.has_authentication_failures()
+        handler.results.append(Mock(status=UpdateRequestStatus.ERROR_AUTH))
+        assert handler.has_authentication_failures()
 
     def test_parse_valid_new_objects_with_override(self, prepare_mocks, monkeypatch):
         mock_dq, mock_dh, mock_email = prepare_mocks
