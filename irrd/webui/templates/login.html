@@ -9,6 +9,7 @@
                 </div>
             {% endif %}
             <form method="POST">
+                <input id="csrf_token" name="csrf_token" type="hidden" value="{{ csrf_token }}">
                 <div class="row mb-3"><label class="form-label col-sm-3 col-form-label" for="email">Email
                     address</label>
                     <div class="col-sm-9">

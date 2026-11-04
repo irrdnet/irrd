@@ -109,6 +109,7 @@ class TOTPAuthenticateForm(StarletteForm):
 
 
 @rate_limit_post
+@csrf_protect
 @authentication_required(mfa_check=False)
 @session_provider_manager
 async def mfa_authenticate(request: Request, session_provider: ORMSessionProvider) -> Response:
@@ -342,6 +343,7 @@ class TOTPRegisterForm(CurrentPasswordForm):
         return True
 
 
+@csrf_protect
 @authentication_required
 @session_provider_manager
 async def totp_register(request: Request, session_provider: ORMSessionProvider) -> Response:

@@ -5,7 +5,7 @@ from urllib.parse import unquote_plus, urlparse
 import wtforms
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
-from starlette_wtf import StarletteForm, csrf_protect
+from starlette_wtf import StarletteForm, csrf_protect, csrf_token
 
 from irrd.storage.models import AuthUser
 from irrd.storage.orm_provider import ORMSessionProvider, session_provider_manager
@@ -45,6 +45,7 @@ def clean_next_url(request: Request, default: str = DEFAULT_REDIRECT_URL):
 
 
 @rate_limit_post
+@csrf_protect
 async def login(request: Request):
     if request.method == "GET":
         return template_context_render(
@@ -52,6 +53,7 @@ async def login(request: Request):
             request,
             {
                 "errors": None,
+                "csrf_token": csrf_token(request),
             },
         )
 
@@ -76,6 +78,7 @@ async def login(request: Request):
                 request,
                 {
                     "errors": "Invalid account or password.",
+                    "csrf_token": csrf_token(request),
                 },
             )
 
