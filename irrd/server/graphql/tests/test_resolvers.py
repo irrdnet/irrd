@@ -8,7 +8,7 @@ from starlette.requests import HTTPConnection
 from irrd.routepref.status import RoutePreferenceStatus
 from irrd.rpki.status import RPKIStatus
 from irrd.scopefilter.status import ScopeFilterStatus
-from irrd.server.query_resolver import QueryResolver
+from irrd.server.query_resolver import InvalidQueryException, QueryResolver
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.models import DatabaseOperation, JournalEntryOrigin
 from irrd.storage.preload import Preloader
@@ -109,16 +109,16 @@ class TestGraphQLResolvers:
 
         info, mock_database_query, mock_query_resolver = prepare_resolver
 
-        with pytest.raises(ValueError):
+        with pytest.raises(InvalidQueryException):
             resolvers.resolve_rpsl_objects(None, info)
-        with pytest.raises(ValueError):
+        with pytest.raises(InvalidQueryException):
             resolvers.resolve_rpsl_objects(None, info, object_class="route", sql_trace=True)
-        with pytest.raises(ValueError):
+        with pytest.raises(InvalidQueryException):
             resolvers.resolve_rpsl_objects(
                 None, info, object_class="route", rpki_status=[RPKIStatus.not_found], sql_trace=True
             )
 
-        # Should not raise ValueError
+        # Should not raise InvalidQueryException
         resolvers.resolve_rpsl_objects(
             None, info, object_class="route", rpki_status=[RPKIStatus.invalid], sql_trace=True
         )
