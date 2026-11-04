@@ -278,6 +278,7 @@ class Configuration:
         expected_access_lists = {
             config.get("server.whois.access_list"),
             config.get("server.http.status_access_list"),
+            config.get("server.http.event_stream_access_list"),
         }
 
         if not self._check_is_str(config, "email.from") or "@" not in config.get("email.from", ""):
@@ -297,6 +298,7 @@ class Configuration:
             "email.footer",
             "server.whois.access_list",
             "server.http.status_access_list",
+            "server.http.event_stream_access_list",
             "rpki.notify_invalid_subject",
             "rpki.notify_invalid_header",
             "rpki.slurm_source",
