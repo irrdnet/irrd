@@ -5,7 +5,14 @@ import pytest
 
 from irrd.conf import get_setting
 
-from ..email import EmailParser, send_email
+from ..email import EmailParser, message_headers, send_email
+
+
+def test_message_headers():
+    assert message_headers("Subject: x\n\npassword: secret") == "Subject: x"
+    assert message_headers("Subject: x\r\n\r\npassword: secret") == "Subject: x"
+    assert message_headers("Subject: x\nFrom: y\n\npassword: secret") == "Subject: x From: y"
+    assert message_headers("password: secret") == ""
 
 
 class TestEmailParser:

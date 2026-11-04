@@ -126,6 +126,18 @@ class TestWhoisQueryEndpoint:
                 "type": "http",
                 "client": ("127.0.0.1", "8000"),
                 "app": app,
+                "query_string": "q=query%0Ainjected",
+            }
+        )
+        result = endpoint.get(mock_request)
+        assert result.status_code == 400
+        assert result.body.startswith(b"Queries may not contain")
+
+        mock_request = HTTPConnection(
+            {
+                "type": "http",
+                "client": ("127.0.0.1", "8000"),
+                "app": app,
                 "query_string": "q=query",
             }
         )
@@ -198,11 +210,39 @@ class TestObjectSubmissionEndpoint:
             data=expected_data,
             origin=AuthoritativeChangeOrigin.webapi,
             delete=False,
-            request_meta={META_KEY_HTTP_CLIENT_IP: "testclient", "HTTP-User-Agent": "testclient", "meta": 2},
+            request_meta={
+                META_KEY_HTTP_CLIENT_IP: "testclient",
+                "HTTP-User-Agent": "testclient",
+                "meta": 2,
+            },
             remote_ip=None,
         )
         mock_handler.send_notification_target_reports.assert_called_once()
         mock_handler.reset_mock()
+
+        # Keys IRRD fills itself are ignored, and keys may not add lines
+        base_meta = {META_KEY_HTTP_CLIENT_IP: "testclient", "HTTP-User-Agent": "testclient"}
+        internal = dict.fromkeys(
+            ["From", "Date", "Subject", "Message-ID", "HTTP-User-Agent", "HTTP-User-Email", "HTTP-User-ID"],
+            "x",
+        )
+        for metadata, expected_meta in [
+            (ujson.dumps(internal), base_meta),
+            (ujson.dumps({"meta\nkey": "value"}), base_meta | {"meta key": "value"}),
+            ('"not-an-object"', base_meta),
+        ]:
+            response_post = client.post(
+                "/v1/submit/", content=ujson.dumps(data), headers={"X-irrd-metadata": metadata}
+            )
+            assert response_post.status_code == 200
+            mock_handler.load_change_submission.assert_called_once_with(
+                data=expected_data,
+                origin=AuthoritativeChangeOrigin.webapi,
+                delete=False,
+                request_meta=expected_meta,
+                remote_ip=None,
+            )
+            mock_handler.reset_mock()
 
         response_delete = client.request("DELETE", "/v1/submit/", content=ujson.dumps(data))
         assert response_delete.status_code == 200

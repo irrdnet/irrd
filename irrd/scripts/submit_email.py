@@ -18,6 +18,7 @@ sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from irrd.conf import CONFIG_PATH_DEFAULT, config_init
 from irrd.updates.email import handle_email_submission
+from irrd.utils.email import message_headers
 
 
 def run(data):
@@ -25,7 +26,9 @@ def run(data):
         handle_email_submission(data)
     except Exception as exc:
         logger.critical(
-            f"An exception occurred while attempting to process the following email: {data}", exc_info=exc
+            "An exception occurred while attempting to process an email with headers: "
+            f"{message_headers(data)}",
+            exc_info=exc,
         )
         print("An internal error occurred while processing this email.")
 
