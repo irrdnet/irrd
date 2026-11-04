@@ -6,8 +6,24 @@ from IPy import IP
 from irrd.conf import get_setting
 
 STARLETTE_TEST_CLIENT_HOST = "testclient"
+MAPPED_IPV4_RANGE = IP("::ffff:0:0/96")
 
 logger = logging.getLogger(__name__)
+
+
+def rate_limit_host_key(host: str) -> str:
+    """
+    The key to rate limit a client host by. IPv6 clients are limited per /64,
+    as a single client commonly has at least a /64 to rotate through. Mapped
+    IPv4 addresses are unmapped first, as they would all share one /64.
+    """
+    try:
+        ip = IP(host)
+    except (ValueError, TypeError):
+        return host
+    if ip.version() == 6:
+        return str(ip.v46map()) if ip in MAPPED_IPV4_RANGE else str(ip.make_net(64))
+    return str(ip)
 
 
 def is_client_permitted(ip: str, access_list_setting: str, default_deny=True, log=True) -> bool:

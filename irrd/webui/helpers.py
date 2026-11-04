@@ -9,7 +9,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from irrd.conf import get_setting
-from irrd.server.access_check import STARLETTE_TEST_CLIENT_HOST
+from irrd.server.access_check import STARLETTE_TEST_CLIENT_HOST, rate_limit_host_key
 from irrd.storage.models import AuthUser, RPSLDatabaseObject, Setting
 from irrd.storage.orm_provider import ORMSessionProvider
 from irrd.utils.email import send_email
@@ -43,7 +43,9 @@ def rate_limit_post(_func=None, any_response_code=False):
 
             if request and request.method == "POST":
                 limiter = request.app.state.rate_limiter
-                host = request.client.host if request.client else STARLETTE_TEST_CLIENT_HOST
+                host = rate_limit_host_key(
+                    request.client.host if request.client else STARLETTE_TEST_CLIENT_HOST
+                )
                 permitted = await limiter.test(rate_limit, RATE_LIMIT_POST_200_NAMESPACE, host)
                 if not permitted:
                     logger.info(f"{client_ip_str(request)}rejecting request due to rate limiting")

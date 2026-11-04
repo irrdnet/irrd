@@ -1,4 +1,12 @@
-from .access_check import is_client_permitted
+from .access_check import is_client_permitted, rate_limit_host_key
+
+
+def test_rate_limit_host_key():
+    assert rate_limit_host_key("2001:db8:1:2:3:4:5:6") == "2001:db8:1:2::/64"
+    assert rate_limit_host_key("192.0.2.1") == "192.0.2.1"
+    assert rate_limit_host_key("::ffff:192.0.2.1") == "192.0.2.1"
+    assert rate_limit_host_key("testclient") == "testclient"
+    assert rate_limit_host_key(None) is None
 
 
 class TestIsClientPermitted:
