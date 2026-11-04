@@ -324,7 +324,7 @@ class AuthValidator:
         self.origin = origin
         self.remote_ip = remote_ip
         self._mntner_db_cache: set[RPSLMntner] = set()
-        self._pre_approved: set[str] = set()
+        self._pre_approved: set[tuple[str, str]] = set()
         self.keycert_obj_pk = keycert_obj_pk
         self._internal_authenticated_user = internal_authenticated_user
         # Cache per instance: a class level lru_cache would leak self,
@@ -339,13 +339,14 @@ class AuthValidator:
         Pre-approve certain maintainers that are part of this batch of updates.
         This is required for creating new maintainers along with other objects.
 
-        All new maintainer PKs are added to self._pre_approved. When they are
-        encountered as mnt-by, the authentication is immediately approved,
-        as a check in the database would fail.
+        All new maintainer PKs, with their source, are added to
+        self._pre_approved. When they are encountered as mnt-by in the same
+        source, the authentication is immediately approved, as a check in the
+        database would fail.
         When the new mntner object's mnt-by is checked, there is an additional
         check to verify that it passes the newly submitted authentication.
         """
-        self._pre_approved = {obj.pk() for obj in presumed_valid_new_mntners}
+        self._pre_approved = {(obj.pk(), obj.source()) for obj in presumed_valid_new_mntners}
 
     def process_auth(self, rpsl_obj_new: RPSLObject, rpsl_obj_current: RPSLObject | None) -> ValidatorResult:
         """
@@ -522,7 +523,7 @@ class AuthValidator:
             mntner_objs += retrieved_mntner_objs
 
         for mntner_name in mntner_pk_list:
-            if mntner_name in self._pre_approved:
+            if (mntner_name, source) in self._pre_approved:
                 return MntnerCheckResult(
                     valid=True,
                     associated_mntners=mntner_objs,

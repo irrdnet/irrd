@@ -9,7 +9,7 @@ IRRd has an HTTP interface which accepts GraphQL_ queries.
 .. _graphqurl: https://github.com/hasura/graphqurl
 .. _clients listed on the GraphQL website: https://graphql.org/code/#graphql-clients
 .. _awesome-graphql: https://github.com/chentsulin/awesome-graphql
-.. _graphql-playground: https://github.com/graphql/graphql-playground
+.. _GraphiQL: https://github.com/graphql/graphiql
 .. _GraphQL introduction: https://graphql.org/learn/
 .. _inline fragment: https://graphql.org/learn/queries/#inline-fragments
 .. _GraphQL types: https://graphql.org/learn/schema/#object-types-and-fields
@@ -25,7 +25,7 @@ is running on ``rr.example.net``, you can find the GraphQL API on::
 
     https://rr.example.net/graphql
 
-Opening this in a browser shows the GraphQL playground, which lets you
+Opening this in a browser shows the GraphQL explorer, which lets you
 execute queries, like this::
 
     query {
@@ -54,11 +54,10 @@ As the example shows, GraphQL lets you query individual attributes, which
 means you don't have to parse RPSL yourself. You can also directly query
 related objects. The output of GraphQL is always JSON.
 
-You can use the "copy curl" button to copy a curl command line that runs the
-same query. For more flexible use, use a dedicated GraphQL client like
+For more flexible use, use a dedicated GraphQL client like
 `graphql-cli`_ or a HTTP or GraphQL client library.
 
-The GraphQL playground has partial auto-complete to help you write your query,
+The GraphQL explorer has partial auto-complete to help you write your query,
 and syntax validation.
 
 
@@ -105,11 +104,10 @@ their RPSL primary key, object class and source. The response to this is::
       }
     }
 
-To help you in exploring the GraphQL interface, IRRd includes
-graphql-playground_. This is a web interface that allows you to experiment
-with GraphQL queries. It features partial auto-completion, though there are
-some cases where this does not work, and lets you inspect the schema
-(schema tab on the right).
+To help you in exploring the GraphQL interface, IRRd includes GraphiQL_.
+This is a web interface that allows you to experiment with GraphQL queries.
+It features partial auto-completion, though there are some cases where this
+does not work, and lets you inspect the schema.
 
 IRRd queries
 ------------
@@ -259,8 +257,9 @@ are an alias. Other sources have the the following fields for each valid source:
 * ``authoritative``: true if this source is authoritative in this IRRd
   instance, i.e. whether local changes are allowed. False if the source
   is mirrored from elsewhere.
-* ``objectClassFilter``: may be a list of object classes that are
-  ignored by this IRRd instance, when mirroring from a remote source.
+* ``objectClassFilter``: may be a list of the only object classes that this
+  IRRd instance accepts for this source. Objects of other classes are ignored
+  when mirroring, and rejected in authoritative changes.
 * ``rpkiRovFilter``: whether RPKI validation is enabled for this source.
 * ``localJournalKept``: whether this IRRd instance keeps a local journal
   of the changes in this source, allowing it to be mirrored over NRTM.
@@ -487,9 +486,14 @@ The query is defined as follows::
     }
 
 The arguments you can query for include all lookup attributes of RPSL objects
-in IRRd, like ``techC``, ``mntBy`` or ``members``. All arguments are optional,
-but you must include at least one. Most arguments directly translate
-to RPSL attributes. Note that not all objects have all attributes.
+in IRRd, like ``techC``, ``mntBy`` or ``members``. Most arguments directly
+translate to RPSL attributes. Note that not all objects have all attributes.
+
+Each query must be specific enough: ``objectClass``, ``sources``,
+``rpkiStatus``, ``scopeFilterStatus``, ``routePreferenceStatus`` and
+``sqlTrace`` do not make a query specific, and a query that uses only those
+is rejected. The exception is ``rpkiStatus`` selecting exclusively on
+``valid`` or ``invalid``, which is specific enough on its own.
 
 The other possible arguments for the query are:
 
@@ -634,9 +638,9 @@ Note that if you also expect ``RPSLRouteSet`` objects, that also have a
         source
         ... on RPSLAsSet {
           members
+        }
         ... on RPSLRouteSet {
           members
-        }
         }
       }
     }
@@ -743,7 +747,7 @@ You can chain these related object retrievals as well::
 
 This query means:
 
-* Retrieve the object with RPSL PK ``EXAMPLE-MNT``.
+* Retrieve the object with RPSL PK ``AS-DEMO``.
 * Then, retrieve each member object from each returned as-set.
   (Note that only other as-sets are looked up by ``membersObjs`` on
   ``RPSLASSet``, i.e. AS numbers are ignored by ``membersObjs`` as they
@@ -755,7 +759,7 @@ This query means:
 * For each maintainer, retrieve the notify attribute.
 
 To see which ``...Objs`` queries exist on a GraphQL object, consult the schema.
-This will also tell you what return type to expect. The GraphQL playground
+This will also tell you what return type to expect. The GraphQL explorer
 can also help you with auto-complete.
 
 .. warning::
@@ -811,10 +815,11 @@ You can use the ``RPSLContact`` object::
 Journal queries
 ~~~~~~~~~~~~~~~
 ``RPSLObject`` also has a field ``journal``, which returns an array of
-``RPSLJournal`` objects. This allows you to query the history of objects
+``RPSLJournalEntry`` objects. This allows you to query the history of objects
 as seen in the local IRRd database. This is the same journal that is used
-for serving NRTM. This feature may be restricted by
-the IRRd instance administrator. An example::
+for serving NRTM. Access is denied unless the IRRd instance administrator
+has permitted your IP in the ``nrtm_access_list`` for the source.
+An example::
 
     query {
       rpslObjects(asn: 64512) {
@@ -867,6 +872,11 @@ metadata is kept in the journal. Worth noting are the fields:
     of the object changed
   * ``scope_filter``: generated because the
     :doc:`scopefilter status </admins/scopefilter>` of the object changed
+  * ``route_preference``: generated because the
+    :doc:`route object preference </admins/route-object-preference>` status
+    of the object changed
+  * ``suspension``: generated because the object was
+    :doc:`suspended or reactivated </admins/suspension>`
 * ``serialNrtm``: the local serial of this change.
 
 Custom types in IRRd

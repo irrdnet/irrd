@@ -188,8 +188,8 @@ Submission through web interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 In the same format as e-mail, you can submit your changes through
 a web interface on ``/ui/rpsl/update/``. This provides direct
-feedback and is more secure when using HTTPS. It does not support
-PGP.
+feedback and is more secure when using HTTPS. Inline PGP signatures are
+supported, detached signatures are not.
 
 If your IRRD operator has enabled
 :doc:`maintainer migration </admins/webui>` to IRRD internal authentication,
@@ -326,9 +326,9 @@ authentication for the affected objects.
 
 You can only make changes to objects in authoritative databases.
 
-When you create a new `mntner`, a submission must pass authorisation for
-one of the auth methods of the new mntner. You can submit other objects
-that depend on the new `mntner` in the same submission.
+New `mntner` objects can only be created with a valid override password.
+You can submit other objects that depend on the new `mntner` in the same
+submission.
 
 .. _auth-related-mntners-route:
 

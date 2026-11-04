@@ -45,6 +45,15 @@ def test_client_with_smtp(config_override, smtpd):
         yield client, smtpd
 
 
+@pytest.fixture()
+def csrf_client(test_client):
+    """A client with CSRF enabled, which the test suite disables by default."""
+    app.force_csrf_in_testing = True
+    with TestClient(app) as client:
+        app.force_csrf_in_testing = False
+        yield client
+
+
 class WebRequestTest:
     url: str
     requires_login = True

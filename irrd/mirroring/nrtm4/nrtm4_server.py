@@ -219,17 +219,23 @@ class NRTM4ServerWriter:
             snapshot_lockfile.close()
 
     def _commit_status(self) -> None:
-        self._expire_deltas()
-        self._write_unf()
+        expired_delta_files = self._expire_deltas()
+        new_unf_path = self._write_unf()
 
         if self.status != self.original_status:
             self.database_handler.record_nrtm4_server_status(self.source, self.status)
-        self._expire_snapshots()
         self.database_handler.commit()
 
-    def _write_unf(self) -> None:
+        # Only publish, then delete, once the status is committed: the files
+        # referred by the current Update Notification File must always exist.
+        new_unf_path.replace(self.path / UPDATE_NOTIFICATION_FILENAME)
+        for file_path in expired_delta_files:
+            file_path.unlink(missing_ok=True)
+        self._expire_snapshots()
+
+    def _write_unf(self) -> Path:
         """
-        Write the Update Notification File.
+        Write the Update Notification File to a temporary path, which is returned.
         This is based on settings and self.status.
         """
         assert self.status
@@ -261,33 +267,39 @@ class NRTM4ServerWriter:
         private_key = eckey_from_config(f"sources.{self.source}.nrtm4_server_private_key")
         assert private_key
         unf_serialized = jws_serialize(unf_content, private_key)
-        with open(self.path / UPDATE_NOTIFICATION_FILENAME, "w") as unf_file:
+        new_unf_path = self.path / (UPDATE_NOTIFICATION_FILENAME + ".new")
+        with open(new_unf_path, "w") as unf_file:
             unf_file.write(unf_serialized)
         self.status.last_update_notification_file_update = unf.timestamp
+        return new_unf_path
 
-    def _expire_deltas(self) -> None:
+    def _expire_deltas(self) -> list[Path]:
         """
-        Expire old delta files and remove any dangling ones.
-        Delta files are removed from disk and metadata after the expiry time.
-        Any delta files not referred in the current known deltas are deleted.
+        Expire old deltas from the metadata after the expiry time, and
+        return the delta files to be deleted, including any dangling ones.
         """
         new_delta_list = []
+        expired_files = []
         assert self.status
         for delta in self.status.previous_deltas:
             delta_timestamp = datetime.datetime.fromtimestamp(delta["timestamp"], tz=UTC)
             if self.timestamp - delta_timestamp > NRTM4_SERVER_DELTA_EXPIRY_TIME:
-                (self.path / delta["filename"]).unlink()
+                expired_files.append(self.path / delta["filename"])
                 logger.debug(f"{self.source}: Expired older delta {delta['version']}")
 
             else:
                 new_delta_list.append(delta)
+
+        # Expired files are already queued, so look for dangling files
+        # against the list from before the expiry
+        known_delta_filenames = {d["filename"] for d in self.status.previous_deltas}
         self.status.previous_deltas = new_delta_list
 
-        known_delta_filenames = {d["filename"] for d in self.status.previous_deltas}
         for file_path in self.path.glob("nrtm-delta.*.json.gz"):
             if file_path.name not in known_delta_filenames:
-                file_path.unlink()
+                expired_files.append(file_path)
                 logger.debug(f"{self.source}: Removed dangling delta file {file_path.name}")
+        return expired_files
 
     def _expire_snapshots(self) -> None:
         """

@@ -293,6 +293,7 @@ class Configuration:
         expected_access_lists = {
             config.get("server.whois.access_list"),
             config.get("server.http.status_access_list"),
+            config.get("server.http.event_stream_access_list"),
         }
 
         if not self._check_is_str(config, "email.from") or "@" not in config.get("email.from", ""):
@@ -312,6 +313,7 @@ class Configuration:
             "email.footer",
             "server.whois.access_list",
             "server.http.status_access_list",
+            "server.http.event_stream_access_list",
             "rpki.notify_invalid_subject",
             "rpki.notify_invalid_header",
             "rpki.slurm_source",
@@ -474,7 +476,7 @@ class Configuration:
                 )
 
             if nrtm4_server_enabled and not details.get("keep_journal"):
-                errors.append("NRTMv4 server requires keep_journal to be set for for source {name}.")
+                errors.append(f"NRTMv4 server requires keep_journal to be set for source {name}.")
 
             if details.get("nrtm4_server_private_key"):
                 try:
@@ -508,8 +510,8 @@ class Configuration:
                 <= datetime.timedelta(hours=24).total_seconds()
             ):
                 errors.append(
-                    f"nrtm4_server_snapshot_frequency for source {name} must be between 1 and 24 hours"
-                    f" of {int(NRTM4_SERVER_DELTA_EXPIRY_TIME.total_seconds())} seconds"
+                    f"nrtm4_server_snapshot_frequency for source {name} must be between 3600 and"
+                    " 86400 seconds, i.e. 1 to 24 hours."
                 )
 
             if config.get("readonly_standby") and (
@@ -523,6 +525,7 @@ class Configuration:
             ):
                 errors.append(
                     f"Source {name} can not have authoritative, import_source, nrtm_host,"
+                    " export_destination, export_destination_unfiltered,"
                     " or NRTMv4 client or server set when readonly_standby is enabled."
                 )
 

@@ -86,10 +86,10 @@ There are several important requirements for this setup:
   ``sources.{name}.object_class_filter`` consistent between active
   and standby. Note that you can not set
   ``sources.{name}.authoritative``, ``sources.{name}.nrtm_host``,
-  ``sources.{name}.import_source``, ``sources.{name}.import_source``,
-  ``sources.{name}.export_destination``, ``sources.{name}.export_destination_unfiltered``, or
-  ``sources.{name}.nrtm4_client_initial_public_key`` on a standby instance, as these
-  conflict with ``readonly_standby``.
+  ``sources.{name}.import_source``, ``sources.{name}.export_destination``,
+  ``sources.{name}.export_destination_unfiltered``,
+  ``sources.{name}.nrtm4_client_notification_file_url``, or the NRTMv4 server
+  settings on a standby instance, as these conflict with ``readonly_standby``.
 * All instances must run the same IRRD version.
 * It is recommended that all PostgreSQL instances only host the IRRd
   database. Streaming replication will always include all databases,
@@ -137,9 +137,9 @@ The general plan for promoting an IRRDv4 instance is:
   ``nrtm_host`` or ``nrtm4_client_notification_file_url`` are correct.
 * Start the IRRd instance.
 * Redirect queries to the new instance.
-* Run the ``irrd_load_pgp_keys`` command to load all PGP keys from
-  authoritative sources into the local keychain, allowing them to be used
-  for authentication.
+* Run the ``irrd_load_pgp_keys <source>`` command for each authoritative
+  source, to load its PGP keys into the local keychain, allowing them to be
+  used for authentication.
 * Redirect update emails to the new instance.
 * Ensure published exports are now taken from the new instance.
 * Check the mirroring status to ensure the new active instance
@@ -186,7 +186,8 @@ Refreshes are batched, so only a single one will run at a time.
 Due to small differences in the timing of the preload process,
 there may be an additional delay in updating responses to some
 queries on the standby compared to the active instance, in the
-order of 15-60 seconds.
+order of 15-60 seconds. The delay is mainly the time a refresh takes,
+as a standby always refreshes all data.
 This concerns the whois queries ``!g``, ``!6``, ``!a`` and ``!i``,
 and the GraphQL queries ``asnPrefixes``, ``asSetPrefixes`` and
 ``recursiveSetMembers``.
@@ -227,9 +228,9 @@ part of a recovery or a planned migration. Key steps:
 
 * If the backup was made with an older IRRD version, run
   ``irrd_database_upgrade`` to upgrade the schema.
-* Run the ``irrd_load_pgp_keys`` command to load all PGP keys from
-  authoritative sources into the local keychain, allowing them to be used
-  for authentication.
+* Run the ``irrd_load_pgp_keys <source>`` command for each authoritative
+  source, to load its PGP keys into the local keychain, allowing them to be
+  used for authentication.
 
 
 Migration from legacy IRRD
@@ -324,9 +325,9 @@ in the future.
 
 If your IRRd instance already has (or may have) `key-cert` objects that were
 imported without ``strict_import_keycert_objects``, you can insert them into the
-local keychain with the ``irrd_load_pgp_keys`` command. You must also run this
-command after promoting a standby instance to active when using PostgreSQL
-replication.
+local keychain with the ``irrd_load_pgp_keys <source>`` command. You must
+also run this command after promoting a standby instance to active when using
+PostgreSQL replication.
 
 The ``irrd_load_pgp_keys`` command may fail to import certain keys if they use
 an unsupported format. It is safe to run multiple times, even if some or all

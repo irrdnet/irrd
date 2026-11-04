@@ -275,6 +275,7 @@ class TestConfiguration:
                     "http": {
                         "url": "💩",
                         "status_access_list": ["foo"],
+                        "event_stream_access_list": "doesnotexist-stream",
                     },
                 },
                 "email": {
@@ -386,8 +387,9 @@ class TestConfiguration:
         assert "Setting auth.set_creation.as-set.autnum_authentication must be one of" in str(ce.value)
         assert "Unknown setting key: auth.password_hashers.unknown-hash" in str(ce.value)
         assert "Setting auth.password_hashers.crypt-pw must be one of" in str(ce.value)
-        assert "Access lists doesnotexist, invalid-list referenced in settings, but not defined." in str(
-            ce.value
+        assert (
+            "Access lists doesnotexist, doesnotexist-stream, invalid-list referenced in settings, but not"
+            " defined." in str(ce.value)
         )
         assert "Setting server.http.url is missing or invalid." in str(ce.value)
         assert "Setting server.http.status_access_list must be a string, if defined." in str(ce.value)
@@ -430,12 +432,15 @@ class TestConfiguration:
         )
         assert (
             "Source TESTDB can not have authoritative, import_source, nrtm_host,"
+            " export_destination, export_destination_unfiltered,"
             " or NRTMv4 client or server set when readonly_standby is enabled." in str(ce.value)
         )
         assert (
             "Source TESTDB3 can not have authoritative, import_source, nrtm_host,"
+            " export_destination, export_destination_unfiltered,"
             " or NRTMv4 client or server set when readonly_standby is enabled." in str(ce.value)
         )
+        assert "NRTMv4 server requires keep_journal to be set for source TESTDB2." in str(ce.value)
         assert "Setting nrtm_port for source TESTDB2 must be a number." in str(ce.value)
         assert "Setting nrtm3_client_timeout for source TESTDB2 must be a number." in str(ce.value)
         assert "Setting rpki.roa_import_timer must be set to a number." in str(ce.value)
@@ -467,7 +472,7 @@ class TestConfiguration:
             "Setting nrtm4_server_local_path for source TESTDB is required and must point to an existing"
             " directory." in str(ce.value)
         )
-        assert "nrtm4_server_snapshot_frequency for source TESTDB must be between 1 and 24 hours" in str(
+        assert "nrtm4_server_snapshot_frequency for source TESTDB must be between 3600 and 86400" in str(
             ce.value
         )
         assert (

@@ -5,6 +5,8 @@ from ariadne import format_error
 from ariadne.types import Extension
 from graphql import GraphQLError
 
+from irrd.server.query_resolver import InvalidQueryException
+
 logger = logging.getLogger(__name__)
 
 
@@ -47,9 +49,11 @@ def error_formatter(error: GraphQLError, debug: bool = False):
     Custom Ariadne error formatter. A generic text is used if the
     server is not in debug mode and the original error is a
     different error (as in, a different kind of exception raised
-    during processing).
+    during processing). Invalid query errors are caused by the
+    client, and are returned to it.
     """
-    if debug or not error.original_error or isinstance(error.original_error, GraphQLError):
+    client_errors = (GraphQLError, InvalidQueryException)
+    if debug or not error.original_error or isinstance(error.original_error, client_errors):
         return format_error(error, debug)
 
     formatted = error.formatted
