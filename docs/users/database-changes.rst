@@ -326,9 +326,9 @@ authentication for the affected objects.
 
 You can only make changes to objects in authoritative databases.
 
-When you create a new `mntner`, a submission must pass authorisation for
-one of the auth methods of the new mntner. You can submit other objects
-that depend on the new `mntner` in the same submission.
+New `mntner` objects can only be created with a valid override password.
+You can submit other objects that depend on the new `mntner` in the same
+submission.
 
 .. _auth-related-mntners-route:
 

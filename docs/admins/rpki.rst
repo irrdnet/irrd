@@ -124,7 +124,7 @@ HTTP(s), FTP or local file URLs, in ``file://<path>`` format.
 The ``prefixAssertions`` entries in the SLURM file are processed as if they
 were ROAs from ``rpki.roa_source``. This includes being used in RPKI
 validation and creating pseudo-IRR objects. Their trust anchor is set to
-"SLURM".
+"SLURM file".
 
 The ``prefixFilters`` entries are used to filter the ROAs from
 ``rpki.roa_source``. ROAs that match a filter are discarded. They are not

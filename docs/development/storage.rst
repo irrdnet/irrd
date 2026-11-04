@@ -53,7 +53,7 @@ which records:
   When :doc:`RPKI-aware mode </admins/rpki>` is disabled, this is
   set to not_found for all objects.
 
-The columns `rpsl_pk` and `source` must be unique together.
+The columns `rpsl_pk`, `source` and `object_class` must be unique together.
 The columns `pk`, `rpsl_pk`, `source`, `ip_version`, `ip_first`,
 `ip_last`, `asn_first`, `asn_last` and `rpki_status`  are indexed with
 several kinds of indexes. In addition, all lookup keys in `parsed_data`
@@ -193,7 +193,7 @@ And this to ``downgrade()``::
 
 Note that the indexes are not differentiated by RPSL object class.
 
-To remind you to do this, ``irrd.db.models`` asks ``irrd.rpsl.rpsl_objects``
+To remind you to do this, ``irrd.storage.models`` asks ``irrd.rpsl.rpsl_objects``
 for the current set of lookup fields upon initialisation, and compares it to
 a hard-coded list of expected fields. If these are inconsistent, indexes may
 be missing, and so IRRd will fail to start with the error:
@@ -202,5 +202,5 @@ be missing, and so IRRd will fail to start with the error:
 Therefore, after creating your index, you need to **both**:
 
     * add an alembic migration that adds/removes your index
-    * add your field to ``expected_lookup_field_names`` in ``irrd.db.models``
+    * add your field to ``expected_lookup_field_names`` in ``irrd.storage.models``
 

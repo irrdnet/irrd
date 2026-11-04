@@ -111,7 +111,7 @@ or e-mail submission.
 
 HTTP API
 ^^^^^^^^
-To submit changes over HTTP, make a POST or DELETE request to ``/v1/suspension/``.
+To submit changes over HTTP, make a POST request to ``/v1/suspension/``.
 For example, if the IRRd instance is running on ``rr.example.net``, the URL is::
 
     https://rr.example.net/v1/submit/
