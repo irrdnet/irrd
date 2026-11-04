@@ -303,27 +303,31 @@ class TestAuthValidator:
         result = validator.process_auth(person, None)
         assert not result.is_valid()
 
-    def test_too_many_credentials(self, prepare_mocks, config_override):
+    @pytest.mark.parametrize("attribute,name", [("passwords", "passwords"), ("api_keys", "API keys")])
+    def test_too_many_credentials(self, prepare_mocks, attribute, name):
         validator, mock_dq, mock_dh = prepare_mocks
         person = rpsl_object_from_text(SAMPLE_PERSON)
         expected_error = {
-            f"Submissions may include at most {MAX_CREDENTIALS_PER_SUBMISSION} distinct passwords."
+            f"Submissions may include at most {MAX_CREDENTIALS_PER_SUBMISSION} distinct {name}."
         }
 
-        validator.passwords = [f"pw-{i}" for i in range(MAX_CREDENTIALS_PER_SUBMISSION + 1)]
+        setattr(validator, attribute, [f"cred-{i}" for i in range(MAX_CREDENTIALS_PER_SUBMISSION + 1)])
         result = validator.process_auth(person, None)
         assert not result.is_valid()
         assert result.error_messages == expected_error
 
-        # Make sure deduplication works
+        # Repeats of the same credential do not count against the limit
         mock_dh.execute_query = lambda q: []
-        validator.passwords = ["password"] * (MAX_CREDENTIALS_PER_SUBMISSION * 3)
+        setattr(validator, attribute, ["cred"] * (MAX_CREDENTIALS_PER_SUBMISSION * 3))
         result = validator.process_auth(person, None)
         assert result.error_messages != expected_error
-        assert validator.passwords == ["password"]
+        assert getattr(validator, attribute) == ["cred"]
 
-        # A valid override is honored regardless of password count
+    def test_override_ignores_credential_limits(self, prepare_mocks, config_override):
+        validator, mock_dq, mock_dh = prepare_mocks
+        person = rpsl_object_from_text(SAMPLE_PERSON)
         config_override({"auth": {"override_password": VALID_PW_MD5}})
+
         validator.passwords = [f"pw-{i}" for i in range(MAX_CREDENTIALS_PER_SUBMISSION + 1)]
         validator.overrides = [VALID_PW]
         result = validator.process_auth(person, None)
