@@ -150,7 +150,7 @@ class TestQueryResolver:
         mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
         mock_dh.reset_mock()
 
-        resolver.set_object_class_filter_next_query(["route"])
+        resolver.set_object_class_filter(["route"])
         result = resolver.rpsl_attribute_search("mnt-by", "MNT-TEST")
         assert list(result) == mock_query_result
         assert flatten_mock_calls(mock_dq) == [
@@ -160,11 +160,12 @@ class TestQueryResolver:
         ]
         mock_dq.reset_mock()
 
-        # filter should not persist
+        # Stays set until reset, which the query parser does per query
         result = resolver.rpsl_attribute_search("mnt-by", "MNT-TEST")
         assert list(result) == mock_query_result
         assert flatten_mock_calls(mock_dq) == [
             ["sources", (["TEST1", "TEST2"],), {}],
+            ["object_classes", (["route"],), {}],
             ["lookup_attr", ("mnt-by", "MNT-TEST"), {}],
         ]
 

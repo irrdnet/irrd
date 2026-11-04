@@ -1,6 +1,6 @@
 import uuid
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 import pytest
 from IPy import IP
@@ -264,7 +264,6 @@ class TestWhoisQueryParserRIPE:
 
     def test_restrict_object_class(self, prepare_parser):
         mock_query_resolver, mock_dh, parser = prepare_parser
-        mock_query_resolver.set_object_class_filter_next_query = Mock()
         mock_query_resolver.rpsl_attribute_search = Mock(return_value=MOCK_DATABASE_RESPONSE)
 
         response = parser.handle_query("-T route -i mnt-by MNT-TEST")
@@ -272,8 +271,12 @@ class TestWhoisQueryParserRIPE:
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert response.result == MOCK_ROUTE_COMBINED
         assert response.remove_auth_hashes
-        mock_query_resolver.rpsl_attribute_search.set_object_class_filter_next_query(["route"])
-        mock_query_resolver.rpsl_attribute_search.rpsl_attribute_search("mnt-by", "MNT-TEST")
+        parser.handle_query("-i mnt-by MNT-TEST")
+        assert mock_query_resolver.set_object_class_filter.mock_calls == [
+            call([]),
+            call(["route"]),
+            call([]),
+        ]
 
     def test_object_template(self, prepare_parser):
         mock_query_resolver, mock_dh, parser = prepare_parser
