@@ -30,6 +30,7 @@ from irrd.server.graphql import ENV_UVICORN_WORKER_CONFIG_PATH
 from irrd.server.graphql.explorer import IRRDGraphiQLExplorer
 from irrd.server.graphql.extensions import QueryMetadataExtension, error_formatter
 from irrd.server.graphql.schema_builder import build_executable_schema
+from irrd.server.graphql.validation import validate_query
 from irrd.server.http.endpoints_api import (
     MetricsEndpoint,
     ObjectSubmissionEndpoint,
@@ -119,6 +120,7 @@ graphql = GraphQL(
     explorer=_graphiql,
     error_formatter=error_formatter,
     validation_rules=[cost_validator(maximum_cost=MAX_GRAPHQL_QUERY_COST, default_cost=1)],
+    query_validator=validate_query,
 )
 
 STATIC_DIR = Path(__file__).parent.parent.parent / "webui" / "static"
