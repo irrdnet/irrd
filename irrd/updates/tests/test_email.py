@@ -90,11 +90,25 @@ class TestHandleEmailSubmission:
         mock_parser = Mock(side_effect=Exception("test-error"))
         monkeypatch.setattr("irrd.utils.email.EmailParser", mock_parser)
 
-        handle_email_submission(self.default_email)
+        handle_email_submission(self.default_email + "\npassword: secret")
         assert not mock_email.mock_calls
-        assert "An exception occurred while attempting to parse the following update e-mail" in caplog.text
+        assert "An exception occurred while attempting to parse an update e-mail" in caplog.text
         assert "traceback for test-error follows" in caplog.text
         assert "test-error" in caplog.text
+        # The body may contain credentials, and is therefore not logged
+        assert "Subject: my subject" in caplog.text
+        assert "secret" not in caplog.text
+
+    def test_handles_missing_from_address(self, monkeypatch, caplog, tmp_gpg_dir):
+        mock_email = Mock()
+        monkeypatch.setattr("irrd.utils.email.send_email", mock_email)
+
+        email_txt = self.default_email.replace("From: Sasha <sasha@example.com>", "")
+        handle_email_submission(email_txt + "\npassword: secret")
+        assert not mock_email.mock_calls
+        assert "No from address was found" in caplog.text
+        assert "Subject: my subject" in caplog.text
+        assert "secret" not in caplog.text
 
     def test_handles_exception_submission_request_handler(self, monkeypatch, caplog, tmp_gpg_dir):
         mock_email = Mock()
@@ -103,16 +117,19 @@ class TestHandleEmailSubmission:
         mock_handler = Mock(side_effect=Exception("test-error"))
         monkeypatch.setattr("irrd.updates.email.ChangeSubmissionHandler", mock_handler)
 
-        handle_email_submission(self.default_email)
+        handle_email_submission(self.default_email + "\npassword: secret")
 
         assert mock_email.mock_calls[0][0] == ""
         assert mock_email.mock_calls[0][1][0] == "sasha@example.com"
         assert mock_email.mock_calls[0][1][1] == "ERROR: my subject"
         assert "internal error" in mock_email.mock_calls[0][1][2]
 
-        assert "An exception occurred while attempting to process the following update" in caplog.text
+        assert "An exception occurred while attempting to process an update" in caplog.text
         assert "traceback for test-error follows" in caplog.text
         assert "test-error" in caplog.text
+        # The body may contain credentials, and is therefore not logged
+        assert "Subject: my subject" in caplog.text
+        assert "secret" not in caplog.text
 
     def test_handles_exception_smtp(self, mock_email_dh, caplog, tmp_gpg_dir):
         mock_email, mock_dh = mock_email_dh

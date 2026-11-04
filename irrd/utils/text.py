@@ -20,6 +20,11 @@ def remove_auth_hashes(input: Optional[str]):
     return re_remove_passwords.sub(r"\1 %s  # Filtered for security" % PASSWORD_HASH_DUMMY_VALUE, input)
 
 
+def remove_control_chars(value: str) -> str:
+    """Replace characters that are not printable, so a value can not add lines."""
+    return "".join(char if char.isprintable() else " " for char in value)
+
+
 def remove_last_modified(rpsl_text: str):
     """
     Remove all last-modified attributes from an RPSL text with less overhead

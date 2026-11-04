@@ -18,6 +18,7 @@ from irrd.server.whois.query_parser import WhoisQueryParser
 from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.preload import Preloader
 from irrd.utils.process_support import memory_trim
+from irrd.utils.text import remove_control_chars
 
 logger = logging.getLogger(__name__)
 mp.allow_connection_pickling()
@@ -203,7 +204,7 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
             if not query:
                 continue
 
-            logger.debug(f"{self.client_str}: processing query: {query}")
+            logger.debug(f"{self.client_str}: processing query: {remove_control_chars(query)}")
 
             if not self.handle_query(query):
                 return
@@ -229,7 +230,7 @@ class WhoisWorker(mp.Process, socketserver.StreamRequestHandler):
         elapsed = time.perf_counter() - start_time
         logger.info(
             f"{self.client_str}: sent answer to query, elapsed {elapsed:.9f}s, "
-            f"{len(response_bytes)} bytes: {query}"
+            f"{len(response_bytes)} bytes: {remove_control_chars(query)}"
         )
 
         if not self.query_parser.multiple_command_mode:

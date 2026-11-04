@@ -67,11 +67,13 @@ class WhoisQueryParser:
         self.key_fields_only = False
         self.query_resolver.set_object_class_filter([])
 
-        if chr(0) in query:
+        # Null bytes break the SQL query (#581), and queries are logged in
+        # several places, where a line separator writes additional lines
+        if not query.isprintable():
             return WhoisQueryResponse(
                 response_type=WhoisQueryResponseType.ERROR_USER,
                 mode=WhoisQueryResponseMode.IRRD,
-                result="Queries may not contain null bytes",
+                result="Queries may not contain non-printable characters",
             )
 
         if query.startswith("!"):

@@ -1,5 +1,6 @@
 import email
 import logging
+import re
 import socket
 from email.mime.text import MIMEText
 from email.utils import parseaddr
@@ -9,8 +10,17 @@ from typing import Optional
 from irrd import __version__
 from irrd.conf import get_setting
 from irrd.utils.pgp import validate_pgp_signature
+from irrd.utils.text import remove_control_chars
 
 logger = logging.getLogger(__name__)
+
+
+def message_headers(message: str) -> str:
+    """Return the headers of a raw e-mail message, on a single line.
+    The body may contain credentials, the headers are sender controlled."""
+    parts = re.split(r"\r?\n\r?\n", message, maxsplit=1)
+    # Without a separator, the entire message may be body
+    return remove_control_chars(parts[0]) if len(parts) == 2 else ""
 
 
 class EmailParser:
