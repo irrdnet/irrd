@@ -400,6 +400,11 @@ class WhoisQueryParser:
         response_type = WhoisQueryResponseType.SUCCESS
         remove_auth_hashes = True
 
+        # A keepalive flag has no effect on the response, and is also handled
+        # here, as searches stop the processing of any further components
+        if "-k" in components:
+            self.multiple_command_mode = True
+
         while len(components):
             component = components.pop(0)
             if component.startswith("-"):
@@ -434,7 +439,11 @@ class WhoisQueryParser:
                         result = self.handle_nrtm_information_query(components.pop(0))
                     elif command == "g":
                         result = self.handle_nrtm_request(components.pop(0))
+                        # The NRTM generator filters for the client's access level,
+                        # so this response must not be filtered again. Therefore,
+                        # no other query may be processed after this one.
                         remove_auth_hashes = False
+                        break
                     elif command in ["F", "r"]:
                         continue  # These flags disable recursion, but IRRd never performs recursion anyways
                     else:
