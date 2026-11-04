@@ -22,7 +22,8 @@ def handle_email_submission(email_txt: str) -> ChangeSubmissionHandler | None:
         }
     except Exception as exc:
         logger.critical(
-            f"An exception occurred while attempting to parse the following update e-mail: {email_txt}\n"
+            "An exception occurred while attempting to parse an update e-mail with headers: "
+            f"{email.message_headers(email_txt)}\n"
             f"--- traceback for {exc} follows:",
             exc_info=exc,
         )
@@ -30,8 +31,8 @@ def handle_email_submission(email_txt: str) -> ChangeSubmissionHandler | None:
 
     if not msg.message_from:
         logger.critical(
-            "No from address was found while attempting to parse the following update e-mail - "
-            f"update not processed: {email_txt}\n"
+            "No from address was found while attempting to parse an update e-mail - "
+            f"update not processed. Headers: {email.message_headers(email_txt)}"
         )
         return None
 
@@ -65,7 +66,8 @@ def handle_email_submission(email_txt: str) -> ChangeSubmissionHandler | None:
 
     except Exception as exc:
         logger.critical(
-            f"An exception occurred while attempting to process the following update: {email_txt}\n"
+            "An exception occurred while attempting to process an update with headers: "
+            f"{email.message_headers(email_txt)}\n"
             f"--- traceback for {exc} follows:",
             exc_info=exc,
         )

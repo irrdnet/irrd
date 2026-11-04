@@ -8,11 +8,17 @@ from irrd.utils.rpsl_samples import SAMPLE_MNTNER
 from ..text import (
     dummify_object_text,
     remove_auth_hashes,
+    remove_control_chars,
     remove_last_modified,
     snake_to_camel_case,
     split_paragraphs_rpsl,
     splitline_unicodesafe,
 )
+
+
+def test_remove_control_chars():
+    assert remove_control_chars("plain -T route unicöde 🌈") == "plain -T route unicöde 🌈"
+    assert remove_control_chars("line\r\nbreak\x00null\x7f\x85\u2028\u202esep") == "line  break null    sep"
 
 
 def test_remove_auth_hashes():

@@ -15,9 +15,11 @@ def test_submit_email_fail(capsys, monkeypatch, caplog):
     mock_handle_email = Mock(side_effect=Exception("expected-test-error"))
     monkeypatch.setattr("irrd.scripts.submit_email.handle_email_submission", mock_handle_email)
 
-    run("test input")
+    run("Subject: test\n\npassword: secret")
 
     assert "expected-test-error" in caplog.text
+    assert "Subject: test" in caplog.text
+    assert "secret" not in caplog.text
     stdout = capsys.readouterr().out
     assert "An internal error occurred" in stdout
     assert "expected-test-error" not in stdout

@@ -12,9 +12,10 @@ from starlette.responses import JSONResponse, PlainTextResponse, Response
 
 from irrd.server.access_check import STARLETTE_TEST_CLIENT_HOST, is_client_permitted
 from irrd.updates.handler import ChangeSubmissionHandler
+from irrd.utils.text import remove_control_chars
 from irrd.utils.validators import RPSLChangeSubmission, RPSLSuspensionSubmission
 
-from ... import META_KEY_HTTP_CLIENT_IP
+from ... import META_KEY_HTTP_CLIENT_IP, META_KEYS_INTERNAL
 from ...storage.models import AuthoritativeChangeOrigin
 from ..whois.query_parser import WhoisQueryParser
 from ..whois.query_response import WhoisQueryResponseType
@@ -44,6 +45,17 @@ class MetricsEndpoint(HTTPEndpoint):
         return PlainTextResponse(response)
 
 
+def clean_request_meta(request_meta: dict) -> dict:
+    """Drop the metadata keys that IRRD fills itself from client provided metadata."""
+    internal_keys = {key.lower() for key in META_KEYS_INTERNAL}
+    cleaned = {}
+    for key, value in request_meta.items():
+        key = remove_control_chars(str(key)).strip()
+        if key and value is not None and key.lower() not in internal_keys:
+            cleaned[key] = value
+    return cleaned
+
+
 class WhoisQueryEndpoint(HTTPEndpoint):
     def get(self, request: Request) -> Response:
         host = request.client.host if request.client else STARLETTE_TEST_CLIENT_HOST
@@ -53,6 +65,8 @@ class WhoisQueryEndpoint(HTTPEndpoint):
             return PlainTextResponse('Missing required query parameter "q"', status_code=400)
         client_str = host + ":" + str(port)
         query = request.query_params["q"]
+        if not query.isprintable():
+            return PlainTextResponse("Queries may not contain non-printable characters", status_code=400)
 
         parser = WhoisQueryParser(
             host, client_str, request.app.state.preloader, request.app.state.database_handler
@@ -96,9 +110,12 @@ class ObjectSubmissionEndpoint(HTTPEndpoint):
             request_meta = json.loads(meta_json)
         except (JSONDecodeError, KeyError):
             request_meta = {}
+        if not isinstance(request_meta, dict):
+            request_meta = {}
+        meta = clean_request_meta(request_meta)
 
-        request_meta[META_KEY_HTTP_CLIENT_IP] = host
-        request_meta["HTTP-User-Agent"] = request.headers.get("User-Agent")
+        meta[META_KEY_HTTP_CLIENT_IP] = host
+        meta["HTTP-User-Agent"] = request.headers.get("User-Agent")
         try:
             remote_ip = IP(host)
         except ValueError:
@@ -109,7 +126,7 @@ class ObjectSubmissionEndpoint(HTTPEndpoint):
             data=data,
             origin=AuthoritativeChangeOrigin.webapi,
             delete=delete,
-            request_meta=request_meta,
+            request_meta=meta,
             remote_ip=remote_ip,
         )
         await sync_to_async(handler.send_notification_target_reports)()
