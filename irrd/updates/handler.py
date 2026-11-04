@@ -223,6 +223,10 @@ class ChangeSubmissionHandler:
             return None, set()
         return key_id, sources
 
+    def has_authentication_failures(self) -> bool:
+        """Whether any of the requests failed authentication."""
+        return any([result.status == UpdateRequestStatus.ERROR_AUTH for result in self.results])
+
     def status(self) -> str:
         """Provide a simple SUCCESS/FAILED string based - former used if all objects were saved."""
         if all([result.status == UpdateRequestStatus.SAVED for result in self.results]):

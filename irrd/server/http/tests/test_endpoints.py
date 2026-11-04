@@ -1,5 +1,6 @@
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 
+import pytest
 import ujson
 from starlette.requests import HTTPConnection
 from starlette.testclient import TestClient
@@ -21,6 +22,15 @@ from ..app import app
 from ..endpoints_api import MetricsEndpoint, StatusEndpoint, WhoisQueryEndpoint
 from ..metrics_generator import MetricsGenerator
 from ..status_generator import StatusGenerator
+
+
+@pytest.fixture()
+def mock_rate_limiter(monkeypatch):
+    """The rate limiter is usually set up in the app lifespan, which tests do not run."""
+    limiter = AsyncMock()
+    limiter.test.return_value = True
+    monkeypatch.setattr(app.state, "rate_limiter", limiter, raising=False)
+    return limiter
 
 
 class StatusAccessListEndpointBase:
@@ -180,7 +190,7 @@ class TestWhoisQueryEndpoint:
 
 
 class TestObjectSubmissionEndpoint:
-    def test_endpoint(self, monkeypatch):
+    def test_endpoint(self, monkeypatch, mock_rate_limiter):
         mock_handler = Mock(spec=ChangeSubmissionHandler)
         monkeypatch.setattr("irrd.server.http.endpoints_api.ChangeSubmissionHandler", lambda: mock_handler)
         mock_handler.submitter_report_json = lambda: {"response": True}
@@ -269,9 +279,28 @@ class TestObjectSubmissionEndpoint:
         mock_handler.load_change_submission.assert_not_called()
         mock_handler.send_notification_target_reports.assert_not_called()
 
+    def test_endpoint_rate_limited(self, mock_rate_limiter):
+        mock_rate_limiter.test.return_value = False
+        response = TestClient(app).post("/v1/submit/", content="{}")
+        assert response.status_code == 429
+
+    def test_endpoint_rate_limit_counts_authentication_failures(self, monkeypatch, mock_rate_limiter):
+        mock_handler = Mock(spec=ChangeSubmissionHandler)
+        monkeypatch.setattr("irrd.server.http.endpoints_api.ChangeSubmissionHandler", lambda: mock_handler)
+        mock_handler.submitter_report_json = lambda: {}
+        content = ujson.dumps({"objects": [{"object_text": "person: Placeholder Person Object"}]})
+
+        mock_handler.has_authentication_failures = lambda: False
+        assert TestClient(app).post("/v1/submit/", content=content).status_code == 200
+        mock_rate_limiter.hit.assert_not_called()
+
+        mock_handler.has_authentication_failures = lambda: True
+        assert TestClient(app).post("/v1/submit/", content=content).status_code == 200
+        mock_rate_limiter.hit.assert_called_once()
+
 
 class TestSuspensionSubmissionEndpoint:
-    def test_endpoint(self, monkeypatch):
+    def test_endpoint(self, monkeypatch, mock_rate_limiter):
         mock_handler = Mock(spec=ChangeSubmissionHandler)
         monkeypatch.setattr("irrd.server.http.endpoints_api.ChangeSubmissionHandler", lambda: mock_handler)
         mock_handler.submitter_report_json = lambda: {"response": True}
@@ -299,6 +328,11 @@ class TestSuspensionSubmissionEndpoint:
         response_invalid_json = client.post("/v1/suspension/", content="invalid")
         assert response_invalid_json.status_code == 400
         assert "expect" in response_invalid_json.text.lower()
+
+    def test_endpoint_rate_limited(self, mock_rate_limiter):
+        mock_rate_limiter.test.return_value = False
+        response = TestClient(app).post("/v1/suspension/", content="{}")
+        assert response.status_code == 429
 
 
 class TestGraphQLValidation:

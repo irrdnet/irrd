@@ -339,6 +339,12 @@ class Configuration:
         except ValueError:
             errors.append("Setting auth.webui_auth_failure_rate_limit is missing or invalid.")
 
+        try:
+            if config.get("auth.submission_auth_failure_rate_limit"):
+                limits.parse(config.get("auth.submission_auth_failure_rate_limit", ""))
+        except ValueError:
+            errors.append("Setting auth.submission_auth_failure_rate_limit is missing or invalid.")
+
         from irrd.updates.parser_state import RPSLSetAutnumAuthenticationMode
 
         valid_auth = [mode.value for mode in RPSLSetAutnumAuthenticationMode]
