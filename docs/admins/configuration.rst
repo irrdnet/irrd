@@ -360,12 +360,14 @@ Authentication and validation
   initiate a migration.
 * ``auth.webui_auth_failure_rate_limit``: the rate limit for failed
   authentication attempts through the web interface. This includes logins,
-  but also other cases that request passwords. This is a moving window
+  but also other cases that request passwords. Attempts are counted per
+  client IP, or per /64 for IPv6 clients. This is a moving window
   in the format of the limits_ library.
   |br| **Default**: ``30/hour``.
   |br| **Change takes effect**: after SIGHUP, upon next request.
 * ``auth.submission_auth_failure_rate_limit``: the rate limit for RPSL
-  submissions over HTTP that failed authentication, counted per client IP.
+  submissions over HTTP that failed authentication, counted per client IP,
+  or per /64 for IPv6 clients.
   A submission counts once, regardless of how many objects it contains.
   Submissions by email are not affected, as they have no client IP.
   This is a moving window in the format of the limits_ library, kept

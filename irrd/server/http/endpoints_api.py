@@ -12,7 +12,11 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, PlainTextResponse, Response
 
 from irrd.conf import get_setting
-from irrd.server.access_check import STARLETTE_TEST_CLIENT_HOST, is_client_permitted
+from irrd.server.access_check import (
+    STARLETTE_TEST_CLIENT_HOST,
+    is_client_permitted,
+    rate_limit_host_key,
+)
 from irrd.updates.handler import ChangeSubmissionHandler
 from irrd.utils.text import remove_control_chars
 from irrd.utils.validators import RPSLChangeSubmission, RPSLSuspensionSubmission
@@ -32,7 +36,7 @@ RATE_LIMIT_SUBMISSION_AUTH_FAILURE_NAMESPACE = "irrd-submission-auth-failure"
 
 def _rate_limit_args(host: str):
     rate_limit = limits.parse(get_setting("auth.submission_auth_failure_rate_limit"))
-    return rate_limit, RATE_LIMIT_SUBMISSION_AUTH_FAILURE_NAMESPACE, host
+    return rate_limit, RATE_LIMIT_SUBMISSION_AUTH_FAILURE_NAMESPACE, rate_limit_host_key(host)
 
 
 class StatusEndpoint(HTTPEndpoint):
