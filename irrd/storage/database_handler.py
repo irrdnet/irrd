@@ -422,8 +422,8 @@ class DatabaseHandler:
         rpsl_objs_now_out_scope_prefix: List[Dict[str, Any]] = [],
     ) -> None:
         """
-        Update the scopefilter status for the given RPSL PKs.
-        Only PKs whose status have changed should be included.
+        Update the scopefilter status for the given objects.
+        Only objects whose status has changed should be included.
 
         Objects that moved to or from in_scope generate a journal
         entry, so that mirrors follow the (in)visibility depending
@@ -432,26 +432,26 @@ class DatabaseHandler:
         self._check_write_permitted()
         table = RPSLDatabaseObject.__table__
         if rpsl_objs_now_in_scope:
-            pks = {o["rpsl_pk"] for o in rpsl_objs_now_in_scope}
+            pks = {o["pk"] for o in rpsl_objs_now_in_scope}
             stmt = (
                 table.update()
-                .where(table.c.rpsl_pk.in_(pks))
+                .where(table.c.pk.in_(pks))
                 .values(scopefilter_status=ScopeFilterStatus.in_scope)
             )
             self.execute_statement(stmt)
         if rpsl_objs_now_out_scope_as:
-            pks = {o["rpsl_pk"] for o in rpsl_objs_now_out_scope_as}
+            pks = {o["pk"] for o in rpsl_objs_now_out_scope_as}
             stmt = (
                 table.update()
-                .where(table.c.rpsl_pk.in_(pks))
+                .where(table.c.pk.in_(pks))
                 .values(scopefilter_status=ScopeFilterStatus.out_scope_as)
             )
             self.execute_statement(stmt)
         if rpsl_objs_now_out_scope_prefix:
-            pks = {o["rpsl_pk"] for o in rpsl_objs_now_out_scope_prefix}
+            pks = {o["pk"] for o in rpsl_objs_now_out_scope_prefix}
             stmt = (
                 table.update()
-                .where(table.c.rpsl_pk.in_(pks))
+                .where(table.c.pk.in_(pks))
                 .values(scopefilter_status=ScopeFilterStatus.out_scope_prefix)
             )
             self.execute_statement(stmt)
