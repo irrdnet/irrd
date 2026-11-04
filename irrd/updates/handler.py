@@ -12,6 +12,7 @@ from irrd.storage.database_handler import DatabaseHandler
 from irrd.storage.models import AuthoritativeChangeOrigin, AuthUser
 from irrd.storage.queries import RPSLDatabaseQuery
 from irrd.utils import email
+from irrd.utils.text import remove_control_chars
 
 from ..utils.validators import RPSLChangeSubmission, RPSLSuspensionSubmission
 from .parser import ChangeRequest, SuspensionRequest, parse_change_requests
@@ -330,7 +331,9 @@ class ChangeSubmissionHandler:
             email.send_email(recipient, subject, user_report)
 
     def _request_meta_str(self):
-        request_meta_str = "\n".join([f"> {k}: {v}" for k, v in self.request_meta.items() if v])
+        request_meta_str = "\n".join(
+            [f"> {k}: {remove_control_chars(str(v))}" for k, v in self.request_meta.items() if v]
+        )
         if request_meta_str:
             request_meta_str = "\n" + request_meta_str + "\n\n"
         return request_meta_str

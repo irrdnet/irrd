@@ -204,7 +204,7 @@ class TestChangeSubmissionHandler:
             rpsl_text,
             AuthoritativeChangeOrigin.email,
             pgp_fingerprint="8626 1D8DBEBD A4F5 4692  D64D A838 3BA7 80F2 38C6",
-            request_meta={"Message-ID": "test", "From": "example@example.com"},
+            request_meta={"Message-ID": "test", "From": "example@example.com\n > Subject: forged"},
         )
         assert handler.status() == "SUCCESS", handler.submitter_report_human()
 
@@ -233,7 +233,7 @@ class TestChangeSubmissionHandler:
 
         assert handler.submitter_report_human() == textwrap.dedent("""
         > Message-ID: test
-        > From: example@example.com
+        > From: example@example.com  > Subject: forged
         
         
         SUMMARY OF UPDATE:
@@ -274,7 +274,7 @@ class TestChangeSubmissionHandler:
             The request was made with the following details:
             
             > Message-ID: test
-            > From: example@example.com
+            > From: example@example.com  > Subject: forged
             
             
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -135,13 +135,14 @@ class TestWhoisQueryParserRIPE:
         assert response.mode == WhoisQueryResponseMode.RIPE
         assert response.result == "Unrecognised flag/search: e"
 
-    def test_null_bytes(self, prepare_parser):  # #581
+    @pytest.mark.parametrize("query", ["\x00 foo", "foo\nbar", "foo\rbar", "foo\u2028bar"])
+    def test_control_characters(self, prepare_parser, query):  # #581
         mock_query_resolver, mock_dh, parser = prepare_parser
 
-        response = parser.handle_query("\x00 foo")
+        response = parser.handle_query(query)
         assert response.response_type == WhoisQueryResponseType.ERROR_USER
         assert response.mode == WhoisQueryResponseMode.IRRD
-        assert response.result == "Queries may not contain null bytes"
+        assert response.result == "Queries may not contain non-printable characters"
 
     def test_keepalive(self, prepare_parser):
         mock_query_resolver, mock_dh, parser = prepare_parser
