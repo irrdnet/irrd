@@ -302,12 +302,14 @@ class AuthValidator:
     overrides: list[str]
     api_keys: list[str]
     keycert_obj_pk: str | None = None
+    keycert_obj_sources: set[str]
 
     def __init__(
         self,
         database_handler: DatabaseHandler,
         origin: AuthoritativeChangeOrigin = AuthoritativeChangeOrigin.other,
         keycert_obj_pk=None,
+        keycert_obj_sources: set[str] | None = None,
         internal_authenticated_user: AuthUser | None = None,
         remote_ip: IP | None = None,
     ) -> None:
@@ -320,6 +322,7 @@ class AuthValidator:
         self._mntner_db_cache: set[RPSLMntner] = set()
         self._pre_approved: set[tuple[str, str]] = set()
         self.keycert_obj_pk = keycert_obj_pk
+        self.keycert_obj_sources = keycert_obj_sources if keycert_obj_sources else set()
         self._internal_authenticated_user = internal_authenticated_user
         # Cache per instance: a class level lru_cache would leak self,
         # and thereby the database handler (GHSA-cvm7-qcww-5m59)
@@ -341,6 +344,22 @@ class AuthValidator:
         check to verify that it passes the newly submitted authentication.
         """
         self._pre_approved = {(obj.pk(), obj.source()) for obj in presumed_valid_new_mntners}
+
+    def _keycert_obj_pk_for(self, source: str) -> str | None:
+        """
+        The key-cert PK that may authenticate mntners in a source: a PGP key
+        only authenticates where its own key-cert is published, as IDs are 32 bits.
+        """
+        if not self.keycert_obj_pk:
+            return None
+        if source not in self.keycert_obj_sources:
+            sources = ", ".join(sorted(self.keycert_obj_sources))
+            logger.info(
+                f"Not using PGP key {self.keycert_obj_pk} to authenticate in {source}: its key-cert is"
+                f" only published in {sources}"
+            )
+            return None
+        return self.keycert_obj_pk
 
     def process_auth(self, rpsl_obj_new: RPSLObject, rpsl_obj_current: RPSLObject | None) -> ValidatorResult:
         """
@@ -432,7 +451,7 @@ class AuthValidator:
                     )
             elif not any(
                 [
-                    rpsl_obj_new.verify_auth(self.passwords, self.keycert_obj_pk),
+                    rpsl_obj_new.verify_auth(self.passwords, self._keycert_obj_pk_for(source)),
                     self._mntner_matches_internal_auth(rpsl_obj_new, rpsl_obj_new.pk(), source),
                     # API keys are not checked here, as they can never be used on RPSLMntner
                 ]
@@ -544,8 +563,9 @@ class AuthValidator:
                     api_key=api_key,
                 )
 
+        keycert_obj_pk = self._keycert_obj_pk_for(source)
         for mntner_obj in mntner_objs:
-            valid_scheme = mntner_obj.verify_auth(self.passwords, self.keycert_obj_pk)
+            valid_scheme = mntner_obj.verify_auth(self.passwords, keycert_obj_pk)
             if valid_scheme:
                 auth_method = (
                     AuthMethod.MNTNER_PGP_KEY if "PGPKEY" in valid_scheme else AuthMethod.MNTNER_PASSWORD
