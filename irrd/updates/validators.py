@@ -380,14 +380,16 @@ class AuthValidator:
             logger.info("Found valid override password.")
             return result
 
-        # Deduplicate first: the same password: line may be repeated for
-        # each object, and repeats should not count against the limit
+        # Deduplicate first: the same password/api-key line may be repeated
+        # for each object, and repeats should not count against the limit
         self.passwords = list(dict.fromkeys(self.passwords))
-        if len(self.passwords) > MAX_CREDENTIALS_PER_SUBMISSION:
-            result.error_messages.add(
-                f"Submissions may include at most {MAX_CREDENTIALS_PER_SUBMISSION} distinct passwords."
-            )
-            return result
+        self.api_keys = list(dict.fromkeys(self.api_keys))
+        for credentials, name in [(self.passwords, "passwords"), (self.api_keys, "API keys")]:
+            if len(credentials) > MAX_CREDENTIALS_PER_SUBMISSION:
+                result.error_messages.add(
+                    f"Submissions may include at most {MAX_CREDENTIALS_PER_SUBMISSION} distinct {name}."
+                )
+                return result
 
         mntners_new = rpsl_obj_new.parsed_data["mnt-by"]
         logger.debug(f"Checking auth for new object {rpsl_obj_new}, mntners in new object: {mntners_new}")
