@@ -1,10 +1,26 @@
 import secrets
 import uuid
+from unittest.mock import Mock
 
 from irrd.storage.models import AuthUser
 from irrd.utils.factories import SAMPLE_USER_PASSWORD
+from irrd.webui.auth.endpoints import clean_next_url
 from irrd.webui.auth.users import PasswordResetToken
 from irrd.webui.tests.conftest import WebRequestTest
+
+
+def test_clean_next_url():
+    def request(next_param):
+        return Mock(query_params={"next": next_param}, url_for=lambda default: "DEFAULT")
+
+    assert clean_next_url(request("/ui/user/")) == "/ui/user/"
+    assert clean_next_url(request("https://example.com/ui/user/")) == "/ui/user/"
+    assert clean_next_url(request("")) == "DEFAULT"
+    # Paths that browsers read as a URL to another host
+    assert clean_next_url(request("//example.com")) == "DEFAULT"
+    assert clean_next_url(request("////example.com")) == "DEFAULT"
+    assert clean_next_url(request("%2F%2Fexample.com")) == "DEFAULT"
+    assert clean_next_url(request("/\\example.com")) == "DEFAULT"
 
 
 class TestLogin:
