@@ -15,7 +15,7 @@ patches and features.
 If you have found an issue, strange behaviour, possible oversight,
 or anything else that may have security implications, please do not
 report it in the GitHub repository, but email irrd@reliablycoded.nl.
-See the [security policy](SECURITY.rst) for additional details.
+See the [security policy](SECURITY.md) for additional details.
 
 ## Using the issue tracker
 
