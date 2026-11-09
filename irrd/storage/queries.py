@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 class BaseDatabaseQuery:
     def __init__(self):  # pragma: no cover
-        self.statement = sa.select([1])
+        self.statement = sa.select(sa.literal(1))
 
     def __eq__(self, other):
         return all(

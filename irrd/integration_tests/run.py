@@ -1007,11 +1007,12 @@ class TestIntegration:
             alembic_cfg.set_main_option("script_location", f"{IRRD_ROOT_PATH}/irrd/storage/alembic")
             command.upgrade(alembic_cfg, "head")
 
-            connection = sa.create_engine(database_url).connect()
-            connection.execute(sqlalchemy.text("DELETE FROM rpsl_objects"))
-            connection.execute(sqlalchemy.text("DELETE FROM rpsl_database_journal"))
-            connection.execute(sqlalchemy.text("DELETE FROM database_status"))
-            connection.execute(sqlalchemy.text("DELETE FROM roa_object"))
+            with sa.create_engine(database_url).connect() as connection:
+                connection.execute(sqlalchemy.text("DELETE FROM rpsl_objects"))
+                connection.execute(sqlalchemy.text("DELETE FROM rpsl_database_journal"))
+                connection.execute(sqlalchemy.text("DELETE FROM database_status"))
+                connection.execute(sqlalchemy.text("DELETE FROM roa_object"))
+                connection.commit()
 
     def _submit_update(self, config_path, request):
         """
