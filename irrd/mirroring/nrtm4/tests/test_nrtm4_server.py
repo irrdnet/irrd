@@ -223,9 +223,21 @@ class TestNRTM4ServerWriter:
         assert delta[1]["object_class"] == "mntner"
         assert delta[1]["action"] == "delete"
 
-        # Final run, no new journal entries, but one delta expired
+        # Fourth run, no new journal entries, all deltas past the expiry time,
+        # but kept as they are newer than the snapshot
         status = mock_dh.other_calls[0][1]["status"]
-        status.previous_deltas[0]["timestamp"] -= (NRTM4_SERVER_DELTA_EXPIRY_TIME * 2).total_seconds()
+        for delta in status.previous_deltas:
+            delta["timestamp"] -= (NRTM4_SERVER_DELTA_EXPIRY_TIME * 2).total_seconds()
+
+        self._run_writer(mock_dh, [self._status_to_dict(status)])
+        retained_unf = self._load_unf(nrtm_path)
+        assert retained_unf["version"] == newest_unf["version"]
+        assert retained_unf["snapshot"] == newest_unf["snapshot"]
+        assert retained_unf["deltas"] == newest_unf["deltas"]
+
+        # Final run, with the snapshot caught up to the first delta,
+        # which therefore does expire
+        status.last_snapshot_version = status.previous_deltas[0]["version"]
 
         # A failed status commit must not publish the new Update Notification
         # File, nor delete the files the published one still refers to
@@ -233,7 +245,7 @@ class TestNRTM4ServerWriter:
             monkeypatch.setattr(mock_dh, "commit", Mock(side_effect=ValueError))
             with pytest.raises(ValueError):
                 self._run_writer(mock_dh, [self._status_to_dict(status)])
-            assert self._load_unf(nrtm_path) == newest_unf
+            assert self._load_unf(nrtm_path) == retained_unf
             check_file_hash_sha256(nrtm_path / delta1_filename, new_unf["deltas"][0]["hash"])
 
         self._run_writer(mock_dh, [self._status_to_dict(status)])
@@ -246,7 +258,7 @@ class TestNRTM4ServerWriter:
         ]
         expiry_unf = self._load_unf(nrtm_path)
         assert expiry_unf["version"] == newest_unf["version"]
-        assert expiry_unf["snapshot"] == newest_unf["snapshot"]
+        assert expiry_unf["snapshot"]["url"] == newest_unf["snapshot"]["url"]
         assert expiry_unf["session_id"] == newest_unf["session_id"]
         assert expiry_unf["timestamp"] != newest_unf["timestamp"]
         assert len(expiry_unf["deltas"]) == 1
