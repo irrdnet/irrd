@@ -1,0 +1,172 @@
+============================
+Release notes for IRRD 4.4.9
+============================
+
+IRRD 4.4.9 was released on November 9, 2026, and fixes two security
+issues, along with other hardening and bug fixes:
+
+* An NRTMv3 request combined with a search in the same whois query
+  could return password hashes in full, to any client with NRTMv3
+  access (`GHSA-vwx3-f364-7hxv`_). This affected IRRD 4.2.0 and all
+  later versions.
+* Inline PGP signed submissions could authenticate content that the
+  signature does not cover (`GHSA-4277-7x4g-p526`_). This affected IRRD
+  4.0.0 and all later versions, when running authoritative databases.
+
+The NRTMv3 issue was reported by David Crees (Abstract Shield). The PGP
+issue was discovered and reported by Josh Finlay, as were some of the
+hardening below. The redirect and PGP key-cert items below were
+reported by Admir Bajric.
+All users of 4.4 are recommended to upgrade.
+
+.. _GHSA-vwx3-f364-7hxv: https://github.com/irrdnet/irrd/security/advisories/GHSA-vwx3-f364-7hxv
+.. _GHSA-4277-7x4g-p526: https://github.com/irrdnet/irrd/security/advisories/GHSA-4277-7x4g-p526
+
+NRTMv3 requests could return password hashes in full
+----------------------------------------------------
+In query responses, IRRD replaces the hash in ``auth`` attributes with a
+dummy value, so that password hashes are not disclosed.
+By default, IRRD filters these hashes in output, but queries can opt out
+of this default. This is done by NRTMv3 requests, made with the ``-g``
+query, as they can include the real hashes for clients in
+``nrtm_access_list_unfiltered``. The ``-g`` query therefore disables the
+usual replacement for the response to that query. Unfiltered NRTMv3 access
+is deprecated and will be removed in a future release.
+
+The vulnerability is that IRRD then continued to process the rest of the
+query, so a search in the same query overwrote the response, but the
+hash filter was still disabled.
+
+Being permitted in ``nrtm_access_list`` for a single source was enough.
+That grants NRTMv3 access with the hashes replaced, but it also makes the
+``-g`` part of the query valid, along with a valid serial range. NRTMv3
+access to one source was therefore enough to read hashes from objects
+in any source on the instance.
+
+IRRD now stops processing a query after an NRTMv3 request.
+NRTMv4, available from IRRD 4.5, has no unfiltered mode at all, and
+always filters password hashes. All other query,
+export and notification paths were re-checked and found to apply the
+expected filtering.
+
+Operators can check for past exploitation in their logs, as every whois
+query is logged in full at the ``INFO`` level, including the search that
+followed the ``-g``.
+This finds queries where ``-g`` is followed by more than its own
+parameter::
+
+    grep -E 'sent answer to (HTTP )?query' irrd.log \
+      | grep -E '(bytes|chars): (.*[ ])?-g +[^ ]+ +[^ ]'
+
+The byte/character count in each log line shows how much data was
+returned. There are lines found by this query that are unusual but
+did not expose hashes, like if ``-g`` was followed by ``-k``.
+Failed attempts by clients without NRTMv3 access are logged as well.
+
+The mixing of these
+secret hashes with normal RPSL data is an old design decision in RPSL.
+To resolve this, IRRD now offers
+:doc:`internal authentication </admins/webui>`, but a lot of
+authentication still happens with hashes in ``auth`` attributes.
+IRRD has also been encouraging stronger hash algorithms: since 4.3.0,
+``CRYPT-PW`` hashes can not be added to objects by default, and IRRD
+uses ``BCRYPT-PW`` when it sets a password itself.
+
+Inline PGP signed submissions could authenticate unsigned content
+-----------------------------------------------------------------
+IRRD extracted the body of an inline, or cleartext, PGP signed message
+with a regular expression, which was incorrect. The historical
+reasons for this design were the confusing APIs in gpg and python-gnupg,
+which made this appear necessary.
+
+Anyone with a single valid inline signed submission from a maintainer
+could append further RPSL objects after the signature, and
+have IRRD process them as authenticated.
+
+This required e-mail submissions to be enabled, and at least one
+mntner that authenticates with a ``PGPKEY-`` auth attribute. PGP/MIME,
+or detached, signatures are not affected.
+
+IRRD now has gpg extract the signed text
+(by, curiously, "decrypting" the message that is not encrypted).
+The text processed
+can not differ from the text verified.
+
+Operators can check for past exploitation in their logs. When this was
+exploited, IRRD would parse the PGP signature block as RPSL objects, which
+are logged as ``None`` in the submission summary::
+
+    grep "Processing change requests" irrd.log | grep "None (request"
+
+Then, if the same submission also logged ``Found valid PGP
+signature``, this can point to exploitation.
+In this log, ``None`` means an object was so malformed IRRD could not even
+determine an object class, which is the case for a PGP signature block,
+but can also occur for legitimate user errors. So such
+submissions may be suspect, but they are on their own not
+proof of exploitation.
+
+
+Other changes
+-------------
+The following low severity issues and hardening were also fixed:
+
+* The ``next`` parameter, used to return to a page after a web interface
+  login, allowed open redirects. This could aid in phishing.
+  It accepted paths starting with two slashes, and in the WebAuthn flow,
+  with a backslash, which browsers can interpret as pointing to another host.
+  No session, token or credential information was exposed to other hosts.
+  The HTTP access log records the query string, so any
+  past use can be found by looking for a ``next`` parameter that starts
+  with four path separators, is an absolute URL whose path starts with
+  two, or contains a backslash::
+
+      grep -iE 'next=(/|%2f){4}' irrd.log
+      grep -iE 'next=[a-z]+(:|%3a)(/|%2f){2}[^&" ]*(/|%2f){2}' irrd.log
+      grep -iE 'next=[^&" ]*(\\|%5c)' irrd.log
+* When validating authorisation with PGP, IRRD looked up the corresponding
+  key-cert object in any source in the database.
+  In theory, this would allow an attacker to generate a key with a matching
+  32-bit ID, place it in a key-cert in a different source, and use that to
+  authenticate. In practice, this only affected instances that are
+  authoritative for more than one source, or that set
+  ``strict_import_keycert_objects`` on a mirrored source: a key can only be
+  used to authenticate if IRRD added it to the local gnupg keyring, which
+  doesn't happen for normal mirroring.
+  No collisions were found when reviewing current key-certs in the IRR.
+  IRRD now only accepts a key-cert from the mntner's own source.
+* Submission e-mails that raised exceptions would log the full
+  body, including potential authentication data.
+  Logging is now limited to the headers.
+* Some of the metadata recorded for changes could be submitted by
+  users, causing confusion in the audit trail.
+* Whois queries permitted non-printable characters, such as a line
+  break. This could be used for injection of additional, misleading
+  log lines. Queries with non-printable characters are now rejected.
+* IRRD now refuses to start when the PID file in ``piddir`` is a symbolic
+  or hard link, so that a ``piddir`` shared with other users can not
+  redirect the write to another file.
+* Several forms, including login, did not have sufficient CSRF protection.
+  There was no practical path to exploit this, which is why they were missing
+  in the first place, but this was added as hardening.
+* The password reset and TOTP registration endpoints did not have the
+  rate limiting that other authentication endpoints have, so a token
+  could be attempted without limit.
+
+Other fixes in this release:
+
+* The scope filter status of an object was updated by RPSL primary key
+  alone, which is not always unique, so a change could apply too widely
+  in rare cases.
+* The object class filter of a whois query, set with ``-T``, was not
+  always cleared, so that it could carry over into later queries on
+  the same connection, causing missing objects in query responses.
+* On a source with ``readonly_standby`` enabled, setting
+  ``export_destination`` or ``export_destination_unfiltered`` passed
+  configuration validation, even though the exporter can not run on a
+  standby instance. This was specific to IRRD 4.4.
+* A reference to an undefined access list in
+  ``server.http.event_stream_access_list`` now fails configuration
+  validation, like other access list references, rather than denying
+  all event stream clients at run time.
+* Several corrections to the documentation.
