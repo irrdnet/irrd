@@ -1,5 +1,6 @@
 import dataclasses
 import datetime
+import decimal
 import enum
 from uuid import UUID
 
@@ -7,7 +8,7 @@ import sqlalchemy as sa
 from IPy import IP
 from sqlalchemy.dialects import postgresql as pg
 from sqlalchemy.ext.declarative import declared_attr
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from irrd.routepref.status import RoutePreferenceStatus
 from irrd.rpki.status import RPKIStatus
@@ -123,12 +124,12 @@ class RPSLDatabaseObject(Base):  # type: ignore
 
     object_class = sa.Column(sa.String, nullable=False, index=True)
     parsed_data = sa.Column(pg.JSONB, nullable=False)
-    object_text = sa.Column(sa.Text, nullable=False)
+    object_text: Mapped[str] = mapped_column(sa.Text, nullable=False)
 
     ip_version = sa.Column(sa.Integer, index=True)
     ip_first = sa.Column(pg.INET, index=True)
     ip_last = sa.Column(pg.INET, index=True)
-    ip_size = sa.Column(sa.DECIMAL(scale=0))
+    ip_size: Mapped[decimal.Decimal | None] = mapped_column(sa.DECIMAL(scale=0))
     # Only filled for route/route6
     prefix_length = sa.Column(sa.Integer, nullable=True)
     prefix = sa.Column(pg.CIDR, nullable=True)
@@ -136,13 +137,13 @@ class RPSLDatabaseObject(Base):  # type: ignore
     asn_first = sa.Column(sa.BigInteger, index=True)
     asn_last = sa.Column(sa.BigInteger, index=True)
 
-    rpki_status = sa.Column(
+    rpki_status: Mapped[RPKIStatus] = mapped_column(
         sa.Enum(RPKIStatus), nullable=False, index=True, server_default=RPKIStatus.not_found.name
     )
-    scopefilter_status = sa.Column(
+    scopefilter_status: Mapped[ScopeFilterStatus] = mapped_column(
         sa.Enum(ScopeFilterStatus), nullable=False, index=True, server_default=ScopeFilterStatus.in_scope.name
     )
-    route_preference_status = sa.Column(
+    route_preference_status: Mapped[RoutePreferenceStatus] = mapped_column(
         sa.Enum(RoutePreferenceStatus),
         nullable=False,
         index=True,
@@ -205,7 +206,7 @@ class RPSLDatabaseJournal(Base):  # type: ignore
 
     rpsl_pk = sa.Column(sa.String, index=True, nullable=False)
     source = sa.Column(sa.String, index=True, nullable=False)
-    origin = sa.Column(
+    origin: Mapped[JournalEntryOrigin] = mapped_column(
         sa.Enum(JournalEntryOrigin),
         nullable=False,
         index=True,
@@ -213,7 +214,7 @@ class RPSLDatabaseJournal(Base):  # type: ignore
     )
 
     serial_nrtm = sa.Column(sa.Integer, index=True, nullable=False)
-    operation = sa.Column(sa.Enum(DatabaseOperation), nullable=False)
+    operation: Mapped[DatabaseOperation] = mapped_column(sa.Enum(DatabaseOperation), nullable=False)
 
     object_class = sa.Column(sa.String, nullable=False, index=True)
     object_text = sa.Column(sa.Text, nullable=False)
@@ -248,7 +249,7 @@ class RPSLDatabaseObjectSuspended(Base):  # type: ignore
 
     object_class = sa.Column(sa.String, nullable=False, index=True)
     object_text = sa.Column(sa.Text, nullable=False)
-    mntners = sa.Column(pg.ARRAY(sa.Text), nullable=False, index=True)
+    mntners: Mapped[list[str]] = mapped_column(pg.ARRAY(sa.Text), nullable=False, index=True)
 
     timestamp = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
     original_created = sa.Column(sa.DateTime(timezone=True), nullable=False)
@@ -297,8 +298,8 @@ class RPSLDatabaseStatus(Base):  # type: ignore
     nrtm4_server_last_snapshot_hash = sa.Column(sa.Text)
     nrtm4_server_previous_deltas = sa.Column(pg.JSONB, nullable=True)
 
-    force_reload = sa.Column(sa.Boolean(), default=False, nullable=False)
-    synchronised_serials = sa.Column(sa.Boolean(), default=True, nullable=False)
+    force_reload: Mapped[bool] = mapped_column(sa.Boolean(), default=False, nullable=False)
+    synchronised_serials: Mapped[bool] = mapped_column(sa.Boolean(), default=True, nullable=False)
 
     last_error = sa.Column(sa.Text)
     last_error_timestamp = sa.Column(sa.DateTime(timezone=True))
@@ -412,17 +413,17 @@ class AuthUser(Base):  # type: ignore
     __tablename__ = "auth_user"
 
     pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)
-    email = sa.Column(sa.String, index=True, unique=True, nullable=False)
-    name = sa.Column(sa.String, nullable=False)
-    password = sa.Column(sa.String, nullable=False)
+    email: Mapped[str] = mapped_column(sa.String, index=True, unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(sa.String, nullable=False)
+    password: Mapped[str] = mapped_column(sa.String, nullable=False)
 
-    totp_secret = sa.Column(sa.String, nullable=True)
-    totp_last_used = sa.Column(sa.String, nullable=True)
+    totp_secret: Mapped[str | None] = mapped_column(sa.String, nullable=True)
+    totp_last_used: Mapped[str | None] = mapped_column(sa.String, nullable=True)
 
     # Not used: accounts are unusable until a password is set through an
     # emailed token. Filtering on it requires setting it on all accounts first.
     active = sa.Column(sa.Boolean, default=False, nullable=False)
-    override = sa.Column(sa.Boolean, default=False, nullable=False)
+    override: Mapped[bool] = mapped_column(sa.Boolean, default=False, nullable=False)
 
     permissions = relationship(
         "AuthPermission",
@@ -521,8 +522,8 @@ class AuthApiToken(Base):  # type: ignore
 
     # This is not an ARRAY(CIDR) because psycopg2cffi does not support those.
     ip_restriction = sa.Column(sa.String, nullable=True)
-    enabled_webapi = sa.Column(sa.Boolean(), default=True, nullable=False)
-    enabled_email = sa.Column(sa.Boolean(), default=True, nullable=False)
+    enabled_webapi: Mapped[bool] = mapped_column(sa.Boolean(), default=True, nullable=False)
+    enabled_email: Mapped[bool] = mapped_column(sa.Boolean(), default=True, nullable=False)
 
     created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
     updated = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
@@ -616,10 +617,10 @@ class ChangeLog(Base):  # type: ignore
     auth_by_rpsl_mntner_pgp_key = sa.Column(sa.Boolean, nullable=False, default=False)
     auth_by_override = sa.Column(sa.Boolean, default=False)
 
-    from_email = sa.Column(sa.String, nullable=True)
-    from_ip = sa.Column(pg.INET, nullable=True)
+    from_email: Mapped[str | None] = mapped_column(sa.String, nullable=True)
+    from_ip: Mapped[str | None] = mapped_column(pg.INET, nullable=True)
 
-    auth_change_descr = sa.Column(sa.String, nullable=True)
+    auth_change_descr: Mapped[str | None] = mapped_column(sa.String, nullable=True)
     auth_affected_user_id = sa.Column(
         pg.UUID, sa.ForeignKey("auth_user.pk", ondelete="SET NULL"), nullable=True
     )
@@ -635,12 +636,14 @@ class ChangeLog(Base):  # type: ignore
         foreign_keys="ChangeLog.auth_affected_user_id",
     )
 
-    rpsl_target_request_type = sa.Column(sa.Enum(UpdateRequestType), nullable=True)
-    rpsl_target_pk = sa.Column(sa.String, index=True, nullable=True)
-    rpsl_target_source = sa.Column(sa.String, nullable=True)
-    rpsl_target_object_class = sa.Column(sa.String, nullable=True)
-    rpsl_target_object_text_old = sa.Column(sa.Text, nullable=True)
-    rpsl_target_object_text_new = sa.Column(sa.Text, nullable=True)
+    rpsl_target_request_type: Mapped[UpdateRequestType | None] = mapped_column(
+        sa.Enum(UpdateRequestType), nullable=True
+    )
+    rpsl_target_pk: Mapped[str | None] = mapped_column(sa.String, index=True, nullable=True)
+    rpsl_target_source: Mapped[str | None] = mapped_column(sa.String, nullable=True)
+    rpsl_target_object_class: Mapped[str | None] = mapped_column(sa.String, nullable=True)
+    rpsl_target_object_text_old: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    rpsl_target_object_text_new: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
 
     timestamp = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
 
@@ -648,7 +651,7 @@ class ChangeLog(Base):  # type: ignore
         return f"<{self.pk}/{self.description()}>"
 
     def description(self) -> str:
-        if self.rpsl_target_pk:
+        if self.rpsl_target_pk and self.rpsl_target_request_type:
             return (
                 f"{self.rpsl_target_request_type.value} of"
                 f" {self.rpsl_target_object_class} {self.rpsl_target_pk} in {self.rpsl_target_source}"

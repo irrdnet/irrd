@@ -9,7 +9,7 @@ Create Date: 2019-03-04 16:14:17.862510
 import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql as pg
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 
 # revision identifiers, used by Alembic.
 revision = "a8609af97aa3"
@@ -24,7 +24,7 @@ class RPSLDatabaseObject(Base):  # type: ignore
 
     pk = sa.Column(pg.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), primary_key=True)
     object_class = sa.Column(sa.String, nullable=False, index=True)
-    ip_size = sa.Column(sa.DECIMAL(scale=0))
+    ip_size = sa.Column(sa.DECIMAL(scale=0))  # type: ignore[var-annotated]
     prefix_length = sa.Column(sa.Integer, nullable=True)
 
 
