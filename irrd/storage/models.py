@@ -392,6 +392,22 @@ class AuthPermission(Base):  # type: ignore
         return f"AuthPermission<{self.pk}, user {self.user_id}, mntner {self.mntner_id}>"
 
 
+def _mntner_permission_join(*extra_conditions):
+    """
+    The join from a user's permissions to their mntners, for relationship secondaries.
+    Called when mappers are configured, so AuthMntner need not be defined yet.
+    """
+    return sa.join(
+        AuthPermission,
+        AuthMntner,
+        sa.and_(
+            AuthMntner.pk == AuthPermission.mntner_id,
+            AuthMntner.migration_token.is_(None),
+            *extra_conditions,
+        ),
+    )
+
+
 class AuthUser(Base):  # type: ignore
     __tablename__ = "auth_user"
 
@@ -420,26 +436,17 @@ class AuthUser(Base):  # type: ignore
     mntners = relationship(
         "AuthMntner",
         backref="users",
-        secondary=(
-            "join(AuthPermission, AuthMntner, and_(AuthMntner.pk==AuthPermission.mntner_id,"
-            " AuthMntner.migration_token.is_(None)))"
-        ),
+        secondary=lambda: _mntner_permission_join(),
         overlaps="permissions,user,users",
     )
     mntners_user_management = relationship(
         "AuthMntner",
-        secondary=(
-            "join(AuthPermission, AuthMntner, and_(AuthMntner.pk==AuthPermission.mntner_id,"
-            " AuthMntner.migration_token.is_(None),AuthPermission.user_management==True))"
-        ),
+        secondary=lambda: _mntner_permission_join(AuthPermission.user_management == sa.true()),
         overlaps="user,users,mntners,mntners_no_user_management",
     )
     mntners_no_user_management = relationship(
         "AuthMntner",
-        secondary=(
-            "join(AuthPermission, AuthMntner, and_(AuthMntner.pk==AuthPermission.mntner_id,"
-            " AuthMntner.migration_token.is_(None),AuthPermission.user_management==False))"
-        ),
+        secondary=lambda: _mntner_permission_join(AuthPermission.user_management == sa.false()),
         overlaps="user,users,mntners,mntners_user_management",
     )
 
