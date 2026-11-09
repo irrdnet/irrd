@@ -15,7 +15,7 @@ documentation = "https://irrd.readthedocs.io/"
 exclude = ['irrd/*/tests', 'irrd/*/*/tests', 'irrd/integration_tests']
 
 [tool.poetry.dependencies]
-python = ">3.10.0,<4.0"
+python = ">=3.11,<4.0"
 # For installation dependencies, this project pins on exact
 # versions. This is because it's an application rather than
 # a library, so we assume that irrd is the only tool installed
@@ -107,7 +107,7 @@ irrd_load_pgp_keys = 'irrd.scripts.load_pgp_keys:main'
 
 [tool.isort]
 profile = "black"
-py_version = 310
+py_version = 311
 src_paths = "irrd"
 
 [tool.ruff]
@@ -115,11 +115,11 @@ line-length = 110
 # B019: lru_cache on methods leaks the instance and all it references (GHSA-cvm7-qcww-5m59)
 lint.extend-select = ["B019"]
 lint.ignore = ["E501"]
-target-version = "py310"
+target-version = "py311"
 
 [tool.black]
 line-length = 110
-target-version = ['py310']
+target-version = ['py311']
 preview = true
 
 [tool.pytest.ini_options]
