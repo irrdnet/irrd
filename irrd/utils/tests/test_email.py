@@ -186,6 +186,12 @@ class TestEmailParser:
         assert parser.pgp_fingerprint is None
 
     @pytest.mark.usefixtures("tmp_gpg_dir")
+    def test_parse_folded_header(self):
+        parser = EmailParser("Subject: first\r\n HTTP-User-Email: forged\r\nFrom: a@b.c\r\n\r\nbody")
+        assert "\n" not in parser.message_subject
+        assert parser.message_from == "a@b.c"
+
+    @pytest.mark.usefixtures("tmp_gpg_dir")
     def test_parse_valid_multipart_signed_ascii(self, tmp_gpg_dir, preload_gpg_key):
         email = textwrap.dedent("""
         From sasha@localhost  Thu Jan  5 10:04:48 2018

@@ -65,10 +65,12 @@ class EmailParser:
             self.body = message.get_payload(decode=True).decode(charset, "backslashreplace")  # type: ignore
             self._raw_body = self.body
 
-        self.message_id = message["Message-ID"]  # type: ignore
-        self.message_from = message["From"]  # type: ignore
-        self.message_date = message["Date"]  # type: ignore
-        self.message_subject = message["Subject"]  # type: ignore
+        # Folded headers are returned with their line breaks, and these
+        # end up in logs, reports and notifications
+        self.message_id = remove_control_chars(message["Message-ID"] or "")
+        self.message_from = remove_control_chars(message["From"] or "")
+        self.message_date = remove_control_chars(message["Date"] or "")
+        self.message_subject = remove_control_chars(message["Subject"] or "")
 
         if not (self.body and self._raw_body):
             return
