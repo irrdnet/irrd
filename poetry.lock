@@ -1392,14 +1392,14 @@ files = [
 
 [[package]]
 name = "graphql-core"
-version = "3.3.0"
+version = "3.3.1"
 description = "GraphQL-core is a Python port of GraphQL.js, the JavaScript reference implementation for GraphQL."
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "graphql_core-3.3.0-py3-none-any.whl", hash = "sha256:d37fac6ef4dfc3eaa5daa59dcb498d7cbb118439d240993c68fddc4cb1bade44"},
-    {file = "graphql_core-3.3.0.tar.gz", hash = "sha256:fd3424e88af3f3211931c6ff96350f1cd9069cf0f1a31b9972899e35d39136b5"},
+    {file = "graphql_core-3.3.1-py3-none-any.whl", hash = "sha256:43ebcd0d9a0662a71b1a2f6562ba863d253057ec11cbc45835b2e2683a0a3770"},
+    {file = "graphql_core-3.3.1.tar.gz", hash = "sha256:8d9b6f95fb66b58b260904cf9e191f422782620533ec8fa0c96ab941b6659a2a"},
 ]
 
 [[package]]
@@ -5041,4 +5041,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">3.10.0,<4.0"
-content-hash = "3b1bed73cae926af7e8f02e000c513b8e8f7482ed50fc26143b7abc3d43b0817"
+content-hash = "f028ae020df8db0b564810af0c994c0d69487a347808068d3a6d9ad213a25322"
