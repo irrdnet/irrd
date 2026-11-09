@@ -436,7 +436,7 @@ class AuthUser(Base):  # type: ignore
     )
     mntners = relationship(
         "AuthMntner",
-        backref="users",
+        backref=sa.orm.backref("users", overlaps="permissions,user"),
         secondary=lambda: _mntner_permission_join(),
         overlaps="permissions,user,users",
     )
@@ -565,7 +565,11 @@ class AuthMntner(Base):  # type: ignore
 
     permissions = relationship(
         "AuthPermission",
-        backref=sa.orm.backref("mntner", uselist=False),
+        backref=sa.orm.backref(
+            "mntner",
+            uselist=False,
+            overlaps="mntners,mntners_no_user_management,mntners_user_management,users",
+        ),
         overlaps="users,mntners,mntners_user_management,mntners_no_user_management",
     )
 
