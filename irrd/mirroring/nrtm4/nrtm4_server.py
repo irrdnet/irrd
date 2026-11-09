@@ -283,10 +283,13 @@ class NRTM4ServerWriter:
         assert self.status
         for delta in self.status.previous_deltas:
             delta_timestamp = datetime.datetime.fromtimestamp(delta["timestamp"], tz=UTC)
-            if self.timestamp - delta_timestamp > NRTM4_SERVER_DELTA_EXPIRY_TIME:
+            expired = self.timestamp - delta_timestamp > NRTM4_SERVER_DELTA_EXPIRY_TIME
+            # Deltas newer than the current snapshot are kept regardless of age,
+            # as there must be a path from the latest snapshot to the latest version through deltas.
+            covered_by_snapshot = delta["version"] <= (self.status.last_snapshot_version or 0)
+            if expired and covered_by_snapshot:
                 expired_files.append(self.path / delta["filename"])
                 logger.debug(f"{self.source}: Expired older delta {delta['version']}")
-
             else:
                 new_delta_list.append(delta)
 
