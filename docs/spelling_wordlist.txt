@@ -48,6 +48,7 @@ keyring
 logfile
 loglevel
 logrotate
+lookups
 Miroslav
 misconfiguration
 mnt

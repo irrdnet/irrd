@@ -357,10 +357,12 @@ As the result shows, you can send one GraphQL query and get the results for
 one or multiple ASNs, separated by ASN.
 
 Registry-scoped lookups
-~~~~~~~~~~~~~~~~~~~~~~~
-The queries ``asSetPrefixes`` and ``recursiveSetMembers`` (covered below),
-normally look up their initial object across all configured
-sources, or the sources given in the ``sources`` argument.
+-----------------------
+The queries ``asSetPrefixes`` and ``recursiveSetMembers`` (covered below)
+normally look up their initial object in all configured sources, or the
+sources given in the ``sources`` argument. ``asSetPrefixes`` then uses the
+first source that has it, while ``recursiveSetMembers`` returns a result per
+source.
 
 Sometimes when there are multiple objects with the same primary key
 in different sources, you may want the initial lookup of an AS-SET/route-set
@@ -369,8 +371,8 @@ further recursion (e.g. the members of an AS-SET) using all sources, or the
 sources given in ``sources``.
 
 To do this, you can specify the ``rootSource`` string on ``asSetPrefixes``
-and ``recursiveSetMembers`` queries with a source configured on the server e.g.,
-``"RIPE"``.
+and ``recursiveSetMembers`` queries, e.g. ``"RIPE"``. It must be one of the
+sources being queried, and can not be an alias.
 
 For example::
 

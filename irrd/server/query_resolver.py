@@ -110,6 +110,15 @@ class QueryResolver:
     def set_query_sources(self, sources: list[str] | None) -> None:
         self.source_manager.set_query_sources(sources)
 
+    def _clean_root_source(self, root_source: str | None) -> str | None:
+        """Check a root source, which must be a single queried source, not an alias."""
+        if not root_source:
+            return None
+        root_source = root_source.upper()
+        if root_source not in self.source_manager.sources_resolved:
+            raise InvalidQueryException(f"The root source {root_source} is unavailable or an alias.")
+        return root_source
+
     def disable_rpki_filter(self) -> None:
         self.rpki_invalid_filter_enabled = False
 
@@ -183,6 +192,7 @@ class QueryResolver:
         If root_source is set, the root as-set is only looked for in that source -
         resolving is then continued using the currently set sources.
         """
+        root_source = self._clean_root_source(root_source)
         self._current_set_root_object_class = "as-set"
         self._current_excluded_sets = exclude_sets if exclude_sets else set()
         self._current_set_maximum_depth = 0
@@ -197,17 +207,21 @@ class QueryResolver:
         exclude_sets: set[str] | None = None,
         depth=0,
         recursive=False,
+        root_source: str | None = None,
     ) -> dict[str, list[str]]:
         """
         Find all members of an as-set or route-set, possibly recursively, distinguishing
         between multiple root objects in different sources with the same name.
         Returns a dict with sources as keys, list of all members, including leaf members,
-        as values.
+        as values. If root_source is set, only the root object in that source is returned.
         """
+        root_source = self._clean_root_source(root_source)
         query = self._prepare_query(column_names=["source"])
         object_classes = ["as-set", "route-set"]
         query = query.object_classes(object_classes).rpsl_pk(parameter)
         set_sources = [row["source"] for row in self._execute_query(query)]
+        if root_source:
+            set_sources = [source for source in set_sources if source == root_source]
 
         return {
             source: self.members_for_set(

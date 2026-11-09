@@ -552,6 +552,23 @@ class TestQueryResolver:
             ["set_members", ("AS-TEST", ["TEST2"], ["route-set", "as-set"]), {}],
         ]
 
+        result = resolver.members_for_set_per_source("AS-TEST", recursive=True, root_source="test2")
+        assert result == {"TEST2": ["AS65549"]}
+
+        # A set that does not exist in the root source has no results at all
+        mock_dh.execute_query = lambda query, refresh_on_error=False: [
+            {"rpsl_pk": "AS-TEST", "source": "TEST2"}
+        ]
+        assert resolver.members_for_set_per_source("AS-TEST", recursive=True, root_source="TEST1") == {}
+
+        for invalid_root_source in "UNKNOWN", "ALIAS":
+            with pytest.raises(InvalidQueryException):
+                resolver.members_for_set_per_source("AS-TEST", root_source=invalid_root_source)
+
+        resolver.set_query_sources(["TEST1"])
+        with pytest.raises(InvalidQueryException):
+            resolver.members_for_set_per_source("AS-TEST", root_source="TEST2")
+
     def test_recursive_set_resolve_root_source(self, prepare_resolver):
         mock_dq, mock_dh, mock_preloader, mock_query_result, resolver = prepare_resolver
 
@@ -597,6 +614,20 @@ class TestQueryResolver:
             ["set_members", ("AS-TEST", ["TEST2"], ["as-set"]), {}],
             ["set_members", ("AS-SUB", ["TEST1", "TEST2"], ["as-set"]), {}],
         ]
+        mock_preloader.reset_mock()
+
+        # The same restriction applies through routes_for_as_set, which also
+        # uppercases the source name, and rejects one that is not queried.
+        mock_preloader.routes_for_origins = Mock(return_value={"192.0.2.0/24"})
+        assert resolver.routes_for_as_set("AS-TEST", root_source="test2") == {"192.0.2.0/24"}
+        assert flatten_mock_calls(mock_preloader.set_members) == [
+            ["", ("AS-TEST", ["TEST2"], ["as-set"]), {}],
+            ["", ("AS-SUB", ["TEST1", "TEST2"], ["as-set"]), {}],
+        ]
+        assert mock_preloader.routes_for_origins.mock_calls[0].args[0] == {"AS65547", "AS65549"}
+
+        with pytest.raises(InvalidQueryException):
+            resolver.routes_for_as_set("AS-TEST", root_source="UNKNOWN")
 
         assert not mock_dq.mock_calls
 

@@ -377,9 +377,7 @@ class TestGraphQLResolvers:
 
     def test_resolve_asn_prefixes(self, prepare_resolver):
         info, mock_database_query, mock_query_resolver = prepare_resolver
-        mock_query_resolver.routes_for_origin = lambda asn, ip_version, root_source=None: [
-            f"prefix-{asn}-{root_source}"
-        ]
+        mock_query_resolver.routes_for_origin = lambda asn, ip_version: [f"prefix-{asn}"]
 
         result = list(
             resolvers.resolve_asn_prefixes(
@@ -390,15 +388,15 @@ class TestGraphQLResolvers:
             )
         )
         assert result == [
-            {"asn": 65550, "prefixes": ["prefix-AS65550-None"]},
-            {"asn": 65551, "prefixes": ["prefix-AS65551-None"]},
+            {"asn": 65550, "prefixes": ["prefix-AS65550"]},
+            {"asn": 65551, "prefixes": ["prefix-AS65551"]},
         ]
         mock_query_resolver.set_query_sources.assert_called_once()
 
     def test_resolve_as_set_prefixes(self, prepare_resolver):
         info, mock_database_query, mock_query_resolver = prepare_resolver
         mock_query_resolver.routes_for_as_set = lambda set_name, ip_version, root_source, exclude_sets: [
-            f"prefix-{set_name}"
+            f"prefix-{set_name}-{root_source}"
         ]
 
         result = list(
@@ -413,22 +411,24 @@ class TestGraphQLResolvers:
         )
         assert sorted(result, key=str) == sorted(
             [
-                {"rpslPk": "AS-A", "prefixes": ["prefix-AS-A"]},
-                {"rpslPk": "AS-B", "prefixes": ["prefix-AS-B"]},
+                {"rpslPk": "AS-A", "prefixes": ["prefix-AS-A-None"]},
+                {"rpslPk": "AS-B", "prefixes": ["prefix-AS-B-None"]},
             ],
             key=str,
         )
         mock_query_resolver.set_query_sources.assert_called_once()
 
+        result = list(resolvers.resolve_as_set_prefixes(None, info, set_names=["as-A"], root_source="TEST1"))
+        assert result == [{"rpslPk": "AS-A", "prefixes": ["prefix-AS-A-TEST1"]}]
+
     def test_resolve_recursive_set_members(self, prepare_resolver):
         info, mock_database_query, mock_query_resolver = prepare_resolver
-        mock_query_resolver.members_for_set_per_source = lambda set_name, exclude_sets, depth, recursive: {
-            "TEST1": [f"member1-{set_name}"],
-            "TEST2": [f"member2-{set_name}"],
-        }
-        mock_query_resolver.members_for_set = lambda set_name, exclude_sets, depth, recursive, root_source: [
-            f"member3-{set_name}"
-        ]
+
+        def members_per_source(set_name, exclude_sets, depth, recursive, root_source):
+            members = {"TEST1": [f"member1-{set_name}"], "TEST2": [f"member2-{set_name}"]}
+            return {root_source: members[root_source]} if root_source else members
+
+        mock_query_resolver.members_for_set_per_source = members_per_source
 
         result = list(
             resolvers.resolve_recursive_set_members(
@@ -458,21 +458,13 @@ class TestGraphQLResolvers:
                 set_names=["as-A", "AS-B"],
                 depth=4,
                 sql_trace=True,
-                root_source="TEST3",
+                root_source="TEST2",
             )
         )
         assert sorted(result, key=str) == sorted(
             [
-                {
-                    "rpslPk": "AS-A",
-                    "rootSource": "TEST3",
-                    "members": ["member3-AS-A"],
-                },
-                {
-                    "rpslPk": "AS-B",
-                    "rootSource": "TEST3",
-                    "members": ["member3-AS-B"],
-                },
+                {"rpslPk": "AS-A", "rootSource": "TEST2", "members": ["member2-AS-A"]},
+                {"rpslPk": "AS-B", "rootSource": "TEST2", "members": ["member2-AS-B"]},
             ],
             key=str,
         )
