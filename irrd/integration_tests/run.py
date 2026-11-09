@@ -1,8 +1,8 @@
 import base64
 import email
+import logging
 import os
 import signal
-import socket
 import subprocess
 import sys
 import textwrap
@@ -15,6 +15,7 @@ import sqlalchemy
 import sqlalchemy as sa
 import ujson
 import yaml
+from aiosmtpd.controller import Controller
 from alembic import command, config
 from joserfc.jwk import ECKey
 from python_graphql_client import GraphqlClient
@@ -44,13 +45,9 @@ from irrd.utils.whois_client import whois_query, whois_query_irrd
 
 from ..mirroring.nrtm4 import UPDATE_NOTIFICATION_FILENAME
 from ..utils.crypto import eckey_private_key_as_str, eckey_public_key_as_str
-from .constants import (
-    EMAIL_DISCARD_MSGS_COMMAND,
-    EMAIL_END,
-    EMAIL_RETURN_MSGS_COMMAND,
-    EMAIL_SEPARATOR,
-    EMAIL_SMTP_PORT,
-)
+
+MAILSERVER_HOST = "127.0.0.1"
+EMAIL_SMTP_PORT = 2500
 
 IRRD_ROOT_PATH = str(Path(__file__).resolve().parents[2])
 sys.path.append(IRRD_ROOT_PATH)
@@ -95,6 +92,18 @@ LARGE_UPDATE = "\n\n".join(
 )
 
 
+class MemoryMailServer:
+    """SMTP handler that keeps all messages it receives in memory."""
+
+    def __init__(self):
+        self.messages: list[bytes] = []
+
+    async def handle_DATA(self, server, session, envelope):
+        # Normalised to LF, as the assertions match mails as text
+        self.messages.append(envelope.content.replace(b"\r\n", b"\n"))
+        return "250 Message accepted for delivery"
+
+
 class TestIntegration:
     """
     This integration test will start two instances of IRRd, one mirroring off the
@@ -106,6 +115,7 @@ class TestIntegration:
     this is intentional.
     """
 
+    mailserver_controller = None
     port_http1 = 6080
     port_whois1 = 6043
     port_http2 = 6081
@@ -120,7 +130,7 @@ class TestIntegration:
             del os.environ["IRRD_DATABASE_URL"]
         if "IRRD_REDIS_URL" in os.environ:
             del os.environ["IRRD_REDIS_URL"]
-        # PYTHONPATH needs to contain the twisted plugin path to support the mailserver.
+        # PYTHONPATH needs to contain the root path, as some scripts are run directly.
         os.environ["PYTHONPATH"] = IRRD_ROOT_PATH
         os.environ["IRRD_TESTING_FAST_SCHEDULER_OVERRIDE"] = "1"
         self.tmpdir = tmpdir
@@ -777,23 +787,17 @@ class TestIntegration:
 
     def _start_mailserver(self):
         """
-        Start the mailserver through twisted. This special SMTP server is
-        configured as the SMTP server for both IRRd instances.
-        It keeps mails in memory, and _retrieve_mails() can retrieve them
-        using special SMTP commands.
+        Start an SMTP server, configured as the SMTP server for all IRRD
+        instances. It keeps mails in memory for _retrieve_mails().
+        Bound to localhost only, as it accepts any mail without authentication.
         """
-        self.pidfile_mailserver = str(self.tmpdir) + "/mailserver.pid"
-        self.logfile_mailserver = str(self.tmpdir) + "/mailserver.log"
-        mailserver_path = IRRD_ROOT_PATH + "/irrd/integration_tests/mailserver.tac"
-        assert not subprocess.call(
-            [
-                "twistd",
-                f"--pidfile={self.pidfile_mailserver}",
-                f"--logfile={self.logfile_mailserver}",
-                "-y",
-                mailserver_path,
-            ]
+        # Without this, every line of every mail is logged
+        logging.getLogger("mail.log").setLevel(logging.INFO)
+        self.mailserver = MemoryMailServer()
+        self.mailserver_controller = Controller(
+            self.mailserver, hostname=MAILSERVER_HOST, port=EMAIL_SMTP_PORT
         )
+        self.mailserver_controller.start()
 
     # noinspection PyTypeChecker
     def _start_irrds(self):
@@ -904,7 +908,7 @@ class TestIntegration:
                 "email": {
                     "footer": "email footer",
                     "from": "from@example.com",
-                    "smtp": f"localhost:{EMAIL_SMTP_PORT}",
+                    "smtp": f"{MAILSERVER_HOST}:{EMAIL_SMTP_PORT}",
                 },
                 "log": {
                     "logfile_path": None,
@@ -1040,30 +1044,9 @@ class TestIntegration:
         p.wait()
 
     def _retrieve_mails(self):
-        """
-        Retrieve all mails kept in storage by the special integration test
-        SMTP server. Returns a list of email.Message objects.
-        Will only return new mails since the last call.
-        """
-        s = socket.socket()
-        s.settimeout(5)
-        s.connect(("localhost", EMAIL_SMTP_PORT))
-
-        s.sendall(f"{EMAIL_RETURN_MSGS_COMMAND}\r\n".encode("ascii"))
-
-        buffer = b""
-        while EMAIL_END not in buffer:
-            data = s.recv(1024 * 1024)
-            buffer += data
-        buffer = buffer.split(b"\n", 1)[1]
-        buffer = buffer.split(EMAIL_END, 1)[0]
-
-        s.sendall(f"{EMAIL_DISCARD_MSGS_COMMAND}\r\n".encode("ascii"))
-        messages = [
-            email.message_from_string(m.strip().decode("ascii"))
-            for m in buffer.split(EMAIL_SEPARATOR.encode("ascii"))
-        ]
-        return messages
+        """Return the mails received since the last call, as email.Message objects."""
+        messages, self.mailserver.messages = self.mailserver.messages, []
+        return [email.message_from_bytes(message) for message in messages]
 
     def _extract_message_body(self, message):
         """
@@ -1078,6 +1061,7 @@ class TestIntegration:
         Check a list of email.Message objects for each of a list of
         expected texts. I.e. every message should contain every text.
         """
+        assert messages
         for expected_text in expected_texts:
             for message in messages:
                 message_text = self._extract_message_body(message)
@@ -1118,7 +1102,7 @@ class TestIntegration:
         server processes.
         """
         print("\n")
-        for pidfile in self.pidfile1, self.pidfile2, self.pidfile3, self.pidfile_mailserver:
+        for pidfile in self.pidfile1, self.pidfile2, self.pidfile3:
             try:
                 with open(pidfile) as fh:
                     pid = int(fh.read())
@@ -1127,3 +1111,5 @@ class TestIntegration:
             except (FileNotFoundError, ProcessLookupError, ValueError) as exc:
                 print(f"Failed to kill: {pidfile}: {exc}")
                 pass
+        if self.mailserver_controller:
+            self.mailserver_controller.stop()
