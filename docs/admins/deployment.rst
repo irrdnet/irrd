@@ -375,7 +375,7 @@ Resource exhaustion that these measures can mitigate is generally
 treated as hardening rather than a security vulnerability - see the
 `security policy`_ for details.
 
-.. _security policy: https://github.com/irrdnet/irrd/blob/main/SECURITY.rst
+.. _security policy: https://github.com/irrdnet/irrd/security/policy
 
 Logrotate configuration
 -----------------------

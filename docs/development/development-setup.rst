@@ -126,7 +126,7 @@ Making a release
 To create a new packaged version of IRRD:
 
 * Create the new release notes and commit them in the main branch.
-* If this is a new minor release (x.y), update ``SECURITY.rst``.
+* If this is a new minor release (x.y), update ``SECURITY.md``.
 * If you are adding changes from main to an existing release branch,
   cherry-pick the changes from the main branch, at least including the release
   notes commit. Version updates of dependencies are not generally applied to
