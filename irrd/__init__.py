@@ -1,5 +1,5 @@
 # Note that version is also in pyproject.toml
-__version__ = "4.4.8"
+__version__ = "4.4.9"
 ENV_MAIN_PROCESS_PID = "IRRD_MAIN_PROCESS_PID"
 META_KEY_HTTP_CLIENT_IP = "HTTP-Client-IP"
 # Metadata keys IRRD fills itself, not accepted from a client
