@@ -1904,15 +1904,106 @@ files = [
 ]
 
 [[package]]
+name = "libvalkey"
+version = "4.2.1"
+description = "Python wrapper for libvalkey"
+optional = false
+python-versions = ">=3.11"
+groups = ["main"]
+files = [
+    {file = "libvalkey-4.2.1-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:bc98e11a833722b437188a5f06b9bc1293f508f3fe71ec7b2ec47604f8839ae7"},
+    {file = "libvalkey-4.2.1-cp311-cp311-macosx_11_0_universal2.whl", hash = "sha256:7824b7ebb138fddd54ba647fe3ef2ac17ea8d68e0ed56e75110a8a0988c74ea3"},
+    {file = "libvalkey-4.2.1-cp311-cp311-macosx_11_0_x86_64.whl", hash = "sha256:54c63837728cf6b30fd7532b31182fd9a45c52e977a10fbe6513cc6411a91b5a"},
+    {file = "libvalkey-4.2.1-cp311-cp311-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:481ed37c323c77610cefa0943d1cd35501491b239a5ef0e66e397ab4e266f500"},
+    {file = "libvalkey-4.2.1-cp311-cp311-manylinux2014_ppc64le.manylinux_2_17_ppc64le.manylinux_2_28_ppc64le.whl", hash = "sha256:ee7e60ff11c85b7bb11bb1bcef5ce2895d3e9ff7890c5349f1006788f5a1841a"},
+    {file = "libvalkey-4.2.1-cp311-cp311-manylinux2014_s390x.manylinux_2_17_s390x.manylinux_2_28_s390x.whl", hash = "sha256:01b8d5825b78d4b41fb8bc20f0fdbfa0097f3bba2ada820096c5dab019345c3e"},
+    {file = "libvalkey-4.2.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:3e4cd3dfea949fd1bb119279dd22c73e62771bc2ddcbc84a082dcc9d0cdc825b"},
+    {file = "libvalkey-4.2.1-cp311-cp311-musllinux_1_2_aarch64.whl", hash = "sha256:bf160f51c3ba2f42ff70ce3b06fa139ebece534afd5d72e6fed729892aedbed8"},
+    {file = "libvalkey-4.2.1-cp311-cp311-musllinux_1_2_ppc64le.whl", hash = "sha256:c6ab5d455ed0cc2aed0d5b9b8211c0447fdaa03471ab3bc5beeac45daa196167"},
+    {file = "libvalkey-4.2.1-cp311-cp311-musllinux_1_2_s390x.whl", hash = "sha256:d8057a89a9354404465639993c3699ae8fcba5ea13da8b7524b782ead2fafe8b"},
+    {file = "libvalkey-4.2.1-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:01727573a36bc16437916e96e993b1262dea12e9eca51195c05689ac2a721f61"},
+    {file = "libvalkey-4.2.1-cp311-cp311-win32.whl", hash = "sha256:ddca53324f094c904bb5d2081d842833b8bd7371d24d75cba5629aa717cbc7a6"},
+    {file = "libvalkey-4.2.1-cp311-cp311-win_amd64.whl", hash = "sha256:82de3db14d6514afd00fde60b5cc26f596cfe48a616bb5105cef4c04e2ad2835"},
+    {file = "libvalkey-4.2.1-cp311-cp311-win_arm64.whl", hash = "sha256:6852ac84a4bc21c2611706d15c548cb57384d87aa3bc9d1d3510e334f1fe81ba"},
+    {file = "libvalkey-4.2.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:13c87463dce894d920a36c7ccaa35b13eb5427e185e3e8890d4175fe9e343b05"},
+    {file = "libvalkey-4.2.1-cp312-cp312-macosx_11_0_universal2.whl", hash = "sha256:58fe041f5511696feb36c37e82a08db73609dfa3203c4fcf9a86e1c6164c5f89"},
+    {file = "libvalkey-4.2.1-cp312-cp312-macosx_11_0_x86_64.whl", hash = "sha256:db867a454f996989346ed0b13a74c1c451e1b5808778ce52fb490ef2a41acb83"},
+    {file = "libvalkey-4.2.1-cp312-cp312-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:c0e11d97648cf797d5fd8494e2d5f9b9ef537ceaae88e35a59adf7719ba15c18"},
+    {file = "libvalkey-4.2.1-cp312-cp312-manylinux2014_ppc64le.manylinux_2_17_ppc64le.manylinux_2_28_ppc64le.whl", hash = "sha256:17f366e676a59504a70cbb04f0bb922ede39a0c6011a28eb3fb415bc303c2e75"},
+    {file = "libvalkey-4.2.1-cp312-cp312-manylinux2014_s390x.manylinux_2_17_s390x.manylinux_2_28_s390x.whl", hash = "sha256:ed95ce81c1a0bf9a15e275af3ef38243826e1e6be6be975dcd4902785e2a4d3a"},
+    {file = "libvalkey-4.2.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:80ac1e2a7c378aaa42009fa018db8719b3cdf066d2b4d4e58271eb4e1387bdca"},
+    {file = "libvalkey-4.2.1-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:121438a11dd0f7c2a2e69a31df65d7219b73548cd7cb11f1cd58a10fd1db97f7"},
+    {file = "libvalkey-4.2.1-cp312-cp312-musllinux_1_2_ppc64le.whl", hash = "sha256:44e4d948ecd7a4cf379709833e920bf98242b76c19a85f9ce0d57df9d8d2b58c"},
+    {file = "libvalkey-4.2.1-cp312-cp312-musllinux_1_2_s390x.whl", hash = "sha256:86865e08f203169511420ffba3c8e2c5479bad859ec4e5f12c5a4d1deb9c1f3c"},
+    {file = "libvalkey-4.2.1-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:53e70f6d2a73da27c721edc495310f3ab7b9d3675d7b365aacea7b0af162bd49"},
+    {file = "libvalkey-4.2.1-cp312-cp312-win32.whl", hash = "sha256:2cc93a8152528096bc58c317aae53f6cba277ccb88bb9c977244b340024c5545"},
+    {file = "libvalkey-4.2.1-cp312-cp312-win_amd64.whl", hash = "sha256:8411c669990fc5494768f1b79631918bef889fffd678c4ffcdcc16b2eea2d6c5"},
+    {file = "libvalkey-4.2.1-cp312-cp312-win_arm64.whl", hash = "sha256:f86e7432e30b260cf2de0005643ea5c0838235faaf70261f7e7def9b26be213b"},
+    {file = "libvalkey-4.2.1-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:ec62a587ce763cd05392083b67066ba871ab599059e5be77cc56aeaf14eb8b91"},
+    {file = "libvalkey-4.2.1-cp313-cp313-macosx_11_0_universal2.whl", hash = "sha256:9991e387e031764cbd876e321c0f14c66e9a13a63996ba4f287a2782e4760ea9"},
+    {file = "libvalkey-4.2.1-cp313-cp313-macosx_11_0_x86_64.whl", hash = "sha256:2482a354654bd25cb81dd1f5a370ebae730328243b4db8e67c471e4a73ca0b1a"},
+    {file = "libvalkey-4.2.1-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:49fa82699f929f203ef20685b07c169f0cf494248696f221fb41006b8c0a30d4"},
+    {file = "libvalkey-4.2.1-cp313-cp313-manylinux2014_ppc64le.manylinux_2_17_ppc64le.manylinux_2_28_ppc64le.whl", hash = "sha256:c27d4556360533ed944d9fcf34eb3f0a76e03c57792106d0db6a2c0b2b1374a5"},
+    {file = "libvalkey-4.2.1-cp313-cp313-manylinux2014_s390x.manylinux_2_17_s390x.manylinux_2_28_s390x.whl", hash = "sha256:985089b789942bf54548c15dc9df42566e52c6bd2bd16ee816a30fa9f3a12a81"},
+    {file = "libvalkey-4.2.1-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:d50263435566408e0b36a30287c9a52552ec99c7ae7c99825157e00cc88c090c"},
+    {file = "libvalkey-4.2.1-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:a03fbc3c110034cf923aeb06d972d5031d2cabb93b16d2aed11ceda484048904"},
+    {file = "libvalkey-4.2.1-cp313-cp313-musllinux_1_2_ppc64le.whl", hash = "sha256:d72433dd195acfb65f1f4e60ba0fd7f1c110b7ca633ec44c4b50166dff8128ca"},
+    {file = "libvalkey-4.2.1-cp313-cp313-musllinux_1_2_s390x.whl", hash = "sha256:222e1eaa5f98369a4e040deee84b231a985d4385549246f810ea84d979272913"},
+    {file = "libvalkey-4.2.1-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:10a09777b2a72f30f16814ecc0e14443fac71b49d005b93bdbfe96dcb478f9c6"},
+    {file = "libvalkey-4.2.1-cp313-cp313-win32.whl", hash = "sha256:d696ef0706551b359939f1f47555c3575f826c1a50a0addaf0bd708e028b5251"},
+    {file = "libvalkey-4.2.1-cp313-cp313-win_amd64.whl", hash = "sha256:74164ab1115b92e1b9490153e3c5f3d9bd84336aa39b41651ed1f0e215946896"},
+    {file = "libvalkey-4.2.1-cp313-cp313-win_arm64.whl", hash = "sha256:5e48932147f22080f7dafb4a2509397884d01b1acc273e7d00bc3a986a919c91"},
+    {file = "libvalkey-4.2.1-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:d19c974292bba2ab23eff37b3dd86a32a2ace0e0172de55951e6a3bd6e60e31e"},
+    {file = "libvalkey-4.2.1-cp314-cp314-macosx_11_0_universal2.whl", hash = "sha256:a7a036bd12357b2515433c4df48e7378a11a27bf9a55676339bfba0695238c53"},
+    {file = "libvalkey-4.2.1-cp314-cp314-macosx_11_0_x86_64.whl", hash = "sha256:6de98c6497d221ec4942f8ab1f25f6b0616a965400542648f5629c7749216091"},
+    {file = "libvalkey-4.2.1-cp314-cp314-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:58268b00bd1d6586a61f5f82b5ea53c346c5dedac2739a111c57c21894f311f7"},
+    {file = "libvalkey-4.2.1-cp314-cp314-manylinux2014_ppc64le.manylinux_2_17_ppc64le.manylinux_2_28_ppc64le.whl", hash = "sha256:6b9ab1de3167eb5884dee6354c6627618db0b012ca284238ff5e5e3bf20aa2c0"},
+    {file = "libvalkey-4.2.1-cp314-cp314-manylinux2014_s390x.manylinux_2_17_s390x.manylinux_2_28_s390x.whl", hash = "sha256:9425eb9275c0539fb075c075ec3e9df4597e1a4de7f5df2a485409876234dd9f"},
+    {file = "libvalkey-4.2.1-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:cfd53d09ddda7b671826bfcf4b8c7dcc466087a27eb96171e0f68919b56b5293"},
+    {file = "libvalkey-4.2.1-cp314-cp314-musllinux_1_2_aarch64.whl", hash = "sha256:b8725ab97ceafe00507f796b0005a2bdf4bd540968f5166822c92568b4ff4f76"},
+    {file = "libvalkey-4.2.1-cp314-cp314-musllinux_1_2_ppc64le.whl", hash = "sha256:391cf76012fb79c79cb9e7a3e604551d245f97ce9753edc6ad0630405deb7c5c"},
+    {file = "libvalkey-4.2.1-cp314-cp314-musllinux_1_2_s390x.whl", hash = "sha256:15faf146d6f78cd78f81d3669df02712b676474f80da39092ac08fa355d34a61"},
+    {file = "libvalkey-4.2.1-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:9b81158f48e4d22d3fa2d73961bc02f6d4ad598fde016c528f9da3e6af606f5a"},
+    {file = "libvalkey-4.2.1-cp314-cp314-win32.whl", hash = "sha256:6f493236af86dda591cfc9bbdac3b59d1c6814cb74429975db8ca2d695c54eae"},
+    {file = "libvalkey-4.2.1-cp314-cp314-win_amd64.whl", hash = "sha256:9940d9078086f6ec6f4db17a0743dce16fa5dd46ab369c4d9215ba1ebfd4c5f9"},
+    {file = "libvalkey-4.2.1-cp314-cp314-win_arm64.whl", hash = "sha256:f7bfbc61ce97e03fa48b10c8c3749817aae7d6d782e1a0e1b857a5df2a2f64b7"},
+    {file = "libvalkey-4.2.1-cp315-cp315-macosx_11_0_arm64.whl", hash = "sha256:00c7feb1722cfc29106cd211267ffc755e5fb3866a6fe8a2d4db65e8eb36c5c5"},
+    {file = "libvalkey-4.2.1-cp315-cp315-macosx_11_0_universal2.whl", hash = "sha256:0ae7bf565bba356dc54ad91ee223198185799884a688de5deee0d611c7343d28"},
+    {file = "libvalkey-4.2.1-cp315-cp315-macosx_11_0_x86_64.whl", hash = "sha256:3f6484eaf045eba40402542d2fc3edf1b39471a670195504817e161e1c6601ec"},
+    {file = "libvalkey-4.2.1-cp315-cp315-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:53b6da77a6172b2d3cbda444aa5960118e7ece3cd56f8c43d109bb71634d2c50"},
+    {file = "libvalkey-4.2.1-cp315-cp315-manylinux2014_ppc64le.manylinux_2_17_ppc64le.manylinux_2_28_ppc64le.whl", hash = "sha256:7fa0197e86b5cb1ac60dbe1c911fd5a0204597ba0ca6083d3f93b4bcdd2f37b2"},
+    {file = "libvalkey-4.2.1-cp315-cp315-manylinux2014_s390x.manylinux_2_17_s390x.manylinux_2_28_s390x.whl", hash = "sha256:ccacdc2eead32fa6c273de23c83c8451636d2b26bf9b58acd09742525757a813"},
+    {file = "libvalkey-4.2.1-cp315-cp315-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:54103238af94c649ea7b4a2bd1659ae55d526aa6d7cc61bd88329d6c84d42f47"},
+    {file = "libvalkey-4.2.1-cp315-cp315-musllinux_1_2_aarch64.whl", hash = "sha256:2537b682f5f2a57229735d6f3c74d035037bd46312a5df5a69e5bceb1e91ce65"},
+    {file = "libvalkey-4.2.1-cp315-cp315-musllinux_1_2_ppc64le.whl", hash = "sha256:8c26711dbaa19be2b206099d164585719ae188a1f652085cbcff22350c9cf5cd"},
+    {file = "libvalkey-4.2.1-cp315-cp315-musllinux_1_2_s390x.whl", hash = "sha256:e83f22209df8169fca370de603f67d03f4b97548198f22ce18a9b1103406f7a7"},
+    {file = "libvalkey-4.2.1-cp315-cp315-musllinux_1_2_x86_64.whl", hash = "sha256:9da02dcdc3b9b0b54ae0b88140c192cd1495100790ace46696b17cd38fa24a8a"},
+    {file = "libvalkey-4.2.1-cp315-cp315-win32.whl", hash = "sha256:1e61906f27bb9d83b2c476cb9e25d7453a0e17d190c870f7a76bcbb14c4b466b"},
+    {file = "libvalkey-4.2.1-cp315-cp315-win_amd64.whl", hash = "sha256:89859009fcb22593dac7cc2ae238e4a6d45e81ee5bbd3f4cd2a9765e7e54c41f"},
+    {file = "libvalkey-4.2.1-cp315-cp315-win_arm64.whl", hash = "sha256:d1028f87e361ebaea5f4fb5dcd414afc9f70f7b67526a70c530be655712f0e12"},
+    {file = "libvalkey-4.2.1-pp311-pypy311_pp80-macosx_11_0_arm64.whl", hash = "sha256:5a2754911bf57b5f92a06026b67f1485dbb4b7f57b70b777fb416c8c86963ff0"},
+    {file = "libvalkey-4.2.1-pp311-pypy311_pp80-macosx_11_0_x86_64.whl", hash = "sha256:45697dcce6c93c6ee89be8055f2f660656c2508f2c1a1d8462c2f47a51bfe041"},
+    {file = "libvalkey-4.2.1-pp311-pypy311_pp80-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:b4be378f4026d75288636cd59fd94429745f409bd7ed321abd2f94b7b9fb97f4"},
+    {file = "libvalkey-4.2.1-pp311-pypy311_pp80-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:3cf1d7ccb27a8ae923ce2af7f02dd3923f11a7f2c014f5da4559717cff12ab4c"},
+    {file = "libvalkey-4.2.1-pp311-pypy311_pp80-win_amd64.whl", hash = "sha256:7f18f5ac6dd90b32a886f40974a3e6dbf3d55e87feb165a29b8e03b244707a30"},
+    {file = "libvalkey-4.2.1-pp312-pypy312_pp80-macosx_11_0_arm64.whl", hash = "sha256:4349914c45688515764f8e71a6b9478c07c8991d3639e7efeb1ae06c63320617"},
+    {file = "libvalkey-4.2.1-pp312-pypy312_pp80-macosx_11_0_x86_64.whl", hash = "sha256:baa22a88fd5e1b9829c21b8e51a1e537e8f8d63447d28cfcf4600d836a7ffc63"},
+    {file = "libvalkey-4.2.1-pp312-pypy312_pp80-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:9ba9d6a04b8c3cee3d83bcc57fa6454167505ab948bd7991c9aa803235451147"},
+    {file = "libvalkey-4.2.1-pp312-pypy312_pp80-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:bcedc3feeedfb38939101f1dc4036282b967511872a0aeb6e4cdefe0a0bd403c"},
+    {file = "libvalkey-4.2.1-pp312-pypy312_pp80-win_amd64.whl", hash = "sha256:f4a1514d4f6811f6a0ac376769437aa2f2f41888677d813cc0278127e0737d39"},
+    {file = "libvalkey-4.2.1.tar.gz", hash = "sha256:7f0ffb6dfa9c01cde7f398d8bab93d2566597cbad17f4068d019bb5cf335bd47"},
+]
+
+[[package]]
 name = "limits"
-version = "5.6.0"
+version = "5.7.0"
 description = "Rate limiting utilities"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "limits-5.6.0-py3-none-any.whl", hash = "sha256:b585c2104274528536a5b68864ec3835602b3c4a802cd6aa0b07419798394021"},
-    {file = "limits-5.6.0.tar.gz", hash = "sha256:807fac75755e73912e894fdd61e2838de574c5721876a19f7ab454ae1fffb4b5"},
+    {file = "limits-5.7.0-py3-none-any.whl", hash = "sha256:4b51c58e88fd3ad1fec90a49d3f26d8b2a7fd3620762ee79f5298cc6670deabd"},
+    {file = "limits-5.7.0.tar.gz", hash = "sha256:4a42261ed9974b6aaed0cb124fa4858c6e51c7af426c9109c1769b5343611767"},
 ]
 
 [package.dependencies]
@@ -1927,7 +2018,7 @@ async-redis = ["coredis (>=3.4.0,<6)"]
 async-valkey = ["valkey (>=6)"]
 memcached = ["pymemcache (>3,<5.0.0)"]
 mongodb = ["pymongo (>4.1,<5)"]
-redis = ["redis (>3,!=4.5.2,!=4.5.3,<7.0.0)"]
+redis = ["redis (>3,!=4.5.2,!=4.5.3,<8.0.0)"]
 rediscluster = ["redis (>=4.2.0,!=4.5.2,!=4.5.3)"]
 valkey = ["valkey (>=6)"]
 
@@ -4262,6 +4353,26 @@ docs = ["Sphinx (>=4.1.2,<4.2.0)", "sphinx_rtd_theme (>=0.5.2,<0.6.0)", "sphinxc
 test = ["aiohttp (>=3.10.5)", "flake8 (>=6.1,<7.0)", "mypy (>=0.800)", "psutil", "pyOpenSSL (>=25.3.0,<25.4.0)", "pycodestyle (>=2.11.0,<2.12.0)"]
 
 [[package]]
+name = "valkey"
+version = "6.2.0"
+description = "Python client for Valkey forked from redis-py"
+optional = false
+python-versions = ">=3.11"
+groups = ["main"]
+files = [
+    {file = "valkey-6.2.0-py3-none-any.whl", hash = "sha256:94a12c87cd070e356b2c89e2946fa582d9f65ec2e003ab1867e987220e2beae8"},
+    {file = "valkey-6.2.0.tar.gz", hash = "sha256:7337c493ce55d7fe58ab44c93c37f56552dad75f9512e97c5808374ab5af4939"},
+]
+
+[package.dependencies]
+async-timeout = {version = ">=4.0.3", markers = "python_full_version < \"3.11.3\""}
+libvalkey = {version = ">=4.0.1", optional = true, markers = "extra == \"libvalkey\""}
+
+[package.extras]
+libvalkey = ["libvalkey (>=4.0.1)"]
+ocsp = ["cryptography (>=36.0.1)", "pyopenssl (>=23.2.0)", "requests (>=2.31.0)"]
+
+[[package]]
 name = "watchfiles"
 version = "1.1.1"
 description = "Simple, modern and high performance file watching and code reload in python."
@@ -4811,4 +4922,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "4bd8430f30bee36d8ed3c279c7ecc4039ceb780fa1cc75274a91206f580f174f"
+content-hash = "062d06456d5913078dd70f68fd810b241d7c4542508de030bd94fd3b9abe9d24"

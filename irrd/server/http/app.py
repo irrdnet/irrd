@@ -56,6 +56,16 @@ logger = logging.getLogger(__name__)
 # Uvicorn worker process, and then the app is started in each process.
 
 
+def rate_limiter_storage_url(redis_url: str) -> str:
+    """
+    Translate redis_url into a limits storage URL. limits prefixes its
+    asyncio storage schemes with async+, except for unix sockets.
+    """
+    if redis_url.startswith("unix://"):
+        return "async+redis+" + redis_url
+    return "async+" + redis_url
+
+
 @contextlib.asynccontextmanager
 async def lifespan(app):
     """
@@ -72,16 +82,8 @@ async def lifespan(app):
     try:
         app.state.database_handler = DatabaseHandler(readonly=True)
         app.state.preloader = Preloader(enable_queries=True)
-        async_redis_prefix = ""
-        if get_setting("redis_url").startswith("redis://"):
-            async_redis_prefix = "async+"
-        elif get_setting("redis_url").startswith("rediss://"):
-            async_redis_prefix = "async+"
-        elif get_setting("redis_url").startswith("unix://"):
-            async_redis_prefix = "async+redis+"
         app.state.rate_limiter_storage = limits.storage.storage_from_string(
-            async_redis_prefix + get_setting("redis_url"),
-            protocol_version=2,
+            rate_limiter_storage_url(get_setting("redis_url")), implementation="valkey"
         )
         app.state.rate_limiter = limits.aio.strategies.MovingWindowRateLimiter(app.state.rate_limiter_storage)
     except Exception as e:
