@@ -1,12 +1,11 @@
 import datetime
 from functools import cached_property
-from typing import Any, Literal
+from typing import Any, Literal, Self
 from urllib.parse import urlparse, urlunparse
 from uuid import UUID
 
 import pydantic
 from pytz import UTC
-from typing_extensions import Self
 
 from irrd.mirroring.nrtm4 import UPDATE_NOTIFICATION_FILENAME
 from irrd.utils.crypto import eckey_from_str

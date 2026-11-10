@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# flake8: noqa: E402
 import argparse
 import grp
 import logging
@@ -88,7 +87,7 @@ def main():
             args.foreground,
         ]
     ):
-        logging.critical(
+        logger.critical(
             "Unable to start: when not running in the foreground, you must set "
             "either log.logfile_path or log.logging_config_path in the settings"
         )
@@ -98,17 +97,16 @@ def main():
     if uid and gid:
         os.setegid(gid)
         os.seteuid(uid)
-        if staged_logfile_path:
-            # First check if a writable file already exists, if not,
-            # if we have permission to create the file.
-            if not os.access(staged_logfile_path, os.W_OK, effective_ids=True):
-                staged_logfile_dir = Path(staged_logfile_path).parent
-                if not os.access(staged_logfile_dir, os.W_OK, effective_ids=True):
-                    logging.critical(
-                        f"Unable to start: logfile {staged_logfile_path} not writable by UID {uid} / GID"
-                        f" {gid}"
-                    )
-                    return
+        # First check if a writable file already exists, if not,
+        # if we have permission to create the file.
+        if staged_logfile_path and not os.access(staged_logfile_path, os.W_OK, effective_ids=True):
+            staged_logfile_dir = Path(staged_logfile_path).parent
+            if not os.access(staged_logfile_dir, os.W_OK, effective_ids=True):
+                logger.critical(
+                    f"Unable to start: logfile {staged_logfile_path} not writable by UID {uid} / GID"
+                    f" {gid}"
+                )
+                return
 
     with daemon.DaemonContext(**daemon_kwargs):
         config_init(args.config_file_path)
@@ -116,7 +114,7 @@ def main():
         uid, gid = get_configured_owner()
         # Running as root is permitted on CI
         if not os.environ.get("CI") and not uid and os.geteuid() == 0:
-            logging.critical(
+            logger.critical(
                 "Unable to start: user and group must be defined in settings when starting IRRd as root"
             )
             return
@@ -155,9 +153,8 @@ def main():
                     )
         except PidFileError as pfe:
             logger.error(f"Failed to start IRRd, unable to lock PID file irrd.pid in {piddir}: {pfe}")
-        except Exception as e:
-            logger.error("Error occurred in main process, terminating. Error follows:")
-            logger.exception(e)
+        except Exception:
+            logger.exception("Error occurred in main process, terminating. Error follows:")
             os.kill(os.getpid(), signal.SIGTERM)
 
 
@@ -199,7 +196,7 @@ def run_irrd(mirror_frequency: int, config_file_path: str, uid: int | None, gid:
             for process in children:
                 process.send_signal(signal.SIGHUP)
             if children:
-                logging.info(
+                logger.info(
                     "Main process received SIGHUP with valid config, sent SIGHUP to "
                     f"child processes {[c.pid for c in children]}"
                 )
@@ -218,7 +215,7 @@ def run_irrd(mirror_frequency: int, config_file_path: str, uid: int | None, gid:
                 # do the best we can.
                 pass
         if children:
-            logging.info(
+            logger.info(
                 f"Main process received SIGTERM, sent SIGTERM to child processes {[c.pid for c in children]}"
             )
 
@@ -237,7 +234,7 @@ def run_irrd(mirror_frequency: int, config_file_path: str, uid: int | None, gid:
         time.sleep(1)
         sleeps += 1
 
-    logging.debug("Main process waiting for child processes to terminate")
+    logger.debug("Main process waiting for child processes to terminate")
     for child_process in whois_process, uvicorn_process, preload_manager:
         if child_process:
             child_process.join(timeout=3)
@@ -250,12 +247,12 @@ def run_irrd(mirror_frequency: int, config_file_path: str, uid: int | None, gid:
         except Exception:
             pass
     if children:
-        logging.info(
+        logger.info(
             "Some processes left alive after SIGTERM, send SIGKILL to "
             f"child processes {[c.pid for c in children]}"
         )
 
-    logging.info("Main process exiting")
+    logger.info("Main process exiting")
 
 
 def get_configured_owner(from_staging=False) -> tuple[int | None, int | None]:

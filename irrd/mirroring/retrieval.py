@@ -97,14 +97,14 @@ def _download_file(destination: IO[Any], url: str, url_parsed):
             r = request.urlopen(url, timeout=download_timeout)
             shutil.copyfileobj(r, destination)
         except URLError as error:
-            raise OSError(f"Failed to download {url}: {str(error)}")
+            raise OSError(f"Failed to download {url}: {error!s}")
     elif url_parsed.scheme in ["http", "https"]:
         r = requests.get(url, stream=True, timeout=download_timeout, headers={"User-Agent": HTTP_USER_AGENT})
         if r.status_code == 200:
             for chunk in r.iter_content(10240):
                 destination.write(chunk)
         else:
-            raise OSError(f"Failed to download {url}: {r.status_code}: {str(r.content)}")
+            raise OSError(f"Failed to download {url}: {r.status_code}: {r.content!s}")
 
 
 def _retrieve_file_local(path, return_contents=False, expected_hash: str | None = None) -> tuple[str, bool]:

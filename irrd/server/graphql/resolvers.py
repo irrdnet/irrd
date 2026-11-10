@@ -237,7 +237,7 @@ def _rpsl_db_query_to_graphql_out(query: RPSLDatabaseQuery, info: GraphQLResolve
             graphql_result["asn"] = row["asn_first"]
 
         object_type = resolve_rpsl_object_type(row)
-        for key, value in row.get("parsed_data", dict()).items():
+        for key, value in row.get("parsed_data", {}).items():
             if key == "auth":
                 value = [remove_auth_hashes(v) for v in value]
             graphql_type = schema.graphql_types[object_type][key]
@@ -275,7 +275,7 @@ def resolve_asn_prefixes(
     )
     query_resolver.set_query_sources(sources)
     for asn in asns:
-        yield dict(asn=asn, prefixes=list(query_resolver.routes_for_origin(f"AS{asn}", ip_version)))
+        yield {"asn": asn, "prefixes": list(query_resolver.routes_for_origin(f"AS{asn}", ip_version))}
 
 
 @convert_kwargs_to_snake_case
@@ -299,7 +299,7 @@ def resolve_as_set_prefixes(
     query_resolver.set_query_sources(sources)
     for set_name in set_names_set:
         prefixes = list(query_resolver.routes_for_as_set(set_name, ip_version, exclude_sets=exclude_sets_set))
-        yield dict(rpslPk=set_name, prefixes=prefixes)
+        yield {"rpslPk": set_name, "prefixes": prefixes}
     if sql_trace:
         info.context["sql_queries"] = query_resolver.retrieve_sql_trace()
 
@@ -328,7 +328,7 @@ def resolve_recursive_set_members(
             set_name, exclude_sets=exclude_sets_set, depth=depth, recursive=True
         )
         for source, members in results.items():
-            yield dict(rpslPk=set_name, rootSource=source, members=members)
+            yield {"rpslPk": set_name, "rootSource": source, "members": members}
     if sql_trace:
         info.context["sql_queries"] = query_resolver.retrieve_sql_trace()
 

@@ -18,7 +18,7 @@ SLURM_TRUST_ANCHOR = "SLURM file"
 logger = logging.getLogger(__name__)
 
 
-class ROAParserException(Exception):  # noqa: N818
+class ROAParserException(Exception):
     pass
 
 

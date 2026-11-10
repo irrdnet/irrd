@@ -58,7 +58,7 @@ class MirrorScheduler:
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.processes = dict()
+        self.processes = {}
         self.last_started_time = defaultdict(int)
         self.previous_scopefilter_prefixes = None
         self.previous_scopefilter_asns = None
@@ -77,10 +77,8 @@ class MirrorScheduler:
             self.run_if_relevant(None, ROAImportRunner, import_timer)
 
         if get_setting("sources") and any(
-            [
-                source_settings.get("route_object_preference")
-                for source_settings in get_setting("sources").values()
-            ]
+            source_settings.get("route_object_preference")
+            for source_settings in get_setting("sources").values()
         ):
             import_timer = int(get_setting("route_object_preference.update_timer"))
             self.run_if_relevant(None, RoutePreferenceUpdateRunner, import_timer)
@@ -89,7 +87,7 @@ class MirrorScheduler:
             self.run_if_relevant(None, ScopeFilterUpdateRunner, 0)
 
         sources_started = 0
-        for source in get_setting("sources", {}).keys():
+        for source in get_setting("sources", {}):
             if sources_started >= MAX_SIMULTANEOUS_RUNS:
                 break
             started_import = False
@@ -197,7 +195,7 @@ class MirrorScheduler:
             try:
                 process.close()
             except Exception as e:  # pragma: no cover
-                logging.error(
+                logger.error(
                     f"Failed to close {process_name} (pid {process.pid}), possible resource leak: {e}"
                 )
             del self.processes[process_name]

@@ -69,7 +69,7 @@ class NRTMOperation:
             except UnknownRPSLObjectClassException as exc:
                 # Unknown object classes are only logged if they have not been filtered out.
                 if not self.object_class_filter or exc.rpsl_object_class.lower() in self.object_class_filter:
-                    logger.info(f"Ignoring NRTM operation {str(self)}: {exc}")
+                    logger.info(f"Ignoring NRTM operation {self!s}: {exc}")
                 return False
 
             self.rpsl_pk = obj.pk()
@@ -84,7 +84,7 @@ class NRTMOperation:
         if obj and obj.messages.errors():
             errors = "; ".join(obj.messages.errors())
             logger.critical(
-                f"Parsing errors occurred while processing NRTM operation {str(self)}. "
+                f"Parsing errors occurred while processing NRTM operation {self!s}. "
                 "This operation is ignored, causing potential data inconsistencies. "
                 "A new operation for this update, without errors, "
                 "will still be processed and cause the inconsistency to be resolved. "
@@ -122,7 +122,7 @@ class NRTMOperation:
                 source_serial=self.serial,
             )
 
-        log = f"Completed NRTM operation {str(self)}/{self.object_class}/{self.rpsl_pk}"
+        log = f"Completed NRTM operation {self!s}/{self.object_class}/{self.rpsl_pk}"
         if obj and self.rpki_aware and obj.is_route:
             log += f", RPKI status {obj.rpki_status.value}"
         logger.info(log)

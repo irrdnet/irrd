@@ -44,7 +44,7 @@ def start_whois_server(uid, gid):  # pragma: no cover
         nonlocal server
 
         def shutdown(server):
-            logging.info("Whois server shutting down")
+            logger.info("Whois server shutting down")
             server.shutdown()
             server.server_close()
 
@@ -69,7 +69,7 @@ class WhoisTCPServer(socketserver.TCPServer):  # pragma: no cover
     allow_reuse_address = True
     request_queue_size = 50
 
-    def __init__(self, server_address, uid, gid, bind_and_activate=True):  # noqa: N803
+    def __init__(self, server_address, uid, gid, bind_and_activate=True):
         self.address_family = socket.AF_INET6 if IP(server_address[0]).version() == 6 else socket.AF_INET
         super().__init__(server_address, None, bind_and_activate)
         if uid and gid:
@@ -87,7 +87,7 @@ class WhoisTCPServer(socketserver.TCPServer):  # pragma: no cover
         self.connection_queue.put((request, client_address))
 
     def handle_error(self, request, client_address):
-        logger.error(f"Error while handling request from {client_address}", exc_info=True)
+        logger.exception(f"Error while handling request from {client_address}")
 
     def shutdown(self):
         """

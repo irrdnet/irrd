@@ -60,7 +60,7 @@ class RPSLMirrorImportUpdateRunner:
         except NRTM4ClientError as err:
             msg = (
                 f"{self.source}: Validation errors occurred while attempting a NRTMv4 client update:"
-                f" {str(err)}"
+                f" {err!s}"
             )
             logger.error(msg)
             self.database_handler.record_mirror_error(self.source, str(err))

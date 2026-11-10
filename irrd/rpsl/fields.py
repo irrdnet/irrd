@@ -58,7 +58,7 @@ ALLOWED_CONTROL_CHARS = {"\n", "\r", "\t", "\u200d"}
 NOPRINT_TRANS_TABLE = str.maketrans(
     {
         i: None
-        for i in range(0, sys.maxunicode + 1)
+        for i in range(sys.maxunicode + 1)
         if not chr(i).isprintable() and chr(i) not in ALLOWED_CONTROL_CHARS
     }
 )
@@ -173,8 +173,6 @@ class RPSLIPv4PrefixField(RPSLTextField):
 class RPSLIPv4PrefixesField(RPSLFieldListMixin, RPSLIPv4PrefixField):
     """Field for a comma-separated list of IPv4 prefixes."""
 
-    pass
-
 
 class RPSLIPv6PrefixField(RPSLTextField):
     """Field for a single IPv6 prefix."""
@@ -207,8 +205,6 @@ class RPSLIPv6PrefixField(RPSLTextField):
 
 class RPSLIPv6PrefixesField(RPSLFieldListMixin, RPSLIPv6PrefixField):
     """Field for a comma-separated list of IPv6 prefixes."""
-
-    pass
 
 
 class RPSLIPv4AddressRangeField(RPSLTextField):
@@ -298,7 +294,7 @@ class RPSLRouteSetMemberField(RPSLTextField):
                 messages.info(f"Route set member {value} was reformatted as {result_value}")
             return RPSLFieldParseResult(value=result_value)
         try:
-            parsed_str, parsed_int = parse_as_number(address)
+            parsed_str, _parsed_int = parse_as_number(address)
             result_value = parsed_str
             if range_operator:
                 result_value += "^" + range_operator
@@ -606,9 +602,9 @@ class RPSLReferenceField(RPSLTextField):
 
         for ref in self.referring:
             rpsl_object_class = OBJECT_CLASS_MAPPING[ref]
-            pk_field = [
+            pk_field = next(
                 field for field in rpsl_object_class.fields.values() if field.primary_key and field.lookup_key
-            ][0]
+            )
             self.referring_object_classes.append(rpsl_object_class)
             self.referring_identifier_fields.append(pk_field)
 
@@ -639,7 +635,7 @@ class RPSLAuthField(RPSLTextField):
         self, value: str, messages: RPSLParserMessages, strict_validation=True
     ) -> RPSLFieldParseResult | None:
         hashers = get_password_hashers(permit_legacy=not strict_validation)
-        valid_beginnings = [hasher + " " for hasher in hashers.keys()]
+        valid_beginnings = [hasher + " " for hasher in hashers]
         has_valid_beginning = any(value.upper().startswith(b) for b in valid_beginnings)
         is_valid_hash = has_valid_beginning and value.count(" ") == 1 and not value.count(",")
 
@@ -661,7 +657,7 @@ class RPSLAuthField(RPSLTextField):
 def parse_set_name(
     prefixes: list[str], value: str, messages: RPSLParserMessages, strict_validation=True
 ) -> RPSLFieldParseResult | None:
-    assert all([prefix in reserved_prefixes for prefix in prefixes])
+    assert all(prefix in reserved_prefixes for prefix in prefixes)
     input_components = value.split(":")
     output_components: list[str] = []
     prefix_display = "/".join(prefixes)
@@ -670,7 +666,7 @@ def parse_set_name(
         messages.error("Set names can have a maximum of five components.")
         return None
 
-    if strict_validation and not any([c.upper().startswith(tuple(prefixes)) for c in input_components]):
+    if strict_validation and not any(c.upper().startswith(tuple(prefixes)) for c in input_components):
         messages.error(
             f"Invalid set name {value}: at least one component must be "
             f"an actual set name (i.e. start with {prefix_display})"

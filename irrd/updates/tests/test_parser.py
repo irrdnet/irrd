@@ -877,9 +877,11 @@ class TestSingleChangeRequestHandling:
         assert result_mntner._check_auth()
         assert not result_mntner.error_messages
         assert result_mntner.info_messages == [
-            "As you submitted dummy hash values, all password hashes on this object "
-            "were replaced with a new BCRYPT-PW hash of the password you provided for "
-            "authentication."
+            (
+                "As you submitted dummy hash values, all password hashes on this object "
+                "were replaced with a new BCRYPT-PW hash of the password you provided for "
+                "authentication."
+            )
         ]
 
         auth_pgp, auth_hash = splitline_unicodesafe("\n".join(result_mntner.rpsl_obj_new.parsed_data["auth"]))
@@ -957,8 +959,10 @@ class TestSingleChangeRequestHandling:
         result_mntner._check_auth()
         assert not result_mntner.is_valid()
         assert result_mntner.error_messages == [
-            "Object submitted with dummy hash values, but multiple or no passwords submitted. "
-            "Either submit only full hashes, or a single password."
+            (
+                "Object submitted with dummy hash values, but multiple or no passwords submitted. "
+                "Either submit only full hashes, or a single password."
+            )
         ]
 
     def test_check_auth_invalid_update_mntner_wrong_password_current_db_object(self, prepare_mocks):
@@ -980,8 +984,10 @@ class TestSingleChangeRequestHandling:
         )[0]
         assert not result_mntner._check_auth()
         assert result_mntner.error_messages == [
-            "Authorisation for mntner TEST-MNT failed: must be authenticated by one of: TEST-MNT, "
-            "OTHER1-MNT, OTHER2-MNT"
+            (
+                "Authorisation for mntner TEST-MNT failed: must be authenticated by one of: TEST-MNT, "
+                "OTHER1-MNT, OTHER2-MNT"
+            )
         ]
         assert result_mntner.notification_targets() == {"notify@example.net", "upd-to@example.net"}
 

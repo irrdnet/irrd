@@ -1,7 +1,7 @@
 import base64
 import logging
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from urllib.parse import urlparse
 
 import pyotp
@@ -204,7 +204,7 @@ async def webauthn_verify_authentication_response(
         return JSONResponse({"verified": False})
 
     authn.credential_sign_count = verification.new_sign_count
-    authn.last_used = datetime.now(timezone.utc)
+    authn.last_used = datetime.now(UTC)
     session_provider.session.add(authn)
 
     del request.session[WN_CHALLENGE_SESSION_KEY]

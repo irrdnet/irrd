@@ -65,7 +65,7 @@ class RPSLSet(RPSLObject):
                 return True
             self.messages.error(
                 f"{self.rpsl_object_class} names must be hierarchical and the first "
-                f'component must be an AS number, e.g. "AS65537:{self.pk_asn_segment}": {str(ve)}'
+                f'component must be an AS number, e.g. "AS65537:{self.pk_asn_segment}": {ve!s}'
             )
 
             return False
@@ -476,7 +476,7 @@ class RPSLMntner(RPSLObject):
         means that either all or no hashes have dummy values.
         """
         auth_values = [auth[1] for auth in self._auth_lines(password_hashes=True)]
-        return bool(auth_values) and all([value == PASSWORD_HASH_DUMMY_VALUE for value in auth_values])
+        return bool(auth_values) and all(value == PASSWORD_HASH_DUMMY_VALUE for value in auth_values)
 
     def force_single_new_password(self, password) -> None:
         """

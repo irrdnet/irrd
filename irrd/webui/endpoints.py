@@ -66,7 +66,7 @@ async def maintained_objects(request: Request, session_provider: ORMSessionProvi
     q = RPSLDatabaseQuery().lookup_attrs_in(["mnt-by"], list(user_mntbys)).sources(user_sources)
     query_result = list(session_provider.database_handler.execute_query(q))
     objects = filter(
-        lambda obj: any([(mntby, obj["source"]) in user_mntners for mntby in obj["parsed_data"]["mnt-by"]]),
+        lambda obj: any((mntby, obj["source"]) in user_mntners for mntby in obj["parsed_data"]["mnt-by"]),
         query_result,
     )
 
@@ -151,7 +151,7 @@ async def rpsl_update(
 
     if request.method == "GET":
         existing_data = ""
-        if all([key in request.path_params for key in ["rpsl_pk", "object_class", "source"]]):
+        if all(key in request.path_params for key in ["rpsl_pk", "object_class", "source"]):
             query = session_provider.session.query(RPSLDatabaseObject).filter(
                 RPSLDatabaseObject.rpsl_pk == str(request.path_params["rpsl_pk"].upper()),
                 RPSLDatabaseObject.object_class == str(request.path_params["object_class"].lower()),
@@ -220,7 +220,7 @@ async def change_log_mntner(request: Request, session_provider: ORMSessionProvid
     query = query.filter(
         AuthMntner.pk == request.path_params["mntner"],
         AuthPermission.user_id == str(request.auth.user.pk),
-        AuthPermission.user_management == True,  # noqa
+        AuthPermission.user_management == True,
     )
     mntner = await session_provider.run(query.one)
     if not mntner or not mntner.migration_complete:

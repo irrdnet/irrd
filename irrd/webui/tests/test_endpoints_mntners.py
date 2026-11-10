@@ -588,14 +588,14 @@ class TestMntnerMigrateInitiate(WebRequestTest):
             follow_redirects=False,
         )
 
-    @time_machine.travel(datetime.datetime(2026, 3, 14, 12, 0, tzinfo=datetime.timezone.utc), tick=False)
+    @time_machine.travel(datetime.datetime(2026, 3, 14, 12, 0, tzinfo=datetime.UTC), tick=False)
     def test_restart(self, irrd_db_session_with_user, test_client_with_smtp):
         test_client, smtpd = test_client_with_smtp
         session_provider, user = irrd_db_session_with_user
         self.pre_login(session_provider, user)
         auth_mntner = AuthMntnerFactory(
             migration_token="old-token",
-            updated=datetime.datetime(2026, 3, 14, 10, 0, tzinfo=datetime.timezone.utc),
+            updated=datetime.datetime(2026, 3, 14, 10, 0, tzinfo=datetime.UTC),
         )
         create_permission(session_provider, AuthUserFactory(), mntner=auth_mntner)
         self._login_if_needed(test_client, user)
@@ -604,7 +604,7 @@ class TestMntnerMigrateInitiate(WebRequestTest):
         assert response.status_code == 200
         assert "can be restarted after 2026-03-14 22:00 UTC" in response.text
 
-        stale = datetime.datetime(2026, 3, 13, 23, 0, tzinfo=datetime.timezone.utc)
+        stale = datetime.datetime(2026, 3, 13, 23, 0, tzinfo=datetime.UTC)
         auth_mntner.updated = stale
         session_provider.session.commit()
 

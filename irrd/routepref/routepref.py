@@ -139,10 +139,8 @@ def update_route_preference_status(
     Results are saved to the database and counters are logged.
     """
     if not any(
-        [
-            source_setting.get("route_object_preference", None)
-            for source_setting in get_setting("sources", {}).values()
-        ]
+        source_setting.get("route_object_preference", None)
+        for source_setting in get_setting("sources", {}).values()
     ):
         return
 

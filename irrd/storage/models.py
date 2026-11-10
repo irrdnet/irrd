@@ -156,7 +156,7 @@ class RPSLDatabaseObject(Base):  # type: ignore
     auth_mntner = relationship("AuthMntner", uselist=False, backref="rpsl_mntner_obj")
 
     @declared_attr
-    def __table_args__(cls):  # noqa
+    def __table_args__(cls):
         args = [
             sa.UniqueConstraint(
                 "rpsl_pk", "source", "object_class", name="rpsl_objects_rpsl_pk_source_class_unique"
@@ -225,7 +225,7 @@ class RPSLDatabaseJournal(Base):  # type: ignore
     )
 
     @declared_attr
-    def __table_args__(cls):  # noqa
+    def __table_args__(cls):
         return (
             sa.UniqueConstraint(
                 "serial_nrtm", "source", name="rpsl_objects_history_serial_nrtm_source_unique"
@@ -333,7 +333,7 @@ class ROADatabaseObject(Base):  # type: ignore
     created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
 
     @declared_attr
-    def __table_args__(cls):  # noqa
+    def __table_args__(cls):
         args = [
             sa.UniqueConstraint(
                 "prefix", "asn", "max_length", "trust_anchor", name="roa_object_prefix_asn_maxlength_unique"
@@ -383,7 +383,7 @@ class AuthPermission(Base):  # type: ignore
     updated = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
 
     @declared_attr
-    def __table_args__(cls):  # noqa
+    def __table_args__(cls):
         args = [
             sa.UniqueConstraint("user_id", "mntner_id", name="auth_permission_user_mntner_unique"),
         ]
@@ -575,7 +575,7 @@ class AuthMntner(Base):  # type: ignore
         return self.migration_token is None
 
     @declared_attr
-    def __table_args__(cls):  # noqa
+    def __table_args__(cls):
         args = [
             sa.UniqueConstraint(
                 "rpsl_mntner_obj_id",

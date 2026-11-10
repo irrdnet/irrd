@@ -587,7 +587,7 @@ class TestQueryResolver:
                 "nrtm4_server_session_id": "server_session_id",
                 "nrtm4_server_version": 22,
                 "nrtm4_server_last_update_notification_file_update": datetime.datetime(
-                    2020, 1, 1, tzinfo=datetime.timezone.utc
+                    2020, 1, 1, tzinfo=datetime.UTC
                 ),
                 "nrtm4_server_last_snapshot_version": 21,
                 "rpsl_data_updated": datetime.datetime(2019, 1, 1, tzinfo=timezone("UTC")),

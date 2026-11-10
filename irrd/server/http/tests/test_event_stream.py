@@ -177,9 +177,11 @@ class TestEventStreamEndpoint:
 
     async def test_endpoint_access_denied(self, monkeypatch, config_override):
         client = TestClient(app)
-        with client.websocket_connect("/v1/event-stream/") as websocket:
-            with pytest.raises(WebSocketDisconnect):
-                websocket.receive_text()
+        with (
+            client.websocket_connect("/v1/event-stream/") as websocket,
+            pytest.raises(WebSocketDisconnect),
+        ):
+            websocket.receive_text()
 
 
 class MockAsyncEventStreamRedisClient:

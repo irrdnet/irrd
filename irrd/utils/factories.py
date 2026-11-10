@@ -31,7 +31,7 @@ class AuthUserFactory(factory.alchemy.SQLAlchemyModelFactory):
         model = AuthUser
         sqlalchemy_session_persistence = "commit"
 
-    email = factory.Sequence(lambda n: "user-%s@example.com" % n)
+    email = factory.Sequence(lambda n: f"user-{n}@example.com")
     name = "name"
     totp_secret = SAMPLE_USER_TOTP_TOKEN
 
@@ -83,7 +83,7 @@ class AuthApiTokenFactory(factory.alchemy.SQLAlchemyModelFactory):
         model = AuthApiToken
         sqlalchemy_session_persistence = "commit"
 
-    name = factory.Sequence(lambda n: "API token %s" % n)
+    name = factory.Sequence(lambda n: f"API token {n}")
     enabled_webapi = True
     enabled_email = True
 

@@ -6,7 +6,9 @@ from typing import TextIO
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE, get_setting
 from irrd.rpsl.auth import PASSWORD_HASHERS_ALL
 
-re_remove_passwords = re.compile(r"(%s)[^\n]+" % "|".join(PASSWORD_HASHERS_ALL.keys()), flags=re.IGNORECASE)
+re_remove_passwords = re.compile(
+    r"({})[^\n]+".format("|".join(PASSWORD_HASHERS_ALL.keys())), flags=re.IGNORECASE
+)
 re_remove_last_modified = re.compile(r"^last-modified: [^\n]+\n", flags=re.MULTILINE)
 RPSL_ATTRIBUTE_TEXT_WIDTH = 16
 
@@ -18,9 +20,9 @@ def remove_auth_hashes(input: str | None):
         raise ValueError("Auth hash removal only supported for strings")
     # If there are no hashes, skip the RE for performance.
     input_lower = input.lower()
-    if not any([pw_hash.lower() in input_lower for pw_hash in PASSWORD_HASHERS_ALL.keys()]):
+    if not any(pw_hash.lower() in input_lower for pw_hash in PASSWORD_HASHERS_ALL):
         return input
-    return re_remove_passwords.sub(r"\1 %s  # Filtered for security" % PASSWORD_HASH_DUMMY_VALUE, input)
+    return re_remove_passwords.sub(rf"\1 {PASSWORD_HASH_DUMMY_VALUE}  # Filtered for security", input)
 
 
 def remove_control_chars(value: str) -> str:

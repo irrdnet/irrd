@@ -302,8 +302,8 @@ class TestBulkRouteROAValidator:
         new_valid_pks, new_invalid_pks, new_unknown_pks = result
         assert {o["rpsl_pk"] for o in new_valid_pks} == {"pk_route_v4_d0_l25"}
         assert {o["object_text"] for o in new_valid_pks} == {"object text"}
-        assert new_invalid_pks == list()
-        assert new_unknown_pks == list()
+        assert new_invalid_pks == []
+        assert new_unknown_pks == []
 
         assert flatten_mock_calls(mock_dq) == [
             ["object_classes", (["route", "route6"],), {}],

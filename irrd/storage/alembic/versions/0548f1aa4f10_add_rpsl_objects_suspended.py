@@ -61,7 +61,7 @@ def upgrade():
             op.execute("ALTER TYPE journalentryorigin ADD VALUE 'suspension'")
         except ProgrammingError as pe:
             if "DuplicateObject" not in str(pe):
-                raise pe
+                raise
 
 
 def downgrade():

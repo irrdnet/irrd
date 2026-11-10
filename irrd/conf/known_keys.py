@@ -53,7 +53,7 @@ KNOWN_CONFIG_KEYS = DottedDict(
                     if issubclass(set_object, RPSLSet)
                 ] + [AUTH_SET_CREATION_COMMON_KEY]
             },
-            "password_hashers": {hasher_name.lower(): {} for hasher_name in PASSWORD_HASHERS_ALL.keys()},
+            "password_hashers": {hasher_name.lower(): {} for hasher_name in PASSWORD_HASHERS_ALL},
         },
         "rpki": {
             "roa_source": {},
