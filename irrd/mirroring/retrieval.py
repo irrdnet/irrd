@@ -33,10 +33,11 @@ def retrieve_file(url: Url | str, return_contents=True, expected_hash: str | Non
     the local file, and a boolean to indicate whether the caller should
     unlink the path later.
 
-    If the URL ends in .gz, the file is gunzipped before being processed,
-    but only for HTTP(s) and FTP downloads.
+    If the URL or path ends in .gz, the file is gunzipped, but only when
+    return_contents is False.
 
-    An expected_hash can only be verified when the file is written to disk.
+    An expected_hash is only supported with return_contents False, and is
+    verified against the retrieved file as-is, before any gunzipping.
     """
     if expected_hash and return_contents:
         raise ValueError("Hash verification is not supported when returning contents")
@@ -65,29 +66,44 @@ def _retrieve_file_download(
     If the URL ends in .gz, the file is gunzipped before being processed,
     but only if return_contents is False.
     """
-    destination: IO[Any]
     if return_contents:
-        destination = BytesIO()
-    else:
-        destination = NamedTemporaryFile(delete=False)
-    _download_file(destination, url, url_parsed)
-    if return_contents:
-        value = destination.getvalue().decode("utf-8").strip()  # type: ignore
+        contents = BytesIO()
+        _download_file(contents, url, url_parsed)
         logger.info(f"Downloaded {url}")
-        return value, False
-    else:
+        return contents.getvalue().decode("utf-8").strip(), False
+
+    destination = NamedTemporaryFile(delete=False)
+    path = destination.name
+    try:
+        _download_file(destination, url, url_parsed)
         destination.close()
-        check_file_hash_sha256(destination.name, expected_hash)
+        check_file_hash_sha256(path, expected_hash)
         if url.endswith(".gz"):
-            zipped_file = destination
+            gunzipped_path = _gunzip_file(path)
+            os.unlink(path)
+            path = gunzipped_path
+    except Exception:
+        os.unlink(path)
+        raise
 
-            destination = NamedTemporaryFile(delete=False)
-            with gzip.open(zipped_file.name, "rb") as f_in:
-                shutil.copyfileobj(f_in, destination)  # type: ignore
-            os.unlink(zipped_file.name)
+    logger.info(f"Downloaded (and gunzipped if applicable) {url} to {path}")
+    return path, True
 
-        logger.info(f"Downloaded (and gunzipped if applicable) {url} to {destination.name}")
-        return destination.name, True
+
+def _gunzip_file(path: str) -> str:
+    """
+    Gunzip a file into a new temporary file, removing the new file again if
+    gunzipping fails. The original file is left to the caller.
+    """
+    destination = NamedTemporaryFile(delete=False)
+    try:
+        with gzip.open(path, "rb") as f_in:
+            shutil.copyfileobj(f_in, destination)
+        destination.close()
+    except Exception:
+        os.unlink(destination.name)
+        raise
+    return destination.name
 
 
 def _download_file(destination: IO[Any], url: str, url_parsed):
@@ -116,12 +132,8 @@ def _retrieve_file_local(path, return_contents: bool, expected_hash: str | None)
     if not return_contents:
         check_file_hash_sha256(path, expected_hash)
         if path.endswith(".gz"):
-            destination = NamedTemporaryFile(delete=False)
             logger.debug(f"Local file is expected to be gzipped, gunzipping from {path}")
-            with gzip.open(path, "rb") as f_in:
-                shutil.copyfileobj(f_in, destination)
-            destination.close()
-            return destination.name, True
+            return _gunzip_file(path), True
         else:
             return path, False
     with open(path) as fh:

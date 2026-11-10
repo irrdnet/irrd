@@ -1,11 +1,58 @@
-# These tests are very limited, as most retrieval behaviour
-# is tested in test_parsers. In the past, the retrieval code was part
-# of the parsers. These tests should be split up.
+import gzip
+from functools import partial
+from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 import pytest
 
 from irrd.mirroring.retrieval import check_file_hash_sha256, retrieve_file
+
+
+@pytest.fixture()
+def tmp_download_dir(monkeypatch, tmp_path):
+    """Keep the temporary files of retrievals in their own directory, so leftovers show up."""
+    download_dir = tmp_path / "downloads"
+    download_dir.mkdir()
+    monkeypatch.setattr(
+        "irrd.mirroring.retrieval.NamedTemporaryFile", partial(NamedTemporaryFile, dir=download_dir)
+    )
+    return download_dir
+
+
+def _mock_download(monkeypatch, content: bytes):
+    monkeypatch.setattr(
+        "irrd.mirroring.retrieval._download_file",
+        lambda destination, url, url_parsed: destination.write(content),
+    )
+
+
+def test_download_unlinks_temporary_file_on_invalid_hash(monkeypatch, tmp_download_dir):
+    _mock_download(monkeypatch, b"test")
+    with pytest.raises(ValueError):
+        retrieve_file("https://example.com/source", return_contents=False, expected_hash="9f")
+    assert not list(tmp_download_dir.iterdir())
+
+
+def test_download_unlinks_temporary_files_on_invalid_gzip(monkeypatch, tmp_download_dir):
+    _mock_download(monkeypatch, b"not gzipped")
+    with pytest.raises(gzip.BadGzipFile):
+        retrieve_file("https://example.com/source.gz", return_contents=False)
+    assert not list(tmp_download_dir.iterdir())
+
+
+def test_download_gz_removes_the_compressed_file(monkeypatch, tmp_download_dir):
+    _mock_download(monkeypatch, gzip.compress(b"payload"))
+    path, _ = retrieve_file("https://example.com/source.gz", return_contents=False)
+    assert [p.name for p in tmp_download_dir.iterdir()] == [Path(path).name]
+
+
+def test_local_unlinks_temporary_file_on_invalid_gzip(tmp_path, tmp_download_dir):
+    source = tmp_path / "source.gz"
+    source.write_bytes(b"not gzipped")
+    with pytest.raises(gzip.BadGzipFile):
+        retrieve_file(f"file://{source}", return_contents=False)
+    assert not list(tmp_download_dir.iterdir())
+    assert source.exists()
 
 
 def test_check_expected_hash(tmp_path):

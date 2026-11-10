@@ -157,26 +157,27 @@ class RPSLMirrorFullImportRunner:
                 return
 
         database_handler.delete_all_rpsl_objects_with_journal(self.source)
-        import_data = [
-            retrieve_file(import_source, return_contents=False) for import_source in import_sources
-        ]
+        import_data = []
+        try:
+            for import_source in import_sources:
+                import_data.append(retrieve_file(import_source, return_contents=False))
 
-        roa_validator = None
-        if get_setting("rpki.roa_source"):
-            roa_validator = BulkRouteROAValidator(database_handler)
+            roa_validator = None
+            if get_setting("rpki.roa_source"):
+                roa_validator = BulkRouteROAValidator(database_handler)
 
-        database_handler.disable_journaling()
-        for import_filename, to_delete in import_data:
-            p = MirrorFileImportParser(
-                source=self.source,
-                filename=import_filename,
-                serial=None,
-                database_handler=database_handler,
-                roa_validator=roa_validator,
-            )
-            try:
+            database_handler.disable_journaling()
+            for import_filename, to_delete in import_data:
+                p = MirrorFileImportParser(
+                    source=self.source,
+                    filename=import_filename,
+                    serial=None,
+                    database_handler=database_handler,
+                    roa_validator=roa_validator,
+                )
                 p.run_import()
-            finally:
+        finally:
+            for import_filename, to_delete in import_data:
                 if to_delete:
                     os.unlink(import_filename)
 
@@ -245,10 +246,12 @@ class ROAImportRunner:
             slurm_data, _ = retrieve_file(slurm_source, return_contents=True)
 
         roa_filename, roa_to_delete = retrieve_file(roa_source, return_contents=False)
-        with open(roa_filename) as fh:
-            roa_importer = ROADataImporter(fh.read(), slurm_data, self.database_handler)
-        if roa_to_delete:
-            os.unlink(roa_filename)
+        try:
+            with open(roa_filename) as fh:
+                roa_importer = ROADataImporter(fh.read(), slurm_data, self.database_handler)
+        finally:
+            if roa_to_delete:
+                os.unlink(roa_filename)
         logger.info(
             f"ROA import from {roa_source}, SLURM {slurm_source}, imported {len(roa_importer.roa_objs)} ROAs,"
             " running validator"
