@@ -204,10 +204,10 @@ class Preloader:
         if not getattr(sys, "_called_from_test", None):
             time.sleep(random.random())  # pragma: no cover
 
-        new_origin_route4_store = dict()
-        new_origin_route6_store = dict()
-        new_as_set_store = dict()
-        new_route_set_store = dict()
+        new_origin_route4_store = {}
+        new_origin_route6_store = {}
+        new_as_set_store = {}
+        new_route_set_store = {}
 
         def _load(redis_key, target):
             for key, routes in self._redis_conn.hgetall(redis_key).items():
@@ -215,7 +215,7 @@ class Preloader:
                     continue
                 source, origin = key.decode("ascii").split(REDIS_KEY_PK_SOURCE_SEPARATOR, 1)
                 if source not in target:
-                    target[source] = dict()
+                    target[source] = {}
                 target[source][origin] = routes.decode("ascii")
 
         _load(REDIS_ORIGIN_ROUTE4_STORE_KEY, new_origin_route4_store)
@@ -257,7 +257,7 @@ class PreloadStoreManager(ExceptionLoggingProcess):
             # During tests, this is run from a thread,
             # which does not allow setting signal handlers.
             pass
-        logging.info("Starting preload store manager")
+        logger.info("Starting preload store manager")
 
         self._clear_existing_data()
         self._pubsub = self._redis_conn.pubsub()

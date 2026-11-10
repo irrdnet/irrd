@@ -1,5 +1,5 @@
 import textwrap
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from irrd.conf import get_setting
 from irrd.storage.database_handler import DatabaseHandler
@@ -8,7 +8,7 @@ from irrd.utils.text import dummify_object_text as dummify_object_text_func
 from irrd.utils.text import remove_auth_hashes as remove_auth_hashes_func
 
 
-class NRTMGeneratorException(Exception):  # noqa: N818
+class NRTMGeneratorException(Exception):
     pass
 
 
@@ -94,8 +94,8 @@ class NRTMGenerator:
                     f" {serial_start_requested}."
                 )
 
-            serial_start_requested_timestamp_utc = journal["timestamp"].astimezone(timezone.utc)
-            current_utc_time = datetime.now(timezone.utc)
+            serial_start_requested_timestamp_utc = journal["timestamp"].astimezone(UTC)
+            current_utc_time = datetime.now(UTC)
 
             if (current_utc_time - serial_start_requested_timestamp_utc) > timedelta(days=days_limit):
                 raise NRTMGeneratorException(

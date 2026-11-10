@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# flake8: noqa: E402
 """
 This script will run a list of queries against two IRRD instances,
 and report significant results.
@@ -42,7 +41,7 @@ class QueryComparison:
         else:
             f = open(input_file, encoding="utf-8", errors="backslashreplace")
 
-        for query in f.readlines():
+        for query in f:
             query = query.strip() + "\n"
             if query == "!!\n":
                 continue
@@ -140,7 +139,7 @@ class QueryComparison:
         if irr_query in ["!6", "!g"] and cleaned_result_list:
             cleaned_result_list = [str(IP(ip)) for ip in cleaned_result_list]
         if cleaned_result_list:
-            return " ".join(sorted(list(set(cleaned_result_list))))
+            return " ".join(sorted(set(cleaned_result_list)))
         else:
             new_responses = []
             for paragraph in split_paragraphs_rpsl(response):

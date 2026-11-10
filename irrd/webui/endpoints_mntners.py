@@ -474,7 +474,7 @@ class MntnerMigrateInitiateForm(StarletteForm):
                 self.mntner_key.errors.append("This maintainer was already migrated.")
                 return False
             restart_from = self.auth_mntner.updated + datetime.timedelta(hours=MIGRATION_RESTART_AFTER_HOURS)
-            if datetime.datetime.now(datetime.timezone.utc) < restart_from:
+            if datetime.datetime.now(datetime.UTC) < restart_from:
                 self.mntner_key.errors.append(
                     "A migration for this maintainer is in progress. It can be restarted after"
                     f" {datetime_format(restart_from)} UTC."
@@ -532,7 +532,7 @@ async def mntner_migrate_initiate(request: Request, session_provider: ORMSession
     if form.auth_mntner:
         new_auth_mntner = form.auth_mntner
         new_auth_mntner.migration_token = secrets.token_urlsafe(24)
-        new_auth_mntner.updated = datetime.datetime.now(datetime.timezone.utc)
+        new_auth_mntner.updated = datetime.datetime.now(datetime.UTC)
         # Replace the previous attempt's permission, so only the user restarting gains access
         session_provider.session.query(AuthPermission).filter(
             AuthPermission.mntner_id == str(new_auth_mntner.pk)

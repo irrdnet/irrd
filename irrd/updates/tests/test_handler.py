@@ -726,9 +726,11 @@ class TestChangeSubmissionHandler:
                     "object_class": "mntner",
                     "rpsl_pk": "TEST-MNT",
                     "error_messages": [
-                        "Object PERSON-TEST referenced in field "
-                        "admin-c not found in database TEST - must "
-                        "reference one of role, person."
+                        (
+                            "Object PERSON-TEST referenced in field "
+                            "admin-c not found in database TEST - must "
+                            "reference one of role, person."
+                        )
                     ],
                     "info_messages": [],
                     "new_object_text": None,
@@ -763,9 +765,11 @@ class TestChangeSubmissionHandler:
                         ),
                     ],
                     "info_messages": [
-                        "Address range 80.16.151.184 - 80.016.151.191 "
-                        "was reformatted as 80.16.151.184 - "
-                        "80.16.151.191"
+                        (
+                            "Address range 80.16.151.184 - 80.016.151.191 "
+                            "was reformatted as 80.16.151.184 - "
+                            "80.16.151.191"
+                        )
                     ],
                     "new_object_text": None,
                     "submitted_object_text": (
@@ -793,9 +797,11 @@ class TestChangeSubmissionHandler:
                     "object_class": "person",
                     "rpsl_pk": "PERSON-TEST",
                     "error_messages": [
-                        "Object OTHER-MNT referenced in field mnt-by "
-                        "not found in database TEST - must reference "
-                        "mntner."
+                        (
+                            "Object OTHER-MNT referenced in field mnt-by "
+                            "not found in database TEST - must reference "
+                            "mntner."
+                        )
                     ],
                     "info_messages": [],
                     "new_object_text": None,

@@ -366,7 +366,7 @@ class TestIntegration:
             assert message["From"] == "from@example.com"
 
         # Notify attribute mails are only about the objects concerned.
-        notify_msg = [msg for msg in messages if msg["To"] == "notify@example.net"][0]
+        notify_msg = next(msg for msg in messages if msg["To"] == "notify@example.net")
         mail_text = self._extract_message_body(notify_msg)
         assert notify_msg["Subject"] == "Notification of TEST database changes"
         assert notify_msg["From"] == "from@example.com"
@@ -1111,6 +1111,5 @@ class TestIntegration:
                     os.kill(pid, signal.SIGTERM)
             except (FileNotFoundError, ProcessLookupError, ValueError) as exc:
                 print(f"Failed to kill: {pidfile}: {exc}")
-                pass
         if self.mailserver_controller:
             self.mailserver_controller.stop()

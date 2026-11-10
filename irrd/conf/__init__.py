@@ -178,9 +178,11 @@ class Configuration:
             components = setting_name.split(".")
             if len(components) == 3 and components[2] not in self.known_sources_keys:
                 raise ValueError(f"Unknown setting {setting_name}")
-        elif not any([setting_name.startswith(k) for k in self.known_flexible_keys]):
-            if self.known_config_keys.get(setting_name) is None:
-                raise ValueError(f"Unknown setting {setting_name}")
+        elif (
+            not any(setting_name.startswith(k) for k in self.known_flexible_keys)
+            and self.known_config_keys.get(setting_name) is None
+        ):
+            raise ValueError(f"Unknown setting {setting_name}")
 
         env_key = "IRRD_" + setting_name.upper().replace(".", "_")
         if env_key in os.environ:
@@ -639,7 +641,6 @@ def get_configuration() -> Configuration | None:
     """
     Get the Configuration object, if initialised.
     """
-    global configuration
     return configuration
 
 

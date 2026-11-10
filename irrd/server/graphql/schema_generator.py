@@ -136,7 +136,7 @@ class SchemaGenerator:
             self.ip_scalar_type,
         ]
 
-        for name in self.rpsl_object_schemas.keys():
+        for name in self.rpsl_object_schemas:
             self.object_types.append(ariadne.ObjectType(name))
 
         self.object_types.append(ariadne.ObjectType("ASNPrefixes"))
@@ -234,7 +234,7 @@ class SchemaGenerator:
         """
         self.graphql_types = defaultdict(dict)
         schemas = OrderedDict()
-        for object_class, klass in OBJECT_CLASS_MAPPING.items():
+        for klass in OBJECT_CLASS_MAPPING.values():
             object_name = klass.__name__
             graphql_fields = OrderedDict()
             graphql_fields["rpslPk"] = "String"
@@ -296,10 +296,8 @@ class SchemaGenerator:
             rpsl_field.resolve_references()
             graphql_name = snake_to_camel_case(field_name) + "Objs"
             grapql_referring = set(rpsl_field.referring_object_classes)
-            if RPSLAutNum in grapql_referring:
-                grapql_referring.remove(RPSLAutNum)
-            if RPSLInetRtr in grapql_referring:
-                grapql_referring.remove(RPSLInetRtr)
+            grapql_referring.discard(RPSLAutNum)
+            grapql_referring.discard(RPSLInetRtr)
             if grapql_referring == {RPSLPerson, RPSLRole}:
                 graphql_type = "[RPSLContactUnion!]"
             else:

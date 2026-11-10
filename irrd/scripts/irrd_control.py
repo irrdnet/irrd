@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# ruff: noqa: E402
 import logging
 import sys
 import textwrap
@@ -140,7 +139,6 @@ def user_change_override(email: str, enable: bool, session_provider: ORMSessionP
 @cli.group()
 def nrtm4():
     """Manage NRTMv4 status."""
-    pass  # pragma: no cover
 
 
 @nrtm4.command()

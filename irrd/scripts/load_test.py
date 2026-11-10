@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# flake8: noqa: E402
 
 """
 A simple load tester for IRRd.

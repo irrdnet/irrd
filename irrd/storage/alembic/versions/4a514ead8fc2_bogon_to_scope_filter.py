@@ -55,7 +55,7 @@ def upgrade():
             op.execute("ALTER TYPE journalentryorigin ADD VALUE 'scope_filter'")
         except ProgrammingError as pe:
             if "DuplicateObject" not in str(pe):
-                raise pe
+                raise
 
 
 def downgrade():

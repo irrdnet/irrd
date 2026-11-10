@@ -14,7 +14,7 @@ from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.utils.text import splitline_unicodesafe
 
 from ..conf import get_setting
-from .fields import RPSLTextField
+from .fields import RPSLReferenceField, RPSLTextField
 
 RPSL_ATTRIBUTE_TEXT_WIDTH = 16
 TypeRPSLObjectData = list[tuple[str, str, list[str]]]
@@ -29,11 +29,11 @@ class RPSLObjectMeta(type):
     from the fields defined by a subclass of RPSLObject, for optimised parsing speed.
     """
 
-    def __init__(cls, name, bases, clsdict):  # noqa: N805
+    def __init__(cls, name, bases, clsdict):
         super().__init__(name, bases, clsdict)
         fields = clsdict.get("fields")
         if fields:
-            cls.rpsl_object_class = list(fields.keys())[0]
+            cls.rpsl_object_class = next(iter(fields.keys()))
             cls.pk_fields = [field[0] for field in fields.items() if field[1].primary_key]
             cls.lookup_fields = [field[0] for field in fields.items() if field[1].lookup_key]
             cls.attrs_allowed = [field[0] for field in fields.items()]
@@ -51,7 +51,7 @@ class RPSLObjectMeta(type):
             cls.referring_strong_fields = [
                 (field[0], field[1].referring)
                 for field in fields.items()
-                if hasattr(field[1], "referring") and getattr(field[1], "strong")
+                if isinstance(field[1], RPSLReferenceField) and field[1].strong
             ]
 
 
@@ -177,7 +177,11 @@ class RPSLObject(metaclass=RPSLObjectMeta):
 
         for rpsl_object in OBJECT_CLASS_MAPPING.values():
             for field_name, field in rpsl_object.fields.items():
-                if self.rpsl_object_class in getattr(field, "referring", []) and getattr(field, "strong"):
+                if (
+                    isinstance(field, RPSLReferenceField)
+                    and self.rpsl_object_class in field.referring
+                    and field.strong
+                ):
                     result.add(field_name)
         return result
 
@@ -224,7 +228,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
     def generate_template(self):
         """Generate a template in text form of the main attributes of all fields."""
         template = ""
-        max_name_width = max(len(k) for k in self.fields.keys())
+        max_name_width = max(len(k) for k in self.fields)
         for name, field in self.fields.items():
             mandatory = "[optional] " if field.optional else "[mandatory]"
             single = "[multiple]" if field.multiple else "[single]  "
@@ -236,7 +240,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
             elif field.lookup_key:
                 metadata.append("look-up key")
             if getattr(field, "referring", []):
-                reference_type = "strong" if getattr(field, "strong") else "weak"
+                reference_type = "strong" if field.strong else "weak"
                 metadata.append(f"{reference_type} references " + "/".join(field.referring))
             metadata_str = ", ".join(metadata)
             name_padding = (max_name_width - len(name)) * " "
@@ -504,7 +508,7 @@ class RPSLObject(metaclass=RPSLObjectMeta):
         return isinstance(self, type(other)) and self.__key() == other.__key()
 
 
-class UnknownRPSLObjectClassException(Exception):  # noqa: N818
+class UnknownRPSLObjectClassException(Exception):
     def __init__(self, message: str, rpsl_object_class: str) -> None:
         self.message = message
         self.rpsl_object_class = rpsl_object_class

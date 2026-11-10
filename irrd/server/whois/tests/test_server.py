@@ -1,4 +1,3 @@
-import socket
 import time
 from io import BytesIO
 from queue import Queue
@@ -135,7 +134,7 @@ class TestWhoisWorker:
         # Write errors are usually due to the connection being
         # dropped, and should cause the connection to be closed
         # from our end.
-        request.sendall = Mock(side_effect=socket.error("expected"))
+        request.sendall = Mock(side_effect=OSError("expected"))
         worker.run(keep_running=False)
 
     def test_whois_request_worker_access_list_permitted(self, config_override, create_worker):

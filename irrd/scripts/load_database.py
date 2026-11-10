@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# flake8: noqa: E402
 import argparse
 import logging
 import sys

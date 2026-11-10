@@ -329,7 +329,7 @@ class TestRPSLKeyCert:
         obj = RPSLKeyCert()
         assert OBJECT_CLASS_MAPPING[obj.rpsl_object_class] == obj.__class__
 
-    @pytest.mark.usefixtures("tmp_gpg_dir")  # noqa: F811
+    @pytest.mark.usefixtures("tmp_gpg_dir")
     def test_parse_parse(self):
         rpsl_text = object_sample_mapping[RPSLKeyCert().rpsl_object_class]
 
@@ -349,7 +349,7 @@ class TestRPSLKeyCert:
         assert obj.render_rpsl_text() == expected_text
         assert obj.parsed_data["fingerpr"] == "8626 1D8D BEBD A4F5 4692  D64D A838 3BA7 80F2 38C6"
 
-    @pytest.mark.usefixtures("tmp_gpg_dir")  # noqa: F811
+    @pytest.mark.usefixtures("tmp_gpg_dir")
     def test_parse_incorrect_object_name(self, tmp_gpg_dir):
         rpsl_text = object_sample_mapping[RPSLKeyCert().rpsl_object_class]
         obj = rpsl_object_from_text(rpsl_text.replace("PGPKEY-80F238C6", "PGPKEY-80F23816"))
@@ -358,7 +358,7 @@ class TestRPSLKeyCert:
         assert len(errors) == 1, f"Unexpected multiple errors: {errors}"
         assert "does not match key fingerprint" in errors[0]
 
-    @pytest.mark.usefixtures("tmp_gpg_dir")  # noqa: F811
+    @pytest.mark.usefixtures("tmp_gpg_dir")
     def test_parse_missing_key(self, tmp_gpg_dir):
         rpsl_text = object_sample_mapping[RPSLKeyCert().rpsl_object_class]
         obj = rpsl_object_from_text(rpsl_text.replace("certif:", "remarks:"), strict_validation=True)
@@ -367,7 +367,7 @@ class TestRPSLKeyCert:
         assert len(errors) == 1, f"Unexpected multiple errors: {errors}"
         assert 'Mandatory attribute "certif" on object key-cert is missing' in errors[0]
 
-    @pytest.mark.usefixtures("tmp_gpg_dir")  # noqa: F811
+    @pytest.mark.usefixtures("tmp_gpg_dir")
     def test_parse_invalid_key(self, tmp_gpg_dir):
         rpsl_text = object_sample_mapping[RPSLKeyCert().rpsl_object_class]
         obj = rpsl_object_from_text(
@@ -378,7 +378,7 @@ class TestRPSLKeyCert:
         assert len(errors) == 1, f"Unexpected multiple errors: {errors}"
         assert "Unable to read public PGP key: key corrupt or multiple keys provided" in errors[0]
 
-    @pytest.mark.usefixtures("tmp_gpg_dir")  # noqa: F811
+    @pytest.mark.usefixtures("tmp_gpg_dir")
     def test_verify(self, tmp_gpg_dir):
         rpsl_text = object_sample_mapping[RPSLKeyCert().rpsl_object_class]
         obj = rpsl_object_from_text(rpsl_text)
@@ -420,7 +420,7 @@ class TestRPSLMntner:
             "Either all password auth hashes in a submitted mntner must be dummy objects, or none."
         ]
 
-    @pytest.mark.usefixtures("tmp_gpg_dir")  # noqa: F811
+    @pytest.mark.usefixtures("tmp_gpg_dir")
     def test_verify(self, tmp_gpg_dir):
         rpsl_text = object_sample_mapping[RPSLMntner().rpsl_object_class]
         # Unknown hashes and invalid hashes should simply be ignored.

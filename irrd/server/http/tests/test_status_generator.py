@@ -1,5 +1,5 @@
 import textwrap
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import Mock
 
 from irrd import __version__
@@ -99,14 +99,12 @@ class TestStatusGenerator:
                         "nrtm4_client_version": 10,
                         "nrtm4_server_session_id": "server_session_id",
                         "nrtm4_server_version": 22,
-                        "nrtm4_server_last_update_notification_file_update": datetime(
-                            2018, 1, 1, tzinfo=timezone.utc
-                        ),
+                        "nrtm4_server_last_update_notification_file_update": datetime(2018, 1, 1, tzinfo=UTC),
                         "nrtm4_server_last_snapshot_version": 21,
                         "nrtm4_server_previous_deltas": ["d1", "d2"],
-                        "last_error_timestamp": datetime(2018, 1, 1, tzinfo=timezone.utc),
-                        "rpsl_data_updated": datetime(2017, 6, 1, tzinfo=timezone.utc),
-                        "updated": datetime(2018, 6, 1, tzinfo=timezone.utc),
+                        "last_error_timestamp": datetime(2018, 1, 1, tzinfo=UTC),
+                        "rpsl_data_updated": datetime(2017, 6, 1, tzinfo=UTC),
+                        "updated": datetime(2018, 6, 1, tzinfo=UTC),
                     },
                     {
                         "source": "TEST2",
@@ -123,9 +121,9 @@ class TestStatusGenerator:
                         "nrtm4_server_last_update_notification_file_update": None,
                         "nrtm4_server_last_snapshot_version": None,
                         "nrtm4_server_previous_deltas": None,
-                        "last_error_timestamp": datetime(2019, 1, 1, tzinfo=timezone.utc),
-                        "rpsl_data_updated": datetime(2018, 6, 1, tzinfo=timezone.utc),
-                        "updated": datetime(2019, 6, 1, tzinfo=timezone.utc),
+                        "last_error_timestamp": datetime(2019, 1, 1, tzinfo=UTC),
+                        "rpsl_data_updated": datetime(2018, 6, 1, tzinfo=UTC),
+                        "updated": datetime(2019, 6, 1, tzinfo=UTC),
                     },
                     {
                         "source": "TEST3",

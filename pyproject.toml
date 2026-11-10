@@ -74,7 +74,7 @@ aiosmtpd = "^1.4.6"
 python-graphql-client = "^0.4"
 pytest-asyncio = "^1.4"
 mypy = "^2.4"
-ruff = "^0.14.8"
+ruff = "^0.17.4"
 isort = "^9.0"
 black = "26.10.1"
 poethepoet = "^0.49"
@@ -110,10 +110,34 @@ src_paths = "irrd"
 
 [tool.ruff]
 line-length = 110
+# Vendored third party code is not ours to restyle.
+extend-exclude = ["irrd/vendor"]
 # B019: lru_cache on methods leaks the instance and all it references (GHSA-cvm7-qcww-5m59)
 lint.extend-select = ["B019"]
-lint.ignore = ["E501"]
+lint.ignore = [
+    # Line length and import sorting are handled by black and isort.
+    "E501",
+    "I001",
+    # Our RPSL object classes declare their fields as class attributes
+    "RUF012",
+    # Later cleanup
+    "BLE001",
+    "S110",
+    # Handles that outlive the block opening them: we use this in temporary files for exports
+    # and downloads, a lock file, and input files handed to a generator.
+    "SIM115",
+    # Our security headers are built by joining a list
+    "FLY002",
+    # These are behavioural changes, not just style
+    "DTZ003",
+    "TRY002",
+    "TRY004",
+]
 target-version = "py311"
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/*" = ["RUF012", "RUF059", "RUF015"]
+"**/test_*.py" = ["RUF012", "RUF059", "RUF015"]
 
 [tool.black]
 line-length = 110

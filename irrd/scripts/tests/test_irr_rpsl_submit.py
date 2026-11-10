@@ -133,7 +133,9 @@ class APIResult:
     response returns (once the JSON is decoded).
     """
 
-    def __init__(self, objects=[]):
+    def __init__(self, objects=None):
+        if objects is None:
+            objects = []
         self.result = {"objects": [o.obj for o in objects], "summary": {}, "request_meta": {}}
 
     def sum_of(self, operation, success):
@@ -186,6 +188,7 @@ class Runner:
         repo_root = (
             subprocess.run(
                 ["git", "rev-parse", "--show-toplevel"],
+                check=True,
                 capture_output=True,
             )
             .stdout.decode(sys.stdout.encoding)
@@ -204,7 +207,7 @@ class Runner:
     @classmethod
     def run(cls, args, env=None, rpsl=""):
         command = cls.program_args(args)
-        raw_result = subprocess.run(
+        raw_result = subprocess.run(  # noqa: PLW1510 (exit code is asserted by the caller)
             command,
             capture_output=True,
             encoding="utf-8",
@@ -459,7 +462,7 @@ class Test300MakeRequest(MyBase):
         self.assertEqual(args.url, UNREACHABLE_URL)
 
         irr_rpsl_submit.send_request = lambda rpsl, args: my_raise(
-            HTTPError("http://fake.example.com", 500, "Internal Server Error", dict(), None)  # type: ignore
+            HTTPError("http://fake.example.com", 500, "Internal Server Error", {}, None)  # type: ignore
         )
         with pytest.raises(irr_rpsl_submit.XNetwork):
             irr_rpsl_submit.make_request(RPSL_MINIMAL, args)

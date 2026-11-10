@@ -42,7 +42,7 @@ from .parser_state import AuthMethod, RPSLSetAutnumAuthenticationMode, UpdateReq
 
 if TYPE_CHECKING:  # pragma: no cover
     # http://mypy.readthedocs.io/en/latest/common_issues.html#import-cycles
-    from .parser import ChangeRequest, SuspensionRequest  # noqa: F401
+    from .parser import ChangeRequest, SuspensionRequest
 
 logger = logging.getLogger(__name__)
 
@@ -173,10 +173,7 @@ class ReferenceValidator:
         results = list(self.database_handler.execute_query(query))
         for result in results:
             self._cache.add((result["object_class"], object_pk, source))
-        if len(results):
-            return True
-
-        return False
+        return bool(len(results))
 
     def check_references_from_others_for_deletion(
         self, rpsl_obj: RPSLObject, used_override=False
@@ -770,7 +767,7 @@ class RulesValidator:
 
         if (
             request_type != UpdateRequestType.DELETE
-            and (isinstance(rpsl_obj, RPSLRoute) or isinstance(rpsl_obj, RPSLRoute6))
+            and (isinstance(rpsl_obj, (RPSLRoute, RPSLRoute6)))
             and rpsl_obj.prefix in self.BLOCKLIST_ROUTES
         ):
             result.error_messages.add(f"Route(6) objects for {rpsl_obj.prefix} are not permitted.")

@@ -326,11 +326,14 @@ class ChangeRequest:
         return targets
 
     def validate(self) -> bool:
-        if self.rpsl_obj_new and self.request_type == UpdateRequestType.CREATE:
-            if not self.rpsl_obj_new.clean_for_create():
-                self.error_messages += self.rpsl_obj_new.messages.errors()
-                self.status = UpdateRequestStatus.ERROR_PARSING
-                return False
+        if (
+            self.rpsl_obj_new
+            and self.request_type == UpdateRequestType.CREATE
+            and not self.rpsl_obj_new.clean_for_create()
+        ):
+            self.error_messages += self.rpsl_obj_new.messages.errors()
+            self.status = UpdateRequestStatus.ERROR_PARSING
+            return False
         if self.rpsl_obj_new and self.request_type and self.request_type != UpdateRequestType.DELETE:
             rules_result = self.rules_validator.validate(self.rpsl_obj_new, self.request_type)
             self.info_messages += rules_result.info_messages

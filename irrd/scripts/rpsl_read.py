@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# flake8: noqa: E402
 """
 This is a helper script to run RPSL data through the parser and, optionally,
 insert it into the database.
@@ -69,11 +68,11 @@ class RPSLParse:
         except UnknownRPSLObjectClassException as e:
             self.obj_unknown += 1
             self.unknown_object_classes.add(str(e).split(":")[1].strip())
-        except Exception as e:  # pragma: no cover
+        except Exception:  # pragma: no cover
             print("=======================================")
             print(rpsl_text)
             print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-            raise e
+            raise
 
 
 def main():  # pragma: no cover

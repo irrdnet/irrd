@@ -61,7 +61,7 @@ class QuerySourceManager:
         May include alias names."""
         if sources is None:
             sources = self.sources_default if self.sources_default else self.all_valid_sources
-        elif not all([source in self.all_valid_sources for source in sources]):
+        elif not all(source in self.all_valid_sources for source in sources):
             raise InvalidQueryException("One or more selected sources are unavailable.")
         self.sources = sources
 
@@ -266,7 +266,7 @@ class QueryResolver:
         if not sets_seen:
             sets_seen = set()
 
-        if all([member in sets_seen for member in members]):
+        if all(member in sets_seen for member in members):
             return set()
         sets_seen.update(members)
 

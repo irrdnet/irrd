@@ -97,7 +97,7 @@ class MetricsGenerator:
         """
         Generate statistics about the time since last update
         """
-        now = datetime.datetime.now(tz=datetime.timezone.utc)
+        now = datetime.datetime.now(tz=datetime.UTC)
         lines = [
             "# HELP irrd_last_rpsl_data_update_seconds Seconds since the last update to RPSL data",
             "# TYPE irrd_last_rpsl_data_update_seconds gauge",
@@ -131,7 +131,7 @@ class MetricsGenerator:
         """
         Generate statistics about the time since last update
         """
-        now = datetime.datetime.now(tz=datetime.timezone.utc)
+        now = datetime.datetime.now(tz=datetime.UTC)
         lines = [
             "# HELP irrd_last_update_seconds Seconds since the last internal status change",
             "# TYPE irrd_last_update_seconds gauge",
@@ -165,7 +165,7 @@ class MetricsGenerator:
         """
         Generate statistics about the time since last update
         """
-        now = datetime.datetime.now(tz=datetime.timezone.utc)
+        now = datetime.datetime.now(tz=datetime.UTC)
         lines = [
             "# HELP irrd_last_error_seconds Seconds since the last mirroring error",
             "# TYPE irrd_last_error_seconds gauge",

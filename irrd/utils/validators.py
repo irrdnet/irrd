@@ -69,7 +69,7 @@ class RPSLChangeSubmissionObjectAttribute(pydantic.BaseModel):
 
     @pydantic.field_validator("value")
     @classmethod
-    def translate_list_to_str(cls, value):  # noqa: N805
+    def translate_list_to_str(cls, value):
         """Translate lists to RPSL-compatible strings"""
         if not isinstance(value, str):
             return ", ".join(value)
@@ -83,7 +83,7 @@ class RPSLChangeSubmissionObject(pydantic.BaseModel):
     attributes: list[RPSLChangeSubmissionObjectAttribute] | None = None
 
     @pydantic.model_validator(mode="before")
-    def check_text_xor_attributes_present(cls, values):  # noqa: N805
+    def check_text_xor_attributes_present(cls, values):
         if bool(values.get("object_text")) == bool(values.get("attributes")):
             raise ValueError('You must describe each object with either "object_text" or "attributes"')
         return values

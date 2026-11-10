@@ -377,16 +377,20 @@ class TestAuthValidator:
         result = validator.process_auth(person_new, rpsl_obj_current=person_old)
         assert not result.is_valid()
         assert result.error_messages == {
-            "Authorisation for person PERSON-TEST failed: "
-            "must be authenticated by one of: TEST-MNT, TEST-NEW-MNT"
+            (
+                "Authorisation for person PERSON-TEST failed: "
+                "must be authenticated by one of: TEST-MNT, TEST-NEW-MNT"
+            )
         }
 
         validator.passwords = [SAMPLE_MNTNER_CRYPT]
         result = validator.process_auth(person_new, rpsl_obj_current=person_old)
         assert not result.is_valid()
         assert result.error_messages == {
-            "Authorisation for person PERSON-TEST failed: "
-            "must be authenticated by one of: TEST-MNT, TEST-OLD-MNT"
+            (
+                "Authorisation for person PERSON-TEST failed: "
+                "must be authenticated by one of: TEST-MNT, TEST-OLD-MNT"
+            )
         }
 
     def test_valid_new_person_preapproved_mntner(self, prepare_mocks):
@@ -478,9 +482,11 @@ class TestAuthValidator:
         assert result.is_valid()
         assert not new_mntner.has_dummy_auth_value()
         assert result.info_messages == {
-            "As you submitted dummy hash values, all password hashes on this "
-            "object were replaced with a new BCRYPT-PW hash of the password you "
-            "provided for authentication."
+            (
+                "As you submitted dummy hash values, all password hashes on this "
+                "object were replaced with a new BCRYPT-PW hash of the password you "
+                "provided for authentication."
+            )
         }
 
         # # This is a multi password submission with dummy hashes which is rejected
@@ -490,8 +496,10 @@ class TestAuthValidator:
         assert not result.is_valid()
         assert not result.info_messages
         assert result.error_messages == {
-            "Object submitted with dummy hash values, but multiple or no passwords "
-            "submitted. Either submit only full hashes, or a single password."
+            (
+                "Object submitted with dummy hash values, but multiple or no passwords "
+                "submitted. Either submit only full hashes, or a single password."
+            )
         }
 
     def test_modify_mntner_internal_auth(self, prepare_mocks, config_override):
@@ -569,8 +577,10 @@ class TestAuthValidator:
         result = validator.process_auth(route, None)
         assert not result.is_valid()
         assert result.error_messages == {
-            "Authorisation for route 192.0.2.0/24AS65537 failed: must be authenticated by one of: "
-            "RELATED-MNT - from parent inetnum 192.0.2.0-192.0.2.255"
+            (
+                "Authorisation for route 192.0.2.0/24AS65537 failed: must be authenticated by one of: "
+                "RELATED-MNT - from parent inetnum 192.0.2.0-192.0.2.255"
+            )
         }
 
         config_override(
@@ -633,8 +643,10 @@ class TestAuthValidator:
         result = validator.process_auth(route, None)
         assert not result.is_valid()
         assert result.error_messages == {
-            "Authorisation for route 192.0.2.0/24AS65537 failed: must be authenticated by one of: "
-            "RELATED-MNT - from parent inetnum 192.0.2.0-192.0.2.255"
+            (
+                "Authorisation for route 192.0.2.0/24AS65537 failed: must be authenticated by one of: "
+                "RELATED-MNT - from parent inetnum 192.0.2.0-192.0.2.255"
+            )
         }
 
     def test_related_route_less_specific_route(self, prepare_mocks):
@@ -688,8 +700,10 @@ class TestAuthValidator:
         result = validator.process_auth(route, None)
         assert not result.is_valid()
         assert result.error_messages == {
-            "Authorisation for route 192.0.2.0/24AS65537 failed: must be authenticated by one of: "
-            "RELATED-MNT - from parent route 192.0.2.0/24AS65537"
+            (
+                "Authorisation for route 192.0.2.0/24AS65537 failed: must be authenticated by one of: "
+                "RELATED-MNT - from parent route 192.0.2.0/24AS65537"
+            )
         }
 
     def test_related_route_no_match_v6(self, prepare_mocks):
@@ -794,8 +808,10 @@ class TestAuthValidator:
         result = validator.process_auth(as_set, None)
         assert not result.is_valid()
         assert result.error_messages == {
-            "Authorisation for as-set AS65537:AS-SETTEST failed: must be authenticated by one of: "
-            "RELATED-MNT - from parent aut-num AS655375"
+            (
+                "Authorisation for as-set AS65537:AS-SETTEST failed: must be authenticated by one of: "
+                "RELATED-MNT - from parent aut-num AS655375"
+            )
         }
 
         result = validator.process_auth(as_set, rpsl_obj_current=as_set)

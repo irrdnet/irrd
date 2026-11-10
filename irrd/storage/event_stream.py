@@ -68,7 +68,6 @@ class EventStreamPublisher:
                 "operation": OPERATION_FULL_RELOAD,
             },
         )
-        return
 
     def close(self):
         self._redis_conn.close()

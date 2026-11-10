@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# flake8: noqa: E402
 
 """
 Submit a raw update message, i.e. without email headers.

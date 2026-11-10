@@ -135,9 +135,7 @@ def prepare_nrtm4_test(config_override, monkeypatch, tmp_path):
         }
     )
 
-    with time_machine.travel(
-        datetime.datetime(2022, 1, 1, 15, 0, 1, tzinfo=datetime.timezone.utc), tick=False
-    ):
+    with time_machine.travel(datetime.datetime(2022, 1, 1, 15, 0, 1, tzinfo=datetime.UTC), tick=False):
         yield
 
 

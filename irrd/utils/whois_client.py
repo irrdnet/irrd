@@ -35,7 +35,7 @@ def whois_query(
     s.sendall(query.encode("utf-8"))
 
     buffer = b""
-    while not any([end_marking in buffer for end_marking in end_markings_bytes]):
+    while not any(end_marking in buffer for end_marking in end_markings_bytes):
         try:
             data = s.recv(1024 * 1024)
         except TimeoutError:

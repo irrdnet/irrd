@@ -69,10 +69,10 @@ class MockSingletonMeta(Singleton):
     def __new__(cls, name, bases, attrs):
         original_class = attrs.pop("DeriveFrom")
         new_class = super().__new__(cls, name, bases, attrs)
-        for name, method in inspect.getmembers(original_class, predicate=inspect.isfunction):
-            if name not in attrs and not name.startswith("__"):
+        for method_name, method in inspect.getmembers(original_class, predicate=inspect.isfunction):
+            if method_name not in attrs and not method_name.startswith("__"):
                 defined_method = cls.create_mock_method(method)
-                setattr(new_class, name, defined_method)
+                setattr(new_class, method_name, defined_method)
         return new_class
 
     @staticmethod

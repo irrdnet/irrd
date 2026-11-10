@@ -12,7 +12,7 @@ templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
 
 def datetime_format(value: datetime.datetime, format=UI_DEFAULT_DATETIME_FORMAT):
-    return value.astimezone(datetime.timezone.utc).strftime(format)
+    return value.astimezone(datetime.UTC).strftime(format)
 
 
 templates.env.globals["irrd_version"] = irrd.__version__

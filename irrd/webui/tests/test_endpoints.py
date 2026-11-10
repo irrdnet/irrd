@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import create_autospec
 
 import pytest
@@ -19,7 +19,7 @@ from .conftest import WebRequestTest, create_permission
 
 
 def test_datetime_format():
-    date = datetime(2022, 3, 14, 12, 34, 56, tzinfo=timezone.utc)
+    date = datetime(2022, 3, 14, 12, 34, 56, tzinfo=UTC)
     assert datetime_format(date) == "2022-03-14 12:34"
 
 

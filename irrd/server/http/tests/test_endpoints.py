@@ -287,7 +287,7 @@ class TestObjectSubmissionEndpoint:
     def test_endpoint_rate_limit_counts_authentication_failures(self, monkeypatch, mock_rate_limiter):
         mock_handler = Mock(spec=ChangeSubmissionHandler)
         monkeypatch.setattr("irrd.server.http.endpoints_api.ChangeSubmissionHandler", lambda: mock_handler)
-        mock_handler.submitter_report_json = lambda: {}
+        mock_handler.submitter_report_json = dict
         content = ujson.dumps({"objects": [{"object_text": "person: Placeholder Person Object"}]})
 
         mock_handler.has_authentication_failures = lambda: False

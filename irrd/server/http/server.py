@@ -1,4 +1,3 @@
-# flake8: noqa: E402
 """
 Runner for the HTTP server process.
 """

@@ -342,9 +342,9 @@ class NRTMStreamParser:
         for paragraph in paragraphs:
             if self._handle_possible_start_line(paragraph):
                 continue
-            elif paragraph.startswith("%") or paragraph.startswith("#"):
+            elif paragraph.startswith(("%", "#")):
                 last_comment_seen = paragraph
-            elif paragraph.startswith("ADD") or paragraph.startswith("DEL"):
+            elif paragraph.startswith(("ADD", "DEL")):
                 self._handle_operation(paragraph, paragraphs)
 
         if self.nrtm_source and last_comment_seen.upper().strip() != f"%END {self.source}":

@@ -1,10 +1,10 @@
 import logging
 from collections import defaultdict
 from collections.abc import Iterable, Iterator
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from functools import lru_cache
 from io import StringIO
-from typing import Any, Union
+from typing import Any
 
 import sqlalchemy as sa
 from asgiref.sync import sync_to_async
@@ -47,13 +47,13 @@ from .queries import (
     RPSLDatabaseObjectStatisticsQuery,
 )
 
-QueryType = Union[
-    BaseRPSLObjectDatabaseQuery,
-    DatabaseStatusQuery,
-    RPSLDatabaseObjectStatisticsQuery,
-    ROADatabaseObjectQuery,
-    RPSLDatabaseJournalStatisticsQuery,
-]
+QueryType = (
+    BaseRPSLObjectDatabaseQuery
+    | DatabaseStatusQuery
+    | RPSLDatabaseObjectStatisticsQuery
+    | ROADatabaseObjectQuery
+    | RPSLDatabaseJournalStatisticsQuery
+)
 
 logger = logging.getLogger(__name__)
 MAX_RECORDS_BUFFER_BEFORE_INSERT = 15000
@@ -229,12 +229,12 @@ class DatabaseHandler:
 
         try:
             result = execute_query()
-        except Exception as exc:  # pragma: no cover
+        except Exception:  # pragma: no cover
             if refresh_on_error:
                 self.refresh_connection()
                 result = execute_query()
             else:
-                raise exc
+                raise
 
         result_partition = result.fetchmany()
         while result_partition:
@@ -294,7 +294,7 @@ class DatabaseHandler:
         if rpsl_pk_source in self._rpsl_pk_source_seen:
             self._flush_rpsl_object_writing_buffer()
 
-        update_time = datetime.now(timezone.utc)
+        update_time = datetime.now(UTC)
         object_dict = {
             "rpsl_pk": rpsl_object.pk(),
             "source": source,
@@ -616,7 +616,7 @@ class DatabaseHandler:
         results = self.execute_statement(stmt)
 
         if not self._check_single_row_match(results, user_identifier=f"{rpsl_pk}/{source}"):
-            return None
+            return
 
         result = results.fetchone()
         self.status_tracker.record_operation(
@@ -1074,7 +1074,7 @@ class DatabaseStatusTracker:
             if self._is_serial_synchronised(source):
                 serial_nrtm = source_serial
             else:
-                if source in self._new_serials_per_source and self._new_serials_per_source[source]:
+                if self._new_serials_per_source.get(source):
                     serial_nrtm = max(self._new_serials_per_source[source]) + 1
                 else:
                     serial_nrtm = sa.select(
@@ -1087,7 +1087,7 @@ class DatabaseStatusTracker:
                     )
                     serial_nrtm = serial_nrtm.where(self.c_status.source == source).scalar_subquery()
 
-            timestamp = datetime.now(timezone.utc)
+            timestamp = datetime.now(UTC)
 
             stmt = (
                 RPSLDatabaseJournal.__table__.insert()
@@ -1120,7 +1120,7 @@ class DatabaseStatusTracker:
                 source=source,
                 force_reload=False,
                 synchronised_serials=self._is_serial_synchronised(source),
-                rpsl_data_updated=datetime.now(timezone.utc),
+                rpsl_data_updated=datetime.now(UTC),
             )
             stmt = stmt.on_conflict_do_update(
                 index_elements=["source"],
@@ -1136,7 +1136,7 @@ class DatabaseStatusTracker:
                 RPSLDatabaseStatus.__table__.update()
                 .where(self.c_status.source == source)
                 .values(
-                    rpsl_data_updated=datetime.now(timezone.utc),
+                    rpsl_data_updated=datetime.now(UTC),
                 )
             )
             self.database_handler.execute_statement(stmt)
@@ -1181,7 +1181,7 @@ class DatabaseStatusTracker:
                     serial_newest_seen=serial_newest_seen,
                     serial_oldest_journal=serial_oldest_journal,
                     serial_newest_journal=serial_newest_journal,
-                    rpsl_data_updated=datetime.now(timezone.utc),
+                    rpsl_data_updated=datetime.now(UTC),
                 )
             )
             self.database_handler.execute_statement(stmt)
@@ -1192,7 +1192,7 @@ class DatabaseStatusTracker:
                 .where(self.c_status.source == source)
                 .values(
                     last_error=error,
-                    last_error_timestamp=datetime.now(timezone.utc),
+                    last_error_timestamp=datetime.now(UTC),
                 )
             )
             self.database_handler.execute_statement(stmt)
@@ -1203,7 +1203,7 @@ class DatabaseStatusTracker:
                 .where(self.c_status.source == source)
                 .values(
                     serial_newest_mirror=serial,
-                    rpsl_data_updated=datetime.now(timezone.utc),
+                    rpsl_data_updated=datetime.now(UTC),
                 )
             )
             self.database_handler.execute_statement(stmt)
@@ -1256,7 +1256,7 @@ class DatabaseStatusTracker:
         This should happen right after commit, so that a listener querying
         the journal immediately after receiving will see the new journal entries.
         """
-        for source in self._new_serials_per_source.keys():
+        for source in self._new_serials_per_source:
             self.event_stream_publisher.publish_update(source=source)
 
     def _is_serial_synchronised(self, source: str) -> bool:
@@ -1271,11 +1271,11 @@ class DatabaseStatusTracker:
         self._new_serials_per_source = defaultdict(set)
         self._sources_seen = set()
         self._sources_rpsl_data_updated = set()
-        self._newest_mirror_serials = dict()
-        self._mirroring_error = dict()
-        self._exported_serials = dict()
-        self._nrtm4_client_status = dict()
-        self._nrtm4_server_status = dict()
+        self._newest_mirror_serials = {}
+        self._mirroring_error = {}
+        self._exported_serials = {}
+        self._nrtm4_client_status = {}
+        self._nrtm4_server_status = {}
         self._is_serial_synchronised.cache_clear()
 
 

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# flake8: noqa: E402
 """
 Read RPSL submissions from stdin, submit them to the
 IRRD HTTP API and return a response on stdout.
@@ -146,8 +145,6 @@ class XArgumentProcessing(XBasic):
     they have been parsed
     """
 
-    pass
-
 
 class XHelp(XBasic):
     """
@@ -240,8 +237,6 @@ class XNoObjects(XInput):
     Raised when there are no RPSL objects. There must be at least
     one object in the input.
     """
-
-    pass
 
 
 class XResponse(XBasic):
@@ -746,9 +741,9 @@ def send_request(requests_text, args):
             raise XNameResolutionFailed(args.url, reason) from error
         if isinstance(reason, (socket.timeout, ConnectionRefusedError)):
             raise XHTTPConnectionFailed(args.url, http_request) from error  # pragma: no cover
-        raise error  # pragma: no cover: CI glitch workaround
-    except Exception as error:
-        raise error
+        raise  # pragma: no cover: CI glitch workaround
+    except Exception:
+        raise
 
     response_body = http_response.read().decode("utf-8")
     logger.debug("====START RESPONSE BODY====:\n%s\n====ENE RESPONSE BODY====\n", response_body)
