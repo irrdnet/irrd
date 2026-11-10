@@ -8,11 +8,13 @@ name = "irrd"
 version = "4.6-dev"
 description = "Internet Routing Registry daemon (IRRd)"
 authors = ["Reliably Coded for NTT Ltd. and others <irrd@reliablycoded.nl>"]
-license = "BSD"
+license = "BSD-2-Clause"
 readme = "README.rst"
 repository = "https://github.com/irrdnet/irrd"
 documentation = "https://irrd.readthedocs.io/"
 exclude = ['irrd/*/tests', 'irrd/*/*/tests', 'irrd/integration_tests']
+# The licenses of vendored code require that we distribute them.
+include = [{ path = "THIRD-PARTY-NOTICES", format = ["sdist", "wheel"] }]
 
 [tool.poetry.dependencies]
 python = ">=3.11,<4.0"
