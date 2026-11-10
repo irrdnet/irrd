@@ -27,7 +27,7 @@ workflows:
           name: unit-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-valkey<< matrix.redis_version >>
           matrix:
             parameters:
-              python_version: ["3.14"]
+              python_version: ["3.15"]
               postgres_version: ["15.0"]
               redis_version: ["9.0"]
       - integration_tests_cpython:
@@ -42,7 +42,7 @@ workflows:
           name: integration-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-valkey<< matrix.redis_version >>
           matrix:
             parameters:
-              python_version: ["3.14"]
+              python_version: ["3.15"]
               postgres_version: ["15.0"]
               redis_version: ["9.0"]
       - lint:
@@ -62,14 +62,14 @@ workflows:
           matrix:
             parameters:
               # Update deployment docs as well.
-              python_version: ["3.11", "3.12", "3.13", "3.14"]
+              python_version: ["3.11", "3.12", "3.13", "3.14", "3.15"]
               postgres_version: ["9.6", "11.16", "13.7", "15.0", "18.0"]
               redis_version: ["9.0"]
       - integration_tests_cpython:
           name: integration-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-valkey<< matrix.redis_version >>
           matrix:
             parameters:
-              python_version: ["3.11", "3.12", "3.13", "3.14"]
+              python_version: ["3.11", "3.12", "3.13", "3.14", "3.15"]
               postgres_version: ["9.6", "11.16", "13.7", "15.0", "18.0"]
               redis_version: ["9.0"]
       # Other server versions are covered on one recent Python and PostgreSQL,
@@ -78,21 +78,21 @@ workflows:
           name: unit-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-valkey<< matrix.redis_version >>
           matrix:
             parameters:
-              python_version: ["3.14"]
+              python_version: ["3.15"]
               postgres_version: ["15.0"]
               redis_version: ["7.2", "8.1"]
       - integration_tests_cpython:
           name: integration-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-valkey<< matrix.redis_version >>
           matrix:
             parameters:
-              python_version: ["3.14"]
+              python_version: ["3.15"]
               postgres_version: ["15.0"]
               redis_version: ["7.2", "8.1"]
       - unit_tests_cpython:
           name: unit-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
           matrix:
             parameters:
-              python_version: ["3.14"]
+              python_version: ["3.15"]
               postgres_version: ["15.0"]
               redis_image: ["cimg/redis"]
               redis_version: ["5.0", "8.10"]
@@ -100,7 +100,7 @@ workflows:
           name: integration-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
           matrix:
             parameters:
-              python_version: ["3.14"]
+              python_version: ["3.15"]
               postgres_version: ["15.0"]
               redis_image: ["cimg/redis"]
               redis_version: ["5.0", "8.10"]
