@@ -84,9 +84,9 @@ httpx = "^0.28.1"
 
 [tool.poetry.group.docs.dependencies]
 # Also in readthedocs.yaml
-sphinx = "^8.0"
+sphinx = "^9.0"
 sphinxcontrib-spelling = "^8.0.0"
-sphinx-immaterial = "^0.13.8"
+sphinx-immaterial = "^0.13.11"
 pyenchant = "^3.2.2"
 
 [tool.poetry.scripts]
