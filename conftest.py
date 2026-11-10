@@ -6,7 +6,6 @@ import os
 import pytest
 from typing import Dict, Any
 
-import redis
 import sqlalchemy
 from sqlalchemy.engine import reflection
 from sqlalchemy.exc import ProgrammingError

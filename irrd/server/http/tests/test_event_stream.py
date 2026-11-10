@@ -8,12 +8,11 @@ from unittest.mock import create_autospec
 
 import pytest
 import time_machine
-from coredis.response.types import StreamEntry
 from starlette.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
 from irrd.rpsl.rpsl_objects import rpsl_object_from_text
-from irrd.storage.event_stream import OPERATION_JOURNAL_EXTENDED
+from irrd.storage.event_stream import OPERATION_JOURNAL_EXTENDED, EventStreamEntry
 from irrd.storage.queries import (
     RPSLDatabaseJournalQuery,
     RPSLDatabaseJournalStatisticsQuery,
@@ -192,14 +191,14 @@ class MockAsyncEventStreamRedisClient:
         self.closed = False
         self.has_returned_entries = False
 
-    async def get_entries(self, after_event_id: str) -> tuple[StreamEntry, ...]:
+    async def get_entries(self, after_event_id: str) -> tuple[EventStreamEntry, ...]:
         if self.has_returned_entries:
             await asyncio.sleep(10)
         self.has_returned_entries = True
         field_values: OrderedDict[str | bytes, str | bytes] = OrderedDict(
             {"source": "TEST", "operation": OPERATION_JOURNAL_EXTENDED}
         )
-        return (StreamEntry(identifier=after_event_id, field_values=field_values),)
+        return (EventStreamEntry(identifier=after_event_id, field_values=field_values),)
 
     async def close(self):
         self.closed = True
