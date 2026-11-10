@@ -112,6 +112,7 @@ upsert
 upserted
 upserting
 utils
+Valkey
 validator
 validators
 virtualenv
