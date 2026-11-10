@@ -254,7 +254,7 @@ class TestAsyncEventStreamFollower:
             "event_data": {"source": "TEST", "operation": "journal_extended"},
         }
 
-    async def test_follower_invalid_serial(self, monkeypatch, event_loop):
+    async def test_follower_invalid_serial(self, monkeypatch):
         mock_dh = MockDatabaseHandler()
         mock_dh.reset_mock()
         monkeypatch.setattr("irrd.server.http.event_stream.DatabaseHandler", MockDatabaseHandler)
