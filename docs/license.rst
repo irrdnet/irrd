@@ -2,11 +2,11 @@
 License
 =======
 
-.. include:: ../LICENSE
-   :literal:
+.. literalinclude:: ../LICENSE
+   :language: none
 
 Third party notices
 ===================
 
-.. include:: ../THIRD-PARTY-NOTICES
-   :literal:
+.. literalinclude:: ../THIRD-PARTY-NOTICES
+   :language: none
