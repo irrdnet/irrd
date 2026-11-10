@@ -103,7 +103,6 @@ html_show_sourcelink = False
 html_theme_options = {
     'repo_url': 'https://github.com/irrdnet/irrd/',
     'repo_name': 'IRRd',
-    "repo_type": "github",
     "edit_uri": "blob/main/docs/",
     "icon": {
         "repo": "fontawesome/brands/github",
