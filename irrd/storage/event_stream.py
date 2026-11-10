@@ -1,6 +1,7 @@
-import coredis
-import redis
-from coredis.response.types import StreamEntry
+from collections import namedtuple
+
+import valkey
+import valkey.asyncio
 
 from irrd.conf import get_setting
 
@@ -14,36 +15,36 @@ REDIS_STREAM_RPSL = "irrd-eventstream-rpsl-stream"
 REDIS_STREAM_MAX_LEN = 1000
 REDIS_STREAM_END_IDENTIFIER = "$"
 
+EventStreamEntry = namedtuple("EventStreamEntry", ["identifier", "field_values"])
+
 
 class AsyncEventStreamRedisClient:
     @classmethod
     async def create(cls):
-        redis_conn = await coredis.Redis.from_url(
-            get_setting("redis_url"), protocol_version=2, decode_responses=True
-        )
+        redis_conn = valkey.asyncio.Valkey.from_url(get_setting("redis_url"), decode_responses=True)
         return cls(redis_conn)
 
-    def __init__(self, redis_conn: coredis.Redis):
+    def __init__(self, redis_conn: valkey.asyncio.Valkey):
         self.redis_conn = redis_conn
 
-    async def get_entries(self, after_event_id: str) -> tuple[StreamEntry, ...]:
-        entries = await self.redis_conn.xread(
+    async def get_entries(self, after_event_id: str) -> tuple[EventStreamEntry, ...]:
+        streams = await self.redis_conn.xread(
             streams={REDIS_STREAM_RPSL: after_event_id},
             block=EVENT_STREAM_MAX_WAIT_MS,
             count=EVENT_STREAM_WS_CHUNK_SIZE,
         )
-        if not entries or REDIS_STREAM_RPSL not in entries:
+        if not streams:
             return ()
-        return entries[REDIS_STREAM_RPSL]
+        _, entries = streams[0]
+        return tuple(EventStreamEntry(identifier, fields) for identifier, fields in entries)
 
     async def close(self):
-        if self.redis_conn:
-            self.redis_conn = None
+        await self.redis_conn.aclose()
 
 
 class EventStreamPublisher:
     def __init__(self):
-        self._redis_conn = redis.Redis.from_url(get_setting("redis_url"), decode_responses=True)
+        self._redis_conn = valkey.Valkey.from_url(get_setting("redis_url"), decode_responses=True)
 
     def reset_stream(self) -> None:
         self._redis_conn.delete(REDIS_STREAM_RPSL.encode())

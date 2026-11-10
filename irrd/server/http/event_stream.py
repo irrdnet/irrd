@@ -267,7 +267,7 @@ class AsyncEventStreamFollower:
                         "event_data": entry.field_values,
                     }
                 )
-                after_redis_event_id = entry.identifier  # type: ignore
+                after_redis_event_id = entry.identifier
             # get_entries() times out every EVENT_STREAM_MAX_WAIT_MS,
             # to allow us to catch any incidentally missed journal entries
             await self._send_new_journal_entries()

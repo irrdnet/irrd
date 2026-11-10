@@ -7,7 +7,7 @@ import threading
 import time
 from collections import defaultdict, namedtuple
 
-import redis
+import valkey
 from setproctitle import setproctitle
 
 from irrd.conf import get_setting
@@ -39,7 +39,7 @@ large data sets, this can improve performance.
 SetMembers = namedtuple("SetMembers", ["members", "object_class"])
 
 
-class PersistentPubSubWorkerThread(redis.client.PubSubWorkerThread):  # type: ignore
+class PersistentPubSubWorkerThread(valkey.client.PubSubWorkerThread):
     """
     This is a variation of PubSubWorkerThread which persists after an error.
     Rather than terminate, the thread will attempt to reconnect periodically
@@ -59,7 +59,7 @@ class PersistentPubSubWorkerThread(redis.client.PubSubWorkerThread):  # type: ig
                     self.pubsub.subscribe(**{REDIS_PRELOAD_COMPLETE_CHANNEL: self.callback})
                     self.should_resubscribe = False
                 self.pubsub.get_message(ignore_subscribe_messages=True, timeout=self.sleep_time)
-            except redis.ConnectionError as rce:  # pragma: no cover
+            except valkey.ConnectionError as rce:  # pragma: no cover
                 logger.error(f"Failed redis pubsub connection, attempting reconnect and reload in 5s: {rce}")
                 time.sleep(5)
                 self.should_resubscribe = True
@@ -92,7 +92,7 @@ class Preloader:
         Otherwise, this method starts a background thread that keeps an in-memory store,
         which is automatically updated.
         """
-        self._redis_conn = redis.Redis.from_url(get_setting("redis_url"))
+        self._redis_conn = valkey.Valkey.from_url(get_setting("redis_url"))
         if enable_queries:
             self._pubsub = self._redis_conn.pubsub()
             self._pubsub_thread = PersistentPubSubWorkerThread(
@@ -241,7 +241,7 @@ class PreloadStoreManager(ExceptionLoggingProcess):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._target = self.main
-        self._redis_conn = redis.Redis.from_url(get_setting("redis_url"))
+        self._redis_conn = valkey.Valkey.from_url(get_setting("redis_url"))
 
     def main(self):
         """
@@ -277,7 +277,7 @@ class PreloadStoreManager(ExceptionLoggingProcess):
                         self.perform_reload(message)
                         if self.terminate:
                             return
-            except redis.ConnectionError as rce:  # pragma: no cover
+            except valkey.ConnectionError as rce:  # pragma: no cover
                 logger.error(f"Failed redis pubsub connection, attempting reconnect and reload in 5s: {rce}")
                 time.sleep(5)
 
@@ -290,7 +290,7 @@ class PreloadStoreManager(ExceptionLoggingProcess):
             self._redis_conn.delete(
                 REDIS_ORIGIN_ROUTE4_STORE_KEY, REDIS_ORIGIN_ROUTE6_STORE_KEY, REDIS_AS_SET_STORE_KEY
             )
-        except redis.ConnectionError as rce:  # pragma: no cover
+        except valkey.ConnectionError as rce:  # pragma: no cover
             logger.error(
                 "Failed to empty preload store due to redis connection error, "
                 f"queries may have outdated results until full reload is completed (max 30s): {rce}"
@@ -367,7 +367,7 @@ class PreloadStoreManager(ExceptionLoggingProcess):
 
             return True
 
-        except redis.ConnectionError as rce:  # pragma: no cover
+        except valkey.ConnectionError as rce:  # pragma: no cover
             return self._handle_preload_update_error(rce)
 
     def update_as_set_store(self, new_as_set_store) -> bool:
@@ -394,7 +394,7 @@ class PreloadStoreManager(ExceptionLoggingProcess):
             pipeline.hset(redis_key, mapping=set_str_dict)
             pipeline.execute()
             return True
-        except redis.ConnectionError as rce:  # pragma: no cover
+        except valkey.ConnectionError as rce:  # pragma: no cover
             return self._handle_preload_update_error(rce)
 
     def signal_redis_store_updated(self):
@@ -402,7 +402,7 @@ class PreloadStoreManager(ExceptionLoggingProcess):
             self._redis_conn.publish(REDIS_PRELOAD_COMPLETE_CHANNEL, "complete")
             return True
 
-        except redis.ConnectionError as rce:  # pragma: no cover
+        except valkey.ConnectionError as rce:  # pragma: no cover
             return self._handle_preload_update_error(rce)
 
     def _handle_preload_update_error(self, rce):  # pragma: no cover
