@@ -65,7 +65,7 @@ instance with different database numbers, e.g.::
 .. danger::
     The integration test will wipe all contents of IRRd tables in the databases
     ``IRRD_DATABASE_URL_INTEGRATION_1`` and ``IRRD_DATABASE_URL_INTEGRATION_2``,
-    along with both redis databases, without further checks or confirmation.
+    along with both Redis databases, without further checks or confirmation.
 
 The test can then be started with::
 

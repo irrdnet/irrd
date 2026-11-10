@@ -283,6 +283,7 @@ def resolve_as_set_prefixes(
     _,
     info: GraphQLResolveInfo,
     set_names: list[str],
+    root_source: str | None = None,
     sources: list[str] | None = None,
     ip_version: int | None = None,
     exclude_sets: list[str] | None = None,
@@ -298,7 +299,11 @@ def resolve_as_set_prefixes(
     exclude_sets_set = {i.upper() for i in exclude_sets} if exclude_sets else set()
     query_resolver.set_query_sources(sources)
     for set_name in set_names_set:
-        prefixes = list(query_resolver.routes_for_as_set(set_name, ip_version, exclude_sets=exclude_sets_set))
+        prefixes = list(
+            query_resolver.routes_for_as_set(
+                set_name, ip_version, root_source=root_source, exclude_sets=exclude_sets_set
+            )
+        )
         yield {"rpslPk": set_name, "prefixes": prefixes}
     if sql_trace:
         info.context["sql_queries"] = query_resolver.retrieve_sql_trace()
@@ -310,6 +315,7 @@ def resolve_recursive_set_members(
     info: GraphQLResolveInfo,
     set_names: list[str],
     depth: int = 0,
+    root_source: str | None = None,
     sources: list[str] | None = None,
     exclude_sets: list[str] | None = None,
     sql_trace: bool = False,
@@ -325,7 +331,7 @@ def resolve_recursive_set_members(
     query_resolver.set_query_sources(sources)
     for set_name in set_names_set:
         results = query_resolver.members_for_set_per_source(
-            set_name, exclude_sets=exclude_sets_set, depth=depth, recursive=True
+            set_name, exclude_sets=exclude_sets_set, depth=depth, recursive=True, root_source=root_source
         )
         for source, members in results.items():
             yield {"rpslPk": set_name, "rootSource": source, "members": members}
