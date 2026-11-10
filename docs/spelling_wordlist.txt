@@ -87,6 +87,7 @@ Redistributions
 resolvers
 reStructuredText
 Rey
+redis
 rpki
 rpki-ov-state
 RPSL
@@ -96,6 +97,7 @@ Sarvepalli
 schemas
 setcap
 scalability
+scoped
 Shubernetskiy
 snapshotting
 sqlalchemy
