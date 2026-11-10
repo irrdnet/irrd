@@ -267,7 +267,7 @@ app = Starlette(
 
 
 def set_middleware(app):
-    testing = os.environ.get("TESTING", False)
+    testing = os.environ.get("TESTING")
     csrf_disabled = testing and not getattr(app, "force_csrf_in_testing", False)
     if csrf_disabled:
         logger.info("Running in testing mode, disabling CSRF.")

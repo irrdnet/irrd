@@ -369,7 +369,10 @@ class TestRPSLMirrorFullImportRunner:
 
         assert not MockMirrorFileImportParser.rpsl_data_calls
         assert flatten_mock_calls(mock_dh) == []
-        assert "Current newest serial seen for TEST is 424243, import_serial is 424242, cancelling import."
+        assert (
+            "Current newest serial seen from mirror for TEST is 424243, import_serial is 424242,"
+            " cancelling import." in caplog.text
+        )
 
     def test_import_force_reload_with_serial_too_old(self, monkeypatch, config_override):
         config_override(

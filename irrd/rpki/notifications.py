@@ -87,8 +87,8 @@ def notify_rpki_invalid_owners(
 
         # Step 5: use the contacts per maintainer, and emails per contact
         # to create a flattened list of emails per maintainer
-        for mntner_pk, mntner_contacts in mntner_contacts.items():
-            for contact_pk in mntner_contacts:
+        for mntner_pk, contact_pks in mntner_contacts.items():
+            for contact_pk in contact_pks:
                 try:
                     mntner_emails[mntner_pk].update(contacts[contact_pk])
                 except KeyError:
