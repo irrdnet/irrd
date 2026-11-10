@@ -25,7 +25,7 @@ IRRd requires:
 * A recent version of PostgreSQL. Versions 9.6, 11.16, 13.7, 15.0, and 18.0 are all
   tested before release. 11 or higher is strongly recommended, due to faster
   database migrations during upgrades.
-* Redis 5 or newer.
+* Valkey, or Redis 5 or newer.
 * At least 32GB RAM
 * At least 4 CPU cores
 * At least 150GB of disk space (SSD recommended)
@@ -108,8 +108,9 @@ size of the RPSL text imported.
 
 Redis configuration
 -------------------
-Redis is required for communication and persistence between IRRd's processes.
-IRRd releases are tested on Redis 5 through 8.
+Redis or Valkey is required for communication and persistence between
+IRRd's processes. IRRd releases are tested on Valkey 7.2 through 9,
+and on Redis 5 and 8.
 Beyond a default Redis installation, it is recommended to:
 
 * Increase ``maxmemory`` to 2GB (no limit is also fine). This is a hard

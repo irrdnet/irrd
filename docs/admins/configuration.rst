@@ -218,9 +218,9 @@ General settings
   **Do not enable this setting without reading the further documentation on standby setups.**
   |br| **Default**: ``false``.
   |br| **Change takes effect**: after full IRRd restart.
-* ``redis_url``: a URL to a Redis instance, e.g.
+* ``redis_url``: a URL to a Redis or Valkey instance, e.g.
   ``unix:///var/run/redis.sock`` to connect through a unix socket, or
-  ``redis://localhost`` to connect through TCP.
+  ``redis://localhost`` or ``valkey://localhost`` to connect through TCP.
   **Connecting through a unix socket is strongly recommended**,
   for improved performance
   |br| **Default**: not defined, but required.
