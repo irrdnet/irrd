@@ -350,9 +350,9 @@ class DatabaseHandler:
 
     def update_rpki_status(
         self,
-        rpsl_objs_now_valid: list[dict[str, Any]] = [],
-        rpsl_objs_now_invalid: list[dict[str, Any]] = [],
-        rpsl_objs_now_not_found: list[dict[str, Any]] = [],
+        rpsl_objs_now_valid: list[dict[str, Any]] | None = None,
+        rpsl_objs_now_invalid: list[dict[str, Any]] | None = None,
+        rpsl_objs_now_not_found: list[dict[str, Any]] | None = None,
     ) -> None:
         """
         Update the RPKI status for the given RPSL PKs.
@@ -363,6 +363,9 @@ class DatabaseHandler:
         on RPKI status.
         """
         self._check_write_permitted()
+        rpsl_objs_now_valid = rpsl_objs_now_valid or []
+        rpsl_objs_now_invalid = rpsl_objs_now_invalid or []
+        rpsl_objs_now_not_found = rpsl_objs_now_not_found or []
         table = RPSLDatabaseObject.__table__
         if rpsl_objs_now_valid:
             pks = {o["pk"] for o in rpsl_objs_now_valid}
@@ -420,9 +423,9 @@ class DatabaseHandler:
 
     def update_scopefilter_status(
         self,
-        rpsl_objs_now_in_scope: list[dict[str, Any]] = [],
-        rpsl_objs_now_out_scope_as: list[dict[str, Any]] = [],
-        rpsl_objs_now_out_scope_prefix: list[dict[str, Any]] = [],
+        rpsl_objs_now_in_scope: list[dict[str, Any]] | None = None,
+        rpsl_objs_now_out_scope_as: list[dict[str, Any]] | None = None,
+        rpsl_objs_now_out_scope_prefix: list[dict[str, Any]] | None = None,
     ) -> None:
         """
         Update the scopefilter status for the given objects.
@@ -433,6 +436,9 @@ class DatabaseHandler:
         on scopefilter status.
         """
         self._check_write_permitted()
+        rpsl_objs_now_in_scope = rpsl_objs_now_in_scope or []
+        rpsl_objs_now_out_scope_as = rpsl_objs_now_out_scope_as or []
+        rpsl_objs_now_out_scope_prefix = rpsl_objs_now_out_scope_prefix or []
         table = RPSLDatabaseObject.__table__
         if rpsl_objs_now_in_scope:
             pks = {o["pk"] for o in rpsl_objs_now_in_scope}

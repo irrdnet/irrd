@@ -1673,7 +1673,7 @@ class TestSingleChangeRequestHandling:
         assert "ERROR: unknown object class" in report_unknown
 
         assert "FAILED" in report_invalid
-        assert "aut-num: pw1"  # full RPSL object should be included
+        assert "aut-num: pw1" in report_invalid  # full RPSL object should be included
         assert "ERROR: Mandatory attribute" in report_invalid
         assert "ERROR: Invalid AS number PW1" in report_invalid
 

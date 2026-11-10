@@ -1,7 +1,6 @@
 import datetime
 import difflib
 import logging
-from typing import Optional
 
 import sqlalchemy.orm as saorm
 
@@ -499,7 +498,7 @@ class SuspensionRequest:
         rpsl_text_submitted: str,
         database_handler: DatabaseHandler,
         auth_validator: AuthValidator,
-        suspension_state=Optional[str],
+        suspension_state: str,
     ) -> None:
         """
         Initialise a new suspension/reactivation request.
