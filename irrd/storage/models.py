@@ -428,7 +428,6 @@ class AuthUser(Base):  # type: ignore
     permissions = relationship(
         "AuthPermission",
         backref=sa.orm.backref("user", uselist=False),
-        overlaps="mntners,mntners_user_management,mntners_no_user_management",
     )
     webauthns = relationship(
         "AuthWebAuthn",
@@ -436,19 +435,19 @@ class AuthUser(Base):  # type: ignore
     )
     mntners = relationship(
         "AuthMntner",
-        backref=sa.orm.backref("users", overlaps="permissions,user"),
+        backref=sa.orm.backref("users", viewonly=True),
         secondary=lambda: _mntner_permission_join(),
-        overlaps="permissions,user,users",
+        viewonly=True,
     )
     mntners_user_management = relationship(
         "AuthMntner",
         secondary=lambda: _mntner_permission_join(AuthPermission.user_management == sa.true()),
-        overlaps="user,users,mntners,mntners_no_user_management",
+        viewonly=True,
     )
     mntners_no_user_management = relationship(
         "AuthMntner",
         secondary=lambda: _mntner_permission_join(AuthPermission.user_management == sa.false()),
-        overlaps="user,users,mntners,mntners_user_management",
+        viewonly=True,
     )
 
     created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
@@ -565,12 +564,7 @@ class AuthMntner(Base):  # type: ignore
 
     permissions = relationship(
         "AuthPermission",
-        backref=sa.orm.backref(
-            "mntner",
-            uselist=False,
-            overlaps="mntners,mntners_no_user_management,mntners_user_management,users",
-        ),
-        overlaps="users,mntners,mntners_user_management,mntners_no_user_management",
+        backref=sa.orm.backref("mntner", uselist=False),
     )
 
     created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False)
