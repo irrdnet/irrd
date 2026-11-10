@@ -13,20 +13,38 @@ workflows:
     when:
         not: << pipeline.parameters.build_extensive >>
     jobs:
+      # The oldest supported server and a recent one, paired with the oldest
+      # and newest Python, to keep both ends covered on every commit.
       - unit_tests_cpython:
           name: unit-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
           matrix:
             parameters:
-              python_version: ["3.11", "3.14"]
+              python_version: ["3.11"]
               postgres_version: ["15.0"]
+              redis_image: ["cimg/redis"]
               redis_version: ["5.0"]
+      - unit_tests_cpython:
+          name: unit-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-valkey<< matrix.redis_version >>
+          matrix:
+            parameters:
+              python_version: ["3.14"]
+              postgres_version: ["15.0"]
+              redis_version: ["9.0"]
       - integration_tests_cpython:
           name: integration-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
           matrix:
             parameters:
-              python_version: ["3.11", "3.14"]
+              python_version: ["3.11"]
               postgres_version: ["15.0"]
+              redis_image: ["cimg/redis"]
               redis_version: ["5.0"]
+      - integration_tests_cpython:
+          name: integration-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-valkey<< matrix.redis_version >>
+          matrix:
+            parameters:
+              python_version: ["3.14"]
+              postgres_version: ["15.0"]
+              redis_version: ["9.0"]
       - lint:
           name: lint-cpython-3-11
           docker_image: cimg/python:3.11
@@ -35,24 +53,57 @@ workflows:
           docker_image: cimg/python:3.11
 
   test-extensive:
-    # This workflow is about 10K credits
+    # This workflow is about 4K credits
     when: << pipeline.parameters.build_extensive >>
     jobs:
+      # The full Python and PostgreSQL matrix runs against one recent server.
       - unit_tests_cpython:
-          name: unit-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
+          name: unit-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-valkey<< matrix.redis_version >>
           matrix:
             parameters:
               # Update deployment docs as well.
               python_version: ["3.11", "3.12", "3.13", "3.14"]
               postgres_version: ["9.6", "11.16", "13.7", "15.0", "18.0"]
-              redis_version: ["5.0", "6.2", "7.0", "8.4"]
+              redis_version: ["9.0"]
       - integration_tests_cpython:
-          name: integration-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
+          name: integration-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-valkey<< matrix.redis_version >>
           matrix:
             parameters:
               python_version: ["3.11", "3.12", "3.13", "3.14"]
               postgres_version: ["9.6", "11.16", "13.7", "15.0", "18.0"]
-              redis_version: ["5.0", "6.2", "7.0"]
+              redis_version: ["9.0"]
+      # Other server versions are covered on one recent Python and PostgreSQL,
+      # as our command use is limited but server behaviour can still change.
+      - unit_tests_cpython:
+          name: unit-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-valkey<< matrix.redis_version >>
+          matrix:
+            parameters:
+              python_version: ["3.14"]
+              postgres_version: ["15.0"]
+              redis_version: ["7.2", "8.1"]
+      - integration_tests_cpython:
+          name: integration-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-valkey<< matrix.redis_version >>
+          matrix:
+            parameters:
+              python_version: ["3.14"]
+              postgres_version: ["15.0"]
+              redis_version: ["7.2", "8.1"]
+      - unit_tests_cpython:
+          name: unit-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
+          matrix:
+            parameters:
+              python_version: ["3.14"]
+              postgres_version: ["15.0"]
+              redis_image: ["cimg/redis"]
+              redis_version: ["5.0", "8.10"]
+      - integration_tests_cpython:
+          name: integration-tests-cpython<< matrix.python_version >>-pg<< matrix.postgres_version >>-redis<< matrix.redis_version >>
+          matrix:
+            parameters:
+              python_version: ["3.14"]
+              postgres_version: ["15.0"]
+              redis_image: ["cimg/redis"]
+              redis_version: ["5.0", "8.10"]
       - lint:
           name: lint-cpython-3-11
           docker_image: cimg/python:3.11
@@ -158,6 +209,9 @@ jobs:
         type: string
       redis_version:
         type: string
+      redis_image:
+        type: string
+        default: valkey/valkey
 
     resource_class: small
     working_directory: /mnt/ramdisk
@@ -176,7 +230,7 @@ jobs:
           POSTGRES_HOST_AUTH_METHOD: trust
         command: postgres -c track_commit_timestamp=true
 
-      - image: cimg/redis:<< parameters.redis_version >>
+      - image: << parameters.redis_image >>:<< parameters.redis_version >>
 #      - image: cimg/rust:1.65
 
     steps:
@@ -195,6 +249,9 @@ jobs:
         type: string
       redis_version:
         type: string
+      redis_image:
+        type: string
+        default: valkey/valkey
 
     resource_class: large
     working_directory: /mnt/ramdisk
@@ -217,7 +274,7 @@ jobs:
           POSTGRES_HOST_AUTH_METHOD: trust
         command: postgres -c track_commit_timestamp=true
 
-      - image: cimg/redis:<< parameters.redis_version >>
+      - image: << parameters.redis_image >>:<< parameters.redis_version >>
 #      - image: cimg/rust:1.65
 
     steps:
