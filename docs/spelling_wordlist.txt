@@ -106,6 +106,8 @@ starlette
 stdin
 stdout
 sublicense
+Subqueries
+subqueries
 Systemd
 systemd
 th

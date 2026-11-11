@@ -17,6 +17,8 @@ from irrd.utils.text import remove_auth_hashes, snake_to_camel_case
 from ..query_resolver import InvalidQueryException, QueryResolver, QuerySourceManager
 from .schema_generator import SchemaGenerator
 
+MAX_SQL_QUERIES_PER_REQUEST = 5000
+
 """
 Resolvers resolve GraphQL queries, usually by translating them
 to a database query and then translating the results to an
@@ -198,6 +200,7 @@ def resolve_rpsl_object_journal(rpsl_object, info: GraphQLResolveInfo):
     if not is_client_permitted(info.context["request"].client.host, access_list):
         raise GraphQLError(f"Access to journal denied for source {rpsl_object['source']}")
 
+    _count_sql_query(info)
     query = RPSLDatabaseJournalQuery()
     query.sources([rpsl_object["source"]]).rpsl_pk(rpsl_object["rpslPk"])
     for row in database_handler.execute_query(query, refresh_on_error=True):
@@ -210,6 +213,15 @@ def resolve_rpsl_object_journal(rpsl_object, info: GraphQLResolveInfo):
         yield response
 
 
+def _count_sql_query(info: GraphQLResolveInfo) -> None:
+    info.context["sql_queries_run"] = info.context.get("sql_queries_run", 0) + 1
+    if info.context["sql_queries_run"] > MAX_SQL_QUERIES_PER_REQUEST:
+        raise InvalidQueryException(
+            f"This query needs more than {MAX_SQL_QUERIES_PER_REQUEST} database queries. "
+            "Limit the number of objects, or the subqueries made on them."
+        )
+
+
 def _rpsl_db_query_to_graphql_out(query: RPSLDatabaseQuery, info: GraphQLResolveInfo):
     """
     Given an RPSL database query, execute it and clean up the output
@@ -220,6 +232,7 @@ def _rpsl_db_query_to_graphql_out(query: RPSLDatabaseQuery, info: GraphQLResolve
     - Adding the asn and prefix fields if applicable
     - Ensuring the right fields are returned as a list of strings or a string
     """
+    _count_sql_query(info)
     database_handler = info.context["request"].app.state.database_handler
     if info.context.get("sql_trace"):
         info.context.setdefault("sql_queries", []).append(repr(query))
