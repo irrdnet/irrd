@@ -1,4 +1,3 @@
-import contextlib
 import logging
 import textwrap
 from collections import defaultdict
@@ -38,8 +37,7 @@ class ChangeSubmissionHandler:
         internal_authenticated_user: AuthUser | None = None,
         request_meta: dict[str, str | None] | None = None,
     ):
-        self.database_handler = DatabaseHandler()
-        with contextlib.closing(self.database_handler):
+        with DatabaseHandler() as self.database_handler:
             self.request_meta = request_meta if request_meta else {}
             keycert_obj_pk, keycert_obj_sources = (
                 self._resolve_pgp_keycert(pgp_fingerprint) if pgp_fingerprint else (None, set())
@@ -73,8 +71,7 @@ class ChangeSubmissionHandler:
         request_meta: dict[str, str | None] | None = None,
         remote_ip: IP | None = None,
     ):
-        self.database_handler = DatabaseHandler()
-        with contextlib.closing(self.database_handler):
+        with DatabaseHandler() as self.database_handler:
             self.request_meta = request_meta if request_meta else {}
 
             reference_validator = ReferenceValidator(self.database_handler)
@@ -118,8 +115,7 @@ class ChangeSubmissionHandler:
     def load_suspension_submission(
         self, data: RPSLSuspensionSubmission, request_meta: dict[str, str | None] | None = None
     ):
-        self.database_handler = DatabaseHandler()
-        with contextlib.closing(self.database_handler):
+        with DatabaseHandler() as self.database_handler:
             self.request_meta = request_meta if request_meta else {}
 
             reference_validator = ReferenceValidator(self.database_handler)

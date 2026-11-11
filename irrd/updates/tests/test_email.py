@@ -3,8 +3,8 @@ from unittest.mock import Mock
 
 import pytest
 
-from irrd.storage.database_handler import DatabaseHandler
 from irrd.updates.email import handle_email_submission
+from irrd.utils.test_utils import make_mock_dh
 
 
 @pytest.fixture()
@@ -12,8 +12,8 @@ def mock_email_dh(monkeypatch):
     mock_email = Mock()
     monkeypatch.setattr("irrd.utils.email.send_email", mock_email)
 
-    mock_dh = Mock(spec=DatabaseHandler)
-    monkeypatch.setattr("irrd.updates.handler.DatabaseHandler", mock_dh)
+    mock_dh = make_mock_dh()
+    monkeypatch.setattr("irrd.updates.handler.DatabaseHandler", lambda: mock_dh)
 
     yield mock_email, mock_dh
 

@@ -1,4 +1,3 @@
-import contextlib
 import logging
 import random
 import signal
@@ -489,7 +488,7 @@ class PreloadUpdater(threading.Thread):
         else:
             dh = mock_database_handler
 
-        with contextlib.closing(dh):
+        with dh:
             if self.update_routes:
                 self._update_routes(dh)
             self._update_all_sets(dh)
