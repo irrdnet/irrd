@@ -1,12 +1,10 @@
-from unittest.mock import Mock
-
-from irrd.utils.test_utils import flatten_mock_calls
+from irrd.utils.test_utils import flatten_mock_calls, make_mock_dh
 
 from ..mirror_force_reload import set_force_reload
 
 
 def test_set_force_reload(capsys, monkeypatch, config_override):
-    mock_dh = Mock()
+    mock_dh = make_mock_dh()
     monkeypatch.setattr("irrd.scripts.mirror_force_reload.DatabaseHandler", lambda: mock_dh)
 
     config_override({"sources": {"TEST": {"nrtm_host": "host"}}})

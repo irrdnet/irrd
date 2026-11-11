@@ -5,7 +5,7 @@ from unittest.mock import Mock
 from pytz import timezone
 
 from irrd.utils.rpsl_samples import SAMPLE_RTR_SET
-from irrd.utils.test_utils import flatten_mock_calls
+from irrd.utils.test_utils import flatten_mock_calls, make_mock_dh
 
 from ..set_last_modified_auth import set_last_modified
 
@@ -19,7 +19,7 @@ def test_set_last_modified(capsys, monkeypatch, config_override):
             }
         }
     )
-    mock_dh = Mock()
+    mock_dh = make_mock_dh()
     monkeypatch.setattr("irrd.scripts.set_last_modified_auth.DatabaseHandler", lambda: mock_dh)
     mock_dq = Mock()
     monkeypatch.setattr(

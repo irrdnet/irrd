@@ -1,12 +1,12 @@
 from unittest.mock import Mock
 
-from irrd.utils.test_utils import flatten_mock_calls
+from irrd.utils.test_utils import flatten_mock_calls, make_mock_dh
 
 from ..load_database import load
 
 
 def test_load_database_success(capsys, monkeypatch):
-    mock_dh = Mock()
+    mock_dh = make_mock_dh()
     monkeypatch.setattr("irrd.scripts.load_database.DatabaseHandler", lambda: mock_dh)
     mock_roa_validator = Mock()
     monkeypatch.setattr("irrd.scripts.load_database.BulkRouteROAValidator", lambda dh: mock_roa_validator)
@@ -31,7 +31,7 @@ def test_load_database_success(capsys, monkeypatch):
 
 
 def test_load_database_import_error(capsys, monkeypatch, caplog):
-    mock_dh = Mock()
+    mock_dh = make_mock_dh()
     monkeypatch.setattr("irrd.scripts.load_database.DatabaseHandler", lambda: mock_dh)
     mock_roa_validator = Mock()
     monkeypatch.setattr("irrd.scripts.load_database.BulkRouteROAValidator", lambda dh: mock_roa_validator)

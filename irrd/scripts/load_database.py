@@ -30,27 +30,24 @@ def load(source, filename, serial) -> int:
         )
         return 2
 
-    dh = DatabaseHandler()
-    roa_validator = BulkRouteROAValidator(dh)
-    dh.delete_all_rpsl_objects_with_journal(source)
-    dh.disable_journaling()
-    parser = MirrorFileImportParser(
-        source=source,
-        filename=filename,
-        serial=serial,
-        database_handler=dh,
-        direct_error_return=True,
-        roa_validator=roa_validator,
-    )
-    error = parser.run_import()
-    if error:
-        dh.rollback()
-    else:
+    with DatabaseHandler() as dh:
+        roa_validator = BulkRouteROAValidator(dh)
+        dh.delete_all_rpsl_objects_with_journal(source)
+        dh.disable_journaling()
+        parser = MirrorFileImportParser(
+            source=source,
+            filename=filename,
+            serial=serial,
+            database_handler=dh,
+            direct_error_return=True,
+            roa_validator=roa_validator,
+        )
+        error = parser.run_import()
+        if error:
+            dh.rollback()
+            print(f"Error occurred while processing object:\n{error}")
+            return 1
         dh.commit()
-    dh.close()
-    if error:
-        print(f"Error occurred while processing object:\n{error}")
-        return 1
     return 0
 
 

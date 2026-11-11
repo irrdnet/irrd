@@ -30,20 +30,17 @@ def update(source, filename) -> int:
         )
         return 2
 
-    dh = DatabaseHandler()
-    roa_validator = BulkRouteROAValidator(dh)
-    parser = MirrorUpdateFileImportParser(
-        source, filename, database_handler=dh, direct_error_return=True, roa_validator=roa_validator
-    )
-    error = parser.run_import()
-    if error:
-        dh.rollback()
-    else:
+    with DatabaseHandler() as dh:
+        roa_validator = BulkRouteROAValidator(dh)
+        parser = MirrorUpdateFileImportParser(
+            source, filename, database_handler=dh, direct_error_return=True, roa_validator=roa_validator
+        )
+        error = parser.run_import()
+        if error:
+            dh.rollback()
+            print(f"Error occurred while processing object:\n{error}")
+            return 1
         dh.commit()
-    dh.close()
-    if error:
-        print(f"Error occurred while processing object:\n{error}")
-        return 1
     return 0
 
 

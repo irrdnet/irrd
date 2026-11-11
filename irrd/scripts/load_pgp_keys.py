@@ -18,21 +18,20 @@ from irrd.storage.queries import RPSLDatabaseQuery
 
 
 def load_pgp_keys(source: str) -> None:
-    dh = DatabaseHandler()
-    query = RPSLDatabaseQuery(column_names=["rpsl_pk", "object_text"])
-    query = query.sources([source]).object_classes(["key-cert"])
-    keycerts = dh.execute_query(query)
+    with DatabaseHandler() as dh:
+        query = RPSLDatabaseQuery(column_names=["rpsl_pk", "object_text"])
+        query = query.sources([source]).object_classes(["key-cert"])
+        keycerts = dh.execute_query(query)
 
-    for keycert in keycerts:
-        rpsl_pk = keycert["rpsl_pk"]
-        print(f"Loading key-cert {rpsl_pk}")
-        # Parsing the keycert in strict mode will load it into the GPG keychain
-        result = rpsl_object_from_text(keycert["object_text"], strict_validation=True)
-        if result.messages.errors():
-            print(f"Errors in PGP key {rpsl_pk}: {result.messages.errors()}")
+        for keycert in keycerts:
+            rpsl_pk = keycert["rpsl_pk"]
+            print(f"Loading key-cert {rpsl_pk}")
+            # Parsing the keycert in strict mode will load it into the GPG keychain
+            result = rpsl_object_from_text(keycert["object_text"], strict_validation=True)
+            if result.messages.errors():
+                print(f"Errors in PGP key {rpsl_pk}: {result.messages.errors()}")
 
-    print("All valid key-certs loaded into the GnuPG keychain.")
-    dh.close()
+        print("All valid key-certs loaded into the GnuPG keychain.")
 
 
 def main():  # pragma: no cover
