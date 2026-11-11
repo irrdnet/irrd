@@ -1,3 +1,4 @@
+import contextlib
 import datetime
 import difflib
 import logging
@@ -206,20 +207,21 @@ class ChangeRequest:
             self.database_handler.upsert_rpsl_object(self.rpsl_obj_new, JournalEntryOrigin.auth_change)
 
         if self._auth_result:
-            session = saorm.Session(bind=self.database_handler._connection)
-            change_log = self._auth_result.to_change_log()
-            change_log.from_ip = self.request_meta.get(META_KEY_HTTP_CLIENT_IP, None)
-            change_log.from_email = self.request_meta.get("From", None)
-            change_log.rpsl_target_request_type = self.request_type
-            change_log.rpsl_target_pk = self.rpsl_obj_new.pk()
-            change_log.rpsl_target_source = self.rpsl_obj_new.source()
-            change_log.rpsl_target_object_class = self.rpsl_obj_new.rpsl_object_class
-            if self.rpsl_obj_current:
-                change_log.rpsl_target_object_text_old = self.rpsl_obj_current.render_rpsl_text()
-            if self.request_type != UpdateRequestType.DELETE:
-                change_log.rpsl_target_object_text_new = self.rpsl_obj_new.render_rpsl_text()
-            session.add(change_log)
-            session.flush()
+            with contextlib.closing(saorm.Session(bind=self.database_handler._connection)) as session:
+                change_log = self._auth_result.to_change_log()
+                change_log.from_ip = self.request_meta.get(META_KEY_HTTP_CLIENT_IP, None)
+                change_log.from_email = self.request_meta.get("From", None)
+                change_log.rpsl_target_request_type = self.request_type
+                change_log.rpsl_target_pk = self.rpsl_obj_new.pk()
+                change_log.rpsl_target_source = self.rpsl_obj_new.source()
+                change_log.rpsl_target_object_class = self.rpsl_obj_new.rpsl_object_class
+                if self.rpsl_obj_current:
+                    change_log.rpsl_target_object_text_old = self.rpsl_obj_current.render_rpsl_text()
+                if self.request_type != UpdateRequestType.DELETE:
+                    change_log.rpsl_target_object_text_new = self.rpsl_obj_new.render_rpsl_text()
+                session.add(change_log)
+                # Flushed, not committed: the change log is part of the handler's transaction.
+                session.flush()
 
         self.status = UpdateRequestStatus.SAVED
 
