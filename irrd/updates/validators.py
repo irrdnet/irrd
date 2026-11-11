@@ -611,20 +611,22 @@ class AuthValidator:
         if not api_keys:
             return None
 
-        session = saorm.Session(bind=self.database_handler._connection)
-        query = (
-            session.query(AuthApiToken)
-            .join(AuthMntner)
-            .filter(
-                AuthMntner.rpsl_mntner_pk == rpsl_pk,
-                AuthMntner.rpsl_mntner_source == source,
-                AuthApiToken.token.in_(api_keys),
+        with contextlib.closing(saorm.Session(bind=self.database_handler._connection)) as session:
+            # The mntner is loaded eagerly, as callers read it after the session is closed.
+            query = (
+                session.query(AuthApiToken)
+                .join(AuthMntner)
+                .options(saorm.joinedload(AuthApiToken.mntner))
+                .filter(
+                    AuthMntner.rpsl_mntner_pk == rpsl_pk,
+                    AuthMntner.rpsl_mntner_source == source,
+                    AuthApiToken.token.in_(api_keys),
+                )
             )
-        )
-        for api_token in query.all():
-            if api_token.valid_for(self.origin, self.remote_ip):
-                logger.info(f"Authenticated through API token {api_token.pk} on mntner {rpsl_pk}")
-                return api_token
+            for api_token in query.all():
+                if api_token.valid_for(self.origin, self.remote_ip):
+                    logger.info(f"Authenticated through API token {api_token.pk} on mntner {rpsl_pk}")
+                    return api_token
 
         return None
 
