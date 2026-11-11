@@ -5,6 +5,7 @@ insert it into the database.
 """
 
 import argparse
+import contextlib
 import sys
 from pathlib import Path
 
@@ -28,26 +29,26 @@ class RPSLParse:
 
     def main(self, filename, strict_validation, database, show_info=True):
         self.show_info = show_info
-        if database:
-            self.database_handler = DatabaseHandler()
-            self.database_handler.disable_journaling()
+        with contextlib.ExitStack() as stack:
+            if database:
+                self.database_handler = stack.enter_context(DatabaseHandler())
+                self.database_handler.disable_journaling()
 
-        if filename == "-":  # pragma: no cover
-            f = sys.stdin
-        else:
-            f = open(filename, encoding="utf-8", errors="backslashreplace")
+            if filename == "-":  # pragma: no cover
+                f = sys.stdin
+            else:
+                f = stack.enter_context(open(filename, encoding="utf-8", errors="backslashreplace"))
 
-        for paragraph in split_paragraphs_rpsl(f):
-            self.parse_object(paragraph, strict_validation)
+            for paragraph in split_paragraphs_rpsl(f):
+                self.parse_object(paragraph, strict_validation)
 
-        print(f"Processed {self.obj_parsed} objects, {self.obj_errors} with errors")
-        if self.obj_unknown:
-            unknown_formatted = ", ".join(self.unknown_object_classes)
-            print(f"Ignored {self.obj_unknown} objects due to unknown object classes: {unknown_formatted}")
+            print(f"Processed {self.obj_parsed} objects, {self.obj_errors} with errors")
+            if self.obj_unknown:
+                unknown = ", ".join(self.unknown_object_classes)
+                print(f"Ignored {self.obj_unknown} objects due to unknown object classes: {unknown}")
 
-        if self.database_handler:
-            self.database_handler.commit()
-            self.database_handler.close()
+            if self.database_handler:
+                self.database_handler.commit()
 
     def parse_object(self, rpsl_text, strict_validation):
         try:

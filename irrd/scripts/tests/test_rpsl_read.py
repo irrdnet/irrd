@@ -1,5 +1,9 @@
 from unittest.mock import Mock
 
+import pytest
+
+from irrd.utils.test_utils import make_mock_dh
+
 from ..rpsl_read import RPSLParse
 
 # First an entirely valid object with an as-block that should be reformatted,
@@ -41,7 +45,7 @@ remarks:        remark
 
 
 def test_rpsl_read(capsys, tmpdir, monkeypatch):
-    mock_database_handler = Mock()
+    mock_database_handler = make_mock_dh()
     monkeypatch.setattr("irrd.scripts.rpsl_read.DatabaseHandler", lambda: mock_database_handler)
 
     tmp_file = tmpdir + "/rpsl_parse_test.rpsl"
@@ -79,3 +83,17 @@ def test_rpsl_read(capsys, tmpdir, monkeypatch):
 
     RPSLParse().main(filename=tmp_file, strict_validation=False, database=False)
     assert not mock_database_handler.mock_calls
+
+
+def test_rpsl_read_closes_handler_on_failure(tmpdir, monkeypatch):
+    mock_database_handler = make_mock_dh()
+    monkeypatch.setattr("irrd.scripts.rpsl_read.DatabaseHandler", lambda: mock_database_handler)
+    monkeypatch.setattr("irrd.scripts.rpsl_read.rpsl_object_from_text", Mock(side_effect=RuntimeError))
+    tmp_file = tmpdir + "/rpsl_parse_test.rpsl"
+    with open(tmp_file, "w") as fh:
+        fh.write(TEST_DATA)
+
+    with pytest.raises(RuntimeError):
+        RPSLParse().main(filename=tmp_file, strict_validation=True, database=True)
+    assert mock_database_handler.close.called
+    assert not mock_database_handler.commit.called
