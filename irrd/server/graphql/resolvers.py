@@ -222,10 +222,7 @@ def _rpsl_db_query_to_graphql_out(query: RPSLDatabaseQuery, info: GraphQLResolve
     """
     database_handler = info.context["request"].app.state.database_handler
     if info.context.get("sql_trace"):
-        if "sql_queries" not in info.context:
-            info.context["sql_queries"] = [repr(query)]
-        else:
-            info.context["sql_queries"].append(repr(query))
+        info.context.setdefault("sql_queries", []).append(repr(query))
 
     for row in database_handler.execute_query(query, refresh_on_error=True):
         graphql_result = {snake_to_camel_case(k): v for k, v in row.items() if k != "parsed_data"}
@@ -306,7 +303,7 @@ def resolve_as_set_prefixes(
         )
         yield {"rpslPk": set_name, "prefixes": prefixes}
     if sql_trace:
-        info.context["sql_queries"] = query_resolver.retrieve_sql_trace()
+        info.context.setdefault("sql_queries", []).extend(query_resolver.retrieve_sql_trace())
 
 
 @convert_kwargs_to_snake_case
@@ -336,7 +333,7 @@ def resolve_recursive_set_members(
         for source, members in results.items():
             yield {"rpslPk": set_name, "rootSource": source, "members": members}
     if sql_trace:
-        info.context["sql_queries"] = query_resolver.retrieve_sql_trace()
+        info.context.setdefault("sql_queries", []).extend(query_resolver.retrieve_sql_trace())
 
 
 def _columns_for_graphql_selection(info: GraphQLResolveInfo) -> set[str]:

@@ -77,6 +77,7 @@ def prepare_resolver(monkeypatch):
     mock_database_query.columns = RPSLDatabaseQuery.columns
 
     mock_query_resolver = Mock(spec=QueryResolver)
+    mock_query_resolver.retrieve_sql_trace = Mock(return_value=["sql query"])
     monkeypatch.setattr(
         "irrd.server.graphql.resolvers.QueryResolver", lambda preloader, database_handler: mock_query_resolver
     )
@@ -398,6 +399,7 @@ class TestGraphQLResolvers:
         mock_query_resolver.routes_for_as_set = lambda set_name, ip_version, root_source, exclude_sets: [
             f"prefix-{set_name}-{root_source}"
         ]
+        info.context["sql_queries"] = ["earlier query"]
 
         result = list(
             resolvers.resolve_as_set_prefixes(
@@ -417,6 +419,8 @@ class TestGraphQLResolvers:
             key=str,
         )
         mock_query_resolver.set_query_sources.assert_called_once()
+        # Added to, not replacing, an existing trace
+        assert info.context["sql_queries"] == ["earlier query", "sql query"]
 
         result = list(resolvers.resolve_as_set_prefixes(None, info, set_names=["as-A"], root_source="TEST1"))
         assert result == [{"rpslPk": "AS-A", "prefixes": ["prefix-AS-A-TEST1"]}]
