@@ -4,13 +4,14 @@ from unittest.mock import Mock
 
 from irrd import __version__
 from irrd.conf import get_setting
+from irrd.utils.test_utils import make_mock_dh
 
 from ..status_generator import StatusGenerator
 
 
 class TestStatusGenerator:
     def test_request(self, monkeypatch, config_override):
-        mock_database_handler = Mock()
+        mock_database_handler = make_mock_dh()
         monkeypatch.setattr(
             "irrd.server.http.status_generator.DatabaseHandler", lambda readonly: mock_database_handler
         )

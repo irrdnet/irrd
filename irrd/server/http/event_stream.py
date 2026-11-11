@@ -1,5 +1,4 @@
 import asyncio
-import contextlib
 import csv
 import datetime
 import logging
@@ -151,8 +150,7 @@ class EventStreamEndpoint(WebSocketEndpoint):
         journaled_sources = [
             name for name, settings in get_setting("sources").items() if settings.get("keep_journal")
         ]
-        dh = DatabaseHandler(readonly=True)
-        with contextlib.closing(dh):
+        with DatabaseHandler(readonly=True) as dh:
             query = DatabaseStatusQuery().sources(journaled_sources)
             sources_created = {row["source"]: row["created"].isoformat() for row in dh.execute_query(query)}
 

@@ -1,4 +1,3 @@
-import contextlib
 import logging
 import textwrap
 
@@ -19,8 +18,7 @@ class StatusGenerator:
         """
         Generate a human-readable overview of database status.
         """
-        database_handler = DatabaseHandler(readonly=True)
-        with contextlib.closing(database_handler):
+        with DatabaseHandler(readonly=True) as database_handler:
             statistics_query = RPSLDatabaseObjectStatisticsQuery()
             self.statistics_results = list(database_handler.execute_query(statistics_query))
             status_query = DatabaseStatusQuery()

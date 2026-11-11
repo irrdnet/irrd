@@ -7,7 +7,7 @@ from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.scopefilter.validators import ScopeFilterValidator
 from irrd.storage.models import AuthoritativeChangeOrigin, JournalEntryOrigin
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
-from irrd.utils.test_utils import flatten_mock_calls
+from irrd.utils.test_utils import flatten_mock_calls, make_mock_dh
 
 from ...utils.validators import RPSLChangeSubmission, RPSLSuspensionSubmission
 from ...vendor.mock_alchemy.mocking import UnifiedAlchemyMagicMock
@@ -18,7 +18,7 @@ from ..parser_state import SuspensionRequestType, UpdateRequestStatus
 @pytest.fixture()
 def prepare_mocks(monkeypatch, config_override):
     monkeypatch.setenv("IRRD_SOURCES_TEST_AUTHORITATIVE", "1")
-    mock_dh = Mock()
+    mock_dh = make_mock_dh()
     monkeypatch.setattr("irrd.updates.handler.DatabaseHandler", lambda: mock_dh)
     mock_dq = Mock()
     monkeypatch.setattr("irrd.updates.handler.RPSLDatabaseQuery", lambda: mock_dq)

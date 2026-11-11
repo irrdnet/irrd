@@ -6,6 +6,7 @@ import time_machine
 from pytz import UTC
 
 from irrd import ENV_MAIN_STARTUP_TIME, __version__
+from irrd.utils.test_utils import make_mock_dh
 
 from ..metrics_generator import MetricsGenerator
 
@@ -13,7 +14,7 @@ from ..metrics_generator import MetricsGenerator
 class TestMetricsGenerator:
     @time_machine.travel(datetime.fromtimestamp(50, UTC))
     def test_request(self, monkeypatch):
-        mock_database_handler = Mock()
+        mock_database_handler = make_mock_dh()
         monkeypatch.setattr(
             "irrd.server.http.metrics_generator.DatabaseHandler", lambda readonly: mock_database_handler
         )

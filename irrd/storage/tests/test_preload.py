@@ -4,9 +4,8 @@ from unittest.mock import Mock
 
 import pytest
 
-from irrd.utils.test_utils import flatten_mock_calls
+from irrd.utils.test_utils import flatten_mock_calls, make_mock_dh
 
-from ..database_handler import DatabaseHandler
 from ..preload import (
     REDIS_KEY_PK_SOURCE_SEPARATOR,
     REDIS_PRELOAD_ALL_MESSAGE,
@@ -201,7 +200,7 @@ class TestPreloading:
 
 class TestPreloadUpdater:
     def test_preload_updater(self, monkeypatch):
-        mock_database_handler = Mock(spec=DatabaseHandler)
+        mock_database_handler = make_mock_dh()
         mock_database_query = Mock(spec=RPSLDatabaseQuery)
         monkeypatch.setattr(
             "irrd.storage.preload.RPSLDatabaseQuery",
@@ -387,7 +386,8 @@ class TestPreloadUpdater:
         ]
 
     def test_preload_updater_failure(self, caplog):
-        mock_database_handler = Mock()
+        mock_database_handler = make_mock_dh()
+        mock_database_handler.execute_query = Mock(side_effect=RuntimeError("expected"))
         mock_reload_lock = Mock()
         mock_preload_obj = Mock()
         PreloadUpdater(mock_preload_obj, mock_reload_lock, True, True, True).run(mock_database_handler)
