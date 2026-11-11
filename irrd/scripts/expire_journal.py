@@ -8,10 +8,6 @@ from pathlib import Path
 
 import pytz
 
-"""
-Remove journal entries from IRRd.
-"""
-
 logger = logging.getLogger(__name__)
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 from pytz import UTC

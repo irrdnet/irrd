@@ -4,10 +4,6 @@ import logging
 import sys
 from pathlib import Path
 
-"""
-Set last-modified attribute on all authoritative objects.
-"""
-
 logger = logging.getLogger(__name__)
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 

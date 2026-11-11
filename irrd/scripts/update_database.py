@@ -4,10 +4,6 @@ import logging
 import sys
 from pathlib import Path
 
-"""
-Update a database based on a RPSL file.
-"""
-
 logger = logging.getLogger(__name__)
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 

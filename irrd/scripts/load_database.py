@@ -4,10 +4,6 @@ import logging
 import sys
 from pathlib import Path
 
-"""
-Load an RPSL file into the database.
-"""
-
 logger = logging.getLogger(__name__)
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
