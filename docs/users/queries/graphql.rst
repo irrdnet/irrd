@@ -935,6 +935,11 @@ Tips
   aliases_. This reduces latency. One request may ask for at most 2500
   fields in total, over all its queries, including through aliases and
   fragments.
+* Subqueries like ``mntByObjs`` are resolved with one database query for
+  each object returned by their parent query. One request may run at most
+  5000 database queries in total. Subqueries beyond that return null with
+  an error, so limit the number of objects with ``recordLimit``, or ask for
+  fewer subqueries on them.
 * Many queries will be based on user input. Composing a string to embed
   the query arguments is frowned upon in GraphQL. You can use variables_
   to work with user input.

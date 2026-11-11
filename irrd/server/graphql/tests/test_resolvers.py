@@ -105,6 +105,15 @@ def prepare_resolver(monkeypatch):
 
 
 class TestGraphQLResolvers:
+    def test_database_query_limit(self, prepare_resolver, config_override):
+        config_override({"sources": {"TEST1": {}}})
+        info, _, _ = prepare_resolver
+
+        info.context["sql_queries_run"] = resolvers.MAX_SQL_QUERIES_PER_REQUEST
+        with pytest.raises(InvalidQueryException) as ce:
+            list(resolvers.resolve_rpsl_objects(None, info, rpsl_pk="pk"))
+        assert "database queries" in str(ce.value)
+
     def test_resolve_rpsl_objects(self, prepare_resolver, config_override):
         config_override({"sources": {"TEST1": {}}})
 
@@ -419,7 +428,6 @@ class TestGraphQLResolvers:
             key=str,
         )
         mock_query_resolver.set_query_sources.assert_called_once()
-        # Added to, not replacing, an existing trace
         assert info.context["sql_queries"] == ["earlier query", "sql query"]
 
         result = list(resolvers.resolve_as_set_prefixes(None, info, set_names=["as-A"], root_source="TEST1"))
