@@ -3,6 +3,7 @@ import inspect
 from collections import abc
 from datetime import datetime
 from typing import Any
+from unittest.mock import MagicMock
 
 from irrd.rpsl.parser import RPSLObject
 from irrd.storage.database_handler import (
@@ -17,6 +18,19 @@ from irrd.storage.queries import (
     RPSLDatabaseJournalStatisticsQuery,
 )
 from irrd.utils.rpsl_samples import SAMPLE_MNTNER
+
+
+def make_mock_dh() -> MagicMock:
+    """
+    A mock DatabaseHandler, which uses the real context manager methods.
+    Set as plain functions, so that they are not recorded as calls.
+    """
+    mock_dh = MagicMock(spec=DatabaseHandler)
+    # An instance attribute, so not covered by the spec
+    mock_dh._connection = MagicMock()
+    mock_dh.__enter__ = lambda self: DatabaseHandler.__enter__(mock_dh)
+    mock_dh.__exit__ = lambda self, *args: DatabaseHandler.__exit__(mock_dh, *args)
+    return mock_dh
 
 
 def flatten_mock_calls(mock, flatten_objects=False):
@@ -181,6 +195,9 @@ class MockDatabaseHandler(metaclass=MockSingletonMeta):
                 return result
             except KeyError:  # pragma: no cover
                 raise ValueError(f"Unknown query in MockDatabaseHandler: {query}")
+
+    __enter__ = DatabaseHandler.__enter__
+    __exit__ = DatabaseHandler.__exit__
 
     def close(self):
         self.closed = True

@@ -36,10 +36,9 @@ def set_force_reload(source) -> None:
             " client-clear-known-keys'"
         )
 
-    dh = DatabaseHandler()
-    dh.set_force_reload(source)
-    dh.commit()
-    dh.close()
+    with DatabaseHandler() as dh:
+        dh.set_force_reload(source)
+        dh.commit()
 
 
 def main():  # pragma: no cover

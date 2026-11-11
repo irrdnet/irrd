@@ -34,37 +34,34 @@ def expire_journal(skip_confirmation: bool, expire_before: datetime.datetime, so
         print(f"Minimum expiry is {minimum_expiry.strftime('%Y-%m-%d')}")
         return 1
 
-    dh = DatabaseHandler()
+    with DatabaseHandler() as dh:
+        q = (
+            RPSLDatabaseJournalQuery(column_names=["timestamp"])
+            .sources([source])
+            .entries_before_date(expire_before)
+        )
+        affected_object_count = len(list(dh.execute_query(q)))
 
-    q = (
-        RPSLDatabaseJournalQuery(column_names=["timestamp"])
-        .sources([source])
-        .entries_before_date(expire_before)
-    )
-    affected_object_count = len(list(dh.execute_query(q)))
+        if not affected_object_count:
+            print("No journal entries found to expire.")
+            return 1
 
-    if not affected_object_count:
-        print("No journal entries found to expire.")
-        dh.close()
-        return 1
+        if not skip_confirmation:
+            print(textwrap.dedent(f"""
+                    Found {affected_object_count} journal entries to delete from the journal for {source}.
+                    This is the only record of history kept by IRRd itself.
+                    After deletion, this can not be recovered.
+                    
+                    To confirm deleting these entries for {source}, type 'yes':
+                    """).strip())
+            confirmation = input("> ")
+            if confirmation != "yes":
+                print("Deletion cancelled.")
+                return 2
 
-    if not skip_confirmation:
-        print(textwrap.dedent(f"""
-                Found {affected_object_count} journal entries to delete from the journal for {source}.
-                This is the only record of history kept by IRRd itself.
-                After deletion, this can not be recovered.
-                
-                To confirm deleting these entries for {source}, type 'yes':
-                """).strip())
-        confirmation = input("> ")
-        if confirmation != "yes":
-            print("Deletion cancelled.")
-            dh.close()
-            return 2
+        dh.delete_journal_entries_before_date(expire_before, source)
+        dh.commit()
 
-    dh.delete_journal_entries_before_date(expire_before, source)
-    dh.commit()
-    dh.close()
     print("Expiry complete.")
     return 0
 

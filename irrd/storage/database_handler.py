@@ -5,7 +5,7 @@ from collections.abc import Iterable, Iterator
 from datetime import UTC, datetime
 from functools import lru_cache
 from io import StringIO
-from typing import Any
+from typing import Any, Self
 
 import sqlalchemy as sa
 from asgiref.sync import sync_to_async
@@ -82,7 +82,10 @@ class DatabaseHandler:
 
     Note that no writes to the database are final until commit()
     has been called - and rollback() can be called at any time
-    to all submitted changes.
+    to discard all submitted changes.
+
+    Exiting the context manager does not commit, so any uncommitted
+    changes are discarded.
     """
 
     journaling_enabled: bool
@@ -126,6 +129,12 @@ class DatabaseHandler:
     @sync_to_async
     def create_async(cls, readonly=False) -> "DatabaseHandler":
         return cls(readonly=readonly)  # pragma: no cover
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        self.close()
 
     def refresh_connection(self) -> None:
         """

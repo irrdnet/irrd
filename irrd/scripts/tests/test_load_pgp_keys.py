@@ -3,14 +3,14 @@ from unittest.mock import Mock
 import pytest
 
 from irrd.utils.rpsl_samples import SAMPLE_KEY_CERT
-from irrd.utils.test_utils import flatten_mock_calls
+from irrd.utils.test_utils import flatten_mock_calls, make_mock_dh
 
 from ..load_pgp_keys import load_pgp_keys
 
 
 @pytest.mark.usefixtures("tmp_gpg_dir")
 def test_load_pgp_keys(capsys, monkeypatch):
-    mock_dh = Mock()
+    mock_dh = make_mock_dh()
     mock_dq = Mock()
     monkeypatch.setattr("irrd.scripts.load_pgp_keys.DatabaseHandler", lambda: mock_dh)
     monkeypatch.setattr("irrd.scripts.load_pgp_keys.RPSLDatabaseQuery", lambda column_names: mock_dq)

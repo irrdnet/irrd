@@ -94,6 +94,24 @@ def test_status_tracker_closed_on_init_failure(monkeypatch):
     assert connection.close.called
 
 
+def test_connection_closed_on_context_manager_exit(monkeypatch):
+    connection = Mock()
+    monkeypatch.setattr("irrd.storage.database_handler.get_engine", lambda: Mock(connect=lambda: connection))
+
+    with DatabaseHandler(readonly=True) as dh:
+        assert dh._connection is connection
+    assert connection.close.called
+
+
+def test_exception_not_suppressed_by_context_manager(monkeypatch):
+    connection = Mock()
+    monkeypatch.setattr("irrd.storage.database_handler.get_engine", lambda: Mock(connect=lambda: connection))
+
+    with raises(ValueError), DatabaseHandler(readonly=True):
+        raise ValueError()
+    assert connection.close.called
+
+
 # noinspection PyTypeChecker
 class TestDatabaseHandlerLive:
     """
