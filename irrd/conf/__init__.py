@@ -38,6 +38,10 @@ BCRYPT_MAX_ROUNDS = 16
 # per submission (GHSA-pcwp-hhmm-c58f)
 MAX_CREDENTIALS_PER_SUBMISSION = 20
 NRTM4_SERVER_DELTA_EXPIRY_TIME = datetime.timedelta(hours=24)
+# Bounds how far a gzipped file may expand relative to its compressed size,
+# so a small file can not decompress into an arbitrarily large one.
+# Mirror files compress 10-30x, or over 100x when objects are near identical.
+MAX_GZIP_EXPANSION_RATIO = 500
 
 
 LOGGING = {

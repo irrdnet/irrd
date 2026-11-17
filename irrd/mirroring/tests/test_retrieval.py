@@ -46,6 +46,32 @@ def test_download_gz_removes_the_compressed_file(monkeypatch, tmp_download_dir):
     assert [p.name for p in tmp_download_dir.iterdir()] == [Path(path).name]
 
 
+def test_download_rejects_gzip_expanding_too_far(monkeypatch, tmp_download_dir):
+    # Large enough that the limit is only reached after the first chunk
+    _mock_download(monkeypatch, gzip.compress(b"\0" * 8 * 1024 * 1024))
+    with pytest.raises(ValueError) as ce:
+        retrieve_file("https://example.com/source.gz", return_contents=False)
+    assert "https://example.com/source.gz" in str(ce.value)
+    assert "compressed size" in str(ce.value)
+    assert not list(tmp_download_dir.iterdir())
+
+
+def test_download_accepts_realistically_compressed_gzip(monkeypatch, tmp_download_dir):
+    content = b"".join(
+        f"route: 192.0.{i // 256}.{i % 256}/24\norigin: AS65530\nsource: TEST\n\n".encode()
+        for i in range(20000)
+    )
+    _mock_download(monkeypatch, gzip.compress(content))
+    path, _ = retrieve_file("https://example.com/source.gz", return_contents=False)
+    assert Path(path).read_bytes() == content
+
+
+def test_local_unlinks_temporary_file_on_missing_file(tmp_path, tmp_download_dir):
+    with pytest.raises(FileNotFoundError):
+        retrieve_file(f"file://{tmp_path}/missing.gz", return_contents=False)
+    assert not list(tmp_download_dir.iterdir())
+
+
 def test_local_unlinks_temporary_file_on_invalid_gzip(tmp_path, tmp_download_dir):
     source = tmp_path / "source.gz"
     source.write_bytes(b"not gzipped")

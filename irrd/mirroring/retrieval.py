@@ -15,7 +15,7 @@ import requests
 from cryptography.hazmat.primitives import constant_time
 from pydantic_core import Url
 
-from irrd.conf import get_setting
+from irrd.conf import MAX_GZIP_EXPANSION_RATIO, get_setting
 from irrd.conf.defaults import HTTP_USER_AGENT
 
 logger = logging.getLogger(__name__)
@@ -79,7 +79,7 @@ def _retrieve_file_download(
         destination.close()
         check_file_hash_sha256(path, expected_hash)
         if url.endswith(".gz"):
-            gunzipped_path = _gunzip_file(path)
+            gunzipped_path = _gunzip_file(path, url)
             os.unlink(path)
             path = gunzipped_path
     except Exception:
@@ -90,15 +90,25 @@ def _retrieve_file_download(
     return path, True
 
 
-def _gunzip_file(path: str) -> str:
+def _gunzip_file(path: str, origin: str) -> str:
     """
     Gunzip a file into a new temporary file, removing the new file again if
-    gunzipping fails. The original file is left to the caller.
+    gunzipping fails, or the file expands further than permitted.
+    The original file is left to the caller. The origin is only used
+    in error messages, to identify the file to the operator.
     """
     destination = NamedTemporaryFile(delete=False)
     try:
-        with gzip.open(path, "rb") as f_in:
-            shutil.copyfileobj(f_in, destination)
+        with open(path, "rb") as compressed:
+            max_size = os.fstat(compressed.fileno()).st_size * MAX_GZIP_EXPANSION_RATIO
+            with gzip.open(compressed, "rb") as f_in:
+                while chunk := f_in.read(1024 * 1024):
+                    if destination.tell() + len(chunk) > max_size:
+                        raise ValueError(
+                            f"Refusing to gunzip {origin}: expands to more than"
+                            f" {MAX_GZIP_EXPANSION_RATIO} times its compressed size"
+                        )
+                    destination.write(chunk)
         destination.close()
     except Exception:
         os.unlink(destination.name)
@@ -133,7 +143,7 @@ def _retrieve_file_local(path, return_contents: bool, expected_hash: str | None)
         check_file_hash_sha256(path, expected_hash)
         if path.endswith(".gz"):
             logger.debug(f"Local file is expected to be gzipped, gunzipping from {path}")
-            return _gunzip_file(path), True
+            return _gunzip_file(path, path), True
         else:
             return path, False
     with open(path) as fh:
