@@ -104,6 +104,10 @@ scalability needs. So in a way, the actual "serving" part of an
 NRTMv4 server is not performed by IRRD, it only produces files for you
 to serve over HTTPS.
 
+On the Update Notification File, set ``Cache-Control`` to ``no-cache``
+or ``max-age=60``. Snapshot and Delta file URLs are unique for their
+content, so set ``Cache-Control`` to ``immutable`` on those.
+
 NRTMv4 has support for in-band key rotation. Use the following process:
 
 * Generate a new private key.
