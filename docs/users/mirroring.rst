@@ -52,8 +52,9 @@ The basic building blocks of NRTMv4 are:
   Each Delta file has an increasing version number.
 * The UNF has a random session ID. If this is changed, all clients
   must reload from the snapshot.
-* The server keeps Delta files for 24 hours. If a client lags behind too
-  far, it will detect this, and reload from the snapshot.
+* The server keeps Delta files for 24 hours, and keeps any that are newer
+  than the current snapshot for longer. If a client lags behind too far,
+  it will detect this, and reload from the snapshot.
 
 NRTMv4 is reliable, detects errors, secure, and recovers automatically
 from loss of synchronisation.
@@ -87,7 +88,8 @@ When running the NRTMv4 server process, IRRD will:
   and if there were changes, write a new Delta file.
 * If ``nrtm4_server_snapshot_frequency`` has expired (default: 4 hours),
   or there was no ongoing session, write a new snapshot.
-* Expire any Delta files older than 24 hours.
+* Expire any Delta files older than 24 hours, except those that are newer
+  than the current snapshot.
 * Write and publish the new Update Notification File, which includes its
   signature.
 * Delete the expired Delta files, any dangling Delta files and older Snapshot
