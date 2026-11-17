@@ -37,8 +37,7 @@ NRTMv4 overview
 
 The recommended method of mirroring to/from other databases is NRTM version 4.
 
-NRTMv4 uses `draft-ietf-grow-nrtm-v4-07`_ which loads JSON-ish files over HTTPS.
-Future releases may use newer versions of this draft.
+NRTMv4 is specified in `RFC 10063`_, and loads JSON-ish files over HTTPS.
 
 The basic building blocks of NRTMv4 are:
 
@@ -59,7 +58,7 @@ The basic building blocks of NRTMv4 are:
 NRTMv4 is reliable, detects errors, secure, and recovers automatically
 from loss of synchronisation.
 
-.. _draft-ietf-grow-nrtm-v4-07: https://datatracker.ietf.org/doc/draft-ietf-grow-nrtm-v4/07/
+.. _RFC 10063: https://www.rfc-editor.org/rfc/rfc10063.html
 
 
 Mirroring services for others (exporting)
@@ -103,7 +102,7 @@ using the same nginx instance used for other parts of IRRD,
 or through an entirely different web server or CDN, depending on your
 scalability needs. So in a way, the actual "serving" part of an
 NRTMv4 server is not performed by IRRD, it only produces files for you
-to serve over HTTPS
+to serve over HTTPS.
 
 NRTMv4 has support for in-band key rotation. Use the following process:
 
